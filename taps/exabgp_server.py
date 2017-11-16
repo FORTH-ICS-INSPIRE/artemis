@@ -1,10 +1,8 @@
-#!/usr/bin/python
-
-from __future__ import print_function
+#!/usr/bin/env python
 
 import time
-from flask import Flask, abort
 import socketio
+from flask import Flask, abort
 from sys import stdin, stdout, stderr
 import json
 import time
@@ -13,12 +11,8 @@ from netaddr import IPNetwork, IPAddress
 import radix
 
 async_mode = 'threading'
-
-
 sio = socketio.Server(logger=False, async_mode=async_mode)
 app = Flask(__name__)
-
-
 thread = None
 clients = {}
 global hostname
@@ -43,13 +37,13 @@ def message_parser(line):
                     for sid in clients.keys():
                         try:
                             if clients[sid][0].search_worst(prefix) is not None:
-                                print('Sending exa_message to ' + str(clients[sid][0]), file=stderr)
+                                stderr.write('Sending exa_message to ' + str(clients[sid][0]) + '\n')
                                 sio.emit(
                                     'exa_message', message, room=sid)
                         except:
-                            print('Invalid format received from %s'.format(str(sid)))
+                            print('Invalid format received from %s' % str(sid))
     except Exception as e:
-        print(str(e), file=stderr)
+        stderr.write(str(e) + '\n')
 
 
 def exabgp_update_event():
@@ -87,7 +81,7 @@ def artemis_exa_subscribe(sid, message):
         clients[sid] = [prefixes_tree, True]
 
     except:
-        print('Invalid format received from %s'.format(str(sid)))
+        stderr.write('Invalid format received from %s\n' % str(sid))
 
 if __name__ == '__main__':
     hostname = sys.argv[1]
@@ -95,4 +89,3 @@ if __name__ == '__main__':
     app.config['SECRET_KEY'] = 'secret!'
 
     app.run(host='0.0.0.0', threaded=True)
-    #socketio.run(app)

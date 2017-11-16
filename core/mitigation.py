@@ -1,0 +1,3 @@
+class Mitigation()
+
+	pass

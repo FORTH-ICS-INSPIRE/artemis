@@ -1,0 +1,6 @@
+netaddr
+selenium
+socketIO_client
+bs4
+automake
+

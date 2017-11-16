@@ -1,12 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import time
-import socketio
-from flask import Flask, abort
-from sys import stdin, stdout, stderr
-import json
-import time
 import sys
+from sys import stdin, stdout, stderr
+from flask import Flask, abort
+import socketio
+import json
 from netaddr import IPNetwork, IPAddress
 import radix
 
@@ -37,13 +35,13 @@ def message_parser(line):
                     for sid in clients.keys():
                         try:
                             if clients[sid][0].search_worst(prefix) is not None:
-                                stderr.write('Sending exa_message to ' + str(clients[sid][0]) + '\n')
+                                print('Sending exa_message to ' + str(clients[sid][0]), file=stderr)
                                 sio.emit(
                                     'exa_message', message, room=sid)
                         except:
-                            print('Invalid format received from %s' % str(sid))
+                            print('Invalid format received from %s'.format(str(sid)))
     except Exception as e:
-        stderr.write(str(e) + '\n')
+        print(str(e), file=stderr)
 
 
 def exabgp_update_event():
@@ -81,7 +79,7 @@ def artemis_exa_subscribe(sid, message):
         clients[sid] = [prefixes_tree, True]
 
     except:
-        stderr.write('Invalid format received from %s\n' % str(sid))
+        print('Invalid format received from %s'.format(str(sid)))
 
 if __name__ == '__main__':
     hostname = sys.argv[1]

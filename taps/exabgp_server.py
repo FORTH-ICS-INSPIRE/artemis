@@ -6,7 +6,6 @@ from flask import Flask, abort
 import socketio
 import json
 from netaddr import IPNetwork, IPAddress
-import radix
 
 async_mode = 'threading'
 sio = socketio.Server(logger=False, async_mode=async_mode)
@@ -35,13 +34,14 @@ def message_parser(line):
                 for prefix in temp_message['neighbor']['message']['update']['announce']['ipv4 unicast'][origin]:
                     message['prefix'] = prefix
                     for sid in clients.keys():
-                        try:
-                            if clients[sid][0].search_worst(prefix) is not None:
-                                print('Sending exa_message to ' + str(clients[sid][0]), file=stderr)
-                                sio.emit(
+                        for check_prefix in clients[sid][0]:
+                            try:
+                                if IPAddress(prefix.split('/')[0]) in IPNetwork(prefix):
+                                    print('Sending exa_message to ' + str(clients[sid][0]), file=stderr)
+                                    sio.emit(
                                     'exa_message', message, room=sid)
-                        except:
-                            print('Invalid format received from %s'.format(str(sid)))
+                            except:
+                                print('Invalid format received from %s'.format(str(sid)))
     except Exception as e:
         print(str(e), file=stderr)
 
@@ -72,13 +72,12 @@ def artemis_disconnect(sid):
 
 @sio.on('exa_subscribe')
 def artemis_exa_subscribe(sid, message):
-    prefixes_tree = radix.Radix()
-
+    all_prefixes = list()
     try:
         for prefix in message['prefixes']:
-            prefixes_tree.add(prefix)
+            all_prefixes.append(prefix)
 
-        clients[sid] = [prefixes_tree, True]
+        clients[sid] = [all_prefixes, True]
 
     except:
         print('Invalid format received from %s'.format(str(sid)))

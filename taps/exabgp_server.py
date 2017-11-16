@@ -11,6 +11,8 @@ import radix
 async_mode = 'threading'
 sio = socketio.Server(logger=False, async_mode=async_mode)
 app = Flask(__name__)
+app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
+app.config['SECRET_KEY'] = 'secret!'
 thread = None
 clients = {}
 global hostname
@@ -83,7 +85,4 @@ def artemis_exa_subscribe(sid, message):
 
 if __name__ == '__main__':
     hostname = sys.argv[1]
-    app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
-    app.config['SECRET_KEY'] = 'secret!'
-
     app.run(host='0.0.0.0', threaded=True)

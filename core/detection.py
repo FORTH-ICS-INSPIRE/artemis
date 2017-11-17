@@ -2,11 +2,12 @@ import radix
 
 class Detection():
 
-	def __init__(self, configs, parsed_log_queue):
+	def __init__(self, configs, parsed_log_queue, monitors):
 
 		self.configs_ = configs
 		self.parsed_log_queue = parsed_log_queue
-		
+		self.monitors = monitors
+
 		self.prefix_tree = radix.Radix()
 
 		self.init_detection()
@@ -29,7 +30,10 @@ class Detection():
 		while(True):
 			try:
 				parsed_log = self.parsed_log_queue.get()
-				self.detect_origin_hijack(parsed_log)
+				if( not self.detect_origin_hijack(parsed_log) ):
+					if( not self.detech_type_1_hijack(parsed_log) ):
+						pass
+
 
 			except:
 				print("Error on raw log queue parsing.")
@@ -42,15 +46,32 @@ class Detection():
 				origin_asn = int(bgp_msg['as_path'][-1])
 				prefix_node = self.prefix_tree.search_best(bgp_msg['prefix'])
 				if(prefix_node is not None):
-					
 					if(origin_asn not in prefix_node.data['origin_asns']):
 						## Trigger hijack
-						print("HIJACK TYPE 0 detected!")
 
+
+						print("HIJACK TYPE 0 detected!")
+						return True
+			return False
 		except:
 			print("Error on detect origin hijack.")
 
 
 	def detech_type_1_hijack(self, bgp_msg):
 
-		pass
+
+		try:
+			if(len(bgp_msg['as_path']) > 1):
+				first_neighbor_asn = int(bgp_msg['as_path'][-2])
+				prefix_node = self.prefix_tree.search_best(bgp_msg['prefix'])
+				if(prefix_node is not None):
+					if(first_neighbor_asn not in prefix_node.data['neighbors']):
+						## Trigger hijack
+
+
+						print("HIJACK TYPE 1 detected!")
+						return True
+			return False
+
+		except:
+			print("Error on detect 1 hop neighbor hijack.")

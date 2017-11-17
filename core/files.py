@@ -26,6 +26,7 @@ class WriteLogs():
 	def set_date(self):
 		self.date = time.strftime("%d-%m-%Y")
 
+
 	def append_log(self, log_line):
 		try:
 			timestamp = int(time.time())

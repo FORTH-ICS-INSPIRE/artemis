@@ -1,8 +1,8 @@
+import sys
 from socketIO_client import SocketIO
 import ipaddress
 from core.files import WriteLogs
 
-import sys
 
 class ExaBGP():
 
@@ -27,15 +27,17 @@ class ExaBGP():
 
 	def start(self):
 		socketIO = SocketIO("http://" + str(self.config['host']))
-		print("[ExaBGP] %s monitor service is up for prefix %s" % (self.config['host'],  self.config['prefixes']))
+		print("[ExaBGP] %s monitor service is up for prefixes %s" % (self.config['host'],  self.config['prefixes']))
 
 
 		def on_connect(*args):
 			prefixes_ = {"prefixes": self.config['prefixes']}
 			socketIO.emit("exa_subscribe", prefixes_)
 
+
 		def on_pong(*args):
 			socketIO.emit("ping")
+
 
 		def exabgp_msg(bgp_message):
 			
@@ -48,10 +50,12 @@ class ExaBGP():
 			socketIO.emit("ping")
 
 
+		# not used yet (TODO)
 		def on_reconnecting():
 			print("ExaBGP host ", self.config['host'], " reconnecting.")
 
 
+		# not used yet (TODO)
 		def on_reconnect_error():
 			print("ExaBGP host ", self.config['host'], " reconnect error.")
 
@@ -61,6 +65,7 @@ class ExaBGP():
 			socketIO.close()
 
 
+		# not used yet (TODO)
 		def on_error():
 			print("ExaBGP host ", self.config['host'], " error.")
 

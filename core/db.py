@@ -48,6 +48,7 @@ class DB():
 			print("Database failed to connect.")
 			exit(-1)
 
+
 	def insert_entry(self, pformat_obj):
 		
 		try:

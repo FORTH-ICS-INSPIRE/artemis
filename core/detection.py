@@ -1,9 +1,6 @@
 import radix
 
-
 class Detection():
-
-	
 
 	def __init__(self, configs, parsed_log_queue):
 
@@ -27,7 +24,6 @@ class Detection():
 				node.data["mitigation"] = self.configs_[config]['mitigation']
 
 
-
 	def parse_queue(self):
 
 		while(True):
@@ -37,6 +33,7 @@ class Detection():
 
 			except:
 				print("Error on raw log queue parsing.")
+
 
 	def detect_origin_hijack(self, bgp_msg):
 
@@ -53,7 +50,7 @@ class Detection():
 		except:
 			print("Error on detect origin hijack.")
 
+
 	def detech_type_1_hijack(self, bgp_msg):
 
 		pass
-	

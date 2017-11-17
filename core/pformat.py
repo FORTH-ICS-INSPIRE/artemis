@@ -119,5 +119,6 @@ class Pformat():
 		except:
 			print("Error on Pformat RIPEris format transformation.")
 
+
 	def store_to_db(self, pformat_obj):
 		pass

@@ -31,7 +31,7 @@ class Detection():
 			try:
 				parsed_log = self.parsed_log_queue.get()
 				if( not self.detect_origin_hijack(parsed_log) ):
-					if( not self.detech_type_1_hijack(parsed_log) ):
+					if( not self.detect_type_1_hijack(parsed_log) ):
 						pass
 
 
@@ -57,8 +57,7 @@ class Detection():
 			print("Error on detect origin hijack.")
 
 
-	def detech_type_1_hijack(self, bgp_msg):
-
+	def detect_type_1_hijack(self, bgp_msg):
 
 		try:
 			if(len(bgp_msg['as_path']) > 1):

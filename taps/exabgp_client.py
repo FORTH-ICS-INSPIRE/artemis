@@ -1,8 +1,8 @@
+import sys
 from socketIO_client import SocketIO
 import ipaddress
 from core.files import WriteLogs
 
-import sys
 
 class ExaBGP():
 
@@ -27,34 +27,35 @@ class ExaBGP():
 
 	def start(self):
 		socketIO = SocketIO("http://" + str(self.config['host']))
-		print("[ExaBGP] %s monitor service is up for prefix %s" % (self.config['host'],  self.config['prefixes']))
+		print("[ExaBGP] %s monitor service is up for prefixes %s" % (self.config['host'],  self.config['prefixes']))
 
 
 		def on_connect(*args):
-			print("on_connect")
 			prefixes_ = {"prefixes": self.config['prefixes']}
 			socketIO.emit("exa_subscribe", prefixes_)
 
-			print("on_connect done")
 
 		def on_pong(*args):
 			socketIO.emit("ping")
+
 
 		def exabgp_msg(bgp_message):
 			
 			# Write raw log
 			self.write2file.append_log(bgp_message)
 
-			print(bgp_message)
 			# Put in queue to be tranformed to Pformat
 			self.raw_log_queue.put(('ExaBGP', self.config['host'], bgp_message))
 
-			#socketIO.emit("ping")
+			socketIO.emit("ping")
 
 
+		# not used yet (TODO)
 		def on_reconnecting():
 			print("ExaBGP host ", self.config['host'], " reconnecting.")
 
+
+		# not used yet (TODO)
 		def on_reconnect_error():
 			print("ExaBGP host ", self.config['host'], " reconnect error.")
 
@@ -63,17 +64,18 @@ class ExaBGP():
 			print("ExaBGP host ", self.config['host'], " disconnected.")
 			socketIO.close()
 
+
+		# not used yet (TODO)
 		def on_error():
 			print("ExaBGP host ", self.config['host'], " error.")
 
+
 		socketIO.on("connect", on_connect)
 		socketIO.on("disconnect", on_disconnect)
-		#socketIO.on("pong", on_pong)
+		socketIO.on("pong", on_pong)
 		socketIO.on("exa_message", exabgp_msg)
 		#socketIO.on("reconnecting", on_reconnecting)
 		#socketIO.on("reconnect_error", on_reconnect_error)
 		#socketIO.on("error", on_error)
 
 		socketIO.wait()
-
-

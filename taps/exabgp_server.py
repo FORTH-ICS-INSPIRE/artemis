@@ -5,6 +5,7 @@ from sys import stdin, stdout, stderr
 from flask import Flask, abort
 import socketio
 import json
+import time
 from netaddr import IPNetwork, IPAddress
 
 async_mode = 'threading'
@@ -35,13 +36,9 @@ def message_parser(line):
                     message['prefix'] = prefix
                     for sid in clients.keys():
                         for check_prefix in clients[sid][0]:
-                            try:
-                                if IPAddress(prefix.split('/')[0]) in IPNetwork(prefix):
-                                    print('Sending exa_message to ' + str(clients[sid][0]), file=stderr)
-                                    sio.emit(
-                                    'exa_message', message, room=sid)
-                            except:
-                                print('Invalid format received from %s'.format(str(sid)))
+                            if IPAddress(prefix.split('/')[0]) in check_prefix:
+                                #print('Sending exa_message to ' + str(sid), file=stderr)
+                                sio.emit('exa_message', message, room=sid)
     except Exception as e:
         print(str(e), file=stderr)
 
@@ -64,10 +61,18 @@ def artemis_connect(sid, environ):
         thread = sio.start_background_task(exabgp_update_event)
     sio.emit("connect")
 
+
 @sio.on('disconnect')
 def artemis_disconnect(sid):
     if sid in clients:
         del clients[sid]
+
+
+@sio.on('ping')
+def artemis_ping(sid):
+    # keep connection alive
+    time.sleep(1)
+    sio.emit("pong", room=sid)
 
 
 @sio.on('exa_subscribe')
@@ -75,12 +80,11 @@ def artemis_exa_subscribe(sid, message):
     all_prefixes = list()
     try:
         for prefix in message['prefixes']:
-            all_prefixes.append(prefix)
-
+            all_prefixes.append(IPNetwork(prefix))
         clients[sid] = [all_prefixes, True]
-
     except:
         print('Invalid format received from %s'.format(str(sid)))
+
 
 if __name__ == '__main__':
     hostname = sys.argv[1]

@@ -1,6 +1,7 @@
 from pathlib import Path
 import time
 import json
+import os
 
 class WriteLogs():
 
@@ -12,15 +13,19 @@ class WriteLogs():
 		self.date = time.strftime("%d-%m-%Y")
 		self.service = service
 		self.monitor = monitor
-		self.prefix =prefix
+		self.prefix = prefix
 		self.filename = str(monitor) + "_" + str(prefix) + "_" + str(self.date)
+		if not os.path.isdir(self.path):
+			os.mkdir(self.path)
 
 
 	def set_filename(self, prefix):		
 		self.filename = str(self.monitor) + "_" + str(prefix) + "_" + str(self.date)
 
+
 	def set_date(self):
 		self.date = time.strftime("%d-%m-%Y")
+
 
 	def append_log(self, log_line):
 		try:

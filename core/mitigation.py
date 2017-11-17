@@ -12,9 +12,17 @@ MTS_PY = '{}/moas_tcp_sender.py'.format(MITIGATION_SCRIPTS_DIR)
 
 class Mitigation():
 
-	def __init__(self, configs=None, alert=None):
+	def __init__(self,
+				 prefix_node=None,
+				 bgp_msg=None,
+				 local_mitigation=None,
+				 moas_mitigation=None):
 
-		pass
+		print(str(prefix_node.prefix))
+		print(str(prefix_node.data))
+		print(str(bgp_msg))
+		print(str(local_mitigation))
+		print(str(moas_mitigation))
 
 	def init_mitigation(self):
 
@@ -77,7 +85,5 @@ class Mitigation():
 												   moas_ip,
 												   moas_port,
 												   moas_prefix))
-
-m = Mitigation()
 
 

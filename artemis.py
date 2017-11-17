@@ -6,6 +6,7 @@ from core.pformat import Pformat
 from multiprocessing import Process, Manager, Queue
 import os
 
+
 def main():
 
     # Read the config file
@@ -14,12 +15,14 @@ def main():
     if(confparser_.isValid()):
         configs = confparser_.get_obj()
         monitors = confparser_.get_monitors()
+        local_mitigation = confparser_.get_local_mitigation()
+        moas_mitigation = confparser_.get_moas_mitigation()
+
         # Run system check
         systemcheck_ = SysCheck()
         
         if(systemcheck_.isValid()):
 
-                    
             raw_log_queue = Queue()
             parsed_log_queue = Queue()
             process_ids = list()
@@ -38,7 +41,12 @@ def main():
 
             print("Starting Detection mechanism...")
             # Start detections
-            detection_ = Process(target=Detection, args=(configs, parsed_log_queue, monitors))
+            detection_ = Process(target=Detection,
+                                 args=(configs,
+                                       parsed_log_queue,
+                                       monitors,
+                                       local_mitigation,
+                                       moas_mitigation))
             detection_.start()
 
             process_ids.append(['Detection', detection_])

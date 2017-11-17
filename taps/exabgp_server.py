@@ -36,13 +36,9 @@ def message_parser(line):
                     message['prefix'] = prefix
                     for sid in clients.keys():
                         for check_prefix in clients[sid][0]:
-                            try:
-                                if IPAddress(prefix.split('/')[0]) in IPNetwork(prefix):
-                                    print('Sending exa_message to ' + str(clients[sid][0]), file=stderr)
-                                    sio.emit(
-                                    'exa_message', message, room=sid)
-                            except:
-                                print('Invalid format received from %s'.format(str(sid)))
+                            if IPAddress(prefix.split('/')[0]) in check_prefix:
+                                #print('Sending exa_message to ' + str(sid), file=stderr)
+                                sio.emit('exa_message', message, room=sid)
     except Exception as e:
         print(str(e), file=stderr)
 
@@ -84,7 +80,7 @@ def artemis_exa_subscribe(sid, message):
     all_prefixes = list()
     try:
         for prefix in message['prefixes']:
-            all_prefixes.append(prefix)
+            all_prefixes.append(IPNetwork(prefix))
         clients[sid] = [all_prefixes, True]
     except:
         print('Invalid format received from %s'.format(str(sid)))

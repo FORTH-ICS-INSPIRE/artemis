@@ -1,18 +1,11 @@
 import os
 import sys
 import radix
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, CURRENT_DIR)
-from mitigation import Mitigation
+from core.mitigation import Mitigation
 
 class Detection():
 
-	def __init__(self,
-				configs,
-				parsed_log_queue,
-				monitors,
-				local_mitigation,
-				moas_mitigation):
+	def __init__(self, configs, parsed_log_queue, monitors, local_mitigation, moas_mitigation):
 
 		self.configs_ = configs
 		self.parsed_log_queue = parsed_log_queue
@@ -57,15 +50,16 @@ class Detection():
 				if(prefix_node is not None):
 					if(origin_asn not in prefix_node.data['origin_asns']):
 						# Trigger hijack
+						print("HIJACK TYPE 0 detected!")
 
 						# Trigger mitigation
 						if len(prefix_node.data["mitigation"]) > 0:
-							mit = Mitigation(prefix_node,
-											bgp_msg,
-											self.local_mitigation,
-											self.moas_mitigation)
+							mit = Mitigation(
+								prefix_node,
+								bgp_msg,
+								self.local_mitigation,
+								self.moas_mitigation)
 
-						print("HIJACK TYPE 0 detected!")
 						return True
 			return False
 		except:
@@ -81,15 +75,16 @@ class Detection():
 				if(prefix_node is not None):
 					if(first_neighbor_asn not in prefix_node.data['neighbors']):
 						# Trigger hijack
+						print("HIJACK TYPE 1 detected!")
 
 						# Trigger mitigation
 						if len(prefix_node.data["mitigation"]) > 0:
-							mit = Mitigation(prefix_node,
-											bgp_msg,
-											self.local_mitigation,
-											self.moas_mitigation)
+							mit = Mitigation(
+								prefix_node,
+								bgp_msg,
+								self.local_mitigation,
+								self.moas_mitigation)
 
-						print("HIJACK TYPE 1 detected!")
 						return True
 			return False
 

@@ -53,7 +53,7 @@ def main():
     parser.add_argument('-w', '--withdraw', dest='withdraw_prefix', help='withdraw prefix', action='store_true')
     args = parser.parse_args()
 
-    print('Connecting to {} {}'.format(args.telnet_host, args.telnet_port))
+    #print('Connecting to {} {}'.format(args.telnet_host, args.telnet_port))
     #print("Enter your telnet password")
     #telnet_pw = getpass.getpass()
     telnet_pw = 'sdnip' # hardcode for now

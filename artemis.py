@@ -38,7 +38,7 @@ def main():
 
             print("Starting Detection mechanism...")
             # Start detections
-            detection_ = Process(target=Detection, args=(configs, parsed_log_queue))
+            detection_ = Process(target=Detection, args=(configs, parsed_log_queue, monitors))
             detection_.start()
 
             process_ids.append(['Detection', detection_])

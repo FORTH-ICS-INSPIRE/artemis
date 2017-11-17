@@ -5,6 +5,7 @@ from sys import stdin, stdout, stderr
 from flask import Flask, abort
 import socketio
 import json
+import time
 from netaddr import IPNetwork, IPAddress
 
 async_mode = 'threading'
@@ -64,10 +65,18 @@ def artemis_connect(sid, environ):
         thread = sio.start_background_task(exabgp_update_event)
     sio.emit("connect")
 
+
 @sio.on('disconnect')
 def artemis_disconnect(sid):
     if sid in clients:
         del clients[sid]
+
+
+@sio.on('ping')
+def artemis_ping(sid):
+    # keep connection alive
+    time.sleep(1)
+    sio.emit("pong", room=sid)
 
 
 @sio.on('exa_subscribe')
@@ -76,11 +85,10 @@ def artemis_exa_subscribe(sid, message):
     try:
         for prefix in message['prefixes']:
             all_prefixes.append(prefix)
-
         clients[sid] = [all_prefixes, True]
-
     except:
         print('Invalid format received from %s'.format(str(sid)))
+
 
 if __name__ == '__main__':
     hostname = sys.argv[1]

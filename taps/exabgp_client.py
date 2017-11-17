@@ -31,11 +31,8 @@ class ExaBGP():
 
 
 		def on_connect(*args):
-			print("on_connect")
 			prefixes_ = {"prefixes": self.config['prefixes']}
 			socketIO.emit("exa_subscribe", prefixes_)
-
-			print("on_connect done")
 
 		def on_pong(*args):
 			socketIO.emit("ping")
@@ -45,15 +42,15 @@ class ExaBGP():
 			# Write raw log
 			self.write2file.append_log(bgp_message)
 
-			print(bgp_message)
 			# Put in queue to be tranformed to Pformat
 			self.raw_log_queue.put(('ExaBGP', self.config['host'], bgp_message))
 
-			#socketIO.emit("ping")
+			socketIO.emit("ping")
 
 
 		def on_reconnecting():
 			print("ExaBGP host ", self.config['host'], " reconnecting.")
+
 
 		def on_reconnect_error():
 			print("ExaBGP host ", self.config['host'], " reconnect error.")
@@ -63,17 +60,17 @@ class ExaBGP():
 			print("ExaBGP host ", self.config['host'], " disconnected.")
 			socketIO.close()
 
+
 		def on_error():
 			print("ExaBGP host ", self.config['host'], " error.")
 
+
 		socketIO.on("connect", on_connect)
 		socketIO.on("disconnect", on_disconnect)
-		#socketIO.on("pong", on_pong)
+		socketIO.on("pong", on_pong)
 		socketIO.on("exa_message", exabgp_msg)
 		#socketIO.on("reconnecting", on_reconnecting)
 		#socketIO.on("reconnect_error", on_reconnect_error)
 		#socketIO.on("error", on_error)
 
 		socketIO.wait()
-
-

@@ -87,7 +87,7 @@ port: 3001
 prefixes: my_prefixes
 origin_asns: my_asn, moas_asn
 neighbors: 65003, 65002
-mitigation: deaggregate
+mitigation: deaggregate, outsource
 
 # - - 													- - #
 # - - - - - # End of Rule Declaration Groups  # - - - - - - #

@@ -38,7 +38,7 @@ class Detection():
 					if( not self.detect_type_1_hijack(parsed_log) ):
 						pass
 			except:
-				print("Error on raw log queue parsing.")
+				print("[DETECTION] Error on raw log queue parsing.")
 
 
 	def detect_origin_hijack(self, bgp_msg):
@@ -50,7 +50,7 @@ class Detection():
 				if(prefix_node is not None):
 					if(origin_asn not in prefix_node.data['origin_asns']):
 						# Trigger hijack
-						print("HIJACK TYPE 0 detected!")
+						print("[DETECTION] HIJACK TYPE 0 detected!")
 
 						# Trigger mitigation
 						if len(prefix_node.data["mitigation"]) > 0:
@@ -63,7 +63,7 @@ class Detection():
 						return True
 			return False
 		except:
-			print("Error on detect origin hijack.")
+			print("[DETECTION] Error on detect origin hijack.")
 
 
 	def detect_type_1_hijack(self, bgp_msg):
@@ -75,7 +75,7 @@ class Detection():
 				if(prefix_node is not None):
 					if(first_neighbor_asn not in prefix_node.data['neighbors']):
 						# Trigger hijack
-						print("HIJACK TYPE 1 detected!")
+						print("[DETECTION] HIJACK TYPE 1 detected!")
 
 						# Trigger mitigation
 						if len(prefix_node.data["mitigation"]) > 0:
@@ -89,4 +89,4 @@ class Detection():
 			return False
 
 		except:
-			print("Error on detect 1 hop neighbor hijack.")
+			print("[DETECTION] Error on detect 1 hop neighbor hijack.")

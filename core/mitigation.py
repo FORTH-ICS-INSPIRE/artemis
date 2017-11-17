@@ -5,7 +5,7 @@ from netaddr import IPNetwork
 
 
 HOME = expanduser("~")
-MITIGATION_SCRIPTS_DIR = "{}/artemis/mininet".format(HOME)
+MITIGATION_SCRIPTS_DIR = "{}/artemis-tool/routers/quagga".format(HOME)
 PY_BIN = '/usr/bin/python'
 QC_PY = '{}/quagga_command.py'.format(MITIGATION_SCRIPTS_DIR)
 MTS_PY = '{}/moas_tcp_sender.py'.format(MITIGATION_SCRIPTS_DIR)
@@ -25,44 +25,62 @@ class Mitigation():
 
 	def init_mitigation(self):
 		try:
+
 			if IPNetwork(self.bgp_msg['prefix']).prefixlen < 24:
+
 				if 'deaggregate' in self.prefix_node.data['mitigation']:
+
 					self.deaggregate_prefix(
 						prefix=self.bgp_msg['prefix'],
 						local_asn=self.local_mitigation['asn'],
 						local_telnet_ip=self.local_mitigation['ip'],
 						local_telnet_port=self.local_mitigation['port'])
-				# TODO: enable outsourcing
+
 				elif 'outsource' in self.prefix_node.data['mitigation']:
+
 					self.announce_prefix(
 						prefix=self.bgp_msg['prefix'],
 						local_asn=self.local_mitigation['asn'],
 						local_telnet_ip=self.local_mitigation['ip'],
 						local_telnet_port=self.local_mitigation['port'])
-					# TODO: get MOAS help
-					pass
+
+					self.moas_outsource(
+						prefix=self.bgp_msg['prefix'],
+						moas_asn=self.moas_mitigation['asn'],
+						moas_ip=self.moas_mitigation['ip'],
+						moas_port=self.moas_mitigation['port']
+					)
+
 				else:
-					print('Resolving hijack manually!')
+
+					print('[MITIGATION] Resolving hijack manually!')
 			else:
-				if 'deaggregate' in self.prefix_node.data['mitigation']:
-					print('Cannot deaggregate prefix {} due to filtering!'.format(self.bgp_msg['prefix']))
 
-				# TODO: enable outsourcing
+				if 'deaggregate' in self.prefix_node.data['mitigation']:
+
+					print('[MITIGATION] Cannot deaggregate prefix {} due to filtering!'.format(self.bgp_msg['prefix']))
+
 				if 'outsource' in self.prefix_node.data['mitigation']:
-					# TODO: need to calculate /24 prefix and announce this in this case!
+
 					self.announce_prefix(
 						prefix=self.bgp_msg['prefix'],
 						local_asn=self.local_mitigation['asn'],
 						local_telnet_ip=self.local_mitigation['ip'],
 						local_telnet_port=self.local_mitigation['port'])
-					# TODO: get MOAS help
-					pass
-				else:
-					print('Resolving hijack manually!')
-		except:
-			print("Invalid prefix '{}'!".format(self.bgp_msg['prefix']))
 
-		pass
+					self.moas_outsource(
+						prefix=self.bgp_msg['prefix'],
+						moas_asn=self.moas_mitigation['asn'],
+						moas_ip=self.moas_mitigation['ip'],
+						moas_port=self.moas_mitigation['port']
+					)
+
+				else:
+
+					print('[MITIGATION] Resolving hijack manually!')
+		except:
+
+			print("[MITIGATION] Invalid prefix '{}'!".format(self.bgp_msg['prefix']))
 
 
 	def announce_prefix(self, prefix=None, local_asn=None, local_telnet_ip=None, local_telnet_port=None):
@@ -84,8 +102,6 @@ class Mitigation():
 					local_asn=local_asn,
 					local_telnet_ip=local_telnet_ip,
 					local_telnet_port=local_telnet_port)
-		else:
-			print('Cannot deaggregate prefix {} due to filtering!'.format(prefix))
 
 
 	def moas_outsource(self, prefix = None, moas_asn=None, moas_ip=None, moas_port=None):

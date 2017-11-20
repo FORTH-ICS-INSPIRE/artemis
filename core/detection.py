@@ -52,7 +52,7 @@ class Detection():
 						# Trigger hijack
 						print("[DETECTION] HIJACK TYPE 0 detected!")
 
-						# Trigger mitigation
+						# Trigger mitigation (TODO: need to react on a hijack event basis, not bgp message!)
 						if len(prefix_node.data["mitigation"]) > 0:
 							mit = Mitigation(
 								prefix_node,
@@ -77,7 +77,7 @@ class Detection():
 						# Trigger hijack
 						print("[DETECTION] HIJACK TYPE 1 detected!")
 
-						# Trigger mitigation
+						# Trigger mitigation (TODO: need to react on a hijack event basis, not bgp message!)
 						if len(prefix_node.data["mitigation"]) > 0:
 							mit = Mitigation(
 								prefix_node,

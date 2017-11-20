@@ -235,6 +235,9 @@ class ConfParser():
 
 	def process_local_and_moas_mitigation(self, field, where, label, definition=None):
 
+		# TODO: check with operators whether they need multiple local control endpoints,
+		# multiple remote MOAS control endpoints, as well as selection per group
+		# for now keep single dict for local, single dict for MOAS
 		try:
 			if(label in self.available_mitigation_fields):
 				if(label == 'asn'):

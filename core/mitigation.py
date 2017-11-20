@@ -15,6 +15,7 @@ class Mitigation():
 
 	def __init__(self, prefix_node=None, bgp_msg=None, local_mitigation=None, moas_mitigation=None):
 
+		# TODO: check if we need also "type" differentiation (e.g., quagga, etc.)
 		self.prefix_node = prefix_node
 		self.bgp_msg = bgp_msg
 		self.local_mitigation = local_mitigation

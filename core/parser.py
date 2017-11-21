@@ -13,7 +13,7 @@ class ConfParser():
 	req_opt = ['prefixes', 'origin_asns']
 	section_groups = ['prefixes_group', 'asns_group', 'monitors_group', 'local_mitigation_group', 'moas_mitigation_group']
 	supported_fields = ['prefixes', 'origin_asns', 'neighbors', 'mitigation']
-	mitigation_types = ['deaggregate', 'outsource']
+	mitigation_types = ['deaggregate', 'outsource', 'manual']
 	
 	available_monitor_types = ['riperis', 'bgpmon', 'exabgp']
 	available_ris = ['rrc18', 'rrc19', 'rrc20', 'rrc21']

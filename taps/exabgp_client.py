@@ -47,8 +47,6 @@ class ExaBGP():
 			# Put in queue to be tranformed to Pformat
 			self.raw_log_queue.put(('ExaBGP', self.config['host'], bgp_message))
 
-			socketIO.emit("ping")
-
 
 		# not used yet (TODO)
 		def on_reconnecting():

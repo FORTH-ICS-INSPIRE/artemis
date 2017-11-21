@@ -70,8 +70,6 @@ def artemis_disconnect(sid):
 
 @sio.on('ping')
 def artemis_ping(sid):
-    # keep connection alive
-    time.sleep(1)
     sio.emit("pong", room=sid)
 
 

@@ -1,13 +1,17 @@
+import os
+import sys
 import radix
+from core.mitigation import Mitigation
 
 class Detection():
 
-	def __init__(self, configs, parsed_log_queue, monitors):
+	def __init__(self, configs, parsed_log_queue, monitors, local_mitigation, moas_mitigation):
 
 		self.configs_ = configs
 		self.parsed_log_queue = parsed_log_queue
 		self.monitors = monitors
-
+		self.local_mitigation = local_mitigation
+		self.moas_mitigation = moas_mitigation
 		self.prefix_tree = radix.Radix()
 
 		self.init_detection()
@@ -33,10 +37,8 @@ class Detection():
 				if( not self.detect_origin_hijack(parsed_log) ):
 					if( not self.detect_type_1_hijack(parsed_log) ):
 						pass
-
-
 			except:
-				print("Error on raw log queue parsing.")
+				print("[DETECTION] Error on raw log queue parsing.")
 
 
 	def detect_origin_hijack(self, bgp_msg):
@@ -47,14 +49,21 @@ class Detection():
 				prefix_node = self.prefix_tree.search_best(bgp_msg['prefix'])
 				if(prefix_node is not None):
 					if(origin_asn not in prefix_node.data['origin_asns']):
-						## Trigger hijack
+						# Trigger hijack
+						print("[DETECTION] HIJACK TYPE 0 detected!")
 
+						# Trigger mitigation (TODO: need to react on a hijack event basis, not bgp message!)
+						if len(prefix_node.data["mitigation"]) > 0:
+							mit = Mitigation(
+								prefix_node,
+								bgp_msg,
+								self.local_mitigation,
+								self.moas_mitigation)
 
-						print("HIJACK TYPE 0 detected!")
 						return True
 			return False
 		except:
-			print("Error on detect origin hijack.")
+			print("[DETECTION] Error on detect origin hijack.")
 
 
 	def detect_type_1_hijack(self, bgp_msg):
@@ -65,12 +74,19 @@ class Detection():
 				prefix_node = self.prefix_tree.search_best(bgp_msg['prefix'])
 				if(prefix_node is not None):
 					if(first_neighbor_asn not in prefix_node.data['neighbors']):
-						## Trigger hijack
+						# Trigger hijack
+						print("[DETECTION] HIJACK TYPE 1 detected!")
 
+						# Trigger mitigation (TODO: need to react on a hijack event basis, not bgp message!)
+						if len(prefix_node.data["mitigation"]) > 0:
+							mit = Mitigation(
+								prefix_node,
+								bgp_msg,
+								self.local_mitigation,
+								self.moas_mitigation)
 
-						print("HIJACK TYPE 1 detected!")
 						return True
 			return False
 
 		except:
-			print("Error on detect 1 hop neighbor hijack.")
+			print("[DETECTION] Error on detect 1 hop neighbor hijack.")

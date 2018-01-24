@@ -1,26 +1,26 @@
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# 					ARTEMIS Config File 					#
+#                   ARTEMIS Config File                     #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   # 
-# - - 													- - #
+# - -                                                   - - #
 # - - - - - # Start of Prefix Definition Groups # - - - - - #
-# - - 													- - #
+# - -                                                   - - #
 
 [prefixes_group]
 
 my_prefixes: 10.0.0.0/8
 
-# - - 													- - #
+# - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #
-# - - 													- - #
-#   													    # 
-#   													    # 
-# - -												    - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           # 
+# - -                                                   - - #
 # - - - - - # Start of Monitor Definition Groups # - -- - - #
-# - -												    - - #
+# - -                                                   - - #
 
 [monitors_group]
 
@@ -30,28 +30,30 @@ bgpmon: (livebgp.netsec.colostate.edu : 5001)
 
 exabgp: (192.168.1.1 : 5000), (192.168.5.1 : 5000)
 
-# - - 													- - #
+# - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
-# - - 													- - #
-#   													    # 
-#   													    # 
-# - -												    - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           # 
+# - -                                                   - - #
 # - - - - - # Start of ASN  Definition Groups # - - - - - - #
-# - -
+# - -                                                   - - #
 
 [asns_group]
 
 my_asn: 65001
+my_upstream_asn: 65002
 moas_asn: 65005
+moas_upstream_asn: 65003
 
-# - - 													- - #
+# - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
-# - - 													- - #
-#   													    #
-#   													    #
-# - -												    - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           # 
+# - -                                                   - - #
 # - - # Start of Local Mitigation  Definition Groups #  - - #
-# - -
+# - -                                                   - - #
 
 [local_mitigation_group]
 
@@ -59,14 +61,14 @@ asn: 65001
 ip: 192.168.101.1
 port: 2605
 
-# - -												    - - #
+# - -                                                   - - #
 # - - # End of Local Mitigation  Definition Groups #    - - #
-# - - 													- - #
-#   													    #
-#  														    #
-# - - 													- - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           #
+# - -                                                   - - #
 # - - # Start of MOAS Mitigation  Definition Groups #   - - #
-# - - 													- - #
+# - -                                                   - - #
 
 [moas_mitigation_group]
 
@@ -74,22 +76,22 @@ asn: 65005
 ip: 192.168.201.1
 port: 3001
 
-# - -												    - - #
+# - -                                                   - - #
 # - - # End of MOAS Mitigation  Definition Groups #     - - #
-# - - 													- - #
-#   													    # 
-#  														    # 
-# - - 													- - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           #
+# - -                                                   - - #
 # - - - - - # Start of Rule Declaration Groups  # - - - - - #
-# - - 													- - #
+# - -                                                   - - #
 
 [group1]
 prefixes: my_prefixes
 origin_asns: my_asn, moas_asn
-neighbors: 65003, 65002
+neighbors: my_upstream_asn, moas_upstream_asn
 mitigation: deaggregate, outsource
 
-# - - 													- - #
+# - -                                                   - - #
 # - - - - - # End of Rule Declaration Groups  # - - - - - - #
-# - - 													- - #
+# - -                                                   - - #
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   # 

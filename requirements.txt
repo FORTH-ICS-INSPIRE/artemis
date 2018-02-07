@@ -1,6 +1,11 @@
-netaddr
-selenium
-socketIO_client
-bs4
-automake
-
+certifi==2018.1.18
+chardet==3.0.4
+idna==2.6
+netaddr==0.7.19
+peewee==3.0.13
+py-radix==0.10.0
+requests==2.18.4
+six==1.11.0
+socketIO-client==0.7.2
+urllib3==1.22
+websocket-client==0.46.0

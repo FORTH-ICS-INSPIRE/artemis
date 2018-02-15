@@ -41,10 +41,12 @@ cd ./mininet-demo
 vim ../configs/config
 
 ## configure the exabgp collectors with the absolute path to exabgp_server.py (under taps folder)
-vim ./configs_policy/exabgp.conf
+vim ./configs_policy/exabgp_<ASN>.conf
 
 ## run mininet topology (shown on artemis_ascii_topo_policy.txt)
 sudo ./artemis-topo-policy.py
+
+ASNs: 65001 (victim), 65004 (hijacker), 65005 (helper), 65002, 65003 (intermediate)
 
 ## fire up terminals
 mininet> xterm artemis h1 h3 h4 R4 R5
@@ -81,7 +83,7 @@ bgp(config)# router bgp 65004
 
 bgp(config-router)# network 10.0.0.0/23
 
-## on artemis terminal, check that detection and prefix deaggregation has taken place
+## on artemis terminal, check detection + prefix deaggregation
 artemis> (check output)
 
 ## on h1,h4 terminals, check that traffic is routed correctly
@@ -89,20 +91,26 @@ h1> (check output)
 
 h4> (check output)
 
+## traceroute from h3 (should flow normally to victim)
+h3> traceroute 10.0.0.100
+
 ## configure R4 router to hijack /24 sub-prefix
 
 bgp(config-router)# network 10.0.0.0/24
 
-## on artemis terminal, check that detection and MOAS alert has taken place
+## on artemis terminal, check that detection + MOAS alert
 artemis> (check output)
 
-## on R5 terminal, check that MOAS mitigation has taken place
+## on R5 terminal, check MOAS mitigation
 R5> (check output)
 
 ## on h1,h4 terminals, check that traffic is routed correctly
 h1> (check output)
 
 h4> (check output)
+
+## traceroute from h3 (should flow over tunnel to victim)
+h3> traceroute 10.0.0.100
 
 ## clean-up
 mininet> exit

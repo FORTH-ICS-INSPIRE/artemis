@@ -42,7 +42,7 @@ cd ./mininet-demo
 vim ../configs/config
 
 ## configure the exabgp collectors with the absolute path to exabgp_server.py (under taps folder)
-vim ./configs_policy/exabgp_6500*.conf
+vim ./configs_policy/exabgp-6500*.conf
 
 ## run mininet topology (shown on artemis_ascii_topo_policy.txt)
 sudo ./artemis-topo-policy.py

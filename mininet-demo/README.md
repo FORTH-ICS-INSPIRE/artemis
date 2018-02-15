@@ -1,8 +1,9 @@
 # installation
 
-## install requirements
-first install artemis (see README 1 level up), then:
+## install artemis
+see README 1 level up
 
+## install requirements
 sudo apt-get install python3-pip -y
 
 sudo -H pip3 install -r requirements.txt
@@ -41,7 +42,7 @@ cd ./mininet-demo
 vim ../configs/config
 
 ## configure the exabgp collectors with the absolute path to exabgp_server.py (under taps folder)
-vim ./configs_policy/exabgp_<ASN>.conf
+vim ./configs_policy/exabgp_6500*.conf
 
 ## run mininet topology (shown on artemis_ascii_topo_policy.txt)
 sudo ./artemis-topo-policy.py
@@ -70,7 +71,7 @@ hijack operation: h4 sees traffic (and not h1)
 ## (optionally) activate MOAS daemon on R5 (in helper AS)
 R5> cd ../routers/quagga; python moas_agent.py -li 0.0.0.0 -lp 3001 -la 65005
 
-## configure R4 router to hijack /23 sub-prefix
+## configure R4 router to hijack /23 sub-prefix (deaggregatable)
 R4> telnet localhost 2605
 
 Password: sdnip (this is the password)
@@ -94,11 +95,11 @@ h4> (check output)
 ## traceroute from h3 (should flow normally to victim)
 h3> traceroute 10.0.0.100
 
-## configure R4 router to hijack /24 sub-prefix
+## configure R4 router to hijack /24 sub-prefix (non-deaggregatable)
 
 bgp(config-router)# network 10.0.0.0/24
 
-## on artemis terminal, check that detection + MOAS alert
+## on artemis terminal, check detection + MOAS notification
 artemis> (check output)
 
 ## on R5 terminal, check MOAS mitigation
@@ -109,7 +110,7 @@ h1> (check output)
 
 h4> (check output)
 
-## traceroute from h3 (should flow over tunnel to victim)
+## traceroute from h3 (should flow over helper tunnel to victim)
 h3> traceroute 10.0.0.100
 
 ## clean-up

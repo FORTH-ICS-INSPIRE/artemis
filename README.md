@@ -12,6 +12,11 @@ These instructions will get you a copy of the ARTEMIS tool up and running on you
 
 * [Python 3](https://www.python.org/downloads/)   —  **ARTEMIS** requires Python 3.4.
 
+Install pip3
+```
+sudo apt-get install python3-pip
+```
+
 Then inside the root folder of the tool run
 ```
 pip3 install -r requirements.txt
@@ -29,6 +34,8 @@ After modifying the configuration file run
 ```
 python3 artemis.py
 ```
+
+Note: to run the mininet demo please follow the instructions under mininet-demo/README.md
 
 
 ## Contributing

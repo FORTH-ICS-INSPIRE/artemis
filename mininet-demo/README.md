@@ -1,3 +1,6 @@
+# Before you begin
+The following demo has been tested on an Ubuntu Server 16.04 VM
+
 # installation
 
 ## install artemis
@@ -6,7 +9,11 @@ see README 1 level up
 ## install requirements
 sudo apt-get install python3-pip -y
 
-sudo -H pip3 install -r requirements.txt
+sudo apt-get install python-pip -y
+
+pip3 install -r requirements.txt
+
+pip install -r requirements.txt
 
 ## install exabgp
 cd ~
@@ -27,6 +34,8 @@ cd ~
 sudo apt-get install quagga -y
 
 ## install mininet
+cd ~
+
 git clone https://github.com/mininet/mininet
 
 cd mininet; git checkout 2.2.2
@@ -36,7 +45,7 @@ cd mininet; git checkout 2.2.2
 # running the demo
 
 ## switch to the mininet-demo folder
-cd ./mininet-demo
+cd ~/artemis-tool/mininet-demo
 
 ## configure artemis accordingly
 vim ../configs/config

@@ -26,7 +26,7 @@ pip3 install -r requirements.txt
 To succesfully run the script you need to modify the configuration file
 
 ```
-cd configs/config
+vim configs/config
 ```
 
 After modifying the configuration file run

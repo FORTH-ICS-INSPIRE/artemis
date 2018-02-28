@@ -11,9 +11,9 @@ sudo apt-get install python3-pip -y
 
 sudo apt-get install python-pip -y
 
-sudo -H pip3 install -r requirements.txt
+sudo -H pip3 install -r requirement3.txt
 
-sudo -H pip install -r requirements.txt
+sudo -H pip install -r requirement2.txt
 
 ## install exabgp
 cd ~

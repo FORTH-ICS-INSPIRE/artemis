@@ -1,3 +1,5 @@
+python-engineio==1.7.0
 python-socketio==1.7.6
+Werkzeug==0.12.2
 netaddr==0.7.19
 Flask==0.12.2

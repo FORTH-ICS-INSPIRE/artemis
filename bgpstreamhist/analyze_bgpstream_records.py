@@ -29,8 +29,6 @@ def main():
     start_time = format_timestamp(int(filename_elems[1].split('_')[1]))
     end_time = format_timestamp(int(filename_elems[2].split('_')[1].split('.csv')[0]))
 
-    print('REPORT FROM {} TO {}'.format(start_time, end_time))
-
     observed_prefixes = {}
     with open(args.input_file, 'r') as f:
         csv_reader = csv.reader(f, delimiter='|')
@@ -69,10 +67,12 @@ def main():
 
     if not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
-    out_file = '{}/{}_analyzed.json'.format(args.output_dir, args.input_file.split('/')[-1].split('csv')[0])
+    out_file = '{}/{}_analyzed.json'.format(args.output_dir, args.input_file.split('/')[-1].split('.csv')[0])
 
     with open(out_file, 'w') as f:
         json.dump(observed_prefixes, f)
+
+    print('REPORT FROM {} TO {} generated on {}'.format(start_time, end_time, out_file))
 
 
 if __name__=='__main__':

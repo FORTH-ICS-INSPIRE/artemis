@@ -83,7 +83,7 @@ def main():
     assert query_value is not None, "not valid prefix or asn to query!"
 
     parsed_data = []
-    if not os.path.isfile(args.output_dir):
+    if not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
     out_file = '{}/query_value_{}_timestamp_{}'.format(args.output_dir,
                                                        str(query_value).replace('/','+'),

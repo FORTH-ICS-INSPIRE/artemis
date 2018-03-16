@@ -2,55 +2,43 @@ from core.parser import ConfParser
 from core.monitor import Monitor
 from core.detection import Detection
 from core.syscheck import SysCheck
-from core.pformat import Pformat
 from multiprocessing import Process, Manager, Queue
 import os
+import signal
+from webapp.webapp import WebApplication
+from protogrpc.grpc_server import GrpcServer
 
 
 def main():
 
-    # Read the config file
+    webapp_ = WebApplication()
+    webapp_.start()
+
     confparser_ = ConfParser()
+    confparser_.parse_file()
 
     if(confparser_.isValid()):
-        configs = confparser_.get_obj()
-        monitors = confparser_.get_monitors()
-        local_mitigation = confparser_.get_local_mitigation()
-        moas_mitigation = confparser_.get_moas_mitigation()
-
-        # Run system check
+        print("Running system check..")
         systemcheck_ = SysCheck()
-        
         if(systemcheck_.isValid()):
+            parsed_log_queue_ = Queue()
 
-            raw_log_queue = Queue()
-            parsed_log_queue = Queue()
-            process_ids = list()
-            
-            print("Starting Monitors...")
-            # Start monitors
-            monitor_ = Monitor(configs, raw_log_queue, monitors)
-            process_ids = monitor_.get_process_ids()
+            monitor_ = Monitor(confparser_)
+            detection_ = Detection(confparser_, parsed_log_queue_)
 
-            print("Starting Pformat processing...")
-            # Pformat processing  
-            pformat_ = Process(target=Pformat, args=(raw_log_queue, parsed_log_queue))
-            pformat_.start()
-            
-            process_ids.append(['Pformat', pformat_])
+            # GRPC server
+            grpc_ = GrpcServer(webapp_.db, parsed_log_queue_)
+            grpc_.start(monitor_, detection_)
 
-            print("Starting Detection mechanism...")
-            # Start detections
-            detection_ = Process(target=Detection, args=(configs, parsed_log_queue, monitors, local_mitigation, moas_mitigation))
-            detection_.start()
+            input("[!] Press ENTER to exit [!]")
 
-            process_ids.append(['Detection', detection_])
-
-            input("\n\nenter to close\n\n")
-            for proc_id in process_ids:
-                os.kill(int(proc_id[1]), signal.SIGTERM)
-            
+            monitor_.stop()
+            detection_.stop()
+            grpc_.stop()
+            webapp_.stop()
     else:
         print("The config file is wrong.")
 
-main()
+
+if __name__ == '__main__':
+    main()

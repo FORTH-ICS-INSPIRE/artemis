@@ -30,6 +30,10 @@ class WebApplication():
     def index():
         form = CheckboxForm()
 
+        conf = None
+        with open('configs/config','r') as f:
+            conf = f.read()
+
         if request.method == 'POST':
             if form.monitor.data:
                 app.config['monitor'].start()
@@ -49,7 +53,7 @@ class WebApplication():
             # form.mitigator.data = app.config['mitigator'].flag
             form.mitigator.data = False
 
-        return render_template('index.html', form=form)
+        return render_template('index.html', config=conf, form=form)
 
     @app.route('/monitors', methods=['GET', 'POST'])
     def show_monitors():

@@ -16,10 +16,10 @@ class Monitor(db.Model):
     def __init__(self, msg):
         try:
             self.prefix = msg['prefix']
-            self.origin_as = msg['as_path'][-1]
             self.service = msg['service']
             self.type = msg['type']
-            if (self.type == 'A'):
+            if self.type == 'A':
+                self.origin_as = msg['as_path'][-1]
                 self.as_path = str(msg['as_path'])
             else:
                 self.as_path = None

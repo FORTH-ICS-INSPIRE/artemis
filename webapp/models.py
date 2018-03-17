@@ -7,7 +7,7 @@ class Monitor(db.Model):
     __tablename__ = 'monitor'
     id = Column(Integer, primary_key=True)
     prefix = Column(String(22))
-    origin_as = Column(String(5))
+    origin_as = Column(String(6))
     as_path = Column(String(100))
     service = Column(String(14))
     type = Column(String(1))
@@ -32,7 +32,7 @@ class Hijack(db.Model):
     id = Column(Integer, primary_key=True)
     type = Column(String(1))
     prefix = Column(String(22))
-    hijack_as = Column(String(5))
+    hijack_as = Column(String(6))
     num_peers = Column(Integer)
     num_asns_inf = Column(Integer)
     time_started = Column(Float)

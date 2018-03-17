@@ -7,23 +7,24 @@ MAX_ASN_NUMBER = 397213
 
 class ConfParser():
 
-    obj_ = dict()
-    file = 'configs/config'
-    valid = True
-    definitions_ = None
-    req_opt = ['prefixes', 'origin_asns']
-    section_groups = ['prefixes_group', 'asns_group', 'monitors_group',
-                      'local_mitigation_group', 'moas_mitigation_group']
-    supported_fields = ['prefixes', 'origin_asns', 'neighbors', 'mitigation']
-    mitigation_types = ['deaggregate', 'outsource', 'manual']
-
-    available_monitor_types = ['riperis', 'bgpmon', 'exabgp']
-    available_ris = ['rrc18', 'rrc19', 'rrc20', 'rrc21']
-    valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
-
-    available_mitigation_fields = ['asn', 'ip', 'port']
-
     def __init__(self):
+        self.definitions_ = None
+        self.obj_ = dict()
+        self.file = 'configs/config'
+        self.valid = True
+
+        self.req_opt = ['prefixes', 'origin_asns']
+        self.section_groups = ['prefixes_group', 'asns_group', 'monitors_group',
+                               'local_mitigation_group', 'moas_mitigation_group']
+        self.supported_fields = ['prefixes',
+                                 'origin_asns', 'neighbors', 'mitigation']
+        self.mitigation_types = ['deaggregate', 'outsource', 'manual']
+
+        self.available_monitor_types = ['riperis', 'bgpmon', 'exabgp']
+        self.available_ris = ['rrc18', 'rrc19', 'rrc20', 'rrc21']
+        self.valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
+
+        self.available_mitigation_fields = ['asn', 'ip', 'port']
 
         self.parser = ConfigParser()
 
@@ -294,6 +295,9 @@ class ConfParser():
 
     def get_obj(self):
         return self.obj_
+
+    def get_definitions(self):
+        return self.definitions_
 
     def get_monitors(self):
         return self.definitions_['monitors_group']

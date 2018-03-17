@@ -21,16 +21,16 @@ def main():
         print("Running system check..")
         systemcheck_ = SysCheck()
         if(systemcheck_.isValid()):
-            parsed_log_queue_ = Queue()
+            monitor_queue = Queue()
 
             monitor_ = Monitor(confparser_)
-            detection_ = Detection(confparser_, parsed_log_queue_)
+            detection_ = Detection(webapp_.db, confparser_, monitor_queue)
 
             # GRPC server
-            grpc_ = GrpcServer(webapp_.db, parsed_log_queue_)
+            grpc_ = GrpcServer(webapp_.db, monitor_queue)
             grpc_.start(monitor_, detection_)
 
-            input("[!] Press ENTER to exit [!]")
+            input("\n[!] Press ENTER to exit [!]\n\n")
 
             monitor_.stop()
             detection_.stop()

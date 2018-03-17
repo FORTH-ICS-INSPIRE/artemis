@@ -73,9 +73,9 @@ class MessageListenerStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.queryPformat = channel.unary_unary(
-        '/service.MessageListener/queryPformat',
-        request_serializer=service__pb2.PformatMessage.SerializeToString,
+    self.queryMformat = channel.unary_unary(
+        '/service.MessageListener/queryMformat',
+        request_serializer=service__pb2.MformatMessage.SerializeToString,
         response_deserializer=service__pb2.Empty.FromString,
         )
 
@@ -84,7 +84,7 @@ class MessageListenerServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def queryPformat(self, request, context):
+  def queryMformat(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -94,9 +94,9 @@ class MessageListenerServicer(object):
 
 def add_MessageListenerServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'queryPformat': grpc.unary_unary_rpc_method_handler(
-          servicer.queryPformat,
-          request_deserializer=service__pb2.PformatMessage.FromString,
+      'queryMformat': grpc.unary_unary_rpc_method_handler(
+          servicer.queryMformat,
+          request_deserializer=service__pb2.MformatMessage.FromString,
           response_serializer=service__pb2.Empty.SerializeToString,
       ),
   }

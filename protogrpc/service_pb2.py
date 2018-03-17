@@ -19,58 +19,51 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='service.proto',
   package='service',
   syntax='proto3',
-  serialized_pb=_b('\n\rservice.proto\x12\x07service\"v\n\x0ePformatMessage\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0e\n\x06prefix\x18\x03 \x01(\t\x12\x0f\n\x07\x61s_path\x18\x04 \x03(\x05\x12\x11\n\ttimestamp\x18\x05 \x01(\x01\x12\x11\n\torigin_as\x18\x06 \x01(\t\"\x07\n\x05\x45mpty\"F\n\x0eServiceMessage\x12\x0f\n\x07monitor\x18\x01 \x01(\x08\x12\x10\n\x08\x64\x65tector\x18\x02 \x01(\x08\x12\x11\n\tmitigator\x18\x03 \x01(\x08\x32\x91\x01\n\x0fServiceListener\x12>\n\x11sendServiceHandle\x12\x17.service.ServiceMessage\x1a\x0e.service.Empty\"\x00\x12>\n\x11queryServiceState\x12\x0e.service.Empty\x1a\x17.service.ServiceMessage\"\x00\x32L\n\x0fMessageListener\x12\x39\n\x0cqueryPformat\x12\x17.service.PformatMessage\x1a\x0e.service.Empty\"\x00\x42\x30\n\x16\x61rtemis.io.grpc.protosB\x0cServiceProtoP\x01\xa2\x02\x05SRVCPb\x06proto3')
+  serialized_pb=_b('\n\rservice.proto\x12\x07service\"c\n\x0eMformatMessage\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0e\n\x06prefix\x18\x03 \x01(\t\x12\x0f\n\x07\x61s_path\x18\x04 \x03(\x05\x12\x11\n\ttimestamp\x18\x05 \x01(\x01\"\x07\n\x05\x45mpty\"F\n\x0eServiceMessage\x12\x0f\n\x07monitor\x18\x01 \x01(\x08\x12\x10\n\x08\x64\x65tector\x18\x02 \x01(\x08\x12\x11\n\tmitigator\x18\x03 \x01(\x08\x32\x91\x01\n\x0fServiceListener\x12>\n\x11sendServiceHandle\x12\x17.service.ServiceMessage\x1a\x0e.service.Empty\"\x00\x12>\n\x11queryServiceState\x12\x0e.service.Empty\x1a\x17.service.ServiceMessage\"\x00\x32L\n\x0fMessageListener\x12\x39\n\x0cqueryMformat\x12\x17.service.MformatMessage\x1a\x0e.service.Empty\"\x00\x42\x30\n\x16\x61rtemis.io.grpc.protosB\x0cServiceProtoP\x01\xa2\x02\x05SRVCPb\x06proto3')
 )
 
 
 
 
-_PFORMATMESSAGE = _descriptor.Descriptor(
-  name='PformatMessage',
-  full_name='service.PformatMessage',
+_MFORMATMESSAGE = _descriptor.Descriptor(
+  name='MformatMessage',
+  full_name='service.MformatMessage',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='service', full_name='service.PformatMessage.service', index=0,
+      name='service', full_name='service.MformatMessage.service', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='type', full_name='service.PformatMessage.type', index=1,
+      name='type', full_name='service.MformatMessage.type', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='prefix', full_name='service.PformatMessage.prefix', index=2,
+      name='prefix', full_name='service.MformatMessage.prefix', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='as_path', full_name='service.PformatMessage.as_path', index=3,
+      name='as_path', full_name='service.MformatMessage.as_path', index=3,
       number=4, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='service.PformatMessage.timestamp', index=4,
+      name='timestamp', full_name='service.MformatMessage.timestamp', index=4,
       number=5, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='origin_as', full_name='service.PformatMessage.origin_as', index=5,
-      number=6, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -87,7 +80,7 @@ _PFORMATMESSAGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=26,
-  serialized_end=144,
+  serialized_end=125,
 )
 
 
@@ -110,8 +103,8 @@ _EMPTY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=146,
-  serialized_end=153,
+  serialized_start=127,
+  serialized_end=134,
 )
 
 
@@ -155,21 +148,21 @@ _SERVICEMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=155,
-  serialized_end=225,
+  serialized_start=136,
+  serialized_end=206,
 )
 
-DESCRIPTOR.message_types_by_name['PformatMessage'] = _PFORMATMESSAGE
+DESCRIPTOR.message_types_by_name['MformatMessage'] = _MFORMATMESSAGE
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
 DESCRIPTOR.message_types_by_name['ServiceMessage'] = _SERVICEMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-PformatMessage = _reflection.GeneratedProtocolMessageType('PformatMessage', (_message.Message,), dict(
-  DESCRIPTOR = _PFORMATMESSAGE,
+MformatMessage = _reflection.GeneratedProtocolMessageType('MformatMessage', (_message.Message,), dict(
+  DESCRIPTOR = _MFORMATMESSAGE,
   __module__ = 'service_pb2'
-  # @@protoc_insertion_point(class_scope:service.PformatMessage)
+  # @@protoc_insertion_point(class_scope:service.MformatMessage)
   ))
-_sym_db.RegisterMessage(PformatMessage)
+_sym_db.RegisterMessage(MformatMessage)
 
 Empty = _reflection.GeneratedProtocolMessageType('Empty', (_message.Message,), dict(
   DESCRIPTOR = _EMPTY,
@@ -195,8 +188,8 @@ _SERVICELISTENER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=228,
-  serialized_end=373,
+  serialized_start=209,
+  serialized_end=354,
   methods=[
   _descriptor.MethodDescriptor(
     name='sendServiceHandle',
@@ -228,15 +221,15 @@ _MESSAGELISTENER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   options=None,
-  serialized_start=375,
-  serialized_end=451,
+  serialized_start=356,
+  serialized_end=432,
   methods=[
   _descriptor.MethodDescriptor(
-    name='queryPformat',
-    full_name='service.MessageListener.queryPformat',
+    name='queryMformat',
+    full_name='service.MessageListener.queryMformat',
     index=0,
     containing_service=None,
-    input_type=_PFORMATMESSAGE,
+    input_type=_MFORMATMESSAGE,
     output_type=_EMPTY,
     options=None,
   ),

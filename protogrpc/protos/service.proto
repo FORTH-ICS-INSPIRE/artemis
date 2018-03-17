@@ -13,16 +13,15 @@ service ServiceListener {
 }
 
 service MessageListener {
-  rpc queryPformat (PformatMessage) returns (Empty) {}
+  rpc queryMformat (MformatMessage) returns (Empty) {}
 }
 
-message PformatMessage {
+message MformatMessage {
   string service = 1;
   string type = 2;
   string prefix = 3;
   repeated int32 as_path = 4;
   double timestamp = 5;
-  string origin_as = 6;
 }
 
 message Empty {}

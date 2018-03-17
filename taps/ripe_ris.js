@@ -38,10 +38,9 @@ socket.on('ris_message', function(msg) {
         'service': 'RIPEris '.concat(msg['host']),
         'as_path': msg['path'],
         'type': msg['type'],
-        'origin_as': msg['peer_asn'],
     };
 
-    client.queryPformat(json_obj, function(err, response) {
+    client.queryMformat(json_obj, function(err, response) {
         if(err)
 	       console.log(err);
     });

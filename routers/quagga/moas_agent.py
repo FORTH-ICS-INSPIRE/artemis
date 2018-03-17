@@ -31,11 +31,16 @@ def is_valid_ipv4_prefix(pref_str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="receive a MOAS command from MOAS sender")
-    parser.add_argument('-li', '--lip', dest='listen_ip', type=str, help='listen ip', required=True)
-    parser.add_argument('-lp', '--lport', dest='listen_port', type=int, help='listen port', required=True)
-    parser.add_argument('-la', '--lasn', dest='local_asn', type=int, help='local asn', required=True)
-    parser.add_argument('-b', '--buffer', dest='buffer_size', type=int, help='buffer size', default=1024)
+    parser = argparse.ArgumentParser(
+        description="receive a MOAS command from MOAS sender")
+    parser.add_argument('-li', '--lip', dest='listen_ip',
+                        type=str, help='listen ip', required=True)
+    parser.add_argument('-lp', '--lport', dest='listen_port',
+                        type=int, help='listen port', required=True)
+    parser.add_argument('-la', '--lasn', dest='local_asn',
+                        type=int, help='local asn', required=True)
+    parser.add_argument('-b', '--buffer', dest='buffer_size',
+                        type=int, help='buffer size', default=1024)
     args = parser.parse_args()
 
     if not is_valid_ipv4_address(args.listen_ip):
@@ -56,7 +61,8 @@ def main():
 
             data = conn.recv(args.buffer_size)
             if data:
-                print("Received '%s' from host %s from port %s over TCP." % (data, addr[0], addr[1]))
+                print("Received '%s' from host %s from port %s over TCP." %
+                      (data, addr[0], addr[1]))
                 command = str(data).split('-')
                 if len(command) != 2 or command[1] not in ['yes', 'no']:
                     print('Unexpected/invalid message received!')
@@ -71,17 +77,23 @@ def main():
                     continue
 
                 if command[1] == 'yes':
-                    print("Anouncing prefix '%s' locally from ASN %d" % (prefix, args.local_asn))
-                    os.system('%s %s -la %d -ap %s ' % (PY_BIN, QC_PY, args.local_asn, prefix))
+                    print("Anouncing prefix '%s' locally from ASN %d" %
+                          (prefix, args.local_asn))
+                    os.system('%s %s -la %d -ap %s ' %
+                              (PY_BIN, QC_PY, args.local_asn, prefix))
                     time.sleep(1)
                     os.system('%s %s -p %s' % (PY_BIN, GR_PY, prefix))
-                    print('Activated GRE tunnel from MOAS helper for prefix %s' % prefix)
+                    print(
+                        'Activated GRE tunnel from MOAS helper for prefix %s' % prefix)
                 else:
-                    print("Unanouncing prefix '%s' locally from ASN %d" % (prefix, args.local_asn))
-                    os.system('%s %s -la %d -ap %s -w' % (PY_BIN, QC_PY, args.local_asn, prefix))
+                    print("Unanouncing prefix '%s' locally from ASN %d" %
+                          (prefix, args.local_asn))
+                    os.system('%s %s -la %d -ap %s -w' %
+                              (PY_BIN, QC_PY, args.local_asn, prefix))
                     time.sleep(1)
                     os.system('%s %s -p %s -d' % (PY_BIN, GR_PY, prefix))
-                    print('Deactivated GRE tunnel from MOAS helper for prefix %s' % prefix)
+                    print(
+                        'Deactivated GRE tunnel from MOAS helper for prefix %s' % prefix)
             conn.close()
     except:
         print("Error with connection!")

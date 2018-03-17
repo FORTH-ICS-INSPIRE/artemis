@@ -49,9 +49,11 @@ class ConfParser():
         # Filtering sections blocks
         sections_list = self.parser.sections()
         sections_def_list = [
-            section for section in sections_list if section in self.section_groups]
+            section for section in sections_list if section in self.section_groups
+        ]
         sections_other_list = [
-            section for section in sections_list if section not in self.section_groups]
+            section for section in sections_list if section not in self.section_groups
+        ]
 
         # Parse definition blocks
         self.definitions_ = self.parse_definition_blocks(sections_def_list)
@@ -97,12 +99,17 @@ class ConfParser():
                             values, group, label=label, definition=True)
 
             else:
-                # Case if we want to print error if a definition label is mising.
                 pass
 
         return ret_
 
-    def process_field__prefixes(self, field, where, label=None, definition=False):
+    def process_field__prefixes(
+        self,
+        field,
+        where,
+        label=None,
+        definition=False
+    ):
 
         prefixes = (''.join(field.split())).split(',')
         prefix_v = list()

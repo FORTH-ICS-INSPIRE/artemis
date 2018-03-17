@@ -11,13 +11,13 @@ class ExaBGP():
     config = {'host': None, 'prefixes': None}
 
     def __init__(self, prefixes, address_port):
-
         self.config['host'] = str(address_port[0]) + ":" + str(address_port[1])
         self.config['prefixes'] = prefixes
+        self.flag = True
         self.start_loop()
 
     def start_loop(self):
-        while(True):
+        while(self.flag):
             self.start()
 
     def start(self):
@@ -35,7 +35,7 @@ class ExaBGP():
         def exabgp_msg(bgp_message):
             channel = grpc.insecure_channel('localhost:50051')
             stub = service_pb2_grpc.MessageListenerStub(channel)
-            stub.queryPformat(service_pb2.PformatMessage(
+            stub.queryMformat(service_pb2.MformatMessage(
                 type=bgp_message['type'],
                 timestamp=bgp_message['timestamp'],
                 as_path=bgp_message['path'],
@@ -69,3 +69,7 @@ class ExaBGP():
         #socketIO.on("error", on_error)
 
         socketIO.wait()
+
+    def stop(self):
+        if self.flag:
+            self.flag = False

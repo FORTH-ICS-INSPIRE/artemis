@@ -2,17 +2,13 @@ from flask import url_for, render_template, request
 from flask_nav import Nav
 from flask_nav.elements import Navbar, View
 from webapp.forms import CheckboxForm
-from multiprocessing import Process
+import _thread
 import grpc
 import time
 import math
-import _thread
-from protogrpc import service_pb2_grpc, service_pb2
 from webapp.tables import MonitorTable, HijackTable
 from webapp.models import Monitor, Hijack
-from protobuf_to_dict import protobuf_to_dict
-from webapp.shared import db
-from webapp.shared import app
+from webapp.shared import db, app
 from sqlalchemy import desc
 
 
@@ -25,9 +21,8 @@ class WebApplication():
             View('Monitors', 'show_monitors'),
             View('Hijacks', 'show_hijacks')
         ))
+        self.app = app
         self.db = db
-        self.db.init_app(app)
-        self.nav.init_app(app)
         self.webapp_ = None
         self.flag = False
 
@@ -35,23 +30,24 @@ class WebApplication():
     def index():
         form = CheckboxForm()
 
-        channel = grpc.insecure_channel('localhost:50051')
-        stub = service_pb2_grpc.ServiceListenerStub(channel)
         if request.method == 'POST':
-            stub.sendServiceHandle(service_pb2.ServiceMessage(
-                monitor=form.monitor.data,
-                detector=form.detector.data,
-                mitigator=form.mitigator.data
-            ))
+            if form.monitor.data:
+                app.config['monitor'].start()
+            else:
+                app.config['monitor'].stop()
+            if form.detector.data:
+                app.config['detector'].start()
+            else:
+                app.config['detector'].stop()
+            # if form.mitgator.data:
+            #     app.config['mitgator'].start()
+            # else:
+            #     app.config['mitgator'].stop()
         else:
-            reply = protobuf_to_dict(
-                stub.queryServiceState(service_pb2.Empty()))
-            if 'monitor' in reply:
-                form.monitor.data = True
-            if 'detector' in reply:
-                form.detector.data = True
-            if 'mitigator' in reply:
-                form.mitigator.data = True
+            form.monitor.data = app.config['monitor'].flag
+            form.detector.data = app.config['detector'].flag
+            # form.mitigator.data = app.config['mitigator'].flag
+            form.mitigator.data = False
 
         return render_template('index.html', form=form)
 
@@ -104,17 +100,17 @@ class WebApplication():
         db.session.remove()
 
     def run(self):
-        app.run(debug=False)
+        self.db.init_app(app)
+        self.nav.init_app(app)
+        self.app.run(debug=False)
 
     def start(self):
         if not self.flag:
-            print('Starting WebApplication..')
-            self.webapp_ = Process(target=self.run, args=())
-            self.webapp_.start()
+            self.webapp_ = _thread.start_new_thread(self.run, ())
             self.flag = True
+            print('WebApplication Started..')
 
     def stop(self):
         if self.flag:
-            print('Stopping WebApplication..')
-            self.webapp_.terminate()
             self.flag = False
+            print('WebApplication Stopped..')

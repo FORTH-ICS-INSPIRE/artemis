@@ -1,10 +1,10 @@
 import radix
 from taps.exabgp_client import ExaBGP
 # from taps.bgpmon import BGPmon
-from multiprocessing import Process
 from subprocess import Popen
 import os
 import signal
+from multiprocessing import Process
 
 
 class Monitor():
@@ -17,7 +17,6 @@ class Monitor():
 
     def start(self):
         if not self.flag:
-            print('Starting Monitors...')
             configs = self.confparser.get_obj()
             for config in configs:
                 try:
@@ -36,14 +35,14 @@ class Monitor():
             # self.init_bgpmon_instance(prefixes)
             self.init_exabgp_instance(prefixes)
             self.flag = True
+            print('Monitors Started...')
 
     def stop(self):
         if self.flag:
-            print('Stopping Monitors...')
             for proc_id in self.process_ids:
                 proc_id[1].terminate()
-
             self.flag = False
+            print('Monitors Stopped...')
 
     def init_ris_instances(self, prefixes):
         try:
@@ -52,7 +51,7 @@ class Monitor():
                 for prefix in prefixes:
                     for ris_monitor in monitors['riperis']:
                         p = Popen(['nodejs', 'taps/ripe_ris.js',
-                                   '-p', prefix, '-r', ris_monitor])
+                                   '--prefix', prefix, '--host', ris_monitor])
                         self.process_ids.append(('RIPEris', p))
         except Exception as e:
             print('Error on initializing of RIPEris monitors.. {}'.format(e))
@@ -72,8 +71,8 @@ class Monitor():
             if 'exabgp' in monitors and len(monitors['exabgp']) > 0:
                 for exabgp_monitor in monitors['exabgp']:
                     prefixes = self.prefix_tree.prefixes()
-                    p = Process(target=ExaBGP, args=(
-                        prefixes, exabgp_monitor))
+                    p = Popen(['python', 'taps/exabgp_client.py',
+                        '--prefix', prefixes, '--host', exabgp_monitor])
                     self.process_ids.append(('ExaBGP', p))
         except Exception as e:
             print('Error on initializing of ExaBGP.. {}'.format(e))

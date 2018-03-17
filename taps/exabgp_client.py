@@ -3,18 +3,17 @@ from socketIO_client import SocketIO
 import ipaddress
 from protogrpc import service_pb2, service_pb2_grpc
 import grpc
+import argparse
 
 
 class ExaBGP():
-
-    socketIO = None
-    config = {'host': None, 'prefixes': None}
 
     def __init__(self, prefixes, address_port):
         self.config['host'] = str(address_port[0]) + ":" + str(address_port[1])
         self.config['prefixes'] = prefixes
         self.flag = True
-        self.start_loop()
+        self.channel = grpc.insecure_channel('localhost:50051')
+        self.stub = service_pb2_grpc.MessageListenerStub(channel)
 
     def start_loop(self):
         while(self.flag):
@@ -33,14 +32,11 @@ class ExaBGP():
             socketIO.emit("ping")
 
         def exabgp_msg(bgp_message):
-            channel = grpc.insecure_channel('localhost:50051')
-            stub = service_pb2_grpc.MessageListenerStub(channel)
-            stub.queryMformat(service_pb2.MformatMessage(
+            self.stub.queryMformat(service_pb2.MformatMessage(
                 type=bgp_message['type'],
                 timestamp=bgp_message['timestamp'],
                 as_path=bgp_message['path'],
                 service='ExaBGP {}'.format(self.config['host']),
-                origin_as=bgp_message['peer'],
                 prefix=bgp_message['prefix']
             ))
 
@@ -70,6 +66,15 @@ class ExaBGP():
 
         socketIO.wait()
 
-    def stop(self):
-        if self.flag:
-            self.flag = False
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='ExaBGP Monitor Client')
+    parser.add_argument('-p', '--prefix', type=str, default=None,
+                        help='Prefix to be monitored')
+    parser.add_argument('-r', '--host', type=str, default=None,
+                        help='Prefix to be monitored')
+
+    args = parser.parse_args()
+
+    exa = ExaBGP(args.prefix, args.host)
+    exa.start()

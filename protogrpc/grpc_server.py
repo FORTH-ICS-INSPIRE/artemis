@@ -13,6 +13,7 @@ class GrpcServer():
         self.db = db
         self.db.create_all()
         self.monitor_queue = monitor_queue
+        self.server_process = None
 
     class MonitorGrpc(service_pb2_grpc.MessageListenerServicer):
 
@@ -22,46 +23,13 @@ class GrpcServer():
 
         def queryMformat(self, request, context):
             msg = protobuf_to_dict(request)
-            self.monitor_queue.put(msg)
+            if msg['type'] == 'A':
+                self.monitor_queue.put(msg)
             self.db.session.add(Monitor(msg))
             self.db.session.commit()
             return service_pb2.Empty()
 
-    class ServiceGrpc(service_pb2_grpc.ServiceListenerServicer):
-
-        def __init__(self, monitor, detector, mitigator):
-            self.monitor = monitor
-            self.detector = detector
-            self.mitigator = mitigator
-
-        def sendServiceHandle(self, request, context):
-            msg = protobuf_to_dict(request)
-            try:
-                if 'monitor' in msg:
-                    self.monitor.start()
-                else:
-                    self.monitor.stop()
-                if 'detector' in msg:
-                    self.detector.start()
-                else:
-                    self.detector.stop()
-                # if 'mitigator' in msg:
-                #     self.mitigator.start()
-                # else:
-                #     self.mitigator.stop()
-            except Exception as e:
-                print(e)
-            return service_pb2.Empty()
-
-        def queryServiceState(self, request, context):
-            return service_pb2.ServiceMessage(
-                monitor=self.monitor.flag,
-                detector=self.detector.flag,
-                mitigator=False
-            )
-
     def start(self, monitor, detector, mitigator=None):
-        print("Starting GRPC Server...")
         self.grpc_server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=10))
 
@@ -69,14 +37,11 @@ class GrpcServer():
             GrpcServer.MonitorGrpc(self.db, self.monitor_queue),
             self.grpc_server
         )
-        service_pb2_grpc.add_ServiceListenerServicer_to_server(
-            GrpcServer.ServiceGrpc(monitor, detector, mitigator),
-            self.grpc_server
-        )
 
         self.grpc_server.add_insecure_port('[::]:50051')
         _thread.start_new_thread(self.grpc_server.start, ())
+        print("GRPC Server Started..")
 
     def stop(self):
-        print("Stopping GRPC Server...")
         self.grpc_server.stop(0)
+        print("GRPC Server Stopped..")

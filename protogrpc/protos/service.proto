@@ -7,11 +7,6 @@ option objc_class_prefix = "SRVCP";
 
 package service;
 
-service ServiceListener {
-  rpc sendServiceHandle (ServiceMessage) returns (Empty) {}
-  rpc queryServiceState (Empty) returns (ServiceMessage) {}
-}
-
 service MessageListener {
   rpc queryMformat (MformatMessage) returns (Empty) {}
 }
@@ -25,9 +20,3 @@ message MformatMessage {
 }
 
 message Empty {}
-
-message ServiceMessage {
-  bool monitor = 1;
-  bool detector = 2;
-  bool mitigator = 3;
-}

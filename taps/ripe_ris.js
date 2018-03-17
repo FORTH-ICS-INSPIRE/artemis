@@ -11,7 +11,7 @@ var ArgumentParser = require('argparse').ArgumentParser;
 var parser = new ArgumentParser({
     version: '0.0.1',
     addHelp: true,
-    description: 'Argparse example'
+    description: 'RIPE RIS Monitor Client'
 });
 
 parser.addArgument(
@@ -22,7 +22,7 @@ parser.addArgument(
     }
 );
 parser.addArgument(
-    [ '-r', '--rrc' ],
+    [ '-r', '--host' ],
     {
         help: 'RRC host',
         defaultValue: null
@@ -54,6 +54,6 @@ socket.emit('ris_subscribe',
     "moreSpecific": true,
     "lessSpecific": false,
     "includeBody": false,
-    "host": args.rrc,
+    "host": args.host,
     "peer": null
 });

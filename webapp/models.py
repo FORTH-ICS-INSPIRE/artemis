@@ -1,5 +1,6 @@
 from webapp.shared import db
 from sqlalchemy import Column, Integer, String, Float, desc
+import time
 
 
 class Monitor(db.Model):
@@ -14,19 +15,16 @@ class Monitor(db.Model):
     hijack_id = Column(Integer, nullable=True)
 
     def __init__(self, msg):
-        try:
-            self.prefix = msg['prefix']
-            self.service = msg['service']
-            self.type = msg['type']
-            if self.type == 'A':
-                self.origin_as = msg['as_path'][-1]
-                self.as_path = str(msg['as_path'])
-            else:
-                self.as_path = None
-            self.timestamp = msg['timestamp']
-            self.hijack_id = None
-        except:
-            print(msg)
+        self.prefix = msg['prefix']
+        self.service = msg['service']
+        self.type = msg['type']
+        if self.type == 'A':
+            self.as_path = str(msg['as_path'])
+            self.origin_as = str(msg['as_path'][-1])
+        else:
+            self.as_path = None
+        self.timestamp = msg['timestamp']
+        self.hijack_id = None
 
 
 class Hijack(db.Model):

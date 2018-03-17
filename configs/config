@@ -11,7 +11,7 @@
 
 [prefixes_group]
 
-my_prefixes: 187.87.80.0/20
+my_prefixes: 203.252.142.0/24
 
 # - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #

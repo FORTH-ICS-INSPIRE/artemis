@@ -4,7 +4,7 @@ import radix
 import signal
 from core.mitigation import Mitigation
 from webapp.models import Hijack
-from multiprocessing import Process
+import _thread
 
 
 class Detection():
@@ -15,7 +15,6 @@ class Detection():
         self.prefix_tree = radix.Radix()
         self.db = db
         self.flag = False
-        self.detection_ = None
 
     def init_detection(self):
         configs = self.confparser.get_obj()
@@ -28,22 +27,22 @@ class Detection():
 
     def start(self):
         if not self.flag:
-            print('Starting Detection mechanism...')
             self.flag = True
-            self.detection_ = Process(target=self.parse_queue, args=())
-            self.detection_.start()
+            _thread.start_new_thread(self.parse_queue, ())
 
     def stop(self):
         if self.flag:
-            print('Stopping Detection mechanism...')
-            self.detection_.terminate()
             self.flag = False
+            self.monitor_queue.put(None)
 
     def parse_queue(self):
+        print('Detection Mechanism Started...')
         self.init_detection()
         while self.flag:
             try:
                 parsed_log = self.monitor_queue.get()
+                if parsed_log is None:
+                    continue
                 if(not self.detect_origin_hijack(parsed_log)):
                     if(not self.detect_type_1_hijack(parsed_log)):
                         pass
@@ -52,6 +51,7 @@ class Detection():
                     '[DETECTION] Error on raw log queue parsing.. {}'
                     .format(e)
                 )
+        print('Detection Mechanism Stopped...')
 
     def detect_origin_hijack(self, bgp_msg):
         try:

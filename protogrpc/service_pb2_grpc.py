@@ -4,102 +4,43 @@ import grpc
 import protogrpc.service_pb2 as service__pb2
 
 
-class ServiceListenerStub(object):
-  # missing associated documentation comment in .proto file
-  pass
-
-  def __init__(self, channel):
-    """Constructor.
-
-    Args:
-      channel: A grpc.Channel.
-    """
-    self.sendServiceHandle = channel.unary_unary(
-        '/service.ServiceListener/sendServiceHandle',
-        request_serializer=service__pb2.ServiceMessage.SerializeToString,
-        response_deserializer=service__pb2.Empty.FromString,
-        )
-    self.queryServiceState = channel.unary_unary(
-        '/service.ServiceListener/queryServiceState',
-        request_serializer=service__pb2.Empty.SerializeToString,
-        response_deserializer=service__pb2.ServiceMessage.FromString,
-        )
-
-
-class ServiceListenerServicer(object):
-  # missing associated documentation comment in .proto file
-  pass
-
-  def sendServiceHandle(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def queryServiceState(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-
-def add_ServiceListenerServicer_to_server(servicer, server):
-  rpc_method_handlers = {
-      'sendServiceHandle': grpc.unary_unary_rpc_method_handler(
-          servicer.sendServiceHandle,
-          request_deserializer=service__pb2.ServiceMessage.FromString,
-          response_serializer=service__pb2.Empty.SerializeToString,
-      ),
-      'queryServiceState': grpc.unary_unary_rpc_method_handler(
-          servicer.queryServiceState,
-          request_deserializer=service__pb2.Empty.FromString,
-          response_serializer=service__pb2.ServiceMessage.SerializeToString,
-      ),
-  }
-  generic_handler = grpc.method_handlers_generic_handler(
-      'service.ServiceListener', rpc_method_handlers)
-  server.add_generic_rpc_handlers((generic_handler,))
-
-
 class MessageListenerStub(object):
-  # missing associated documentation comment in .proto file
-  pass
+    # missing associated documentation comment in .proto file
+    pass
 
-  def __init__(self, channel):
-    """Constructor.
+    def __init__(self, channel):
+        """Constructor.
 
-    Args:
-      channel: A grpc.Channel.
-    """
-    self.queryMformat = channel.unary_unary(
-        '/service.MessageListener/queryMformat',
-        request_serializer=service__pb2.MformatMessage.SerializeToString,
-        response_deserializer=service__pb2.Empty.FromString,
+        Args:
+          channel: A grpc.Channel.
+        """
+        self.queryMformat = channel.unary_unary(
+            '/service.MessageListener/queryMformat',
+            request_serializer=service__pb2.MformatMessage.SerializeToString,
+            response_deserializer=service__pb2.Empty.FromString,
         )
 
 
 class MessageListenerServicer(object):
-  # missing associated documentation comment in .proto file
-  pass
-
-  def queryMformat(self, request, context):
     # missing associated documentation comment in .proto file
     pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+
+    def queryMformat(self, request, context):
+        # missing associated documentation comment in .proto file
+        pass
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_MessageListenerServicer_to_server(servicer, server):
-  rpc_method_handlers = {
-      'queryMformat': grpc.unary_unary_rpc_method_handler(
-          servicer.queryMformat,
-          request_deserializer=service__pb2.MformatMessage.FromString,
-          response_serializer=service__pb2.Empty.SerializeToString,
-      ),
-  }
-  generic_handler = grpc.method_handlers_generic_handler(
-      'service.MessageListener', rpc_method_handlers)
-  server.add_generic_rpc_handlers((generic_handler,))
+    rpc_method_handlers = {
+        'queryMformat': grpc.unary_unary_rpc_method_handler(
+            servicer.queryMformat,
+            request_deserializer=service__pb2.MformatMessage.FromString,
+            response_serializer=service__pb2.Empty.SerializeToString,
+        ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+        'service.MessageListener', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))

@@ -101,9 +101,11 @@ class Detection():
                         hijack = Hijack(monitor_event, first_neighbor_asn, 1)
                         self.db.session.add(hijack)
                         self.db.session.commit()
-                        monitor_event.hijack_id = hijack.id
+
+                        # Update monitor with new Hijack ID
+                        updated_monitor = Monitor.query.get(monitor_event.id)
+                        updated_monitor.hijack_id = hijack.id
                         self.db.session.commit()
-                        self.db.session.flush()
 
                         # if len(prefix_node.data['mitigation']) > 0:
                         #     mit = Mitigation(

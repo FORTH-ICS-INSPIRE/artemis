@@ -34,7 +34,7 @@ class WebApplication():
         with open('configs/config','r') as f:
             conf = f.read()
 
-        if request.method == 'POST':
+        if request.method == 'POST' and form.validate_on_submit():
             if form.monitor.data:
                 app.config['monitor'].start()
             else:

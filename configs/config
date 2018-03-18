@@ -11,7 +11,7 @@
 
 [prefixes_group]
 
-my_prefixes: 203.252.142.0/24
+my_prefixes: 203.0.0.0/8
 
 # - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #
@@ -24,7 +24,7 @@ my_prefixes: 203.252.142.0/24
 
 [monitors_group]
 
-riperis: rrc21
+riperis: rrc18, rrc19, rrc20, rrc21
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #

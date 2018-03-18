@@ -22,11 +22,14 @@ class GrpcServer():
             self.monitor_queue = monitor_queue
 
         def queryMformat(self, request, context):
-            msg = protobuf_to_dict(request)
-            if msg['type'] == 'A':
-                self.monitor_queue.put(msg)
-            self.db.session.add(Monitor(msg))
+            monitor_event = Monitor(protobuf_to_dict(request))
+
+            self.db.session.add(monitor_event)
             self.db.session.commit()
+
+            if monitor_event.type == 'A':
+                self.monitor_queue.put(monitor_event)
+
             return service_pb2.Empty()
 
     def start(self, monitor, detector, mitigator=None):

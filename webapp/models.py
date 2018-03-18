@@ -5,7 +5,7 @@ import time
 
 class Monitor(db.Model):
     __tablename__ = 'monitor'
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     prefix = Column(String(22))
     origin_as = Column(String(6))
     as_path = Column(String(100))
@@ -19,7 +19,7 @@ class Monitor(db.Model):
         self.service = msg['service']
         self.type = msg['type']
         if self.type == 'A':
-            self.as_path = str(msg['as_path'])
+            self.as_path = ' '.join(map(str, msg['as_path']))
             self.origin_as = str(msg['as_path'][-1])
         else:
             self.as_path = None
@@ -29,7 +29,7 @@ class Monitor(db.Model):
 
 class Hijack(db.Model):
     __tablename__ = 'hijack'
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(1))
     prefix = Column(String(22))
     hijack_as = Column(String(6))
@@ -39,13 +39,10 @@ class Hijack(db.Model):
     time_last = Column(Float)
     time_ended = Column(Float)
 
-    def __init__(self, msg, htype):
+    def __init__(self, msg, asn, htype):
         self.type = htype
-        self.prefix = msg['prefix']
-        if htype == 0:
-            self.hijack_as = msg['as_path'][-1]
-        else:
-            self.hijack_as = msg['as_path'][-2]
+        self.prefix = msg.prefix
+        self.hijack_as = asn
         self.num_peer = 0
         self.num_asns_in = 0
         self.time_started = time.time()

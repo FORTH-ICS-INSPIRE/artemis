@@ -8,9 +8,9 @@ from protogrpc import service_pb2, service_pb2_grpc
 
 class ExaBGP():
 
-    def __init__(self, prefixes, address_port):
+    def __init__(self, prefixes, address, port):
         self.config = {}
-        self.config['host'] = str(address_port[0]) + ":" + str(address_port[1])
+        self.config['host'] = str(address) + ":" + str(port)
         self.config['prefixes'] = prefixes
         self.flag = True
         self.channel = grpc.insecure_channel('localhost:50051')
@@ -78,5 +78,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     prefixes = args.prefixes.split(',')
-    exa = ExaBGP(prefixes, args.host)
+    (address, port) = args.host.split(':')
+    exa = ExaBGP(prefixes, address, port)
     exa.start()

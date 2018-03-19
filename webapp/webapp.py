@@ -106,7 +106,7 @@ class WebApplication():
     def run(self):
         self.db.init_app(app)
         self.nav.init_app(app)
-        self.app.run(debug=False)
+        self.app.run(debug=False, host='0.0.0.0')
 
     def start(self):
         if not self.flag:

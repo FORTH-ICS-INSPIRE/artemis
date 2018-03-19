@@ -1,5 +1,5 @@
 import radix
-from taps.exabgp_client import ExaBGP
+#from taps.exabgp_client import ExaBGP
 # from taps.bgpmon import BGPmon
 from subprocess import Popen
 import os
@@ -71,8 +71,9 @@ class Monitor():
             if 'exabgp' in monitors and len(monitors['exabgp']) > 0:
                 for exabgp_monitor in monitors['exabgp']:
                     prefixes = self.prefix_tree.prefixes()
-                    p = Popen(['python', 'taps/exabgp_client.py',
-                        '--prefix', prefixes, '--host', exabgp_monitor])
+                    exabgp_monitor_str = exabgp_monitor[0] + ':' +  str(exabgp_monitor[1])
+                    p = Popen(['python3', 'taps/exabgp_client.py',
+                        '--prefix', ','.join(prefixes), '--host', exabgp_monitor_str])
                     self.process_ids.append(('ExaBGP', p))
         except Exception as e:
             print('Error on initializing of ExaBGP.. {}'.format(e))

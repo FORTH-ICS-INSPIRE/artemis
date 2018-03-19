@@ -1,19 +1,20 @@
 import sys
 from socketIO_client import SocketIO
 import ipaddress
-from protogrpc import service_pb2, service_pb2_grpc
 import grpc
 import argparse
+from protogrpc import service_pb2, service_pb2_grpc
 
 
 class ExaBGP():
 
     def __init__(self, prefixes, address_port):
+        self.config = {}
         self.config['host'] = str(address_port[0]) + ":" + str(address_port[1])
         self.config['prefixes'] = prefixes
         self.flag = True
         self.channel = grpc.insecure_channel('localhost:50051')
-        self.stub = service_pb2_grpc.MessageListenerStub(channel)
+        self.stub = service_pb2_grpc.MessageListenerStub(self.channel)
 
     def start_loop(self):
         while(self.flag):
@@ -69,12 +70,13 @@ class ExaBGP():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ExaBGP Monitor Client')
-    parser.add_argument('-p', '--prefix', type=str, default=None,
+    parser.add_argument('-p', '--prefixes', type=str, default=None,
                         help='Prefix to be monitored')
     parser.add_argument('-r', '--host', type=str, default=None,
                         help='Prefix to be monitored')
 
     args = parser.parse_args()
 
-    exa = ExaBGP(args.prefix, args.host)
+    prefixes = args.prefixes.split(',')
+    exa = ExaBGP(prefixes, args.host)
     exa.start()

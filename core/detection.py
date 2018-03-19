@@ -56,7 +56,7 @@ class Detection():
     def detect_origin_hijack(self, monitor_event):
         try:
             if len(monitor_event.as_path) > 0:
-                origin_asn = monitor_event.origin_as
+                origin_asn = int(monitor_event.origin_as)
                 prefix_node = self.prefix_tree.search_best(
                     monitor_event.prefix)
                 if prefix_node is not None:

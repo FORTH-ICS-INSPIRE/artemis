@@ -34,6 +34,7 @@ class Monitor():
             self.init_ris_instances(prefixes)
             # self.init_bgpmon_instance(prefixes)
             self.init_exabgp_instance(prefixes)
+            self.init_bgpstreamhist_instance(prefixes)
             self.flag = True
             print('Monitors Started...')
 
@@ -77,3 +78,15 @@ class Monitor():
                     self.process_ids.append(('ExaBGP', p))
         except Exception as e:
             print('Error on initializing of ExaBGP.. {}'.format(e))
+
+    def init_bgpstreamhist_instance(self, prefixes):
+        try:
+            monitors = self.confparser.get_monitors()
+            if 'bgpstreamhist' in monitors:
+                prefixes = self.prefix_tree.prefixes()
+                bgpstreamhist_dir = monitors['bgpstreamhist']
+                p = Popen(['python3', 'taps/bgpstreamhist.py',
+                        '--prefix', ','.join(prefixes), '--dir', bgpstreamhist_dir])
+                self.process_ids.append(('BGPStreamHist', p))
+        except Exception as e:
+            print('Error on initializing of BGPStreamHist... {}'.format(e))

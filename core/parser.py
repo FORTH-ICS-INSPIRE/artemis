@@ -1,4 +1,5 @@
 from configparser import ConfigParser
+import os
 import ipaddress
 import pprint
 
@@ -20,7 +21,7 @@ class ConfParser():
                                  'origin_asns', 'neighbors', 'mitigation']
         self.mitigation_types = ['deaggregate', 'outsource', 'manual']
 
-        self.available_monitor_types = ['riperis', 'bgpmon', 'exabgp']
+        self.available_monitor_types = ['riperis', 'bgpmon', 'exabgp', 'bgpstreamhist']
         self.available_ris = ['rrc18', 'rrc19', 'rrc20', 'rrc21']
         self.valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
 
@@ -222,7 +223,16 @@ class ConfParser():
 
                     if(set(bgpmon_).issubset(self.valid_bgpmon)):
                         return [bgpmon_[0], int(bgpmon_[1])]
-                else:
+
+                elif(label == 'bgpstreamhist'):
+                    bgpstreamhist_ = str(field)
+                    if not os.path.isdir(bgpstreamhist_):
+                        print("Error: bgpstreamhist csv dir is not valid!")
+                        self.valid = False
+                    else:
+                        return bgpstreamhist_
+
+                elif(label == 'exabgp'):
                     exabgp_ = (''.join(field.split())).split(",")
                     list_ = list()
                     for entry in exabgp_:

@@ -14,6 +14,12 @@ sys.path.insert(0, upper_dir)
 from protogrpc import service_pb2, service_pb2_grpc
 
 
+def as_mapper(asn_str):
+    if asn_str != '':
+        return int(asn_str)
+    return 0
+
+
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
     channel = grpc.insecure_channel('localhost:50051')
     stub = service_pb2_grpc.MessageListenerStub(channel)
@@ -26,7 +32,7 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                     continue
                 # example row: 139.91.250.0/24|8522|11666,3257,174,56910,8522|routeviews|route-views.eqix|A|1517443593|11666
                 this_prefix = row[0]
-                as_path = list(map(int, row[2].split(',')))
+                as_path = list(map(as_mapper, row[2].split(',')))
                 service = "bhist" # TODO: increase the number of service characters in DB!
                 type = row[5]
                 timestamp = float(row[6])

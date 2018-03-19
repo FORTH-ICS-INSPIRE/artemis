@@ -77,14 +77,14 @@ class ExaBGP():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ExaBGP Monitor Client')
-    parser.add_argument('-p', '--prefixes', type=str, default=None,
+    parser.add_argument('-p', '--prefix', type=str, dest='prefix', default=None,
                         help='Prefix to be monitored')
-    parser.add_argument('-r', '--host', type=str, default=None,
+    parser.add_argument('-r', '--host', type=str, dest='host', default=None,
                         help='Prefix to be monitored')
 
     args = parser.parse_args()
 
-    prefixes = args.prefixes.split(',')
+    prefixes = args.prefix.split(',')
     (address, port) = args.host.split(':')
     exa = ExaBGP(prefixes, address, port)
     exa.start()

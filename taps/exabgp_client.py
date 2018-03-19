@@ -1,8 +1,15 @@
 import sys
+import os
 from socketIO_client import SocketIO
 import ipaddress
 import grpc
 import argparse
+
+# to import protogrpc, since the root package has '-'
+# in the name ("artemis-tool")
+this_script_path = os.path.realpath(__file__)
+upper_dir = '/'.join(this_script_path.split('/')[:-2])
+sys.path.insert(0, upper_dir)
 from protogrpc import service_pb2, service_pb2_grpc
 
 

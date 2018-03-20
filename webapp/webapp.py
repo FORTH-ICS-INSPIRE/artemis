@@ -103,7 +103,7 @@ class WebApplication():
     def run(self):
         self.db.init_app(app)
         self.nav.init_app(app)
-        self.app.run(debug=False, host='0.0.0.0')
+        self.app.run(debug=False, host=self.app.config['WEBAPP_HOST'], port=self.app.config['WEBAPP_PORT'])
 
     def start(self):
         if not self.flag:

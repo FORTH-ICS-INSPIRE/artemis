@@ -1,6 +1,4 @@
-import sys
 import os
-from os.path import expanduser
 from core.deaggregate import Deaggr
 from netaddr import IPNetwork
 

@@ -1,10 +1,11 @@
+import os
+import signal
+import webapp
 from core.parser import ConfParser
 from core.monitor import Monitor
 from core.detection import Detection
 from core.syscheck import SysCheck
-from multiprocessing import Queue, set_start_method
-import os
-import signal
+from multiprocessing import Queue
 from webapp.webapp import WebApplication
 from protogrpc.grpc_server import GrpcServer
 from webapp.shared import app, db

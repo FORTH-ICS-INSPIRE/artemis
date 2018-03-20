@@ -3,9 +3,6 @@ from flask_nav import Nav
 from flask_nav.elements import Navbar, View
 from webapp.forms import CheckboxForm
 import _thread
-import grpc
-import time
-import math
 from webapp.tables import MonitorTable, HijackTable
 from webapp.models import Monitor, Hijack
 from webapp.shared import db, app

@@ -1,10 +1,8 @@
+import sys
+import os
 import radix
-#from taps.exabgp_client import ExaBGP
 # from taps.bgpmon import BGPmon
 from subprocess import Popen
-import os
-import signal
-from multiprocessing import Process
 
 
 class Monitor():

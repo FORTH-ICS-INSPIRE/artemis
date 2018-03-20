@@ -1,7 +1,4 @@
-import os
-import sys
 import radix
-import signal
 from core.mitigation import Mitigation
 from webapp.models import Hijack, Monitor
 import _thread

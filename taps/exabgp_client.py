@@ -1,7 +1,6 @@
 import sys
 import os
 from socketIO_client import SocketIO
-import ipaddress
 import grpc
 import argparse
 

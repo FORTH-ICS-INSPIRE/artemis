@@ -1,7 +1,6 @@
 from configparser import ConfigParser
 import os
 import ipaddress
-import pprint
 
 MAX_ASN_NUMBER = 397213
 

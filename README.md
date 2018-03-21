@@ -51,10 +51,9 @@ python3 artemis.py
 
 Note: to run the mininet demo please follow the instructions under mininet-demo/README.md
 
-
 ## Contributing
 
-### Implementing additional Monitor
+### Implementing additional Monitors (taps)
 
 In order to add new monitors you need to send the BGP Update messages to the GRPC Server which runs on port 50051. The .proto file is provided and you only need to compile and use the `queryMformat` function with the provided format:
 
@@ -68,16 +67,19 @@ message MformatMessage {
 }
 ```
 
-For example take a look at the `taps/exabgp_client.py` which implements the python GRPC Client or `taps/ripe_ris.js` which implements the javascript GRPC Client.
+For example take a look at the `taps/exabgp_client.py` which implements the python GRPC Client or `taps/ripe_ris.js` which implements the javascript GRPC Client. Please edit only the code in the taps folder.
 
 ## Versioning
-
+TBD (for now working on master branch, version tags to-be-released)
 
 ## Authors
-
+* Dimitris Mavrommatis, ICS-FORTH
+* Petros Gigis, ICS-FORTH
+* Vasileios Kotronis, ICS-FORTH
+* Pavlos Sermpezis, ICS-FORTH
 
 ## License
-
+TBD (closed source until further notice)
 
 ## Acknowledgments
-
+TBD (ERC NetVolution Grant, ERC PoC Grant, RIPE NCC Community Project Grant)

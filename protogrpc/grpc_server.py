@@ -32,7 +32,9 @@ class GrpcServer():
                 self.db.session.add(monitor_event)
                 self.db.session.commit()
             except exc.SQLAlchemyError as e:
-                print('SQLAlchemy error on GRPC server inserting m-entry into db... {}'.format(e))
+                duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"
+                if duplicate_entry_str not in str(e):
+                    print('SQLAlchemy error on GRPC server inserting m-entry into db... {}'.format(e))
                 return service_pb2.Empty()
 
             if monitor_event.type == 'A' and self.detector.flag:

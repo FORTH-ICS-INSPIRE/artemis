@@ -33,6 +33,7 @@ class GrpcServer():
                 self.db.session.commit()
             except exc.SQLAlchemyError as e:
                 print('SQLAlchemy error on GRPC server inserting m-entry into db... {}'.format(e))
+                return service_pb2.Empty()
 
             if monitor_event.type == 'A' and self.detector.flag:
                 self.detector.monitor_queue.put(monitor_event)

@@ -50,7 +50,7 @@ class Detection():
                         self.db.session.commit()
             except Exception as e:
                 print(
-                    '[DETECTION] Error on raw log queue parsing.. {}'
+                    '[DETECTION] Error on unhandled DB event parsing.. {}'
                     .format(e)
                 )
 

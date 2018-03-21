@@ -26,7 +26,7 @@ class Monitor(db.Model):
             'type',
             'timestamp',
             'hijack_id' 
-        )
+        ),
     )
 
     def __init__(self, msg):

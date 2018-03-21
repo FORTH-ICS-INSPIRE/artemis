@@ -41,7 +41,7 @@ class Detection():
 
         for monitor_event in unhandled_events:
             try:
-                if monitor_event is None:
+                if monitor_event is None or monitor_event.type == 'W':
                     continue
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):

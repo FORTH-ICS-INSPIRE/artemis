@@ -5,13 +5,13 @@ from webapp.forms import CheckboxForm
 import _thread
 from webapp.tables import MonitorTable, HijackTable
 from webapp.models import Monitor, Hijack
-from webapp.shared import db, app
+from webapp.shared import app
 from sqlalchemy import desc
 
 
 class WebApplication():
 
-    def __init__(self):
+    def __init__(self, db):
         self.nav = Nav()
         self.nav.register_element('top', Navbar(
             View('Home', 'index'),
@@ -28,7 +28,7 @@ class WebApplication():
         form = CheckboxForm()
 
         conf = None
-        with open('configs/config','r') as f:
+        with open('configs/config', 'r') as f:
             conf = f.read()
 
         if request.method == 'POST' and form.validate_on_submit():
@@ -96,14 +96,11 @@ class WebApplication():
                 sort_reverse=reverse)
         return render_template('show.html', data=data, type='Hijack')
 
-    @app.teardown_appcontext
-    def shutdown_session(exception=None):
-        db.session.remove()
-
     def run(self):
         self.db.init_app(app)
         self.nav.init_app(app)
-        self.app.run(debug=False, host=self.app.config['WEBAPP_HOST'], port=self.app.config['WEBAPP_PORT'])
+        self.app.run(
+            debug=False, host=self.app.config['WEBAPP_HOST'], port=self.app.config['WEBAPP_PORT'])
 
     def start(self):
         if not self.flag:
@@ -114,4 +111,5 @@ class WebApplication():
     def stop(self):
         if self.flag:
             self.flag = False
+            self.db.session.remove()
             print('WebApplication Stopped..')

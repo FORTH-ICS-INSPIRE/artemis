@@ -9,11 +9,13 @@ class MonitorTable(Table):
     id = Col('ID')
     prefix = Col('Prefix')
     origin_as = Col('Origin AS')
+    peer_as = Col('Peer AS')
     as_path = Col('AS Path')
     service = Col('Service')
     type = Col('Type')
     timestamp = Col('Timestamp')
     hijack_id = Col('Hijack ID')
+    handled = Col('Hanlded')
     allow_sort = True
 
     def sort_url(self, col_key, reverse=False):

@@ -2,13 +2,14 @@ import radix
 from core.mitigation import Mitigation
 from webapp.models import Hijack, Monitor
 import _thread
+from multiprocessing import Queue
 
 
 class Detection():
 
-    def __init__(self, db, confparser, monitor_queue):
+    def __init__(self, db, confparser):
         self.confparser = confparser
-        self.monitor_queue = monitor_queue
+        self.monitor_queue = Queue()
         self.prefix_tree = radix.Radix()
         self.db = db
         self.flag = False
@@ -35,6 +36,22 @@ class Detection():
     def parse_queue(self):
         print('Detection Mechanism Started...')
         self.init_detection()
+
+        unhandled_events = Monitor.query.filter_by(handled=False).all()
+
+        for monitor_event in unhandled_events:
+            try:
+                if monitor_event is None:
+                    continue
+                if(not self.detect_origin_hijack(monitor_event)):
+                    if(not self.detect_type_1_hijack(monitor_event)):
+                        pass
+            except Exception as e:
+                print(
+                    '[DETECTION] Error on raw log queue parsing.. {}'
+                    .format(e)
+                )
+
         while self.flag:
             try:
                 monitor_event = self.monitor_queue.get()
@@ -68,6 +85,7 @@ class Detection():
                         # Update monitor with new Hijack ID
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.hijack_id = hijack.id
+                        updated_monitor.handled = True
                         self.db.session.commit()
 
                         # if len(prefix_node.data['mitigation']) > 0:
@@ -102,6 +120,7 @@ class Detection():
                         # Update monitor with new Hijack ID
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.hijack_id = hijack.id
+                        updated_monitor.handled = True
                         self.db.session.commit()
 
                         # if len(prefix_node.data['mitigation']) > 0:

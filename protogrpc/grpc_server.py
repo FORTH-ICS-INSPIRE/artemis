@@ -9,17 +9,20 @@ from webapp.models import Monitor
 
 class GrpcServer():
 
-    def __init__(self, db, monitor_queue):
+    def __init__(self, db, monitor, detector, mitigator=None):
         self.db = db
         self.db.create_all()
-        self.monitor_queue = monitor_queue
         self.server_process = None
+
+        self.monitor = monitor
+        self.detector = detector
+        self.mitigator = mitigator
 
     class MonitorGrpc(service_pb2_grpc.MessageListenerServicer):
 
-        def __init__(self, db, monitor_queue):
+        def __init__(self, db, detector):
             self.db = db
-            self.monitor_queue = monitor_queue
+            self.detector = detector
 
         def queryMformat(self, request, context):
             monitor_event = Monitor(protobuf_to_dict(request))
@@ -27,17 +30,17 @@ class GrpcServer():
             self.db.session.add(monitor_event)
             self.db.session.commit()
 
-            if monitor_event.type == 'A':
-                self.monitor_queue.put(monitor_event)
+            if monitor_event.type == 'A' and self.detector.flag:
+                self.detector.monitor_queue.put(monitor_event)
 
             return service_pb2.Empty()
 
-    def start(self, monitor, detector, mitigator=None):
+    def start(self):
         self.grpc_server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=10))
 
         service_pb2_grpc.add_MessageListenerServicer_to_server(
-            GrpcServer.MonitorGrpc(self.db, self.monitor_queue),
+            GrpcServer.MonitorGrpc(self.db, self.detector),
             self.grpc_server
         )
 

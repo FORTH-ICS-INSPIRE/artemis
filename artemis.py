@@ -5,7 +5,6 @@ from core.parser import ConfParser
 from core.monitor import Monitor
 from core.detection import Detection
 from core.syscheck import SysCheck
-from multiprocessing import Queue
 from webapp.webapp import WebApplication
 from protogrpc.grpc_server import GrpcServer
 from webapp.shared import app, db
@@ -19,16 +18,14 @@ def main():
     if(confparser_.isValid()):
         systemcheck_ = SysCheck()
         if(systemcheck_.isValid()):
-            # Initialize Monitor Queue
-            monitor_queue = Queue()
 
             # Instatiate Modules
             monitor_ = Monitor(confparser_)
-            detection_ = Detection(db, confparser_, monitor_queue)
+            detection_ = Detection(db, confparser_)
 
             # GRPC Server
-            grpc_ = GrpcServer(db, monitor_queue)
-            grpc_.start(monitor_, detection_)
+            grpc_ = GrpcServer(db, monitor_, detection_)
+            grpc_.start()
 
             # Load Modules to Web Application
             app.config['monitor'] = monitor_
@@ -36,7 +33,7 @@ def main():
             # app.config['mitigator'] = mitigation_
 
             # Web Application
-            webapp_ = WebApplication()
+            webapp_ = WebApplication(db)
             webapp_.start()
 
             input("\n[!] Press ENTER to exit [!]\n\n")

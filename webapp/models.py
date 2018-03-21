@@ -1,5 +1,5 @@
 from webapp.shared import db
-from sqlalchemy import Column, Integer, String, Float, desc
+from sqlalchemy import Column, Integer, String, Float, desc, Boolean, UniqueConstraint
 import time
 
 
@@ -8,11 +8,26 @@ class Monitor(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     prefix = Column(String(22))
     origin_as = Column(String(6))
+    peer_as = Column(String(6))
     as_path = Column(String(100))
     service = Column(String(14))
     type = Column(String(1))
     timestamp = Column(Float)
     hijack_id = Column(Integer, nullable=True)
+    handled = Column(Boolean)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'prefix',
+            'origin_as',
+            'peer_as',
+            'as_path',
+            'service',
+            'type',
+            'timestamp',
+            'hijack_id' 
+        )
+    )
 
     def __init__(self, msg):
         self.prefix = msg['prefix']
@@ -21,10 +36,12 @@ class Monitor(db.Model):
         if self.type == 'A':
             self.as_path = ' '.join(map(str, msg['as_path']))
             self.origin_as = str(msg['as_path'][-1])
+            self.peer_as = str(msg['as_path'][0])
         else:
             self.as_path = None
         self.timestamp = msg['timestamp']
         self.hijack_id = None
+        self.handled = False
 
 
 class Hijack(db.Model):

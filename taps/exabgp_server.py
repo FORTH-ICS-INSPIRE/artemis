@@ -6,7 +6,10 @@ from flask import Flask, abort
 import socketio
 import json
 from netaddr import IPNetwork, IPAddress
+import logging
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 async_mode = 'threading'
 sio = socketio.Server(logger=False, async_mode=async_mode)
 app = Flask(__name__)

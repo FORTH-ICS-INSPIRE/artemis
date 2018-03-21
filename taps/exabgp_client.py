@@ -28,8 +28,8 @@ class ExaBGP():
 
     def start(self):
         socketIO = SocketIO("http://" + str(self.config['host']))
-        print("[ExaBGP] %s monitor service is up for prefixes %s" %
-              (self.config['host'],  self.config['prefixes']))
+        #print("[ExaBGP] %s monitor service is up for prefixes %s" %
+        #      (self.config['host'],  self.config['prefixes']))
 
         def on_connect(*args):
             prefixes_ = {"prefixes": self.config['prefixes']}

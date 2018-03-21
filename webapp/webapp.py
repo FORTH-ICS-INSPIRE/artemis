@@ -7,6 +7,11 @@ from webapp.tables import MonitorTable, HijackTable
 from webapp.models import Monitor, Hijack
 from webapp.shared import app
 from sqlalchemy import desc
+import logging
+
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 
 class WebApplication():

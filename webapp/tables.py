@@ -15,7 +15,7 @@ class MonitorTable(Table):
     type = Col('Type')
     timestamp = Col('Timestamp')
     hijack_id = Col('Hijack ID')
-    handled = Col('Hanlded')
+    handled = Col('Handled')
     allow_sort = True
 
     def sort_url(self, col_key, reverse=False):
@@ -34,10 +34,10 @@ class HijackTable(Table):
     type = Col('Type')
     prefix = Col('Prefix')
     hijack_as = Col('Hijack AS')
-    num_peers = Col('Num of peers')
-    num_asns_inf = Col('Num of ASNs inf')
+    num_peers_seen = Col('Num Peers Seen')
+    num_asns_inf = Col('Num ASNs Inf')
     time_started = Col('Time Started')
-    time_last = Col('Time Last')
+    time_last = Col('Time Last Upd')
     time_ended = Col('Time Ended')
     allow_sort = True
 

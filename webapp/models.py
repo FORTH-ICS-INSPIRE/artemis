@@ -10,7 +10,7 @@ class Monitor(db.Model):
     origin_as = Column(String(6))
     peer_as = Column(String(6))
     as_path = Column(String(100))
-    service = Column(String(14))
+    service = Column(String(50))
     type = Column(String(1))
     timestamp = Column(Float)
     hijack_id = Column(Integer, nullable=True)
@@ -49,7 +49,7 @@ class Hijack(db.Model):
     type = Column(String(1))
     prefix = Column(String(22))
     hijack_as = Column(String(6))
-    num_peers = Column(Integer)
+    num_peers_seen = Column(Integer)
     num_asns_inf = Column(Integer)
     time_started = Column(Float)
     time_last = Column(Float)
@@ -59,8 +59,8 @@ class Hijack(db.Model):
         self.type = htype
         self.prefix = msg.prefix
         self.hijack_as = asn
-        self.num_peer = 0
-        self.num_asns_in = 0
+        self.num_peers_seen = 0
+        self.num_asns_inf = 0
         self.time_started = time.time()
         self.time_last = None
         self.time_ended = None

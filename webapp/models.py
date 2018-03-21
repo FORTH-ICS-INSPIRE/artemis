@@ -24,8 +24,7 @@ class Monitor(db.Model):
             'as_path',
             'service',
             'type',
-            'timestamp',
-            'hijack_id' 
+            'timestamp'
         ),
     )
 

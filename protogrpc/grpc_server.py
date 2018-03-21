@@ -5,6 +5,7 @@ import _thread
 from concurrent import futures
 from protobuf_to_dict import protobuf_to_dict
 from webapp.models import Monitor
+from sqlalchemy import exc
 
 
 class GrpcServer():
@@ -27,8 +28,11 @@ class GrpcServer():
         def queryMformat(self, request, context):
             monitor_event = Monitor(protobuf_to_dict(request))
 
-            self.db.session.add(monitor_event)
-            self.db.session.commit()
+            try:
+                self.db.session.add(monitor_event)
+                self.db.session.commit()
+            except exc.SQLAlchemyError as e:
+                print('SQLAlchemy error on GRPC server inserting m-entry into db... {}'.format(e))
 
             if monitor_event.type == 'A' and self.detector.flag:
                 self.detector.monitor_queue.put(monitor_event)

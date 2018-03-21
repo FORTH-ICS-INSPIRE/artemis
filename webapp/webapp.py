@@ -55,7 +55,7 @@ class WebApplication():
     @app.route('/monitors', methods=['GET', 'POST'])
     def show_monitors():
         sort = request.args.get('sort', 'id')
-        reverse = (request.args.get('direction', 'asc') == 'desc')
+        reverse = (request.args.get('direction', 'desc') == 'desc')
         if reverse:
             data = MonitorTable(
                 Monitor.query.order_by(
@@ -77,7 +77,7 @@ class WebApplication():
     @app.route('/hijacks', methods=['GET', 'POST'])
     def show_hijacks():
         sort = request.args.get('sort', 'id')
-        reverse = (request.args.get('direction', 'asc') == 'desc')
+        reverse = (request.args.get('direction', 'desc') == 'desc')
         if reverse:
             data = HijackTable(
                 Hijack.query.order_by(

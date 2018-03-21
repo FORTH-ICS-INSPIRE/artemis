@@ -1,5 +1,6 @@
 from netaddr import IPNetwork
 
+
 class Deaggr:
 
     def __init__(self, prefix, max_deaggr):
@@ -9,7 +10,6 @@ class Deaggr:
         self.__subprefixes = []
         self.__calc_subprefixes()
 
-
     def __calc_subprefixes(self):
         net = IPNetwork(self.__prefix)
         self.__subprefixes = list()
@@ -18,11 +18,9 @@ class Deaggr:
             new_prefixlen = net.prefixlen + 1
             self.__subprefixes = net.subnet(new_prefixlen)
 
-
     def print_subprefixes(self):
         for subprefix in self.__subprefixes:
             print(subprefix)
-
 
     def get_subprefixes(self):
         prefixes = []

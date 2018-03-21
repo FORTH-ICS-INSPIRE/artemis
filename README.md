@@ -21,6 +21,20 @@ Then inside the root folder of the tool run
 ```
 pip3 install -r requirements.txt
 ```
+
+For RIPE RIS monitors you need to install nodejs
+```
+curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -
+sudo apt-get install -y nodejs build-essential
+```
+
+Then install npm and the needed modules
+```
+sudo apt-get install -y npm
+cd taps
+npm install
+```
+
 ### How to run
 
 To succesfully run the script you need to modify the configuration file
@@ -40,6 +54,21 @@ Note: to run the mininet demo please follow the instructions under mininet-demo/
 
 ## Contributing
 
+### Implementing additional Monitor
+
+In order to add new monitors you need to send the BGP Update messages to the GRPC Server which runs on port 50051. The .proto file is provided and you only need to compile and use the `queryMformat` function with the provided format:
+
+```
+message MformatMessage {
+  string service = 1;
+  string type = 2;
+  string prefix = 3;
+  repeated int32 as_path = 4;
+  double timestamp = 5;
+}
+```
+
+For example take a look at the `taps/exabgp_client.py` which implements the python GRPC Client or `taps/ripe_ris.js` which implements the javascript GRPC Client.
 
 ## Versioning
 
@@ -48,7 +77,6 @@ Note: to run the mininet demo please follow the instructions under mininet-demo/
 
 
 ## License
-
 
 
 ## Acknowledgments

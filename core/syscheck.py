@@ -1,10 +1,9 @@
 class SysCheck():
 
-	valid = True
+    valid = True
 
-	def __init__(self):
-		pass
+    def __init__(self):
+        pass
 
-
-	def isValid(self):
-		return self.valid
+    def isValid(self):
+        return self.valid

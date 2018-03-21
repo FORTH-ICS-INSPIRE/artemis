@@ -1,92 +1,142 @@
-import os
-import sys
 import radix
 from core.mitigation import Mitigation
+from webapp.models import Hijack, Monitor
+import _thread
+from multiprocessing import Queue
+
 
 class Detection():
 
-	def __init__(self, configs, parsed_log_queue, monitors, local_mitigation, moas_mitigation):
+    def __init__(self, db, confparser):
+        self.confparser = confparser
+        self.monitor_queue = Queue()
+        self.prefix_tree = radix.Radix()
+        self.db = db
+        self.flag = False
 
-		self.configs_ = configs
-		self.parsed_log_queue = parsed_log_queue
-		self.monitors = monitors
-		self.local_mitigation = local_mitigation
-		self.moas_mitigation = moas_mitigation
-		self.prefix_tree = radix.Radix()
+    def init_detection(self):
+        configs = self.confparser.get_obj()
+        for config in configs:
+            for prefix in configs[config]['prefixes']:
+                node = self.prefix_tree.add(str(prefix))
+                node.data['origin_asns'] = configs[config]['origin_asns']
+                node.data['neighbors'] = configs[config]['neighbors']
+                node.data['mitigation'] = configs[config]['mitigation']
 
-		self.init_detection()
-		self.parse_queue()
+    def start(self):
+        if not self.flag:
+            self.flag = True
+            _thread.start_new_thread(self.parse_queue, ())
 
+    def stop(self):
+        if self.flag:
+            self.flag = False
+            self.monitor_queue.put(None)
 
-	def init_detection(self):
+    def parse_queue(self):
+        print('Detection Mechanism Started...')
+        self.init_detection()
 
-		for config in self.configs_:
-			
-			for prefix in self.configs_[config]['prefixes']:
-				node = self.prefix_tree.add(str(prefix))
-				node.data["origin_asns"] = self.configs_[config]['origin_asns']
-				node.data["neighbors"] = self.configs_[config]['neighbors']
-				node.data["mitigation"] = self.configs_[config]['mitigation']
+        unhandled_events = Monitor.query.filter_by(handled=False).all()
 
+        for monitor_event in unhandled_events:
+            try:
+                if monitor_event is None or monitor_event.type == 'W':
+                    continue
+                if(not self.detect_origin_hijack(monitor_event)):
+                    if(not self.detect_type_1_hijack(monitor_event)):
+                        updated_monitor = Monitor.query.get(monitor_event.id)
+                        updated_monitor.handled = True
+                        self.db.session.commit()
+            except Exception as e:
+                print(
+                    '[DETECTION] Error on unhandled DB event parsing.. {}'
+                    .format(e)
+                )
 
-	def parse_queue(self):
+        while self.flag:
+            try:
+                monitor_event = self.monitor_queue.get()
+                if monitor_event is None:
+                    continue
+                if(not self.detect_origin_hijack(monitor_event)):
+                    if(not self.detect_type_1_hijack(monitor_event)):
+                        updated_monitor = Monitor.query.get(monitor_event.id)
+                        updated_monitor.handled = True
+                        self.db.session.commit()
+            except Exception as e:
+                print(
+                    '[DETECTION] Error on raw log queue parsing.. {}'
+                    .format(e)
+                )
+        print('Detection Mechanism Stopped...')
 
-		while(True):
-			try:
-				parsed_log = self.parsed_log_queue.get()
-				if( not self.detect_origin_hijack(parsed_log) ):
-					if( not self.detect_type_1_hijack(parsed_log) ):
-						pass
-			except:
-				print("[DETECTION] Error on raw log queue parsing.")
+    def detect_origin_hijack(self, monitor_event):
+        try:
+            if len(monitor_event.as_path) > 0:
+                origin_asn = int(monitor_event.origin_as)
+                prefix_node = self.prefix_tree.search_best(
+                    monitor_event.prefix)
+                if prefix_node is not None:
+                    if origin_asn not in prefix_node.data['origin_asns']:
+                        # Trigger hijack
+                        print('[DETECTION] HIJACK TYPE 0 detected!')
 
+                        hijack = Hijack(monitor_event, origin_asn, 0)
+                        self.db.session.add(hijack)
+                        self.db.session.commit()
 
-	def detect_origin_hijack(self, bgp_msg):
+                        # Update monitor with new Hijack ID
+                        updated_monitor = Monitor.query.get(monitor_event.id)
+                        updated_monitor.hijack_id = hijack.id
+                        updated_monitor.handled = True
+                        self.db.session.commit()
 
-		try:
-			if(len(bgp_msg['as_path']) > 0):
-				origin_asn = int(bgp_msg['as_path'][-1])
-				prefix_node = self.prefix_tree.search_best(bgp_msg['prefix'])
-				if(prefix_node is not None):
-					if(origin_asn not in prefix_node.data['origin_asns']):
-						# Trigger hijack
-						print("[DETECTION] HIJACK TYPE 0 detected!")
+                        # if len(prefix_node.data['mitigation']) > 0:
+                        #     mit = Mitigation(
+                        #         prefix_node,
+                        #         monitor_event,
+                        #         self.local_mitigation,
+                        #         self.moas_mitigation)
+                        return True
+            return False
+        except Exception as e:
+            print(
+                '[DETECTION] Error on detect origin hijack.. {}:{}'
+                .format(e, monitor_event)
+            )
 
-						# Trigger mitigation (TODO: need to react on a hijack event basis, not bgp message!)
-						if len(prefix_node.data["mitigation"]) > 0:
-							mit = Mitigation(
-								prefix_node,
-								bgp_msg,
-								self.local_mitigation,
-								self.moas_mitigation)
+    def detect_type_1_hijack(self, monitor_event):
+        try:
+            if len(monitor_event.as_path) > 1:
+                first_neighbor_asn = int(monitor_event.as_path.split(' ')[-2])
+                prefix_node = self.prefix_tree.search_best(
+                    monitor_event.prefix)
+                if prefix_node is not None:
+                    if first_neighbor_asn not in prefix_node.data['neighbors']:
+                        # Trigger hijack
+                        print('[DETECTION] HIJACK TYPE 1 detected!')
 
-						return True
-			return False
-		except:
-			print("[DETECTION] Error on detect origin hijack.")
+                        hijack = Hijack(monitor_event, first_neighbor_asn, 1)
+                        self.db.session.add(hijack)
+                        self.db.session.commit()
 
+                        # Update monitor with new Hijack ID
+                        updated_monitor = Monitor.query.get(monitor_event.id)
+                        updated_monitor.hijack_id = hijack.id
+                        updated_monitor.handled = True
+                        self.db.session.commit()
 
-	def detect_type_1_hijack(self, bgp_msg):
-
-		try:
-			if(len(bgp_msg['as_path']) > 1):
-				first_neighbor_asn = int(bgp_msg['as_path'][-2])
-				prefix_node = self.prefix_tree.search_best(bgp_msg['prefix'])
-				if(prefix_node is not None):
-					if(first_neighbor_asn not in prefix_node.data['neighbors']):
-						# Trigger hijack
-						print("[DETECTION] HIJACK TYPE 1 detected!")
-
-						# Trigger mitigation (TODO: need to react on a hijack event basis, not bgp message!)
-						if len(prefix_node.data["mitigation"]) > 0:
-							mit = Mitigation(
-								prefix_node,
-								bgp_msg,
-								self.local_mitigation,
-								self.moas_mitigation)
-
-						return True
-			return False
-
-		except:
-			print("[DETECTION] Error on detect 1 hop neighbor hijack.")
+                        # if len(prefix_node.data['mitigation']) > 0:
+                        #     mit = Mitigation(
+                        #         prefix_node,
+                        #         monitor_event,
+                        #         self.local_mitigation,
+                        #         self.moas_mitigation)
+                        return True
+            return False
+        except Exception as e:
+            print(
+                '[DETECTION] Error on detect 1 hop neighbor hijack.. {}:{}'
+                .format(e, monitor_event)
+            )

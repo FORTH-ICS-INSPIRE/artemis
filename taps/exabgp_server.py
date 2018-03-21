@@ -5,7 +5,6 @@ from sys import stdin, stdout, stderr
 from flask import Flask, abort
 import socketio
 import json
-import time
 from netaddr import IPNetwork, IPAddress
 
 async_mode = 'threading'

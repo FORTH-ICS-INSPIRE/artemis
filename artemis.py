@@ -1,56 +1,51 @@
+import os
+import signal
+import webapp
 from core.parser import ConfParser
 from core.monitor import Monitor
 from core.detection import Detection
 from core.syscheck import SysCheck
-from core.pformat import Pformat
-from multiprocessing import Process, Manager, Queue
-import os
+from webapp.webapp import WebApplication
+from protogrpc.grpc_server import GrpcServer
+from webapp.shared import app, db
 
 
 def main():
-
-    # Read the config file
+    # Configuration Parser
     confparser_ = ConfParser()
+    confparser_.parse_file()
 
     if(confparser_.isValid()):
-        configs = confparser_.get_obj()
-        monitors = confparser_.get_monitors()
-        local_mitigation = confparser_.get_local_mitigation()
-        moas_mitigation = confparser_.get_moas_mitigation()
-
-        # Run system check
         systemcheck_ = SysCheck()
-        
         if(systemcheck_.isValid()):
 
-            raw_log_queue = Queue()
-            parsed_log_queue = Queue()
-            process_ids = list()
-            
-            print("Starting Monitors...")
-            # Start monitors
-            monitor_ = Monitor(configs, raw_log_queue, monitors)
-            process_ids = monitor_.get_process_ids()
+            # Instatiate Modules
+            monitor_ = Monitor(confparser_)
+            detection_ = Detection(db, confparser_)
 
-            print("Starting Pformat processing...")
-            # Pformat processing  
-            pformat_ = Process(target=Pformat, args=(raw_log_queue, parsed_log_queue))
-            pformat_.start()
-            
-            process_ids.append(['Pformat', pformat_])
+            # GRPC Server
+            grpc_ = GrpcServer(db, monitor_, detection_)
+            grpc_.start()
 
-            print("Starting Detection mechanism...")
-            # Start detections
-            detection_ = Process(target=Detection, args=(configs, parsed_log_queue, monitors, local_mitigation, moas_mitigation))
-            detection_.start()
+            # Load Modules to Web Application
+            app.config['monitor'] = monitor_
+            app.config['detector'] = detection_
+            # app.config['mitigator'] = mitigation_
 
-            process_ids.append(['Detection', detection_])
+            # Web Application
+            webapp_ = WebApplication(db)
+            webapp_.start()
 
-            input("\n\nenter to close\n\n")
-            for proc_id in process_ids:
-                os.kill(int(proc_id[1]), signal.SIGTERM)
-            
+            input("\n[!] Press ENTER to exit [!]\n\n")
+
+            # Stop all modules and web application
+            monitor_.stop()
+            detection_.stop()
+            grpc_.stop()
+            webapp_.stop()
     else:
         print("The config file is wrong.")
 
-main()
+
+if __name__ == '__main__':
+    main()

@@ -11,7 +11,7 @@
 
 [prefixes_group]
 
-my_prefixes: 10.0.0.0/8
+my_prefixes: 203.0.0.0/8
 
 # - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #
@@ -25,10 +25,6 @@ my_prefixes: 10.0.0.0/8
 [monitors_group]
 
 riperis: rrc18, rrc19, rrc20, rrc21
-
-bgpmon: (livebgp.netsec.colostate.edu : 5001)
-
-exabgp: (192.168.1.1 : 5000), (192.168.5.1 : 5000)
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #

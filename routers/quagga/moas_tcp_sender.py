@@ -29,11 +29,16 @@ def is_valid_ipv4_prefix(pref_str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="send a MOAS command to MOAS receiver")
-    parser.add_argument('-r', '--receiver', dest='moas_receiver', type=str, help='receiver ip', required=True)
-    parser.add_argument('-p', '--port', dest='moas_port', type=int, help='receiver port', required=True)
-    parser.add_argument('-m', '--moas_prefix', dest='moas_prefix', type=str, help='moas prefix', required=True)
-    parser.add_argument('-w', '--withdraw', dest='moas_withdraw', help='withdraw moas prefix', action='store_true')
+    parser = argparse.ArgumentParser(
+        description="send a MOAS command to MOAS receiver")
+    parser.add_argument('-r', '--receiver', dest='moas_receiver',
+                        type=str, help='receiver ip', required=True)
+    parser.add_argument('-p', '--port', dest='moas_port',
+                        type=int, help='receiver port', required=True)
+    parser.add_argument('-m', '--moas_prefix', dest='moas_prefix',
+                        type=str, help='moas prefix', required=True)
+    parser.add_argument('-w', '--withdraw', dest='moas_withdraw',
+                        help='withdraw moas prefix', action='store_true')
     args = parser.parse_args()
 
     if not is_valid_ipv4_address(args.moas_receiver):
@@ -60,6 +65,7 @@ def main():
         print("Message sent!")
     except:
         print("Could not connect!")
+
 
 if __name__ == '__main__':
     main()

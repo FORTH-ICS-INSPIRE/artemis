@@ -381,10 +381,10 @@ class ArtemisTopo(Topo):
         # link L2_SW_1-exabgp_65001: L2_SW_1:eth3 - exabgp_65001:eth0:10.0.0.3
         self.addLink(l2_sw_1, exabgp_65001, port1=3, port2=0)
 
-        # link exabgp_65001-artemis: exabgp_65001:eth1:192.168.1.1 - artemis:eth0:192.168.1.1
+        # link exabgp_65001-artemis: exabgp_65001:eth1:192.168.1.1 - artemis:eth0:192.168.1.2
         self.addLink(exabgp_65001, artemis, port1=1, port2=0)
 
-        # link R1-artemis: R1:eth0:192.168.101.1 - artemis:eth2:192.168.101.1
+        # link R1-artemis: R1:eth0:192.168.101.1 - artemis:eth2:192.168.101.2
         self.addLink(r1, artemis, port1=0, port2=2)
 
         # link R1-R2: R1:eth2:150.1.1.1 - R2:eth2:150.1.1.2
@@ -408,7 +408,7 @@ class ArtemisTopo(Topo):
         # link R3-R5: R3:eth4:150.1.5.1 - R5:eth2:150.1.5.2
         self.addLink(r3, r5, port1=4, port2=2)
 
-        # link R5-L2_SW_5: R5:eth1:50.0.0.1 - L2_SW_1:eth1
+        # link R5-L2_SW_5: R5:eth1:50.0.0.1 - L2_SW_5:eth1
         self.addLink(r5, l2_sw_5, port1=1, port2=1)
 
         # link L2_SW_5-H5: L2_SW_5:eth2 - H5:eth0:50.0.0.100

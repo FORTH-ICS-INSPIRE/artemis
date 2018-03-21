@@ -45,7 +45,9 @@ class Detection():
                     continue
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
-                        pass
+                        updated_monitor = Monitor.query.get(monitor_event.id)
+                        updated_monitor.handled = True
+                        self.db.session.commit()
             except Exception as e:
                 print(
                     '[DETECTION] Error on raw log queue parsing.. {}'
@@ -59,7 +61,9 @@ class Detection():
                     continue
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
-                        pass
+                        updated_monitor = Monitor.query.get(monitor_event.id)
+                        updated_monitor.handled = True
+                        self.db.session.commit()
             except Exception as e:
                 print(
                     '[DETECTION] Error on raw log queue parsing.. {}'

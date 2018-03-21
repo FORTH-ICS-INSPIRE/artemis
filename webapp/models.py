@@ -64,3 +64,12 @@ class Hijack(db.Model):
         self.time_started = time.time()
         self.time_last = None
         self.time_ended = None
+
+    def __repr__(self):
+        repr_str = "[\n"
+        repr_str += "\tTYPE:         {}\n".format(self.type)
+        repr_str += "\tPREFIX:       {}\n".format(self.prefix)
+        repr_str += "\tHIJACK AS:    {}\n".format(self.hijack_as)
+        repr_str += "\tTIME STARTED: {}\n".format(self.time_started)
+        repr_str += "]"
+        return repr_str

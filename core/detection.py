@@ -80,9 +80,9 @@ class Detection():
                 if prefix_node is not None:
                     if origin_asn not in prefix_node.data['origin_asns']:
                         # Trigger hijack
-                        print('[DETECTION] HIJACK TYPE 0 detected!')
-
                         hijack = Hijack(monitor_event, origin_asn, 0)
+                        print('[DETECTION] NEW HIJACK!')
+                        print(str(hijack))
                         self.db.session.add(hijack)
                         self.db.session.commit()
 
@@ -115,9 +115,9 @@ class Detection():
                 if prefix_node is not None:
                     if first_neighbor_asn not in prefix_node.data['neighbors']:
                         # Trigger hijack
-                        print('[DETECTION] HIJACK TYPE 1 detected!')
-
                         hijack = Hijack(monitor_event, first_neighbor_asn, 1)
+                        print('[DETECTION] NEW HIJACK!')
+                        print(str(hijack))
                         self.db.session.add(hijack)
                         self.db.session.commit()
 

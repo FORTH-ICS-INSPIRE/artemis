@@ -1,5 +1,4 @@
 *.pyc
 logs/*
 node_modules/
-package-lock.json
 artemis.db

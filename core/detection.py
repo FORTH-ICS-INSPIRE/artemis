@@ -132,7 +132,7 @@ class Detection():
                             and_(
                                 Hijack.type.like('1'),
                                 Hijack.prefix.like(monitor_event.prefix),
-                                Hijack.hijack_as.like(monitor_event.origin_as)
+                                Hijack.hijack_as.like(first_neighbor_asn)
                             )
                         ).first()
 

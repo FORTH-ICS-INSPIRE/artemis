@@ -37,7 +37,9 @@ class Monitor(db.Model):
             self.origin_as = str(msg['as_path'][-1])
             self.peer_as = str(msg['as_path'][0])
         else:
-            self.as_path = None
+            self.as_path = ''
+            self.origin_as = ''
+            self.peer_as = ''
         self.timestamp = msg['timestamp']
         self.hijack_id = None
         self.handled = False

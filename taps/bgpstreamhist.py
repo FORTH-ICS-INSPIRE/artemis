@@ -32,7 +32,10 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                     continue
                 # example row: 139.91.250.0/24|8522|11666,3257,174,56910,8522|routeviews|route-views.eqix|A|1517443593|11666
                 this_prefix = row[0]
-                as_path = list(map(as_mapper, row[2].split(',')))
+                if row[5] == 'A':
+                    as_path = list(map(as_mapper, row[2].split(',')))
+                else:
+                    as_path = None
                 service = "historical|{}|{}".format(row[3], row[4])
                 type = row[5]
                 timestamp = float(row[6])

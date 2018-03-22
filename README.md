@@ -6,7 +6,7 @@ You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/ar
 
 ## Getting Started
 
-These instructions will get you a copy of the ARTEMIS tool up and running on your local machine for testing purposes.
+These instructions will get you a copy of the ARTEMIS tool up and running on your local machine for testing purposes. For a detailed view of the ARTEMIS system architecture please check architecture.txt.
 
 ### Dependencies
 

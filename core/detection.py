@@ -97,6 +97,28 @@ class Detection():
                             print('[DETECTION] NEW HIJACK!')
                             print(str(hijack))
                         else:
+                            if monitor_event.timestamp < hijack_event.time_started:
+                                hijack_event.time_started = monitor_event.timestamp
+
+                            if monitor_event.timestamp > hijack_event.time_last:
+                                hijack_event.time_last = monitor_event.timestamp
+
+                            hijack_monitors = Monitor.query.filter(
+                                Monitor.hijack_id.like(hijack_event.id)
+                            ).all()
+
+                            peers_seen = set()
+                            inf_asns = set()
+
+                            for monitor in hijack_monitors:
+                                peers_seen.add(monitor.peer_as)
+                                inf_asns.update(monitor.as_path.split(' '))
+
+                            peers_seen.add(monitor_event.peer_as)
+                            inf_asns.update(monitor_event.as_path.split(' '))
+                            hijack_event.num_peers_seen = len(peers_seen)
+                            hijack_event.num_asns_inf = len(inf_asns)
+
                             hijack_id = hijack_event.id
 
                         # Update monitor with new Hijack ID
@@ -145,6 +167,28 @@ class Detection():
                             print('[DETECTION] NEW HIJACK!')
                             print(str(hijack))
                         else:
+                            if monitor_event.timestamp < hijack_event.time_started:
+                                hijack_event.time_started = monitor_event.timestamp
+
+                            if monitor_event.timestamp > hijack_event.time_last:
+                                hijack_event.time_last = monitor_event.timestamp
+
+                            hijack_monitors = Monitor.query.filter(
+                                Monitor.hijack_id.like(hijack_event.id)
+                            ).all()
+
+                            peers_seen = set()
+                            inf_asns = set()
+
+                            for monitor in hijack_monitors:
+                                peers_seen.add(monitor.peer_as)
+                                inf_asns.update(monitor.as_path.split(' '))
+
+                            peers_seen.add(monitor_event.peer_as)
+                            inf_asns.update(monitor_event.as_path.split(' '))
+                            hijack_event.num_peers_seen = len(peers_seen)
+                            hijack_event.num_asns_inf = len(inf_asns)
+
                             hijack_id = hijack_event.id
 
                         # Update monitor with new Hijack ID

@@ -44,6 +44,16 @@ class Monitor(db.Model):
         self.hijack_id = None
         self.handled = False
 
+    def __repr__(self):
+        repr_str = '[\n'
+        repr_str += '\tTYPE:         {}\n'.format(self.type)
+        repr_str += '\tPREFIX:       {}\n'.format(self.prefix)
+        repr_str += '\tORIGIN AS:    {}\n'.format(self.origin_as)
+        repr_str += '\tPEER AS:      {}\n'.format(self.peer_as)
+        repr_str += '\tAS PATH:      {}\n'.format(self.as_path)
+        repr_str += ']'
+        return repr_str
+
 
 class Hijack(db.Model):
     __tablename__ = 'hijack'
@@ -61,17 +71,17 @@ class Hijack(db.Model):
         self.type = htype
         self.prefix = msg.prefix
         self.hijack_as = asn
-        self.num_peers_seen = 0
-        self.num_asns_inf = 0
-        self.time_started = time.time()
-        self.time_last = None
+        self.num_peers_seen = 1
+        self.num_asns_inf = len(set(msg.as_path.split(' ')))
+        self.time_started = msg.timestamp
+        self.time_last = msg.timestamp
         self.time_ended = None
 
     def __repr__(self):
-        repr_str = "[\n"
-        repr_str += "\tTYPE:         {}\n".format(self.type)
-        repr_str += "\tPREFIX:       {}\n".format(self.prefix)
-        repr_str += "\tHIJACK AS:    {}\n".format(self.hijack_as)
-        repr_str += "\tTIME STARTED: {}\n".format(self.time_started)
-        repr_str += "]"
+        repr_str = '[\n'
+        repr_str += '\tTYPE:         {}\n'.format(self.type)
+        repr_str += '\tPREFIX:       {}\n'.format(self.prefix)
+        repr_str += '\tHIJACK AS:    {}\n'.format(self.hijack_as)
+        repr_str += '\tTIME STARTED: {}\n'.format(self.time_started)
+        repr_str += ']'
         return repr_str

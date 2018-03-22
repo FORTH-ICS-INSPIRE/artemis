@@ -5,7 +5,7 @@ from webapp.forms import CheckboxForm
 import _thread
 from webapp.tables import MonitorTable, HijackTable
 from webapp.models import Monitor, Hijack
-from webapp.shared import app
+from webapp.shared import app, db, db_session
 from sqlalchemy import desc
 import logging
 
@@ -16,7 +16,7 @@ log.setLevel(logging.ERROR)
 
 class WebApplication():
 
-    def __init__(self, db):
+    def __init__(self):
         self.nav = Nav()
         self.nav.register_element('top', Navbar(
             View('Home', 'index'),
@@ -24,7 +24,7 @@ class WebApplication():
             View('Hijacks', 'show_hijacks')
         ))
         self.app = app
-        self.db = db
+        self.session = db_session
         self.webapp_ = None
         self.flag = False
 
@@ -101,8 +101,12 @@ class WebApplication():
                 sort_reverse=reverse)
         return render_template('show.html', data=data, type='Hijack')
 
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        db_session.remove()
+
     def run(self):
-        self.db.init_app(app)
+        db.init_app(app)
         self.nav.init_app(app)
         self.app.run(
             debug=False, host=self.app.config['WEBAPP_HOST'], port=self.app.config['WEBAPP_PORT'])
@@ -116,5 +120,4 @@ class WebApplication():
     def stop(self):
         if self.flag:
             self.flag = False
-            self.db.session.remove()
             print('WebApplication Stopped..')

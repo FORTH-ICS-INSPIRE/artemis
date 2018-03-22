@@ -3,15 +3,16 @@ from core.mitigation import Mitigation
 from webapp.models import Hijack, Monitor
 import _thread
 from multiprocessing import Queue
+from sqlalchemy import and_
+from webapp.shared import db_session
 
 
 class Detection():
 
-    def __init__(self, db, confparser):
+    def __init__(self, confparser):
         self.confparser = confparser
         self.monitor_queue = Queue()
         self.prefix_tree = radix.Radix()
-        self.db = db
         self.flag = False
 
     def init_detection(self):
@@ -47,7 +48,7 @@ class Detection():
                     if(not self.detect_type_1_hijack(monitor_event)):
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.handled = True
-                        self.db.session.commit()
+                        db_session.commit()
             except Exception as e:
                 print(
                     '[DETECTION] Error on unhandled DB event parsing.. {}'
@@ -63,7 +64,7 @@ class Detection():
                     if(not self.detect_type_1_hijack(monitor_event)):
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.handled = True
-                        self.db.session.commit()
+                        db_session.commit()
             except Exception as e:
                 print(
                     '[DETECTION] Error on raw log queue parsing.. {}'
@@ -80,17 +81,29 @@ class Detection():
                 if prefix_node is not None:
                     if origin_asn not in prefix_node.data['origin_asns']:
                         # Trigger hijack
-                        hijack = Hijack(monitor_event, origin_asn, 0)
-                        print('[DETECTION] NEW HIJACK!')
-                        print(str(hijack))
-                        self.db.session.add(hijack)
-                        self.db.session.commit()
+                        hijack_event = Hijack.query.filter(
+                            and_(
+                                Hijack.type.like('0'),
+                                Hijack.prefix.like(monitor_event.prefix),
+                                Hijack.hijack_as.like(monitor_event.origin_as)
+                            )
+                        ).first()
+
+                        if hijack_event is None:
+                            hijack = Hijack(monitor_event, origin_asn, 0)
+                            db_session.add(hijack)
+                            db_session.commit()
+                            hijack_id = hijack.id
+                            print('[DETECTION] NEW HIJACK!')
+                            print(str(hijack))
+                        else:
+                            hijack_id = hijack_event.id
 
                         # Update monitor with new Hijack ID
                         updated_monitor = Monitor.query.get(monitor_event.id)
-                        updated_monitor.hijack_id = hijack.id
+                        updated_monitor.hijack_id = hijack_id
                         updated_monitor.handled = True
-                        self.db.session.commit()
+                        db_session.commit()
 
                         # if len(prefix_node.data['mitigation']) > 0:
                         #     mit = Mitigation(
@@ -115,17 +128,30 @@ class Detection():
                 if prefix_node is not None:
                     if first_neighbor_asn not in prefix_node.data['neighbors']:
                         # Trigger hijack
-                        hijack = Hijack(monitor_event, first_neighbor_asn, 1)
-                        print('[DETECTION] NEW HIJACK!')
-                        print(str(hijack))
-                        self.db.session.add(hijack)
-                        self.db.session.commit()
+                        hijack_event = Hijack.query.filter(
+                            and_(
+                                Hijack.type.like('1'),
+                                Hijack.prefix.like(monitor_event.prefix),
+                                Hijack.hijack_as.like(monitor_event.origin_as)
+                            )
+                        ).first()
+
+                        if hijack_event is None:
+                            hijack = Hijack(
+                                monitor_event, first_neighbor_asn, 1)
+                            db_session.add(hijack)
+                            db_session.commit()
+                            hijack_id = hijack.id
+                            print('[DETECTION] NEW HIJACK!')
+                            print(str(hijack))
+                        else:
+                            hijack_id = hijack_event.id
 
                         # Update monitor with new Hijack ID
                         updated_monitor = Monitor.query.get(monitor_event.id)
-                        updated_monitor.hijack_id = hijack.id
+                        updated_monitor.hijack_id = hijack_id
                         updated_monitor.handled = True
-                        self.db.session.commit()
+                        db_session.commit()
 
                         # if len(prefix_node.data['mitigation']) > 0:
                         #     mit = Mitigation(

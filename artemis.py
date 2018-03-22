@@ -18,13 +18,14 @@ def main():
     if(confparser_.isValid()):
         systemcheck_ = SysCheck()
         if(systemcheck_.isValid()):
-
+            db.create_all()
+            
             # Instatiate Modules
             monitor_ = Monitor(confparser_)
-            detection_ = Detection(db, confparser_)
+            detection_ = Detection(confparser_)
 
             # GRPC Server
-            grpc_ = GrpcServer(db, monitor_, detection_)
+            grpc_ = GrpcServer(monitor_, detection_)
             grpc_.start()
 
             # Load Modules to Web Application
@@ -33,7 +34,7 @@ def main():
             # app.config['mitigator'] = mitigation_
 
             # Web Application
-            webapp_ = WebApplication(db)
+            webapp_ = WebApplication()
             webapp_.start()
 
             input("\n[!] Press ENTER to exit [!]\n\n")

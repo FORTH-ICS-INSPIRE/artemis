@@ -6,13 +6,12 @@ from concurrent import futures
 from protobuf_to_dict import protobuf_to_dict
 from webapp.models import Monitor
 from sqlalchemy import exc
+from webapp.shared import db_session
 
 
 class GrpcServer():
 
-    def __init__(self, db, monitor, detector, mitigator=None):
-        self.db = db
-        self.db.create_all()
+    def __init__(self, monitor, detector, mitigator=None):
         self.server_process = None
 
         self.monitor = monitor
@@ -21,20 +20,20 @@ class GrpcServer():
 
     class MonitorGrpc(service_pb2_grpc.MessageListenerServicer):
 
-        def __init__(self, db, detector):
-            self.db = db
+        def __init__(self, detector):
             self.detector = detector
 
         def queryMformat(self, request, context):
             monitor_event = Monitor(protobuf_to_dict(request))
 
             try:
-                self.db.session.add(monitor_event)
-                self.db.session.commit()
+                db_session.add(monitor_event)
+                db_session.commit()
             except exc.SQLAlchemyError as e:
                 duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"
                 if duplicate_entry_str not in str(e):
-                    print('SQLAlchemy error on GRPC server inserting m-entry into db... {}'.format(e))
+                    print(
+                        'SQLAlchemy error on GRPC server inserting m-entry into db... {}'.format(e))
                 return service_pb2.Empty()
 
             if monitor_event.type == 'A' and self.detector.flag:
@@ -47,7 +46,7 @@ class GrpcServer():
             futures.ThreadPoolExecutor(max_workers=10))
 
         service_pb2_grpc.add_MessageListenerServicer_to_server(
-            GrpcServer.MonitorGrpc(self.db, self.detector),
+            GrpcServer.MonitorGrpc(self.detector),
             self.grpc_server
         )
 

@@ -1,4 +1,4 @@
-from flask_table import Table, Col
+from flask_table import Table, Col, DatetimeCol
 from flask import url_for
 
 
@@ -13,7 +13,7 @@ class MonitorTable(Table):
     as_path = Col('AS Path')
     service = Col('Service')
     type = Col('Type')
-    timestamp = Col('Timestamp')
+    timestamp = DatetimeCol('Timestamp')
     hijack_id = Col('Hijack ID')
     handled = Col('Handled')
     allow_sort = True
@@ -36,9 +36,9 @@ class HijackTable(Table):
     hijack_as = Col('Hijack AS')
     num_peers_seen = Col('CNum Peers Seen')
     num_asns_inf = Col('CNum ASNs Infected')
-    time_started = Col('Time Started')
-    time_last = Col('Time Last Updated')
-    time_ended = Col('Time Ended')
+    time_started = DatetimeCol('Time Started')
+    time_last = DatetimeCol('Time Last Updated')
+    time_ended = DatetimeCol('Time Ended')
     allow_sort = True
 
     def sort_url(self, col_key, reverse=False):

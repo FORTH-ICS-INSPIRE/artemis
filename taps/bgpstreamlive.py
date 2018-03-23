@@ -54,6 +54,9 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     # filter based on timing (if end=0 --> live mode)
     stream.add_interval_filter(start, end)
 
+    # set live mode
+    stream.set_live_mode()
+
     # start the stream
     stream.start()
 

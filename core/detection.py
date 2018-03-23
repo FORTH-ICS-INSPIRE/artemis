@@ -112,10 +112,10 @@ class Detection():
 
                             for monitor in hijack_monitors:
                                 peers_seen.add(monitor.peer_as)
-                                inf_asns.update(monitor.as_path.split(' '))
+                                inf_asns.update(set(monitor.as_path.split(' ')[:-1]))
 
                             peers_seen.add(monitor_event.peer_as)
-                            inf_asns.update(monitor_event.as_path.split(' '))
+                            inf_asns.update(set(monitor_event.as_path.split(' ')[:-1]))
                             hijack_event.num_peers_seen = len(peers_seen)
                             hijack_event.num_asns_inf = len(inf_asns)
 
@@ -182,10 +182,10 @@ class Detection():
 
                             for monitor in hijack_monitors:
                                 peers_seen.add(monitor.peer_as)
-                                inf_asns.update(monitor.as_path.split(' '))
+                                inf_asns.update(set(monitor_event.as_path.split(' ')[:-2]))
 
                             peers_seen.add(monitor_event.peer_as)
-                            inf_asns.update(monitor_event.as_path.split(' '))
+                            inf_asns.update(set(monitor_event.as_path.split(' ')[:-2]))
                             hijack_event.num_peers_seen = len(peers_seen)
                             hijack_event.num_asns_inf = len(inf_asns)
 

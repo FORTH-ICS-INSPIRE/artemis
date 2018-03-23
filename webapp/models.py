@@ -51,6 +51,8 @@ class Monitor(db.Model):
         repr_str += '\tORIGIN AS:    {}\n'.format(self.origin_as)
         repr_str += '\tPEER AS:      {}\n'.format(self.peer_as)
         repr_str += '\tAS PATH:      {}\n'.format(self.as_path)
+        repr_str += '\tSERVICE:      {}\n'.format(self.service)
+        repr_str += '\tTIMESTAMP:    {}\n'.format(self.timestamp)
         repr_str += ']'
         return repr_str
 
@@ -72,7 +74,8 @@ class Hijack(db.Model):
         self.prefix = msg.prefix
         self.hijack_as = asn
         self.num_peers_seen = 1
-        self.num_asns_inf = len(set(msg.as_path.split(' ')))
+        inf_asns_to_ignore = int(self.type) + 1
+        self.num_asns_inf = len(set(msg.as_path.split(' ')[:-inf_asns_to_ignore]))
         self.time_started = msg.timestamp
         self.time_last = msg.timestamp
         self.time_ended = None

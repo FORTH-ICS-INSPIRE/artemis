@@ -96,7 +96,7 @@ class Monitor():
             if 'bgpstreamlive' in monitors:
                 prefixes = self.prefix_tree.prefixes()
                 bgpstream_projects = ','.join(monitors['bgpstreamlive'])
-                p = Popen(['python3', 'taps/bgpstreamlive.py',
+                p = Popen(['python', 'taps/bgpstreamlive.py',
                         '--prefix', ','.join(prefixes), '--mon_projects', bgpstream_projects])
                 self.process_ids.append(('BGPStreamLive', p))
         except Exception as e:

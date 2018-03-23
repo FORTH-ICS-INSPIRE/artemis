@@ -14,6 +14,8 @@ upper_dir = '/'.join(this_script_path.split('/')[:-2])
 sys.path.insert(0, upper_dir)
 from protogrpc import service_pb2, service_pb2_grpc
 
+START_TIME_OFFSET = 3600 # seconds
+
 
 def as_mapper(asn_str):
     if asn_str != '':
@@ -102,5 +104,5 @@ if __name__ == '__main__':
 
     prefixes = args.prefix.split(',')
     projects = args.mon_projects.split(',')
-    run_bgpstream(prefixes, projects, start=int(time.time()), end=0)
+    run_bgpstream(prefixes, projects, start=int(time.time()) - START_TIME_OFFSET, end=0)
 

@@ -33,6 +33,7 @@ class Monitor():
             # self.init_bgpmon_instance(prefixes)
             self.init_exabgp_instance(prefixes)
             self.init_bgpstreamhist_instance(prefixes)
+            self.init_bgpstreamlive_instance(prefixes)
             self.flag = True
             print('Monitors Started...')
 
@@ -88,3 +89,15 @@ class Monitor():
                 self.process_ids.append(('BGPStreamHist', p))
         except Exception as e:
             print('Error on initializing of BGPStreamHist... {}'.format(e))
+
+    def init_bgpstreamlive_instance(self, prefixes):
+        try:
+            monitors = self.confparser.get_monitors()
+            if 'bgpstreamlive' in monitors:
+                prefixes = self.prefix_tree.prefixes()
+                bgpstream_projects = ','.join(monitors['bgpstreamlive'])
+                p = Popen(['python3', 'taps/bgpstreamlive.py',
+                        '--prefix', ','.join(prefixes), '--mon_projects', bgpstream_projects])
+                self.process_ids.append(('BGPStreamLive', p))
+        except Exception as e:
+            print('Error on initializing of BGPStreamLive... {}'.format(e))

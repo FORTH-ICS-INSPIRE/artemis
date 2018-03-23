@@ -20,8 +20,9 @@ class ConfParser():
                                  'origin_asns', 'neighbors', 'mitigation']
         self.mitigation_types = ['deaggregate', 'outsource', 'manual']
 
-        self.available_monitor_types = ['riperis', 'bgpmon', 'exabgp', 'bgpstreamhist']
+        self.available_monitor_types = ['riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive']
         self.available_ris = ['rrc18', 'rrc19', 'rrc20', 'rrc21']
+        self.available_bgpstreamlive = ['routeviews', 'ris']
         self.valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
 
         self.available_mitigation_fields = ['asn', 'ip', 'port']
@@ -230,6 +231,15 @@ class ConfParser():
                         self.valid = False
                     else:
                         return bgpstreamhist_
+
+                elif(label == 'bgpstreamlive'):
+                    stream_projects_ = (''.join(field.split())).split(',')
+                    print(stream_projects_)
+                    if len(stream_projects_) == 0 or not set(stream_projects_).issubset(set(self.available_bgpstreamlive)):
+                        print("Error: bgpstreamlive project(s) not supported!")
+                        self.valid = False
+                    else:
+                        return stream_projects_
 
                 elif(label == 'exabgp'):
                     exabgp_ = (''.join(field.split())).split(",")

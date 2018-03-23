@@ -66,13 +66,20 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     # print('Start ' + str(start))
     # print('End ' + str(end))
 
-    # get next record
-    while stream.get_next_record(rec):
+    while True:
+        # get next record
+        try:
+            stream.get_next_record(rec)
+        except:
+            continue
         if (rec.status != "valid") or (rec.type != "update"):
             continue
 
         # get next element
-        elem = rec.get_next_elem()
+        try:
+            elem = rec.get_next_elem()
+        except:
+            continue
 
         while elem:
             if elem.type in ["A", "W"]:
@@ -93,7 +100,10 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                             prefix=this_prefix
                         ))
 
-            elem = rec.get_next_elem()
+            try:
+                elem = rec.get_next_elem()
+            except:
+                continue
 
 
 if __name__ == '__main__':

@@ -67,6 +67,13 @@ class Detection():
                 monitor_event = self.monitor_queue.get()
                 if monitor_event is None:
                     continue
+
+                # ignore withdrawals for now
+                if monitor_event.type == 'W':
+                    updated_monitor = Monitor.query.get(monitor_event.id)
+                    updated_monitor.handled = True
+                    db_session.commit()
+                    
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
                         updated_monitor = Monitor.query.get(monitor_event.id)

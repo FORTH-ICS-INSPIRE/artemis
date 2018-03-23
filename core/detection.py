@@ -118,10 +118,9 @@ class Detection():
                             inf_asns.update(set(monitor_event.as_path.split(' ')[:-1]))
                             hijack_event.num_peers_seen = len(peers_seen)
                             hijack_event.num_asns_inf = len(inf_asns)
-
                             hijack_id = hijack_event.id
 
-                        # Update monitor with new Hijack ID
+                        # Update monitor with new Hijack ID and register Hijack event changes
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.hijack_id = hijack_id
                         updated_monitor.handled = True
@@ -182,16 +181,15 @@ class Detection():
 
                             for monitor in hijack_monitors:
                                 peers_seen.add(monitor.peer_as)
-                                inf_asns.update(set(monitor_event.as_path.split(' ')[:-2]))
+                                inf_asns.update(set(monitor.as_path.split(' ')[:-2]))
 
                             peers_seen.add(monitor_event.peer_as)
                             inf_asns.update(set(monitor_event.as_path.split(' ')[:-2]))
                             hijack_event.num_peers_seen = len(peers_seen)
                             hijack_event.num_asns_inf = len(inf_asns)
-
                             hijack_id = hijack_event.id
 
-                        # Update monitor with new Hijack ID
+                        # Update monitor with new Hijack ID and register Hijack event changes
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.hijack_id = hijack_id
                         updated_monitor.handled = True

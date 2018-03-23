@@ -89,7 +89,7 @@ class Detection():
                             )
                         ).first()
 
-                        if hijack_event is None:
+                        if hijack_event is None or hijack_event.time_ended is not None:
                             hijack = Hijack(monitor_event, origin_asn, 0)
                             db_session.add(hijack)
                             db_session.commit()
@@ -120,7 +120,7 @@ class Detection():
                             hijack_event.num_asns_inf = len(inf_asns)
                             hijack_id = hijack_event.id
 
-                        # Update monitor with new Hijack ID and register Hijack event changes
+                        # Update monitor with new Hijack ID and register possible Hijack event changes
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.hijack_id = hijack_id
                         updated_monitor.handled = True
@@ -157,7 +157,7 @@ class Detection():
                             )
                         ).first()
 
-                        if hijack_event is None:
+                        if hijack_event is None or hijack_event.time_ended is not None:
                             hijack = Hijack(
                                 monitor_event, first_neighbor_asn, 1)
                             db_session.add(hijack)
@@ -189,7 +189,7 @@ class Detection():
                             hijack_event.num_asns_inf = len(inf_asns)
                             hijack_id = hijack_event.id
 
-                        # Update monitor with new Hijack ID and register Hijack event changes
+                        # Update monitor with new Hijack ID and register possible Hijack event changes
                         updated_monitor = Monitor.query.get(monitor_event.id)
                         updated_monitor.hijack_id = hijack_id
                         updated_monitor.handled = True

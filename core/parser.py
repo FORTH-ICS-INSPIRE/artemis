@@ -234,7 +234,6 @@ class ConfParser():
 
                 elif(label == 'bgpstreamlive'):
                     stream_projects_ = (''.join(field.split())).split(',')
-                    print(stream_projects_)
                     if len(stream_projects_) == 0 or not set(stream_projects_).issubset(set(self.available_bgpstreamlive)):
                         print("Error: bgpstreamlive project(s) not supported!")
                         self.valid = False

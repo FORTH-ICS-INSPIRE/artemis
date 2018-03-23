@@ -34,6 +34,22 @@ cd taps
 npm install
 ```
 
+For BGPStream live support (as well as historical data retrieval), you need to follow the
+instructions on:
+```
+https://bgpstream.caida.org/docs/install/bgpstream
+https://bgpstream.caida.org/docs/install/pybgpstream
+```
+in order to install the libbgpstream (core) and the Python library/API pybgpstream
+
+Since pybgpstream requires python2, you need to install also:
+```
+pip install grpcio==1.10.0
+pip install grpcio-tools==1.10.0
+pip install protobuf==3.5.2
+pip install protobuf3-to-dict==0.1.5
+```
+
 ### How to run
 
 To succesfully run the script you need to modify the configuration file

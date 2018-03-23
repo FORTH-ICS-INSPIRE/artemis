@@ -34,10 +34,10 @@ class HijackTable(Table):
     type = Col('Type')
     prefix = Col('Prefix')
     hijack_as = Col('Hijack AS')
-    num_peers_seen = Col('Num Peers Seen')
-    num_asns_inf = Col('Num ASNs Inf')
+    num_peers_seen = Col('CNum Peers Seen')
+    num_asns_inf = Col('CNum ASNs Infected')
     time_started = Col('Time Started')
-    time_last = Col('Time Last Upd')
+    time_last = Col('Time Last Updated')
     time_ended = Col('Time Ended')
     allow_sort = True
 

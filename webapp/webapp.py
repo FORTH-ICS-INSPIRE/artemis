@@ -1,7 +1,7 @@
 from flask import url_for, render_template, request
 from flask_nav import Nav
 from flask_nav.elements import Navbar, View
-from webapp.forms import CheckboxForm
+from webapp.forms import CheckboxForm, ConfigForm
 import _thread
 from webapp.tables import MonitorTable, HijackTable
 from webapp.models import Monitor, Hijack
@@ -31,10 +31,10 @@ class WebApplication():
     @app.route('/', methods=['GET', 'POST'])
     def index():
         form = CheckboxForm()
+        config_form = ConfigForm()
 
-        conf = None
         with open('configs/config', 'r') as f:
-            conf = f.read()
+            config_form.config.data = f.read()
 
         if request.method == 'POST' and form.validate_on_submit():
             if form.monitor.data:
@@ -55,7 +55,7 @@ class WebApplication():
             # form.mitigator.data = app.config['mitigator'].flag
             form.mitigator.data = False
 
-        return render_template('index.html', config=conf, form=form)
+        return render_template('index.html', config=config_form, form=form)
 
     @app.route('/monitors', methods=['GET', 'POST'])
     def show_monitors():

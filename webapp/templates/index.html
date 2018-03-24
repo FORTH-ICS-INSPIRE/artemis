@@ -10,15 +10,16 @@
 			<div class="panel-heading">Control Panel</div>
 			<div class="panel-body">
 				<div class="row">
-					<div class="col-md-10">
-						<div class="form-group">
-							<label for="exampleFormControlTextarea3">Configuration</label>
-							<textarea class="form-control" id="exampleFormControlTextarea3" rows="17">{{ config }}</textarea>
+					<form method="post">
+						<div class="col-md-10">
+							<label for="config-div">Configuration</label>
+							<div class="form-group" id="config-div">
+								{{ config.config(cols='130',rows='18') }}
+							</div>
 						</div>
-					</div>
-					<div class="col-md-2">
-						<form method="post">
-							<div class="form-group">
+						<div class="col-md-2">
+							<label for="modules-div">Modules</label>
+							<div class="form-group" id="modules-div">
 								{{ form.hidden_tag() }}
 								<div class="panel panel-default">
 									<div class="panel-heading">Monitor</div>
@@ -34,11 +35,11 @@
 								</div>
 								{{ form.submit(class_='btn btn-primary pull-right') }}
 							</div>
-						</form>
-					</div>
-					{% if form.erros %}
-						<div class="panel-footer">{{ form.errors }}</div>
-					{% endif %}
+						</div>
+						{% if form.erros %}
+							<div class="panel-footer">{{ form.errors }}</div>
+						{% endif %}
+					</form>
 				</div>
 			</div>
 		</div>

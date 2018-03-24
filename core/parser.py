@@ -20,8 +20,10 @@ class ConfParser():
                                  'origin_asns', 'neighbors', 'mitigation']
         self.mitigation_types = ['deaggregate', 'outsource', 'manual']
 
-        self.available_monitor_types = ['riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive']
-        self.available_ris = ['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21']
+        self.available_monitor_types = [
+            'riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive']
+        self.available_ris = ['rrc15', 'rrc16',
+                              'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21']
         self.available_bgpstreamlive = ['routeviews', 'ris']
         self.valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
 

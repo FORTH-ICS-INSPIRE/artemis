@@ -51,11 +51,14 @@ class Detection():
                 if monitor_event.type == 'W':
                     monitor_event.handled = True
                     db_session.commit()
+                    db_session.expunge(monitor_event)
+                    continue
 
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
             except Exception as e:
                 print(
                     '[DETECTION] Error on unhandled DB event parsing.. {}'
@@ -74,11 +77,14 @@ class Detection():
                 if monitor_event.type == 'W':
                     monitor_event.handled = True
                     db_session.commit()
+                    db_session.expunge(monitor_event)
+                    continue
 
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
             except Exception as e:
                 print(
                     '[DETECTION] Error on raw log queue parsing.. {}'
@@ -140,6 +146,7 @@ class Detection():
                         monitor_event.hijack_id = hijack_id
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
 
                         # if len(prefix_node.data['mitigation']) > 0:
                         #     mit = Mitigation(
@@ -210,6 +217,7 @@ class Detection():
                         monitor_event.hijack_id = hijack_id
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
 
                         # if len(prefix_node.data['mitigation']) > 0:
                         #     mit = Mitigation(

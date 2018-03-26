@@ -1,10 +1,45 @@
-from webapp.shared import db
-from sqlalchemy import Column, Integer, String, Float, desc, Boolean, UniqueConstraint
+from webapp.shared import db, app
+from sqlalchemy import Column, Integer, String, Float, \
+    desc, Boolean, UniqueConstraint, DateTime
 import time
 
 
+# class Role(db.Model):
+#     __tablename__ = 'roles'
+#     id = Column(Integer(), primary_key=True)
+#     name = Column(String(80), unique=True)
+#     description = Column(String(255))
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(255), unique=True)
+    password = Column(String(255))
+    # active = Column(Boolean())
+    # confirmed_at = Column(DateTime())
+    # roles = db.relationship('Role')
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+
+    def get_id(self):
+        return self.id
+
+    def is_active(self):
+        return True
+
+    def is_authenticated(self):
+        return True
+
+    def __repr__(self):
+        return '<User id:{}, username:{}, password:{}>'.format(
+            self.id, self.username, self.password)
+
+
 class Monitor(db.Model):
-    __tablename__ = 'monitor'
+    __tablename__ = 'monitors'
     id = Column(Integer, primary_key=True, autoincrement=True)
     prefix = Column(String(22))
     origin_as = Column(String(6))
@@ -58,7 +93,7 @@ class Monitor(db.Model):
 
 
 class Hijack(db.Model):
-    __tablename__ = 'hijack'
+    __tablename__ = 'hijacks'
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(1))
     prefix = Column(String(22))

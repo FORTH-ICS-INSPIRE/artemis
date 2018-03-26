@@ -1,4 +1,4 @@
-from flask_table import Table, Col, DatetimeCol
+from flask_table import Table, Col, DatetimeCol, BoolCol
 from flask import url_for
 
 
@@ -15,7 +15,7 @@ class MonitorTable(Table):
     type = Col('Type')
     timestamp = DatetimeCol('Timestamp')
     hijack_id = Col('Hijack ID')
-    handled = Col('Handled')
+    handled = BoolCol('Handled')
     allow_sort = True
 
     def sort_url(self, col_key, reverse=False):

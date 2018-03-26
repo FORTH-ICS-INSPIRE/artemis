@@ -18,15 +18,9 @@ def main():
     if(confparser_.isValid()):
         systemcheck_ = SysCheck()
         if(systemcheck_.isValid()):
-            db.create_all()
-            
             # Instatiate Modules
             monitor_ = Monitor(confparser_)
             detection_ = Detection(confparser_)
-
-            # GRPC Server
-            grpc_ = GrpcServer(monitor_, detection_)
-            grpc_.start()
 
             # Load Modules to Web Application
             app.config['monitor'] = monitor_
@@ -36,6 +30,10 @@ def main():
             # Web Application
             webapp_ = WebApplication()
             webapp_.start()
+
+            # GRPC Server
+            grpc_ = GrpcServer(monitor_, detection_)
+            grpc_.start()
 
             input("\n[!] Press ENTER to exit [!]\n\n")
 

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block scripts %}
+    {{super()}}
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+    {{super()}}
+    <div class="container container-login">
+        <div class="row">
+            <div class="col-md-offset-5 col-md-3">
+                <div class="form-login">
+                    <h4>Welcome back.</h4>
+                    {% for field, errors in login_form.errors.items() %}
+                        <div class="alert alert-danger">
+                            {{ login_form[field].label }}: {{ ', '.join(errors) }}
+                        </div>
+                    {% endfor %}
+                    {% if error %}
+                        <div class="alert alert-danger">
+                            {{ error }}
+                        </div>
+                    {% endif %}
+                    <form method="post">
+                        {{ login_form.hidden_tag() }}
+                        <div class="form-group">
+                            {{ login_form.username(**{'class':'form-control input-sm chat-input', 'placeholder':'username'}) }}
+                        </div>
+                        <div class="form-group">
+                            {{ login_form.password(**{'class':'form-control input-sm chat-input', 'placeholder':'password'}) }}
+                        </div>
+                        <div class="form-group">
+                            <label for="remember_me">Remember me? </label>
+                            {{ login_form.remember_me() }}
+                        </div>
+                        <div class="form-group">
+                            {{ login_form.login(class_='btn btn-primary') }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

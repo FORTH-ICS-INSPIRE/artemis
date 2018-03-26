@@ -1,10 +1,11 @@
-{%- extends "base.html" %}
+{% extends "base.html" %}
 {% import "bootstrap/utils.html" as utils %}
 {% block head %}
 	{{super()}}
 	<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
 {% endblock %}
 {% block content %}
+	{{super()}}
 	<div class="container">
 		<div class="panel panel-primary">
 			<div class="panel-heading">Control Panel</div>
@@ -48,4 +49,7 @@
 {% block scripts %}
 	{{super()}}
 	<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+{% endblock %}
+{% block navbar %}
+    {{nav.top.render()}}
 {% endblock %}

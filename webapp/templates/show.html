@@ -1,5 +1,4 @@
-{%- extends "base.html" %}
-{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
 {% block metas %}
     <meta http-equiv="refresh" content="5"/>
 {% endblock %}
@@ -7,16 +6,8 @@
     {{super()}}
 {% endblock %}
 {% block content %}
+    {{super()}}
     <div class="container">
-        {%- with messages = get_flashed_messages(with_categories=True) %}
-        {%- if messages %}
-        <div class="row">
-            <div class="col-md-12">
-                {{utils.flashed_messages(messages)}}
-            </div>
-        </div>
-        {%- endif %}
-        {%- endwith %}
         <div class="row">
             <div class="col-lg-12">
                 <div class="page-header">
@@ -54,4 +45,7 @@
     });
     </script>
     <script src="//rawgithub.com/stidges/jquery-searchable/master/dist/jquery.searchable-1.0.0.min.js"></script>
+{% endblock %}
+{% block navbar %}
+    {{nav.top.render()}}
 {% endblock %}

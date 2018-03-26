@@ -5,21 +5,34 @@
 {% endblock %}
 {% block content %}
     {{super()}}
+    {% for field, errors in login_form.errors.items() %}
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-danger">
+                        {{ login_form[field].label }}: {{ ', '.join(errors) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    {% if error %}
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
     <div class="container container-login">
         <div class="row">
             <div class="col-md-offset-5 col-md-3">
                 <div class="form-login">
                     <h4>Welcome back.</h4>
-                    {% for field, errors in login_form.errors.items() %}
-                        <div class="alert alert-danger">
-                            {{ login_form[field].label }}: {{ ', '.join(errors) }}
-                        </div>
-                    {% endfor %}
-                    {% if error %}
-                        <div class="alert alert-danger">
-                            {{ error }}
-                        </div>
-                    {% endif %}
+                    
                     <form method="post">
                         {{ login_form.hidden_tag() }}
                         <div class="form-group">

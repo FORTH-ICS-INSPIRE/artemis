@@ -45,16 +45,16 @@ class Detection():
                 if monitor_event is None:
                     continue
 
+                db_session.add(monitor_event)
+
                 # ignore withdrawals for now
                 if monitor_event.type == 'W':
-                    updated_monitor = Monitor.query.get(monitor_event.id)
-                    updated_monitor.handled = True
+                    monitor_event.handled = True
                     db_session.commit()
 
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
-                        updated_monitor = Monitor.query.get(monitor_event.id)
-                        updated_monitor.handled = True
+                        monitor_event.handled = True
                         db_session.commit()
             except Exception as e:
                 print(
@@ -68,16 +68,16 @@ class Detection():
                 if monitor_event is None:
                     continue
 
+                db_session.add(monitor_event)
+
                 # ignore withdrawals for now
                 if monitor_event.type == 'W':
-                    updated_monitor = Monitor.query.get(monitor_event.id)
-                    updated_monitor.handled = True
+                    monitor_event.handled = True
                     db_session.commit()
 
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
-                        updated_monitor = Monitor.query.get(monitor_event.id)
-                        updated_monitor.handled = True
+                        monitor_event.handled = True
                         db_session.commit()
             except Exception as e:
                 print(
@@ -137,9 +137,8 @@ class Detection():
                             hijack_id = hijack_event.id
 
                         # Update monitor with new Hijack ID and register possible Hijack event changes
-                        updated_monitor = Monitor.query.get(monitor_event.id)
-                        updated_monitor.hijack_id = hijack_id
-                        updated_monitor.handled = True
+                        monitor_event.hijack_id = hijack_id
+                        monitor_event.handled = True
                         db_session.commit()
 
                         # if len(prefix_node.data['mitigation']) > 0:
@@ -208,9 +207,8 @@ class Detection():
                             hijack_id = hijack_event.id
 
                         # Update monitor with new Hijack ID and register possible Hijack event changes
-                        updated_monitor = Monitor.query.get(monitor_event.id)
-                        updated_monitor.hijack_id = hijack_id
-                        updated_monitor.handled = True
+                        monitor_event.hijack_id = hijack_id
+                        monitor_event.handled = True
                         db_session.commit()
 
                         # if len(prefix_node.data['mitigation']) > 0:

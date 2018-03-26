@@ -7,7 +7,7 @@ from core.detection import Detection
 from core.syscheck import SysCheck
 from webapp.webapp import WebApplication
 from protogrpc.grpc_server import GrpcServer
-from webapp.shared import app, db
+from webapp.shared import app, db, db_session
 
 
 def main():
@@ -42,6 +42,8 @@ def main():
             detection_.stop()
             grpc_.stop()
             webapp_.stop()
+
+            db_session.remove()
     else:
         print("The config file is wrong.")
 

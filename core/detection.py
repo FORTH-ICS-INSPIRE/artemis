@@ -73,7 +73,7 @@ class Detection():
                     updated_monitor = Monitor.query.get(monitor_event.id)
                     updated_monitor.handled = True
                     db_session.commit()
-                    
+
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
                         updated_monitor = Monitor.query.get(monitor_event.id)
@@ -126,10 +126,12 @@ class Detection():
 
                             for monitor in hijack_monitors:
                                 peers_seen.add(monitor.peer_as)
-                                inf_asns.update(set(monitor.as_path.split(' ')[:-1]))
+                                inf_asns.update(
+                                    set(monitor.as_path.split(' ')[:-1]))
 
                             peers_seen.add(monitor_event.peer_as)
-                            inf_asns.update(set(monitor_event.as_path.split(' ')[:-1]))
+                            inf_asns.update(
+                                set(monitor_event.as_path.split(' ')[:-1]))
                             hijack_event.num_peers_seen = len(peers_seen)
                             hijack_event.num_asns_inf = len(inf_asns)
                             hijack_id = hijack_event.id
@@ -195,10 +197,12 @@ class Detection():
 
                             for monitor in hijack_monitors:
                                 peers_seen.add(monitor.peer_as)
-                                inf_asns.update(set(monitor.as_path.split(' ')[:-2]))
+                                inf_asns.update(
+                                    set(monitor.as_path.split(' ')[:-2]))
 
                             peers_seen.add(monitor_event.peer_as)
-                            inf_asns.update(set(monitor_event.as_path.split(' ')[:-2]))
+                            inf_asns.update(
+                                set(monitor_event.as_path.split(' ')[:-2]))
                             hijack_event.num_peers_seen = len(peers_seen)
                             hijack_event.num_asns_inf = len(inf_asns)
                             hijack_id = hijack_event.id

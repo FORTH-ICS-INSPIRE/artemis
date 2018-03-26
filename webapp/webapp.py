@@ -142,10 +142,6 @@ class WebApplication():
                 sort_reverse=reverse)
         return render_template('show.html', data=data, type='Hijack')
 
-    @app.teardown_appcontext
-    def shutdown_session(exception=None):
-        db_session.remove()
-
     def run(self):
         self.app.run(
             debug=False,

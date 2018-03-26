@@ -39,6 +39,7 @@ class GrpcServer():
                 return service_pb2.Empty()
 
             if monitor_event.type == 'A' and self.detector.flag:
+                db_session.expunge(monitor_event)
                 self.detector.monitor_queue.put(monitor_event)
 
             return service_pb2.Empty()

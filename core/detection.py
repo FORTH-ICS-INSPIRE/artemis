@@ -56,6 +56,7 @@ class Detection():
                     if(not self.detect_type_1_hijack(monitor_event)):
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
             except Exception as e:
                 traceback.print_exc()
 
@@ -80,6 +81,7 @@ class Detection():
                     if(not self.detect_type_1_hijack(monitor_event)):
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
             except Exception as e:
                 traceback.print_exc()
         print('Detection Mechanism Stopped...')
@@ -138,6 +140,7 @@ class Detection():
                         monitor_event.hijack_id = hijack_id
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
 
                         # if len(prefix_node.data['mitigation']) > 0:
                         #     mit = Mitigation(
@@ -205,6 +208,7 @@ class Detection():
                         monitor_event.hijack_id = hijack_id
                         monitor_event.handled = True
                         db_session.commit()
+                        db_session.expunge(monitor_event)
 
                         # if len(prefix_node.data['mitigation']) > 0:
                         #     mit = Mitigation(

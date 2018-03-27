@@ -1,6 +1,7 @@
 import sys
 import os
 import radix
+import traceback
 # from taps.bgpmon import BGPmon
 from subprocess import Popen
 
@@ -26,7 +27,7 @@ class Monitor():
                         node.data['mitigation'] = configs[
                             config]['mitigation']
                 except Exception as e:
-                    print('Error on Monitor module.. {}'.format(e))
+                    traceback.print_exc()
             prefixes = self.prefix_tree.prefixes()
             # Code here later to implement filter of monitors
             self.init_ris_instances(prefixes)
@@ -54,7 +55,7 @@ class Monitor():
                                    '--prefix', prefix, '--host', ris_monitor])
                         self.process_ids.append(('RIPEris', p))
         except Exception as e:
-            print('Error on initializing of RIPEris monitors.. {}'.format(e))
+            traceback.print_exc()
 
     # def init_bgpmon_instance(self, prefixes):
     #   try:
@@ -76,7 +77,7 @@ class Monitor():
                         '--prefix', ','.join(prefixes), '--host', exabgp_monitor_str])
                     self.process_ids.append(('ExaBGP', p))
         except Exception as e:
-            print('Error on initializing of ExaBGP.. {}'.format(e))
+            traceback.print_exc()
 
     def init_bgpstreamhist_instance(self, prefixes):
         try:
@@ -88,7 +89,7 @@ class Monitor():
                         '--prefix', ','.join(prefixes), '--dir', bgpstreamhist_dir])
                 self.process_ids.append(('BGPStreamHist', p))
         except Exception as e:
-            print('Error on initializing of BGPStreamHist... {}'.format(e))
+            traceback.print_exc()
 
     def init_bgpstreamlive_instance(self, prefixes):
         try:
@@ -100,4 +101,4 @@ class Monitor():
                         '--prefix', ','.join(prefixes), '--mon_projects', bgpstream_projects])
                 self.process_ids.append(('BGPStreamLive', p))
         except Exception as e:
-            print('Error on initializing of BGPStreamLive... {}'.format(e))
+            traceback.print_exc()

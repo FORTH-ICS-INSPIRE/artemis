@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 import os
 import ipaddress
+import traceback
 
 MAX_ASN_NUMBER = 397213
 
@@ -272,8 +273,7 @@ class ConfParser():
                 else:
                     return ipaddress.ip_address(field)
         except Exception as e:
-            print("Error in config block: ", where, "-", str(label))
-            print(e)
+            traceback.print_exc()
             self.valid = False
 
     def raise_error(self, type_of_error, where, field=None):

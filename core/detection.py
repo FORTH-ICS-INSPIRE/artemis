@@ -3,8 +3,9 @@ from core.mitigation import Mitigation
 from webapp.models import Hijack, Monitor
 import _thread
 from multiprocessing import Queue
-from sqlalchemy import and_
+from sqlalchemy import and_, exc
 from webapp.shared import db_session
+import traceback
 
 
 class Detection():
@@ -45,22 +46,18 @@ class Detection():
                 if monitor_event is None:
                     continue
 
-                db_session.add(monitor_event)
-
                 # ignore withdrawals for now
                 if monitor_event.type == 'W':
                     monitor_event.handled = True
                     db_session.commit()
+                    continue
 
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
                         monitor_event.handled = True
                         db_session.commit()
             except Exception as e:
-                print(
-                    '[DETECTION] Error on unhandled DB event parsing.. {}'
-                    .format(e)
-                )
+                traceback.print_exc()
 
         while self.flag:
             try:
@@ -68,22 +65,23 @@ class Detection():
                 if monitor_event is None:
                     continue
 
-                db_session.add(monitor_event)
+                try:
+                    db_session.add(monitor_event)
+                except exc.InvalidRequestError:
+                    db_session.rollback()
 
                 # ignore withdrawals for now
                 if monitor_event.type == 'W':
                     monitor_event.handled = True
                     db_session.commit()
+                    continue
 
                 if(not self.detect_origin_hijack(monitor_event)):
                     if(not self.detect_type_1_hijack(monitor_event)):
                         monitor_event.handled = True
                         db_session.commit()
             except Exception as e:
-                print(
-                    '[DETECTION] Error on raw log queue parsing.. {}'
-                    .format(e)
-                )
+                traceback.print_exc()
         print('Detection Mechanism Stopped...')
 
     def detect_origin_hijack(self, monitor_event):
@@ -150,10 +148,7 @@ class Detection():
                         return True
             return False
         except Exception as e:
-            print(
-                '[DETECTION] Error on detect origin hijack.. {}:{}'
-                .format(e, monitor_event)
-            )
+            traceback.print_exc()
 
     def detect_type_1_hijack(self, monitor_event):
         try:
@@ -220,7 +215,4 @@ class Detection():
                         return True
             return False
         except Exception as e:
-            print(
-                '[DETECTION] Error on detect 1 hop neighbor hijack.. {}:{}'
-                .format(e, monitor_event)
-            )
+            traceback.print_exc()

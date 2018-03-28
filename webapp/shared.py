@@ -4,11 +4,13 @@ from flask_login import LoginManager
 from flask_hashing import Hashing
 from flask_nav import Nav
 from flask import Flask
+from flask_babel import Babel
 
 print('Shared Variables Initialization..')
 
 app = Flask(__name__)
 app.config.from_pyfile('../configs/webapp.cfg')
+babel = Babel(app)
 
 Bootstrap(app)
 db = SQLAlchemy(app)

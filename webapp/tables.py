@@ -1,5 +1,25 @@
+from webapp.shared import babel
+from babel.dates import format_datetime
 from flask_table import Table, Col, DatetimeCol, BoolCol
 from flask import url_for
+
+
+class CustomDatetimeCol(Col):
+    """Format the content as a datetime, unless it is None, in which case,
+    output empty.
+    """
+    def __init__(self, name, datetime_format='short', **kwargs):
+        super(CustomDatetimeCol, self).__init__(name, **kwargs)
+        self.datetime_format = datetime_format
+
+    def td_format(self, content):
+        if content:
+            return format_datetime(content,
+                                   self.datetime_format,
+                                   tzinfo=babel.default_timezone,
+                                   locale=babel.default_locale)
+        else:
+            return ''
 
 
 class MonitorTable(Table):
@@ -13,7 +33,7 @@ class MonitorTable(Table):
     as_path = Col('AS Path')
     service = Col('Service')
     type = Col('Type')
-    timestamp = DatetimeCol('Timestamp')
+    timestamp = CustomDatetimeCol('Timestamp')
     hijack_id = Col('Hijack ID')
     handled = BoolCol('Handled')
     allow_sort = True
@@ -36,9 +56,9 @@ class HijackTable(Table):
     hijack_as = Col('Hijack AS')
     num_peers_seen = Col('CNum Peers Seen')
     num_asns_inf = Col('CNum ASNs Infected')
-    time_started = DatetimeCol('Time Started')
-    time_last = DatetimeCol('Time Last Updated')
-    time_ended = DatetimeCol('Time Ended')
+    time_started = CustomDatetimeCol('Time Started')
+    time_last = CustomDatetimeCol('Time Last Updated')
+    time_ended = CustomDatetimeCol('Time Ended')
     allow_sort = True
 
     def sort_url(self, col_key, reverse=False):

@@ -2,10 +2,10 @@ from flask import url_for, render_template, request, redirect
 from flask_nav.elements import Navbar, View
 from webapp.forms import CheckboxForm, ConfigForm, LoginForm
 import _thread
-from webapp.tables import MonitorTable, HijackTable
 from webapp.models import Monitor, Hijack, User
 from webapp.shared import app, db, db_session, login_manager, \
     getOrCreate, hashing, nav
+from webapp.tables import MonitorTable, HijackTable
 from sqlalchemy import desc, and_
 import logging
 from flask_login import UserMixin, login_required, login_user, logout_user

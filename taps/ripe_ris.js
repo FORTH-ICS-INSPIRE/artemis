@@ -1,11 +1,11 @@
 //client.js
 
-var PROTO_PATH = __dirname + '/../protogrpc/protos/service.proto';
+var PROTO_PATH = __dirname + '/../protogrpc/protos/mservice.proto';
 var grpc = require('grpc');
-var service = grpc.load(PROTO_PATH).service;
+var mservice = grpc.load(PROTO_PATH).mservice;
 var io = require('socket.io-client');
 var socket = io.connect('http://stream-dev.ris.ripe.net', {path: '/stream/socket.io/'});
-var client = new service.MessageListener('localhost:50051',
+var client = new mservice.MessageListener('localhost:50051',
                                        grpc.credentials.createInsecure());
 var ArgumentParser = require('argparse').ArgumentParser;
 var parser = new ArgumentParser({

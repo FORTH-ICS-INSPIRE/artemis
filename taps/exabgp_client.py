@@ -9,7 +9,7 @@ import argparse
 this_script_path = os.path.realpath(__file__)
 upper_dir = '/'.join(this_script_path.split('/')[:-2])
 sys.path.insert(0, upper_dir)
-from protogrpc import service_pb2, service_pb2_grpc
+from protogrpc import mservice_pb2, mservice_pb2_grpc
 
 
 class ExaBGP():
@@ -20,7 +20,7 @@ class ExaBGP():
         self.config['prefixes'] = prefixes
         self.flag = True
         self.channel = grpc.insecure_channel('localhost:50051')
-        self.stub = service_pb2_grpc.MessageListenerStub(self.channel)
+        self.stub = mservice_pb2_grpc.MessageListenerStub(self.channel)
 
     def start_loop(self):
         while(self.flag):
@@ -39,7 +39,7 @@ class ExaBGP():
             socketIO.emit("ping")
 
         def exabgp_msg(bgp_message):
-            self.stub.queryMformat(service_pb2.MformatMessage(
+            self.stub.queryMformat(mservice_pb2.MformatMessage(
                 type=bgp_message['type'],
                 timestamp=bgp_message['timestamp'],
                 as_path=bgp_message['path'],

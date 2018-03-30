@@ -85,14 +85,14 @@ class WebApplication():
                 app.config['detector'].start()
             else:
                 app.config['detector'].stop()
-            # if form.mitgator.data:
-            #     app.config['mitgator'].start()
-            # else:
-            #     app.config['mitgator'].stop()
+            if form.mitigator.data:
+                app.config['mitigator'].start()
+            else:
+                app.config['mitigator'].stop()
         else:
             form.monitor.data = app.config['monitor'].flag
             form.detector.data = app.config['detector'].flag
-            # form.mitigator.data = app.config['mitigator'].flag
+            form.mitigator.data = app.config['mitigator'].flag
             form.mitigator.data = False
 
         return render_template('index.html', config=config_form, form=form)
@@ -159,8 +159,8 @@ class WebApplication():
                         db_session.commit()
 
                 elif hijack_action == 'mitigate':
-                    if hijack_event.mitigation_started is None and hijack_event.time_ended is None:
-                        hijack_event.mitigation_started = time_now
+                    if not hijack_event.to_mitigate and hijack_event.time_ended is None:
+                        hijack_event.to_mitigate = True
                         db_session.add(hijack_event)
                         db_session.commit()
 

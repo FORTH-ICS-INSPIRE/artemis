@@ -59,9 +59,10 @@ class HijackTable(Table):
     time_started = CustomDatetimeCol('Time Started')
     time_last = CustomDatetimeCol('Time Last Updated')
     time_ended = CustomDatetimeCol('Time Ended')
-    mitigation_started = CustomDatetimeCol('Mitigation Started')
-    resolved = ButtonCol('Resolved', 'resolved_hijack', url_kwargs=dict(id='id'))
+    to_mitigate = Col('Mit Pending')
+    mitigation_started = CustomDatetimeCol('Mit Started')
     mitigate = ButtonCol('Mitigate', 'mitigate_hijack', url_kwargs=dict(id='id'))
+    resolved = ButtonCol('Resolved', 'resolved_hijack', url_kwargs=dict(id='id'))
     allow_sort = True
 
     def sort_url(self, col_key, reverse=False):

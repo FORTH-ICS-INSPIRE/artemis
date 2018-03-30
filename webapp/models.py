@@ -104,6 +104,7 @@ class Hijack(db.Model):
     time_last = Column(Float)
     time_ended = Column(Float)
     mitigation_started = Column(Float)
+    to_mitigate = Column(Boolean)
 
     def __init__(self, msg, asn, htype):
         self.type = htype
@@ -117,6 +118,7 @@ class Hijack(db.Model):
         self.time_last = msg.timestamp
         self.time_ended = None
         self.mitigation_started = None
+        self.to_mitigate = False
 
     def __repr__(self):
         repr_str = '[\n'

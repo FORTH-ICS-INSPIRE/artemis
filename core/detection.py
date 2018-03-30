@@ -1,5 +1,4 @@
 import radix
-from core.mitigation import Mitigation
 from webapp.models import Hijack, Monitor
 import _thread
 from multiprocessing import Queue
@@ -23,7 +22,6 @@ class Detection():
                 node = self.prefix_tree.add(str(prefix))
                 node.data['origin_asns'] = configs[config]['origin_asns']
                 node.data['neighbors'] = configs[config]['neighbors']
-                node.data['mitigation'] = configs[config]['mitigation']
 
     def start(self):
         if not self.flag:
@@ -142,12 +140,6 @@ class Detection():
                         db_session.commit()
                         db_session.expunge(monitor_event)
 
-                        # if len(prefix_node.data['mitigation']) > 0:
-                        #     mit = Mitigation(
-                        #         prefix_node,
-                        #         monitor_event,
-                        #         self.local_mitigation,
-                        #         self.moas_mitigation)
                         return True
             return False
         except Exception as e:
@@ -210,12 +202,6 @@ class Detection():
                         db_session.commit()
                         db_session.expunge(monitor_event)
 
-                        # if len(prefix_node.data['mitigation']) > 0:
-                        #     mit = Mitigation(
-                        #         prefix_node,
-                        #         monitor_event,
-                        #         self.local_mitigation,
-                        #         self.moas_mitigation)
                         return True
             return False
         except Exception as e:

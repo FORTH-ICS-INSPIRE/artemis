@@ -2,10 +2,10 @@ syntax = "proto3";
 
 option java_multiple_files = true;
 option java_package = "artemis.io.grpc.protos";
-option java_outer_classname = "ServiceProto";
-option objc_class_prefix = "SRVCP";
+option java_outer_classname = "MServiceProto";
+option objc_class_prefix = "MSRVCP";
 
-package service;
+package mservice;
 
 service MessageListener {
   rpc queryMformat (MformatMessage) returns (Empty) {}

@@ -1,6 +1,6 @@
 import grpc
-from protogrpc import service_pb2, hservice_pb2
-from protogrpc import service_pb2_grpc, hservice_pb2_grpc
+from protogrpc import mservice_pb2, hservice_pb2
+from protogrpc import mservice_pb2_grpc, hservice_pb2_grpc
 import _thread
 from concurrent import futures
 from protobuf_to_dict import protobuf_to_dict
@@ -19,7 +19,7 @@ class GrpcServer():
         self.detector = detector
         self.mitigator = mitigator
 
-    class MonitorGrpc(service_pb2_grpc.MessageListenerServicer):
+    class MonitorGrpc(mservice_pb2_grpc.MessageListenerServicer):
 
         def __init__(self, detector):
             self.detector = detector
@@ -38,7 +38,7 @@ class GrpcServer():
                 if duplicate_entry_str not in str(e):
                     traceback.print_exc()
 
-            return service_pb2.Empty()
+            return mservice_pb2.Empty()
 
     class HijackGrpc(hservice_pb2_grpc.MessageListenerServicer):
 
@@ -57,7 +57,7 @@ class GrpcServer():
         self.grpc_server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=10))
 
-        service_pb2_grpc.add_MessageListenerServicer_to_server(
+        mservice_pb2_grpc.add_MessageListenerServicer_to_server(
             GrpcServer.MonitorGrpc(self.detector),
             self.grpc_server
         )

@@ -12,7 +12,7 @@ from _pybgpstream import BGPStream, BGPRecord, BGPElem
 this_script_path = os.path.realpath(__file__)
 upper_dir = '/'.join(this_script_path.split('/')[:-2])
 sys.path.insert(0, upper_dir)
-from protogrpc import service_pb2, service_pb2_grpc
+from protogrpc import mservice_pb2, mservice_pb2_grpc
 
 START_TIME_OFFSET = 3600 # seconds
 
@@ -34,7 +34,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     :return: -
     """
     channel = grpc.insecure_channel('localhost:50051')
-    stub = service_pb2_grpc.MessageListenerStub(channel)
+    stub = mservice_pb2_grpc.MessageListenerStub(channel)
 
     # create a new bgpstream instance and a reusable bgprecord instance
     stream = BGPStream()
@@ -92,7 +92,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
 
                 for prefix in prefixes:
                     if IPAddress(this_prefix.split('/')[0]) in IPNetwork(prefix):
-                        stub.queryMformat(service_pb2.MformatMessage(
+                        stub.queryMformat(mservice_pb2.MformatMessage(
                             type=str(elem.type),
                             timestamp=float(elem.time),
                             as_path=as_path,

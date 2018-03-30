@@ -11,7 +11,7 @@ from netaddr import IPNetwork, IPAddress
 this_script_path = os.path.realpath(__file__)
 upper_dir = '/'.join(this_script_path.split('/')[:-2])
 sys.path.insert(0, upper_dir)
-from protogrpc import service_pb2, service_pb2_grpc
+from protogrpc import mservice_pb2, mservice_pb2_grpc
 
 
 def as_mapper(asn_str):
@@ -22,7 +22,7 @@ def as_mapper(asn_str):
 
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
     channel = grpc.insecure_channel('localhost:50051')
-    stub = service_pb2_grpc.MessageListenerStub(channel)
+    stub = mservice_pb2_grpc.MessageListenerStub(channel)
 
     for csv_file in glob.glob("{}/*.csv".format(input_dir)):
         with open(csv_file, 'r') as f:
@@ -41,7 +41,7 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                 timestamp = float(row[6])
                 for prefix in prefixes:
                     if IPAddress(this_prefix.split('/')[0]) in IPNetwork(prefix):
-                        stub.queryMformat(service_pb2.MformatMessage(
+                        stub.queryMformat(mservice_pb2.MformatMessage(
                             type=type,
                             timestamp=timestamp,
                             as_path=as_path,

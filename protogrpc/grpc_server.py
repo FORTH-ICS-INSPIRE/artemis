@@ -1,6 +1,6 @@
 import grpc
-from protogrpc import service_pb2
-from protogrpc import service_pb2_grpc
+from protogrpc import service_pb2, hservice_pb2
+from protogrpc import service_pb2_grpc, hservice_pb2_grpc
 import _thread
 from concurrent import futures
 from protobuf_to_dict import protobuf_to_dict
@@ -40,7 +40,7 @@ class GrpcServer():
 
             return service_pb2.Empty()
 
-    class HijackGrpc(service_pb2_grpc.MessageListenerServicer):
+    class HijackGrpc(hservice_pb2_grpc.MessageListenerServicer):
 
         def __init__(self, mitigator):
             self.mitigator = mitigator
@@ -51,7 +51,7 @@ class GrpcServer():
             if self.mitigator.flag:
                 self.mitigator.hijack_queue.put(hijack_id)
 
-            return service_pb2.Empty()
+            return hservice_pb2.Empty()
 
     def start(self):
         self.grpc_server = grpc.server(
@@ -62,7 +62,7 @@ class GrpcServer():
             self.grpc_server
         )
 
-        service_pb2_grpc.add_MessageListenerServicer_to_server(
+        hservice_pb2_grpc.add_MessageListenerServicer_to_server(
             GrpcServer.HijackGrpc(self.mitigator),
             self.grpc_server
         )

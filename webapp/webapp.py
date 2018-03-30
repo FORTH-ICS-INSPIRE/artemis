@@ -1,3 +1,5 @@
+import os
+import sys
 from flask import url_for, render_template, request, redirect
 from flask_nav.elements import Navbar, View
 from webapp.forms import CheckboxForm, ConfigForm, LoginForm
@@ -8,9 +10,16 @@ from webapp.shared import app, db, db_session, login_manager, \
 from webapp.tables import MonitorTable, HijackTable
 from sqlalchemy import desc, and_, exc
 import logging
+import grpc
 from flask_login import UserMixin, login_required, login_user, logout_user
 import time
 
+# to import protogrpc, since the root package has '-'
+# in the name ("artemis-tool")
+this_script_path = os.path.realpath(__file__)
+upper_dir = '/'.join(this_script_path.split('/')[:-2])
+sys.path.insert(0, upper_dir)
+from protogrpc import hservice_pb2, hservice_pb2_grpc
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -163,7 +172,14 @@ class WebApplication():
                         db_session.add(hijack_event)
                         db_session.commit()
 
-                        # TODO: if mitigator alive then put on queue!
+                        if app.config['mitigator'].flag:
+                            temp_channel = grpc.insecure_channel('localhost:50051')
+                            temp_stub = hservice_pb2_grpc.MessageListenerStub(temp_channel)
+                            temp_stub.queryHformat(hservice_pb2.HformatMessage(
+                                id=int(hijack_id)
+                            ))
+                            del temp_stub
+                            del temp_channel
 
             return redirect('/hijacks')
 

@@ -57,13 +57,11 @@ class Mitigation():
         while self.flag:
             try:
                 hijack_id = self.hijack_queue.get()
-                print('QUEUE')
-                print(hijack_id)
                 if hijack_id is None:
                     continue
 
                 hijack_event = Hijack.query.filter(
-                                    Hijack.hijack_id.like(hijack_id)
+                                    Hijack.id.like(hijack_id)
                                ).first()
 
                 try:

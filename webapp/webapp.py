@@ -163,6 +163,7 @@ class WebApplication():
                 if hijack_action == 'resolved':
                     if hijack_event.time_ended is None:
                         hijack_event.time_ended = time_now
+                        hijack_event.to_mitigate = False
                         db_session.add(hijack_event)
                         db_session.commit()
 

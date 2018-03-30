@@ -6,9 +6,10 @@ from webapp.models import Monitor, Hijack, User
 from webapp.shared import app, db, db_session, login_manager, \
     getOrCreate, hashing, nav
 from webapp.tables import MonitorTable, HijackTable
-from sqlalchemy import desc, and_
+from sqlalchemy import desc, and_, exc
 import logging
 from flask_login import UserMixin, login_required, login_user, logout_user
+import time
 
 
 log = logging.getLogger('werkzeug')
@@ -123,6 +124,8 @@ class WebApplication():
     @login_required
     def show_hijacks():
         sort = request.args.get('sort', 'id')
+        hijack_id = request.args.get('id', None)
+        hijack_action = request.args.get('action', None)
         reverse = (request.args.get('direction', 'desc') == 'desc')
         if reverse:
             data = HijackTable(
@@ -140,7 +143,42 @@ class WebApplication():
                     )).all(),
                 sort_by=sort,
                 sort_reverse=reverse)
+
+        if hijack_id is not None and hijack_action is not None:
+            time_now = time.time()
+            hijack_event = Hijack.query.filter(
+                Hijack.id.like(hijack_id)
+            ).first()
+
+            if hijack_event is not None:
+
+                if hijack_action == 'resolved':
+                    if hijack_event.time_ended is None:
+                        hijack_event.time_ended = time_now
+                        db_session.add(hijack_event)
+                        db_session.commit()
+
+                elif hijack_action == 'mitigate':
+                    if hijack_event.mitigation_started is None and hijack_event.time_ended is None:
+                        hijack_event.mitigation_started = time_now
+                        db_session.add(hijack_event)
+                        db_session.commit()
+
+            return redirect('/hijacks')
+
         return render_template('show.html', data=data, type='Hijack')
+
+    @app.route('/hijacks/mitigate', methods=['GET', 'POST'])
+    @login_required
+    def mitigate_hijack():
+        hijack_id = request.args.get('id')
+        return redirect('/hijacks?id={}&action=mitigate'.format(hijack_id))
+
+    @app.route('/hijacks/resolved', methods=['GET', 'POST'])
+    @login_required
+    def resolved_hijack():
+        hijack_id = request.args.get('id')
+        return redirect('/hijacks?id={}&action=resolved'.format(hijack_id))
 
     def run(self):
         self.app.run(

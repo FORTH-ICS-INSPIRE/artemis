@@ -1,6 +1,6 @@
 from webapp.shared import babel
 from babel.dates import format_datetime
-from flask_table import Table, Col, DatetimeCol, BoolCol
+from flask_table import Table, Col, DatetimeCol, BoolCol, ButtonCol
 from flask import url_for
 
 
@@ -59,6 +59,9 @@ class HijackTable(Table):
     time_started = CustomDatetimeCol('Time Started')
     time_last = CustomDatetimeCol('Time Last Updated')
     time_ended = CustomDatetimeCol('Time Ended')
+    mitigation_started = CustomDatetimeCol('Mitigation Started')
+    resolved = ButtonCol('Resolved', 'resolved_hijack', url_kwargs=dict(id='id'))
+    mitigate = ButtonCol('Mitigate', 'mitigate_hijack', url_kwargs=dict(id='id'))
     allow_sort = True
 
     def sort_url(self, col_key, reverse=False):

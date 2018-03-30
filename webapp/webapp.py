@@ -164,6 +164,8 @@ class WebApplication():
                         db_session.add(hijack_event)
                         db_session.commit()
 
+                        # TODO: if mitigator alive then put on queue!
+
             return redirect('/hijacks')
 
         return render_template('show.html', data=data, type='Hijack')

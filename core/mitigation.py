@@ -57,7 +57,7 @@ class Mitigation():
         while self.flag:
             try:
                 hijack_id = self.hijack_queue.get()
-                print(QUEUE)
+                print('QUEUE')
                 print(hijack_id)
                 if hijack_id is None:
                     continue

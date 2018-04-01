@@ -13,6 +13,9 @@ MTS_PY = '{}/moas_tcp_sender.py'.format(MITIGATION_SCRIPTS_DIR)
 LOCAL_ASN = 65001
 LOCAL_TELNET_IP = "192.168.101.1"
 LOCAL_TELNET_PORT = 2605
+MOAS_ASN = 65005
+MOAS_IP = "192.168.201.1"
+MOAS_PORT = 3001
 
 
 def announce_prefix(
@@ -44,18 +47,18 @@ def deaggregate_prefix(
                 local_telnet_ip=local_telnet_ip,
                 local_telnet_port=local_telnet_port)
 
-# def moas_outsource(
-#     prefix=None,
-#     moas_asn=None,
-#     moas_ip=None,
-#     moas_port=None):
-#
-#     os.system('{} {} -r {} -p {} -m {}'.format(
-#         PY_BIN,
-#         MTS_PY,
-#         moas_ip,
-#         moas_port,
-#         prefix))
+def moas_outsource(
+    prefix=None,
+    moas_asn=None,
+    moas_ip=None,
+    moas_port=None):
+
+    os.system('{} {} -r {} -p {} -m {}'.format(
+        PY_BIN,
+        MTS_PY,
+        moas_ip,
+        moas_port,
+        prefix))
 
 
 class Deaggr:
@@ -88,7 +91,7 @@ class Deaggr:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="mininet demo mitigation script that performs deaggregation")
+    parser = argparse.ArgumentParser(description="mininet demo mitigation script that performs deaggregation + MOAS")
     parser.add_argument('-i', '--input_hijack', dest='hijack', type=str, help='hijack info in json format', required=True)
     args = parser.parse_args()
 
@@ -104,7 +107,6 @@ def main():
     #     'time_last_updated': <float>
     # }
     hijack_info = json.loads(args.hijack)
-    print(hijack_info)
 
     if IPNetwork(hijack_info['prefix']).prefixlen < 24:
         print('[CUSTOM MITIGATION] Resolving hijack {} via prefix deaggregation...'.format(hijack_info['id']))
@@ -115,20 +117,18 @@ def main():
             local_telnet_port=LOCAL_TELNET_PORT)
     else:
         print('[CUSTOM MITIGATION] Cannot deaggregate prefix {} due to filtering!'.format(hijack_info['prefix']))
-    #
-    # print('[CUSTOM MITIGATION] Resolving hijack {} via MOAS outsourcing...'.format(hijack_info['id']))
-    #
-    # announce_prefix(
-    #     prefix=hijack_info['prefix'],
-    #     local_asn=LOCAL_ASN,
-    #     local_telnet_ip=LOCAL_TELNET_IP,
-    #     local_telnet_port=LOCAL_TELNET_PORT)
-    #
-    # moas_outsource(
-    #     prefix=hijack_info['prefix'],
-    #     moas_asn=MOAS_ASN,
-    #     moas_ip=MOAS_IP,
-    #     moas_port=MOAS_PORT)
+        print('[CUSTOM MITIGATION] Resolving hijack {} via MOAS outsourcing...'.format(hijack_info['id']))
+        announce_prefix(
+            prefix=hijack_info['prefix'],
+            local_asn=LOCAL_ASN,
+            local_telnet_ip=LOCAL_TELNET_IP,
+            local_telnet_port=LOCAL_TELNET_PORT)
+
+        moas_outsource(
+            prefix=hijack_info['prefix'],
+            moas_asn=MOAS_ASN,
+            moas_ip=MOAS_IP,
+            moas_port=MOAS_PORT)
 
 if __name__ == '__main__':
     main()

@@ -52,17 +52,25 @@ pip install protobuf3-to-dict==0.1.5
 
 ### How to run
 
-To succesfully run the script you need to modify the configuration file
+To succesfully run ARTEMIS you need to modify the main configuration file
 
 ```
 vim configs/config
 ```
 
-After modifying the configuration file run
+Since ARTEMIS includes a Web App and GUI, you also need to modify the webapp configuration file
+
+```
+vim configs/webapp.cfg
+```
+
+After modifying the configuration files run
 
 ```
 python3 artemis.py
 ```
+
+You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
 
 Note: to run the mininet demo please follow the instructions under mininet-demo/README.md
 
@@ -85,7 +93,7 @@ message MformatMessage {
 For example take a look at the `taps/exabgp_client.py` which implements the python GRPC Client or `taps/ripe_ris.js` which implements the javascript GRPC Client. Please edit only the code in the taps folder.
 
 ## Versioning
-TBD (for now working on master branch, version tags to-be-released)
+TBD (for now working on the bleeding edge of the master branch, version tags to-be-released)
 
 ## Authors
 * Dimitris Mavrommatis, ICS-FORTH

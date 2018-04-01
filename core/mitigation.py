@@ -56,7 +56,7 @@ class Mitigation():
                     else:
                         print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
                         hijack_event_str = json.dumps(hijack_event.to_dict())
-                        subprocess.Popen([mitigation_action, '-h', hijack_event_str])
+                        subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 hijack_event.to_mitigate = False
 
                 db_session.commit()
@@ -89,7 +89,7 @@ class Mitigation():
                     else:
                         print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
                         hijack_event_str = json.dumps(hijack_event.to_dict())
-                        subprocess.Popen([mitigation_action, '-h', hijack_event_str])
+                        subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 hijack_event.to_mitigate = False
 
                 db_session.commit()

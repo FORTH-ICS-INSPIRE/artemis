@@ -2,6 +2,7 @@ import radix
 from webapp.models import Hijack
 import _thread
 from multiprocessing import Queue
+import subprocess
 from sqlalchemy import and_, exc
 from webapp.shared import db_session
 import traceback
@@ -45,8 +46,15 @@ class Mitigation():
                     continue
 
                 hijack_event.mitigation_started = time.time()
-                # TODO: here the mitigation magic happens
-                print("WILL MITIGATE HIJACK {} (DB)".format(hijack_event.id))
+                prefix_node = self.prefix_tree.search_best(
+                    hijack_event.prefix)
+                if prefix_node is not None:
+                    mitigation_action = prefix_node.data['mitigation']
+                    if mitigation_action == 'manual':
+                        print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                    else:
+                        print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                        subprocess.Popen([mitigation_action])
                 hijack_event.to_mitigate = False
 
                 db_session.commit()
@@ -70,8 +78,15 @@ class Mitigation():
                     db_session.rollback()
 
                 hijack_event.mitigation_started = time.time()
-                # TODO: here the mitigation magic happens
-                print("WILL MITIGATE HIJACK {} (QUEUE)".format(hijack_event.id))
+                prefix_node = self.prefix_tree.search_best(
+                    hijack_event.prefix)
+                if prefix_node is not None:
+                    mitigation_action = prefix_node.data['mitigation']
+                    if mitigation_action == 'manual':
+                        print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                    else:
+                        print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                        subprocess.Popen([mitigation_action])
                 hijack_event.to_mitigate = False
 
                 db_session.commit()

@@ -7,6 +7,7 @@ from sqlalchemy import and_, exc
 from webapp.shared import db_session
 import traceback
 import time
+import json
 
 
 class Mitigation():
@@ -54,7 +55,8 @@ class Mitigation():
                         print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
                     else:
                         print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
-                        subprocess.Popen([mitigation_action])
+                        hijack_event_str = json.dumps(hijack_event.to_dict())
+                        subprocess.Popen([mitigation_action, '-h', hijack_event_str])
                 hijack_event.to_mitigate = False
 
                 db_session.commit()
@@ -86,7 +88,8 @@ class Mitigation():
                         print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
                     else:
                         print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
-                        subprocess.Popen([mitigation_action])
+                        hijack_event_str = json.dumps(hijack_event.to_dict())
+                        subprocess.Popen([mitigation_action, '-h', hijack_event_str])
                 hijack_event.to_mitigate = False
 
                 db_session.commit()

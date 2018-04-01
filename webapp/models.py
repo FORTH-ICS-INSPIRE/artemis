@@ -128,3 +128,15 @@ class Hijack(db.Model):
         repr_str += '\tTIME STARTED: {}\n'.format(self.time_started)
         repr_str += ']'
         return repr_str
+
+    def to_dict(self):
+        return {
+            'id': int(self.id),
+            'type': str(self.type),
+            'prefix': str(self.prefix),
+            'hijack_as': str(self.hijack_as),
+            'num_peers_seen': int(self.num_peers_seen),
+            'num_asns_inf': int(self.num_asns_inf),
+            'time_started': float(self.time_started),
+            'time_last_updated': float(self.time_last)
+        }

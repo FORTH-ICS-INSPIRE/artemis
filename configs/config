@@ -56,7 +56,7 @@ moas_upstream_asn: 65003
 prefixes: my_prefixes
 origin_asns: my_asn, moas_asn
 neighbors: my_upstream_asn, moas_upstream_asn
-mitigation: abs_path_to_mit_script
+mitigation: manual
 
 # - -                                                   - - #
 # - - - - - # End of Rule Declaration Groups  # - - - - - - #

@@ -18,16 +18,12 @@ class ConfParser():
         self.section_groups = ['prefixes_group', 'asns_group', 'monitors_group']
         self.supported_fields = ['prefixes',
                                  'origin_asns', 'neighbors', 'mitigation']
-        self.mitigation_types = ['deaggregate', 'outsource', 'manual']
-
         self.available_monitor_types = [
             'riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive']
         self.available_ris = ['rrc15', 'rrc16',
                               'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21']
         self.available_bgpstreamlive = ['routeviews', 'ris']
         self.valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
-
-        self.available_mitigation_fields = ['asn', 'ip', 'port']
 
         self.parser = ConfigParser()
 
@@ -164,13 +160,13 @@ class ConfParser():
 
     def proceess_field__mitigation(self, field, where):
 
-        mitig_types = (''.join(field.split())).split(',')
-
-        if(set(mitig_types).issubset(self.mitigation_types)):
-            return mitig_types
+        mitigation_action = str(field)
+        print(mitigation_action)
+        if mitigation_action == 'manual' or os.path.isfile(mitigation_action):
+            return mitigation_action
 
         else:
-            self.raise_error('mitigation-error-type', where)
+            self.raise_error('mitigation-error', where)
             return False
 
     def validate_options(self, section_name):
@@ -268,10 +264,9 @@ class ConfParser():
             print("List of supported fields: ", self.supported_fields)
             self.valid = False
 
-        elif(type_of_error == "mitigation-error-type"):
+        elif(type_of_error == "mitigation-error"):
             print("Error -> Found in '", where,
-                  "' the mitigation field has an unsupported value.")
-            print("List of supported fields: ", self.mitigation_types)
+                  "' the mitigation field points to a non-existent script.")
             self.valid = False
 
         elif(type_of_error == 'origin_asns-error'):

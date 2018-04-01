@@ -47,8 +47,11 @@ cd mininet; git checkout 2.2.2
 ## switch to the mininet-demo folder
 cd ~/artemis-tool/mininet-demo
 
-## configure artemis accordingly
+## configure artemis accordingly (note that the demo_mitigation_script.py should be used for mitigation)
 vim ../configs/config
+
+## configure ARTEMIS webapp
+vim ../configs/webapp.cfg
 
 ## configure the exabgp collectors with the absolute path to exabgp_server.py (under taps folder)
 vim ./configs_policy/exabgp-6500*.conf

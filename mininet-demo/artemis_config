@@ -1,0 +1,63 @@
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                   ARTEMIS Config File                     #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   # 
+# - -                                                   - - #
+# - - - - - # Start of Prefix Definition Groups # - - - - - #
+# - -                                                   - - #
+
+[prefixes_group]
+
+my_prefixes: 10.0.0.0/8
+
+# - -                                                   - - #
+# - - - - - # End of Prefix Definition Groups # - - - - - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           # 
+# - -                                                   - - #
+# - - - - - # Start of Monitor Definition Groups # - -- - - #
+# - -                                                   - - #
+
+[monitors_group]
+
+exabgp: (192.168.1.1 : 5000), (192.168.5.1 : 5000)
+
+# - -                                                   - - #
+# - - - - - # End of Monitor Definition Groups #  - - - - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           # 
+# - -                                                   - - #
+# - - - - - # Start of ASN  Definition Groups # - - - - - - #
+# - -                                                   - - #
+
+[asns_group]
+
+my_asn: 65001
+my_upstream_asn: 65002
+moas_asn: 65005
+moas_upstream_asn: 65003
+
+# - -                                                   - - #
+# - - - - - # End of Monitor Definition Groups #  - - - - - #
+# - -                                                   - - #
+#                                                           #                                                         #
+#                                                           #
+# - -                                                   - - #
+# - - - - - # Start of Rule Declaration Groups  # - - - - - #
+# - -                                                   - - #
+
+[group1]
+prefixes: my_prefixes
+origin_asns: my_asn, moas_asn
+neighbors: my_upstream_asn, moas_upstream_asn
+mitigation: /home/artemis-user/artemis-tool/mininet-demo/demo_mitigation_script.py
+
+# - -                                                   - - #
+# - - - - - # End of Rule Declaration Groups  # - - - - - - #
+# - -                                                   - - #
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   # 

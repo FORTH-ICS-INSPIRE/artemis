@@ -47,7 +47,7 @@ cd mininet; git checkout 2.2.2
 ## switch to the mininet-demo folder
 cd ~/artemis-tool/mininet-demo
 
-## configure artemis accordingly (note that the demo_mitigation_script.py should be used for mitigation)
+## configure artemis accordingly (use artemis_config.py)
 vim ../configs/config
 
 ## configure ARTEMIS webapp

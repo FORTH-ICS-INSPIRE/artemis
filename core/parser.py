@@ -161,7 +161,6 @@ class ConfParser():
     def proceess_field__mitigation(self, field, where):
 
         mitigation_action = str(field)
-        print(mitigation_action)
         if mitigation_action == 'manual' or os.path.isfile(mitigation_action):
             return mitigation_action
 

@@ -46,36 +46,7 @@ moas_upstream_asn: 65003
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
 # - -                                                   - - #
 #                                                           # 
-#                                                           # 
-# - -                                                   - - #
-# - - # Start of Local Mitigation  Definition Groups #  - - #
-# - -                                                   - - #
-
-[local_mitigation_group]
-
-asn: 65001
-ip: 192.168.101.1
-port: 2605
-
-# - -                                                   - - #
-# - - # End of Local Mitigation  Definition Groups #    - - #
-# - -                                                   - - #
-#                                                           # 
-#                                                           #
-# - -                                                   - - #
-# - - # Start of MOAS Mitigation  Definition Groups #   - - #
-# - -                                                   - - #
-
-[moas_mitigation_group]
-
-asn: 65005
-ip: 192.168.201.1
-port: 3001
-
-# - -                                                   - - #
-# - - # End of MOAS Mitigation  Definition Groups #     - - #
-# - -                                                   - - #
-#                                                           # 
+#                                                           #                   #
 #                                                           #
 # - -                                                   - - #
 # - - - - - # Start of Rule Declaration Groups  # - - - - - #
@@ -85,7 +56,7 @@ port: 3001
 prefixes: my_prefixes
 origin_asns: my_asn, moas_asn
 neighbors: my_upstream_asn, moas_upstream_asn
-mitigation: deaggregate, outsource
+mitigation: abs_path_to_mit_script
 
 # - -                                                   - - #
 # - - - - - # End of Rule Declaration Groups  # - - - - - - #

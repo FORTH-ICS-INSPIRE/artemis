@@ -15,8 +15,7 @@ class ConfParser():
         self.valid = True
 
         self.req_opt = ['prefixes', 'origin_asns']
-        self.section_groups = ['prefixes_group', 'asns_group', 'monitors_group',
-                               'local_mitigation_group', 'moas_mitigation_group']
+        self.section_groups = ['prefixes_group', 'asns_group', 'monitors_group']
         self.supported_fields = ['prefixes',
                                  'origin_asns', 'neighbors', 'mitigation']
         self.mitigation_types = ['deaggregate', 'outsource', 'manual']
@@ -42,8 +41,6 @@ class ConfParser():
         self.process_group = {
             'prefixes_group': self.process_field__prefixes,
             'asns_group': self.process_field__asns,
-            'local_mitigation_group': self.process_local_and_moas_mitigation,
-            'moas_mitigation_group': self.process_local_and_moas_mitigation,
             'monitors_group': self.process_monitors
         }
 
@@ -258,24 +255,6 @@ class ConfParser():
         except:
             print("ERROR!")
 
-    def process_local_and_moas_mitigation(self, field, where, label, definition=None):
-
-        # TODO: check with operators whether they need multiple local control endpoints,
-        # multiple remote MOAS control endpoints, as well as selection per group
-        # for now keep single dict for local, single dict for MOAS
-        try:
-            if(label in self.available_mitigation_fields):
-                if(label == 'asn'):
-                    if(self.valid_asn_number(int(field))):
-                        return int(field)
-                elif(label == 'port'):
-                    return int(field)
-                else:
-                    return ipaddress.ip_address(field)
-        except Exception as e:
-            traceback.print_exc()
-            self.valid = False
-
     def raise_error(self, type_of_error, where, field=None):
 
         if(type_of_error == "keyword-missing"):
@@ -321,9 +300,3 @@ class ConfParser():
 
     def get_monitors(self):
         return self.definitions_['monitors_group']
-
-    def get_local_mitigation(self):
-        return self.definitions_['local_mitigation_group']
-
-    def get_moas_mitigation(self):
-        return self.definitions_['moas_mitigation_group']

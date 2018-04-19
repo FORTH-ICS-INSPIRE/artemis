@@ -48,6 +48,7 @@ pip2 install --user grpcio==1.10.0
 pip2 install --user grpcio-tools==1.10.0
 pip2 install --user protobuf==3.5.2
 pip2 install --user protobuf3-to-dict==0.1.5
+pip2 install --user netaddr==0.7.19
 ```
 
 ### How to run
@@ -96,10 +97,10 @@ For example take a look at the `taps/exabgp_client.py` which implements the pyth
 TBD (for now working on the bleeding edge of the master branch, version tags to-be-released)
 
 ## Authors
-* Dimitris Mavrommatis, ICS-FORTH
-* Petros Gigis, ICS-FORTH
-* Vasileios Kotronis, ICS-FORTH
-* Pavlos Sermpezis, ICS-FORTH
+* Dimitris Mavrommatis, FORTH-ICS
+* Petros Gigis, FORTH-ICS
+* Vasileios Kotronis, FORTH-ICS
+* Pavlos Sermpezis, FORTH-ICS
 
 ## License
 TBD (closed source until further notice)

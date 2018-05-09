@@ -2,7 +2,7 @@ import radix
 from webapp.models import Hijack, Monitor
 import _thread
 from multiprocessing import Queue
-from sqlalchemy import and_, exc
+from sqlalchemy import and_, exc, desc
 from webapp.shared import db_session
 import traceback
 
@@ -99,7 +99,7 @@ class Detection():
                                 Hijack.prefix.like(monitor_event.prefix),
                                 Hijack.hijack_as.like(monitor_event.origin_as)
                             )
-                        ).first()
+                        ).order_by(desc(Hijack.id)).first()
 
                         if hijack_event is None or hijack_event.time_ended is not None:
                             hijack = Hijack(monitor_event, origin_asn, 0)
@@ -160,7 +160,7 @@ class Detection():
                                 Hijack.prefix.like(monitor_event.prefix),
                                 Hijack.hijack_as.like(first_neighbor_asn)
                             )
-                        ).first()
+                        ).order_by(desc(Hijack.id)).first()
 
                         if hijack_event is None or hijack_event.time_ended is not None:
                             hijack = Hijack(

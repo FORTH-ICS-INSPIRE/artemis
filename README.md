@@ -73,7 +73,15 @@ python3 artemis.py
 
 You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
 
-Note: to run the mininet demo please follow the instructions under mininet-demo/README.md
+Note that to gracefully terminate ARTEMIS and all its sub-threads you can use the following command:
+
+```
+kill <ARTEMIS_PID>
+```
+
+using the SIGTERM signal.
+
+Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
 
 ## Contributing
 

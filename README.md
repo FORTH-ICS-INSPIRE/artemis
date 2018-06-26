@@ -44,11 +44,7 @@ in order to install the libbgpstream (core) and the Python library/API pybgpstre
 
 Since pybgpstream requires python2, you need to install also:
 ```
-pip2 install --user grpcio==1.10.0
-pip2 install --user grpcio-tools==1.10.0
-pip2 install --user protobuf==3.5.2
-pip2 install --user protobuf3-to-dict==0.1.5
-pip2 install --user netaddr==0.7.19
+pip2 install -r requirements2.txt
 ```
 
 ### How to run

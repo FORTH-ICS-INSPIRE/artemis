@@ -1,0 +1,5 @@
+grpcio==1.10.0
+grpcio-tools==1.10.0
+protobuf==3.5.2
+protobuf3-to-dict==0.1.5
+netaddr==0.7.19

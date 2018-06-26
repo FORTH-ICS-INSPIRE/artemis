@@ -83,6 +83,24 @@ using the SIGTERM signal.
 
 Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
 
+## ARTEMIS as Container
+
+# How to run
+
+First, create a directory that includes the `config` and `webapp.cfg` files.
+
+Then, you need to run the container with the following command:
+
+```
+docker run -ti -p 5000:5000 --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
+```
+
+Fields:
+-p: Sets a proxy that maps host's PORT to container's PORT (in this example host's 5000 to container's 5000)
+--expose: Exposes from the container the PORT ARTEMIS is running on (specified in `webapp.cfg`)
+-ti: Makes container interactive
+-v src/dst: Creates a volume in dst path on the container that is a copy of src directory on host
+
 ## Contributing
 
 ### Implementing additional Monitors (taps)

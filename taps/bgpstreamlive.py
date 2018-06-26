@@ -93,7 +93,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                 for prefix in prefixes:
                     base_ip, mask_length = this_prefix.split('/')
                     our_prefix = IPNetwork(prefix)
-                    if IPAddress(base_ip) in our_prefix and mask_length >= our_prefix.prefixlen:
+                    if IPAddress(base_ip) in our_prefix and int(mask_length) >= our_prefix.prefixlen:
                         stub.queryMformat(mservice_pb2.MformatMessage(
                             type=str(elem.type),
                             timestamp=float(elem.time),

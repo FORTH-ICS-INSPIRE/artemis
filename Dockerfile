@@ -20,5 +20,22 @@ RUN npm i npm@latest -g && \
     npm audit fix
 
 WORKDIR ..
+RUN mkdir src
+WORKDIR src
+
+RUN curl -O https://research.wand.net.nz/software/wandio/wandio-1.0.4.tar.gz && \
+    tar zxf wandio-1.0.4.tar.gz
+WORKDIR wandio-1.0.4
+RUN ./configure && make && make install && ldconfig
+
+WORKDIR ..
+
+RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/bgpstream-1.2.0.tar.gz && \
+    tar zxf bgpstream-1.2.0.tar.gz
+WORKDIR bgpstream-1.2.0
+RUN ./configure && make && make install && ldconfig
+RUN pip3 install pybgpstream
+
+WORKDIR ../..
 
 ENTRYPOINT ["python3", "artemis.py"]

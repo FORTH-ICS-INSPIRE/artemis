@@ -38,7 +38,8 @@ def message_parser(line):
                     message['prefix'] = prefix
                     for sid in clients.keys():
                         for check_prefix in clients[sid][0]:
-                            if IPAddress(prefix.split('/')[0]) in check_prefix:
+                            base_ip, mask_length = prefix.split('/')
+                            if IPAddress(base_ip)) in check_prefix and mask_length >= check_prefix.prefixlen:
                                 #print('Sending exa_message to ' + str(sid), file=stderr)
                                 sio.emit('exa_message', message, room=sid)
     except Exception as e:

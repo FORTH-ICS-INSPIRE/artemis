@@ -13,6 +13,7 @@ var parser = new ArgumentParser({
     addHelp: true,
     description: 'RIPE RIS Monitor Client'
 });
+var ip6addr = require('ip6addr');
 
 parser.addArgument(
     [ '-p', '--prefix' ],
@@ -30,38 +31,12 @@ parser.addArgument(
 );
 
 var args = parser.parseArgs();
-
-var ip2long = function(ip){
-    var components;
-
-    if(components = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/))
-    {
-        var iplong = 0;
-        var power  = 1;
-        for(var i=4; i>=1; i-=1)
-        {
-            iplong += power * parseInt(components[i]);
-            power  *= 256;
-        }
-        return iplong;
-    }
-    else return -1;
-};
-
-var inSubNet = function(ip, subnet)
-{   
-    var mask, base_ip, long_ip = ip2long(ip);
-    if( (mask = subnet.match(/^(.*?)\/(\d{1,2})$/)) && ((base_ip=ip2long(mask[1])) >= 0) )
-    {
-        var freedom = Math.pow(2, 32 - parseInt(mask[2]));
-        return (long_ip > base_ip || long_ip === base_ip) && 
-            ((long_ip < base_ip + freedom - 1) || (long_ip === base_ip + freedom - 1));
-    }
-    else return false;
-};
+var sublist = args.prefix.split('/');
+var subnet = ip6addr.createCIDR(sublist[0], parseInt(sublist[1]));
 
 socket.on('ris_message', function(msg) {
-    if(inSubNet(msg['prefix'].split('/')[0], args.prefix)){
+    var recv_pref = msg['prefix'].split('/')
+    if(subnet.contains(recv_pref[0]) && parseInt(recv_pref[1]) >= parseInt(sublist[1])) {
         json_obj = {
             'timestamp': msg['timestamp'],
             'prefix': msg['prefix'],
@@ -72,12 +47,12 @@ socket.on('ris_message', function(msg) {
 
         client.queryMformat(json_obj, function(err, response) {
             if(err)
-    	       console.log(err);
+                console.log(err);
         });
     }
 });
 
-socket.emit('ris_subscribe', 
+socket.emit('ris_subscribe',
 {
     "prefix": args.prefix,
     "origin": null,

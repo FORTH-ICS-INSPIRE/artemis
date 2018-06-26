@@ -40,7 +40,9 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                 type = row[5]
                 timestamp = float(row[6])
                 for prefix in prefixes:
-                    if IPAddress(this_prefix.split('/')[0]) in IPNetwork(prefix):
+                    base_ip, mask_length = this_prefix.split('/')
+                    our_prefix = IPNetwork(prefix)
+                    if IPAddress(base_ip) in our_prefix and mask_length >= our_prefix.prefixlen:
                         stub.queryMformat(mservice_pb2.MformatMessage(
                             type=type,
                             timestamp=timestamp,

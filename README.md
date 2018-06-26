@@ -91,12 +91,35 @@ Then, you need to run the container with the following command:
 docker run -ti -p 5000:5000 --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
 ```
 
+If you do not have access to the mavromat/artemis image you can build your own by running:
+
+```
+docker build -t mavromat/artemis .
+```
+
 Fields:
 ```
 -p: Sets a proxy that maps host's PORT to container's PORT (in this example host's 5000 to container's 5000)
 --expose: Exposes from the container the PORT ARTEMIS is running on (specified in `webapp.cfg`)
 -ti: Makes container interactive
 -v src:dst: Creates a volume in dst path on the container that is a copy of src directory on host
+```
+
+### Known Issues
+
+1. iptables: No chain/target/match by that name
+
+```
+docker: Error response from daemon: driver failed programming external connectivity on endpoint artemistest (4980f6b7fe169a16e8ebe5f5e01a31700409d17258da0ee19ea060060d3f3db9):  (iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2 --dport 5000 -j ACCEPT: iptables: No chain/target/match by that name.
+ (exit status 1)).
+ ```
+
+To fix, clear all chains and then restart Docker Service:
+
+```
+iptables -t filter -F
+iptables -t filter -X
+systemctl restart docker
 ```
 
 ## Contributing

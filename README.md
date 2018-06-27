@@ -12,18 +12,18 @@ These instructions will get you a copy of the ARTEMIS tool up and running on you
 
 ### How to run
 
-First, create a directory that includes the `config` and `webapp.cfg` files.
-
-Then, you need to run the container with the following command:
-
-```
-docker run -ti -p 5000:5000 --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
-```
+First, create a directory that includes the `config` and `webapp.cfg` configuration files.
 
 If you do not have access to the mavromat/artemis image you can build your own by running:
 
 ```
 docker build -t mavromat/artemis .
+```
+
+Then, you need to run the container with the following command:
+
+```
+docker run -ti -p 5000:5000 --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
 ```
 
 Fields:

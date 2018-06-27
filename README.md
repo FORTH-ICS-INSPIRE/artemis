@@ -153,4 +153,4 @@ TBD (for now working on the bleeding edge of the master branch, version tags to-
 TBD (closed source until further notice)
 
 ## Acknowledgments
-TBD (ERC NetVolution Grant, ERC PoC Grant, RIPE NCC Community Project Grant, DHS SISTER, NSF HIJACKS)
+This work was supported by the European Research Council (ERC) grant agreement no. 338402 (NetVolution Project), the RIPE NCC Community Projects Fund, the National Science Foundation (NSF) grant CNS-1423659, and the Department of Homeland Security (DHS) Science and Technology Directorate, Cyber Security Division (DHS S&T/CSD) via contract number HHSP233201600012C.

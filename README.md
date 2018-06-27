@@ -2,7 +2,7 @@
 
 ARTEMIS is a defense approach versus BGP prefix hijacking attacks (a) based on accurate and fast detection operated by the AS itself, leveraging the pervasiveness of publicly available BGP monitoring services and their recent shift towards real-time streaming, thus (b) enabling flexible and fast mitigation of hijacking events. Compared to existing approaches/tools, ARTEMIS combines characteristics desirable to network operators such as comprehensiveness, accuracy, speed, privacy, and flexibility. With the ARTEMIS approach, prefix hijacking can be neutralized within a minute!
 
-You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis
+You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis .
 
 ## Getting Started
 
@@ -157,8 +157,8 @@ TBD (for now working on the bleeding edge of the master branch, version tags to-
 TBD (closed source until further notice)
 
 ## Acknowledgments
-This work was supported by the following sources:
+This work is supported by the following sources:
 * European Research Council (ERC) grant agreement no. 338402 (NetVolution Project)
-* the RIPE NCC Community Projects Fund
-* the National Science Foundation (NSF) grant CNS-1423659
-* the Department of Homeland Security (DHS) Science and Technology Directorate, Cyber Security Division (DHS S&T/CSD) via contract number HHSP233201600012C
+* RIPE NCC Community Projects Fund
+* National Science Foundation (NSF) grant CNS-1423659
+* Department of Homeland Security (DHS) Science and Technology Directorate, Cyber Security Division (DHS S&T/CSD) via contract number HHSP233201600012C

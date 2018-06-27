@@ -8,77 +8,6 @@ You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/ar
 
 These instructions will get you a copy of the ARTEMIS tool up and running on your local machine for testing purposes. For a detailed view of the ARTEMIS system architecture please check architecture.txt.
 
-### Dependencies
-
-* [Python 3](https://www.python.org/downloads/)   —  **ARTEMIS** requires Python 3.4.
-
-Install pip3
-```
-sudo apt-get install python3-pip
-```
-
-Then inside the root folder of the tool run
-```
-pip3 install -r requirements.txt
-```
-
-For RIPE RIS monitors you need to install nodejs
-```
-curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -
-sudo apt-get install -y nodejs build-essential
-```
-
-Then install the needed modules
-```
-cd taps
-npm install
-```
-
-For BGPStream live support (as well as historical data retrieval), you need to follow the
-instructions on:
-```
-https://bgpstream.caida.org/docs/install/bgpstream
-https://bgpstream.caida.org/docs/install/pybgpstream
-```
-in order to install the libbgpstream (core) and the Python library/API pybgpstream
-
-Since pybgpstream requires python2, you need to install also:
-```
-pip2 install -r requirements2.txt
-```
-
-### How to run
-
-To succesfully run ARTEMIS you need to modify the main configuration file
-
-```
-vim configs/config
-```
-
-Since ARTEMIS includes a Web App and GUI, you also need to modify the webapp configuration file
-
-```
-vim configs/webapp.cfg
-```
-
-After modifying the configuration files run
-
-```
-python3 artemis.py
-```
-
-You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
-
-Note that to gracefully terminate ARTEMIS and all its sub-threads you can use the following command:
-
-```
-kill <ARTEMIS_PID>
-```
-
-using the SIGTERM signal.
-
-Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
-
 ## ARTEMIS as Container
 
 ### How to run
@@ -122,6 +51,81 @@ iptables -t filter -X
 systemctl restart docker
 ```
 
+## ARTEMIS from source
+
+### Dependencies
+
+* [Python 3](https://www.python.org/downloads/)   —  **ARTEMIS** requires Python 3.4.
+
+Install pip3
+```
+apt-get update && \
+apt-get -y install python3-pip
+```
+
+Then inside the root folder of the tool run
+```
+pip3 --no-cache-dir install -r requirements.txt
+```
+
+For RIPE RIS monitors you need to install nodejs
+```
+curl -sL https://deb.nodesource.com/setup_9.x | bash - && \
+apt-get install -y nodejs build-essential
+```
+
+Then install the needed modules
+```
+cd taps
+npm i npm@latest -g && \
+npm install && \
+npm audit fix
+```
+
+For BGPStream live support (as well as historical data retrieval), you need to follow the
+instructions on:
+```
+https://bgpstream.caida.org/docs/install/bgpstream
+https://bgpstream.caida.org/docs/install/pybgpstream
+```
+in order to install the libbgpstream (core) and the Python library/API pybgpstream. Note to install pybgpstream via:
+```
+pip3 install pybgpstream
+```
+For more detailed instructions see the relevant lines of the Dockerfile.
+
+### How to run
+
+To succesfully run ARTEMIS you need to modify the main configuration file
+
+```
+vim configs/config
+```
+
+Since ARTEMIS includes a Web App and GUI, you also need to modify the webapp configuration file
+
+```
+vim configs/webapp.cfg
+```
+
+After modifying the configuration files run
+
+```
+python3 artemis.py
+```
+
+You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
+
+Note that to gracefully terminate ARTEMIS and all its sub-threads you can use the following command:
+
+```
+kill <ARTEMIS_PID>
+```
+
+using the SIGTERM signal.
+
+Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
+
 ## Contributing
 
 ### Implementing additional Monitors (taps)
@@ -153,4 +157,8 @@ TBD (for now working on the bleeding edge of the master branch, version tags to-
 TBD (closed source until further notice)
 
 ## Acknowledgments
-This work was supported by the European Research Council (ERC) grant agreement no. 338402 (NetVolution Project), the RIPE NCC Community Projects Fund, the National Science Foundation (NSF) grant CNS-1423659, and the Department of Homeland Security (DHS) Science and Technology Directorate, Cyber Security Division (DHS S&T/CSD) via contract number HHSP233201600012C.
+This work was supported by the following sources:
+* European Research Council (ERC) grant agreement no. 338402 (NetVolution Project)
+* the RIPE NCC Community Projects Fund
+* the National Science Foundation (NSF) grant CNS-1423659
+* the Department of Homeland Security (DHS) Science and Technology Directorate, Cyber Security Division (DHS S&T/CSD) via contract number HHSP233201600012C

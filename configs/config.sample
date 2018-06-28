@@ -1,4 +1,3 @@
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                   ARTEMIS Config File                     #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -11,7 +10,8 @@
 
 [prefixes_group]
 
-forth_prefixes: 139.91.0.0/16
+my_prefixes: X.Y.Z.W/N, ...
+...: ...
 
 # - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #
@@ -24,10 +24,11 @@ forth_prefixes: 139.91.0.0/16
 
 [monitors_group]
 
-riperis: rrc15, rrc16, rrc17, rrc18, rrc19, rrc20, rrc21
-#exabgp: (192.168.1.1 : 5000), (192.168.5.1 : 5000)
-#bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
+riperis: rrc15, ...
+exabgp: (<IP1> : <PORT_1>), ...
+bgpstreamhist: <path_to_dir_with_hist_csv_files>
 bgpstreamlive: routeviews, ris
+...: ...
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
@@ -40,26 +41,39 @@ bgpstreamlive: routeviews, ris
 
 [asns_group]
 
-forth_asn: 8522
-grnet_forth_upstream: 5408
-lamda_forth_upstream_back: 56910
+my_asn: 65001
+my_upstream_asn: 65002
+moas_asn: 65005
+moas_upstream_asn: 65003
+...: ...
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
 # - -                                                   - - #
 #                                                           # 
+#                                                           #                   #
 #                                                           #
 # - -                                                   - - #
 # - - - - - # Start of Rule Declaration Groups  # - - - - - #
 # - -                                                   - - #
 
 [group1]
-prefixes: forth_prefixes
-origin_asns: forth_asn
-neighbors: grnet_forth_upstream, lamda_forth_upstream_back
+prefixes: my_prefixes
+origin_asns: my_asn, moas_asn
+neighbors: my_upstream_asn, moas_upstream_asn
 mitigation: manual
+# optionally mitigation can also be: <path_to_exec_script>
+# The script should have one input: '-i' (<str>), containing the ARTEMIS-supplied hijack info
+
+[group2]
+prefixes: ...
+origin_asns: ...
+neighbors: ...
+mitigation: ...
+
+...
 
 # - -                                                   - - #
 # - - - - - # End of Rule Declaration Groups  # - - - - - - #
 # - -                                                   - - #
-#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   # 

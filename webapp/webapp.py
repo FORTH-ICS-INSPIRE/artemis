@@ -185,11 +185,25 @@ class WebApplication():
         return redirect('/hijacks?id={}&action=resolved'.format(hijack_id))
 
     def run(self):
-        self.app.run(
-            debug=False,
-            host=self.app.config['WEBAPP_HOST'],
-            port=self.app.config['WEBAPP_PORT']
-        )
+
+        if 'WEBAPP_KEY' in self.app.config and 'WEBAPP_CRT' in self.app.config:
+            print('SSL: enabled')
+            # http://flask.pocoo.org/snippets/111/
+            # https://www.digitalocean.com/community/tutorials/openssl-essentials-working-with-ssl-certificates-private-keys-and-csrs
+            context = (self.app.config['WEBAPP_CRT'], self.app.config['WEBAPP_KEY'])
+            self.app.run(
+                debug=False,
+                host=self.app.config['WEBAPP_HOST'],
+                port=self.app.config['WEBAPP_PORT'],
+                ssl_context=context
+            )
+        else:
+            print('SSL: disabled')
+            self.app.run(
+                debug=False,
+                host=self.app.config['WEBAPP_HOST'],
+                port=self.app.config['WEBAPP_PORT']
+            )
 
     def start(self):
         if not self.flag:

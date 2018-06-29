@@ -126,6 +126,18 @@ using the SIGTERM signal.
 
 Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
 
+### SSL/TLS Support
+
+The following process, based on Flask-accessed certificates/keys, is to be used only in testing environments. 
+
+In production, a scalable nginx/apache-based reverse proxy will be used to terminate SSL connections.
+
+For testing, simply configure the following in configs/webapp.cfg: 
+```
+WEBAPP_KEY = '<path_to_key_file>'
+WEBAPP_CRT = '<path_to_cert_file>'
+```
+
 ## Contributing
 
 ### Implementing additional Monitors (taps)

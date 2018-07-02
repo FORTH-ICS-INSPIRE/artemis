@@ -45,7 +45,6 @@ class ConfParser():
 
     def __parse_rrcs(self):
         with SocketIO("http://stream-dev.ris.ripe.net/stream") as socket_io:
-            print(dir(socket_io))
             def on_msg(msg):
                 self.available_ris = msg
                 socket_io.disconnect()

@@ -26,7 +26,7 @@ netaddr==0.7.19
 protobuf==3.5.2
 protobuf3-to-dict==0.1.5
 py-radix==0.10.0
-pybgpstream==1.2.0
+pyopenssl==18.0.0
 pytz==2018.3
 requests==2.18.4
 six==1.11.0

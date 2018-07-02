@@ -2,6 +2,7 @@ from configparser import ConfigParser
 import os
 import ipaddress
 import traceback
+from socketIO_client_nexus import SocketIO
 
 MAX_ASN_NUMBER = 397213
 
@@ -20,10 +21,10 @@ class ConfParser():
                                  'origin_asns', 'neighbors', 'mitigation']
         self.available_monitor_types = [
             'riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive']
-        self.available_ris = [ 'rrc00', 'rrc01', 'rrc02', 'rrc03', 'rrc04', 'rrc05',
-                'rrc06', 'rrc07', 'rrc08', 'rrc09', 'rrc10', 'rrc11', 'rrc12',
-                'rrc13', 'rrc14', 'rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19',
-                'rrc20', 'rrc21', 'rrc22', 'rrc23']
+        self.available_ris = []
+
+        self.__parse_rrcs()
+
         self.available_bgpstreamlive = ['routeviews', 'ris']
         self.valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
 
@@ -41,6 +42,16 @@ class ConfParser():
             'asns_group': self.process_field__asns,
             'monitors_group': self.process_monitors
         }
+
+    def __parse_rrcs(self):
+        with SocketIO("http://stream-dev.ris.ripe.net/stream") as socket_io:
+            print(dir(socket_io))
+            def on_msg(msg):
+                self.available_ris = msg
+                socket_io.disconnect()
+
+            socket_io.on('ris_rrc_list', on_msg)
+            socket_io.wait()
 
     def parse_file(self):
         print("Reading the config file..")

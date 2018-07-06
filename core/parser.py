@@ -6,7 +6,6 @@ from socketIO_client_nexus import SocketIO
 
 MAX_ASN_NUMBER = 397213
 
-
 class ConfParser():
 
     def __init__(self):
@@ -31,16 +30,16 @@ class ConfParser():
         self.parser = ConfigParser()
 
         self.process_field = {
-            'prefixes': self.process_field__prefixes,
-            'origin_asns': self.process_field__asns,
-            'neighbors': self.process_field__asns,
-            'mitigation': self.proceess_field__mitigation
+            'prefixes': self.__process_field__prefixes,
+            'origin_asns': self.__process_field__asns,
+            'neighbors': self.__process_field__asns,
+            'mitigation': self.__process_field__mitigation
         }
 
         self.process_group = {
-            'prefixes_group': self.process_field__prefixes,
-            'asns_group': self.process_field__asns,
-            'monitors_group': self.process_monitors
+            'prefixes_group': self.__process_field__prefixes,
+            'asns_group': self.__process_field__asns,
+            'monitors_group': self.__process_monitors
         }
 
     def __parse_rrcs(self):
@@ -66,28 +65,28 @@ class ConfParser():
         ]
 
         # Parse definition blocks
-        self.definitions_ = self.parse_definition_blocks(sections_def_list)
+        self.definitions_ = self.__parse_definition_blocks(sections_def_list)
 
         # Parse remaining blocks
 
         for section_name in sections_other_list:
             self.obj_[section_name] = dict()
 
-            if(self.validate_options(section_name)):
+            if(self.__validate_options(section_name)):
                 fields = self.parser.items(section_name)
 
                 for field in fields:
                     type_of_field = field[0]
 
                     if(type_of_field not in self.supported_fields):
-                        self.raise_error(
+                        self.__raise_error(
                             'field-wrong', section_name, type_of_field)
 
                     values_of_field = field[1]
                     self.obj_[section_name][type_of_field] = self.process_field[type_of_field](
                         values_of_field, section_name)
 
-    def parse_definition_blocks(self, section_labels):
+    def __parse_definition_blocks(self, section_labels):
 
         ret_ = dict()
 
@@ -113,7 +112,7 @@ class ConfParser():
 
         return ret_
 
-    def process_field__prefixes(
+    def __process_field__prefixes(
         self,
         field,
         where,
@@ -146,12 +145,12 @@ class ConfParser():
 
         return prefix_v
 
-    def process_field__asns(self, field, where, definition=False):
+    def __process_field__asns(self, field, where, definition=False):
         try:
             if(definition == True):
                 list_of_asns = list(
                     map(int, ''.join(field.split()).split(',')))
-                if(all(self.valid_asn_number(item) for item in list_of_asns)):
+                if(all(self.__valid_asn_number(item) for item in list_of_asns)):
                     return sorted(list(set(list_of_asns)))
 
             else:
@@ -162,25 +161,25 @@ class ConfParser():
                     if(asn in list(self.definitions_['asns_group'].keys())):
                         list_of_asns += self.definitions_['asns_group'][asn]
                     else:
-                        if(self.valid_asn_number(int(asn))):
+                        if(self.__valid_asn_number(int(asn))):
                             list_of_asns.append(int(asn))
 
                 return sorted(list(set(list_of_asns)))
 
         except:
-            self.raise_error('origin_asns-error', where)
+            self.__raise_error('origin_asns-error', where)
 
-    def proceess_field__mitigation(self, field, where):
+    def __process_field__mitigation(self, field, where):
 
         mitigation_action = str(field)
         if mitigation_action == 'manual' or os.path.isfile(mitigation_action):
             return mitigation_action
 
         else:
-            self.raise_error('mitigation-error', where)
+            self.__raise_error('mitigation-error', where)
             return False
 
-    def validate_options(self, section_name):
+    def __validate_options(self, section_name):
 
         opt_list = self.parser.options(section_name)
 
@@ -188,17 +187,17 @@ class ConfParser():
             return True
 
         else:
-            self.raise_error('keyword-missing', section_name)
+            self.__raise_error('keyword-missing', section_name)
             return False
 
-    def valid_asn_number(self, item):
+    def __valid_asn_number(self, item):
 
         # https://www.iana.org/assignments/as-numbers/as-numbers.xhtml
         if(type(item) == int and item > 0 and item < MAX_ASN_NUMBER):
             return True
         return False
 
-    def process_monitors(self, field, where, label, definition=None):
+    def __process_monitors(self, field, where, label, definition=None):
 
         try:
             if(label in self.available_monitor_types):
@@ -262,7 +261,7 @@ class ConfParser():
         except:
             print("ERROR!")
 
-    def raise_error(self, type_of_error, where, field=None):
+    def __raise_error(self, type_of_error, where, field=None):
 
         if(type_of_error == "keyword-missing"):
             print(

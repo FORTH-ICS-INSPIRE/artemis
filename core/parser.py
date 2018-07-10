@@ -1,8 +1,10 @@
-from configparser import ConfigParser
+from configparser import ConfigParser, ParsingError
 import os
+import sys
 import ipaddress
 import traceback
 from socketIO_client_nexus import SocketIO
+import re
 
 MAX_ASN_NUMBER = 397213
 
@@ -14,46 +16,50 @@ class ConfParser():
         self.file = 'configs/config'
         self.valid = True
 
-        self.req_opt = ['prefixes', 'origin_asns']
-        self.section_groups = ['prefixes_group', 'asns_group', 'monitors_group']
-        self.supported_fields = ['prefixes',
-                                 'origin_asns', 'neighbors', 'mitigation']
-        self.available_monitor_types = [
-            'riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive']
-        self.available_ris = []
+        self.req_opt = set(['prefixes', 'origin_asns'])
+        self.section_groups = set(['prefixes_group', 'asns_group', 'monitors_group'])
+        self.supported_fields = set(['prefixes',
+                                 'origin_asns', 'neighbors', 'mitigation'])
+        self.available_monitor_types = set(
+            ['riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive'])
+        self.available_ris = set()
 
-        self.__parse_rrcs()
+        self.parse_rrcs()
 
-        self.available_bgpstreamlive = ['routeviews', 'ris']
-        self.valid_bgpmon = ['livebgp.netsec.colostate.edu', '5001']
+        self.available_bgpstreamlive = set(['routeviews', 'ris'])
+        self.valid_bgpmon = set([('livebgp.netsec.colostate.edu','5001')])
 
         self.parser = ConfigParser()
 
         self.process_field = {
-            'prefixes': self.__process_field__prefixes,
-            'origin_asns': self.__process_field__asns,
-            'neighbors': self.__process_field__asns,
-            'mitigation': self.__process_field__mitigation
+            'prefixes': self.__process_field_prefixes,
+            'origin_asns': self.__process_field_asns,
+            'neighbors': self.__process_field_asns,
+            'mitigation': self.__process_field_mitigation
         }
 
         self.process_group = {
-            'prefixes_group': self.__process_field__prefixes,
-            'asns_group': self.__process_field__asns,
+            'prefixes_group': self.__process_field_prefixes,
+            'asns_group': self.__process_field_asns,
             'monitors_group': self.__process_monitors
         }
 
-    def __parse_rrcs(self):
-        with SocketIO("http://stream-dev.ris.ripe.net/stream") as socket_io:
+    def parse_rrcs(self):
+        with SocketIO('http://stream-dev.ris.ripe.net/stream') as socket_io:
             def on_msg(msg):
-                self.available_ris = msg
+                self.available_ris = set(msg)
                 socket_io.disconnect()
 
             socket_io.on('ris_rrc_list', on_msg)
             socket_io.wait()
 
     def parse_file(self):
-        print("Reading the config file..")
-        self.parser.read(self.file)
+        try:
+            self.parser.read(self.file)
+        except ParsingError as e:
+            print('[!] Configuration file could not be parsed.\nException: {}'.format(e),
+                    file=sys.stderr)
+            raise e
 
         # Filtering sections blocks
         sections_list = self.parser.sections()
@@ -72,13 +78,13 @@ class ConfParser():
         for section_name in sections_other_list:
             self.obj_[section_name] = dict()
 
-            if(self.__validate_options(section_name)):
+            if self.__validate_options(section_name):
                 fields = self.parser.items(section_name)
 
                 for field in fields:
                     type_of_field = field[0]
 
-                    if(type_of_field not in self.supported_fields):
+                    if type_of_field not in self.supported_fields:
                         self.__raise_error(
                             'field-wrong', section_name, type_of_field)
 
@@ -87,7 +93,6 @@ class ConfParser():
                         values_of_field, section_name)
 
     def __parse_definition_blocks(self, section_labels):
-
         ret_ = dict()
 
         for group in self.section_groups:
@@ -99,7 +104,7 @@ class ConfParser():
                 for field in fields:
                     label = field[0]
                     values = field[1]
-                    if(group == 'asns_group'):
+                    if group == 'asns_group':
                         ret_[group][label] = self.process_group[group](
                             values, group, definition=True)
 
@@ -112,24 +117,23 @@ class ConfParser():
 
         return ret_
 
-    def __process_field__prefixes(
+    def __process_field_prefixes(
         self,
         field,
         where,
         label=None,
         definition=False
     ):
-
-        prefixes = (''.join(field.split())).split(',')
+        prefixes = field.split(', ')
         prefix_v = list()
 
-        if(definition == True):
+        if definition == True:
             for prefix in prefixes:
                 try:
                     prefix_v.append(ipaddress.ip_network(prefix))
                 except ValueError as e:
-                    print("Error in config block: ", where, "-", str(label))
-                    print(e)
+                    print('[!] Error in config block: {} - {}.\nException: {}'.format(where, label, e),
+                            file=sys.stderr)
                     self.valid = False
 
         else:
@@ -137,40 +141,38 @@ class ConfParser():
                 try:
                     prefix_v.append(ipaddress.ip_network(prefix))
                 except ValueError as e:
-                    if(prefix in list(self.definitions_['prefixes_group'].keys())):
+                    if prefix in self.definitions_['prefixes_group']:
                         prefix_v += self.definitions_['prefixes_group'][prefix]
                     else:
                         # error
-                        print("Not a valid group of prefixes")
+                        print('[!] Not a valid group of prefixes', file=sys.stderr)
 
         return prefix_v
 
-    def __process_field__asns(self, field, where, definition=False):
+    def __process_field_asns(self, field, where, definition=False):
         try:
-            if(definition == True):
-                list_of_asns = list(
-                    map(int, ''.join(field.split()).split(',')))
-                if(all(self.__valid_asn_number(item) for item in list_of_asns)):
+            if definition:
+                list_of_asns = list(map(int, field.split(', ')))
+                if all(map(self.__valid_asn_number, list_of_asns)):
                     return sorted(list(set(list_of_asns)))
 
             else:
-                list_of_asns_ = ''.join(field.split()).split(',')
-                list_of_asns = list()
-
+                list_of_asns_ = field.split(', ')
+                list_of_asns = []
                 for asn in list_of_asns_:
-                    if(asn in list(self.definitions_['asns_group'].keys())):
+                    if asn in self.definitions_['asns_group']:
                         list_of_asns += self.definitions_['asns_group'][asn]
                     else:
-                        if(self.__valid_asn_number(int(asn))):
+                        if self.__valid_asn_number(int(asn)):
                             list_of_asns.append(int(asn))
 
                 return sorted(list(set(list_of_asns)))
 
-        except:
+        except Exception as e:
+            print(e)
             self.__raise_error('origin_asns-error', where)
 
-    def __process_field__mitigation(self, field, where):
-
+    def __process_field_mitigation(self, field, where):
         mitigation_action = str(field)
         if mitigation_action == 'manual' or os.path.isfile(mitigation_action):
             return mitigation_action
@@ -180,10 +182,9 @@ class ConfParser():
             return False
 
     def __validate_options(self, section_name):
-
         opt_list = self.parser.options(section_name)
 
-        if(set(self.req_opt).issubset(opt_list)):
+        if set(self.req_opt).issubset(opt_list):
             return True
 
         else:
@@ -191,46 +192,32 @@ class ConfParser():
             return False
 
     def __valid_asn_number(self, item):
-
         # https://www.iana.org/assignments/as-numbers/as-numbers.xhtml
-        if(type(item) == int and item > 0 and item < MAX_ASN_NUMBER):
+        if type(item) == int and item > 0 and item < MAX_ASN_NUMBER:
             return True
         return False
 
     def __process_monitors(self, field, where, label, definition=None):
-
         try:
-            if(label in self.available_monitor_types):
+            if label in self.available_monitor_types:
 
-                if(label == 'riperis'):
-                    riperis_ = (''.join(field.split())).split(',')
+                if label == 'riperis':
+                    riperis_ = set(field.split(', '))
 
-                    if(set(riperis_).issubset(self.available_ris)):
-                        return riperis_
-                    else:
-                        list_ = list()
-                        for ris_monitor in riperis_:
-                            if(ris_monitor in self.available_ris):
-                                list_.append(ris_monitor)
-                            else:
-                                print("Warning ", ris_monitor,
-                                      " is not available.")
+                    for unavailable in riperis_.difference(self.available_ris):
+                        print('[!] Warning unavailable monitor: {}'.format(unavailable),
+                                file=sys.stderr)
 
-                        return list_
+                    return riperis_.intersection(self.available_ris)
+                elif label == 'bgpmon':
+                    bgpmon_pattern = re.compile('(?:([a-zA-Z0-9.]+) ?: ?([0-9]+))')
 
-                elif(label == 'bgpmon'):
-                    bgpmon_ = (''.join(field.split())).lstrip(
-                        '(').rstrip(')').split(':')
+                    entries = re.findall(bgpmon_pattern, field)
 
-                    if(len(bgpmon_) > 2):
-                        print("Error only one value expected at ",
-                              label, "in", where, ".")
-                        self.valid = False
+                    if set(entries).issubset(self.valid_bgpmon):
+                        return (entries[0][0], int(entries[0][1]))
 
-                    if(set(bgpmon_).issubset(self.valid_bgpmon)):
-                        return [bgpmon_[0], int(bgpmon_[1])]
-
-                elif(label == 'bgpstreamhist'):
+                elif label == 'bgpstreamhist':
                     bgpstreamhist_ = str(field)
                     if not os.path.isdir(bgpstreamhist_):
                         print("Error: bgpstreamhist csv dir is not valid!")
@@ -238,28 +225,25 @@ class ConfParser():
                     else:
                         return bgpstreamhist_
 
-                elif(label == 'bgpstreamlive'):
-                    stream_projects_ = (''.join(field.split())).split(',')
+                elif label == 'bgpstreamlive':
+                    stream_projects_ = field.split(', ')
                     if len(stream_projects_) == 0 or not set(stream_projects_).issubset(set(self.available_bgpstreamlive)):
                         print("Error: bgpstreamlive project(s) not supported!")
                         self.valid = False
                     else:
-                        return stream_projects_
+                        return set(stream_projects_)
 
-                elif(label == 'exabgp'):
-                    exabgp_ = (''.join(field.split())).split(",")
-                    list_ = list()
-                    for entry in exabgp_:
-                        ip = entry.split(':')[0].lstrip('(').rstrip(')')
-                        port = int(entry.split(':')[1].lstrip('(').rstrip(')'))
-                        list_.append([ip, port])
-
-                    return list_
+                elif label == 'exabgp':
+                    exa_pattern = re.compile('(?:([0-9.]+) ?: ?([0-9]+))')
+                    entries = re.findall(exa_pattern, field)
+                    entries = set(map(lambda a: (a[0], int(a[1])), entries))
+                    return entries
             else:
                 # Error not a valid monitor
                 pass
-        except:
-            print("ERROR!")
+        except ParsingError as e:
+            print('[!] Parsing Error {}'.format(e))
+            raise e
 
     def __raise_error(self, type_of_error, where, field=None):
 

@@ -24,6 +24,7 @@ class GracefulKiller:
 def main():
     # Configuration Parser
     confparser_ = ConfParser()
+    print('[+] Parsing Configuration..')
     confparser_.parse_file()
 
     if(confparser_.isValid()):

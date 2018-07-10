@@ -45,12 +45,10 @@ class ConfParser():
         }
 
     def parse_rrcs(self):
-        print('here')
         with SocketIO('http://stream-dev.ris.ripe.net/stream') as socket_io:
             def on_msg(msg):
                 self.available_ris = set(msg)
                 socket_io.disconnect()
-
             socket_io.on('ris_rrc_list', on_msg)
             socket_io.wait()
 

@@ -11,6 +11,7 @@ import mock
 from core.parser import ConfParser
 import configparser
 
+
 class TestConfParser(unittest.TestCase):
 
     @mock.patch.object(ConfParser, 'parse_rrcs')
@@ -22,17 +23,16 @@ class TestConfParser(unittest.TestCase):
 
     @mock.patch.object(ConfParser, 'parse_rrcs')
     def test_isValid(self, mock_parse_rrcs):
-        print('Testing a valid configuration file')
+        print('[!] Testing a valid configuration file')
         self.assertTrue(self.confParser.isValid())
 
-        print('Testing an invalid configuration file')
+        print('[!] Testing an invalid configuration file')
         wrongParser = ConfParser()
         wrongParser.file = 'test_wrong_config'
         self.assertRaises(configparser.ParsingError, wrongParser.parse_file)
 
     def test_get_obj(self):
-
-        print('Testing object fields of the configuration')
+        print('[!] Testing object fields of the configuration')
         obj = self.confParser.get_obj()
         group1 = obj['group1']
         group2 = obj['group2']
@@ -49,8 +49,7 @@ class TestConfParser(unittest.TestCase):
         self.assertEqual(group2['mitigation'], 'manual')
 
     def test_get_definitions(self):
-
-        print('Testing definitions of the configuration')
+        print('[!] Testing definitions of the configuration')
         defs = self.confParser.get_definitions()
         # {'prefixes_group': {'forth_prefixes': [IPv4Network('139.91.0.0/16')], 'sample_prefixes': [IPv4Network('139.91.0.0/17')]}, 'asns_group': {'forth_asn': [8522], 'grnet_forth_upstream': [5408], 'lamda_forth_upstream_back': [56910], 'sample_asn': [12345]}, 'monitors_group': {'riperis': ['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'], 'exabgp': [['192.168.1.1', 5000], ['192.168.5.1', 5000]], 'bgpstreamlive': ['routeviews', 'ris']}}
 

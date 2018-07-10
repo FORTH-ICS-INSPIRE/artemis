@@ -57,7 +57,7 @@ class ConfParser():
         try:
             self.parser.read(self.file)
         except ParsingError as e:
-            print('[!] Configuration file could not be parsed.\nException: {}'.format(e),
+            print('[!] Error: Configuration file could not be parsed with exception: {}'.format(e),
                     file=sys.stderr)
             raise e
 
@@ -132,7 +132,7 @@ class ConfParser():
                 try:
                     prefix_v.append(ipaddress.ip_network(prefix))
                 except ValueError as e:
-                    print('[!] Error in config block: {} - {}.\nException: {}'.format(where, label, e),
+                    print('[!] Error: Config block {} - {} with exception: {}'.format(where, label, e),
                             file=sys.stderr)
                     self.valid = False
 
@@ -145,7 +145,7 @@ class ConfParser():
                         prefix_v += self.definitions_['prefixes_group'][prefix]
                     else:
                         # error
-                        print('[!] Not a valid group of prefixes', file=sys.stderr)
+                        print('[!] Error: Not a valid group of prefixes', file=sys.stderr)
 
         return prefix_v
 
@@ -205,13 +205,12 @@ class ConfParser():
                     riperis_ = set(field.split(', '))
 
                     for unavailable in riperis_.difference(self.available_ris):
-                        print('[!] Warning unavailable monitor: {}'.format(unavailable),
+                        print('[!] Warning: unavailable monitor {}'.format(unavailable),
                                 file=sys.stderr)
 
                     return riperis_.intersection(self.available_ris)
                 elif label == 'bgpmon':
                     bgpmon_pattern = re.compile('(?:([a-zA-Z0-9.]+) ?: ?([0-9]+))')
-
                     entries = re.findall(bgpmon_pattern, field)
 
                     if set(entries).issubset(self.valid_bgpmon):
@@ -220,18 +219,20 @@ class ConfParser():
                 elif label == 'bgpstreamhist':
                     bgpstreamhist_ = str(field)
                     if not os.path.isdir(bgpstreamhist_):
-                        print("Error: bgpstreamhist csv dir is not valid!")
+                        print('[!] Error: bgpstreamhist csv dir is not valid!',
+                                file=sys.stderr)
                         self.valid = False
                     else:
                         return bgpstreamhist_
 
                 elif label == 'bgpstreamlive':
-                    stream_projects_ = field.split(', ')
-                    if len(stream_projects_) == 0 or not set(stream_projects_).issubset(set(self.available_bgpstreamlive)):
-                        print("Error: bgpstreamlive project(s) not supported!")
+                    stream_projects_ = set(field.split(', '))
+                    if len(stream_projects_) == 0 or not stream_projects_.issubset(self.available_bgpstreamlive):
+                        print('[!] Error: bgpstreamlive project(s) not supported!',
+                                file=sys.stderr)
                         self.valid = False
                     else:
-                        return set(stream_projects_)
+                        return stream_projects_
 
                 elif label == 'exabgp':
                     exa_pattern = re.compile('(?:([0-9.]+) ?: ?([0-9]+))')
@@ -240,42 +241,41 @@ class ConfParser():
                     return entries
             else:
                 # Error not a valid monitor
+                print('[!] Error: Not a valid monitor was provided: {}'.format(label),
+                        file=sys.stderr)
                 pass
         except ParsingError as e:
-            print('[!] Parsing Error {}'.format(e))
+            print('[!] Parsing Error: {}'.format(e))
             raise e
 
     def __raise_error(self, type_of_error, where, field=None):
-
-        if(type_of_error == "keyword-missing"):
-            print(
-                "Error -> Missing keyword 'prefixes' or 'origin_asns' on config block: ", where)
+        if type_of_error == 'keyword-missing':
+            print('[!] Error: Missing keyword \'prefixes\' or \'origin_asns\' on config block: {}'.format(where),
+                    file=sys.stderr)
             self.valid = False
 
-        elif(type_of_error == "field-wrong"):
-            print("Error -> Found in '", where, "' the field -> '",
-                  field,  " ' which is not supported.")
-            print("List of supported fields: ", self.supported_fields)
+        elif type_of_error == 'field-wrong':
+            print('[!] Error: Found in \'{}\' the field -> \'{}\' which is not supported'.format(where, field),
+                    file=sys.stderr)
+            print('[!] List of supported fields: {}'.format(self.supported_fields),
+                    file=sys.stderr)
             self.valid = False
 
-        elif(type_of_error == "mitigation-error"):
-            print("Error -> Found in '", where,
-                  "' the mitigation field points to a non-existent script.")
+        elif type_of_error == 'mitigation-error':
+            print('[!] Error: Found in \'{}\' the mitigation field points to a non-existent script.'.format(where),
+                    file=sys.stderr)
             self.valid = False
 
-        elif(type_of_error == 'origin_asns-error'):
-            print("Error in origin_asns config block: ", where)
-            print("Found a wrong ASN number.")
+        elif type_of_error == 'origin_asns-error':
+            print('[!] Error: origin_asns config block {} found a wrong ASN number.'.format(where))
             self.valid = False
 
-        elif(type_of_error == 'neighbors-error'):
-            print("Error in neighbors config block: ", where)
-            print("Found a wrong ASN number.")
+        elif type_of_error == 'neighbors-error':
+            print('[!] Error: neighbors config block {} found a wrong ASN number.'.format(where))
             self.valid = False
 
-        elif(type_of_error == 'asns_group-error'):
-            print("Error in asns_group config block: ", where)
-            print("Found a wrong ASN number.")
+        elif type_of_error == 'asns_group-error':
+            print('[!] Error: asns_group config block {} found a wrong ASN number.'.format(where))
             self.valid = False
 
     def isValid(self):

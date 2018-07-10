@@ -14,13 +14,14 @@ import configparser
 class TestConfParser(unittest.TestCase):
 
     @mock.patch.object(ConfParser, 'parse_rrcs')
-    def setUp(self, parse_rrcs):
+    def setUp(self, mock_parse_rrcs):
         self.confParser = ConfParser()
         self.confParser.file = 'test_config'
         self.confParser.available_ris = set(['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'])
         self.confParser.parse_file()
 
-    def test_isValid(self):
+    @mock.patch.object(ConfParser, 'parse_rrcs')
+    def test_isValid(self, mock_parse_rrcs):
         print('Testing a valid configuration file')
         self.assertTrue(self.confParser.isValid())
 

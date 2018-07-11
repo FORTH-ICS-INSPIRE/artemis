@@ -1,10 +1,9 @@
 import radix
-from webapp.models import Hijack
+from webapp.data.models import Hijack, db
 import _thread
 from multiprocessing import Queue
 import subprocess
 from sqlalchemy import and_, exc
-from webapp.shared import db_session
 import traceback
 import time
 import json
@@ -59,8 +58,8 @@ class Mitigation():
                         subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 hijack_event.to_mitigate = False
 
-                db_session.commit()
-                db_session.expunge(hijack_event)
+                db.session.commit()
+                db.session.expunge(hijack_event)
             except Exception as e:
                 traceback.print_exc()
 
@@ -75,9 +74,9 @@ class Mitigation():
                                ).first()
 
                 try:
-                    db_session.add(hijack_event)
+                    db.session.add(hijack_event)
                 except exc.InvalidRequestError:
-                    db_session.rollback()
+                    db.session.rollback()
 
                 hijack_event.mitigation_started = time.time()
                 prefix_node = self.prefix_tree.search_best(
@@ -92,8 +91,8 @@ class Mitigation():
                         subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 hijack_event.to_mitigate = False
 
-                db_session.commit()
-                db_session.expunge(hijack_event)
+                db.session.commit()
+                db.session.expunge(hijack_event)
             except Exception as e:
                 traceback.print_exc()
         print('Mitigation Mechanism Stopped...')

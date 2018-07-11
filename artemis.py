@@ -9,7 +9,8 @@ from core.mitigation import Mitigation
 from core.syscheck import SysCheck
 from webapp.webapp import WebApplication
 from protogrpc.grpc_server import GrpcServer
-from webapp.shared import app, db, db_session
+from webapp import app
+from webapp.data.models import db
 
 class GracefulKiller:
     def __init__(self):
@@ -23,8 +24,8 @@ class GracefulKiller:
 
 def main():
     # Configuration Parser
-    confparser_ = ConfParser()
     print('[+] Parsing Configuration..')
+    confparser_ = ConfParser()
     confparser_.parse_file()
 
     if(confparser_.isValid()):
@@ -63,7 +64,7 @@ def main():
             grpc_.stop()
             webapp_.stop()
 
-            db_session.remove()
+            db.session.remove()
             print("Bye!")
     else:
         print("The config file is wrong.")

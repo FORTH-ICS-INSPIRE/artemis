@@ -11,7 +11,6 @@
                 <div class="form-login">
                     <h4>Welcome back.</h4>
                     {% from "security/_macros.html" import render_field_with_errors, render_field %}
-                    {% include "security/_messages.html" %}
                     <form action="{{ url_for_security('login') }}" method="POST" name="login_user_form">
                     {{ login_user_form.hidden_tag() }}
                     {{ render_field_with_errors(login_user_form.email) }}

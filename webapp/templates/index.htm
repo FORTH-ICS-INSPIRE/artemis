@@ -9,48 +9,44 @@
     <div class="container">
         <div class="panel panel-primary">
             <div class="panel-heading">Control Panel</div>
-            <div class="panel-body"></div>
+            <div class="panel-body">
+                <div class="row">
+                    <form method="post">
+                        <div class="col-md-10">
+                            <label for="config-div">Configuration</label>
+                            <div class="form-group" id="config-div">
+                                {{ config.config(cols='130',rows='18') }}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="modules-div">Modules</label>
+                            <div class="form-group" id="modules-div">
+                                {{ form.hidden_tag() }}
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">Monitor</div>
+                                    <div class="panel-body"><center>{{ form.monitor(**{'data-toggle': 'toggle'}) }}</center></div>
+                                </div>
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">Detector</div>
+                                    <div class="panel-body"><center>{{ form.detector(**{'data-toggle': 'toggle'}) }}</center></div>
+                                </div>
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">Mitigator</div>
+                                    <div class="panel-body"><center>{{ form.mitigator(**{'data-toggle': 'toggle'}) }}</center></div>
+                                </div>
+                                {{ form.submit(class_='btn btn-primary pull-right') }}
+                            </div>
+                        </div>
+                        {% if form.erros %}
+                            <div class="panel-footer">{{ form.errors }}</div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
 {% block scripts %}
     {{super()}}
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-{% endblock %}
-{% block navbar %}
-<div class="container-fluid">
-    <div class="navbar-header">
-    <a class="navbar-brand" href="{{ url_for('home') }}">{{ _('ARTEMIS') }}</a>
-    </div>
-    <div>
-    <ul class="nav navbar-nav">
-        <li>
-        <a class="navbar-brand" href="{{ url_for('main.display_status') }}">{{ _('Status') }}</a>
-        </li>
-        <li>
-        <a class="navbar-brand" href="{{ url_for('main.display_monitors') }}">{{ _('Monitors') }}</a>
-        </li>
-        <li>
-        <a class="navbar-brand" href="{{ url_for('main.display_hijacks') }}">{{ _('Hijacks') }}</a>
-        </li>
-    </ul>
-    <ul class="nav navbar-nav navbar-right">
-        {% if user.has_role('admin') %}
-        <li>
-        <a class="navbar-brand" href="{{ url_for('admin.index') }}">{{ _('Admin') }}</a>
-        </li>
-        {% endif %} {% if not user.is_authenticated %}
-        <li>
-        <a href="/login">
-            <span class="glyphicon glyphicon-log-in"></span> {{ _('Log In') }}</a>
-        </li>
-        {% else %}
-        <li>
-        <a href="/logout">
-            <span class="glyphicon glyphicon-log-out"></span> {{ _('Log Out') }}</a>
-        </li>
-        {% endif %}
-    </ul>
-    </div>
-</div>
 {% endblock %}

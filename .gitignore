@@ -2,3 +2,4 @@
 logs/*
 node_modules/
 artemis.db
+webapp.log

@@ -1,0 +1,51 @@
+{% extends "layout.htm" %}
+{% block metas %}
+    <meta http-equiv="refresh" content="10"/>
+{% endblock %}
+{% block head %}
+    {{super()}}
+{% endblock %}
+{% block content %}
+    {{super()}}
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h1>{{ type }} Logs</h1>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <h3>Search</h3>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-4 col-lg-offset-4">
+                    <input type="search" id="search" value="" class="form-control" placeholder="Search using Fuzzy searching">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    {{ data }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+    <script type="text/javascript">
+    $(function () {
+    $( '#table' ).searchable({
+    striped: true,
+    oddRow: { 'background-color': '#f5f5f5' },
+    evenRow: { 'background-color': '#fff' },
+    searchType: 'fuzzy'
+    });
+    });
+    </script>
+    <script src="//rawgithub.com/stidges/jquery-searchable/master/dist/jquery.searchable-1.0.0.min.js"></script>
+{% endblock %}
+{% block navbar %}
+    {{nav.top.render()}}
+{% endblock %}

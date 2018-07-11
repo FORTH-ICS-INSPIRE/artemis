@@ -6,12 +6,7 @@ from webapp.data.models import db, Role, User
 
 
 class BaseConfig(object):
-    DEBUG = False
-    TESTING = False
-    # sqlite :memory: identifier is the default if no filepath is present
-    SQLALCHEMY_DATABASE_URI = 'sqlite://'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = b':\xce!\x8ec\xaa\xa2T\xf2W\xa4F=\xb3\xd9\xb6D\xc3\x8a\x9b\xd5h\x85\x06'
     LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     LOGGING_LOCATION = 'webapp.log'
     LOGGING_LEVEL = logging.DEBUG
@@ -46,7 +41,7 @@ class ProductionConfig(BaseConfig):
     DEBUG = False
     TESTING = False
     ENV = 'prod'
-    SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///../db/artemis.db'
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
 
 
@@ -61,7 +56,7 @@ config = {
 def configure_app(app):
     config_name = os.getenv('FLASK_CONFIGURATION', 'default')
     app.config.from_object(config[config_name])
-    app.config.from_pyfile('config.cfg', silent=True)
+    app.config.from_pyfile('webapp.cfg', silent=True)
     # Configure logging
     handler = logging.FileHandler(app.config['LOGGING_LOCATION'])
     handler.setLevel(app.config['LOGGING_LEVEL'])

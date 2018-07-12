@@ -11,8 +11,8 @@
 
 [prefixes_group]
 
-forth_prefixes: 139.91.0.0/16
-sample_prefixes: 139.91.0.0/17
+forth_prefixes: 10.0.0.0/24, 20.0.0.0/24
+sample_prefixes: 30.0.0.0/24
 
 # - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #
@@ -42,10 +42,10 @@ bgpstreamlive: routeviews, ris
 
 [asns_group]
 
-forth_asn: 8522
-grnet_forth_upstream: 5408
-lamda_forth_upstream_back: 56910
-sample_asn: 12345
+forth_asn: 1, 2
+grnet_forth_upstream: 3
+lamda_forth_upstream_back: 4
+sample_asn: 5
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #

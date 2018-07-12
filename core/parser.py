@@ -1,12 +1,13 @@
-from configparser import ConfigParser, ParsingError
+from configparser import ConfigParser, ParsingError, MissingSectionHeaderError
 import os
 import sys
 import ipaddress
 import traceback
 from socketIO_client_nexus import SocketIO
 import re
+from core import ArtemisError
 
-MAX_ASN_NUMBER = 397213
+check_asn = lambda asn : asn > 0 and asn < 4294967295
 
 class ConfParser():
 
@@ -14,7 +15,6 @@ class ConfParser():
         self.definitions_ = None
         self.obj_ = dict()
         self.file = 'configs/config'
-        self.valid = True
 
         self.req_opt = set(['prefixes', 'origin_asns'])
         self.section_groups = set(['prefixes_group', 'asns_group', 'monitors_group'])
@@ -32,16 +32,16 @@ class ConfParser():
         self.parser = ConfigParser()
 
         self.process_field = {
-            'prefixes': self.__process_field_prefixes,
-            'origin_asns': self.__process_field_asns,
-            'neighbors': self.__process_field_asns,
-            'mitigation': self.__process_field_mitigation
+            'prefixes': self._process_field_prefixes,
+            'origin_asns': self._process_field_asns,
+            'neighbors': self._process_field_asns,
+            'mitigation': self._process_field_mitigation
         }
 
         self.process_group = {
-            'prefixes_group': self.__process_field_prefixes,
-            'asns_group': self.__process_field_asns,
-            'monitors_group': self.__process_monitors
+            'prefixes_group': self._process_field_prefixes,
+            'asns_group': self._process_field_asns,
+            'monitors_group': self._process_monitors
         }
 
     def parse_rrcs(self):
@@ -59,9 +59,9 @@ class ConfParser():
         try:
             self.parser.read(self.file)
         except ParsingError as e:
-            print('[!] Error: Configuration file could not be parsed with exception: {}'.format(e),
-                    file=sys.stderr)
-            raise e
+            raise ArtemisError('parsing-error', e)
+        except MissingSectionHeaderError as e:
+            raise ArtemisError('missing-section-header-error', e)
 
         # Filtering sections blocks
         sections_list = self.parser.sections()
@@ -73,28 +73,25 @@ class ConfParser():
         ]
 
         # Parse definition blocks
-        self.definitions_ = self.__parse_definition_blocks(sections_def_list)
+        self.definitions_ = self._parse_definition_blocks(sections_def_list)
 
         # Parse remaining blocks
-
         for section_name in sections_other_list:
             self.obj_[section_name] = dict()
 
-            if self.__validate_options(section_name):
+            if self._validate_options(section_name):
                 fields = self.parser.items(section_name)
 
                 for field in fields:
                     type_of_field = field[0]
 
                     if type_of_field not in self.supported_fields:
-                        self.__raise_error(
-                            'field-wrong', section_name, type_of_field)
-
+                        raise ArtemisError('wrong-field', '[{}][{}] for {}'.format(section_name, field, type_of_field))
                     values_of_field = field[1]
                     self.obj_[section_name][type_of_field] = self.process_field[type_of_field](
                         values_of_field, section_name)
 
-    def __parse_definition_blocks(self, section_labels):
+    def _parse_definition_blocks(self, section_labels):
         ret_ = dict()
 
         for group in self.section_groups:
@@ -109,102 +106,70 @@ class ConfParser():
                     if group == 'asns_group':
                         ret_[group][label] = self.process_group[group](
                             values, group, definition=True)
-
                     else:
                         ret_[group][label] = self.process_group[group](
                             values, group, label=label, definition=True)
 
-            else:
-                pass
-
         return ret_
 
-    def __process_field_prefixes(
+    def _process_field_prefixes(
         self,
         field,
         where,
         label=None,
         definition=False
     ):
-        prefixes = field.split(', ')
-        prefix_v = list()
-
-        if definition == True:
-            for prefix in prefixes:
-                try:
-                    prefix_v.append(ipaddress.ip_network(prefix))
-                except ValueError as e:
-                    print('[!] Error: Config block {} - {} with exception: {}'.format(where, label, e),
-                            file=sys.stderr)
-                    self.valid = False
-
+        if definition:
+            prefixes = [x.strip() for x in field.split(',')]
         else:
-            for prefix in prefixes:
-                try:
-                    prefix_v.append(ipaddress.ip_network(prefix))
-                except ValueError as e:
-                    if prefix in self.definitions_['prefixes_group']:
-                        prefix_v += self.definitions_['prefixes_group'][prefix]
-                    else:
-                        # error
-                        print('[!] Error: Not a valid group of prefixes', file=sys.stderr)
+            tmp_prefixes = [x.strip() for x in field.split(',')]
+            prefixes = [x for prefix in tmp_prefixes for x in self.definitions_['prefixes_group'].get(prefix, [prefix])]
 
-        return prefix_v
-
-    def __process_field_asns(self, field, where, definition=False):
         try:
-            if definition:
-                list_of_asns = list(map(int, field.split(', ')))
-                if all(map(self.__valid_asn_number, list_of_asns)):
-                    return sorted(list(set(list_of_asns)))
+            prefixes = set(map(ipaddress.ip_network, prefixes))
+        except ValueError as e:
+            raise ArtemisError('invalid-prefix', '[{}][{}][{}] with {}'.format(field, where, label, e))
+        return prefixes
 
-            else:
-                list_of_asns_ = field.split(', ')
-                list_of_asns = []
-                for asn in list_of_asns_:
-                    if asn in self.definitions_['asns_group']:
-                        list_of_asns += self.definitions_['asns_group'][asn]
-                    else:
-                        if self.__valid_asn_number(int(asn)):
-                            list_of_asns.append(int(asn))
+    def _process_field_asns(self, field, where, definition=False):
+        list_of_asns = [x.strip() for x in field.split(',')]
+        if definition:
+            asn_list = [asn for asn in list_of_asns]
+        else:
+            asn_list = [x for asn in list_of_asns for x in self.definitions_['asns_group'].get(asn, [asn])]
 
-                return sorted(list(set(list_of_asns)))
+        try:
+            asn_list = [int(asn) for asn in asn_list]
+        except ValueError as e:
+            raise ArtemisError('invalid-asn', '[{}][{}]'.format(field, where))
+        if not all(map(check_asn, asn_list)):
+            raise ArtemisError('invalid-asn', '[{}][{}]'.format(field, where))
+        return set(asn_list)
 
-        except Exception as e:
-            print(e)
-            self.__raise_error('origin_asns-error', where)
+        # raise ArtemisError('origin_asns-error', '{}'.format(where))
 
-    def __process_field_mitigation(self, field, where):
+    def _process_field_mitigation(self, field, where):
         mitigation_action = str(field)
         if mitigation_action == 'manual' or os.path.isfile(mitigation_action):
             return mitigation_action
 
         else:
-            self.__raise_error('mitigation-error', where)
-            return False
+            raise ArtemisError('mitigation-error', '{}'.format(where))
 
-    def __validate_options(self, section_name):
+    def _validate_options(self, section_name):
         opt_list = self.parser.options(section_name)
 
         if set(self.req_opt).issubset(opt_list):
             return True
-
         else:
-            self.__raise_error('keyword-missing', section_name)
-            return False
+            raise ArtemisError('keyword-missing', '{}'.format(section_name))
 
-    def __valid_asn_number(self, item):
-        # https://www.iana.org/assignments/as-numbers/as-numbers.xhtml
-        if type(item) == int and item > 0 and item < MAX_ASN_NUMBER:
-            return True
-        return False
-
-    def __process_monitors(self, field, where, label, definition=None):
+    def _process_monitors(self, field, where, label, definition=None):
         try:
             if label in self.available_monitor_types:
 
                 if label == 'riperis':
-                    riperis_ = set(field.split(', '))
+                    riperis_ = set([x.strip() for x in field.split(',')])
 
                     for unavailable in riperis_.difference(self.available_ris):
                         print('[!] Warning: unavailable monitor {}'.format(unavailable),
@@ -221,18 +186,14 @@ class ConfParser():
                 elif label == 'bgpstreamhist':
                     bgpstreamhist_ = str(field)
                     if not os.path.isdir(bgpstreamhist_):
-                        print('[!] Error: bgpstreamhist csv dir is not valid!',
-                                file=sys.stderr)
-                        self.valid = False
+                        raise ArtemisError('bgpstreamhist', 'csv dir is not valid')
                     else:
                         return bgpstreamhist_
 
                 elif label == 'bgpstreamlive':
-                    stream_projects_ = set(field.split(', '))
+                    stream_projects_ = set([x.strip() for x in field.split(',')])
                     if len(stream_projects_) == 0 or not stream_projects_.issubset(self.available_bgpstreamlive):
-                        print('[!] Error: bgpstreamlive project(s) not supported!',
-                                file=sys.stderr)
-                        self.valid = False
+                        raise ArtemisError('bgpstreamlive','project(s) not supported')
                     else:
                         return stream_projects_
 
@@ -243,45 +204,9 @@ class ConfParser():
                     return entries
             else:
                 # Error not a valid monitor
-                print('[!] Error: Not a valid monitor was provided: {}'.format(label),
-                        file=sys.stderr)
-                pass
+                raise ArtemisError('Invalid monitor', '')
         except ParsingError as e:
-            print('[!] Parsing Error: {}'.format(e))
-            raise e
-
-    def __raise_error(self, type_of_error, where, field=None):
-        if type_of_error == 'keyword-missing':
-            print('[!] Error: Missing keyword \'prefixes\' or \'origin_asns\' on config block: {}'.format(where),
-                    file=sys.stderr)
-            self.valid = False
-
-        elif type_of_error == 'field-wrong':
-            print('[!] Error: Found in \'{}\' the field -> \'{}\' which is not supported'.format(where, field),
-                    file=sys.stderr)
-            print('[!] List of supported fields: {}'.format(self.supported_fields),
-                    file=sys.stderr)
-            self.valid = False
-
-        elif type_of_error == 'mitigation-error':
-            print('[!] Error: Found in \'{}\' the mitigation field points to a non-existent script.'.format(where),
-                    file=sys.stderr)
-            self.valid = False
-
-        elif type_of_error == 'origin_asns-error':
-            print('[!] Error: origin_asns config block {} found a wrong ASN number.'.format(where))
-            self.valid = False
-
-        elif type_of_error == 'neighbors-error':
-            print('[!] Error: neighbors config block {} found a wrong ASN number.'.format(where))
-            self.valid = False
-
-        elif type_of_error == 'asns_group-error':
-            print('[!] Error: asns_group config block {} found a wrong ASN number.'.format(where))
-            self.valid = False
-
-    def isValid(self):
-        return self.valid
+            raise ArtemisError('Parsing Error', e)
 
     def get_obj(self):
         return self.obj_

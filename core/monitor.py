@@ -28,32 +28,31 @@ class Monitor():
                             config]['mitigation']
                 except Exception as e:
                     traceback.print_exc()
-            prefixes = self.prefix_tree.prefixes()
-            # Code here later to implement filter of monitors
-            self.init_ris_instances(prefixes)
-            # self.init_bgpmon_instance(prefixes)
-            self.init_exabgp_instance(prefixes)
-            self.init_bgpstreamhist_instance(prefixes)
-            self.init_bgpstreamlive_instance(prefixes)
+            self.init_ris_instances()
+            # self.init_bgpmon_instance()
+            self.init_exabgp_instances()
+            self.init_bgpstreamhist_instance()
+            self.init_bgpstreamlive_instance()
             self.flag = True
-            print('Monitors Started...')
+            print('[+] Monitors Started..')
 
     def stop(self):
         if self.flag:
             for proc_id in self.process_ids:
                 proc_id[1].terminate()
             self.flag = False
-            print('Monitors Stopped...')
+            print('[+] Monitors Stopped..')
 
-    def init_ris_instances(self, prefixes):
+    def init_ris_instances(self):
         try:
             monitors = self.confparser.get_monitors()
             if 'riperis' in monitors:
+                prefixes = self.prefix_tree.prefixes()
                 for prefix in prefixes:
                     for ris_monitor in monitors['riperis']:
                         p = Popen(['nodejs', 'taps/ripe_ris.js',
                                    '--prefix', prefix, '--host', ris_monitor])
-                        self.process_ids.append(('RIPEris', p))
+                        self.process_ids.append(('RIPEris {}'.format(ris_monitor), p))
         except Exception as e:
             traceback.print_exc()
 
@@ -66,20 +65,20 @@ class Monitor():
     #   except:
     #       print('Error on initializing of BGPmon.')
 
-    def init_exabgp_instance(self, prefixes):
+    def init_exabgp_instances(self):
         try:
             monitors = self.confparser.get_monitors()
             if 'exabgp' in monitors and len(monitors['exabgp']) > 0:
                 for exabgp_monitor in monitors['exabgp']:
                     prefixes = self.prefix_tree.prefixes()
-                    exabgp_monitor_str = exabgp_monitor[0] + ':' +  str(exabgp_monitor[1])
+                    exabgp_monitor_str = '{}:{}'.format(exabgp_monitor[0] ,exabgp_monitor[1])
                     p = Popen(['python3', 'taps/exabgp_client.py',
                         '--prefix', ','.join(prefixes), '--host', exabgp_monitor_str])
-                    self.process_ids.append(('ExaBGP', p))
+                    self.process_ids.append(('ExaBGP {}'.format(exabgp_monitor_str), p))
         except Exception as e:
             traceback.print_exc()
 
-    def init_bgpstreamhist_instance(self, prefixes):
+    def init_bgpstreamhist_instance(self):
         try:
             monitors = self.confparser.get_monitors()
             if 'bgpstreamhist' in monitors:
@@ -87,11 +86,11 @@ class Monitor():
                 bgpstreamhist_dir = monitors['bgpstreamhist']
                 p = Popen(['python3', 'taps/bgpstreamhist.py',
                         '--prefix', ','.join(prefixes), '--dir', bgpstreamhist_dir])
-                self.process_ids.append(('BGPStreamHist', p))
+                self.process_ids.append(('BGPStreamHist {}'.format(bgpstreamhist_dir), p))
         except Exception as e:
             traceback.print_exc()
 
-    def init_bgpstreamlive_instance(self, prefixes):
+    def init_bgpstreamlive_instance(self):
         try:
             monitors = self.confparser.get_monitors()
             if 'bgpstreamlive' in monitors:
@@ -99,6 +98,6 @@ class Monitor():
                 bgpstream_projects = ','.join(monitors['bgpstreamlive'])
                 p = Popen(['python3', 'taps/bgpstreamlive.py',
                         '--prefix', ','.join(prefixes), '--mon_projects', bgpstream_projects])
-                self.process_ids.append(('BGPStreamLive', p))
+                self.process_ids.append(('BGPStreamLive {}'.format(bgpstream_projects), p))
         except Exception as e:
             traceback.print_exc()

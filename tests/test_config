@@ -1,0 +1,74 @@
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                   ARTEMIS Config File                     #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   # 
+# - -                                                   - - #
+# - - - - - # Start of Prefix Definition Groups # - - - - - #
+# - -                                                   - - #
+
+[prefixes_group]
+
+forth_prefixes: 139.91.0.0/16
+sample_prefixes: 139.91.0.0/17
+
+# - -                                                   - - #
+# - - - - - # End of Prefix Definition Groups # - - - - - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           # 
+# - -                                                   - - #
+# - - - - - # Start of Monitor Definition Groups # - -- - - #
+# - -                                                   - - #
+
+[monitors_group]
+
+riperis: rrc15, rrc16, rrc17, rrc18, rrc19, rrc20, rrc21
+exabgp: (192.168.1.1 : 5000), (192.168.5.1 : 5000)
+bgpmon: (livebgp.netsec.colostate.edu : 5001)
+# bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
+bgpstreamlive: routeviews, ris
+
+# - -                                                   - - #
+# - - - - - # End of Monitor Definition Groups #  - - - - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           # 
+# - -                                                   - - #
+# - - - - - # Start of ASN  Definition Groups # - - - - - - #
+# - -                                                   - - #
+
+[asns_group]
+
+forth_asn: 8522
+grnet_forth_upstream: 5408
+lamda_forth_upstream_back: 56910
+sample_asn: 12345
+
+# - -                                                   - - #
+# - - - - - # End of Monitor Definition Groups #  - - - - - #
+# - -                                                   - - #
+#                                                           # 
+#                                                           #
+# - -                                                   - - #
+# - - - - - # Start of Rule Declaration Groups  # - - - - - #
+# - -                                                   - - #
+
+[group1]
+prefixes: forth_prefixes
+origin_asns: forth_asn
+neighbors: grnet_forth_upstream, lamda_forth_upstream_back
+mitigation: manual
+
+[group2]
+prefixes: forth_prefixes, sample_prefixes
+origin_asns: sample_asn, forth_asn
+neighbors: grnet_forth_upstream
+mitigation: manual
+
+# - -                                                   - - #
+# - - - - - # End of Rule Declaration Groups  # - - - - - - #
+# - -                                                   - - #
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #

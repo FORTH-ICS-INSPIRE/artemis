@@ -14,6 +14,12 @@ These instructions will get you a copy of the ARTEMIS tool up and running on you
 
 First, if not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install docker.
 
+If you would like to run docker without using sudo, please add the local user to the default docker group:
+
+```
+sudo usermod -aG docker $USER
+```
+
 If you do not have access to the mavromat/artemis image you can build your own by running:
 
 ```

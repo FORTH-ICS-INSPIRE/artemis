@@ -50,7 +50,7 @@ def main():
             grpc_.start()
 
             killer = GracefulKiller()
-            print('Send SIGTERM signal to end...\n')
+            print('[+] Send SIGTERM signal to end..\n')
             while True:
                 time.sleep(1)
                 if killer.kill_now:
@@ -65,9 +65,11 @@ def main():
             webapp_.stop()
 
             db.session.remove()
-            print("Bye!")
+
+            print('[+] Bye..!')
+            
     else:
-        print("The config file is wrong.")
+        print('[!] The config file is wrong..')
 
 
 if __name__ == '__main__':

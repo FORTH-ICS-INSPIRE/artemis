@@ -14,12 +14,23 @@ import configparser
 
 class TestConfParser(unittest.TestCase):
 
+    @classmethod
     @mock.patch.object(ConfParser, 'parse_rrcs')
-    def setUp(self, mock_parse_rrcs):
-        self.confParser = ConfParser()
-        self.confParser.file = 'test_config'
-        self.confParser.available_ris = set(['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'])
-        self.confParser.parse_file()
+    def setUpClass(cls, mock_parse):
+        cls.confParser = ConfParser()
+        cls.confParser.file = 'test_config'
+        cls.confParser.available_ris = set(['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'])
+        cls.confParser.parse_file()
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
 
     @mock.patch.object(ConfParser, 'parse_rrcs')
     def test_isValid(self, mock_parse_rrcs):

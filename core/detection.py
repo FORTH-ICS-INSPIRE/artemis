@@ -35,7 +35,7 @@ class Detection():
 
     def parse_queue(self):
         with app.app_context():
-            print('Detection Mechanism Started...')
+            print('[+] Detection Mechanism Started..')
             self.init_detection()
 
             unhandled_events = Monitor.query.filter_by(handled=False).all()
@@ -83,7 +83,8 @@ class Detection():
                             db.session.expunge(monitor_event)
                 except Exception as e:
                     traceback.print_exc()
-            print('Detection Mechanism Stopped...')
+            print('[+] Detection Mechanism Stopped..')
+
 
     def detect_origin_hijack(self, monitor_event):
         try:

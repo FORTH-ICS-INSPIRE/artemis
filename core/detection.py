@@ -1,4 +1,5 @@
 import radix
+from webapp import app
 from webapp.data.models import Hijack, Monitor, db
 import _thread
 from multiprocessing import Queue
@@ -33,55 +34,56 @@ class Detection():
             self.monitor_queue.put(None)
 
     def parse_queue(self):
-        print('Detection Mechanism Started...')
-        self.init_detection()
+        with app.app_context():
+            print('Detection Mechanism Started...')
+            self.init_detection()
 
-        unhandled_events = Monitor.query.filter_by(handled=False).all()
+            unhandled_events = Monitor.query.filter_by(handled=False).all()
 
-        for monitor_event in unhandled_events:
-            try:
-                if monitor_event is None:
-                    continue
-
-                # ignore withdrawals for now
-                if monitor_event.type == 'W':
-                    monitor_event.handled = True
-                    db.commit()
-                    continue
-
-                if(not self.detect_origin_hijack(monitor_event)):
-                    if(not self.detect_type_1_hijack(monitor_event)):
-                        monitor_event.handled = True
-                        db.commit()
-                        db.expunge(monitor_event)
-            except Exception as e:
-                traceback.print_exc()
-
-        while self.flag:
-            try:
-                monitor_event = self.monitor_queue.get()
-                if monitor_event is None:
-                    continue
-
+            for monitor_event in unhandled_events:
                 try:
-                    db.add(monitor_event)
-                except exc.InvalidRequestError:
-                    db.rollback()
+                    if monitor_event is None:
+                        continue
 
-                # ignore withdrawals for now
-                if monitor_event.type == 'W':
-                    monitor_event.handled = True
-                    db.commit()
-                    continue
-
-                if(not self.detect_origin_hijack(monitor_event)):
-                    if(not self.detect_type_1_hijack(monitor_event)):
+                    # ignore withdrawals for now
+                    if monitor_event.type == 'W':
                         monitor_event.handled = True
-                        db.commit()
-                        db.expunge(monitor_event)
-            except Exception as e:
-                traceback.print_exc()
-        print('Detection Mechanism Stopped...')
+                        db.session.commit()
+                        continue
+
+                    if not self.detect_origin_hijack(monitor_event):
+                        if not self.detect_type_1_hijack(monitor_event):
+                            monitor_event.handled = True
+                            db.session.commit()
+                            db.session.expunge(monitor_event)
+                except Exception as e:
+                    traceback.print_exc()
+
+            while self.flag:
+                try:
+                    monitor_event = self.monitor_queue.get()
+                    if monitor_event is None:
+                        continue
+
+                    try:
+                        db.session.add(monitor_event)
+                    except exc.InvalidRequestError:
+                        db.session.rollback()
+
+                    # ignore withdrawals for now
+                    if monitor_event.type == 'W':
+                        monitor_event.handled = True
+                        db.session.commit()
+                        continue
+
+                    if not self.detect_origin_hijack(monitor_event):
+                        if not self.detect_type_1_hijack(monitor_event):
+                            monitor_event.handled = True
+                            db.session.commit()
+                            db.session.expunge(monitor_event)
+                except Exception as e:
+                    traceback.print_exc()
+            print('Detection Mechanism Stopped...')
 
     def detect_origin_hijack(self, monitor_event):
         try:
@@ -102,8 +104,8 @@ class Detection():
 
                         if hijack_event is None or hijack_event.time_ended is not None:
                             hijack = Hijack(monitor_event, origin_asn, 0)
-                            db.add(hijack)
-                            db.commit()
+                            db.session.add(hijack)
+                            db.session.commit()
                             hijack_id = hijack.id
                             print('[DETECTION] NEW HIJACK!')
                             print(str(hijack))
@@ -136,8 +138,8 @@ class Detection():
                         # Update monitor with new Hijack ID and register possible Hijack event changes
                         monitor_event.hijack_id = hijack_id
                         monitor_event.handled = True
-                        db.commit()
-                        db.expunge(monitor_event)
+                        db.session.commit()
+                        db.session.expunge(monitor_event)
 
                         return True
             return False
@@ -164,8 +166,8 @@ class Detection():
                         if hijack_event is None or hijack_event.time_ended is not None:
                             hijack = Hijack(
                                 monitor_event, first_neighbor_asn, 1)
-                            db.add(hijack)
-                            db.commit()
+                            db.session.add(hijack)
+                            db.session.commit()
                             hijack_id = hijack.id
                             print('[DETECTION] NEW HIJACK!')
                             print(str(hijack))
@@ -198,8 +200,8 @@ class Detection():
                         # Update monitor with new Hijack ID and register possible Hijack event changes
                         monitor_event.hijack_id = hijack_id
                         monitor_event.handled = True
-                        db.commit()
-                        db.expunge(monitor_event)
+                        db.session.commit()
+                        db.session.expunge(monitor_event)
 
                         return True
             return False

@@ -15,12 +15,13 @@ app = Flask(__name__,
             instance_relative_config=True,
             template_folder='templates')
 
-configure_app(app)
-cache.init_app(app)
-db.init_app(app)
-Bootstrap(app)
-babel = Babel(app)
-app.jinja_env.add_extension('jinja2.ext.loopcontrols')
+with app.app_context():
+    configure_app(app)
+    cache.init_app(app)
+    db.init_app(app)
+    Bootstrap(app)
+    babel = Babel(app)
+    app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 
 from webapp.main.controllers import main
 from webapp.admin.controllers import admin

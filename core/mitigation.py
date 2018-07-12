@@ -37,7 +37,7 @@ class Mitigation():
 
     def parse_queue(self):
         with app.app_context():
-            print('Mitigation Mechanism Started...')
+            print('[+] Mitigation Mechanism Started...')
             self.init_mitigation()
 
             to_mitigate_events = Hijack.query.filter_by(to_mitigate=True).all()
@@ -53,9 +53,9 @@ class Mitigation():
                     if prefix_node is not None:
                         mitigation_action = prefix_node.data['mitigation']
                         if mitigation_action == 'manual':
-                            print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                            print("[+] Starting manual mitigation of Hijack {}".format(hijack_event.id))
                         else:
-                            print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                            print("[+] Starting custom mitigation of Hijack {}".format(hijack_event.id))
                             hijack_event_str = json.dumps(hijack_event.to_dict())
                             subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                     hijack_event.to_mitigate = False
@@ -86,9 +86,9 @@ class Mitigation():
                     if prefix_node is not None:
                         mitigation_action = prefix_node.data['mitigation']
                         if mitigation_action == 'manual':
-                            print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                            print("[+] Starting manual mitigation of Hijack {}".format(hijack_event.id))
                         else:
-                            print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                            print("[+] Starting custom mitigation of Hijack {}".format(hijack_event.id))
                             hijack_event_str = json.dumps(hijack_event.to_dict())
                             subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                     hijack_event.to_mitigate = False
@@ -97,4 +97,4 @@ class Mitigation():
                     db.session.expunge(hijack_event)
                 except Exception as e:
                     traceback.print_exc()
-            print('Mitigation Mechanism Stopped...')
+            print('[+] Mitigation Mechanism Stopped...')

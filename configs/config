@@ -41,7 +41,7 @@ bgpstreamlive: routeviews, ris
 forth_asn: 8522
 grnet_forth_upstream: 5408
 lamda_forth_upstream_back: 56910
-voadafone_forth_upstream_back: 12361
+vodafone_forth_upstream_back: 12361
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
@@ -55,7 +55,7 @@ voadafone_forth_upstream_back: 12361
 [group1]
 prefixes: forth_prefixes
 origin_asns: forth_asn
-neighbors: grnet_forth_upstream, lamda_forth_upstream_back, voadafone_forth_upstream_back
+neighbors: grnet_forth_upstream, lamda_forth_upstream_back, vodafone_forth_upstream_back
 mitigation: manual
 
 # - -                                                   - - #

@@ -6,6 +6,7 @@ from concurrent import futures
 from protobuf_to_dict import protobuf_to_dict
 from sqlalchemy import exc
 from webapp.data.models import Monitor, db
+from webapp import app
 import traceback
 
 
@@ -24,18 +25,20 @@ class GrpcServer():
             self.detector = detector
 
         def queryMformat(self, request, context):
-            monitor_event = Monitor(protobuf_to_dict(request))
 
-            try:
-                db.session.add(monitor_event)
-                db.session.commit()
-                if monitor_event.type == 'A' and self.detector.flag:
-                    self.detector.monitor_queue.put(monitor_event)
-            except exc.SQLAlchemyError as e:
-                db.session.rollback()
-                duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"
-                if duplicate_entry_str not in str(e):
-                    traceback.print_exc()
+            with app.app_context():
+                monitor_event = Monitor(protobuf_to_dict(request))
+
+                try:
+                    db.session.add(monitor_event)
+                    db.session.commit()
+                    if monitor_event.type == 'A' and self.detector.flag:
+                        self.detector.monitor_queue.put(monitor_event)
+                except exc.SQLAlchemyError as e:
+                    db.session.rollback()
+                    duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"
+                    if duplicate_entry_str not in str(e):
+                        traceback.print_exc()
 
             return mservice_pb2.Empty()
 

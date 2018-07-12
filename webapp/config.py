@@ -25,7 +25,7 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     TESTING = False
     ENV = 'dev'
-    SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/test.db'
     SECRET_KEY = b':\xce!\x8ec\xaa\xa2T\xf2W\xa4F=\xb3\xd9\xb6D\xc3\x8a\x9b\xd5h\x85\x06'
 
 
@@ -33,7 +33,7 @@ class StagingConfig(BaseConfig):
     DEBUG = False
     TESTING = True
     ENV = 'staging'
-    SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/test.db'
     SECRET_KEY = b'\xad\xf3o\xe3\x00\xd6-<3\xee\xcd\x9e\x9c8[\x83#\xab\x05\xaaM\x8f5\xd6'
 
 

@@ -1,8 +1,6 @@
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                   ARTEMIS Config File                     #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
 
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   # 
 # - -                                                   - - #
@@ -27,7 +25,7 @@ forth_prefixes: 139.91.0.0/16
 riperis: rrc01, rrc02, rrc03, rrc04, rrc05, rrc06, rrc07, rrc08, rrc09, rrc10, rrc11, rrc12, rrc13, rrc14, rrc15, rrc16, rrc17, rrc18, rrc19, rrc20, rrc21, rrc22, rrc23
 #exabgp: (192.168.1.1 : 5000), (192.168.5.1 : 5000)
 #bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
-#bgpstreamlive: routeviews, ris
+bgpstreamlive: routeviews, ris
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
@@ -43,6 +41,7 @@ riperis: rrc01, rrc02, rrc03, rrc04, rrc05, rrc06, rrc07, rrc08, rrc09, rrc10, r
 forth_asn: 8522
 grnet_forth_upstream: 5408
 lamda_forth_upstream_back: 56910
+voadafone_forth_upstream_back: 12361
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #
@@ -56,7 +55,7 @@ lamda_forth_upstream_back: 56910
 [group1]
 prefixes: forth_prefixes
 origin_asns: forth_asn
-neighbors: grnet_forth_upstream, lamda_forth_upstream_back
+neighbors: grnet_forth_upstream, lamda_forth_upstream_back, voadafone_forth_upstream_back
 mitigation: manual
 
 # - -                                                   - - #

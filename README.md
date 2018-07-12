@@ -2,23 +2,26 @@
 
 ARTEMIS is a defense approach versus BGP prefix hijacking attacks (a) based on accurate and fast detection operated by the AS itself, leveraging the pervasiveness of publicly available BGP monitoring services and their recent shift towards real-time streaming, thus (b) enabling flexible and fast mitigation of hijacking events. Compared to existing approaches/tools, ARTEMIS combines characteristics desirable to network operators such as comprehensiveness, accuracy, speed, privacy, and flexibility. With the ARTEMIS approach, prefix hijacking can be neutralized within a minute!
 
-You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis .
+You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis.
 
 ## Getting Started
 
-These instructions will get you a copy of the ARTEMIS tool up and running on your local machine for testing purposes. For a detailed view of the ARTEMIS system architecture please check architecture.txt.
+These instructions will get you a copy of the ARTEMIS tool up and running on your local machine for testing purposes. For a detailed view of the ARTEMIS system architecture please check architecture.txt. We highly recommend using the containerized approach.
 
-## ARTEMIS as Container
+## ARTEMIS as Container (Recommended)
 
 ### How to run
 
-First, create a directory that includes the `config` and `webapp.cfg` configuration files.
+First, if not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install docker.
 
 If you do not have access to the mavromat/artemis image you can build your own by running:
 
 ```
 docker build -t mavromat/artemis .
 ```
+after you have entered the root folder of the cloned artermis repo.
+
+Then, create a directory that includes the `config` and `webapp.cfg` configuration files.
 
 Then, you need to run the container with the following command:
 
@@ -51,7 +54,7 @@ iptables -t filter -X
 systemctl restart docker
 ```
 
-## ARTEMIS from source
+## ARTEMIS from source (Not recommended)
 
 ### Dependencies
 

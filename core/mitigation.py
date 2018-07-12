@@ -1,10 +1,10 @@
 import radix
-from webapp.models import Hijack
+from webapp import app
+from webapp.data.models import Hijack, db
 import _thread
 from multiprocessing import Queue
 import subprocess
 from sqlalchemy import and_, exc
-from webapp.shared import db_session
 import traceback
 import time
 import json
@@ -36,64 +36,65 @@ class Mitigation():
             self.hijack_queue.put(None)
 
     def parse_queue(self):
-        print('Mitigation Mechanism Started...')
-        self.init_mitigation()
+        with app.app_context():
+            print('Mitigation Mechanism Started...')
+            self.init_mitigation()
 
-        to_mitigate_events = Hijack.query.filter_by(to_mitigate=True).all()
+            to_mitigate_events = Hijack.query.filter_by(to_mitigate=True).all()
 
-        for hijack_event in to_mitigate_events:
-            try:
-                if hijack_event is None:
-                    continue
-
-                hijack_event.mitigation_started = time.time()
-                prefix_node = self.prefix_tree.search_best(
-                    hijack_event.prefix)
-                if prefix_node is not None:
-                    mitigation_action = prefix_node.data['mitigation']
-                    if mitigation_action == 'manual':
-                        print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
-                    else:
-                        print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
-                        hijack_event_str = json.dumps(hijack_event.to_dict())
-                        subprocess.Popen([mitigation_action, '-i', hijack_event_str])
-                hijack_event.to_mitigate = False
-
-                db_session.commit()
-                db_session.expunge(hijack_event)
-            except Exception as e:
-                traceback.print_exc()
-
-        while self.flag:
-            try:
-                hijack_id = self.hijack_queue.get()
-                if hijack_id is None:
-                    continue
-
-                hijack_event = Hijack.query.filter(
-                                    Hijack.id.like(hijack_id)
-                               ).first()
-
+            for hijack_event in to_mitigate_events:
                 try:
-                    db_session.add(hijack_event)
-                except exc.InvalidRequestError:
-                    db_session.rollback()
+                    if hijack_event is None:
+                        continue
 
-                hijack_event.mitigation_started = time.time()
-                prefix_node = self.prefix_tree.search_best(
-                    hijack_event.prefix)
-                if prefix_node is not None:
-                    mitigation_action = prefix_node.data['mitigation']
-                    if mitigation_action == 'manual':
-                        print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
-                    else:
-                        print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
-                        hijack_event_str = json.dumps(hijack_event.to_dict())
-                        subprocess.Popen([mitigation_action, '-i', hijack_event_str])
-                hijack_event.to_mitigate = False
+                    hijack_event.mitigation_started = time.time()
+                    prefix_node = self.prefix_tree.search_best(
+                        hijack_event.prefix)
+                    if prefix_node is not None:
+                        mitigation_action = prefix_node.data['mitigation']
+                        if mitigation_action == 'manual':
+                            print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                        else:
+                            print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                            hijack_event_str = json.dumps(hijack_event.to_dict())
+                            subprocess.Popen([mitigation_action, '-i', hijack_event_str])
+                    hijack_event.to_mitigate = False
 
-                db_session.commit()
-                db_session.expunge(hijack_event)
-            except Exception as e:
-                traceback.print_exc()
-        print('Mitigation Mechanism Stopped...')
+                    db.session.commit()
+                    db.session.expunge(hijack_event)
+                except Exception as e:
+                    traceback.print_exc()
+
+            while self.flag:
+                try:
+                    hijack_id = self.hijack_queue.get()
+                    if hijack_id is None:
+                        continue
+
+                    hijack_event = Hijack.query.filter(
+                                        Hijack.id.like(hijack_id)
+                                ).first()
+
+                    try:
+                        db.session.add(hijack_event)
+                    except exc.InvalidRequestError:
+                        db.session.rollback()
+
+                    hijack_event.mitigation_started = time.time()
+                    prefix_node = self.prefix_tree.search_best(
+                        hijack_event.prefix)
+                    if prefix_node is not None:
+                        mitigation_action = prefix_node.data['mitigation']
+                        if mitigation_action == 'manual':
+                            print("Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                        else:
+                            print("Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                            hijack_event_str = json.dumps(hijack_event.to_dict())
+                            subprocess.Popen([mitigation_action, '-i', hijack_event_str])
+                    hijack_event.to_mitigate = False
+
+                    db.session.commit()
+                    db.session.expunge(hijack_event)
+                except Exception as e:
+                    traceback.print_exc()
+            print('Mitigation Mechanism Stopped...')

@@ -4,9 +4,8 @@ from protogrpc import mservice_pb2_grpc, hservice_pb2_grpc
 import _thread
 from concurrent import futures
 from protobuf_to_dict import protobuf_to_dict
-from webapp.models import Monitor
 from sqlalchemy import exc
-from webapp.shared import db_session
+from webapp.data.models import Monitor, db
 import traceback
 
 
@@ -28,12 +27,12 @@ class GrpcServer():
             monitor_event = Monitor(protobuf_to_dict(request))
 
             try:
-                db_session.add(monitor_event)
-                db_session.commit()
+                db.session.add(monitor_event)
+                db.session.commit()
                 if monitor_event.type == 'A' and self.detector.flag:
                     self.detector.monitor_queue.put(monitor_event)
             except exc.SQLAlchemyError as e:
-                db_session.rollback()
+                db.session.rollback()
                 duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"
                 if duplicate_entry_str not in str(e):
                     traceback.print_exc()

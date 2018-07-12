@@ -65,7 +65,9 @@ def main():
             webapp_.stop()
 
             db.session.remove()
+
             print('[+] Bye..!')
+            
     else:
         print('[!] The config file is wrong..')
 

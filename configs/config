@@ -27,7 +27,7 @@ forth_prefixes: 139.91.0.0/16
 riperis: rrc01, rrc02, rrc03, rrc04, rrc05, rrc06, rrc07, rrc08, rrc09, rrc10, rrc11, rrc12, rrc13, rrc14, rrc15, rrc16, rrc17, rrc18, rrc19, rrc20, rrc21, rrc22, rrc23
 #exabgp: (192.168.1.1 : 5000), (192.168.5.1 : 5000)
 #bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
-bgpstreamlive: routeviews, ris
+#bgpstreamlive: routeviews, ris
 
 # - -                                                   - - #
 # - - - - - # End of Monitor Definition Groups #  - - - - - #

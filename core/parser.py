@@ -45,12 +45,15 @@ class ConfParser():
         }
 
     def parse_rrcs(self):
-        with SocketIO('http://stream-dev.ris.ripe.net/stream') as socket_io:
+        try:
+            socket_io = SocketIO('http://stream-dev.ris.ripe.net/stream', wait_for_connection=False)
             def on_msg(msg):
                 self.available_ris = set(msg)
                 socket_io.disconnect()
             socket_io.on('ris_rrc_list', on_msg)
-            socket_io.wait()
+            socket_io.wait(seconds=3)
+        except Exception:
+            print('[!] RIPE RIS server is down. Try again later..')
 
     def parse_file(self):
         try:

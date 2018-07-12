@@ -1,58 +1,58 @@
-from webapp.shared import db, app
-from sqlalchemy import Column, Integer, String, Float, \
-    desc, Boolean, UniqueConstraint, DateTime
-import time
+from flask_sqlalchemy import SQLAlchemy
+from flask_security import UserMixin, RoleMixin
+
+db = SQLAlchemy()
+
+roles_users = db.Table('roles_users', \
+db.Column('user_id', db.Integer(), db.ForeignKey('user.id')), \
+db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 
-# class Role(db.Model):
-#     __tablename__ = 'roles'
-#     id = Column(Integer(), primary_key=True)
-#     name = Column(String(80), unique=True)
-#     description = Column(String(255))
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
 
-
-class User(db.Model):
-    __tablename__ = 'users'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(255), unique=True)
-    password = Column(String(255))
-    # active = Column(Boolean())
-    # confirmed_at = Column(DateTime())
-    # roles = db.relationship('Role')
-
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
-
-    def get_id(self):
-        return self.id
-
-    def is_active(self):
-        return True
-
-    def is_authenticated(self):
-        return True
+    def __init__(self, name):
+        self.name = name
 
     def __repr__(self):
-        return '<User id:{}, username:{}, password:{}>'.format(
-            self.id, self.username, self.password)
+        return '<Role %r>' % (self.name)
+
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True)
+    password = db.Column(db.String(255))
+    active = db.Column(db.Boolean())
+    roles = db.relationship('Role', secondary=roles_users,
+                            backref=db.backref('users', lazy='dynamic'))
+
+    def __init__(self, email, password, active, roles):
+        self.email = email
+        self.password = password
+        self.active = active
+        self.roles = roles
+
+    def __repr__(self):
+        return '<User %r>' % (self.email)
 
 
 class Monitor(db.Model):
     __tablename__ = 'monitors'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    prefix = Column(String(22))
-    origin_as = Column(String(6))
-    peer_as = Column(String(6))
-    as_path = Column(String(100))
-    service = Column(String(50))
-    type = Column(String(1))
-    timestamp = Column(Float)
-    hijack_id = Column(Integer, nullable=True)
-    handled = Column(Boolean)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    prefix = db.Column(db.String(22))
+    origin_as = db.Column(db.String(6))
+    peer_as = db.Column(db.String(6))
+    as_path = db.Column(db.String(100))
+    service = db.Column(db.String(50))
+    type = db.Column(db.String(1))
+    timestamp = db.Column(db.Float)
+    hijack_id = db.Column(db.Integer, nullable=True)
+    handled = db.Column(db.Boolean)
 
     __table_args__ = (
-        UniqueConstraint(
+        db.UniqueConstraint(
             'prefix',
             'origin_as',
             'peer_as',
@@ -94,17 +94,17 @@ class Monitor(db.Model):
 
 class Hijack(db.Model):
     __tablename__ = 'hijacks'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String(1))
-    prefix = Column(String(22))
-    hijack_as = Column(String(6))
-    num_peers_seen = Column(Integer)
-    num_asns_inf = Column(Integer)
-    time_started = Column(Float)
-    time_last = Column(Float)
-    time_ended = Column(Float)
-    mitigation_started = Column(Float)
-    to_mitigate = Column(Boolean)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    type = db.Column(db.String(1))
+    prefix = db.Column(db.String(22))
+    hijack_as = db.Column(db.String(6))
+    num_peers_seen = db.Column(db.Integer)
+    num_asns_inf = db.Column(db.Integer)
+    time_started = db.Column(db.Float)
+    time_last = db.Column(db.Float)
+    time_ended = db.Column(db.Float)
+    mitigation_started = db.Column(db.Float)
+    to_mitigate = db.Column(db.Boolean)
 
     def __init__(self, msg, asn, htype):
         self.type = htype

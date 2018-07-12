@@ -1,7 +1,7 @@
-from webapp.shared import babel
 from babel.dates import format_datetime
 from flask_table import Table, Col, DatetimeCol, BoolCol, ButtonCol
 from flask import url_for
+from webapp import babel
 
 
 class CustomDatetimeCol(Col):
@@ -43,7 +43,7 @@ class MonitorTable(Table):
             direction = 'desc'
         else:
             direction = 'asc'
-        return url_for('show_monitors', sort=col_key, direction=direction)
+        return url_for('main.display_monitors', sort=col_key, direction=direction)
 
 
 class HijackTable(Table):
@@ -70,4 +70,4 @@ class HijackTable(Table):
             direction = 'desc'
         else:
             direction = 'asc'
-        return url_for('show_hijacks', sort=col_key, direction=direction)
+        return url_for('main.display_hijacks', sort=col_key, direction=direction)

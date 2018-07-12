@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layout.htm" %}
 {% block metas %}
     <meta http-equiv="refresh" content="10"/>
 {% endblock %}
@@ -45,7 +45,4 @@
     });
     </script>
     <script src="//rawgithub.com/stidges/jquery-searchable/master/dist/jquery.searchable-1.0.0.min.js"></script>
-{% endblock %}
-{% block navbar %}
-    {{nav.top.render()}}
 {% endblock %}

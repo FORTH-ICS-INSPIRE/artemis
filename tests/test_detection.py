@@ -59,8 +59,8 @@ class TestDetection(unittest.TestCase):
 
         # prefix: 10.0.0.0/24, origin_asns = {1}, neighbors = {2,3,4}
         node = self.detection.prefix_tree.add('10.0.0.0/24')
-        node.data['origin_asns'] = set([1])
-        node.data['neighbors'] = set([2,3,4])
+        node.data['origin_asns'] = {1}
+        node.data['neighbors'] = {2,3,4}
 
         with app.app_context():
             db.drop_all()

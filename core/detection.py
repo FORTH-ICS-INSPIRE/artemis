@@ -108,8 +108,7 @@ class Detection():
                             db.session.add(hijack)
                             db.session.commit()
                             hijack_id = hijack.id
-                            print('[DETECTION] NEW HIJACK!')
-                            print(str(hijack))
+                            print('[DETECTION] NEW TYPE 0 HIJACK!\n{}'.format(hijack))
                         else:
                             if monitor_event.timestamp < hijack_event.time_started:
                                 hijack_event.time_started = monitor_event.timestamp
@@ -148,9 +147,21 @@ class Detection():
             traceback.print_exc()
 
     def detect_type_1_hijack(self, monitor_event):
+        def remove_prepending(seq):
+            last_add = None
+            new_seq = []
+            for x in seq:
+                if last_add != x:
+                    last_add = x
+                    new_seq.append(x)
+
+            if len(set(seq)) != len(new_seq):
+                raise Exception('Routing Loop: {}'.format(seq))
+            return new_seq
+
         try:
             if len(monitor_event.as_path) > 1:
-                first_neighbor_asn = int(monitor_event.as_path.split(' ')[-2])
+                first_neighbor_asn = int(remove_prepending(monitor_event.as_path.split(' '))[-2])
                 prefix_node = self.prefix_tree.search_best(
                     monitor_event.prefix)
                 if prefix_node is not None:
@@ -170,8 +181,7 @@ class Detection():
                             db.session.add(hijack)
                             db.session.commit()
                             hijack_id = hijack.id
-                            print('[DETECTION] NEW HIJACK!')
-                            print(str(hijack))
+                            print('[DETECTION] NEW TYPE 1 HIJACK!\n{}'.format(hijack))
                         else:
                             if monitor_event.timestamp < hijack_event.time_started:
                                 hijack_event.time_started = monitor_event.timestamp

@@ -27,7 +27,6 @@ class TestMonitor(unittest.TestCase):
         self.monitor = Monitor(self.confParser)
 
     def test_start(self):
-        print('[!] Testing monitor start')
         self.monitor.start()
 
         ripe, exa, live = [], [], []

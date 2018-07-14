@@ -29,7 +29,7 @@ def main():
     confparser_.parse_file()
 
     systemcheck_ = SysCheck()
-    if(systemcheck_.isValid()):
+    if systemcheck_.isValid():
         # Instatiate Modules
         monitor_ = Monitor(confparser_)
         detection_ = Detection(confparser_)

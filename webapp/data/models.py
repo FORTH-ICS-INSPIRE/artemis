@@ -63,12 +63,22 @@ class Monitor(db.Model):
         ),
     )
 
+    def __check_as_path(self, as_path):
+        res = []
+        for as_ in as_path:
+            if isinstance(as_, int):
+                res.append(str(as_))
+            else:
+                raise ValueError('Received wrong AS path format')
+        return ' '.join(res)
+
+
     def __init__(self, msg):
         self.prefix = msg['prefix']
         self.service = msg['service']
         self.type = msg['type']
         if self.type == 'A':
-            self.as_path = ' '.join(map(str, msg['as_path']))
+            self.as_path = self.__check_as_path(msg['as_path'])
             self.origin_as = str(msg['as_path'][-1])
             self.peer_as = str(msg['as_path'][0])
         else:

@@ -6,6 +6,7 @@ from multiprocessing import Queue
 from sqlalchemy import and_, exc, desc
 import traceback
 from core import exception_handler
+import ipaddress
 
 class Detection():
 
@@ -99,6 +100,9 @@ class Detection():
             peers_seen = set()
             inf_asns = set()
 
+            # handle inf_asns as if its an type0 hijack
+            if hij_type is 'S':
+                hij_type = 0
             for monitor in hijack_monitors:
                 peers_seen.add(monitor.peer_as)
                 inf_asns.update(
@@ -158,7 +162,16 @@ class Detection():
 
     @exception_handler
     def detect_subprefix_hijack(self, monitor_event):
-        pass
+        as_path = Detection.__remove_prepending(monitor_event.as_path.split(' '))
+        if len(as_path) > 0:
+            mon_prefix = ipaddress.ip_network(monitor_event.prefix)
+            prefix_node = self.prefix_tree.search_best(
+                monitor_event.prefix)
+            if prefix_node is not None and prefix_node.prefixlen < mon_prefix.prefixlen:
+                self.commit_hijack(monitor_event, -1, 'S')
+                return True
+        return False
+
 
     @exception_handler
     def mark_handled(self, monitor_event):

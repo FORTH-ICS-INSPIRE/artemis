@@ -15,7 +15,7 @@ class TestMonitor(unittest.TestCase):
     @mock.patch.object(ConfParser, 'parse_rrcs')
     def setUp(self, mock_parse_rrcs):
         self.confParser = ConfParser()
-        self.confParser.file = 'test_config'
+        self.confParser.file = 'tests/test_config'
         self.confParser.available_ris = set(['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'])
         self.confParser.parse_file()
 

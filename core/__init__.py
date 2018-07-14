@@ -18,5 +18,5 @@ def exception_handler(f):
             return f(*args)
         except Exception as e:
             traceback.print_exc()
-            return False
+            return True
     return wrapper

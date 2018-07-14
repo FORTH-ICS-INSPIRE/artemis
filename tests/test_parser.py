@@ -19,7 +19,7 @@ class TestConfParser(unittest.TestCase):
     @mock.patch.object(ConfParser, 'parse_rrcs')
     def setUpClass(cls, mock_parse):
         cls.confParser = ConfParser()
-        cls.confParser.file = 'test_config'
+        cls.confParser.file = 'tests/test_config'
         cls.confParser.available_ris = set(['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'])
         cls.confParser.parse_file()
 
@@ -36,7 +36,7 @@ class TestConfParser(unittest.TestCase):
     @mock.patch.object(ConfParser, 'parse_rrcs')
     def test_isValid(self, mock_parse_rrcs):
         wrongParser = ConfParser()
-        wrongParser.file = 'test_wrong_config'
+        wrongParser.file = 'tests/test_wrong_config'
 
         with self.assertRaises(ArtemisError) as ex:
             wrongParser.parse_file()

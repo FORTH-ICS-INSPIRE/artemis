@@ -361,6 +361,51 @@ class TestDetection(unittest.TestCase):
         self.assertEqual(len(hijack_rows), 0, msg='[!] Wrong number of detected hijacks')
 
 
+    @mock.patch.object(Detection, 'init_detection')
+    def test_subprefix_detection(self, mock_init):
+        from webapp.data.models import Monitor
+
+        # legitimate update with path prepending
+        mon_1 = Monitor({
+                'prefix':'10.0.0.0/24',
+                'service':'testing',
+                'type':'A',
+                'as_path': [ 9, 8, 7, 6, 5, 4, 4, 1, 1, 1 ],
+                'timestamp': 0
+        })
+
+        # subprefix hijack
+        mon_2 = Monitor({
+                'prefix':'10.0.0.0/25',
+                'service':'testing',
+                'type':'A',
+                'as_path': [ 9, 8, 666, 7, 6, 4, 1 ],
+                'timestamp': 1
+        })
+
+        commit([mon_1, mon_2])
+        self.detection.parse_queue()
+
+        # query sqlite db
+        self.c.execute('SELECT * FROM monitors')
+        monitor_rows = self.c.fetchall()
+        self.c.execute('SELECT * FROM hijacks')
+        hijack_rows = self.c.fetchall()
+
+        # check if number of entries are correct
+        self.assertEqual(len(monitor_rows), 2, msg='[!] Wrong number of monitor entries')
+        self.assertEqual(len(hijack_rows), 1, msg='[!] Wrong number of detected hijacks')
+
+        # check types
+        self.assertEqual(hijack_rows[0][hij_fields['type']], 'S', msg='[!] Wrong hijack type detected')
+
+        # check monitors updated hijack id
+        self.assertEqual(monitor_rows[1][mon_fields['hijack_id']], hijack_rows[0][hij_fields['id']], msg='[!] Malicious Monitor entry has no Hijack ID')
+
+        # check if monitors are handled
+        for monitor_entry in monitor_rows:
+            self.assertTrue(monitor_entry[-1], msg='[!] The monitor should have been handled')
+
     @classmethod
     def tearDownClass(cls):
         cls.webapp.stop()

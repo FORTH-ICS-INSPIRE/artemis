@@ -121,7 +121,9 @@ class Hijack(db.Model):
         self.prefix = msg.prefix
         self.hijack_as = asn
         self.num_peers_seen = 1
-        inf_asns_to_ignore = int(self.type) + 1
+        if htype is 'S':
+            htype = 0
+        inf_asns_to_ignore = int(htype) + 1
         self.num_asns_inf = len(
             set(msg.as_path.split(' ')[:-inf_asns_to_ignore]))
         self.time_started = msg.timestamp

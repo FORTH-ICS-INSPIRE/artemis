@@ -67,8 +67,9 @@ class Detection():
 
             while self.flag:
                 monitor_event_id = self.monitor_queue.get()
-                monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
-                handle_monitor_event(monitor_event)
+                if monitor_event_id is not None:
+                    monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
+                    handle_monitor_event(monitor_event)
             print('[+] Detection Mechanism Stopped..')
 
     def commit_hijack(self, monitor_event, origin, hij_type):

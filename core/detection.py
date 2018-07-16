@@ -107,16 +107,22 @@ class Detection():
             inf_asns = set()
 
             # handle inf_asns as if its an type0 hijack
-            if hij_type is 'S':
-                hij_type = 0
             for monitor in hijack_monitors:
                 peers_seen.add(monitor.peer_as)
-                inf_asns.update(
-                    set(monitor.as_path.split(' ')[:-(hij_type+1)]))
+                if hij_type is 'S':
+                    inf_asns.update(
+                        set(monitor.as_path.split(' ')))
+                else:
+                    inf_asns.update(
+                        set(monitor.as_path.split(' ')[:-(hij_type+1)]))
 
             peers_seen.add(monitor_event.peer_as)
-            inf_asns.update(
-                set(monitor_event.as_path.split(' ')[:-(hij_type+1)]))
+            if hij_type is 'S':
+                inf_asns.update(
+                    set(monitor_event.as_path.split(' ')))
+            else:
+                inf_asns.update(
+                    set(monitor_event.as_path.split(' ')[:-(hij_type+1)]))
             hijack_event.num_peers_seen = len(peers_seen)
             hijack_event.num_asns_inf = len(inf_asns)
             hijack_id = hijack_event.id

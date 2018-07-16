@@ -119,7 +119,7 @@ class Detection():
         monitor_event.hijack_id = hijack_id
         monitor_event.handled = True
         db.session.commit()
-        #db.session.expunge(monitor_event)
+        db.session.expunge(monitor_event)
 
     @staticmethod
     def __remove_prepending(seq):
@@ -138,7 +138,7 @@ class Detection():
 
     @staticmethod
     def __clean_loops(seq):
-        # use inverese direction to clean loops in the path of the traffic
+        # use inverse direction to clean loops in the path of the traffic
         seq_inv = seq[::-1]
         new_seq_inv = []
         for x in seq_inv:
@@ -199,4 +199,4 @@ class Detection():
     def mark_handled(self, monitor_event):
         monitor_event.handled = True
         db.session.commit()
-        #db.session.expunge(monitor_event)
+        db.session.expunge(monitor_event)

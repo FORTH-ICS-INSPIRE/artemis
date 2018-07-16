@@ -130,13 +130,35 @@ class Detection():
                 last_add = x
                 new_seq.append(x)
 
+        is_loopy = False
         if len(set(seq)) != len(new_seq):
-            raise Exception('Routing Loop: {}'.format(seq))
-        return new_seq
+            is_loopy = True
+            #raise Exception('Routing Loop: {}'.format(seq))
+        return (new_seq, is_loopy)
+
+    @staticmethod
+    def __clean_loops(seq):
+        # use inverese direction to clean loops in the path of the traffic
+        seq_inv = seq[::-1]
+        new_seq_inv = []
+        for x in seq_inv:
+            if x not in new_seq_inv:
+                new_seq_inv.append(x)
+            else:
+                x_index = new_seq_inv.index(x)
+                new_seq_inv = new_seq_inv[:x_index+1]
+        return new_seq_inv[::-1]
+
+    @staticmethod
+    def __clean_as_path(as_path):
+        (clean_as_path, is_loopy) = Detection.__remove_prepending(as_path)
+        if is_loopy:
+            clean_as_path = Detection.__clean_loops(clean_as_path)
+        return as_path
 
     @exception_handler
     def detect_origin_hijack(self, monitor_event):
-        as_path = Detection.__remove_prepending(monitor_event.as_path.split(' '))
+        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
         if len(as_path) > 0:
             origin_asn = int(monitor_event.origin_as)
             prefix_node = self.prefix_tree.search_best(
@@ -149,7 +171,7 @@ class Detection():
 
     @exception_handler
     def detect_type_1_hijack(self, monitor_event):
-        as_path = Detection.__remove_prepending(monitor_event.as_path.split(' '))
+        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
         if len(as_path) > 1:
             first_neighbor_asn = int(as_path[-2])
             prefix_node = self.prefix_tree.search_best(
@@ -162,7 +184,7 @@ class Detection():
 
     @exception_handler
     def detect_subprefix_hijack(self, monitor_event):
-        as_path = Detection.__remove_prepending(monitor_event.as_path.split(' '))
+        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
         if len(as_path) > 0:
             mon_prefix = ipaddress.ip_network(monitor_event.prefix)
             prefix_node = self.prefix_tree.search_best(

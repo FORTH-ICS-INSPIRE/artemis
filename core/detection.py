@@ -154,7 +154,7 @@ class Detection():
         (clean_as_path, is_loopy) = Detection.__remove_prepending(as_path)
         if is_loopy:
             clean_as_path = Detection.__clean_loops(clean_as_path)
-        return as_path
+        return clean_as_path
 
     @exception_handler
     def detect_origin_hijack(self, monitor_event):

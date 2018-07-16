@@ -54,7 +54,7 @@ class TestConfParser(unittest.TestCase):
 
         self.assertEqual(group2['prefixes'], {ipaddress.ip_network('10.0.0.0/24'), ipaddress.ip_network('20.0.0.0/24'), ipaddress.ip_network('30.0.0.0/24')})
         self.assertEqual(group2['origin_asns'], {1, 2, 5})
-        self.assertEqual(group2['neighbors'], {3}))
+        self.assertEqual(group2['neighbors'], {3})
         self.assertEqual(group2['mitigation'], 'manual')
 
         defs = self.confParser.get_definitions()

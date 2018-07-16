@@ -67,7 +67,11 @@ class Detection():
 
             while self.flag:
                 monitor_event_id = self.monitor_queue.get()
-                if monitor_event_id is not None:
+                # empty the queue if found empty monitor id (signal queue flush)
+                if monitor_event_id is None:
+                    while not self.monitor_queue.empty():
+                        self.monitor_queue.get()
+                else:
                     monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
                     handle_monitor_event(monitor_event)
             print('[+] Detection Mechanism Stopped..')

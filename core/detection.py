@@ -119,7 +119,7 @@ class Detection():
         monitor_event.hijack_id = hijack_id
         monitor_event.handled = True
         db.session.commit()
-        db.session.expunge(monitor_event)
+        #db.session.expunge(monitor_event)
 
     @staticmethod
     def __remove_prepending(seq):
@@ -177,4 +177,4 @@ class Detection():
     def mark_handled(self, monitor_event):
         monitor_event.handled = True
         db.session.commit()
-        db.session.expunge(monitor_event)
+        #db.session.expunge(monitor_event)

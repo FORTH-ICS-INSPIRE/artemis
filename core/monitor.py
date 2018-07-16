@@ -22,7 +22,7 @@ class Monitor():
             for config in self.configs:
                 try:
                     for prefix in self.configs[config]['prefixes']:
-                        node = self.prefix_tree.add(prefix)
+                        node = self.prefix_tree.add(str(prefix))
                         node.data['origin_asns'] = self.configs[
                             config]['origin_asns']
                         node.data['neighbors'] = self.configs[config]['neighbors']

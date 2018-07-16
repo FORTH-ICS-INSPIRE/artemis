@@ -32,7 +32,7 @@ Then, create a directory that includes the `config` and `webapp.cfg` configurati
 Then, you need to run the container with the following command:
 
 ```
-docker run -ti -p 5000:5000 --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
+docker run --rm -ti -p 5000:5000 --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
 ```
 
 Fields:
@@ -169,7 +169,7 @@ For example take a look at the `taps/exabgp_client.py` which implements the pyth
 TBD (for now working on the bleeding edge of the master branch, version tags to-be-released)
 
 ## Authors
-* Dimitris Mavrommatis, FORTH-ICS
+* Dimitrios Mavrommatis, FORTH-ICS
 * Petros Gigis, FORTH-ICS
 * Vasileios Kotronis, FORTH-ICS
 * Pavlos Sermpezis, FORTH-ICS

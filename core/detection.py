@@ -66,7 +66,8 @@ class Detection():
                 handle_monitor_event(monitor_event)
 
             while self.flag:
-                monitor_event = self.monitor_queue.get()
+                monitor_event_id = self.monitor_queue.get()
+                monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
                 handle_monitor_event(monitor_event)
             print('[+] Detection Mechanism Stopped..')
 

@@ -1,10 +1,12 @@
 from flask import Blueprint
 from webapp.cache import cache
+from webapp import app
 from flask_security.decorators import login_required
 from flask import url_for, render_template, request, redirect
 from sqlalchemy import desc, and_, exc
 from webapp.data.tables import MonitorTable, HijackTable
-from webapp.data.models import Monitor, Hijack
+from webapp.data.models import Monitor, Hijack, db
+import time
 
 main = Blueprint('main', __name__, template_folder='templates')
 

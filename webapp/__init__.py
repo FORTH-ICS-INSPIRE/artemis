@@ -33,9 +33,13 @@ from webapp.templates.forms import CheckboxForm, ConfigForm
 
 @app.before_first_request
 def setupDatabase():
-    if not os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]) or app.config['ENV'] == 'testing':
+
+    if app.config['ENV'] in ['testing', 'dev']:
+        if os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]):
+            os.remove(app.config['SQLALCHEMY_DATABASE_URI'][10:])
+
+    if not os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]):
         data_store = app.security.datastore
-        db.drop_all()
         db.create_all()
 
         def create_roles(ctx):

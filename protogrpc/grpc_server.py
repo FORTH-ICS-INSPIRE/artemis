@@ -33,7 +33,7 @@ class GrpcServer():
                     db.session.add(monitor_event)
                     db.session.commit()
                     if monitor_event.type == 'A' and self.detector.flag:
-                        self.detector.monitor_queue.put(monitor_event)
+                        self.detector.monitor_queue.put(monitor_event.id)
                 except exc.SQLAlchemyError as e:
                     db.session.rollback()
                     duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"

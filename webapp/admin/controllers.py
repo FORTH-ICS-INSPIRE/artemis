@@ -18,7 +18,7 @@ def index():
 ### EXAMPLE
 @admin.route('/user/create', methods=['GET', 'POST'])
 @roles_required('admin')
-def create_author():
+def create_user():
     form = CreateUserForm(request.form)
     if request.method == 'POST' and form.validate():
         names = form.names.data

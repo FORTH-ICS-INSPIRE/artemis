@@ -16,18 +16,18 @@ class ConfParser():
         self.obj_ = dict()
         self.file = 'configs/config'
 
-        self.req_opt = set(['prefixes', 'origin_asns'])
-        self.section_groups = set(['prefixes_group', 'asns_group', 'monitors_group'])
-        self.supported_fields = set(['prefixes',
-                                 'origin_asns', 'neighbors', 'mitigation'])
-        self.available_monitor_types = set(
-            ['riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive'])
+        self.req_opt = {'prefixes', 'origin_asns'}
+        self.section_groups = {'prefixes_group', 'asns_group', 'monitors_group'}
+        self.supported_fields = {'prefixes',
+                                 'origin_asns', 'neighbors', 'mitigation'}
+        self.available_monitor_types = {
+            'riperis', 'bgpmon', 'exabgp', 'bgpstreamhist', 'bgpstreamlive'}
         self.available_ris = set()
 
         self.parse_rrcs()
 
-        self.available_bgpstreamlive = set(['routeviews', 'ris'])
-        self.valid_bgpmon = set([('livebgp.netsec.colostate.edu','5001')])
+        self.available_bgpstreamlive = {'routeviews', 'ris'}
+        self.valid_bgpmon = {('livebgp.netsec.colostate.edu','5001')}
 
         self.parser = ConfigParser()
 
@@ -169,7 +169,7 @@ class ConfParser():
             if label in self.available_monitor_types:
 
                 if label == 'riperis':
-                    riperis_ = set([x.strip() for x in field.split(',')])
+                    riperis_ = {x.strip() for x in field.split(',')}
 
                     for unavailable in riperis_.difference(self.available_ris):
                         print('[!] Warning: unavailable monitor {}'.format(unavailable),
@@ -191,7 +191,7 @@ class ConfParser():
                         return bgpstreamhist_
 
                 elif label == 'bgpstreamlive':
-                    stream_projects_ = set([x.strip() for x in field.split(',')])
+                    stream_projects_ = {x.strip() for x in field.split(',')}
                     if len(stream_projects_) == 0 or not stream_projects_.issubset(self.available_bgpstreamlive):
                         raise ArtemisError('bgpstreamlive','project(s) not supported')
                     else:

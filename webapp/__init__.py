@@ -1,3 +1,5 @@
+import os
+import logging
 from flask import abort, Flask, g, render_template, request, current_app
 from flask_bootstrap import Bootstrap
 from flask_security import current_user
@@ -22,6 +24,8 @@ with app.app_context():
     Bootstrap(app)
     babel = Babel(app)
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
 
 from webapp.main.controllers import main
 from webapp.admin.controllers import admin
@@ -29,42 +33,47 @@ from webapp.templates.forms import CheckboxForm, ConfigForm
 
 @app.before_first_request
 def setupDatabase():
-    data_store = app.security.datastore
-    db.drop_all()
-    db.create_all()
 
-    def create_roles(ctx):
-        ctx.create_role(name='admin')
-        ctx.commit()
-    create_roles(data_store)
+    if app.config['ENV'] in ['testing', 'dev']:
+        if os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]):
+            os.remove(app.config['SQLALCHEMY_DATABASE_URI'][10:])
 
-    def create_users(ctx):
-        users = [('a', 'a', 'a', ['admin'], True),
-                ('u', 'u', 'u', [], True)]
-        for user in users:
-            email = user[0]
-            username = user[1]
-            password = user[2]
-            is_active = user[4]
-            if password is not None:
-                password = encrypt_password(password)
-            roles = [ctx.find_or_create_role(rn) for rn in user[3]]
-            ctx.commit()
-            user = ctx.create_user(
-                email=email, password=password, active=is_active)
-            ctx.commit()
-            for role in roles:
-                ctx.add_role_to_user(user, role)
-            ctx.commit()
-    create_users(data_store)
+    if not os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]):
+        data_store = app.security.datastore
+        db.create_all()
 
-    def add_monitors():
-        from webapp.data.models import Monitor
-        msg = {'prefix':'192.168.0.0/24', 'service':'custom', 'type':'W', 'timestamp':time.time()}
-        monitor = Monitor(msg)
-        db.session.add(monitor)
-        db.session.commit()
-    add_monitors()
+        def create_roles(ctx):
+            ctx.create_role(name='admin')
+            ctx.commit()
+        create_roles(data_store)
+
+        def create_users(ctx):
+            users = [('a', 'a', 'a', ['admin'], True),
+                    ('u', 'u', 'u', [], True)]
+            for user in users:
+                email = user[0]
+                username = user[1]
+                password = user[2]
+                is_active = user[4]
+                if password is not None:
+                    password = encrypt_password(password)
+                roles = [ctx.find_or_create_role(rn) for rn in user[3]]
+                ctx.commit()
+                user = ctx.create_user(
+                    email=email, password=password, active=is_active)
+                ctx.commit()
+                for role in roles:
+                    ctx.add_role_to_user(user, role)
+                ctx.commit()
+        create_users(data_store)
+
+        def add_monitors():
+            from webapp.data.models import Monitor
+            msg = {'prefix':'192.168.0.0/24', 'service':'custom', 'type':'W', 'timestamp':time.time()}
+            monitor = Monitor(msg)
+            db.session.add(monitor)
+            db.session.commit()
+        add_monitors()
 
 
 @app.errorhandler(404)

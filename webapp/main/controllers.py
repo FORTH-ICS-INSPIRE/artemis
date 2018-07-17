@@ -1,10 +1,12 @@
 from flask import Blueprint
 from webapp.cache import cache
-from flask_security.decorators import login_required
+from webapp import app
+from flask_security.decorators import login_required, roles_required
 from flask import url_for, render_template, request, redirect
 from sqlalchemy import desc, and_, exc
 from webapp.data.tables import MonitorTable, HijackTable
-from webapp.data.models import Monitor, Hijack
+from webapp.data.models import Monitor, Hijack, db
+import time
 
 main = Blueprint('main', __name__, template_folder='templates')
 
@@ -83,14 +85,14 @@ def display_hijacks():
 
     return render_template('show.htm', data=data, type='Hijack')
 
-    @app.route('/hijacks/mitigate', methods=['GET', 'POST'])
-    @roles_required('admin')
-    def mitigate_hijack():
-        hijack_id = request.args.get('id')
-        return redirect('/main/hijacks?id={}&action=mitigate'.format(hijack_id))
+@main.route('/hijacks/mitigate/', methods=['GET', 'POST'])
+@roles_required('admin')
+def mitigate_hijack():
+    hijack_id = request.args.get('id')
+    return redirect('/main/hijacks?id={}&action=mitigate'.format(hijack_id))
 
-    @app.route('/hijacks/resolved', methods=['GET', 'POST'])
-    @roles_required('admin')
-    def resolved_hijack():
-        hijack_id = request.args.get('id')
-        return redirect('/main/hijacks?id={}&action=resolved'.format(hijack_id))
+@main.route('/hijacks/resolved/', methods=['GET', 'POST'])
+@roles_required('admin')
+def resolved_hijack():
+    hijack_id = request.args.get('id')
+    return redirect('/main/hijacks?id={}&action=resolved'.format(hijack_id))

@@ -123,7 +123,7 @@ class Hijack(db.Model):
         self.num_peers_seen = 1
         if htype is 'S':
             self.num_asns_inf = len(
-                set(msg.as_path.split(' ')))
+                set(msg.as_path.split(' '))) - 1
         else:
             inf_asns_to_ignore = int(htype) + 1
             self.num_asns_inf = len(

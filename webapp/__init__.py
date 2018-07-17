@@ -3,19 +3,23 @@ import logging
 from flask import abort, Flask, g, render_template, request, current_app
 from flask_bootstrap import Bootstrap
 from flask_security import current_user
-from flask_security.utils import encrypt_password
+from flask_security.utils import hash_password, verify_password
 from flask_security.decorators import login_required
 from flask_babel import Babel
-from webapp.data.models import db
+from flask_restless import APIManager
+from flask_jwt import JWT, jwt_required
+from webapp.data.models import db, Monitor, Hijack
 from webapp.utils import get_instance_folder_path
 from webapp.config import configure_app
 from webapp.cache import cache
 import time
+import traceback
 
 app = Flask(__name__,
             instance_path=get_instance_folder_path(),
             instance_relative_config=True,
             template_folder='templates')
+
 
 with app.app_context():
     configure_app(app)
@@ -26,10 +30,28 @@ with app.app_context():
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
+    manager = APIManager(app, flask_sqlalchemy_db=db)
+    data_store = app.security.datastore
 
 from webapp.main.controllers import main
 from webapp.admin.controllers import admin
 from webapp.templates.forms import CheckboxForm, ConfigForm
+
+def authenticate(username, password):
+    user = data_store.find_user(email=username)
+    if user and username == user.email and verify_password(password, user.password):
+        return user
+    return None
+
+def load_user(payload):
+    user = data_store.find_user(id=payload['identity'])
+    return user
+
+jwt = JWT(app, authenticate, load_user)
+
+@jwt_required()
+def auth_func(**kw):
+    pass
 
 @app.before_first_request
 def setupDatabase():
@@ -39,7 +61,6 @@ def setupDatabase():
             os.remove(app.config['SQLALCHEMY_DATABASE_URI'][10:])
 
     if not os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]):
-        data_store = app.security.datastore
         db.create_all()
 
         def create_roles(ctx):
@@ -56,7 +77,7 @@ def setupDatabase():
                 password = user[2]
                 is_active = user[4]
                 if password is not None:
-                    password = encrypt_password(password)
+                    password = hash_password(password)
                 roles = [ctx.find_or_create_role(rn) for rn in user[3]]
                 ctx.commit()
                 user = ctx.create_user(
@@ -93,6 +114,7 @@ def internal_server_error(error):
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     current_app.logger.error('Unhandled Exception: %s', (error))
+    traceback.print_exc()
     return '{}'.format(error)
     # return render_template('500.htm'), 500
 
@@ -139,5 +161,17 @@ def index():
 
     return render_template('index.htm', config=config_form, form=form)
 
+monitor_api = manager.create_api_blueprint(Monitor,
+        methods=['GET'],
+        preprocessors=dict(GET_SINGLE=[auth_func], GET_MANY=[auth_func])
+        )
+hijack_api = manager.create_api_blueprint(Hijack,
+        methods=['GET'],
+        preprocessors=dict(GET_SINGLE=[auth_func], GET_MANY=[auth_func])
+        )
+
 app.register_blueprint(main, url_prefix='/main')
 app.register_blueprint(admin, url_prefix='/admin')
+app.register_blueprint(monitor_api)
+app.register_blueprint(hijack_api)
+

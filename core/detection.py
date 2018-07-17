@@ -26,9 +26,14 @@ class Detection():
         configs = self.confparser.get_obj()
         for config in configs:
             for prefix in configs[config]['prefixes']:
-                node = self.prefix_tree.add(str(prefix))
-                node.data['origin_asns'] = configs[config]['origin_asns']
-                node.data['neighbors'] = configs[config]['neighbors']
+
+                node = self.prefix_tree.search_exact(str(prefix))
+                if(node is None):
+                    node = self.prefix_tree.add(str(prefix))
+                    node.data['confs'] = list()                    
+
+                conf_obj = {'origin_asns': configs[config]['origin_asns'], 'neighbors': configs[config]['neighbors']}
+                node.data['confs'].append(conf_obj)
 
     def start(self):
         if not self.flag:
@@ -58,9 +63,11 @@ class Detection():
                     db.session.commit()
                     return
 
-                for func in self.__detection_generator():
-                    if func(monitor_event):
-                        break
+                as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
+                if len(as_path) > 0:
+                    for func in self.__detection_generator():
+                        if func(monitor_event, as_path):
+                            break
 
             for monitor_event in unhandled_events:
                 handle_monitor_event(monitor_event)
@@ -169,41 +176,40 @@ class Detection():
         return clean_as_path
 
     @exception_handler
-    def detect_origin_hijack(self, monitor_event):
-        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
-        if len(as_path) > 0:
-            origin_asn = int(monitor_event.origin_as)
-            prefix_node = self.prefix_tree.search_best(
-                monitor_event.prefix)
-            if prefix_node is not None:
-                if origin_asn not in prefix_node.data['origin_asns']:
-                    self.commit_hijack(monitor_event, origin_asn, 0)
-                    return True
+    def detect_origin_hijack(self, monitor_event, as_path):
+        origin_asn = int(monitor_event.origin_as)
+        prefix_node = self.prefix_tree.search_best(
+            monitor_event.prefix)
+        if prefix_node is not None:
+            for item in prefix_node.data['confs']:
+                if origin_asn in item['origin_asns']:
+                   return False 
+            self.commit_hijack(monitor_event, origin_asn, 0)
+            return True
         return False
 
     @exception_handler
-    def detect_type_1_hijack(self, monitor_event):
-        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
+    def detect_type_1_hijack(self, monitor_event, as_path):
         if len(as_path) > 1:
             first_neighbor_asn = int(as_path[-2])
             prefix_node = self.prefix_tree.search_best(
                 monitor_event.prefix)
             if prefix_node is not None:
-                if first_neighbor_asn not in prefix_node.data['neighbors']:
-                    self.commit_hijack(monitor_event, first_neighbor_asn, 1)
-                    return True
+                for item in prefix_node.data['confs']:
+                    if first_neighbor_asn in item['neighbors']:
+                        return False
+                self.commit_hijack(monitor_event, first_neighbor_asn, 1)
+                return True
         return False
 
     @exception_handler
-    def detect_subprefix_hijack(self, monitor_event):
-        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
-        if len(as_path) > 0:
-            mon_prefix = ipaddress.ip_network(monitor_event.prefix)
-            prefix_node = self.prefix_tree.search_best(
-                monitor_event.prefix)
-            if prefix_node is not None and prefix_node.prefixlen < mon_prefix.prefixlen:
-                self.commit_hijack(monitor_event, -1, 'S')
-                return True
+    def detect_subprefix_hijack(self, monitor_event, as_path):
+        mon_prefix = ipaddress.ip_network(monitor_event.prefix)
+        prefix_node = self.prefix_tree.search_best(
+            monitor_event.prefix)
+        if prefix_node is not None and prefix_node.prefixlen < mon_prefix.prefixlen:
+            self.commit_hijack(monitor_event, -1, 'S')
+            return True
         return False
 
 

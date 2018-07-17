@@ -1,4 +1,4 @@
-from configparser import ConfigParser, ParsingError, MissingSectionHeaderError
+from configparser import ConfigParser, ParsingError, MissingSectionHeaderError, DuplicateSectionError
 import os
 import sys
 import ipaddress
@@ -62,6 +62,8 @@ class ConfParser():
             raise ArtemisError('parsing-error', e)
         except MissingSectionHeaderError as e:
             raise ArtemisError('missing-section-header-error', e)
+        except DuplicateSectionError as e:
+            raise ArtemisError('duplicate-section-error', e)
 
         # Filtering sections blocks
         sections_list = self.parser.sections()

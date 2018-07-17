@@ -36,6 +36,12 @@ class TestingConfig(BaseConfig):
     LOGGING_LEVEL = logging.INFO
     SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/test.db'
     SECRET_KEY = b'\xad\xf3o\xe3\x00\xd6-<3\xee\xcd\x9e\x9c8[\x83#\xab\x05\xaaM\x8f5\xd6'
+    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    WEBAPP_HOST = '0.0.0.0'
+    WEBAPP_PORT = 5555
+    BABEL_DEFAULT_LOCALE = 'en'
+    BABEL_DEFAULT_TIMEZONE = 'EET'
 
 
 class ProductionConfig(BaseConfig):
@@ -58,7 +64,9 @@ config = {
 def configure_app(app):
     config_name = os.getenv('FLASK_CONFIGURATION', 'default')
     app.config.from_object(config[config_name])
-    app.config.from_pyfile('webapp.cfg', silent=True)
+
+    if config_name != 'testing':
+        app.config.from_pyfile('webapp.cfg', silent=True)
     # Configure logging
     handler = logging.FileHandler(app.config['LOGGING_LOCATION'])
     handler.setLevel(app.config['LOGGING_LEVEL'])

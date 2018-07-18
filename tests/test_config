@@ -68,6 +68,12 @@ origin_asns: sample_asn, forth_asn
 neighbors: grnet_forth_upstream
 mitigation: manual
 
+[site-2]
+prefixes: forth_prefixes, sample_prefixes
+origin_asns: 15
+neighbors: 16, 17, 18
+mitigation: manual
+
 # - -                                                   - - #
 # - - - - - # End of Rule Declaration Groups  # - - - - - - #
 # - -                                                   - - #

@@ -26,9 +26,13 @@ class Detection():
         configs = self.confparser.get_obj()
         for config in configs:
             for prefix in configs[config]['prefixes']:
-                node = self.prefix_tree.add(str(prefix))
-                node.data['origin_asns'] = configs[config]['origin_asns']
-                node.data['neighbors'] = configs[config]['neighbors']
+                node = self.prefix_tree.search_exact(str(prefix))
+                if(node is None):
+                    node = self.prefix_tree.add(str(prefix))
+                    node.data['confs'] = list()                    
+
+                conf_obj = {'origin_asns': configs[config]['origin_asns'], 'neighbors': configs[config]['neighbors']}
+                node.data['confs'].append(conf_obj)
 
     def start(self):
         if not self.flag:
@@ -176,22 +180,27 @@ class Detection():
             prefix_node = self.prefix_tree.search_best(
                 monitor_event.prefix)
             if prefix_node is not None:
-                if origin_asn not in prefix_node.data['origin_asns']:
-                    self.commit_hijack(monitor_event, origin_asn, 0)
-                    return True
+                for item in prefix_node.data['confs']:
+                    if origin_asn in item['origin_asns']:
+                        return False
+                self.commit_hijack(monitor_event, origin_asn, 0)
+                return True
         return False
 
     @exception_handler
     def detect_type_1_hijack(self, monitor_event):
         as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
         if len(as_path) > 1:
+            origin_asn = int(monitor_event.origin_as)
             first_neighbor_asn = int(as_path[-2])
             prefix_node = self.prefix_tree.search_best(
                 monitor_event.prefix)
             if prefix_node is not None:
-                if first_neighbor_asn not in prefix_node.data['neighbors']:
-                    self.commit_hijack(monitor_event, first_neighbor_asn, 1)
-                    return True
+                for item in prefix_node.data['confs']:
+                    if origin_asn in item['origin_asns'] and first_neighbor_asn in item['neighbors']:
+                        return False
+                self.commit_hijack(monitor_event, first_neighbor_asn, 1)
+                return True
         return False
 
     @exception_handler

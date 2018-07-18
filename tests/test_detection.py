@@ -59,8 +59,13 @@ class TestDetection(unittest.TestCase):
 
         # prefix: 10.0.0.0/24, origin_asns = {1}, neighbors = {2,3,4}
         node = self.detection.prefix_tree.add('10.0.0.0/24')
-        node.data['origin_asns'] = {1}
-        node.data['neighbors'] = {2,3,4}
+        node.data['confs'] = list()
+        conf_obj = {'origin_asns': {1}, 'neighbors': {2,3,4}}
+        node.data['confs'].append(conf_obj)
+
+        # prefix: 10.0.0.0/24, origin_asns = {15}, neighbors = {16,17,18}
+        conf_obj = {'origin_asns': {15}, 'neighbors': {16,17,18}}
+        node.data['confs'].append(conf_obj)
 
         with app.app_context():
             db.drop_all()
@@ -405,6 +410,41 @@ class TestDetection(unittest.TestCase):
         # check if monitors are handled
         for monitor_entry in monitor_rows:
             self.assertTrue(monitor_entry[-1], msg='[!] The monitor should have been handled')
+
+    @mock.patch.object(Detection, 'init_detection')
+    def test_multiple_confs_per_prefix(self, mock_init):
+        from webapp.data.models import Monitor
+
+        # legitimate announcement 
+        mon_1 = Monitor({
+                'prefix':'10.0.0.0/24',
+                'service':'testing',
+                'type':'A',
+                'as_path': [ 19, 16, 15 ],
+                'timestamp': 0
+        })
+
+        # type 1 hijack
+        mon_2 = Monitor({
+                'prefix':'10.0.0.0/24',
+                'service':'testing',
+                'type':'A',
+                'as_path': [ 19, 16, 1 ],
+                'timestamp': 0
+        })
+
+        commit([mon_1, mon_2])
+        self.detection.parse_queue()
+
+        # query sqlite db
+        self.c.execute('SELECT * FROM monitors')
+        monitor_rows = self.c.fetchall()
+        self.c.execute('SELECT * FROM hijacks')
+        hijack_rows = self.c.fetchall()
+
+        # check if number of entries are correct
+        self.assertEqual(len(monitor_rows), 2, msg='[!] Wrong number of monitor entries')
+        self.assertEqual(len(hijack_rows), 1, msg='[!] Wrong number of detected hijacks')
 
     @classmethod
     def tearDownClass(cls):

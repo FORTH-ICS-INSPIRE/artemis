@@ -17,7 +17,8 @@ RUN curl -sL https://deb.nodesource.com/setup_9.x | bash - && \
 WORKDIR taps
 RUN npm i npm@latest -g && \
     npm install && \
-    npm audit fix
+    npm audit fix && \
+    npm install
 
 WORKDIR ..
 RUN mkdir src

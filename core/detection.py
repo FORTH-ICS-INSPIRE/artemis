@@ -124,11 +124,12 @@ class Detection():
             if hij_type is 'S':
                 inf_asns.update(
                     set(monitor_event.as_path.split(' ')))
+                hijack_event.num_asns_inf = len(inf_asns) - 1
             else:
                 inf_asns.update(
                     set(monitor_event.as_path.split(' ')[:-(hij_type+1)]))
+                hijack_event.num_asns_inf = len(inf_asns)
             hijack_event.num_peers_seen = len(peers_seen)
-            hijack_event.num_asns_inf = len(inf_asns)
             hijack_id = hijack_event.id
 
         # Update monitor with new Hijack ID and register possible Hijack event changes

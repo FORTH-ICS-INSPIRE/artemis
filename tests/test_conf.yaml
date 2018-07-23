@@ -13,6 +13,7 @@ prefixes:
         [10.0.0.0/24, 20.0.0.0/24]
     sample_prefixes: &sample_prefixes
         30.0.0.0/24
+    ipv6_prefixes: &ipv6_prefixes dead:beef::/64
 
 # - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #
@@ -94,7 +95,14 @@ rules:
         mitigation:
             manual
 
-    # - -                                                   - - #
-    # - - - - - # End of Rule Declaration Groups  # - - - - - - #
+    -   prefixes:
+            - *ipv6_prefixes
+        origin_asns: 1
+        neighbors: [2, 3, 4]
+        mitigation:
+            manual
+
+# - -                                                   - - #
+# - - - - - # End of Rule Declaration Groups  # - - - - - - #
 # - -                                                   - - #
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #

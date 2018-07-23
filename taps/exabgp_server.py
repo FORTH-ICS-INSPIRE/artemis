@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
 
 import sys
 from sys import stdin, stdout, stderr
 from flask import Flask, abort
 import socketio
 import json
-from netaddr import IPNetwork, IPAddress
 import logging
+import radix
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -17,12 +17,10 @@ app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
 thread = None
 clients = {}
-global hostname
 hostname = 'exabgp'
 
 
 def message_parser(line):
-    global hostname
     try:
         temp_message = json.loads(line)
         if temp_message['type'] == 'update':
@@ -36,14 +34,12 @@ def message_parser(line):
                 }
                 for prefix in temp_message['neighbor']['message']['update']['announce']['ipv4 unicast'][origin]:
                     message['prefix'] = prefix
-                    for sid in clients.keys():
-                        for check_prefix in clients[sid][0]:
-                            base_ip, mask_length = prefix.split('/')
-                            if IPAddress(base_ip)) in check_prefix and int(mask_length) >= check_prefix.prefixlen:
-                                #print('Sending exa_message to ' + str(sid), file=stderr)
-                                sio.emit('exa_message', message, room=sid)
-    except Exception as e:
-        print(str(e), file=stderr)
+                    for sid in clients:
+                        if clients[sid][0].search_best(prefix):
+                            print('Sending to {} for {}'.format(sid, prefix))
+                            # sio.emit('exa_message', message, room=sid)
+    except:
+        pass
 
 
 def exabgp_update_event():
@@ -62,7 +58,7 @@ def artemis_connect(sid, environ):
     global thread
     if thread is None:
         thread = sio.start_background_task(exabgp_update_event)
-    sio.emit("connect")
+    sio.emit('connect')
 
 
 @sio.on('disconnect')
@@ -73,20 +69,22 @@ def artemis_disconnect(sid):
 
 @sio.on('ping')
 def artemis_ping(sid):
-    sio.emit("pong", room=sid)
+    sio.emit('pong', room=sid)
 
 
 @sio.on('exa_subscribe')
 def artemis_exa_subscribe(sid, message):
-    all_prefixes = list()
+    all_prefixes = []
     try:
+        prefix_tree = radix.Radix()
         for prefix in message['prefixes']:
-            all_prefixes.append(IPNetwork(prefix))
-        clients[sid] = [all_prefixes, True]
+            prefix_tree.add(prefix)
+        clients[sid] = (prefx_tree, True)
     except:
         print('Invalid format received from %s'.format(str(sid)))
 
 
 if __name__ == '__main__':
-    hostname = sys.argv[1]
+    if len(sys.argv) > 1:
+        hostname = sys.argv[1]
     app.run(host='0.0.0.0', threaded=True)

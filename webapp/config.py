@@ -8,7 +8,7 @@ from webapp.data.models import db, Role, User
 class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    LOGGING_LOCATION = 'webapp.log'
+    LOGGING_LOCATION = 'logs/webapp.log'
     SECURITY_PASSWORD_SALT = b'O\xdb\xd4\x16\xb8\xcaND6\xe8q\xe5'
     CACHE_TYPE = 'simple'
     COMPRESS_MIMETYPES = ['text/html', 'text/css', 'text/xml',

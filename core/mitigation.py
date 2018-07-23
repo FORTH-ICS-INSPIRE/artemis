@@ -5,9 +5,9 @@ import _thread
 from multiprocessing import Queue
 import subprocess
 from sqlalchemy import and_, exc
-import traceback
 import time
 import json
+from core import log
 
 
 class Mitigation():
@@ -37,7 +37,7 @@ class Mitigation():
 
     def parse_queue(self):
         with app.app_context():
-            print('[+] Mitigation Mechanism Started...')
+            log.info('Mitigation Mechanism Started..')
             self.init_mitigation()
 
             to_mitigate_events = Hijack.query.filter_by(to_mitigate=True).all()
@@ -53,9 +53,9 @@ class Mitigation():
                     if prefix_node is not None:
                         mitigation_action = prefix_node.data['mitigation']
                         if mitigation_action == 'manual':
-                            print("[+] Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                            log.info('Starting manual mitigation of Hijack {}'.format(hijack_event.id))
                         else:
-                            print("[+] Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                            log.info('Starting custom mitigation of Hijack {}'.format(hijack_event.id))
                             hijack_event_str = json.dumps(hijack_event.to_dict())
                             subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                     hijack_event.to_mitigate = False
@@ -63,8 +63,7 @@ class Mitigation():
                     db.session.commit()
                     db.session.expunge(hijack_event)
                 except Exception as e:
-                    traceback.print_exc()
-
+                    log.error(exc_info=True)
             while self.flag:
                 try:
                     hijack_id = self.hijack_queue.get()
@@ -86,9 +85,9 @@ class Mitigation():
                     if prefix_node is not None:
                         mitigation_action = prefix_node.data['mitigation']
                         if mitigation_action == 'manual':
-                            print("[+] Starting manual mitigation of Hijack {}".format(hijack_event.id))
+                            log.info('Starting manual mitigation of Hijack {}'.format(hijack_event.id))
                         else:
-                            print("[+] Starting custom mitigation of Hijack {}".format(hijack_event.id))
+                            log.info('Starting custom mitigation of Hijack {}'.format(hijack_event.id))
                             hijack_event_str = json.dumps(hijack_event.to_dict())
                             subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                     hijack_event.to_mitigate = False
@@ -96,5 +95,5 @@ class Mitigation():
                     db.session.commit()
                     db.session.expunge(hijack_event)
                 except Exception as e:
-                    traceback.print_exc()
-            print('[+] Mitigation Mechanism Stopped...')
+                    log.error(exc_info=True)
+            log.info('Mitigation Mechanism Stopped..')

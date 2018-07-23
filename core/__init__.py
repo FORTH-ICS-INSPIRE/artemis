@@ -1,6 +1,13 @@
 __all__ = ['core']
 
-import traceback
+import logging
+import logging.config
+import json
+
+with open('configs/logging.json', 'r') as f:
+    config = json.load(f)
+    logging.config.dictConfig(config)
+log = logging.getLogger(__name__)
 
 class ArtemisError(Exception):
     def __init__(self, _type, _where):
@@ -17,6 +24,6 @@ def exception_handler(f):
         try:
             return f(*args)
         except Exception as e:
-            traceback.print_exc()
+            log.error(exc_info=True)
             return True
     return wrapper

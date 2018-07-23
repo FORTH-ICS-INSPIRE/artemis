@@ -1,10 +1,9 @@
 import sys
 import os
 import radix
-import traceback
 # from taps.bgpmon import BGPmon
 from subprocess import Popen
-from core import exception_handler
+from core import exception_handler, log
 
 
 class Monitor():
@@ -29,7 +28,7 @@ class Monitor():
                         node.data['mitigation'] = self.configs[
                             config]['mitigation']
                 except Exception as e:
-                    traceback.print_exc()
+                    log.error(exc_info=True)
 
             # only keep super prefixes for monitors
             for prefix in self.prefix_tree.prefixes():
@@ -41,14 +40,14 @@ class Monitor():
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
             self.flag = True
-            print('[+] Monitors Started..')
+            log.info('Monitors Started..')
 
     def stop(self):
         if self.flag:
             for proc_id in self.process_ids:
                 proc_id[1].terminate()
             self.flag = False
-            print('[+] Monitors Stopped..')
+            log.info('Monitors Stopped..')
 
     @exception_handler
     def init_ris_instances(self):

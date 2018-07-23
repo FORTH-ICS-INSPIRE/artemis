@@ -4,8 +4,7 @@ from webapp.data.models import Hijack, Monitor, db
 import _thread
 from multiprocessing import Queue
 from sqlalchemy import and_, exc, desc
-import traceback
-from core import exception_handler
+from core import exception_handler, log
 import ipaddress
 
 class Detection():
@@ -27,9 +26,9 @@ class Detection():
         for config in configs:
             for prefix in configs[config]['prefixes']:
                 node = self.prefix_tree.search_exact(str(prefix))
-                if(node is None):
+                if node is None:
                     node = self.prefix_tree.add(str(prefix))
-                    node.data['confs'] = list()                    
+                    node.data['confs'] = []
 
                 conf_obj = {'origin_asns': configs[config]['origin_asns'], 'neighbors': configs[config]['neighbors']}
                 node.data['confs'].append(conf_obj)
@@ -46,7 +45,7 @@ class Detection():
 
     def parse_queue(self):
         with app.app_context():
-            print('[+] Detection Mechanism Started..')
+            log.info('Detection Mechanism Started..')
             self.init_detection()
 
             unhandled_events = Monitor.query.filter_by(handled=False).all()
@@ -78,7 +77,7 @@ class Detection():
                 else:
                     monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
                     handle_monitor_event(monitor_event)
-            print('[+] Detection Mechanism Stopped..')
+            log.info('Detection Mechanism Stopped..')
 
     def commit_hijack(self, monitor_event, origin, hij_type):
         # Trigger hijack
@@ -95,7 +94,7 @@ class Detection():
             db.session.add(hijack)
             db.session.commit()
             hijack_id = hijack.id
-            print('[DETECTION] NEW TYPE {} HIJACK!\n{}'.format(hij_type, hijack))
+            log.info('[DETECTION] NEW TYPE {} HIJACK!\n{}'.format(hij_type, hijack))
         else:
             if monitor_event.timestamp < hijack_event.time_started:
                 hijack_event.time_started = monitor_event.timestamp

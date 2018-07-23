@@ -1,5 +1,6 @@
 from webapp import app
 import _thread
+from core import log
 
 
 class WebApplication():
@@ -13,7 +14,7 @@ class WebApplication():
 
     def run(self):
         if 'WEBAPP_KEY' in self.app.config and 'WEBAPP_CRT' in self.app.config:
-            print('SSL: enabled')
+            log.info('SSL: enabled')
             # http://flask.pocoo.org/snippets/111/
             # https://www.digitalocean.com/community/tutorials/openssl-essentials-working-with-ssl-certificates-private-keys-and-csrs
             context = (self.app.config['WEBAPP_CRT'], self.app.config['WEBAPP_KEY'])
@@ -24,7 +25,7 @@ class WebApplication():
                 use_reloader=False
             )
         else:
-            print('SSL: disabled')
+            log.info('SSL: disabled')
             self.app.run(
                 host=self.app.config['WEBAPP_HOST'],
                 port=self.app.config['WEBAPP_PORT'],
@@ -36,10 +37,10 @@ class WebApplication():
         if not self.flag:
             self.webapp_ = _thread.start_new_thread(self.run, ())
             self.flag = True
-            print('WebApplication Started..')
+            log.info('WebApplication Started..')
 
 
     def stop(self):
         if self.flag:
             self.flag = False
-            print('WebApplication Stopped..')
+            log.info('WebApplication Stopped..')

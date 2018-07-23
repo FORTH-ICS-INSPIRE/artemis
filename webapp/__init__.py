@@ -13,7 +13,7 @@ from webapp.utils import get_instance_folder_path
 from webapp.config import configure_app
 from webapp.cache import cache
 import time
-import traceback
+from core import log
 
 app = Flask(__name__,
             instance_path=get_instance_folder_path(),
@@ -114,7 +114,7 @@ def internal_server_error(error):
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     current_app.logger.error('Unhandled Exception: %s', (error))
-    traceback.print_exc()
+    log.error(exc_info=True)
     return '{}'.format(error)
     # return render_template('500.htm'), 500
 

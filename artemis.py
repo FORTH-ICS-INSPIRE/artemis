@@ -11,6 +11,7 @@ from webapp.webapp import WebApplication
 from protogrpc.grpc_server import GrpcServer
 from webapp import app
 from webapp.data.models import db
+from core import log
 
 class GracefulKiller:
     def __init__(self):
@@ -24,7 +25,7 @@ class GracefulKiller:
 
 def main():
     # Configuration Parser
-    print('[+] Parsing Configuration..')
+    log.info('Parsing Configuration..')
     confparser_ = ConfParser()
     confparser_.parse_file()
 
@@ -49,7 +50,7 @@ def main():
         grpc_.start()
 
         killer = GracefulKiller()
-        print('[+] Send SIGTERM signal to end..\n')
+        log.info('Send SIGTERM signal to end..\n')
         while True:
             time.sleep(1)
             if killer.kill_now:
@@ -65,7 +66,7 @@ def main():
 
         db.session.remove()
 
-        print('[+] Bye..!')
+        log.info('Bye..!')
 
 
 if __name__ == '__main__':

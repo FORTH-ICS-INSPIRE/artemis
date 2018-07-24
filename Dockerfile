@@ -3,7 +3,12 @@ FROM python:3
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
-    apt-get -y install python3-pip
+    apt-get -y install python3-pip && \
+    apt-get -y install sudo
+
+RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo
+
+USER docker
 
 WORKDIR /root
 

@@ -11,12 +11,17 @@ service MessageListener {
   rpc queryMformat (MformatMessage) returns (Empty) {}
 }
 
+message CommunityGroup {
+  repeated int32 community = 1;
+}
+
 message MformatMessage {
   string service = 1;
   string type = 2;
   string prefix = 3;
   repeated int32 as_path = 4;
-  double timestamp = 5;
+  repeated CommunityGroup community = 5;
+  double timestamp = 6;
 }
 
 message Empty {}

@@ -10,7 +10,7 @@
   "license": "BSD-2-Clause",
   "dependencies": {
     "argparse": "^1.0.10",
-    "grpc": "^1.10.0",
+    "grpc": "^1.13.1",
     "ip6addr": "^0.2.2",
     "object-assign": "~4.1.1",
     "socket.io-client": "~2.0.4"

@@ -42,6 +42,7 @@ socket.on('ris_message', function(msg) {
             'prefix': msg['prefix'],
             'service': 'RIPEris '.concat(msg['host']),
             'as_path': msg['path'],
+            'community': msg['community'],
             'type': msg['type'],
         };
 

@@ -19,10 +19,41 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='mservice.proto',
   package='mservice',
   syntax='proto3',
-  serialized_pb=_b('\n\x0emservice.proto\x12\x08mservice\"c\n\x0eMformatMessage\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0e\n\x06prefix\x18\x03 \x01(\t\x12\x0f\n\x07\x61s_path\x18\x04 \x03(\x05\x12\x11\n\ttimestamp\x18\x05 \x01(\x01\"\x07\n\x05\x45mpty2N\n\x0fMessageListener\x12;\n\x0cqueryMformat\x12\x18.mservice.MformatMessage\x1a\x0f.mservice.Empty\"\x00\x42\x32\n\x16\x61rtemis.io.grpc.protosB\rMServiceProtoP\x01\xa2\x02\x06MSRVCPb\x06proto3')
+  serialized_pb=_b('\n\x0emservice.proto\x12\x08mservice\"#\n\x0e\x43ommunityGroup\x12\x11\n\tcommunity\x18\x01 \x03(\x05\"\x90\x01\n\x0eMformatMessage\x12\x0f\n\x07service\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0e\n\x06prefix\x18\x03 \x01(\t\x12\x0f\n\x07\x61s_path\x18\x04 \x03(\x05\x12+\n\tcommunity\x18\x05 \x03(\x0b\x32\x18.mservice.CommunityGroup\x12\x11\n\ttimestamp\x18\x06 \x01(\x01\"\x07\n\x05\x45mpty2N\n\x0fMessageListener\x12;\n\x0cqueryMformat\x12\x18.mservice.MformatMessage\x1a\x0f.mservice.Empty\"\x00\x42\x32\n\x16\x61rtemis.io.grpc.protosB\rMServiceProtoP\x01\xa2\x02\x06MSRVCPb\x06proto3')
 )
 
 
+
+
+_COMMUNITYGROUP = _descriptor.Descriptor(
+  name='CommunityGroup',
+  full_name='mservice.CommunityGroup',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='community', full_name='mservice.CommunityGroup.community', index=0,
+      number=1, type=5, cpp_type=1, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=28,
+  serialized_end=63,
+)
 
 
 _MFORMATMESSAGE = _descriptor.Descriptor(
@@ -61,8 +92,15 @@ _MFORMATMESSAGE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='mservice.MformatMessage.timestamp', index=4,
-      number=5, type=1, cpp_type=5, label=1,
+      name='community', full_name='mservice.MformatMessage.community', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='timestamp', full_name='mservice.MformatMessage.timestamp', index=5,
+      number=6, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -79,8 +117,8 @@ _MFORMATMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=28,
-  serialized_end=127,
+  serialized_start=66,
+  serialized_end=210,
 )
 
 
@@ -103,13 +141,22 @@ _EMPTY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=129,
-  serialized_end=136,
+  serialized_start=212,
+  serialized_end=219,
 )
 
+_MFORMATMESSAGE.fields_by_name['community'].message_type = _COMMUNITYGROUP
+DESCRIPTOR.message_types_by_name['CommunityGroup'] = _COMMUNITYGROUP
 DESCRIPTOR.message_types_by_name['MformatMessage'] = _MFORMATMESSAGE
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+CommunityGroup = _reflection.GeneratedProtocolMessageType('CommunityGroup', (_message.Message,), dict(
+  DESCRIPTOR = _COMMUNITYGROUP,
+  __module__ = 'mservice_pb2'
+  # @@protoc_insertion_point(class_scope:mservice.CommunityGroup)
+  ))
+_sym_db.RegisterMessage(CommunityGroup)
 
 MformatMessage = _reflection.GeneratedProtocolMessageType('MformatMessage', (_message.Message,), dict(
   DESCRIPTOR = _MFORMATMESSAGE,
@@ -135,8 +182,8 @@ _MESSAGELISTENER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=138,
-  serialized_end=216,
+  serialized_start=221,
+  serialized_end=299,
   methods=[
   _descriptor.MethodDescriptor(
     name='queryMformat',

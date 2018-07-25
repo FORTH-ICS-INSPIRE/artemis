@@ -33,6 +33,7 @@ class MonitorTable(Table):
     as_path = Col('AS Path')
     service = Col('Service')
     type = Col('Type')
+    community = Col('Community')
     timestamp = CustomDatetimeCol('Timestamp')
     hijack_id = Col('Hijack ID')
     handled = BoolCol('Handled')

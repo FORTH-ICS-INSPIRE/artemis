@@ -114,7 +114,7 @@ def internal_server_error(error):
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     current_app.logger.error('Unhandled Exception: %s', (error))
-    log.error(exc_info=True)
+    log.error('Unhandled Exception', exc_info=True)
     return '{}'.format(error)
     # return render_template('500.htm'), 500
 

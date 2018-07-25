@@ -63,7 +63,7 @@ class Mitigation():
                     db.session.commit()
                     db.session.expunge(hijack_event)
                 except Exception as e:
-                    log.error(exc_info=True)
+                    log.error('Exception', exc_info=True)
             while self.flag:
                 try:
                     hijack_id = self.hijack_queue.get()
@@ -95,5 +95,5 @@ class Mitigation():
                     db.session.commit()
                     db.session.expunge(hijack_event)
                 except Exception as e:
-                    log.error(exc_info=True)
+                    log.error('Exception', exc_info=True)
             log.info('Mitigation Mechanism Stopped..')

@@ -26,10 +26,10 @@ class ArtemisError(Exception):
         super().__init__(message)
 
 def exception_handler(f):
-    def wrapper(*args):
+    def wrapper(*args, **kwargs):
         try:
-            return f(*args)
+            return f(*args, **kwargs)
         except Exception as e:
-            log.error(exc_info=True)
+            log.error('Exception', exc_info=True)
             return True
     return wrapper

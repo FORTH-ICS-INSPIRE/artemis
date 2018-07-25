@@ -38,7 +38,7 @@ class GrpcServer():
                     db.session.rollback()
                     duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"
                     if duplicate_entry_str not in str(e):
-                        log.error(exc_info=True)
+                        log.error('Duplicate Entry', exc_info=True)
 
             return mservice_pb2.Empty()
 

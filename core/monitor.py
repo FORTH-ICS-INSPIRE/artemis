@@ -28,7 +28,7 @@ class Monitor():
                         node.data['mitigation'] = self.configs[
                             config]['mitigation']
                 except Exception as e:
-                    log.error(exc_info=True)
+                    log.error('Exception', exc_info=True)
 
             # only keep super prefixes for monitors
             for prefix in self.prefix_tree.prefixes():

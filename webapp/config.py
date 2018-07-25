@@ -60,7 +60,10 @@ class ProductionConfig(BaseConfig):
         os.makedirs('db')
 
     LOGGING_LEVEL = logging.INFO
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///../db/artemis.db'
+
+    db_path = os.path.join(os.path.dirname(__file__), '../db/artemis.db')
+    db_uri = 'sqlite:///{}'.format(db_path)
+    SQLALCHEMY_DATABASE_URI = db_uri
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
 
 

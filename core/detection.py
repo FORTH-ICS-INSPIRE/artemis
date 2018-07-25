@@ -58,7 +58,7 @@ class Detection():
                 if monitor_event is None:
                     return
 
-                log.debug('Hanlding monitor event: {}'.format(monitor_event))
+                log.debug('Hanlding monitor event: {}'.format(str(monitor_event)))
 
                 # ignore withdrawals for now
                 if monitor_event.type == 'W':
@@ -222,7 +222,7 @@ class Detection():
 
     @exception_handler
     def mark_handled(self, monitor_event):
-        log.debug('Marking monitor event as handled {}'.format(monitor_event))
+        log.debug('Marking monitor event as handled {}'.format(str(monitor_event)))
         monitor_event.handled = True
         db.session.commit()
         db.session.expunge(monitor_event)

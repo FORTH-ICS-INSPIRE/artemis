@@ -101,6 +101,9 @@ class Monitor(db.Model):
         repr_str += ']'
         return repr_str
 
+    def __str__(self):
+        return '<Monitor {}, {}, {}, {}, {}>'.format(self.type, self.prefix, self.as_path, self.service, self.timestamp)
+
 
 class Hijack(db.Model):
     __tablename__ = 'hijacks'
@@ -142,6 +145,9 @@ class Hijack(db.Model):
         repr_str += '\tTIME STARTED: {}\n'.format(self.time_started)
         repr_str += ']'
         return repr_str
+
+    def __str__(self):
+        return '<Hijack {}, {}, {}, {}>'.format(self.type, self.prefix, self.hijack_as, self.time_started)
 
     def to_dict(self):
         return {

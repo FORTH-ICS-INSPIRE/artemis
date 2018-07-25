@@ -6,11 +6,13 @@ import ipaddress
 this_script_path = os.path.realpath(__file__)
 upper_dir = '/'.join(this_script_path.split('/')[:-2])
 sys.path.insert(0, upper_dir)
+os.environ['FLASK_CONFIGURATION'] = 'testing'
 
 import mock
 from core.parser import ConfParser
 import configparser
 from core import ArtemisError
+import logging
 
 
 class TestConfParser(unittest.TestCase):
@@ -18,6 +20,7 @@ class TestConfParser(unittest.TestCase):
     @classmethod
     @mock.patch.object(ConfParser, 'parse_rrcs')
     def setUpClass(cls, mock_parse):
+        logging.disable(logging.INFO)
         cls.confParser = ConfParser()
         cls.confParser.file = 'tests/test_config'
         cls.confParser.available_ris = {'rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'}
@@ -25,7 +28,7 @@ class TestConfParser(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        logging.disable(logging.NOTSET)
 
     def setUp(self):
         pass

@@ -1,17 +1,17 @@
 import os
 import signal
 import time
-import webapp
+from core import log
 from core.parser import ConfParser
 from core.monitor import Monitor
 from core.detection import Detection
 from core.mitigation import Mitigation
 from core.syscheck import SysCheck
-from webapp.webapp import WebApplication
 from protogrpc.grpc_server import GrpcServer
+import webapp
+from webapp.webapp import WebApplication
 from webapp import app
 from webapp.data.models import db
-from core import log
 
 class GracefulKiller:
     def __init__(self):

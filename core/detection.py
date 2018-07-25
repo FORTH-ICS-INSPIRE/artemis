@@ -33,6 +33,8 @@ class Detection():
                 conf_obj = {'origin_asns': configs[config]['origin_asns'], 'neighbors': configs[config]['neighbors']}
                 node.data['confs'].append(conf_obj)
 
+        log.debug('Detection configuration: {}'.format(configs))
+
     def start(self):
         if not self.flag:
             self.flag = True
@@ -49,16 +51,18 @@ class Detection():
             self.init_detection()
 
             unhandled_events = Monitor.query.filter_by(handled=False).all()
+            log.info('Loaded {} unhandled_events'.format(len(unhandled_events)))
 
             @exception_handler
             def handle_monitor_event(monitor_event):
                 if monitor_event is None:
                     return
 
+                log.debug('Hanlding monitor event: {}'.format(monitor_event))
+
                 # ignore withdrawals for now
                 if monitor_event.type == 'W':
-                    monitor_event.handled = True
-                    db.session.commit()
+                    self.mark_handled(monitor_event)
                     return
 
                 for func in self.__detection_generator():
@@ -73,6 +77,7 @@ class Detection():
                 # empty the queue if found empty monitor id (signal queue flush)
                 if monitor_event_id is None:
                     while not self.monitor_queue.empty():
+                        log.debug('Waiting for empty queue before stopping')
                         self.monitor_queue.get()
                 else:
                     monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
@@ -133,9 +138,7 @@ class Detection():
 
         # Update monitor with new Hijack ID and register possible Hijack event changes
         monitor_event.hijack_id = hijack_id
-        monitor_event.handled = True
-        db.session.commit()
-        db.session.expunge(monitor_event)
+        self.mark_handled(monitor_event)
 
     @staticmethod
     def __remove_prepending(seq):
@@ -170,6 +173,7 @@ class Detection():
         (clean_as_path, is_loopy) = Detection.__remove_prepending(as_path)
         if is_loopy:
             clean_as_path = Detection.__clean_loops(clean_as_path)
+        log.debug('__clean_as_path - before: {} / after: {}'.format(as_path, clean_as_path))
         return clean_as_path
 
     @exception_handler
@@ -218,6 +222,7 @@ class Detection():
 
     @exception_handler
     def mark_handled(self, monitor_event):
+        log.debug('Marking monitor event as handled {}'.format(monitor_event))
         monitor_event.handled = True
         db.session.commit()
         db.session.expunge(monitor_event)

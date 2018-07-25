@@ -27,12 +27,18 @@ docker build -t mavromat/artemis .
 ```
 after you have entered the root folder of the cloned artermis repo.
 
-Then, create a directory that includes the `config` and `webapp.cfg` configuration files.
+Then, create a directory that includes the `config`, `webapp.cfg` and `logging.json` configuration files.
+
+The application can be run in three different modes: `prod`, `dev` and `testing`. By default, the `dev` mode is selected, and you can modify that by having an environment variable set like this:
+
+```
+export FLASK_CONFIGURATION=prod
+```
 
 Then, you need to run the container with the following command:
 
 ```
-docker run --rm -ti -p 5000:5000 --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
+docker run --rm -ti -p 5000:5000 -e FLASK_CONFIGURATION=dev --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
 ```
 
 Fields:
@@ -41,6 +47,7 @@ Fields:
 --expose: Exposes from the container the PORT ARTEMIS is running on (specified in `webapp.cfg`)
 -ti: Makes container interactive
 -v src:dst: Creates a volume in dst path on the container that is a copy of src directory on host
+-e name:value: Creates an environment variable on the container to set up the mode of the application.
 ```
 
 ### Known Issues
@@ -117,6 +124,18 @@ Since ARTEMIS includes a Web App and GUI, you also need to modify the webapp con
 vim configs/webapp.cfg
 ```
 
+If there is the need to specify your own loggers, you can do so by modifying the logging.json file
+
+```
+vim configs/logging.json
+```
+
+The application can be run in three different modes: `prod`, `dev` and `testing`. By default, the `dev` mode is selected, and you can modify that by having an environment variable set like this:
+
+```
+export FLASK_CONFIGURATION=prod
+```
+
 After modifying the configuration files run
 
 ```
@@ -137,7 +156,7 @@ Note: to run the mininet demo (optional) please follow the instructions under mi
 
 ### SSL/TLS Support
 
-The following process, based on Flask-accessed certificates/keys, is to be used only in testing environments. 
+The following process, based on Flask-accessed certificates/keys, is to be used only in testing environments.
 
 In production, a scalable nginx/apache-based reverse proxy will be used to terminate SSL connections.
 

@@ -3,10 +3,16 @@ __all__ = ['core']
 import logging
 import logging.config
 import json
+import os
 
-with open('configs/logging.json', 'r') as f:
-    config = json.load(f)
-    logging.config.dictConfig(config)
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+if os.path.exists('configs/logging.json'):
+    with open('configs/logging.json', 'r') as f:
+        config = json.load(f)
+        logging.config.dictConfig(config)
+
 log = logging.getLogger(__name__)
 
 class ArtemisError(Exception):

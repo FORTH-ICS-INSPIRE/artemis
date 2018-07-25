@@ -52,7 +52,7 @@ class ConfParser():
             socket_io.on('ris_rrc_list', on_msg)
             socket_io.wait(seconds=3)
         except Exception:
-            log.info('RIPE RIS server is down. Try again later..')
+            log.warning('RIPE RIS server is down. Try again later..')
 
     def parse_file(self):
         try:
@@ -167,7 +167,7 @@ class ConfParser():
                     riperis_ = {x.strip() for x in field.split(',')}
 
                     for unavailable in riperis_.difference(self.available_ris):
-                        log.warn('unavailable monitor {}'.format(unavailable))
+                        log.warning('unavailable monitor {}'.format(unavailable))
 
                     return riperis_.intersection(self.available_ris)
                 elif label == 'bgpmon':

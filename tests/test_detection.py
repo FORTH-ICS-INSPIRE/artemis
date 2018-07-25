@@ -9,6 +9,7 @@ os.environ['FLASK_CONFIGURATION'] = 'testing'
 
 import unittest
 import mock
+import logging
 from core.parser import ConfParser
 from core.detection import Detection
 from webapp.webapp import WebApplication
@@ -50,6 +51,7 @@ class TestDetection(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        logging.disable(logging.INFO)
         cls.webapp = WebApplication()
         cls.webapp.start()
 
@@ -74,6 +76,8 @@ class TestDetection(unittest.TestCase):
         self.conn = sqlite3.connect('/tmp/test.db')
         self.c = self.conn.cursor()
 
+    def tearDown(self):
+        pass
 
     def test_wrong_inputs(self):
         from webapp.data.models import Monitor
@@ -450,6 +454,7 @@ class TestDetection(unittest.TestCase):
     def tearDownClass(cls):
         cls.webapp.stop()
         os.remove(app.config['SQLALCHEMY_DATABASE_URI'][10:])
+        logging.disable(logging.NOTSET)
 
 
 if __name__ == '__main__':

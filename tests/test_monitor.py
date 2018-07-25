@@ -4,16 +4,19 @@ import sys
 this_script_path = os.path.realpath(__file__)
 upper_dir = '/'.join(this_script_path.split('/')[:-2])
 sys.path.insert(0, upper_dir)
+os.environ['FLASK_CONFIGURATION'] = 'testing'
 
 import unittest
 import mock
 from core.parser import ConfParser
+import logging
 
 
 class TestMonitor(unittest.TestCase):
 
     @mock.patch('core.parser.ConfParser')
     def setUp(self, mock_conf):
+        logging.disable(logging.INFO)
         mockSubprocess = mock.MagicMock()
         mockSubprocess.Popen.return_value = None
 
@@ -36,6 +39,9 @@ class TestMonitor(unittest.TestCase):
         sys.modules['subprocess'] = mockSubprocess
         from core.monitor import Monitor
         self.monitor = Monitor(mock_conf)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_start(self):
         self.monitor.start()

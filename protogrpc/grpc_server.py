@@ -7,7 +7,7 @@ from protobuf_to_dict import protobuf_to_dict
 from sqlalchemy import exc
 from webapp.data.models import Monitor, db
 from webapp import app
-import traceback
+from core import exception_handler, log
 
 
 class GrpcServer():
@@ -38,7 +38,7 @@ class GrpcServer():
                     db.session.rollback()
                     duplicate_entry_str = "(sqlite3.IntegrityError) UNIQUE constraint failed"
                     if duplicate_entry_str not in str(e):
-                        traceback.print_exc()
+                        log.error('Duplicate Entry', exc_info=True)
 
             return mservice_pb2.Empty()
 
@@ -71,8 +71,8 @@ class GrpcServer():
 
         self.grpc_server.add_insecure_port('[::]:50051')
         _thread.start_new_thread(self.grpc_server.start, ())
-        print("GRPC Server Started..")
+        log.info('GRPC Server Started..')
 
     def stop(self):
         self.grpc_server.stop(0)
-        print("GRPC Server Stopped..")
+        log.info('GRPC Server Stopped..')

@@ -2,10 +2,9 @@ from configparser import ConfigParser, ParsingError, MissingSectionHeaderError, 
 import os
 import sys
 import ipaddress
-import traceback
 from socketIO_client_nexus import SocketIO
 import re
-from core import ArtemisError
+from core import ArtemisError, log
 
 check_asn = lambda asn : asn > 0 and asn < 4294967295
 
@@ -53,7 +52,7 @@ class ConfParser():
             socket_io.on('ris_rrc_list', on_msg)
             socket_io.wait(seconds=3)
         except Exception:
-            print('[!] RIPE RIS server is down. Try again later..')
+            log.warning('RIPE RIS server is down. Try again later..')
 
     def parse_file(self):
         try:
@@ -114,13 +113,7 @@ class ConfParser():
 
         return ret_
 
-    def _process_field_prefixes(
-        self,
-        field,
-        where,
-        label=None,
-        definition=False
-    ):
+    def _process_field_prefixes(self, field, where, label=None, definition=False):
         if definition:
             prefixes = [x.strip() for x in field.split(',')]
         else:
@@ -174,8 +167,7 @@ class ConfParser():
                     riperis_ = {x.strip() for x in field.split(',')}
 
                     for unavailable in riperis_.difference(self.available_ris):
-                        print('[!] Warning: unavailable monitor {}'.format(unavailable),
-                                file=sys.stderr)
+                        log.warning('unavailable monitor {}'.format(unavailable))
 
                     return riperis_.intersection(self.available_ris)
                 elif label == 'bgpmon':

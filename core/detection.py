@@ -4,8 +4,7 @@ from webapp.data.models import Hijack, Monitor, db
 import _thread
 from multiprocessing import Queue
 from sqlalchemy import and_, exc, desc
-import traceback
-from core import exception_handler
+from core import exception_handler, log
 import ipaddress
 
 class Detection():
@@ -16,10 +15,13 @@ class Detection():
         self.prefix_tree = radix.Radix()
         self.flag = False
 
-    def __detection_generator(self):
-        yield self.detect_origin_hijack
-        yield self.detect_type_1_hijack
-        yield self.detect_subprefix_hijack
+    def __detection_generator(self, path_len):
+        if path_len > 0:
+            yield self.detect_origin_hijack
+            if path_len > 1:
+                yield self.detect_type_1_hijack
+            yield self.detect_subprefix_hijack
+
         yield self.mark_handled
 
     def init_detection(self):
@@ -27,12 +29,14 @@ class Detection():
         for config in configs:
             for prefix in configs[config]['prefixes']:
                 node = self.prefix_tree.search_exact(str(prefix))
-                if(node is None):
+                if node is None:
                     node = self.prefix_tree.add(str(prefix))
-                    node.data['confs'] = list()                    
+                    node.data['confs'] = []
 
                 conf_obj = {'origin_asns': configs[config]['origin_asns'], 'neighbors': configs[config]['neighbors']}
                 node.data['confs'].append(conf_obj)
+
+        log.debug('Detection configuration: {}'.format(configs))
 
     def start(self):
         if not self.flag:
@@ -46,24 +50,27 @@ class Detection():
 
     def parse_queue(self):
         with app.app_context():
-            print('[+] Detection Mechanism Started..')
+            log.info('Detection Mechanism Started..')
             self.init_detection()
 
             unhandled_events = Monitor.query.filter_by(handled=False).all()
+            log.info('Loaded {} unhandled_events'.format(len(unhandled_events)))
 
             @exception_handler
             def handle_monitor_event(monitor_event):
                 if monitor_event is None:
                     return
 
+                log.debug('Hanlding monitor event: {}'.format(str(monitor_event)))
+
                 # ignore withdrawals for now
                 if monitor_event.type == 'W':
-                    monitor_event.handled = True
-                    db.session.commit()
+                    self.mark_handled(monitor_event)
                     return
 
-                for func in self.__detection_generator():
-                    if func(monitor_event):
+                as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
+                for func in self.__detection_generator(len(as_path)):
+                    if func(monitor_event=monitor_event, as_path=as_path):
                         break
 
             for monitor_event in unhandled_events:
@@ -74,11 +81,12 @@ class Detection():
                 # empty the queue if found empty monitor id (signal queue flush)
                 if monitor_event_id is None:
                     while not self.monitor_queue.empty():
+                        log.debug('Waiting for empty queue before stopping')
                         self.monitor_queue.get()
                 else:
                     monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
                     handle_monitor_event(monitor_event)
-            print('[+] Detection Mechanism Stopped..')
+            log.info('Detection Mechanism Stopped..')
 
     def commit_hijack(self, monitor_event, origin, hij_type):
         # Trigger hijack
@@ -95,7 +103,7 @@ class Detection():
             db.session.add(hijack)
             db.session.commit()
             hijack_id = hijack.id
-            print('[DETECTION] NEW TYPE {} HIJACK!\n{}'.format(hij_type, hijack))
+            log.info('[DETECTION] NEW TYPE {} HIJACK!\n{}'.format(hij_type, hijack))
         else:
             if monitor_event.timestamp < hijack_event.time_started:
                 hijack_event.time_started = monitor_event.timestamp
@@ -134,9 +142,7 @@ class Detection():
 
         # Update monitor with new Hijack ID and register possible Hijack event changes
         monitor_event.hijack_id = hijack_id
-        monitor_event.handled = True
-        db.session.commit()
-        db.session.expunge(monitor_event)
+        self.mark_handled(monitor_event)
 
     @staticmethod
     def __remove_prepending(seq):
@@ -171,54 +177,50 @@ class Detection():
         (clean_as_path, is_loopy) = Detection.__remove_prepending(as_path)
         if is_loopy:
             clean_as_path = Detection.__clean_loops(clean_as_path)
+        log.debug('__clean_as_path - before: {} / after: {}'.format(as_path, clean_as_path))
         return clean_as_path
 
     @exception_handler
-    def detect_origin_hijack(self, monitor_event):
-        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
-        if len(as_path) > 0:
-            origin_asn = int(monitor_event.origin_as)
-            prefix_node = self.prefix_tree.search_best(
-                monitor_event.prefix)
-            if prefix_node is not None:
-                for item in prefix_node.data['confs']:
-                    if origin_asn in item['origin_asns']:
-                        return False
-                self.commit_hijack(monitor_event, origin_asn, 0)
-                return True
+    def detect_origin_hijack(self, monitor_event, as_path):
+        origin_asn = int(monitor_event.origin_as)
+        prefix_node = self.prefix_tree.search_best(
+            monitor_event.prefix)
+        if prefix_node is not None:
+            for item in prefix_node.data['confs']:
+                if origin_asn in item['origin_asns']:
+                    return False
+            self.commit_hijack(monitor_event, origin_asn, 0)
+            return True
         return False
 
     @exception_handler
-    def detect_type_1_hijack(self, monitor_event):
-        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
-        if len(as_path) > 1:
-            origin_asn = int(monitor_event.origin_as)
-            first_neighbor_asn = int(as_path[-2])
-            prefix_node = self.prefix_tree.search_best(
-                monitor_event.prefix)
-            if prefix_node is not None:
-                for item in prefix_node.data['confs']:
-                    if origin_asn in item['origin_asns'] and first_neighbor_asn in item['neighbors']:
-                        return False
-                self.commit_hijack(monitor_event, first_neighbor_asn, 1)
-                return True
+    def detect_type_1_hijack(self, monitor_event, as_path):
+        origin_asn = int(monitor_event.origin_as)
+        first_neighbor_asn = int(as_path[-2])
+        prefix_node = self.prefix_tree.search_best(
+            monitor_event.prefix)
+        if prefix_node is not None:
+            for item in prefix_node.data['confs']:
+                if origin_asn in item['origin_asns'] and first_neighbor_asn in item['neighbors']:
+                    return False
+            self.commit_hijack(monitor_event, first_neighbor_asn, 1)
+            return True
         return False
 
     @exception_handler
-    def detect_subprefix_hijack(self, monitor_event):
-        as_path = Detection.__clean_as_path(monitor_event.as_path.split(' '))
-        if len(as_path) > 0:
-            mon_prefix = ipaddress.ip_network(monitor_event.prefix)
-            prefix_node = self.prefix_tree.search_best(
-                monitor_event.prefix)
-            if prefix_node is not None and prefix_node.prefixlen < mon_prefix.prefixlen:
-                self.commit_hijack(monitor_event, -1, 'S')
-                return True
+    def detect_subprefix_hijack(self, monitor_event, as_path):
+        mon_prefix = ipaddress.ip_network(monitor_event.prefix)
+        prefix_node = self.prefix_tree.search_best(
+            monitor_event.prefix)
+        if prefix_node is not None and prefix_node.prefixlen < mon_prefix.prefixlen:
+            self.commit_hijack(monitor_event, -1, 'S')
+            return True
         return False
 
 
     @exception_handler
-    def mark_handled(self, monitor_event):
+    def mark_handled(self, monitor_event, *args, **kwargs):
+        log.debug('Marking monitor event as handled {}'.format(str(monitor_event)))
         monitor_event.handled = True
         db.session.commit()
         db.session.expunge(monitor_event)

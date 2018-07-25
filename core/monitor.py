@@ -1,10 +1,9 @@
 import sys
 import os
 import radix
-import traceback
 # from taps.bgpmon import BGPmon
 from subprocess import Popen
-from core import exception_handler
+from core import exception_handler, log
 
 
 class Monitor():
@@ -29,7 +28,7 @@ class Monitor():
                         node.data['mitigation'] = self.configs[
                             config]['mitigation']
                 except Exception as e:
-                    traceback.print_exc()
+                    log.error('Exception', exc_info=True)
 
             # only keep super prefixes for monitors
             for prefix in self.prefix_tree.prefixes():
@@ -41,17 +40,18 @@ class Monitor():
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
             self.flag = True
-            print('[+] Monitors Started..')
+            log.info('Monitors Started..')
 
     def stop(self):
         if self.flag:
             for proc_id in self.process_ids:
                 proc_id[1].terminate()
             self.flag = False
-            print('[+] Monitors Stopped..')
+            log.info('Monitors Stopped..')
 
     @exception_handler
     def init_ris_instances(self):
+        log.debug('Starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
         for ris_monitor in self.monitors.get('riperis', []):
             for prefix in self.prefixes:
                     p = Popen(['nodejs', 'taps/ripe_ris.js',
@@ -69,6 +69,7 @@ class Monitor():
 
     @exception_handler
     def init_exabgp_instances(self):
+        log.debug('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
         for exabgp_monitor in self.monitors.get('exabgp', []):
             exabgp_monitor_str = '{}:{}'.format(exabgp_monitor[0] ,exabgp_monitor[1])
             p = Popen(['python3', 'taps/exabgp_client.py',
@@ -78,6 +79,7 @@ class Monitor():
     @exception_handler
     def init_bgpstreamhist_instance(self):
         if 'bgpstreamhist' in self.monitors:
+            log.debug('Starting {} for {}'.format(self.monitors['bgpstreamhist'], self.prefixes))
             bgpstreamhist_dir = self.monitors['bgpstreamhist']
             p = Popen(['python3', 'taps/bgpstreamhist.py',
                     '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir])
@@ -86,6 +88,7 @@ class Monitor():
     @exception_handler
     def init_bgpstreamlive_instance(self):
         if 'bgpstreamlive' in self.monitors:
+            log.debug('Starting {} for {}'.format(self.monitors['bgpstreamlive'], self.prefixes))
             bgpstream_projects = ','.join(self.monitors['bgpstreamlive'])
             p = Popen(['python3', 'taps/bgpstreamlive.py',
                     '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects])

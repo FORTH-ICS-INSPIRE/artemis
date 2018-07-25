@@ -3,12 +3,13 @@ import logging
 from flask_compress import Compress
 from flask_security import Security, SQLAlchemyUserDatastore
 from webapp.data.models import db, Role, User
+from core import log
 
 
 class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    LOGGING_LOCATION = 'webapp.log'
+    LOGGING_LOCATION = 'logs/webapp.log'
     SECURITY_PASSWORD_SALT = b'O\xdb\xd4\x16\xb8\xcaND6\xe8q\xe5'
     CACHE_TYPE = 'simple'
     COMPRESS_MIMETYPES = ['text/html', 'text/css', 'text/xml',
@@ -18,6 +19,12 @@ class BaseConfig(object):
     SUPPORTED_LANGUAGES = {'en': 'English'}
     BABEL_DEFAULT_LOCALE = 'en'
     BABEL_DEFAULT_TIMEZONE = 'UTC'
+
+    DEBUG = False
+    TESTING = False
+    LOGGING_LEVEL = logging.INFO
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/dev.db'
+    SECRET_KEY = b':\xce!\x8ec\xaa\xa2T\xf2W\xa4F=\xb3\xd9\xb6D\xc3\x8a\x9b\xd5h\x85\x06'
 
 
 class DevelopmentConfig(BaseConfig):
@@ -48,8 +55,15 @@ class ProductionConfig(BaseConfig):
     DEBUG = False
     TESTING = False
     ENV = 'prod'
+
+    if not os.path.exists('db'):
+        os.makedirs('db')
+
     LOGGING_LEVEL = logging.INFO
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///../db/artemis.db'
+
+    db_path = os.path.join(os.path.dirname(__file__), '../db/artemis.db')
+    db_uri = 'sqlite:///{}'.format(db_path)
+    SQLALCHEMY_DATABASE_URI = db_uri
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
 
 
@@ -63,10 +77,17 @@ config = {
 
 def configure_app(app):
     config_name = os.getenv('FLASK_CONFIGURATION', 'default')
-    app.config.from_object(config[config_name])
+
+    if config_name in config:
+        app.config.from_object(config[config_name])
+        log.info('Loading {} configuration..'.format(config_name))
+    else:
+        log.warning('Unknown FLASK_CONFIGURATION provided: {}. Please use [{}]. Loading default configuration..'.format(config_name, config.keys()))
 
     if config_name != 'testing':
+        log.info('Reading additional configuration from webapp.cfg..')
         app.config.from_pyfile('webapp.cfg', silent=True)
+
     # Configure logging
     handler = logging.FileHandler(app.config['LOGGING_LOCATION'])
     handler.setLevel(app.config['LOGGING_LEVEL'])

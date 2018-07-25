@@ -1,4 +1,5 @@
 from netaddr import IPNetwork
+from core import exception_handler, log
 
 
 class Deaggr:
@@ -20,7 +21,7 @@ class Deaggr:
 
     def print_subprefixes(self):
         for subprefix in self.__subprefixes:
-            print(subprefix)
+            log.info(subprefix)
 
     def get_subprefixes(self):
         prefixes = []

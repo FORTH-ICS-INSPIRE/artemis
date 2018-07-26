@@ -10,23 +10,21 @@ class Monitor():
 
     def __init__(self, confparser):
         self.prefix_tree = radix.Radix()
-        self.process_ids = list()
+        self.process_ids = []
         self.flag = False
-        self.configs = confparser.get_obj()
+        self.rules = confparser.getRules()
         self.prefixes = set()
-        self.monitors = confparser.get_monitors()
+        self.monitors = confparser.getMonitors()
 
     def start(self):
         if not self.flag:
-            for config in self.configs:
+            for rule in self.rules:
                 try:
-                    for prefix in self.configs[config]['prefixes']:
-                        node = self.prefix_tree.add(str(prefix))
-                        node.data['origin_asns'] = self.configs[
-                            config]['origin_asns']
-                        node.data['neighbors'] = self.configs[config]['neighbors']
-                        node.data['mitigation'] = self.configs[
-                            config]['mitigation']
+                    for prefix in rule['prefixes']:
+                        node = self.prefix_tree.add(prefix)
+                        node.data['origin_asns'] = rule['origin_asns']
+                        node.data['neighbors'] = rule['neighbors']
+                        node.data['mitigation'] = rule['mitigation']
                 except Exception as e:
                     log.error('Exception', exc_info=True)
 
@@ -58,20 +56,11 @@ class Monitor():
                                 '--prefix', prefix, '--host', ris_monitor])
                     self.process_ids.append(('RIPEris {} {}'.format(ris_monitor, prefix), p))
 
-    # def init_bgpmon_instance(self, prefixes):
-    #   try:
-    #       if(len(self.confparser.get_monitors()['bgpmon']) == 1):
-    #           p = Process(target=BGPmon, args=(self.prefix_tree, self.raw_log_queue, self.confparser.get_monitors()['bgpmon'][0]))
-    #           p.start()
-    #           self.process_ids.append(('BGPmon', p))
-    #   except:
-    #       print('Error on initializing of BGPmon.')
-
     @exception_handler
     def init_exabgp_instances(self):
         log.debug('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
         for exabgp_monitor in self.monitors.get('exabgp', []):
-            exabgp_monitor_str = '{}:{}'.format(exabgp_monitor[0] ,exabgp_monitor[1])
+            exabgp_monitor_str = '{}:{}'.format(exabgp_monitor['ip'] ,exabgp_monitor['port'])
             p = Popen(['python3', 'taps/exabgp_client.py',
                 '--prefix', ','.join(self.prefixes), '--host', exabgp_monitor_str])
             self.process_ids.append(('ExaBGP {} {}'.format(exabgp_monitor_str, self.prefixes), p))

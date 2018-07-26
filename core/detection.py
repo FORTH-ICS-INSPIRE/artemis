@@ -25,18 +25,18 @@ class Detection():
         yield self.mark_handled
 
     def init_detection(self):
-        configs = self.confparser.get_obj()
-        for config in configs:
-            for prefix in configs[config]['prefixes']:
-                node = self.prefix_tree.search_exact(str(prefix))
+        rules = self.confparser.getRules()
+        for rule in rules:
+            for prefix in rule['prefixes']:
+                node = self.prefix_tree.search_exact(prefix)
                 if node is None:
-                    node = self.prefix_tree.add(str(prefix))
+                    node = self.prefix_tree.add(prefix)
                     node.data['confs'] = []
 
-                conf_obj = {'origin_asns': configs[config]['origin_asns'], 'neighbors': configs[config]['neighbors']}
+                conf_obj = {'origin_asns': rule['origin_asns'], 'neighbors': rule['neighbors']}
                 node.data['confs'].append(conf_obj)
 
-        log.debug('Detection configuration: {}'.format(configs))
+        log.debug('Detection configuration: {}'.format(rules))
 
     def start(self):
         if not self.flag:

@@ -2,7 +2,7 @@ import os
 import signal
 import time
 from core import log
-from core.parser import ConfParser
+from core.yamlparser import ConfigurationLoader
 from core.monitor import Monitor
 from core.detection import Detection
 from core.mitigation import Mitigation
@@ -26,8 +26,8 @@ class GracefulKiller:
 def main():
     # Configuration Parser
     log.info('Parsing Configuration..')
-    confparser_ = ConfParser()
-    confparser_.parse_file()
+    confparser_ = ConfigurationLoader()
+    confparser_.parse()
 
     systemcheck_ = SysCheck()
     if systemcheck_.isValid():

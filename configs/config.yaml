@@ -1,0 +1,50 @@
+#
+# ARTEMIS Configuration File
+#
+
+# Start of Prefix Definitions
+prefixes:
+    forth_prefixes: &forth_prefixes
+        139.91.0.0/16
+# End of Prefix Definitions
+
+# Start of Monitor Definitions
+monitors:
+    riperis: [rrc01, rrc02, rrc03, rrc04, rrc05, rrc06, rrc07, rrc08, rrc09, rrc10, rrc11, rrc12, rrc13, rrc14, rrc15, rrc16, rrc17, rrc18, rrc19, rrc20, rrc21, rrc22, rrc23]
+    bgpstreamlive:
+    - routeviews
+    - ris
+    exabgp:
+    - ip: 192.168.1.1
+      port: 5000
+    - ip: 192.168.5.1
+      port: 5000
+    bgpstreamhist:
+    - /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
+# End of Monitor Definitions
+
+# Start of ASN Definitions
+asns:
+    forth_asn: &forth_asn
+        8522
+    grnet_forth_upstream: &grnet_forth_upstream
+        5408
+    lamda_forth_upstream_back: &lamda_forth_upstream_back
+        56910
+    vodafone_forth_upstream_back: &vodafone_forth_upstream_back
+        12361
+# End of ASN Definitions
+
+# Start of Rule Definitions
+rules:
+- prefixes:
+  - *forth_prefixes
+  origin_asns:
+  - *forth_asn
+  neighbors:
+  - *grnet_forth_upstream
+  - *lamda_forth_upstream_back
+  - *vodafone_forth_upstream_back
+  mitigation:
+      manual
+# End of Rule Definitions

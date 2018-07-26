@@ -46,6 +46,7 @@ pyOpenSSL==18.0.0
 python-dateutil==2.7.3
 python-mimeparse==1.6.0
 pytz==2018.3
+PyYAML==3.13
 requests==2.18.4
 six==1.11.0
 socketIO-client==0.7.2

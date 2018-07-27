@@ -2,11 +2,10 @@ import os
 import signal
 import time
 from core import log
-from core.parser import ConfParser
+from core.yamlparser import ConfigurationLoader
 from core.monitor import Monitor
 from core.detection import Detection
 from core.mitigation import Mitigation
-from core.syscheck import SysCheck
 from protogrpc.grpc_server import GrpcServer
 import webapp
 from webapp.webapp import WebApplication
@@ -26,47 +25,45 @@ class GracefulKiller:
 def main():
     # Configuration Parser
     log.info('Parsing Configuration..')
-    confparser_ = ConfParser()
-    confparser_.parse_file()
+    confparser_ = ConfigurationLoader()
+    confparser_.parse()
 
-    systemcheck_ = SysCheck()
-    if systemcheck_.isValid():
-        # Instatiate Modules
-        monitor_ = Monitor(confparser_)
-        detection_ = Detection(confparser_)
-        mitigation_ = Mitigation(confparser_)
+    # Instatiate Modules
+    monitor_ = Monitor(confparser_)
+    detection_ = Detection(confparser_)
+    mitigation_ = Mitigation(confparser_)
 
-        # Load Modules to Web Application
-        app.config['monitor'] = monitor_
-        app.config['detector'] = detection_
-        app.config['mitigator'] = mitigation_
+    # Load Modules to Web Application
+    app.config['monitor'] = monitor_
+    app.config['detector'] = detection_
+    app.config['mitigator'] = mitigation_
 
-        # Web Application
-        webapp_ = WebApplication()
-        webapp_.start()
+    # Web Application
+    webapp_ = WebApplication()
+    webapp_.start()
 
-        # GRPC Server
-        grpc_ = GrpcServer(monitor_, detection_, mitigation_)
-        grpc_.start()
+    # GRPC Server
+    grpc_ = GrpcServer(monitor_, detection_, mitigation_)
+    grpc_.start()
 
-        killer = GracefulKiller()
-        log.info('Send SIGTERM signal to end..\n')
-        while True:
-            time.sleep(1)
-            if killer.kill_now:
-                break
-        #input("\n[!] Press ENTER to exit [!]\n\n")
+    killer = GracefulKiller()
+    log.info('Send SIGTERM signal to end..\n')
+    while True:
+        time.sleep(1)
+        if killer.kill_now:
+            break
+    #input("\n[!] Press ENTER to exit [!]\n\n")
 
-        # Stop all modules and web application
-        monitor_.stop()
-        detection_.stop()
-        mitigation_.stop()
-        grpc_.stop()
-        webapp_.stop()
+    # Stop all modules and web application
+    monitor_.stop()
+    detection_.stop()
+    mitigation_.stop()
+    grpc_.stop()
+    webapp_.stop()
 
-        db.session.remove()
+    db.session.remove()
 
-        log.info('Bye..!')
+    log.info('Bye..!')
 
 
 if __name__ == '__main__':

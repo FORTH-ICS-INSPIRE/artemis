@@ -10,7 +10,7 @@ os.environ['FLASK_CONFIGURATION'] = 'testing'
 import unittest
 import mock
 import logging
-from core.parser import ConfParser
+from core.yamlparser import ConfigurationLoader
 from core.detection import Detection
 from webapp.webapp import WebApplication
 from webapp import app
@@ -419,7 +419,7 @@ class TestDetection(unittest.TestCase):
     def test_multiple_confs_per_prefix(self, mock_init):
         from webapp.data.models import Monitor
 
-        # legitimate announcement 
+        # legitimate announcement
         mon_1 = Monitor({
                 'prefix':'10.0.0.0/24',
                 'service':'testing',

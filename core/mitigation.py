@@ -19,11 +19,11 @@ class Mitigation():
         self.flag = False
 
     def init_mitigation(self):
-        configs = self.confparser.get_obj()
-        for config in configs:
-            for prefix in configs[config]['prefixes']:
-                node = self.prefix_tree.add(str(prefix))
-                node.data['mitigation'] = configs[config]['mitigation']
+        rules = self.confparser.getRules()
+        for rule in rules:
+            for prefix in rule['prefixes']:
+                node = self.prefix_tree.add(prefix)
+                node.data['mitigation'] = rule['mitigation']
 
     def start(self):
         if not self.flag:

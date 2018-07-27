@@ -8,32 +8,32 @@ os.environ['FLASK_CONFIGURATION'] = 'testing'
 
 import unittest
 import mock
-from core.parser import ConfParser
+from core.yamlparser import ConfigurationLoader
 import logging
 
 
 class TestMonitor(unittest.TestCase):
 
-    @mock.patch('core.parser.ConfParser')
+    @mock.patch('core.yamlparser.ConfigurationLoader')
     def setUp(self, mock_conf):
         logging.disable(logging.INFO)
         mockSubprocess = mock.MagicMock()
         mockSubprocess.Popen.return_value = None
 
-        mock_conf.get_obj.return_value = {
-            'a': {
-                'prefixes': {'10.0.0.0/24', '10.0.0.0/25', '20.0.0.0/24'},
-                'origin_asns': {1, 2},
-                'neighbors': {3, 4, 5, 6},
+        mock_conf.getRules.return_value = [
+            {
+                'prefixes': ['10.0.0.0/24', '10.0.0.0/25', '20.0.0.0/24'],
+                'origin_asns': [1, 2],
+                'neighbors': [3, 4, 5, 6],
                 'mitigation': 'manual'
             }
-        }
+        ]
 
-        mock_conf.get_monitors.return_value = {
-            'riperis': {'rrc01', 'rrc02', 'rrc03'},
-            'bgpstreamlive': {'routeviews', 'ris'},
-            'exabgp': {('192.168.0.0',5000)},
-            'bgpstreamhist': {'/tmp/test'}
+        mock_conf.getMonitors.return_value = {
+            'riperis': ['rrc01', 'rrc02', 'rrc03'],
+            'bgpstreamlive': ['routeviews', 'ris'],
+            'exabgp': [{'ip':'192.168.0.0', 'port':5000}],
+            'bgpstreamhist': ['/tmp/test']
         }
 
         sys.modules['subprocess'] = mockSubprocess

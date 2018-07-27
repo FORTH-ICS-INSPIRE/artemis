@@ -9,10 +9,12 @@
 # - - - - - # Start of Prefix Definition Groups # - - - - - #
 # - -                                                   - - #
 
-[prefixes_group]
-
-forth_prefixes: 10.0.0.0/24, 20.0.0.0/24
-sample_prefixes: 30.0.0.0/24
+prefixes:
+    forth_prefixes: &forth_prefixes
+    - 10.0.0.0/24
+    - 20.0.0.0/24
+    sample_prefixes: &sample_prefixes
+    - 30.0.0.0/24
 
 # - -                                                   - - #
 # - - - - - # End of Prefix Definition Groups # - - - - - - #

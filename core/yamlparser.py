@@ -64,8 +64,11 @@ class ConfigurationLoader():
                     str2ip(prefix)
                 except:
                     raise Exception('invalid-prefix {}'.format(prefix))
-            rule['origin_asns'] = flatten(rule.get('origin_asns', []))
-            rule['neighbors'] = flatten(rule.get('neighbors', []))
+
+            rule['origin_asns'] = flatten(rule['origin_asns'])
+            rule['neighbors'] = flatten(rule['neighbors'])
+            if len(rule['origin_asns']) == 0 and len(rule['neighbors']) > 0:
+                raise Exception('origin-not-set {}'.format(rule))
             for asn in (rule['origin_asns'] + rule['neighbors']):
                 if not isinstance(asn, int):
                     raise Exception('invalid-asn {}'.format(asn))

@@ -125,7 +125,7 @@ class Detection():
             # handle inf_asns as if its an type0 hijack
             for monitor in hijack_monitors:
                 peers_seen.add(monitor.peer_as)
-                if hij_type is 'S':
+                if hij_type in {'S','Q'}:
                     inf_asns.update(
                         set(monitor.as_path.split(' ')))
                 else:
@@ -186,10 +186,11 @@ class Detection():
 
     @exception_handler
     def detect_squatting(self, monitor_event, prefix_node, *args, **kwargs):
+        origin_asn = int(monitor_event.origin_as)
         for item in prefix_node.data['confs']:
             if len(item['origin_asns']) > 0 or len(item['neighbors']) > 0:
                 return False
-        self.commit_hijack(monitor_event, -1, 'Q')
+        self.commit_hijack(monitor_event, origin_asn, 'Q')
         return True
 
     @exception_handler

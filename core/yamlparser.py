@@ -4,7 +4,7 @@ import sys
 from yaml import load as yload
 import re
 from utils import flatten
-from core import log
+from core import log, ArtemisError
 from socketIO_client_nexus import SocketIO
 
 
@@ -44,7 +44,7 @@ class ConfigurationLoader():
     def check(self):
         for section in self.data:
             if section not in self.sections:
-                raise Exception('invalid-section {}'.format(section))
+                raise ArtemisError('invalid-section', section)
 
         self.data['prefixes'] = {k:flatten(v) for k, v in self.data['prefixes'].items()}
         for prefix_group, prefixes in self.data['prefixes'].items():
@@ -52,53 +52,50 @@ class ConfigurationLoader():
                 try:
                     str2ip(prefix)
                 except:
-                    raise Exception('invalid-prefix {}'.format(prefix))
+                    raise ArtemisError('invalid-prefix', prefix)
 
         for rule in self.data['rules']:
             for field in rule:
                 if field not in self.supported_fields:
-                    raise Exception('invalid-rule-field {}'.format(field))
+                    log.warning('Unsupported field found {} in {}'.format(field, rule))
             rule['prefixes'] = flatten(rule['prefixes'])
             for prefix in rule['prefixes']:
                 try:
                     str2ip(prefix)
                 except:
-                    raise Exception('invalid-prefix {}'.format(prefix))
-
-            rule['origin_asns'] = flatten(rule['origin_asns'])
-            rule['neighbors'] = flatten(rule['neighbors'])
-            if len(rule['origin_asns']) == 0 and len(rule['neighbors']) > 0:
-                raise Exception('origin-not-set {}'.format(rule))
+                    raise ArtemisError('invalid-prefix', prefix)
+            rule['origin_asns'] = flatten(rule.get('origin_asns', []))
+            rule['neighbors'] = flatten(rule.get('neighbors', []))
             for asn in (rule['origin_asns'] + rule['neighbors']):
                 if not isinstance(asn, int):
-                    raise Exception('invalid-asn {}'.format(asn))
+                    raise ArtemisError('invalid-asn', asn)
 
 
         for key, info in self.data['monitors'].items():
             if key not in self.supported_monitors:
-                raise Exception('invalid-monitor {}'.format(key))
+                raise ArtemisError('invalid-monitor', key)
             elif key == 'riperis':
                 for unavailable in set(info).difference(self.available_ris):
-                    print('unavailable monitor {}'.format(unavailable))
+                    log.warning('unavailable monitor {}'.format(unavailable))
             elif key == 'bgpstreamlive':
                 if len(info) == 0 or not set(info).issubset(self.available_bgpstreamlive):
-                    raise Exception('invalid-bgpstreamlive-project {}'.format(info))
+                    raise ArtemisError('invalid-bgpstreamlive-project', info)
             elif key == 'exabgp':
                 for entry in info:
                     if 'ip' not in entry and 'port' not in entry:
-                        raise Exception('invalid-exabgp-info {}'.format(entry))
+                        raise ArtemisError('invalid-exabgp-info', entry)
                     try:
                         str2ip(entry['ip'])
                     except:
-                        raise Exception('invalid-exabgp-ip {}'.format(entry['ip']))
+                        raise ArtemisError('invalid-exabgp-ip', entry['ip'])
                     if not isinstance(entry['port'], int):
-                        raise Exception('invalid-port {}'.format(entry['port']))
+                        raise ArtemisError('invalid-exabgp-port', entry['port'])
 
         self.data['asns'] = {k:flatten(v) for k, v in self.data['asns'].items()}
         for name, asns in self.data['asns'].items():
             for asn in asns:
                 if not isinstance(asn, int):
-                    raise Exception('invalid-asn {}'.format(asn))
+                    raise ArtemisError('invalid-asn', asn)
 
     def getRules(self):
         return self.data.get('rules', [])

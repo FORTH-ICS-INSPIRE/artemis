@@ -64,6 +64,7 @@ class ConfigurationLoader():
                     str2ip(prefix)
                 except:
                     raise Exception('invalid-prefix {}'.format(prefix))
+
             rule['origin_asns'] = flatten(rule['origin_asns'])
             rule['neighbors'] = flatten(rule['neighbors'])
             if len(rule['origin_asns']) == 0 and len(rule['neighbors']) > 0:

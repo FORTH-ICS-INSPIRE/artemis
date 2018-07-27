@@ -138,7 +138,7 @@ def index():
     form = CheckboxForm()
     config_form = ConfigForm()
 
-    with open('configs/config', 'r') as f:
+    with open('configs/config.yaml', 'r') as f:
         config_form.config.data = f.read()
 
     if form.validate_on_submit():

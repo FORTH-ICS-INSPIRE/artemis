@@ -4,6 +4,8 @@ import sys
 from yaml import load as yload
 import re
 from utils import flatten
+from core import log
+from socketIO_client_nexus import SocketIO
 
 
 class ConfigurationLoader():
@@ -31,8 +33,7 @@ class ConfigurationLoader():
             socket_io.on('ris_rrc_list', on_msg)
             socket_io.wait(seconds=3)
         except Exception:
-            pass
-            # log.warning('RIPE RIS server is down. Try again later..')
+            log.warning('RIPE RIS server is down. Try again later..')
 
     def parse(self):
         with open(self.file, 'r') as f:

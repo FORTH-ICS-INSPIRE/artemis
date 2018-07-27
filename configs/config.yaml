@@ -14,13 +14,12 @@ monitors:
     bgpstreamlive:
     - routeviews
     - ris
-    exabgp:
-    - ip: 192.168.1.1
-      port: 5000
-    - ip: 192.168.5.1
-      port: 5000
-    bgpstreamhist:
-    - /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
+    # exabgp:
+    # - ip: 192.168.1.1
+    #   port: 5000
+    # - ip: 192.168.5.1
+    #   port: 5000
+    # bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
 # End of Monitor Definitions
 
 # Start of ASN Definitions

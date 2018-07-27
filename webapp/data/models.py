@@ -124,7 +124,7 @@ class Hijack(db.Model):
         self.prefix = msg.prefix
         self.hijack_as = asn
         self.num_peers_seen = 1
-        if htype is 'S':
+        if htype in {'S','Q'}:
             self.num_asns_inf = len(
                 set(msg.as_path.split(' '))) - 1
         else:

@@ -61,12 +61,23 @@ class TestDetection(unittest.TestCase):
 
         # prefix: 10.0.0.0/24, origin_asns = {1}, neighbors = {2,3,4}
         node = self.detection.prefix_tree.add('10.0.0.0/24')
-        node.data['confs'] = list()
+        node.data['confs'] = []
+
         conf_obj = {'origin_asns': {1}, 'neighbors': {2,3,4}}
         node.data['confs'].append(conf_obj)
 
         # prefix: 10.0.0.0/24, origin_asns = {15}, neighbors = {16,17,18}
         conf_obj = {'origin_asns': {15}, 'neighbors': {16,17,18}}
+        node.data['confs'].append(conf_obj)
+
+        # wrong configuration for squatting
+        conf_obj = {'origin_asns': set(), 'neighbors': set()}
+        node.data['confs'].append(conf_obj)
+
+        # prefix: 90.0.0.0/24, origin_asns = {}, neighbors = {}
+        node = self.detection.prefix_tree.add('90.0.0.0/24')
+        node.data['confs'] = []
+        conf_obj = {'origin_asns': set(), 'neighbors': set()}
         node.data['confs'].append(conf_obj)
 
         with app.app_context():
@@ -368,6 +379,51 @@ class TestDetection(unittest.TestCase):
         # check if number of entries are correct
         self.assertEqual(len(monitor_rows), 2, msg='[!] Wrong number of monitor entries')
         self.assertEqual(len(hijack_rows), 0, msg='[!] Wrong number of detected hijacks')
+
+
+    @mock.patch.object(Detection, 'init_detection')
+    def test_squattedprefix(self, mock_init):
+        from webapp.data.models import Monitor
+
+        # legitimate update with path prepending
+        mon_1 = Monitor({
+                'prefix':'10.0.0.0/24',
+                'service':'testing',
+                'type':'A',
+                'as_path': [ 9, 8, 7, 6, 5, 4, 1, 1, 1 ],
+                'timestamp': 1
+        })
+
+        # squatted announce
+        mon_2 = Monitor({
+                'prefix':'90.0.0.0/24',
+                'service':'testing',
+                'type':'A',
+                'as_path': [ 9, 8, 7, 6, 5, 4, 1 ],
+                'timestamp': 2
+        })
+
+        # squatted announce
+        mon_3 = Monitor({
+                'prefix':'90.0.0.0/25',
+                'service':'testing',
+                'type':'A',
+                'as_path': [ 9, 8, 7, 6, 5, 4, 1 ],
+                'timestamp': 2
+        })
+
+        commit([mon_1, mon_2, mon_3])
+        self.detection.parse_queue()
+
+        # query sqlite db
+        self.c.execute('SELECT * FROM monitors')
+        monitor_rows = self.c.fetchall()
+        self.c.execute('SELECT * FROM hijacks')
+        hijack_rows = self.c.fetchall()
+
+        # check if number of entries are correct
+        self.assertEqual(len(monitor_rows), 3, msg='[!] Wrong number of monitor entries')
+        self.assertEqual(len(hijack_rows), 2, msg='[!] Wrong number of detected hijacks')
 
 
     @mock.patch.object(Detection, 'init_detection')

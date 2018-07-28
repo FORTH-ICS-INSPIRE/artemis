@@ -84,7 +84,7 @@ class Monitor(db.Model):
             self.origin_as = str(msg['as_path'][-1])
             self.peer_as = str(msg['as_path'][0])
             if 'communities' in msg:
-                self.communities = str(msg['communities'])
+                self.communities = str([(c['asn'],c['value']) for c in msg['communities']])
             else:
                 self.communities = ''
         else:

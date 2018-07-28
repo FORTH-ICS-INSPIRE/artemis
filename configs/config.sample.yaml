@@ -8,7 +8,7 @@ prefixes:
     simple_prefix: &my_prefix
         A.B.C.D/24
     # A reference for a list of prefixes
-    simple_prefix_list: &simple_prefix_list
+    simple_prefix_list: &my_prefixes
         [ X.Y.Z.W/23, K.L.M.N/24 ]
 # End of Prefix Definitions
 

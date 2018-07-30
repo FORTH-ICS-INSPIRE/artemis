@@ -26,6 +26,12 @@ class TestMonitor(unittest.TestCase):
                 'origin_asns': [1, 2],
                 'neighbors': [3, 4, 5, 6],
                 'mitigation': 'manual'
+            },
+            {
+                'prefixes': ['deaf:beef::/64', 'deaf:beef::/65', 'beef:dead::/64'],
+                'origin_asns': [1, 2],
+                'neighbors': [3, 4, 5, 6],
+                'mitigation': 'manual'
             }
         ]
 
@@ -58,7 +64,7 @@ class TestMonitor(unittest.TestCase):
             elif _info[0] == 'BGPStreamHist':
                 hist.append(_info)
 
-        self.assertEqual(len(ripe), 6)
+        self.assertEqual(len(ripe), 12)
         self.assertEqual(len(exa), 1)
         self.assertEqual(len(live), 1)
         self.assertEqual(len(hist), 1)

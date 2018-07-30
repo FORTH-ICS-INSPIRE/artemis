@@ -41,7 +41,7 @@ class User(db.Model, UserMixin):
 class Monitor(db.Model):
     __tablename__ = 'monitors'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    prefix = db.Column(db.String(22))
+    prefix = db.Column(db.String(44))
     origin_as = db.Column(db.String(6))
     peer_as = db.Column(db.String(6))
     as_path = db.Column(db.String(100))
@@ -117,7 +117,7 @@ class Hijack(db.Model):
     __tablename__ = 'hijacks'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     type = db.Column(db.String(1))
-    prefix = db.Column(db.String(22))
+    prefix = db.Column(db.String(44))
     hijack_as = db.Column(db.String(6))
     num_peers_seen = db.Column(db.Integer)
     num_asns_inf = db.Column(db.Integer)

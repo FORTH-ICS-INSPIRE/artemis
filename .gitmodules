@@ -1,0 +1,3 @@
+[submodule "taps/exabgp-server"]
+	path = taps/exabgp-server
+	url = https://github.com/slowr/ExaBGP-Monitor

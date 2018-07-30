@@ -51,6 +51,7 @@ class Monitor(db.Model):
     timestamp = db.Column(db.Float)
     hijack_id = db.Column(db.Integer, nullable=True)
     handled = db.Column(db.Boolean)
+    matched_prefix = db.Column(db.String(44), nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint(
@@ -95,6 +96,7 @@ class Monitor(db.Model):
         self.timestamp = msg['timestamp']
         self.hijack_id = None
         self.handled = False
+        self.matched_prefix = None
 
     def __repr__(self):
         repr_str = '[\n'

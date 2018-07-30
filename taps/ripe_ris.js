@@ -37,11 +37,18 @@ var subnet = ip6addr.createCIDR(sublist[0], parseInt(sublist[1]));
 socket.on('ris_message', function(msg) {
     var recv_pref = msg['prefix'].split('/')
     if(subnet.contains(recv_pref[0]) && parseInt(recv_pref[1]) >= parseInt(sublist[1])) {
+        var communities = []
+        if('community' in msg){
+            for (var i=0; i < msg['community'].length; i++) {
+                communities.push({asn: msg['community'][i][0], value: msg['community'][i][1]});
+            }
+        }
         json_obj = {
             'timestamp': msg['timestamp'],
             'prefix': msg['prefix'],
             'service': 'RIPEris '.concat(msg['host']),
             'as_path': msg['path'],
+            'communities': communities,
             'type': msg['type'],
         };
 

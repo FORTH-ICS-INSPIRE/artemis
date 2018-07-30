@@ -173,12 +173,18 @@ WEBAPP_CRT = '<path_to_cert_file>'
 In order to add new monitors you need to send the BGP Update messages to the GRPC Server which runs on port 50051. The .proto file is provided and you only need to compile and use the `queryMformat` function with the provided format:
 
 ```
+message Community {
+  int32 asn = 1;
+  int32 value = 2;
+}
+
 message MformatMessage {
   string service = 1;
   string type = 2;
   string prefix = 3;
   repeated int32 as_path = 4;
-  double timestamp = 5;
+  repeated Community communities = 5;
+  double timestamp = 6;
 }
 ```
 

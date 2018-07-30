@@ -47,6 +47,7 @@ class Monitor(db.Model):
     as_path = db.Column(db.String(100))
     service = db.Column(db.String(50))
     type = db.Column(db.String(1))
+    communities = db.Column(db.String(100))
     timestamp = db.Column(db.Float)
     hijack_id = db.Column(db.Integer, nullable=True)
     handled = db.Column(db.Boolean)
@@ -59,6 +60,7 @@ class Monitor(db.Model):
             'as_path',
             'service',
             'type',
+            'communities',
             'timestamp'
         ),
     )
@@ -81,10 +83,15 @@ class Monitor(db.Model):
             self.as_path = self.__check_as_path(msg['as_path'])
             self.origin_as = str(msg['as_path'][-1])
             self.peer_as = str(msg['as_path'][0])
+            if 'communities' in msg:
+                self.communities = str([(c['asn'],c['value']) for c in msg['communities']])
+            else:
+                self.communities = ''
         else:
             self.as_path = ''
             self.origin_as = ''
             self.peer_as = ''
+            self.communities = ''
         self.timestamp = msg['timestamp']
         self.hijack_id = None
         self.handled = False
@@ -97,6 +104,7 @@ class Monitor(db.Model):
         repr_str += '\tPEER AS:      {}\n'.format(self.peer_as)
         repr_str += '\tAS PATH:      {}\n'.format(self.as_path)
         repr_str += '\tSERVICE:      {}\n'.format(self.service)
+        repr_str += '\tCOMMUNITIES:  {}\n'.format(self.communities)
         repr_str += '\tTIMESTAMP:    {}\n'.format(self.timestamp)
         repr_str += ']'
         return repr_str

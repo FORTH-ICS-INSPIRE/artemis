@@ -87,8 +87,10 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                 service = "bgpstream|{}|{}".format(str(rec.project), str(rec.collector))
                 if elem.type == "A":
                     as_path = list(map(as_mapper, elem.fields['as-path'].split(" ")))
+                    communities = [mservice_pb2.Community(asn=c['asn'], value=c['value']) for c in elem.fields['communities']]
                 else:
                     as_path = ''
+                    communities = []
 
                 for prefix in prefixes:
                     base_ip, mask_length = this_prefix.split('/')
@@ -99,6 +101,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                             timestamp=float(elem.time),
                             as_path=as_path,
                             service=service,
+                            communities=communities,
                             prefix=this_prefix
                         ))
 

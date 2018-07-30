@@ -25,9 +25,10 @@ mon_fields = {
         'as_path':4,
         'service':5,
         'type':6,
-        'timestamp':7,
-        'hijack_id':8,
-        'handled':9
+        'communities':7,
+        'timestamp':8,
+        'hijack_id':9,
+        'handled':10
 }
 
 hij_fields = {

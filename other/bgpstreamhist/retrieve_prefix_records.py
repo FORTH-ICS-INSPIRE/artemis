@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 
 import argparse
@@ -6,6 +6,7 @@ import netaddr
 import os
 import sys
 import csv
+import ujson
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 
@@ -79,23 +80,25 @@ def run_bgpstream(prefix, start, end, out_file):
                         elem_csv_list = [
                             str(elem.fields['prefix']),
                             str(elem.fields['as-path'].split(" ")[-1]),
+                            str(elem.peer_asn),
                             ",".join(elem.fields['as-path'].split(" ")),
                             str(rec.project),
                             str(rec.collector),
                             str(elem.type),
+                            ujson.dumps(elem.fields['communities']),
                             str(elem.time),
-                            str(elem.peer_asn)
                         ]
                     else:
                         elem_csv_list = [
                             str(elem.fields['prefix']),
                             "",
+                            str(elem.peer_asn),
                             "",
                             str(rec.project),
                             str(rec.collector),
                             str(elem.type),
+                            ujson.dumps([]),
                             str(elem.time),
-                            str(elem.peer_asn)
                         ]
                     csv_writer.writerow(elem_csv_list)
 

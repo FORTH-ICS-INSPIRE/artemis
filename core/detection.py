@@ -7,6 +7,7 @@ from sqlalchemy import and_, exc, desc
 from core import exception_handler, log
 import ipaddress
 
+
 class Detection():
 
     def __init__(self, confparser):
@@ -91,7 +92,7 @@ class Detection():
                         log.debug('Waiting for empty queue before stopping')
                         self.monitor_queue.get()
                 else:
-                    monitor_event = Monitor.query.filter(Monitor.id.like(monitor_event_id)).first()
+                    monitor_event = Monitor.query.filter(Monitor.id == monitor_event_id).first()
                     handle_monitor_event(monitor_event)
             log.info('Detection Mechanism Stopped..')
 
@@ -99,9 +100,9 @@ class Detection():
         # Trigger hijack
         hijack_event = Hijack.query.filter(
             and_(
-                Hijack.type.like(str(hij_type)),
-                Hijack.prefix.like(monitor_event.prefix),
-                Hijack.hijack_as.like(origin)
+                Hijack.type == str(hij_type),
+                Hijack.prefix == monitor_event.prefix,
+                Hijack.hijack_as == origin
             )
         ).order_by(desc(Hijack.id)).first()
 
@@ -119,7 +120,7 @@ class Detection():
                 hijack_event.time_last = monitor_event.timestamp
 
             hijack_monitors = Monitor.query.filter(
-                Monitor.hijack_id.like(hijack_event.id)
+                Monitor.hijack_id == hijack_event.id
             ).all()
 
             peers_seen = set()

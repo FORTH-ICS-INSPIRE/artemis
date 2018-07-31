@@ -22,7 +22,7 @@ def as_mapper(asn_str):
 
 
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
-    channel = grpc.insecure_channel('localhost:50052')
+    channel = grpc.insecure_channel('localhost:50051')
     stub = mservice_pb2_grpc.MessageListenerStub(channel)
 
     for csv_file in glob.glob("{}/*.csv".format(input_dir)):

@@ -12,7 +12,7 @@ These instructions will get you a copy of the ARTEMIS tool up and running on you
 
 ### How to run
 
-First, if not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install docker.
+First, if not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install the latest version of docker.
 
 If you would like to run docker without using sudo, please add the local user to the default docker group:
 
@@ -20,14 +20,20 @@ If you would like to run docker without using sudo, please add the local user to
 sudo usermod -aG docker $USER
 ```
 
-If you do not have access to the mavromat/artemis image you can build your own by running:
+If you do not have access to the inspiregroup/artemis-tool image you can build your own by running:
 
 ```
-docker build -t mavromat/artemis .
+docker build -t inspiregroup/artemis-tool .
 ```
 after you have entered the root folder of the cloned artermis repo.
 
-Then, create a directory that includes the `config`, `webapp.cfg` and `logging.json` configuration files.
+Otherwise, you can simply pull the latest build from dockerhub:
+```
+docker login
+docker pull inspiregroup/artemis-tool
+```
+
+Then, create a directory that includes the `config.yaml`, `webapp.cfg` and `logging.json` configuration files, after configuring them accordingly (see samples).
 
 The application can be run in three different modes: `prod`, `dev` and `testing`. By default, the `dev` mode is selected, and you can modify that by having an environment variable set like this:
 
@@ -38,7 +44,7 @@ export FLASK_CONFIGURATION=prod
 Then, you need to run the container with the following command:
 
 ```
-docker run --rm -ti -p 5000:5000 -e FLASK_CONFIGURATION=dev --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs mavromat/artemis:latest
+docker run --rm -ti -p 5000:5000 -e FLASK_CONFIGURATION=prod --expose 5000 --name artemis -v absolute/path/to/config/directory:/root/configs inspiregroup/artemis-tool
 ```
 
 Fields:
@@ -50,6 +56,37 @@ Fields:
 -e name:value: Creates an environment variable on the container to set up the mode of the application.
 ```
 
+You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
+
+Note that to gracefully terminate ARTEMIS and all its sub-threads you can use the following command:
+
+```
+docker stop inspiregroup/artemis-tool
+```
+or
+```
+kill <ARTEMIS_PID>
+```
+using the SIGTERM signal.
+
+Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
+
+### Development Testing
+
+TBD
+
+### SSL/TLS Support
+
+The following process, based on Flask-accessed certificates/keys, is to be used only in testing environments.
+
+In production, a scalable nginx/apache-based reverse proxy will be used to terminate SSL connections.
+
+For testing, simply configure the following in configs/webapp.cfg:
+```
+WEBAPP_KEY = '<path_to_key_file>'
+WEBAPP_CRT = '<path_to_cert_file>'
+```
+
 ### Known Issues
 
 1. iptables: No chain/target/match by that name
@@ -57,7 +94,7 @@ Fields:
 ```
 docker: Error response from daemon: driver failed programming external connectivity on endpoint artemistest (4980f6b7fe169a16e8ebe5f5e01a31700409d17258da0ee19ea060060d3f3db9):  (iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2 --dport 5000 -j ACCEPT: iptables: No chain/target/match by that name.
  (exit status 1)).
- ```
+```
 
 To fix, clear all chains and then restart Docker Service:
 
@@ -67,104 +104,9 @@ iptables -t filter -X
 systemctl restart docker
 ```
 
-## ARTEMIS from source (Not recommended)
+2. BGPStream and IPv6
 
-### Dependencies
-
-* [Python 3](https://www.python.org/downloads/)   —  **ARTEMIS** requires Python 3.4.
-
-Install pip3
-```
-apt-get update && \
-apt-get -y install python3-pip
-```
-
-Then inside the root folder of the tool run
-```
-pip3 --no-cache-dir install -r requirements.txt
-```
-
-For RIPE RIS monitors you need to install nodejs
-```
-curl -sL https://deb.nodesource.com/setup_9.x | bash - && \
-apt-get install -y nodejs build-essential
-```
-
-Then install the needed modules
-```
-cd taps
-npm i npm@latest -g && \
-npm install && \
-npm audit fix
-```
-
-For BGPStream live support (as well as historical data retrieval), you need to follow the
-instructions on:
-```
-https://bgpstream.caida.org/docs/install/bgpstream
-https://bgpstream.caida.org/docs/install/pybgpstream
-```
-in order to install the libbgpstream (core) and the Python library/API pybgpstream. Note to install pybgpstream via:
-```
-pip3 install pybgpstream
-```
-For more detailed instructions see the relevant lines of the Dockerfile.
-
-### How to run
-
-To succesfully run ARTEMIS you need to modify the main configuration file
-
-```
-vim configs/config
-```
-
-Since ARTEMIS includes a Web App and GUI, you also need to modify the webapp configuration file
-
-```
-vim configs/webapp.cfg
-```
-
-If there is the need to specify your own loggers, you can do so by modifying the logging.json file
-
-```
-vim configs/logging.json
-```
-
-The application can be run in three different modes: `prod`, `dev` and `testing`. By default, the `dev` mode is selected, and you can modify that by having an environment variable set like this:
-
-```
-export FLASK_CONFIGURATION=prod
-```
-
-After modifying the configuration files run
-
-```
-python3 artemis.py
-```
-
-You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
-
-Note that to gracefully terminate ARTEMIS and all its sub-threads you can use the following command:
-
-```
-kill <ARTEMIS_PID>
-```
-
-using the SIGTERM signal.
-
-Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
-
-### SSL/TLS Support
-
-The following process, based on Flask-accessed certificates/keys, is to be used only in testing environments.
-
-In production, a scalable nginx/apache-based reverse proxy will be used to terminate SSL connections.
-
-For testing, simply configure the following in configs/webapp.cfg: 
-```
-WEBAPP_KEY = '<path_to_key_file>'
-WEBAPP_CRT = '<path_to_cert_file>'
-```
+Due to a bug related to IPv6 support with the current BGPStream release, we would recommend not using BGPStream to monitor IPv6 prefixes.
 
 ## Contributing
 
@@ -189,6 +131,7 @@ message MformatMessage {
 ```
 
 For example take a look at the `taps/exabgp_client.py` which implements the python GRPC Client or `taps/ripe_ris.js` which implements the javascript GRPC Client. Please edit only the code in the taps folder.
+Note that if you need to create a new M-format you need to follow the instructions on the [GRPC website](https://grpc.io/).
 
 ## Versioning
 TBD (for now working on the bleeding edge of the master branch, version tags to-be-released)

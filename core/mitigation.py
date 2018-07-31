@@ -71,7 +71,7 @@ class Mitigation():
                         continue
 
                     hijack_event = Hijack.query.filter(
-                                        Hijack.id.like(hijack_id)
+                                        Hijack.id == hijack_id
                                 ).first()
 
                     try:

@@ -28,7 +28,8 @@ mon_fields = {
         'communities':7,
         'timestamp':8,
         'hijack_id':9,
-        'handled':10
+        'handled':10,
+        'matched_prefix':11
 }
 
 hij_fields = {

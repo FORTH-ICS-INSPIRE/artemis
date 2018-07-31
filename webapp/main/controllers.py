@@ -60,7 +60,7 @@ def display_hijacks():
     if hijack_id is not None and hijack_action is not None:
         time_now = time.time()
         hijack_event = Hijack.query.filter(
-            Hijack.id.like(hijack_id)
+            Hijack.id == hijack_id
         ).first()
 
         if hijack_event is not None:

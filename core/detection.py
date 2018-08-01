@@ -6,6 +6,7 @@ from multiprocessing import Queue
 from sqlalchemy import and_, exc, desc
 from core import exception_handler, log
 import ipaddress
+from profilehooks import profile
 
 
 class Detection():
@@ -96,6 +97,7 @@ class Detection():
                     handle_monitor_event(monitor_event)
             log.info('Detection Mechanism Stopped..')
 
+    @profile
     def commit_hijack(self, monitor_event, origin, hij_type):
         # Trigger hijack
         hijack_event = Hijack.query.filter(

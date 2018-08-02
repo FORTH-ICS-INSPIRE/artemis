@@ -2,27 +2,48 @@ from ipaddress import ip_network as str2ip
 import os
 import sys
 from yaml import load as yload
-import re
-from utils import flatten
-from core import log, ArtemisError
+from utils import flatten, log, ArtemisError
 from socketIO_client_nexus import SocketIO
+import pika
+import json
+import _thread
 
 
-class ConfigurationLoader():
+class Configuration():
+
 
     def __init__(self):
-        self.file = 'configs/config.yaml'
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        self.channel = connection.channel()
+        self.channel.queue_declare(queue='rpc_config_queue')
+        self.channel.basic_qos(prefetch_count=1)
+        self.channel.basic_consume(self.handle_config_request, queue='rpc_config_queue')
 
+        self.file = 'configs/config.yaml'
         self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
         self.supported_fields = {'prefixes',
                                  'origin_asns', 'neighbors', 'mitigation'}
-
         self.supported_monitors = {
             'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive'}
-
         self.available_ris = set()
         self.parse_rrcs()
         self.available_bgpstreamlive = {'routeviews', 'ris'}
+
+        with open(self.file, 'r') as f:
+            self.parse(f.read())
+
+        _thread.start_new_thread(self.channel.start_consuming, ())
+
+
+    def handle_config_request(self, channel, method, header, body):
+        log.info(' [x] Configuration - Sending configuration')
+        channel.basic_publish(exchange='',
+                     routing_key=header.reply_to,
+                     properties=pika.BasicProperties(correlation_id = \
+                                                         header.correlation_id),
+                     body=json.dumps(self.data))
+        channel.basic_ack(delivery_tag = method.delivery_tag)
+
 
     def parse_rrcs(self):
         try:
@@ -35,11 +56,11 @@ class ConfigurationLoader():
         except Exception:
             log.warning('RIPE RIS server is down. Try again later..')
 
-    def parse(self):
-        with open(self.file, 'r') as f:
-            self.raw = yload(f)
-            self.data = self.raw
-            self.check()
+
+    def parse(self, raw):
+        self.data = yload(raw)
+        self.check()
+
 
     def check(self):
         for section in self.data:
@@ -97,15 +118,4 @@ class ConfigurationLoader():
                 if not isinstance(asn, int):
                     raise ArtemisError('invalid-asn', asn)
 
-    def getRules(self):
-        return self.data.get('rules', [])
-
-    def getPrefixes(self):
-        return self.data.get('prefixes', [])
-
-    def getMonitors(self):
-        return self.data.get('monitors', [])
-
-    def getAsns(self):
-        return self.data.get('asns', [])
 

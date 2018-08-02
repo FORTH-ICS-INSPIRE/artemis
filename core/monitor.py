@@ -1,20 +1,52 @@
 import sys
 import os
 import radix
-# from taps.bgpmon import BGPmon
 from subprocess import Popen
-from core import exception_handler, log
+from utils import exception_handler, log
+import uuid
+import pika
+import json
 
 
-class Monitor():
+class Monitor(object):
 
-    def __init__(self, confparser):
+
+    def __init__(self):
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        self.channel = self.connection.channel()
+        result = self.channel.queue_declare(exclusive=True)
+        self.callback_queue = result.method.queue
+        self.channel.basic_consume(self.handle_config_request_reply, no_ack=True,
+                                   queue=self.callback_queue)
+
         self.prefix_tree = radix.Radix()
         self.process_ids = []
         self.flag = False
-        self.rules = confparser.getRules()
+        self.rules = None
         self.prefixes = set()
-        self.monitors = confparser.getMonitors()
+        self.monitors = None
+
+        self.corr_id = str(uuid.uuid4())
+        self.channel.basic_publish(exchange='',
+                                   routing_key='rpc_config_queue',
+                                   properties=pika.BasicProperties(
+                                         reply_to = self.callback_queue,
+                                         correlation_id = self.corr_id,
+                                         ),
+                                   body='')
+
+        while self.rules is None and self.monitors is None:
+            self.connection.process_data_events()
+
+
+    def handle_config_request_reply(self, channel, method, header, body):
+        log.info(' [x] Monitor - Received Configuration: {}'.format(body))
+        if self.corr_id == header.correlation_id:
+            raw = json.loads(body)
+            self.rules = raw.get('rules', {})
+            self.monitors = raw.get('monitors', {})
+            self.start()
+
 
     def start(self):
         if not self.flag:
@@ -82,3 +114,4 @@ class Monitor():
             p = Popen(['python3', 'taps/bgpstreamlive.py',
                     '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects])
             self.process_ids.append(('BGPStreamLive {} {}'.format(bgpstream_projects, self.prefixes), p))
+

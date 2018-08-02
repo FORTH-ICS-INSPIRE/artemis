@@ -1,16 +1,11 @@
 import os
 import signal
 import time
-from core import log
-from core.yamlparser import ConfigurationLoader
+from core.configuration import Configuration
 from core.monitor import Monitor
 from core.detection import Detection
-from core.mitigation import Mitigation
 from protogrpc.grpc_server import GrpcServer
-import webapp
-from webapp.webapp import WebApplication
-from webapp import app
-from webapp.data.models import db
+from utils import log
 
 class GracefulKiller:
     def __init__(self):
@@ -25,25 +20,14 @@ class GracefulKiller:
 def main():
     # Configuration Parser
     log.info('Parsing Configuration..')
-    confparser_ = ConfigurationLoader()
-    confparser_.parse()
+    confparser_ = Configuration()
 
     # Instatiate Modules
-    monitor_ = Monitor(confparser_)
-    detection_ = Detection(confparser_)
-    mitigation_ = Mitigation(confparser_)
-
-    # Load Modules to Web Application
-    app.config['monitor'] = monitor_
-    app.config['detector'] = detection_
-    app.config['mitigator'] = mitigation_
-
-    # Web Application
-    webapp_ = WebApplication()
-    webapp_.start()
+    monitor_ = Monitor()
+    detection_ = Detection()
 
     # GRPC Server
-    grpc_ = GrpcServer(monitor_, detection_, mitigation_)
+    grpc_ = GrpcServer()
     grpc_.start()
 
     killer = GracefulKiller()
@@ -55,14 +39,7 @@ def main():
     #input("\n[!] Press ENTER to exit [!]\n\n")
 
     # Stop all modules and web application
-    monitor_.stop()
-    detection_.stop()
-    mitigation_.stop()
     grpc_.stop()
-    webapp_.stop()
-
-    db.session.remove()
-
     log.info('Bye..!')
 
 

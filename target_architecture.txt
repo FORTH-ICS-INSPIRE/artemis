@@ -1,8 +1,8 @@
                                                                                         GET_CONF                             +---------+
                                                                                         MITIGATE_HIJACK                      | USER DB |
-                                                                                        CONTROL                              +----+----+
-                                                                                        CONFIG_UPDATE                             |
-                                                                    +--------------------------------------------------------+----+----+
+                                                                                        CONTROL                              +---------+
+                                                                                        CONFIG_UPDATE                             |DIRECT QUERIES
+                                                                    +--------------------------------------------------------+---------+
                   EXTERNAL/LOCAL BGP UPDATES                        |                                                        |         |   REST    +----+
                              +                                      |                                                        | WEB APP +-----------+ UI |
                              |                                      | +------------------------------------------------------>         |           +----+
@@ -12,7 +12,7 @@
 +----------------------------v---------------------------+          | |                                                           | DIRECT
 |                      MONITOR                           |          | |                                                           | QUERIES
 |                                                        |          | |             BGP_UPDATE                                    |
-| +---+  +------+  +--------+  +----------+  +---------+ | GET_CONF | |             HIJ_UPDATE                                    |
+| +---+  +------+  +--------+  +----------+  +---------+ | GET_CONF | |             HIJACK_UPDATE                                 |
 | | X |  |EXABGP|  |RIPE RIS|  |BGPSTREAM |  |BGPSTREAM| +----------+ |             HANDLED_UPDATE                          +-----+-----+
 | +-+-+  +--+---+  +---+----+  |HISTORICAL|  |  LIVE   | |          | |             FETCH_UNHANDLED     +---------+ DIRECT  |ARTEMIS DB |
 |   |       |          |       +----------+  +---------+ |          | |  +------------------------------>DB ACCESS| QUERIES |BGP_UPDATES|
@@ -26,10 +26,10 @@
                            |                           |          |             |    CONFIG_UPDATE    +-------------+   R/W   +------+
                       +----+---+                       +----------+ MESSAGE BUS +--------------------->CONFIGURATION+---------+ CONF |
                       |  GRPC  |           BGP_UPDATE             | (RABBITMQ)  |    CONTROL          +------+------+         | FILE |
-                      | SERVER +---------------------------------->  +------+   |    CONFIG                  |                +------+
+                      | SERVER +---------------------------------->  +------+   |    GET_CONF                |                +------+
                       +----^---+                                  |  |      |   |                            |
                            |                                      |  |      |   <----------------------------+
-                           |                                      |  |      |   |    GET_CONF
+                           |                                      |  |      |   |    CONFIG
                            |                                      |  |      |   |
                            |               CONTROL                |  +------+   |    CONFIG
                            +--------------------------------------+  |      |   |    UNHANDLED_DATA
@@ -45,14 +45,13 @@
                                                                   |  |      |   |
                                                                   |  +------+   |    CONFIG
                                                                   |  |      |   |    HIJACK_UPDATE      +------------+
-                                                                  |  +------+   +-----------------------> MITIGATION |
-                                                                  |  |      |   |    MITIGATE_HIJACK    +--+---+-----+
-                                                                  |  +------+   |    CONTROL               |   |
-                                                                  |  |      |   |                          |   v
-                                                                  |  +------+   |    GET_CONF              |EXECUTE
-                                                                  |             +<-------------------------+COUNTERMEASURE
+                                                                  |  +------+   +-----------------------> MITI|ATION |
+                                                                  |  |      |   |    MITIGATE_HIJACK    +--+---------+    EXECUTE
+                                                                  |  +------+   |    CONTROL               |  |           COUNTERMEASURE
+                                                                  |  |      |   |                          |  +------------------------>
+                                                                  |  +------+   |    GET_CONF              |
+                                                                  |             +<-------------------------+
                                                                   +--+-------+--+
                                                                      | MBUS  |
                                                                      |LOGGING|
                                                                      +-------+
-

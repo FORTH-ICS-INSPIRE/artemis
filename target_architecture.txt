@@ -1,12 +1,12 @@
                                                                                         GET_CONF                             +---------+
                                                                                         MITIGATE_HIJACK                      | USER DB |
                                                                                         CONTROL                              +---------+
-                                                                                        CONFIG_UPDATE                             |DIRECT QUERIES
+                                                                                        CONFIG_MODIFY                             |DIRECT QUERIES
                                                                     +--------------------------------------------------------+---------+
                   EXTERNAL/LOCAL BGP UPDATES                        |                                                        |         |   REST    +----+
                              +                                      |                                                        | WEB APP +-----------+ UI |
                              |                                      | +------------------------------------------------------>         |           +----+
-                             |                                      | |                 CONFIG                               +----+----+
+                             |                                      | |                 CONFIG_NOTIFY                        +----+----+
                              |                                      | |                                                           |
                              |                                      | |                                                           |
 +----------------------------v---------------------------+          | |                                                           | DIRECT
@@ -19,19 +19,19 @@
 +--------------------------------------------------------+          | |  |                              | MODULE  +---------+HIJACKS    |
     |       |          |            |             |    ^            | |  |  +---------------------------+---------+         +-----------+
     +-------+----------+---+--------+-------------+    |            | |  |  |       UNHANDLED_DATA
-                           |                           |CONFIG      | |  |  |
+                           |                           |CONFIG_NOTIFY |  |  |
                            |BGP_UPDATE                 |CONTROL     | |  |  |
                            |(M_FORMAT)                 |            | |  |  |
                            |                           |          +-v-+--+--v---+
-                           |                           |          |             |    CONFIG_UPDATE    +-------------+   R/W   +------+
+                           |                           |          |             |    CONFIG_MODIFY    +-------------+   R/W   +------+
                       +----+---+                       +----------+ MESSAGE BUS +--------------------->CONFIGURATION+---------+ CONF |
                       |  GRPC  |           BGP_UPDATE             | (RABBITMQ)  |    CONTROL          +------+------+         | FILE |
                       | SERVER +---------------------------------->  +------+   |    GET_CONF                |                +------+
                       +----^---+                                  |  |      |   |                            |
                            |                                      |  |      |   <----------------------------+
-                           |                                      |  |      |   |    CONFIG
+                           |                                      |  |      |   |    CONFIG_NOTIFY
                            |                                      |  |      |   |
-                           |               CONTROL                |  +------+   |    CONFIG
+                           |               CONTROL                |  +------+   |    CONFIG_NOTIFY
                            +--------------------------------------+  |      |   |    UNHANDLED_DATA
                                                                   |  +------+   |    BGP_UPDATE          +---------+
                                                                   |  |      |   +------------------------>DETECTION|
@@ -43,7 +43,7 @@
                                                                   |  |      |   |    FETCH_UNHANDLED
                                                                   |  +------+   |    GET_CONF
                                                                   |  |      |   |
-                                                                  |  +------+   |    CONFIG
+                                                                  |  +------+   |    CONFIG_NOTIFY
                                                                   |  |      |   |    HIJACK_UPDATE      +------------+
                                                                   |  +------+   +-----------------------> MITI|ATION |
                                                                   |  |      |   |    MITIGATE_HIJACK    +--+---------+    EXECUTE

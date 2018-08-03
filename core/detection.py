@@ -54,31 +54,42 @@ class Detection(object):
         while self.rules is None:
             self.connection.process_data_events()
 
-        self.bgp_handler_process = self.handle_bgp_update()
+        self.bgp_handler_consumer = self.handle_bgp_update()
+        self.configuration_consumer = self.handle_config_notify()
 
 
     def start(self):
         if not self.flag:
             self.flag = True
-            threading.Thread(target=self.bgp_handler_process.run, args=()).start()
+            threading.Thread(target=self.bgp_handler_consumer.run, args=()).start()
             threading.Thread(target=self.hijack_publisher.run, args=()).start()
             threading.Thread(target=self.handled_publisher.run, args=()).start()
+            threading.Thread(target=self.configuration_consumer.run, args=()).start()
 
 
     def stop(self):
         if self.flag:
             self.flag = False
-            self.bgp_handler_process.stop()
+            self.bgp_handler_consumer.stop()
             self.hijack_publisher.stop()
             self.handled_publisher.stop()
+            self.configuration_consumer.stop()
 
 
     def handle_config_request_reply(self, channel, method, header, body):
         log.info(' [x] Detection - Received Configuration')
         if self.corr_id == header.correlation_id:
             raw = pickle.loads(body)
-            self.rules = raw.get('rules', {})
+            self.rules = raw.get('rules', [])
             self.init_detection()
+
+
+    @decorators.consumer_callback('config_notify', 'direct', 'notification')
+    def handle_config_notify(self, channel, method, header, body):
+        log.info(' [x] Detection - Received Configuration')
+        raw = pickle.loads(body)
+        self.rules = raw.get('rules', [])
+        self.init_detection()
 
 
     def __detection_generator(self, path_len, prefix_node):
@@ -107,6 +118,7 @@ class Detection(object):
 
     @decorators.consumer_callback('bgp_update', 'direct', 'update')
     def handle_bgp_update(self, channel, method, header, body):
+        print(self.rules)
         monitor_event = pickle.loads(body)
         log.info(' [x] Detection - Received BGP update: {}'.format(monitor_event))
 

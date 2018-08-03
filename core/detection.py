@@ -4,7 +4,7 @@ from profilehooks import profile
 from utils import log, exception_handler, decorators
 import uuid
 import pika
-import pickle as json
+import pickle
 import _thread
 import hashlib
 
@@ -53,19 +53,19 @@ class Detection(object):
     def start(self):
         if not self.flag:
             self.flag = True
-            self.bgp_handler_process.start()
+            self.bgp_handler_process.run()
 
 
     def stop(self):
         if self.flag:
             self.flag = False
-            self.bgp_handler_process.terminate()
+            self.bgp_handler_process.stop()
 
 
     def handle_config_request_reply(self, channel, method, header, body):
         log.info(' [x] Detection - Received Configuration')
         if self.corr_id == header.correlation_id:
-            raw = json.loads(body)
+            raw = pickle.loads(body)
             self.rules = raw.get('rules', {})
             self.init_detection()
 
@@ -96,10 +96,8 @@ class Detection(object):
 
     @decorators.consumer_callback('bgp_update', 'direct', 'update')
     def handle_bgp_update(self, channel, method, header, body):
-        log.info(' [x] Detection - Received BGP update: {}'.format(body))
-        monitor_event = json.loads(body)
-
-        log.debug('Hanlding monitor event: {}'.format(str(monitor_event)))
+        monitor_event = pickle.loads(body)
+        log.info(' [x] Detection - Received BGP update: {}'.format(monitor_event))
 
         # ignore withdrawals for now
         if monitor_event['type'] == 'W':
@@ -218,12 +216,12 @@ class Detection(object):
 
         self.channel.basic_publish(exchange='hijack_update',
                 routing_key='update',
-                body=json.dumps(self.future_memcache[hijack_key]))
+                body=pickle.dumps(self.future_memcache[hijack_key]))
 
 
     def mark_handled(self, monitor_event):
         self.channel.basic_publish(exchange='handled_update',
                 routing_key='update',
-                body=json.dumps(monitor_event))
+                body=pickle.dumps(monitor_event))
 
 

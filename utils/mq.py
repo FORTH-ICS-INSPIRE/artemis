@@ -28,7 +28,8 @@ class AsyncConsumer(object):
     def connect(self):
         LOGGER.info('Connecting to %s', self._url)
         return pika.SelectConnection(pika.URLParameters(self._url),
-                                     self.on_connection_open)
+                                     self.on_connection_open,
+                                     stop_ioloop_on_close=False)
 
     def on_connection_open(self, unused_connection):
         LOGGER.info('Connection opened')
@@ -39,14 +40,14 @@ class AsyncConsumer(object):
         LOGGER.info('Adding connection close callback')
         self._connection.add_on_close_callback(self.on_connection_closed)
 
-    def on_connection_closed(self, connection, reason):
+    def on_connection_closed(self, connection, reply_code, reply_text):
         self._channel = None
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            LOGGER.warning('Connection closed, reopening in 5 seconds: %s',
-                           reason)
-            self._connection.ioloop.call_later(5, self.reconnect)
+            LOGGER.warning('Connection closed, reopening in 5 seconds: (%s) %s',
+                            reply_code, reply_text)
+            self._connection.add_timeout(5, self.reconnect)
 
     def reconnect(self):
         # This is the old connection IOLoop instance, stop its ioloop

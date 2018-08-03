@@ -3,25 +3,7 @@
 import glob
 import csv
 import argparse
-import yaml
-from collections import OrderedDict as odict
-from pprint import pprint as pp
-
-class CustomAnchorPrefASNs(yaml.Dumper):
-    def __init__(self,*args,**kwargs):
-        super(CustomAnchorPrefASNs,self).__init__(*args,**kwargs)
-        self.depth = 0
-        self.basekey = None
-        self.should_anchor_next = False
-
-    def anchor_node(self, node):
-        self.depth += 1
-        if self.depth == 4:
-            self.basekey = str(node.value)
-        elif self.depth == 5:
-            self.anchors[node] = str(self.basekey)
-            self.depth -= 2
-        super(CustomAnchorPrefASNs,self).anchor_node(node)
+import ruamel.yaml
 
 def __remove_prepending(seq):
     last_add = None
@@ -56,7 +38,10 @@ def __clean_as_path(as_path):
 
 def as_mapper(asn_str):
     if asn_str != '':
-        return int(asn_str)
+        try:
+            return int(asn_str)
+        except:
+            return 0
     return 0
 
 def parse_bgpstreamhist_csvs(input_dir=None):
@@ -97,55 +82,47 @@ def parse_bgpstreamhist_csvs(input_dir=None):
 
     return (prefixes, all_asns, prefix_pols)
 
-def create_prefix_defs(prefixes):
-    yaml_conf = {
-        'prefixes' : {}
-    }
+def create_prefix_defs(yaml_conf, prefixes):
+    yaml_conf['prefixes'] = ruamel.yaml.comments.CommentedMap()
+    #print(dir(yaml_conf['prefixes']))
     for prefix in prefixes:
         prefix_str = 'prefix_{}'.format(prefix.replace('.', '_').replace('/', '_'))
-        yaml_conf['prefixes'][prefix_str] = prefix
-    return yaml_conf
+        yaml_conf['prefixes'][prefix_str] = ruamel.yaml.comments.CommentedSeq()
+        yaml_conf['prefixes'][prefix_str].append(prefix)
+        #print(dir(yaml_conf['prefixes'][prefix_str]))
+        yaml_conf['prefixes'][prefix_str].yaml_set_anchor(prefix_str)
 
-def create_monitor_defs():
+def create_monitor_defs(yaml_conf):
+    yaml_conf['monitors'] = ruamel.yaml.comments.CommentedMap()
     riperis = []
     for i in range(1,24):
         if i < 10:
             riperis.append('rrc0{}'.format(i))
         else:
             riperis.append('rrc{}'.format(i))
-    yaml_conf= {
-        'monitors' : {
-            'riperis': riperis,
-            'bgpstreamlive': ['routeviews', 'ris']
-            # 'exabgp': ['ip': '192.168.1.1', 'port': 5000, ...],
-            # 'bgpstreamhist': '/home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2'
-        }
-    }
-    return yaml_conf
+    yaml_conf['monitors']['riperis'] = riperis
+    yaml_conf['monitors']['bgpstreamlive'] = ['routeviews', 'ris']
+    # 'exabgp': ['ip': '192.168.1.1', 'port': 5000, ...],
+    # 'bgpstreamhist': '/home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2'
 
-def create_asn_defs(asns):
-    yaml_conf = {
-        'asns': {}
-    }
+def create_asn_defs(yaml_conf, asns):
+    yaml_conf['asns'] = ruamel.yaml.comments.CommentedMap()
     for asn in asns:
         asn_str = 'AS{}'.format(asn)
-        yaml_conf['asns'][asn_str] = asn
-    return yaml_conf
-
-def create_rule_defs(prefix_pols):
-    yaml_conf= {
-        'rules': []
-    }
+        yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
+        yaml_conf['asns'][asn_str].append(asn)
+        yaml_conf['asns'][asn_str].yaml_set_anchor(asn_str)
+#
+def create_rule_defs(yaml_conf, prefix_pols):
+    yaml_conf['rules'] = []
     for prefix in prefix_pols:
+        pol_dict = ruamel.yaml.comments.CommentedMap()
         prefix_str = 'prefix_{}'.format(prefix.replace('.', '_').replace('/', '_'))
-        pol_dict = {
-            'prefixes': prefix_str,
-            'origin_asns': ['AS{}'.format(asn) for asn in prefix_pols[prefix]['origins']],
-            'neighbors': ['AS{}'.format(asn) for asn in prefix_pols[prefix]['neighbors']],
-            'mitigation': 'manual'
-        }
+        pol_dict['prefixes'] = [yaml_conf['prefixes'][prefix_str]]
+        pol_dict['origin_asns'] = [yaml_conf['asns']['AS{}'.format(asn)] for asn in prefix_pols[prefix]['origins']],
+        pol_dict['neighbors'] = [yaml_conf['asns']['AS{}'.format(asn)] for asn in prefix_pols[prefix]['neighbors']],
+        pol_dict['mitigation'] = 'manual'
         yaml_conf['rules'].append(pol_dict)
-    return yaml_conf
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='BGPStream Historical Monitor')
@@ -164,25 +141,33 @@ if __name__ == '__main__':
         f.write('#\n')
         f.write('\n')
 
-        f.write('# Start of Prefix Definitions\n')
-        prefixes_yaml_conf = create_prefix_defs(prefixes)
-        yaml.dump(prefixes_yaml_conf, f, default_flow_style=False, Dumper=CustomAnchorPrefASNs)
-        f.write('# End of Prefix Definitions\n')
-        f.write('\n')
+        yaml = ruamel.yaml.YAML()
+        yaml_conf = ruamel.yaml.comments.CommentedMap()
 
-        f.write('# Start of Monitor Definitions\n')
-        monitor_yaml_conf = create_monitor_defs()
-        yaml.dump(monitor_yaml_conf, f, default_flow_style=False)
-        f.write('# End of Monitor Definitions\n')
-        f.write('\n')
+        create_prefix_defs(yaml_conf, prefixes)
+        create_monitor_defs(yaml_conf)
+        create_asn_defs(yaml_conf, asns)
+        create_rule_defs(yaml_conf, prefix_pols)
 
-        f.write('# Start of ASN Definitions\n')
-        asns_yaml_conf = create_asn_defs(asns)
-        yaml.dump(asns_yaml_conf, f, default_flow_style=False, Dumper=CustomAnchorPrefASNs)
-        f.write('# End of ASN Definitions\n')
-        f.write('\n')
-
-        f.write('# Start of Rule Definitions\n')
-        rules_yaml_conf = create_rule_defs(prefix_pols)
-        yaml.dump(rules_yaml_conf, f, default_flow_style=False)
+        yaml_conf.yaml_set_comment_before_after_key('prefixes',
+                                                    before='Start of Prefix Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('monitors',
+                                                    before='End of Prefix Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('monitors',
+                                                    before='\n')
+        yaml_conf.yaml_set_comment_before_after_key('monitors',
+                                                    before='Start of Monitor Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('asns',
+                                                    before='End of Monitor Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('asns',
+                                                    before='\n')
+        yaml_conf.yaml_set_comment_before_after_key('asns',
+                                                    before='Start of ASN Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('rules',
+                                                    before='End of ASN Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('rules',
+                                                    before='\n')
+        yaml_conf.yaml_set_comment_before_after_key('rules',
+                                                    before='Start of Rule Definitions')
+        yaml.dump(yaml_conf, f)
         f.write('# End of Rule Definitions\n')

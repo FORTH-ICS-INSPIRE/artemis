@@ -1,11 +1,12 @@
 import radix
 import ipaddress
 from profilehooks import profile
-from utils import log, exception_handler
+from utils import log, exception_handler, decorators
 import uuid
 import pika
-import json
+import pickle as json
 import _thread
+import hashlib
 
 
 class Detection(object):
@@ -22,17 +23,11 @@ class Detection(object):
                 no_ack=True,
                 queue=self.callback_queue)
 
-        # BGP Update Queue
-        self.channel.exchange_declare(exchange='bgp_update',
+        # Declares
+        self.channel.exchange_declare(exchange='hijack_update',
                 exchange_type='direct')
-        result = self.channel.queue_declare(exclusive=True)
-        self.bgp_update_queue = result.method.queue
-        self.channel.queue_bind(exchange='bgp_update',
-                queue=self.bgp_update_queue,
-                routing_key='update')
-        self.channel.basic_consume(self.handle_bgp_update,
-                queue=self.bgp_update_queue,
-                no_ack=True)
+        self.channel.exchange_declare(exchange='handled_update',
+                exchange_type='direct')
 
         self.prefix_tree = radix.Radix()
         self.flag = False
@@ -52,11 +47,23 @@ class Detection(object):
         while self.rules is None:
             self.connection.process_data_events()
 
-        _thread.start_new_thread(self.channel.start_consuming, ())
+        self.bgp_handler_process = self.handle_bgp_update()
+
+
+    def start(self):
+        if not self.flag:
+            self.flag = True
+            self.bgp_handler_process.start()
+
+
+    def stop(self):
+        if self.flag:
+            self.flag = False
+            self.bgp_handler_process.terminate()
 
 
     def handle_config_request_reply(self, channel, method, header, body):
-        log.info(' [x] Detection - Received Configuration: {}'.format(body))
+        log.info(' [x] Detection - Received Configuration')
         if self.corr_id == header.correlation_id:
             raw = json.loads(body)
             self.rules = raw.get('rules', {})
@@ -71,8 +78,6 @@ class Detection(object):
                 if path_len > 1:
                     yield self.detect_type_1_hijack
                 yield self.detect_subprefix_hijack
-
-        yield self.mark_handled
 
 
     def init_detection(self):
@@ -89,11 +94,10 @@ class Detection(object):
         log.debug('Detection configuration: {}'.format(self.rules))
 
 
+    @decorators.consumer_callback('bgp_update', 'direct', 'update')
     def handle_bgp_update(self, channel, method, header, body):
         log.info(' [x] Detection - Received BGP update: {}'.format(body))
         monitor_event = json.loads(body)
-
-        monitor_event['as_path'] = ' '.join([str(c) for c in monitor_event['as_path']])
 
         log.debug('Hanlding monitor event: {}'.format(str(monitor_event)))
 
@@ -102,7 +106,7 @@ class Detection(object):
             self.mark_handled(monitor_event)
             return
 
-        as_path = Detection.__clean_as_path(monitor_event['as_path'].split(' '))
+        as_path = Detection.__clean_as_path(monitor_event['as_path'])
         prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
 
         if prefix_node is not None:
@@ -111,6 +115,7 @@ class Detection(object):
         for func in self.__detection_generator(len(as_path), prefix_node):
             if func(monitor_event, prefix_node, as_path[-2]):
                 break
+        self.mark_handled(monitor_event)
 
 
     @staticmethod
@@ -190,12 +195,35 @@ class Detection(object):
             return True
 
 
-    def commit_hijack(self, monitor_event, origin, hij_type):
-        print('hijack {} {} {}'.format(monitor_event, origin, hij_type))
-        pass
+    def commit_hijack(self, monitor_event, hijacker, hij_type):
+        hijack_key = hash(frozenset([monitor_event['prefix'], hijacker, hij_type]))
+        hijack_value = {
+            'time_started': monitor_event['timestamp'],
+            'time_last': monitor_event['timestamp'],
+            'peers_seen': {monitor_event['as_path'][0]},
+        }
+
+        if hij_type in {'S','Q'}:
+            hijack_value['inf_asns'] = set(monitor_event['as_path'])
+        else:
+            hijack_value['inf_asns'] = set(monitor_event['as_path'][:-(hij_type+1)])
+
+        if hijack_key in self.future_memcache:
+            self.future_memcache[hijack_key]['time_started'] = min(self.future_memcache[hijack_key]['time_started'], hijack_value['time_started'])
+            self.future_memcache[hijack_key]['time_last'] = max(self.future_memcache[hijack_key]['time_last'], hijack_value['time_last'])
+            self.future_memcache[hijack_key]['peers_seen'].update(hijack_value['peers_seen'])
+            self.future_memcache[hijack_key]['inf_asns'].update(hijack_value['inf_asns'])
+        else:
+            self.future_memcache[hijack_key] = hijack_value
+
+        self.channel.basic_publish(exchange='hijack_update',
+                routing_key='update',
+                body=json.dumps(self.future_memcache[hijack_key]))
 
 
     def mark_handled(self, monitor_event):
-        print('marked handled {}'.format(monitor_event))
-        pass
+        self.channel.basic_publish(exchange='handled_update',
+                routing_key='update',
+                body=json.dumps(monitor_event))
+
 

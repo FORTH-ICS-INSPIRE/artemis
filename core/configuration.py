@@ -5,7 +5,7 @@ from yaml import load as yload
 from utils import flatten, log, ArtemisError
 from socketIO_client_nexus import SocketIO
 import pika
-import json
+import pickle
 import _thread
 
 
@@ -41,7 +41,7 @@ class Configuration():
                      routing_key=header.reply_to,
                      properties=pika.BasicProperties(correlation_id = \
                                                          header.correlation_id),
-                     body=json.dumps(self.data))
+                     body=pickle.dumps(self.data))
         channel.basic_ack(delivery_tag = method.delivery_tag)
 
 

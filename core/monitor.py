@@ -2,10 +2,10 @@ import sys
 import os
 import radix
 from subprocess import Popen
-from utils import exception_handler, log
+from utils import exception_handler, log, decorators
 import uuid
 import pika
-import json
+import pickle
 
 
 class Monitor(object):
@@ -40,9 +40,9 @@ class Monitor(object):
 
 
     def handle_config_request_reply(self, channel, method, header, body):
-        log.info(' [x] Monitor - Received Configuration: {}'.format(body))
+        log.info(' [x] Monitor - Received Configuration')
         if self.corr_id == header.correlation_id:
-            raw = json.loads(body)
+            raw = pickle.loads(body)
             self.rules = raw.get('rules', {})
             self.monitors = raw.get('monitors', {})
             self.start()

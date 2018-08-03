@@ -24,7 +24,9 @@ def main():
 
     # Instatiate Modules
     monitor_ = Monitor()
+
     detection_ = Detection()
+    detection_.start()
 
     # GRPC Server
     grpc_ = GrpcServer()
@@ -39,6 +41,7 @@ def main():
     #input("\n[!] Press ENTER to exit [!]\n\n")
 
     # Stop all modules and web application
+    detection_.stop()
     grpc_.stop()
     log.info('Bye..!')
 

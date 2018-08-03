@@ -13,47 +13,33 @@ class Monitor(object):
 
 
     def __init__(self):
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-        self.channel = self.connection.channel()
-        result = self.channel.queue_declare(exclusive=True)
-        self.callback_queue = result.method.queue
-        self.channel.basic_consume(self.handle_config_request_reply, no_ack=True,
-                                   queue=self.callback_queue)
-
         self.prefix_tree = radix.Radix()
         self.process_ids = []
         self.flag = False
         self.rules = None
         self.prefixes = set()
         self.monitors = None
-
-        self.configuration_consumer = self.handle_config_notify()
-
-        self.corr_id = str(uuid.uuid4())
-        self.channel.basic_publish(exchange='',
-                                   routing_key='rpc_config_queue',
-                                   properties=pika.BasicProperties(
-                                         reply_to = self.callback_queue,
-                                         correlation_id = self.corr_id,
-                                         ),
-                                   body='')
-
-        while self.rules is None and self.monitors is None:
-            self.connection.process_data_events()
+        self.handle_control_consumer = self.handle_control()
 
 
-    def handle_config_request_reply(self, channel, method, header, body):
-        log.info(' [x] Monitor - Received Configuration')
-        if self.corr_id == header.correlation_id:
-            raw = pickle.loads(body)
-            self.rules = raw.get('rules', [])
-            self.monitors = raw.get('monitors', [])
+    def init_start(self):
+        threading.Thread(target=self.handle_control_consumer.run, args=()).start()
+        self.start()
+
+
+    def final_stop(self):
+        self.handle_control_consumer.stop()
+        self.stop()
+
+
+    def restart(self):
+        self.stop()
+        self.start()
 
 
     def start(self):
         if not self.flag:
-            self.flag = True
-            threading.Thread(target=self.configuration_consumer.run, args=()).start()
+            self.rpc_request_config()
             for rule in self.rules:
                 try:
                     for prefix in rule['prefixes']:
@@ -73,26 +59,57 @@ class Monitor(object):
             self.init_exabgp_instances()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
+            self.flag = True
             log.info('Monitors Started..')
 
 
     def stop(self):
         if self.flag:
-            self.configuration_consumer.stop()
+            try:
+                self.channel.stop_consuming()
+            except:
+                pass
             for proc_id in self.process_ids:
                 proc_id[1].terminate()
             self.flag = False
+            self.rules = None
+            self.monitors = None
             log.info('Monitors Stopped..')
 
 
-    @decorators.consumer_callback('config_notify', 'direct', 'notification')
-    def handle_config_notify(self, channel, method, header, body):
+    def rpc_request_config(self):
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        self.channel = self.connection.channel()
+        result = self.channel.queue_declare(exclusive=True)
+        self.callback_queue = result.method.queue
+        self.channel.basic_consume(self.handle_config_request_reply, no_ack=True,
+                                queue=self.callback_queue)
+        self.corr_id = str(uuid.uuid4())
+        self.channel.basic_publish(exchange='',
+                                routing_key='rpc_config_queue',
+                                properties=pika.BasicProperties(
+                                        reply_to = self.callback_queue,
+                                        correlation_id = self.corr_id,
+                                        ),
+                                body='')
+
+        while self.rules is None and self.monitors is None:
+            self.connection.process_data_events()
+
+
+    def handle_config_request_reply(self, channel, method, header, body):
         log.info(' [x] Monitor - Received Configuration')
-        raw = pickle.loads(body)
-        self.rules = raw.get('rules', [])
-        self.monitors = raw.get('monitors', {})
-        self.stop()
-        self.start()
+        if self.corr_id == header.correlation_id:
+            raw = pickle.loads(body)
+            self.rules = raw.get('rules', [])
+            self.monitors = raw.get('monitors', [])
+
+
+    @decorators.consumer_callback('control', 'direct', 'monitor')
+    def handle_control(self, channel, method, header, body):
+        msg = pickle.loads(body)
+        print(' [x] Monitor - Handle Control {}'.format(msg))
+        getattr(self, msg)()
 
 
     @exception_handler

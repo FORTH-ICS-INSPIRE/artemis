@@ -15,15 +15,6 @@ class Detection(object):
 
 
     def __init__(self):
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-        self.channel = self.connection.channel()
-
-        # RPC Queue
-        result = self.channel.queue_declare(exclusive=True)
-        self.callback_queue = result.method.queue
-        self.channel.basic_consume(self.handle_config_request_reply,
-                no_ack=True,
-                queue=self.callback_queue)
 
         self.hijack_publisher = AsyncConnection(exchange='hijack_update',
                 exchange_type='direct',
@@ -42,39 +33,67 @@ class Detection(object):
 
         self.future_memcache = {}
         self.bgp_handler_consumer = self.handle_bgp_update()
-        self.configuration_consumer = self.handle_config_notify()
+        self.handle_control_consumer = self.handle_control()
 
-        self.corr_id = str(uuid.uuid4())
-        self.channel.basic_publish(exchange='',
-                                   routing_key='rpc_config_queue',
-                                   properties=pika.BasicProperties(
-                                         reply_to = self.callback_queue,
-                                         correlation_id = self.corr_id,
-                                         ),
-                                   body='')
 
-        while self.rules is None:
-            self.connection.process_data_events()
+    def init_start(self):
+        threading.Thread(target=self.hijack_publisher.run, args=()).start()
+        threading.Thread(target=self.handled_publisher.run, args=()).start()
+        threading.Thread(target=self.handle_control_consumer.run, args=()).start()
+        self.start()
+
+
+    def final_stop(self):
+        self.hijack_publisher.stop()
+        self.handled_publisher.stop()
+        self.handle_control_consumer.stop()
+        self.stop()
+
+
+    def restart(self):
+        self.stop()
+        self.start()
 
 
     def start(self):
         if not self.flag:
-            self.flag = True
-            threading.Thread(target=self.configuration_consumer.run, args=()).start()
+            self.rpc_request_config()
             threading.Thread(target=self.bgp_handler_consumer.run, args=()).start()
-            threading.Thread(target=self.hijack_publisher.run, args=()).start()
-            threading.Thread(target=self.handled_publisher.run, args=()).start()
+            self.flag = True
             log.info('Detection Started..')
 
 
     def stop(self):
         if self.flag:
+            try:
+                self.channel.stop_consuming()
+            except:
+                pass
             self.bgp_handler_consumer.stop()
-            self.hijack_publisher.stop()
-            self.handled_publisher.stop()
-            self.configuration_consumer.stop()
             self.flag = False
+            self.rules = None
             log.info('Detection Stopped..')
+
+
+    def rpc_request_config(self):
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        self.channel = self.connection.channel()
+        result = self.channel.queue_declare(exclusive=True)
+        self.callback_queue = result.method.queue
+        self.channel.basic_consume(self.handle_config_request_reply,
+                no_ack=True,
+                queue=self.callback_queue)
+        self.corr_id = str(uuid.uuid4())
+        self.channel.basic_publish(exchange='',
+                                routing_key='rpc_config_queue',
+                                properties=pika.BasicProperties(
+                                        reply_to = self.callback_queue,
+                                        correlation_id = self.corr_id,
+                                        ),
+                                body='')
+
+        while self.rules is None:
+            self.connection.process_data_events()
 
 
     def handle_config_request_reply(self, channel, method, header, body):
@@ -85,12 +104,11 @@ class Detection(object):
             self.init_detection()
 
 
-    @decorators.consumer_callback('config_notify', 'direct', 'notification')
-    def handle_config_notify(self, channel, method, header, body):
-        log.info(' [x] Detection - Received Configuration')
-        raw = pickle.loads(body)
-        self.rules = raw.get('rules', [])
-        self.init_detection()
+    @decorators.consumer_callback('control', 'direct', 'detection')
+    def handle_control(self, channel, method, header, body):
+        msg = pickle.loads(body)
+        print(' [x] Detection - Handle Control {}'.format(msg))
+        getattr(self, msg)()
 
 
     def __detection_generator(self, path_len, prefix_node):
@@ -120,7 +138,6 @@ class Detection(object):
 
     @decorators.consumer_callback('bgp_update', 'direct', 'update')
     def handle_bgp_update(self, channel, method, header, body):
-        print(self.rules)
         monitor_event = pickle.loads(body)
         log.info(' [x] Detection - Received BGP update: {}'.format(monitor_event))
 

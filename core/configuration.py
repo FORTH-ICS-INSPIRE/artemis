@@ -37,23 +37,53 @@ class Configuration():
         with open(self.file, 'r') as f:
             self.raw = f.read()
 
+        self.handle_config_modify_consumer = self.handle_config_modify()
+        self.handle_control_consumer = self.handle_control()
+
+
+    def init_start(self):
+        threading.Thread(target=self.handle_control_consumer.run, args=()).start()
+        threading.Thread(target=self.configuration_publisher.run, args=()).start()
+        self.start()
+
+
+    def final_stop(self):
+        self.handle_control_consumer.stop()
+        self.configuration_publisher.stop()
+        self.stop()
+
 
     def start(self):
         if not self.flag:
             self.flag = True
+            threading.Thread(target=self.channel.start_consuming, args=()).start()
+            threading.Thread(target=self.handle_config_modify_consumer.run, args=()).start()
             self.parse_rrcs()
             self.parse()
-            threading.Thread(target=self.channel.start_consuming, args=()).start()
-            threading.Thread(target=self.configuration_publisher.run, args=()).start()
             log.info('Configuration Started..')
 
 
     def stop(self):
         if self.flag:
             self.channel.stop_consuming()
-            self.configuration_publisher.stop()
+            self.handle_config_modify_consumer.stop()
             self.flag = False
             log.info('Configuration Stopped..')
+
+
+    @decorators.consumer_callback('config_modify', 'direct', 'modification')
+    def handle_config_modify(self, channel, method, header, body):
+        self.raw = pickle.loads(body)
+        print(' [x] Configuration - Config Modify {}'.format(msg))
+        self.parse()
+        self.configuration_publisher.publish_message(self.data)
+
+
+    @decorators.consumer_callback('control', 'direct', 'configuration')
+    def handle_control(self, channel, method, header, body):
+        msg = pickle.loads(body)
+        print(' [x] Configuration - Handle Control {}'.format(msg))
+        getattr(self, msg)()
 
 
     def handle_config_request(self, channel, method, header, body):
@@ -81,10 +111,6 @@ class Configuration():
     def parse(self):
         self.data = yload(self.raw)
         self.check()
-
-
-    def broadcast(self):
-        self.configuration_publisher.publish_message(self.data)
 
 
     def check(self):

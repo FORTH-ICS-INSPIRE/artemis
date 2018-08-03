@@ -5,8 +5,10 @@ import _thread
 from concurrent import futures
 from protobuf_to_dict import protobuf_to_dict
 from utils import log
+from utils.mq import AsyncConnection
 import pika
 import json
+import threading
 
 
 class GrpcServer():
@@ -14,23 +16,22 @@ class GrpcServer():
 
     def __init__(self):
         self.server_process = None
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        self.bgp_update_publisher = AsyncConnection(exchange='bgp_update',
+                exchange_type='direct',
+                routing_key='update',
+                objtype='publisher')
 
 
     class MonitorGrpc(mservice_pb2_grpc.MessageListenerServicer):
 
 
-        def __init__(self, connection):
-            self.channel = connection.channel()
-            self.channel.exchange_declare(exchange='bgp_update',
-                            exchange_type='direct')
+        def __init__(self, publisher):
+            self.publisher = publisher
 
 
         def queryMformat(self, request, context):
             monitor_event = protobuf_to_dict(request)
-            self.channel.basic_publish(exchange='bgp_update',
-                                routing_key='#',
-                                body=json.dumps(monitor_event))
+            self.publisher.publish_message(monitor_event)
             return mservice_pb2.Empty()
 
 
@@ -38,17 +39,20 @@ class GrpcServer():
         self.grpc_server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=10))
 
+        threading.Thread(target=self.bgp_update_publisher.run, args=())
         mservice_pb2_grpc.add_MessageListenerServicer_to_server(
-            GrpcServer.MonitorGrpc(self.connection),
+            GrpcServer.MonitorGrpc(self.bgp_update_publisher),
             self.grpc_server
         )
 
         self.grpc_server.add_insecure_port('[::]:50051')
-        _thread.start_new_thread(self.grpc_server.start, ())
+
+        threading.Thread(target=self.grpc_server.start, args=())
         log.info('GRPC Server Started..')
 
 
     def stop(self):
+        self.bgp_update_publisher.stop()
         self.grpc_server.stop(0)
         log.info('GRPC Server Stopped..')
 

@@ -7,6 +7,7 @@ from core.detection import Detection
 from protogrpc.grpc_server import GrpcServer
 from utils import log
 
+
 class GracefulKiller:
     def __init__(self):
         self.kill_now = False
@@ -20,13 +21,13 @@ class GracefulKiller:
 def main():
     # Instatiate Modules
     configuration_ = Configuration()
-    configuration_.start()
+    configuration_.init_start()
 
     monitor_ = Monitor()
-    monitor_.start()
+    monitor_.init_start()
 
     detection_ = Detection()
-    detection_.start()
+    detection_.init_start()
 
     # GRPC Server
     grpc_ = GrpcServer()
@@ -41,9 +42,9 @@ def main():
     #input("\n[!] Press ENTER to exit [!]\n\n")
 
     # Stop all modules and web application
-    configuration_.stop()
-    monitor_.stop()
-    detection_.stop()
+    configuration_.final_stop()
+    monitor_.final_stop()
+    detection_.final_stop()
     grpc_.stop()
     log.info('Bye..!')
 

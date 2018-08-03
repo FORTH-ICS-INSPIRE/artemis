@@ -1,6 +1,7 @@
 import logging
 import pika
 import pickle
+from time import sleep
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
@@ -115,8 +116,8 @@ class AsyncConnection(object):
                     basic_deliver.delivery_tag, properties.app_id, body)
 
     def publish_message(self, message):
-        if self._channel is None or not self._channel.is_open:
-            return
+        while self._channel is None or not self._channel.is_open:
+            time.sleep(1)
 
         self._channel.basic_publish(self._exchange,
                 self._routing_key,

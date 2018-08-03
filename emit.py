@@ -2,16 +2,18 @@
 import pika
 import sys
 import pickle
+from utils.mq import AsyncConnection
+import threading
+import time
 
+publisher = AsyncConnection(exchange='bgp_update',
+        objtype='publisher',
+        routing_key='update',
+        exchange_type='direct')
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-channel = connection.channel()
-
-channel.exchange_declare(exchange='bgp_update',
-                         exchange_type='direct')
+threading.Thread(target=publisher.run, args=()).start()
 
 obj = {"type":"A", "as_path": [0,1,2,3], "prefix": "139.91.0.0/24", "timestamp": int(sys.argv[1])}
-channel.basic_publish(exchange='bgp_update',
-                      routing_key='update',
-                      body=pickle.dumps(obj))
-connection.close()
+
+publisher.publish_message(obj)
+publisher.stop()

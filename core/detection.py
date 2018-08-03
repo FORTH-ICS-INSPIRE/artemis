@@ -7,6 +7,8 @@ import pika
 import pickle
 import _thread
 import hashlib
+from utils.mq import AsyncConnection
+import threading
 
 
 class Detection(object):
@@ -23,11 +25,16 @@ class Detection(object):
                 no_ack=True,
                 queue=self.callback_queue)
 
-        # Declares
-        self.channel.exchange_declare(exchange='hijack_update',
-                exchange_type='direct')
-        self.channel.exchange_declare(exchange='handled_update',
-                exchange_type='direct')
+        self.hijack_publisher = AsyncConnection(exchange='hijack_update',
+                exchange_type='direct',
+                routing_key='update',
+                objtype='publisher')
+
+        self.handled_publisher = AsyncConnection(exchange='handled_update',
+                exchange_type='direct',
+                routing_key='update',
+                objtype='publisher')
+
 
         self.prefix_tree = radix.Radix()
         self.flag = False
@@ -53,13 +60,17 @@ class Detection(object):
     def start(self):
         if not self.flag:
             self.flag = True
-            self.bgp_handler_process.run()
+            threading.Thread(target=self.bgp_handler_process.run, args=()).start()
+            threading.Thread(target=self.hijack_publisher.run, args=()).start()
+            threading.Thread(target=self.handled_publisher.run, args=()).start()
 
 
     def stop(self):
         if self.flag:
             self.flag = False
             self.bgp_handler_process.stop()
+            self.hijack_publisher.stop()
+            self.handled_publisher.stop()
 
 
     def handle_config_request_reply(self, channel, method, header, body):
@@ -214,14 +225,10 @@ class Detection(object):
         else:
             self.future_memcache[hijack_key] = hijack_value
 
-        self.channel.basic_publish(exchange='hijack_update',
-                routing_key='update',
-                body=pickle.dumps(self.future_memcache[hijack_key]))
+        self.hijack_publisher.publish_message(self.future_memcache[hijack_key])
 
 
     def mark_handled(self, monitor_event):
-        self.channel.basic_publish(exchange='handled_update',
-                routing_key='update',
-                body=pickle.dumps(monitor_event))
+        self.handled_publisher.publish_message(monitor_event)
 
 

@@ -3,7 +3,7 @@ import functools
 import pika
 import sys
 from pickle import loads
-from utils.mq import AsyncConsumer
+from utils.mq import AsyncConnection
 import threading
 
 
@@ -14,8 +14,8 @@ def b_func(ch, m, h, b):
     print('handled_update {}'.format(loads(b)))
 
 def main():
-    cons_1 = AsyncConsumer(exchange='hijack_update', routing_key='update', cb=a_func)
-    cons_2 = AsyncConsumer(exchange='handled_update', routing_key='update', cb=b_func)
+    cons_1 = AsyncConnection(exchange='hijack_update', routing_key='update', cb=a_func, objtype='consumer')
+    cons_2 = AsyncConnection(exchange='handled_update', routing_key='update', cb=b_func, objtype='consumer')
 
     try:
         t1 = threading.Thread(target=cons_1.run, args=())

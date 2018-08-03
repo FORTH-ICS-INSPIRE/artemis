@@ -3,7 +3,7 @@ from functools import wraps, partial
 from multiprocessing import Process
 from time import sleep
 import inspect
-from utils.mq import AsyncConsumer
+from utils.mq import AsyncConnection
 
 
 def consumer_callback(exchange, exchange_type, routing_key):
@@ -11,10 +11,11 @@ def consumer_callback(exchange, exchange_type, routing_key):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             t_func = partial(func, self)
-            consumer = AsyncConsumer(exchange=exchange,
+            consumer = AsyncConnection(exchange=exchange,
                     exchange_type=exchange_type,
                     routing_key=routing_key,
-                    cb=t_func)
+                    cb=t_func,
+                    objtype='consumer')
             return consumer
         return wrapper
     return decorator

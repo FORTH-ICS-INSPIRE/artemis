@@ -117,7 +117,7 @@ class AsyncConnection(object):
 
     def publish_message(self, message):
         while self._channel is None or not self._channel.is_open:
-            time.sleep(1)
+            sleep(1)
 
         self._channel.basic_publish(self._exchange,
                 self._routing_key,

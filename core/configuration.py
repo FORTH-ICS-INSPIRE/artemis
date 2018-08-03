@@ -2,11 +2,12 @@ from ipaddress import ip_network as str2ip
 import os
 import sys
 from yaml import load as yload
-from utils import flatten, log, ArtemisError
+from utils import flatten, log, ArtemisError, decorators
+from utils.mq import AsyncConnection
 from socketIO_client_nexus import SocketIO
 import pika
 import pickle
-import _thread
+import threading
 
 
 class Configuration():
@@ -26,13 +27,33 @@ class Configuration():
         self.supported_monitors = {
             'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive'}
         self.available_ris = set()
-        self.parse_rrcs()
         self.available_bgpstreamlive = {'routeviews', 'ris'}
+        self.flag = False
+        self.configuration_publisher = AsyncConnection(exchange='config_notify',
+                exchange_type='direct',
+                routing_key='notification',
+                objtype='publisher')
 
         with open(self.file, 'r') as f:
-            self.parse(f.read())
+            self.raw = f.read()
 
-        _thread.start_new_thread(self.channel.start_consuming, ())
+
+    def start(self):
+        if not self.flag:
+            self.flag = True
+            self.parse_rrcs()
+            self.parse()
+            threading.Thread(target=self.channel.start_consuming, args=()).start()
+            threading.Thread(target=self.configuration_publisher.run, args=()).start()
+            log.info('Configuration Started..')
+
+
+    def stop(self):
+        if self.flag:
+            self.channel.stop_consuming()
+            self.configuration_publisher.stop()
+            self.flag = False
+            log.info('Configuration Stopped..')
 
 
     def handle_config_request(self, channel, method, header, body):
@@ -57,9 +78,13 @@ class Configuration():
             log.warning('RIPE RIS server is down. Try again later..')
 
 
-    def parse(self, raw):
-        self.data = yload(raw)
+    def parse(self):
+        self.data = yload(self.raw)
         self.check()
+
+
+    def broadcast(self):
+        self.configuration_publisher.publish_message(self.data)
 
 
     def check(self):

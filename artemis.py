@@ -18,12 +18,12 @@ class GracefulKiller:
 
 
 def main():
-    # Configuration Parser
-    log.info('Parsing Configuration..')
-    confparser_ = Configuration()
-
     # Instatiate Modules
+    configuration_ = Configuration()
+    configuration_.start()
+
     monitor_ = Monitor()
+    monitor_.start()
 
     detection_ = Detection()
     detection_.start()
@@ -41,6 +41,8 @@ def main():
     #input("\n[!] Press ENTER to exit [!]\n\n")
 
     # Stop all modules and web application
+    configuration_.stop()
+    monitor_.stop()
     detection_.stop()
     grpc_.stop()
     log.info('Bye..!')

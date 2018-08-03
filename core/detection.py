@@ -36,11 +36,13 @@ class Detection(object):
                 objtype='publisher')
 
 
-        self.prefix_tree = radix.Radix()
         self.flag = False
         self.rules = None
+        self.prefix_tree = radix.Radix()
 
         self.future_memcache = {}
+        self.bgp_handler_consumer = self.handle_bgp_update()
+        self.configuration_consumer = self.handle_config_notify()
 
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(exchange='',
@@ -54,26 +56,25 @@ class Detection(object):
         while self.rules is None:
             self.connection.process_data_events()
 
-        self.bgp_handler_consumer = self.handle_bgp_update()
-        self.configuration_consumer = self.handle_config_notify()
-
 
     def start(self):
         if not self.flag:
             self.flag = True
+            threading.Thread(target=self.configuration_consumer.run, args=()).start()
             threading.Thread(target=self.bgp_handler_consumer.run, args=()).start()
             threading.Thread(target=self.hijack_publisher.run, args=()).start()
             threading.Thread(target=self.handled_publisher.run, args=()).start()
-            threading.Thread(target=self.configuration_consumer.run, args=()).start()
+            log.info('Detection Started..')
 
 
     def stop(self):
         if self.flag:
-            self.flag = False
             self.bgp_handler_consumer.stop()
             self.hijack_publisher.stop()
             self.handled_publisher.stop()
             self.configuration_consumer.stop()
+            self.flag = False
+            log.info('Detection Stopped..')
 
 
     def handle_config_request_reply(self, channel, method, header, body):
@@ -103,6 +104,7 @@ class Detection(object):
 
 
     def init_detection(self):
+        self.prefix_tree = radix.Radix()
         for rule in self.rules:
             for prefix in rule['prefixes']:
                 node = self.prefix_tree.search_exact(prefix)

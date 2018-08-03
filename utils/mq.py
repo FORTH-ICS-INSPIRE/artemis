@@ -27,18 +27,18 @@ class AsyncConnection(object):
             self.on_message = cb
 
     def connect(self):
-        LOGGER.info('Connecting to %s', self._url)
+        LOGGER.debug('Connecting to %s', self._url)
         return pika.SelectConnection(pika.URLParameters(self._url),
                                      self.on_connection_open,
                                      stop_ioloop_on_close=False)
 
     def on_connection_open(self, unused_connection):
-        LOGGER.info('Connection opened')
+        LOGGER.debug('Connection opened')
         self.add_on_connection_close_callback()
         self.open_channel()
 
     def add_on_connection_close_callback(self):
-        LOGGER.info('Adding connection close callback')
+        LOGGER.debug('Adding connection close callback')
         self._connection.add_on_close_callback(self.on_connection_closed)
 
     def on_connection_closed(self, connection, reply_code, reply_text):
@@ -60,17 +60,17 @@ class AsyncConnection(object):
             self._connection.ioloop.start()
 
     def open_channel(self):
-        LOGGER.info('Creating a new channel')
+        LOGGER.debug('Creating a new channel')
         self._connection.channel(on_open_callback=self.on_channel_open)
 
     def on_channel_open(self, channel):
-        LOGGER.info('Channel opened')
+        LOGGER.debug('Channel opened')
         self._channel = channel
         self.add_on_channel_close_callback()
         self.setup_exchange(self._exchange)
 
     def add_on_channel_close_callback(self):
-        LOGGER.info('Adding channel close callback')
+        LOGGER.debug('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
 
     def on_channel_closed(self, channel, code, text):
@@ -78,13 +78,13 @@ class AsyncConnection(object):
         self._connection.close()
 
     def setup_exchange(self, exchange_name):
-        LOGGER.info('Declaring exchange %s', exchange_name)
+        LOGGER.debug('Declaring exchange %s', exchange_name)
         self._channel.exchange_declare(self.on_exchange_declareok,
                                        exchange_name,
                                        self._exchange_type)
 
     def on_exchange_declareok(self, unused_frame):
-        LOGGER.info('Exchange declared')
+        LOGGER.debug('Exchange declared')
 
         if self._type == 'consumer':
             self.setup_queue()
@@ -94,25 +94,25 @@ class AsyncConnection(object):
 
     def on_queue_declareok(self, method_frame):
         self._queue = method_frame.method.queue
-        LOGGER.info('Binding %s to %s with %s',
+        LOGGER.debug('Binding %s to %s with %s',
                     self._exchange, self._queue, self._routing_key)
         self._channel.queue_bind(self.on_bindok, self._queue,
                                  self._exchange, self._routing_key)
 
     def on_bindok(self, unused_frame):
-        LOGGER.info('Queue bound')
+        LOGGER.debug('Queue bound')
 
         self.start_consuming()
 
     def start_consuming(self):
-        LOGGER.info('Issuing consumer related commands')
+        LOGGER.debug('Issuing consumer related commands')
         self._consumer_tag = self._channel.basic_consume(
                 self.on_message,
                 queue=self._queue,
                 no_ack=True)
 
     def on_message(self, unused_channel, basic_deliver, properties, body):
-        LOGGER.info('Received message # %s from %s: %s',
+        LOGGER.debug('Received message # %s from %s: %s',
                     basic_deliver.delivery_tag, properties.app_id, body)
 
     def publish_message(self, message):
@@ -123,10 +123,10 @@ class AsyncConnection(object):
                 self._routing_key,
                 pickle.dumps(message))
         self._message_number += 1
-        LOGGER.info('Published message # %i', self._message_number)
+        LOGGER.debug('Published message # %i', self._message_number)
 
     def close_channel(self):
-        LOGGER.info('Closing the channel')
+        LOGGER.debug('Closing the channel')
         self._channel.close()
 
     def run(self):
@@ -134,14 +134,14 @@ class AsyncConnection(object):
         self._connection.ioloop.start()
 
     def stop(self):
-        LOGGER.info('Stopping')
+        LOGGER.debug('Stopping')
         self._closing = True
 
         self.close_channel()
         self.close_connection()
         self._connection.ioloop.start()
-        LOGGER.info('Stopped')
+        LOGGER.debug('Stopped')
 
     def close_connection(self):
-        LOGGER.info('Closing connection')
+        LOGGER.debug('Closing connection')
         self._connection.close()

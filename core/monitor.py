@@ -6,6 +6,7 @@ from utils import exception_handler, log, decorators
 import uuid
 import pika
 import pickle
+import threading
 
 
 class Monitor(object):
@@ -26,6 +27,8 @@ class Monitor(object):
         self.prefixes = set()
         self.monitors = None
 
+        self.configuration_consumer = self.handle_config_notify()
+
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(exchange='',
                                    routing_key='rpc_config_queue',
@@ -43,13 +46,14 @@ class Monitor(object):
         log.info(' [x] Monitor - Received Configuration')
         if self.corr_id == header.correlation_id:
             raw = pickle.loads(body)
-            self.rules = raw.get('rules', {})
-            self.monitors = raw.get('monitors', {})
-            self.start()
+            self.rules = raw.get('rules', [])
+            self.monitors = raw.get('monitors', [])
 
 
     def start(self):
         if not self.flag:
+            self.flag = True
+            threading.Thread(target=self.configuration_consumer.run, args=()).start()
             for rule in self.rules:
                 try:
                     for prefix in rule['prefixes']:
@@ -69,15 +73,27 @@ class Monitor(object):
             self.init_exabgp_instances()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
-            self.flag = True
             log.info('Monitors Started..')
+
 
     def stop(self):
         if self.flag:
+            self.configuration_consumer.stop()
             for proc_id in self.process_ids:
                 proc_id[1].terminate()
             self.flag = False
             log.info('Monitors Stopped..')
+
+
+    @decorators.consumer_callback('config_notify', 'direct', 'notification')
+    def handle_config_notify(self, channel, method, header, body):
+        log.info(' [x] Monitor - Received Configuration')
+        raw = pickle.loads(body)
+        self.rules = raw.get('rules', [])
+        self.monitors = raw.get('monitors', {})
+        self.stop()
+        self.start()
+
 
     @exception_handler
     def init_ris_instances(self):
@@ -88,6 +104,7 @@ class Monitor(object):
                                 '--prefix', prefix, '--host', ris_monitor])
                     self.process_ids.append(('RIPEris {} {}'.format(ris_monitor, prefix), p))
 
+
     @exception_handler
     def init_exabgp_instances(self):
         log.debug('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
@@ -97,6 +114,7 @@ class Monitor(object):
                 '--prefix', ','.join(self.prefixes), '--host', exabgp_monitor_str])
             self.process_ids.append(('ExaBGP {} {}'.format(exabgp_monitor_str, self.prefixes), p))
 
+
     @exception_handler
     def init_bgpstreamhist_instance(self):
         if 'bgpstreamhist' in self.monitors:
@@ -105,6 +123,7 @@ class Monitor(object):
             p = Popen(['python3', 'taps/bgpstreamhist.py',
                     '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir])
             self.process_ids.append(('BGPStreamHist {} {}'.format(bgpstreamhist_dir, self.prefixes), p))
+
 
     @exception_handler
     def init_bgpstreamlive_instance(self):

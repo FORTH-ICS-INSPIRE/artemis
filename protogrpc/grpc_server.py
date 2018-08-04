@@ -39,7 +39,7 @@ class GrpcServer():
         self.grpc_server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=10))
 
-        threading.Thread(target=self.bgp_update_publisher.run, args=())
+        threading.Thread(target=self.bgp_update_publisher.run, args=()).start()
         mservice_pb2_grpc.add_MessageListenerServicer_to_server(
             GrpcServer.MonitorGrpc(self.bgp_update_publisher),
             self.grpc_server
@@ -47,7 +47,7 @@ class GrpcServer():
 
         self.grpc_server.add_insecure_port('[::]:50051')
 
-        threading.Thread(target=self.grpc_server.start, args=())
+        threading.Thread(target=self.grpc_server.start, args=()).start()
         log.info('GRPC Server Started..')
 
 

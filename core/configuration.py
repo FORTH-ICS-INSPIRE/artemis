@@ -29,9 +29,9 @@ class Configuration():
         self.available_ris = set()
         self.available_bgpstreamlive = {'routeviews', 'ris'}
         self.flag = False
-        self.configuration_publisher = AsyncConnection(exchange='config_notify',
+        self.control_publisher = AsyncConnection(exchange='control',
                 exchange_type='direct',
-                routing_key='notification',
+                routing_key='*',
                 objtype='publisher')
 
         with open(self.file, 'r') as f:
@@ -43,13 +43,13 @@ class Configuration():
 
     def init_start(self):
         threading.Thread(target=self.handle_control_consumer.run, args=()).start()
-        threading.Thread(target=self.configuration_publisher.run, args=()).start()
+        threading.Thread(target=self.control_publisher.run, args=()).start()
         self.start()
 
 
     def final_stop(self):
         self.handle_control_consumer.stop()
-        self.configuration_publisher.stop()
+        self.control_publisher.stop()
         self.stop()
 
 
@@ -76,7 +76,7 @@ class Configuration():
         self.raw = pickle.loads(body)
         print(' [x] Configuration - Config Modify {}'.format(msg))
         self.parse()
-        self.configuration_publisher.publish_message(self.data)
+        self.control_publisher.publish_message('restart')
 
 
     @decorators.consumer_callback('control', 'direct', 'configuration')

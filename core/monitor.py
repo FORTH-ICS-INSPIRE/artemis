@@ -114,7 +114,7 @@ class Monitor(object):
 
     @exception_handler
     def init_ris_instances(self):
-        log.debug('Starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
+        log.info('Starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
         for ris_monitor in self.monitors.get('riperis', []):
             for prefix in self.prefixes:
                     p = Popen(['nodejs', 'taps/ripe_ris.js',
@@ -124,7 +124,7 @@ class Monitor(object):
 
     @exception_handler
     def init_exabgp_instances(self):
-        log.debug('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
+        log.info('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
         for exabgp_monitor in self.monitors.get('exabgp', []):
             exabgp_monitor_str = '{}:{}'.format(exabgp_monitor['ip'] ,exabgp_monitor['port'])
             p = Popen(['python3', 'taps/exabgp_client.py',
@@ -135,7 +135,7 @@ class Monitor(object):
     @exception_handler
     def init_bgpstreamhist_instance(self):
         if 'bgpstreamhist' in self.monitors:
-            log.debug('Starting {} for {}'.format(self.monitors['bgpstreamhist'], self.prefixes))
+            log.info('Starting {} for {}'.format(self.monitors['bgpstreamhist'], self.prefixes))
             bgpstreamhist_dir = self.monitors['bgpstreamhist']
             p = Popen(['python3', 'taps/bgpstreamhist.py',
                     '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir])
@@ -145,7 +145,7 @@ class Monitor(object):
     @exception_handler
     def init_bgpstreamlive_instance(self):
         if 'bgpstreamlive' in self.monitors:
-            log.debug('Starting {} for {}'.format(self.monitors['bgpstreamlive'], self.prefixes))
+            log.info('Starting {} for {}'.format(self.monitors['bgpstreamlive'], self.prefixes))
             bgpstream_projects = ','.join(self.monitors['bgpstreamlive'])
             p = Popen(['python3', 'taps/bgpstreamlive.py',
                     '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects])

@@ -31,7 +31,11 @@ class GrpcServer():
 
         def queryMformat(self, request, context):
             monitor_event = protobuf_to_dict(request)
-            self.publisher.publish_message(monitor_event)
+            print(' [o] publishing {}'.format(monitor_event))
+            try:
+                self.publisher.publish_message(monitor_event)
+            except Exception as e:
+                print(' [!] exception {}'.format(e))
             return mservice_pb2.Empty()
 
 

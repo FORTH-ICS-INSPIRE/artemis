@@ -256,6 +256,7 @@ class Detection(object):
         else:
             self.future_memcache[hijack_key] = hijack_value
 
+        print(' [+] publishing hijack')
         self.hijack_publisher.publish_message(self.future_memcache[hijack_key])
 
 

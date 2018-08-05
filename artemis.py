@@ -4,8 +4,8 @@ import time
 from core.configuration import Configuration
 from core.monitor import Monitor
 from core.detection import Detection
-from protogrpc.grpc_server import GrpcServer
 from utils import log
+from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 
 
 class GracefulKiller:
@@ -20,38 +20,55 @@ class GracefulKiller:
 
 def main():
     # Instatiate Modules
-    configuration_ = Configuration()
-    configuration_.start()
+    modules = {}
 
-    monitor_ = Monitor()
-    monitor_.start()
+    modules['configuration'] = Configuration()
+    modules['monitor'] = Monitor()
+    modules['detection'] = Detection()
 
-    detection_ = Detection()
-    detection_.start()
 
-    #
-    # # GRPC Server
-    # grpc_ = GrpcServer()
-    # grpc_.start()
-    #
+    for name, module in modules.items():
+        module.start()
+
     killer = GracefulKiller()
     log.info('Send SIGTERM signal to end..\n')
-    while True:
-        time.sleep(1)
-        if killer.kill_now:
-            break
+
+
+    with Connection('amqp://guest:guest@localhost:5672//') as conn:
+        with conn.SimpleQueue('modules_control') as queue:
+            while True:
+                try:
+                    message = queue.get(block=False)
+                    message.ack()
+
+                    if message.payload['module'] in modules:
+                        module = modules[message.payload['module']]
+                        if message.payload['action'] == 'stop':
+                            if not module.is_alive():
+                                log.warning('Module already stopped..')
+                            else:
+                                module.terminate()
+                                while module.is_alive():
+                                    time.sleep(1)
+                        elif message.payload['action'] == 'start':
+                            if module.is_alive():
+                                log.warning('Module already running..')
+                            else:
+                                modules[message.payload['module']] = module.__class__()
+                                modules[message.payload['module']].start()
+                    else:
+                        log.warning('Unrecognized module name {}'.format(message.payload['module']))
+                except queue.Empty:
+                    if killer.kill_now:
+                        break
     #input("\n[!] Press ENTER to exit [!]\n\n")
 
     # Stop all modules and web application
-    configuration_.terminate()
-    monitor_.terminate()
-    detection_.terminate()
+    for name, module in modules.items():
+        module.terminate()
 
-
-    configuration_.join()
-    monitor_.join()
-    detection_.join()
-    # grpc_.stop()
+    for name, module in modules.items():
+        module.join()
     log.info('Bye..!')
 
 

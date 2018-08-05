@@ -2,8 +2,9 @@ from socketIO_client_nexus import SocketIO
 from kombu import Connection, Producer, Exchange, Queue, uuid
 import argparse
 import traceback
+import signal
+import sys
 
-msg_num = 1
 
 def parse_ripe_ris(connection, prefix, host):
     exchange = Exchange('bgp_update', type='direct', durable=False)
@@ -17,13 +18,11 @@ def parse_ripe_ris(connection, prefix, host):
                 exchange=exchange,
                 routing_key='update',
                 serializer='json')
-            print('Published #{}'.format(msg_num))
-            msg_num += 1
         except Exception:
-            traceback.print_exc()
+            pass
+            # traceback.print_exc()
 
-    try:
-        socket_io = SocketIO('http://stream-dev.ris.ripe.net/stream', wait_for_connection=False)
+    with SocketIO('http://stream-dev.ris.ripe.net/stream', wait_for_connection=False) as socket_io:
         socket_io.on('ris_message', on_ris_msg)
         socket_io.emit('ris_subscribe',
                 {
@@ -35,12 +34,6 @@ def parse_ripe_ris(connection, prefix, host):
                 }
         )
         socket_io.wait()
-    except Exception as e:
-        import sys
-        sys.stdout.flush()
-        log.warning('RIPE RIS server is down. Try again later..')
-        socket_io.disconnect()
-        raise e
 
 
 if __name__ == '__main__':
@@ -57,5 +50,5 @@ if __name__ == '__main__':
     try:
         with Connection('amqp://guest:guest@localhost:5672//') as connection:
             parse_ripe_ris(connection, prefix, host)
-    except Exception:
+    except KeyboardInterrupt:
         pass

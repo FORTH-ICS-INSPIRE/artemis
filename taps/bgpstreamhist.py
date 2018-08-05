@@ -67,5 +67,9 @@ if __name__ == '__main__':
     dir = args.dir.rstrip('/')
 
     prefixes = args.prefix.split(',')
-    parse_bgpstreamhist_csvs(prefixes, dir)
+
+    try:
+        parse_bgpstreamhist_csvs(prefixes, dir)
+    except KeyboardInterrupt:
+        pass
 

@@ -2,7 +2,7 @@ import sys
 import os
 import radix
 from subprocess import Popen
-from utils import exception_handler, log, decorators
+from utils import exception_handler, log
 from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
@@ -31,8 +31,9 @@ class Monitor(Process):
                 self.worker.run()
         except Exception:
             traceback.print_exc()
+        self.worker.stop()
+        log.info('Monitors Stopped..')
         self.stopping = True
-        log.info('Monitor Stopped..')
 
 
     def exit(self, signum, frame):
@@ -110,7 +111,6 @@ class Monitor(Process):
                 self.flag = False
                 self.rules = None
                 self.monitors = None
-                log.info('Monitors Stopped..')
 
 
         def config_request_rpc(self):

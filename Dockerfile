@@ -11,16 +11,6 @@ COPY . ./
 
 RUN pip3 --no-cache-dir install -r requirements.txt
 
-RUN curl -sL https://deb.nodesource.com/setup_9.x | bash - && \
-    apt-get install -y nodejs build-essential
-
-WORKDIR taps
-RUN npm i npm@latest -g && \
-    npm install && \
-    npm audit fix && \
-    npm install
-
-WORKDIR ..
 RUN mkdir src
 WORKDIR src
 
@@ -38,7 +28,5 @@ RUN ./configure && make && make install && ldconfig
 RUN pip3 install pybgpstream
 
 WORKDIR ../..
-
-RUN rabbitmq-server -detached
 
 ENTRYPOINT ["bash"]

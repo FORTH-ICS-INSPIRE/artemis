@@ -1,7 +1,7 @@
 import radix
 import ipaddress
 from profilehooks import profile
-from utils import log, exception_handler, decorators
+from utils import log, exception_handler
 import hashlib
 from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
@@ -31,8 +31,8 @@ class Detection(Process):
                 self.worker.run()
         except Exception:
             traceback.print_exc()
-        self.stopping = True
         log.info('Detection Stopped..')
+        self.stopping = True
 
 
     def exit(self, signum, frame):

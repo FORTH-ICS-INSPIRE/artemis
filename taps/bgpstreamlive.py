@@ -122,5 +122,9 @@ if __name__ == '__main__':
 
     prefixes = args.prefix.split(',')
     projects = args.mon_projects.split(',')
-    run_bgpstream(prefixes, projects, start=int(time.time()) - START_TIME_OFFSET, end=0)
+
+    try:
+        run_bgpstream(prefixes, projects, start=int(time.time()) - START_TIME_OFFSET, end=0)
+    except KeyboardInterrupt:
+        pass
 

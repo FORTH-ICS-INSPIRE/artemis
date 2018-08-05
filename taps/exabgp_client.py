@@ -90,4 +90,8 @@ if __name__ == '__main__':
     prefixes = args.prefix.split(',')
     (address, port) = args.host.split(':')
     exa = ExaBGP(prefixes, address, port)
-    exa.start()
+    try:
+        exa.start()
+    except KeyboardInterrupt:
+        pass
+

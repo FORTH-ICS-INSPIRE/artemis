@@ -31,8 +31,8 @@ class Configuration(Process):
                 self.worker.run()
         except Exception:
             traceback.print_exc()
-        self.stopping = True
         log.info('Configuration Stopped..')
+        self.stopping = True
 
 
     def exit(self, signum, frame):

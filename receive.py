@@ -1,17 +1,11 @@
-"""
-Example of simple consumer that waits for a single message, acknowledges it
-and exits.
-"""
 from __future__ import absolute_import, unicode_literals, print_function
-
 from pprint import pformat
-
-from kombu import Connection, Exchange, Queue, Consumer, eventloop
+from kombu import Connection, Exchange, Queue, Consumer, eventloop, uuid
 
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
-exchange = Exchange('bgp_update', type='fanout', durable=False)
-queue = Queue('bgp_queue', exchange, durable=False)
+exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
+queue = Queue(uuid(), exchange, routing_key='update', durable=False)
 
 
 def pretty(obj):

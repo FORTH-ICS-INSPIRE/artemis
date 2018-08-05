@@ -48,24 +48,29 @@ class Detection(Process):
         def __init__(self, connection):
             self.connection = connection
 
+
+            self.h_num = 0
+            self.j_num = 0
+
             self.flag = False
             self.rules = None
             self.prefix_tree = radix.Radix()
 
             self.future_memcache = {}
 
+
+            # EXCHANGES
+            self.control_exchange = Exchange('control', type='direct', durable=False, delivery_mode=1)
+            self.update_exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
+            self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
+            self.handled_exchange = Exchange('handled_update', type='direct', durable=False, delivery_mode=1)
+
+
+            # QUEUES
             self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
-
-            self.control_exchange = Exchange('control', 'direct', durable=False)
             self.control_queue = Queue('control_queue', exchange=self.control_exchange, routing_key='monitor', durable=False)
-
-            self.update_exchange = Exchange('bgp_update', 'direct', durable=False)
-            self.update_queue = Queue('bgp_queue', exchange=self.control_exchange, routing_key='update', durable=False)
-
-            self.hijack_exchange = Exchange('hijack_update', 'direct', durable=False)
+            self.update_queue = Queue('bgp_queue', exchange=self.update_exchange, routing_key='update', durable=False)
             self.hijack_queue = Queue('hijack_queue', exchange=self.hijack_exchange, routing_key='update', durable=False)
-
-            self.handled_exchange = Exchange('handled_update', 'direct', durable=False)
             self.handled_queue = Queue('handled_queue', exchange=self.hijack_exchange, routing_key='update', durable=False)
 
             self.config_request_rpc()
@@ -137,8 +142,7 @@ class Detection(Process):
 
 
         def handle_bgp_update(self, message):
-            log.info(' [x] Detection - Received BGP update: {}'.format(message))
-
+            # log.info(' [x] Detection - Received BGP update: {}'.format(message))
             monitor_event = message.payload
             # ignore withdrawals for now
             if monitor_event['type'] == 'A':
@@ -266,14 +270,16 @@ class Detection(Process):
             else:
                 self.future_memcache[hijack_key] = hijack_value
 
-            print(' [+] publishing hijack')
             with Producer(self.connection) as producer:
                 producer.publish(
                         self.future_memcache[hijack_key],
                         exchange=self.hijack_queue.exchange,
                         routing_key=self.hijack_queue.routing_key,
+                        declare=[self.hijack_queue],
                         serializer='pickle'
                 )
+                print('Published Hijack #{}'.format(self.j_num))
+                self.j_num += 1
 
 
         def mark_handled(self, monitor_event):
@@ -281,7 +287,10 @@ class Detection(Process):
                 producer.publish(
                         monitor_event,
                         exchange=self.handled_queue.exchange,
-                        routing_key=self.handled_queue.routing_key
+                        routing_key=self.handled_queue.routing_key,
+                        declare=[self.handled_queue]
                 )
+                print('Published Handled #{}'.format(self.h_num))
+                self.h_num += 1
 
 

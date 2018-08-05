@@ -1,10 +1,9 @@
 from socketIO_client_nexus import SocketIO
-from kombu import Connection, Producer, Exchange, Queue
+from kombu import Connection, Producer, Exchange, Queue, uuid
 import traceback
 
 connection = Connection('amqp://guest:guest@localhost:5672//')
 exchange = Exchange('bgp_update', type='direct', durable=False)
-queue = Queue('bgp_queue', exchange, routing_key='updates')
 
 msg_num = 1
 
@@ -17,8 +16,8 @@ def on_ris_msg(msg):
         producer = Producer(connection)
         producer.publish(
             msg,
-            exchange=queue.exchange,
-            routing_key=queue.routing_key,
+            exchange=exchange,
+            routing_key='update',
             serializer='json')
         print('Published #{}'.format(msg_num))
         msg_num += 1

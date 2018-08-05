@@ -61,9 +61,13 @@ class Configuration(Process):
             with open(self.file, 'r') as f:
                 self.raw = f.read()
 
-            self.control_exchange = Exchange('control', 'direct', durable=False)
-            self.config_modify_exchange = Exchange('configuration', 'direct', durable=False)
 
+            # EXCHANGES
+            self.control_exchange = Exchange('control', 'direct', durable=False, delivery_mode=1)
+            self.config_modify_exchange = Exchange('configuration', 'direct', durable=False, delivery_mode=1)
+
+
+            # QUEUES
             self.control_queue = Queue('control_queue', exchange=self.control_exchange, routing_key='configuration', durable=False)
             self.config_modify_queue = Queue('config_modify_queue', exchange=self.config_modify_exchange, routing_key='modification', durable=False)
             self.config_request_queue = Queue('config_request_queue', durable=False)

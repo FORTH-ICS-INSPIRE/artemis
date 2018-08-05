@@ -54,9 +54,12 @@ class Monitor(Process):
             self.prefixes = set()
             self.monitors = None
 
-            self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
 
-            self.control_exchange = Exchange('control', 'direct', durable=False)
+            # EXCHANGES
+            self.control_exchange = Exchange('control', 'direct', durable=False, delivery_mode=1)
+
+            # QUEUES
+            self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
             self.control_queue = Queue('control_queue', exchange=self.control_exchange, routing_key='monitor', durable=False)
 
             self.config_request_rpc()

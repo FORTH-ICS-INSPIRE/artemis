@@ -48,7 +48,6 @@ class Detection(Process):
         def __init__(self, connection):
             self.connection = connection
 
-
             self.h_num = 0
             self.j_num = 0
 
@@ -146,15 +145,15 @@ class Detection(Process):
             monitor_event = message.payload
             # ignore withdrawals for now
             if monitor_event['type'] == 'A':
-                path = Detection.Worker.__clean_as_path(monitor_event['path'])
+                monitor_event['path'] = Detection.Worker.__clean_as_path(monitor_event['path'])
                 prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
 
                 if prefix_node is not None:
                     monitor_event['matched_prefix'] = prefix_node.prefix
 
                 try:
-                    for func in self.__detection_generator(len(path), prefix_node):
-                        if func(monitor_event, prefix_node, path[-2]):
+                    for func in self.__detection_generator(len(monitor_event['path']), prefix_node):
+                        if func(monitor_event, prefix_node):
                             break
                 except:
                     traceback.print_exc()
@@ -213,7 +212,7 @@ class Detection(Process):
 
         @exception_handler
         def detect_squatting(self, monitor_event, prefix_node, *args, **kwargs):
-            origin_asn = int(monitor_event['path'][-1])
+            origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
                 if len(item['origin_asns']) > 0 or len(item['neighbors']) > 0:
                     return False
@@ -223,7 +222,7 @@ class Detection(Process):
 
         @exception_handler
         def detect_origin_hijack(self, monitor_event, prefix_node, *args, **kwargs):
-            origin_asn = int(monitor_event['path'][-1])
+            origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
                 if origin_asn in item['origin_asns']:
                     return False
@@ -232,8 +231,9 @@ class Detection(Process):
 
 
         @exception_handler
-        def detect_type_1_hijack(self, monitor_event, prefix_node, first_neighbor_asn, *args, **kwargs):
-            origin_asn = int(monitor_event['path'][-1])
+        def detect_type_1_hijack(self, monitor_event, prefix_node, *args, **kwargs):
+            origin_asn = monitor_event['path'][-1]
+            first_neighbor_asn = monitor_event['path'][-2]
             for item in prefix_node.data['confs']:
                 if origin_asn in item['origin_asns'] and first_neighbor_asn in item['neighbors']:
                     return False
@@ -278,7 +278,7 @@ class Detection(Process):
                         declare=[self.hijack_queue],
                         serializer='pickle'
                 )
-                print('Published Hijack #{}'.format(self.j_num))
+                log.info('Published Hijack #{}'.format(self.j_num))
                 self.j_num += 1
 
 
@@ -290,7 +290,7 @@ class Detection(Process):
                         routing_key=self.handled_queue.routing_key,
                         declare=[self.handled_queue]
                 )
-                print('Published Handled #{}'.format(self.h_num))
+                log.info('Published Handled #{}'.format(self.h_num))
                 self.h_num += 1
 
 

@@ -151,7 +151,7 @@ class Monitor(Process):
             log.info('Starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
             for ris_monitor in self.monitors.get('riperis', []):
                 for prefix in self.prefixes:
-                        p = Popen(['nodejs', 'taps/ripe_ris.js',
+                        p = Popen(['python3', 'taps/ripe_ris.py',
                                     '--prefix', prefix, '--host', ris_monitor])
                         self.process_ids.append(('RIPEris {} {}'.format(ris_monitor, prefix), p))
 

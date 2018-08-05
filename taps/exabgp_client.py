@@ -1,32 +1,30 @@
 import sys
 import os
 from socketIO_client import SocketIO
-import grpc
 import argparse
-
-# to import protogrpc, since the root package has '-'
-# in the name ("artemis-tool")
-this_script_path = os.path.realpath(__file__)
-upper_dir = '/'.join(this_script_path.split('/')[:-2])
-sys.path.insert(0, upper_dir)
-from protogrpc import mservice_pb2, mservice_pb2_grpc
+from kombu import Connection, Producer, Exchange, Queue, uuid
 
 
 class ExaBGP():
+
 
     def __init__(self, prefixes, address, port):
         self.config = {}
         self.config['host'] = str(address) + ":" + str(port)
         self.config['prefixes'] = prefixes
         self.flag = True
-        self.channel = grpc.insecure_channel('localhost:50051')
-        self.stub = mservice_pb2_grpc.MessageListenerStub(self.channel)
+
 
     def start_loop(self):
-        while(self.flag):
-            self.start()
+        with Connection('amqp://guest:guest@localhost:5672//') as connection:
+            while(self.flag):
+                self.start(connection)
 
-    def start(self):
+
+    def start(self, connection):
+        self.connection = connection
+        self.exchange = Exchange('bgp_update', type='direct', durable=False)
+
         socketIO = SocketIO("http://" + str(self.config['host']))
         #print("[ExaBGP] %s monitor service is up for prefixes %s" %
         #      (self.config['host'],  self.config['prefixes']))
@@ -39,13 +37,19 @@ class ExaBGP():
             socketIO.emit("ping")
 
         def exabgp_msg(bgp_message):
-            self.stub.queryMformat(mservice_pb2.MformatMessage(
-                type=bgp_message['type'],
-                timestamp=bgp_message['timestamp'],
-                as_path=bgp_message['path'],
-                service='ExaBGP {}'.format(self.config['host']),
-                prefix=bgp_message['prefix']
-            ))
+            producer = Producer(connection)
+            producer.publish(
+                    {
+                        'type': bgp_message['type'],
+                        'timestamp': bgp_message['timestamp'],
+                        'path': bgp_message['path'],
+                        'service': 'ExaBGP {}'.format(self.config['host']),
+                        'prefix': bgp_message['prefix']
+                    },
+                    exchange=exchange,
+                    routing_key='update',
+                    serializer='json'
+            )
 
         # not used yet (TODO)
         def on_reconnecting():

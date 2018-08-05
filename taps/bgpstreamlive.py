@@ -1,18 +1,12 @@
 import sys
 import os
 import argparse
-import grpc
 import time
 from netaddr import IPNetwork, IPAddress
+from kombu import Connection, Producer, Exchange, Queue, uuid
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 
-# to import protogrpc, since the root package has '-'
-# in the name ("artemis-tool")
-this_script_path = os.path.realpath(__file__)
-upper_dir = '/'.join(this_script_path.split('/')[:-2])
-sys.path.insert(0, upper_dir)
-from protogrpc import mservice_pb2, mservice_pb2_grpc
 
 START_TIME_OFFSET = 3600 # seconds
 
@@ -33,8 +27,6 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
 
     :return: -
     """
-    channel = grpc.insecure_channel('localhost:50051')
-    stub = mservice_pb2_grpc.MessageListenerStub(channel)
 
     # create a new bgpstream instance and a reusable bgprecord instance
     stream = BGPStream()
@@ -66,49 +58,57 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     # print('Start ' + str(start))
     # print('End ' + str(end))
 
-    while True:
-        # get next record
-        try:
-            stream.get_next_record(rec)
-        except:
-            continue
-        if (rec.status != "valid") or (rec.type != "update"):
-            continue
+    with Connection('amqp://guest:guest@localhost:5672//') as connection:
+        exchange = Exchange('bgp_update', type='direct', durable=False)
+        producer = Producer(connection)
+        while True:
+            # get next record
+            try:
+                stream.get_next_record(rec)
+            except:
+                continue
+            if (rec.status != "valid") or (rec.type != "update"):
+                continue
 
-        # get next element
-        try:
-            elem = rec.get_next_elem()
-        except:
-            continue
-
-        while elem:
-            if elem.type in ["A", "W"]:
-                this_prefix = str(elem.fields['prefix'])
-                service = "bgpstream|{}|{}".format(str(rec.project), str(rec.collector))
-                if elem.type == "A":
-                    as_path = list(map(as_mapper, elem.fields['as-path'].split(" ")))
-                    communities = [mservice_pb2.Community(asn=c['asn'], value=c['value']) for c in elem.fields['communities']]
-                else:
-                    as_path = ''
-                    communities = []
-
-                for prefix in prefixes:
-                    base_ip, mask_length = this_prefix.split('/')
-                    our_prefix = IPNetwork(prefix)
-                    if IPAddress(base_ip) in our_prefix and int(mask_length) >= our_prefix.prefixlen:
-                        stub.queryMformat(mservice_pb2.MformatMessage(
-                            type=str(elem.type),
-                            timestamp=float(elem.time),
-                            as_path=as_path,
-                            service=service,
-                            communities=communities,
-                            prefix=this_prefix
-                        ))
-
+            # get next element
             try:
                 elem = rec.get_next_elem()
             except:
                 continue
+
+            while elem:
+                if elem.type in ["A", "W"]:
+                    this_prefix = str(elem.fields['prefix'])
+                    service = "bgpstream|{}|{}".format(str(rec.project), str(rec.collector))
+                    if elem.type == "A":
+                        as_path = list(map(as_mapper, elem.fields['as-path'].split(" ")))
+                        communities = elem.fields['communities']
+                    else:
+                        as_path = ''
+                        communities = []
+
+                    for prefix in prefixes:
+                        base_ip, mask_length = this_prefix.split('/')
+                        our_prefix = IPNetwork(prefix)
+                        if IPAddress(base_ip) in our_prefix and int(mask_length) >= our_prefix.prefixlen:
+                            producer.publish(
+                                    {
+                                        'type': type_,
+                                        'timestamp': timestamp,
+                                        'path': as_path,
+                                        'service': service,
+                                        'communities': communities,
+                                        'prefix': this_prefix
+                                    },
+                                    exchange=exchange,
+                                    routing_key='update',
+                                    serializer='json'
+                            )
+
+                try:
+                    elem = rec.get_next_elem()
+                except:
+                    continue
 
 
 if __name__ == '__main__':

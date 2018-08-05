@@ -1,20 +1,27 @@
 from socketIO_client_nexus import SocketIO
-import pickle
-from utils.mq import AsyncConnection
+from kombu import Connection, Producer, Exchange, Queue
+import traceback
 
-publisher = AsyncConnection(exchange='bgp_update',
-        objtype='publisher',
-        routing_key='update',
-        exchange_type='direct')
+connection = Connection('amqp://guest:guest@localhost:5672//')
+exchange = Exchange('bgp_update', type='direct', durable=False)
+queue = Queue('bgp_queue', exchange, routing_key='updates')
 
-publisher.start()
+msg_num = 1
 
 def on_rrc_msg(msg):
     print(msg)
 
 def on_ris_msg(msg):
+    global msg_num
     try:
-        publisher.publish_message(msg)
+        producer = Producer(connection)
+        producer.publish(
+            msg,
+            exchange=queue.exchange,
+            routing_key=queue.routing_key,
+            serializer='json')
+        print('Published #{}'.format(msg_num))
+        msg_num += 1
     except Exception:
         traceback.print_exc()
 
@@ -30,5 +37,4 @@ except Exception:
     sys.stdout.flush()
     traceback.print_exc()
     log.warning('RIPE RIS server is down. Try again later..')
-    publisher.stop()
     socket_io.disconnect()

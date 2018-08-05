@@ -148,9 +148,13 @@ class Detection(Process):
                 if prefix_node is not None:
                     monitor_event['matched_prefix'] = prefix_node.prefix
 
-                for func in self.__detection_generator(len(path), prefix_node):
-                    if func(monitor_event, prefix_node, path[-2]):
-                        break
+                try:
+                    for func in self.__detection_generator(len(path), prefix_node):
+                        if func(monitor_event, prefix_node, path[-2]):
+                            break
+                except:
+                    traceback.print_exc()
+                    print(monitor_event)
             self.mark_handled(monitor_event)
 
 

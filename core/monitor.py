@@ -23,7 +23,7 @@ class Monitor(object):
 
 
     def init_start(self):
-        threading.Thread(target=self.handle_control_consumer.run, args=()).start()
+        self.handle_control_consumer.start()
         self.start()
 
 

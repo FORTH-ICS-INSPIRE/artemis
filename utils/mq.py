@@ -2,6 +2,7 @@ import logging
 import pika
 import pickle
 from time import sleep
+from threading import Thread
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
@@ -9,10 +10,11 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 LOGGER = logging.getLogger(__name__)
 
 
-class AsyncConnection(object):
+class AsyncConnection(Thread):
 
 
     def __init__(self, url='amqp://localhost:5672/', exchange='default', exchange_type='direct', routing_key='default', cb=None, objtype='consumer'):
+        Thread.__init__(self)
         self._connection = None
         self._channel = None
         self._closing = False
@@ -123,7 +125,7 @@ class AsyncConnection(object):
                 self._routing_key,
                 pickle.dumps(message))
         self._message_number += 1
-        LOGGER.debug('Published message # %i', self._message_number)
+        LOGGER.info('Published message # {} at {}'.format(self._message_number, self._exchange))
 
     def close_channel(self):
         LOGGER.debug('Closing the channel')

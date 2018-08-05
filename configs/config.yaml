@@ -5,15 +5,15 @@
 # Start of Prefix Definitions
 prefixes:
     forth_prefix_main: &forth_prefix_main
-        [0.0.0.0/0]
+        [0.0.0.0/0, '::/0']
 # End of Prefix Definitions
 
 # Start of Monitor Definitions
 monitors:
-    riperis: [rrc01, rrc02, rrc03, rrc04]
-    bgpstreamlive:
-    - routeviews
-    - ris
+    riperis: []
+    # bgpstreamlive:
+    # - routeviews
+    # - ris
     # exabgp:
     # - ip: 192.168.1.1
     #   port: 5000

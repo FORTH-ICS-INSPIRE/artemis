@@ -37,9 +37,9 @@ class Detection(object):
 
 
     def init_start(self):
-        threading.Thread(target=self.hijack_publisher.run, args=()).start()
-        threading.Thread(target=self.handled_publisher.run, args=()).start()
-        threading.Thread(target=self.handle_control_consumer.run, args=()).start()
+        self.hijack_publisher.start()
+        self.handled_publisher.start()
+        self.handle_control_consumer.start()
         self.start()
 
 
@@ -58,7 +58,7 @@ class Detection(object):
     def start(self):
         if not self.flag:
             self.rpc_request_config()
-            threading.Thread(target=self.bgp_handler_consumer.run, args=()).start()
+            self.bgp_handler_consumer.start()
             self.flag = True
             log.info('Detection Started..')
 
@@ -142,19 +142,16 @@ class Detection(object):
         log.info(' [x] Detection - Received BGP update: {}'.format(monitor_event))
 
         # ignore withdrawals for now
-        if monitor_event['type'] == 'W':
-            self.mark_handled(monitor_event)
-            return
+        if monitor_event['type'] == 'A':
+            path = Detection.__clean_as_path(monitor_event['path'])
+            prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
 
-        as_path = Detection.__clean_as_path(monitor_event['as_path'])
-        prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
+            if prefix_node is not None:
+                monitor_event['matched_prefix'] = prefix_node.prefix
 
-        if prefix_node is not None:
-            monitor_event['matched_prefix'] = prefix_node.prefix
-
-        for func in self.__detection_generator(len(as_path), prefix_node):
-            if func(monitor_event, prefix_node, as_path[-2]):
-                break
+            for func in self.__detection_generator(len(path), prefix_node):
+                if func(monitor_event, prefix_node, path[-2]):
+                    break
         self.mark_handled(monitor_event)
 
 
@@ -189,17 +186,17 @@ class Detection(object):
 
 
     @staticmethod
-    def __clean_as_path(as_path):
-        (clean_as_path, is_loopy) = Detection.__remove_prepending(as_path)
+    def __clean_as_path(path):
+        (clean_as_path, is_loopy) = Detection.__remove_prepending(path)
         if is_loopy:
             clean_as_path = Detection.__clean_loops(clean_as_path)
-        log.debug('__clean_as_path - before: {} / after: {}'.format(as_path, clean_as_path))
+        log.debug('__clean_as_path - before: {} / after: {}'.format(path, clean_as_path))
         return clean_as_path
 
 
     @exception_handler
     def detect_squatting(self, monitor_event, prefix_node, *args, **kwargs):
-        origin_asn = int(monitor_event['as_path'][-1])
+        origin_asn = int(monitor_event['path'][-1])
         for item in prefix_node.data['confs']:
             if len(item['origin_asns']) > 0 or len(item['neighbors']) > 0:
                 return False
@@ -209,7 +206,7 @@ class Detection(object):
 
     @exception_handler
     def detect_origin_hijack(self, monitor_event, prefix_node, *args, **kwargs):
-        origin_asn = int(monitor_event['as_path'][-1])
+        origin_asn = int(monitor_event['path'][-1])
         for item in prefix_node.data['confs']:
             if origin_asn in item['origin_asns']:
                 return False
@@ -219,7 +216,7 @@ class Detection(object):
 
     @exception_handler
     def detect_type_1_hijack(self, monitor_event, prefix_node, first_neighbor_asn, *args, **kwargs):
-        origin_asn = int(monitor_event['as_path'][-1])
+        origin_asn = int(monitor_event['path'][-1])
         for item in prefix_node.data['confs']:
             if origin_asn in item['origin_asns'] and first_neighbor_asn in item['neighbors']:
                 return False
@@ -240,13 +237,13 @@ class Detection(object):
         hijack_value = {
             'time_started': monitor_event['timestamp'],
             'time_last': monitor_event['timestamp'],
-            'peers_seen': {monitor_event['as_path'][0]},
+            'peers_seen': {monitor_event['peer_asn']},
         }
 
         if hij_type in {'S','Q'}:
-            hijack_value['inf_asns'] = set(monitor_event['as_path'])
+            hijack_value['inf_asns'] = set(monitor_event['path'])
         else:
-            hijack_value['inf_asns'] = set(monitor_event['as_path'][:-(hij_type+1)])
+            hijack_value['inf_asns'] = set(monitor_event['path'][:-(hij_type+1)])
 
         if hijack_key in self.future_memcache:
             self.future_memcache[hijack_key]['time_started'] = min(self.future_memcache[hijack_key]['time_started'], hijack_value['time_started'])

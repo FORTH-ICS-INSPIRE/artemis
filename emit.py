@@ -6,14 +6,28 @@ from utils.mq import AsyncConnection
 import threading
 import time
 
-publisher = AsyncConnection(exchange=sys.argv[1],
-        objtype='publisher',
-        routing_key=sys.argv[2],
-        exchange_type='direct')
+def start():
+    publisher = AsyncConnection(exchange='bgp_update',
+            objtype='publisher',
+            routing_key='update',
+            exchange_type='direct')
 
-threading.Thread(target=publisher.run, args=()).start()
+    publisher.start()
 
-# obj = {"type":"A", "as_path": [0,1,2,3], "prefix": "139.91.0.0/24", "timestamp": int(sys.argv[1])}
+    obj = {"type":"A", "as_path": [0,1,2,3], "prefix": "139.91.0.0/24", "timestamp": 0}
 
-publisher.publish_message(eval(sys.argv[3]))
-publisher.stop()
+    for _ in range(10000):
+        publisher.publish_message(pickle.dumps(obj))
+
+    publisher.stop()
+
+threads = []
+
+for _ in range(10):
+    threads.append(threading.Thread(target=start, args=()))
+
+for i in range(10):
+    threads[i].start()
+
+for i in range(10):
+    threads[i].join()

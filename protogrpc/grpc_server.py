@@ -7,8 +7,9 @@ from protobuf_to_dict import protobuf_to_dict
 from utils import log
 from utils.mq import AsyncConnection
 import pika
-import json
+import pickle
 import threading
+import traceback
 
 
 class GrpcServer():
@@ -16,26 +17,26 @@ class GrpcServer():
 
     def __init__(self):
         self.server_process = None
-        self.bgp_update_publisher = AsyncConnection(exchange='bgp_update',
-                exchange_type='direct',
-                routing_key='update',
-                objtype='publisher')
 
 
     class MonitorGrpc(mservice_pb2_grpc.MessageListenerServicer):
 
 
-        def __init__(self, publisher):
-            self.publisher = publisher
+        def __init__(self):
+            self.publisher = AsyncConnection(exchange='bgp_update',
+                    exchange_type='direct',
+                    routing_key='update',
+                    objtype='publisher')
+            self.publisher.start()
 
 
         def queryMformat(self, request, context):
             monitor_event = protobuf_to_dict(request)
-            print(' [o] publishing {}'.format(monitor_event))
             try:
                 self.publisher.publish_message(monitor_event)
             except Exception as e:
-                print(' [!] exception {}'.format(e))
+                print(' [!] exception')
+                traceback.print_exc()
             return mservice_pb2.Empty()
 
 
@@ -43,9 +44,8 @@ class GrpcServer():
         self.grpc_server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=10))
 
-        threading.Thread(target=self.bgp_update_publisher.run, args=()).start()
         mservice_pb2_grpc.add_MessageListenerServicer_to_server(
-            GrpcServer.MonitorGrpc(self.bgp_update_publisher),
+            GrpcServer.MonitorGrpc(),
             self.grpc_server
         )
 
@@ -56,7 +56,6 @@ class GrpcServer():
 
 
     def stop(self):
-        self.bgp_update_publisher.stop()
         self.grpc_server.stop(0)
         log.info('GRPC Server Stopped..')
 

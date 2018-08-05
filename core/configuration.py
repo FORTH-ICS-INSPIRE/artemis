@@ -42,8 +42,8 @@ class Configuration():
 
 
     def init_start(self):
-        threading.Thread(target=self.handle_control_consumer.run, args=()).start()
-        threading.Thread(target=self.control_publisher.run, args=()).start()
+        self.handle_control_consumer.start()
+        self.control_publisher.start()
         self.start()
 
 
@@ -57,7 +57,7 @@ class Configuration():
         if not self.flag:
             self.flag = True
             threading.Thread(target=self.channel.start_consuming, args=()).start()
-            threading.Thread(target=self.handle_config_modify_consumer.run, args=()).start()
+            self.handle_config_modify_consumer.start()
             self.parse_rrcs()
             self.parse()
             log.info('Configuration Started..')

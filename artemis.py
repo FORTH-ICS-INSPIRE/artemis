@@ -21,18 +21,19 @@ class GracefulKiller:
 def main():
     # Instatiate Modules
     configuration_ = Configuration()
-    configuration_.init_start()
+    configuration_.start()
 
     monitor_ = Monitor()
-    monitor_.init_start()
+    monitor_.start()
 
     detection_ = Detection()
-    detection_.init_start()
+    detection_.start()
 
-    # GRPC Server
-    grpc_ = GrpcServer()
-    grpc_.start()
-
+    #
+    # # GRPC Server
+    # grpc_ = GrpcServer()
+    # grpc_.start()
+    #
     killer = GracefulKiller()
     log.info('Send SIGTERM signal to end..\n')
     while True:
@@ -42,10 +43,15 @@ def main():
     #input("\n[!] Press ENTER to exit [!]\n\n")
 
     # Stop all modules and web application
-    configuration_.final_stop()
-    monitor_.final_stop()
-    detection_.final_stop()
-    grpc_.stop()
+    configuration_.terminate()
+    monitor_.terminate()
+    detection_.terminate()
+
+
+    configuration_.join()
+    monitor_.join()
+    detection_.join()
+    # grpc_.stop()
     log.info('Bye..!')
 
 

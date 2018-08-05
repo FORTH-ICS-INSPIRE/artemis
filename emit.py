@@ -1,33 +1,27 @@
 #!/usr/bin/env python
-import pika
 import sys
-import pickle
-from utils.mq import AsyncConnection
-import threading
 import time
+from kombu import Connection, Producer, Exchange, Queue
 
-def start():
-    publisher = AsyncConnection(exchange='bgp_update',
-            objtype='publisher',
-            routing_key='update',
-            exchange_type='direct')
+exchange = Exchange('bgp_update', type='fanout', durable=False)
+queue = Queue('bgp_queue', exchange)
+obj = {"type":"A", "path": [0,1,2,3], "prefix": "139.91.0.0/24", "peer_asn": 0, "timestamp": 0}
 
-    publisher.start()
+with Connection('amqp://guest:guest@localhost:5672//') as connection:
+    producer = Producer(connection)
 
-    obj = {"type":"A", "as_path": [0,1,2,3], "prefix": "139.91.0.0/24", "timestamp": 0}
-
-    for _ in range(10000):
-        publisher.publish_message(pickle.dumps(obj))
-
-    publisher.stop()
-
-threads = []
-
-for _ in range(10):
-    threads.append(threading.Thread(target=start, args=()))
-
-for i in range(10):
-    threads[i].start()
-
-for i in range(10):
-    threads[i].join()
+    producer.publish(
+            obj,
+            exchange=queue.exchange,
+            routing_key=queue.routing_key,
+            serializer='json')
+# threads = []
+#
+# for _ in range(10):
+#     threads.append(threading.Thread(target=start, args=()))
+#
+# for i in range(10):
+#     threads[i].start()
+#
+# for i in range(10):
+#     threads[i].join()

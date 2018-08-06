@@ -1,99 +1,150 @@
 import radix
-from webapp import app
-from webapp.data.models import Hijack, db
-import _thread
-from multiprocessing import Queue
 import subprocess
-from sqlalchemy import and_, exc
+from utils import log
+from multiprocessing import Process
+from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
+from kombu.mixins import ConsumerProducerMixin
+import signal
 import time
-import json
-from core import log
+from setproctitle import setproctitle
+import traceback
+
+class Mitigation(Process):
+
+    def __init__(self):
+        super().__init__()
+        self.worker = None
+        self.stopping = False
 
 
-class Mitigation():
+    def run(self):
+        setproctitle(self.name)
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        try:
+            with Connection('amqp://guest:guest@localhost:5672//') as connection:
+                self.worker = self.Worker(connection)
+                self.worker.run()
+        except Exception:
+            traceback.print_exc()
+        log.info('Mitigation Stopped..')
+        self.stopping = True
 
-    def __init__(self, confparser):
-        self.confparser = confparser
-        self.hijack_queue = Queue()
-        self.prefix_tree = radix.Radix()
-        self.flag = False
 
-    def init_mitigation(self):
-        rules = self.confparser.getRules()
-        for rule in rules:
-            for prefix in rule['prefixes']:
-                node = self.prefix_tree.add(prefix)
-                node.data['mitigation'] = rule['mitigation']
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
+            while(self.stopping):
+                time.sleep(1)
 
-    def start(self):
-        if not self.flag:
-            self.flag = True
-            _thread.start_new_thread(self.parse_queue, ())
 
-    def stop(self):
-        if self.flag:
+    class Worker(ConsumerProducerMixin):
+
+
+        def __init__(self, connection):
+            self.connection = connection
             self.flag = False
-            self.hijack_queue.put(None)
+            self.timestamp = -1
+            self.rules = None
+            self.prefix_tree = None
 
-    def parse_queue(self):
-        with app.app_context():
-            log.info('Mitigation Mechanism Started..')
-            self.init_mitigation()
+            # EXCHANGES
+            self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
+            self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
-            to_mitigate_events = Hijack.query.filter_by(to_mitigate=True).all()
+            # QUEUES
+            self.callback_queue = Queue(uuid(), durable=False, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
+            self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=0,
+                    consumer_arguments={'x-priority': 0})
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
 
-            for hijack_event in to_mitigate_events:
-                try:
-                    if hijack_event is None:
-                        continue
+            self.config_request_rpc()
+            self.flag = True
+            log.info('Mitigation Started..')
 
-                    hijack_event.mitigation_started = time.time()
-                    prefix_node = self.prefix_tree.search_best(
-                        hijack_event.prefix)
-                    if prefix_node is not None:
-                        mitigation_action = prefix_node.data['mitigation']
-                        if mitigation_action == 'manual':
-                            log.info('Starting manual mitigation of Hijack {}'.format(hijack_event.id))
-                        else:
-                            log.info('Starting custom mitigation of Hijack {}'.format(hijack_event.id))
-                            hijack_event_str = json.dumps(hijack_event.to_dict())
-                            subprocess.Popen([mitigation_action, '-i', hijack_event_str])
-                    hijack_event.to_mitigate = False
 
-                    db.session.commit()
-                    db.session.expunge(hijack_event)
-                except Exception as e:
-                    log.error('Exception', exc_info=True)
-            while self.flag:
-                try:
-                    hijack_id = self.hijack_queue.get()
-                    if hijack_id is None:
-                        continue
+        def get_consumers(self, Consumer, channel):
+            return [
+                    Consumer(
+                        queues=[self.config_queue],
+                        on_message=self.handle_config_notify,
+                        prefetch_count=1,
+                        no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.hijack_queue],
+                        on_message=self.handle_hijack_update,
+                        prefetch_count=1,
+                        no_ack=True,
+                        accept=['pickle']
+                        )
+                    ]
 
-                    hijack_event = Hijack.query.filter(
-                                        Hijack.id == hijack_id
-                                ).first()
 
-                    try:
-                        db.session.add(hijack_event)
-                    except exc.InvalidRequestError:
-                        db.session.rollback()
+        def handle_config_notify(self, message):
+            log.info(' [x] Mitigation - Config Notify')
+            raw = message.payload
+            if raw['timestamp'] > self.timestamp:
+                self.timestamp = raw['timestamp']
+                self.rules = raw.get('rules', [])
+                self.init_mitigation()
 
-                    hijack_event.mitigation_started = time.time()
-                    prefix_node = self.prefix_tree.search_best(
-                        hijack_event.prefix)
-                    if prefix_node is not None:
-                        mitigation_action = prefix_node.data['mitigation']
-                        if mitigation_action == 'manual':
-                            log.info('Starting manual mitigation of Hijack {}'.format(hijack_event.id))
-                        else:
-                            log.info('Starting custom mitigation of Hijack {}'.format(hijack_event.id))
-                            hijack_event_str = json.dumps(hijack_event.to_dict())
-                            subprocess.Popen([mitigation_action, '-i', hijack_event_str])
-                    hijack_event.to_mitigate = False
 
-                    db.session.commit()
-                    db.session.expunge(hijack_event)
-                except Exception as e:
-                    log.error('Exception', exc_info=True)
-            log.info('Mitigation Mechanism Stopped..')
+        def config_request_rpc(self):
+            self.correlation_id = uuid()
+
+            self.producer.publish(
+                '',
+                exchange = '',
+                routing_key = 'config_request_queue',
+                reply_to = self.callback_queue.name,
+                correlation_id = self.correlation_id,
+                retry = True,
+                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=9)],
+                priority = 9
+            )
+            with Consumer(self.connection,
+                        on_message=self.handle_config_request_reply,
+                        queues=[self.callback_queue],
+                        no_ack=True):
+                while self.rules is None:
+                    self.connection.drain_events()
+
+
+        def handle_config_request_reply(self, message):
+            log.info(' [x] Mitigation - Received Configuration')
+            if self.correlation_id == message.properties['correlation_id']:
+                raw = message.payload
+                if raw['timestamp'] > self.timestamp:
+                    self.timestamp = raw['timestamp']
+                    self.rules = raw.get('rules', [])
+                    self.init_mitigation()
+
+
+        def init_mitigation(self):
+            self.prefix_tree = radix.Radix()
+            for rule in self.rules:
+                for prefix in rule['prefixes']:
+                    node = self.prefix_tree.add(prefix)
+                    node.data['mitigation'] = rule['mitigation']
+
+
+        def handle_hijack_update(self, message):
+            hijack_event = message.payload
+            log.info(hijack_event)
+
+            hijack_event['mitigation_started'] = time.time()
+            prefix_node = self.prefix_tree.search_best(
+                hijack_event['prefix'])
+            if prefix_node is not None:
+                mitigation_action = prefix_node.data['mitigation']
+                if mitigation_action == 'manual':
+                    log.info('Starting manual mitigation of Hijack')
+                else:
+                    log.info('Starting custom mitigation of Hijack')
+                    hijack_event_str = json.dumps(hijack_event)
+                    subprocess.Popen([mitigation_action, '-i', hijack_event_str])
+            hijack_event['to_mitigate'] = False
+

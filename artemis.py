@@ -4,6 +4,7 @@ import time
 from core.configuration import Configuration
 from core.monitor import Monitor
 from core.detection import Detection
+from core.mitigation import Mitigation
 from utils import log
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 
@@ -25,7 +26,7 @@ def main():
     modules['configuration'] = Configuration()
     modules['monitor'] = Monitor()
     modules['detection'] = Detection()
-    # modules['detection2'] = Detection()
+    modules['mitigation'] = Mitigation()
     # modules['detection3'] = Detection()
     # modules['detection4'] = Detection()
 

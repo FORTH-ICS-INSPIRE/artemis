@@ -52,8 +52,7 @@ class Detection(Process):
             # self.h_num = 0
             # self.j_num = 0
             self.rules = None
-            self.prefix_tree = radix.Radix()
-
+            self.prefix_tree = None
             self.future_memcache = {}
 
 
@@ -266,9 +265,10 @@ class Detection(Process):
         def commit_hijack(self, monitor_event, hijacker, hij_type):
             hijack_key = hash(frozenset([monitor_event['prefix'], hijacker, hij_type]))
             hijack_value = {
-                'time_started': monitor_event['timestamp'],
-                'time_last': monitor_event['timestamp'],
-                'peers_seen': {monitor_event['peer_asn']},
+                    'prefix': monitor_event['prefix'],
+                    'time_started': monitor_event['timestamp'],
+                    'time_last': monitor_event['timestamp'],
+                    'peers_seen': {monitor_event['peer_asn']},
             }
 
             if hij_type in {'S','Q'}:

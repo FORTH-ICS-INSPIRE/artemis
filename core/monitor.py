@@ -51,7 +51,7 @@ class Monitor(Process):
             self.connection = connection
             self.flag = False
             self.timestamp = -1
-            self.prefix_tree = radix.Radix()
+            self.prefix_tree = None
             self.process_ids = []
             self.rules = None
             self.prefixes = set()

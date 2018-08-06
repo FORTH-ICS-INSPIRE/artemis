@@ -47,11 +47,10 @@ class Detection(Process):
 
         def __init__(self, connection):
             self.connection = connection
-
-            self.h_num = 0
-            self.j_num = 0
-
             self.flag = False
+            self.timestamp = -1
+            # self.h_num = 0
+            # self.j_num = 0
             self.rules = None
             self.prefix_tree = radix.Radix()
 
@@ -59,21 +58,20 @@ class Detection(Process):
 
 
             # EXCHANGES
-            self.control_exchange = Exchange('control', type='direct', durable=False, delivery_mode=1)
             self.update_exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
             self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
             self.handled_exchange = Exchange('handled_update', type='direct', durable=False, delivery_mode=1)
+            self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
 
             # QUEUES
-            self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
-            self.control_queue = Queue('control_queue', exchange=self.control_exchange, routing_key='monitor', durable=False)
-            self.update_queue = Queue('bgp_queue', exchange=self.update_exchange, routing_key='update', durable=False)
-            self.hijack_queue = Queue('hijack_queue', exchange=self.hijack_exchange, routing_key='update', durable=False)
-            self.handled_queue = Queue('handled_queue', exchange=self.hijack_exchange, routing_key='update', durable=False)
+            self.callback_queue = Queue(uuid(), durable=False)
+            self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True)
+            self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True)
+            self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True)
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True)
 
             self.config_request_rpc()
-            self.init_detection()
             self.flag = True
             log.info('Detection Started..')
 
@@ -81,34 +79,46 @@ class Detection(Process):
         def get_consumers(self, Consumer, channel):
             return [
                     Consumer(
-                        queues=[self.control_queue],
-                        on_message=self.handle_control,
+                        queues=[self.config_queue],
+                        on_message=self.handle_config_notify,
                         prefetch_count=1,
-                        no_ack=True),
+                        no_ack=True
+                        ),
                     Consumer(
                         queues=[self.update_queue],
                         on_message=self.handle_bgp_update,
                         prefetch_count=1,
-                        no_ack=True)
+                        no_ack=True
+                        )
                     ]
+
+
+        def handle_config_notify(self, message):
+            log.info(' [x] Detection - Config Notify')
+            raw = message.payload
+            if raw['timestamp'] > self.timestamp:
+                self.timestamp = raw['timestamp']
+                self.rules = raw.get('rules', [])
+                self.init_detection()
 
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
 
-            with Producer(self.connection) as producer:
-                producer.publish(
-                    '',
-                    exchange='',
-                    routing_key='config_request_queue',
-                    reply_to=self.callback_queue.name,
-                    correlation_id=self.correlation_id,
-                    retry=True,
-                    declare=[self.callback_queue, Queue('config_request_queue', durable=False)]
-                )
+            self.producer.publish(
+                '',
+                exchange = '',
+                routing_key = 'config_request_queue',
+                reply_to = self.callback_queue.name,
+                correlation_id = self.correlation_id,
+                retry = True,
+                declare = [self.callback_queue, Queue('config_request_queue', durable=False)],
+                priority = 9
+            )
             with Consumer(self.connection,
                         on_message=self.handle_config_request_reply,
-                        queues=[self.callback_queue], no_ack=True):
+                        queues=[self.callback_queue],
+                        no_ack=True):
                 while self.rules is None:
                     self.connection.drain_events()
 
@@ -132,17 +142,16 @@ class Detection(Process):
             log.info(' [x] Detection - Received Configuration')
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
-                self.rules = raw.get('rules', [])
-
-
-        def handle_control(self, message):
-            print(' [x] Detection - Handle Control {}'.format(message))
-            getattr(self, message.payload)()
+                if raw['timestamp'] > self.timestamp:
+                    self.timestamp = raw['timestamp']
+                    self.rules = raw.get('rules', [])
+                    self.init_detection()
 
 
         def handle_bgp_update(self, message):
             # log.info(' [x] Detection - Received BGP update: {}'.format(message))
             monitor_event = message.payload
+            raw = message.payload
             # ignore withdrawals for now
             if monitor_event['type'] == 'A':
                 monitor_event['path'] = Detection.Worker.__clean_as_path(monitor_event['path'])
@@ -158,7 +167,7 @@ class Detection(Process):
                 except:
                     traceback.print_exc()
                     print(monitor_event)
-            self.mark_handled(monitor_event)
+            self.mark_handled(raw)
 
 
         def __detection_generator(self, path_len, prefix_node):
@@ -270,27 +279,25 @@ class Detection(Process):
             else:
                 self.future_memcache[hijack_key] = hijack_value
 
-            with Producer(self.connection) as producer:
-                producer.publish(
-                        self.future_memcache[hijack_key],
-                        exchange=self.hijack_queue.exchange,
-                        routing_key=self.hijack_queue.routing_key,
-                        declare=[self.hijack_queue],
-                        serializer='pickle'
-                )
-                log.info('Published Hijack #{}'.format(self.j_num))
-                self.j_num += 1
+            self.producer.publish(
+                    self.future_memcache[hijack_key],
+                    exchange=self.hijack_queue.exchange,
+                    routing_key=self.hijack_queue.routing_key,
+                    declare=[self.hijack_queue],
+                    serializer='pickle'
+            )
+            # log.info('Published Hijack #{}'.format(self.j_num))
+            # self.j_num += 1
 
 
         def mark_handled(self, monitor_event):
-            with Producer(self.connection) as producer:
-                producer.publish(
-                        monitor_event,
-                        exchange=self.handled_queue.exchange,
-                        routing_key=self.handled_queue.routing_key,
-                        declare=[self.handled_queue]
-                )
-                log.info('Published Handled #{}'.format(self.h_num))
-                self.h_num += 1
+            self.producer.publish(
+                    monitor_event,
+                    exchange=self.handled_queue.exchange,
+                    routing_key=self.handled_queue.routing_key,
+                    declare=[self.handled_queue]
+            )
+            # log.info('Published Handled #{}'.format(self.h_num))
+            # self.h_num += 1
 
 

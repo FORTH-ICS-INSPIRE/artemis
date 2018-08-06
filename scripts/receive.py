@@ -4,7 +4,7 @@ from kombu import Connection, Exchange, Queue, Consumer, eventloop, uuid
 
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
-exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
+exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
 queue = Queue(uuid(), exchange, routing_key='update', durable=False)
 
 
@@ -27,7 +27,7 @@ with Connection('amqp://guest:guest@localhost:5672//') as connection:
     #: Create consumer using our callback and queue.
     #: Second argument can also be a list to consume from
     #: any number of queues.
-    with Consumer(connection, queue, callbacks=[handle_message]):
+    with Consumer(connection, queue, callbacks=[handle_message], accept=['pickle']):
 
         #: Each iteration waits for a single event.  Note that this
         #: event may not be a message, or a message that is to be

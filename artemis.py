@@ -25,6 +25,9 @@ def main():
     modules['configuration'] = Configuration()
     modules['monitor'] = Monitor()
     modules['detection'] = Detection()
+    # modules['detection2'] = Detection()
+    # modules['detection3'] = Detection()
+    # modules['detection4'] = Detection()
 
 
     for name, module in modules.items():
@@ -38,7 +41,7 @@ def main():
         with conn.SimpleQueue('modules_control') as queue:
             while True:
                 try:
-                    message = queue.get(block=False)
+                    message = queue.get(block=False, timeout=1)
                     message.ack()
 
                     if message.payload['module'] in modules:
@@ -59,6 +62,7 @@ def main():
                     else:
                         log.warning('Unrecognized module name {}'.format(message.payload['module']))
                 except queue.Empty:
+                    time.sleep(1)
                     if killer.kill_now:
                         break
     #input("\n[!] Press ENTER to exit [!]\n\n")

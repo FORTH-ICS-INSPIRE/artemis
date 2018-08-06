@@ -31,7 +31,8 @@ class Monitor(Process):
                 self.worker.run()
         except Exception:
             traceback.print_exc()
-        self.worker.stop()
+        if self.worker is not None:
+            self.worker.stop()
         log.info('Monitors Stopped..')
         self.stopping = True
 
@@ -48,34 +49,45 @@ class Monitor(Process):
 
         def __init__(self, connection):
             self.connection = connection
+            self.flag = False
+            self.timestamp = -1
             self.prefix_tree = radix.Radix()
             self.process_ids = []
-            self.flag = False
             self.rules = None
             self.prefixes = set()
             self.monitors = None
 
 
             # EXCHANGES
-            self.control_exchange = Exchange('control', 'direct', durable=False, delivery_mode=1)
-
+            self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
             # QUEUES
-            self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
-            self.control_queue = Queue('control_queue', exchange=self.control_exchange, routing_key='monitor', durable=False)
+            self.callback_queue = Queue(uuid(), durable=False)
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True)
 
             self.config_request_rpc()
-            self.start_monitors()
-
             self.flag = True
             log.info('Monitor Started..')
 
 
         def get_consumers(self, Consumer, channel):
-            return [Consumer(
-                queues=[self.control_queue],
-                on_message=self.handle_control,
-                prefetch_count=1,
-                no_ack=True)]
+            return [
+                    Consumer(
+                        queues=[self.config_queue],
+                        on_message=self.handle_config_notify,
+                        prefetch_count=1,
+                        no_ack=True
+                        )
+                    ]
+
+
+        def handle_config_notify(self, message):
+            log.info(' [x] Monitor - Config Notify')
+            raw = message.payload
+            if raw['timestamp'] > self.timestamp:
+                self.timestamp = raw['timestamp']
+                self.rules = raw.get('rules', [])
+                self.monitors = raw.get('monitors', {})
+                self.start_monitors()
 
 
         def start_monitors(self):
@@ -98,7 +110,6 @@ class Monitor(Process):
                 self.prefixes.add(self.prefix_tree.search_worst(prefix).prefix)
 
             self.init_ris_instances()
-            # self.init_bgpmon_instance()
             self.init_exabgp_instances()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
@@ -116,16 +127,16 @@ class Monitor(Process):
         def config_request_rpc(self):
             self.correlation_id = uuid()
 
-            with Producer(self.connection) as producer:
-                producer.publish(
-                    '',
-                    exchange='',
-                    routing_key='config_request_queue',
-                    reply_to=self.callback_queue.name,
-                    correlation_id=self.correlation_id,
-                    retry=True,
-                    declare=[self.callback_queue, Queue('config_request_queue', durable=False)]
-                )
+            self.producer.publish(
+                '',
+                exchange = '',
+                routing_key = 'config_request_queue',
+                reply_to = self.callback_queue.name,
+                correlation_id = self.correlation_id,
+                retry = True,
+                declare = [self.callback_queue, Queue('config_request_queue', durable=False)],
+                priority = 9
+            )
             with Consumer(self.connection,
                         on_message=self.handle_config_request_reply,
                         queues=[self.callback_queue], no_ack=True):
@@ -137,18 +148,16 @@ class Monitor(Process):
             log.info(' [x] Monitor - Received Configuration')
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
-                self.rules = raw.get('rules', [])
-                self.monitors = raw.get('monitors', {})
-
-
-        def handle_control(self, message):
-            print(' [x] Monitor - Handle Control {}'.format(message))
-            getattr(self, message.payload)()
+                if raw['timestamp'] > self.timestamp:
+                    self.timestamp = raw['timestamp']
+                    self.rules = raw.get('rules', [])
+                    self.monitors = raw.get('monitors', {})
+                    self.start_monitors()
 
 
         @exception_handler
         def init_ris_instances(self):
-            log.info('Starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
+            log.debug('Starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
             for ris_monitor in self.monitors.get('riperis', []):
                 for prefix in self.prefixes:
                         p = Popen(['python3', 'taps/ripe_ris.py',
@@ -158,7 +167,7 @@ class Monitor(Process):
 
         @exception_handler
         def init_exabgp_instances(self):
-            log.info('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
+            log.debug('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
             for exabgp_monitor in self.monitors.get('exabgp', []):
                 exabgp_monitor_str = '{}:{}'.format(exabgp_monitor['ip'] ,exabgp_monitor['port'])
                 p = Popen(['python3', 'taps/exabgp_client.py',
@@ -169,7 +178,7 @@ class Monitor(Process):
         @exception_handler
         def init_bgpstreamhist_instance(self):
             if 'bgpstreamhist' in self.monitors:
-                log.info('Starting {} for {}'.format(self.monitors['bgpstreamhist'], self.prefixes))
+                log.debug('Starting {} for {}'.format(self.monitors['bgpstreamhist'], self.prefixes))
                 bgpstreamhist_dir = self.monitors['bgpstreamhist']
                 p = Popen(['python3', 'taps/bgpstreamhist.py',
                         '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir])
@@ -179,7 +188,7 @@ class Monitor(Process):
         @exception_handler
         def init_bgpstreamlive_instance(self):
             if 'bgpstreamlive' in self.monitors:
-                log.info('Starting {} for {}'.format(self.monitors['bgpstreamlive'], self.prefixes))
+                log.debug('Starting {} for {}'.format(self.monitors['bgpstreamlive'], self.prefixes))
                 bgpstream_projects = ','.join(self.monitors['bgpstreamlive'])
                 p = Popen(['python3', 'taps/bgpstreamlive.py',
                         '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects])

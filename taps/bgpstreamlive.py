@@ -80,6 +80,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                 if elem.type in ["A", "W"]:
                     this_prefix = str(elem.fields['prefix'])
                     service = "bgpstream|{}|{}".format(str(rec.project), str(rec.collector))
+                    type_ = elem.type
                     if elem.type == "A":
                         as_path = list(map(as_mapper, elem.fields['as-path'].split(" ")))
                         communities = elem.fields['communities']

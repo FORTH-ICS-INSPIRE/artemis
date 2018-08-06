@@ -65,8 +65,10 @@ class Configuration(Process):
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='modify', durable=False, exclusive=True)
-            self.config_request_queue = Queue('config_request_queue', durable=False)
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='modify', durable=False, exclusive=True, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
+            self.config_request_queue = Queue('config_request_queue', durable=False, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
 
             self.parse_rrcs()
             self.flag = True

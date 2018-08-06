@@ -60,9 +60,12 @@ class Monitor(Process):
 
             # EXCHANGES
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
+
             # QUEUES
-            self.callback_queue = Queue(uuid(), durable=False)
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True)
+            self.callback_queue = Queue(uuid(), durable=False, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
 
             self.config_request_rpc()
             self.flag = True
@@ -93,6 +96,8 @@ class Monitor(Process):
         def start_monitors(self):
             for proc_id in self.process_ids:
                 proc_id[1].terminate()
+            self.process_ids.clear()
+            self.prefixes.clear()
 
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
@@ -134,7 +139,7 @@ class Monitor(Process):
                 reply_to = self.callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [self.callback_queue, Queue('config_request_queue', durable=False)],
+                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=9)],
                 priority = 9
             )
             with Consumer(self.connection,

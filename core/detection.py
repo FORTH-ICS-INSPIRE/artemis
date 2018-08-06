@@ -65,11 +65,16 @@ class Detection(Process):
 
 
             # QUEUES
-            self.callback_queue = Queue(uuid(), durable=False)
-            self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True)
-            self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True)
-            self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True)
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True)
+            self.callback_queue = Queue(uuid(), durable=False, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
+            self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=0,
+                    consumer_arguments={'x-priority': 0})
+            self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=0,
+                    consumer_arguments={'x-priority': 0})
+            self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=0,
+                    consumer_arguments={'x-priority': 0})
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=9,
+                    consumer_arguments={'x-priority': 9})
 
             self.config_request_rpc()
             self.flag = True
@@ -112,7 +117,7 @@ class Detection(Process):
                 reply_to = self.callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [self.callback_queue, Queue('config_request_queue', durable=False)],
+                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=9)],
                 priority = 9
             )
             with Consumer(self.connection,
@@ -284,7 +289,8 @@ class Detection(Process):
                     exchange=self.hijack_queue.exchange,
                     routing_key=self.hijack_queue.routing_key,
                     declare=[self.hijack_queue],
-                    serializer='pickle'
+                    serializer='pickle',
+                    priority=0
             )
             # log.info('Published Hijack #{}'.format(self.j_num))
             # self.j_num += 1
@@ -295,7 +301,8 @@ class Detection(Process):
                     monitor_event,
                     exchange=self.handled_queue.exchange,
                     routing_key=self.handled_queue.routing_key,
-                    declare=[self.handled_queue]
+                    declare=[self.handled_queue],
+                    priority=0
             )
             # log.info('Published Handled #{}'.format(self.h_num))
             # self.h_num += 1

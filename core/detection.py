@@ -1,7 +1,7 @@
 import radix
 import ipaddress
 from profilehooks import profile
-from utils import log, exception_handler
+from utils import log, exception_handler, RABBITMQ_HOST
 import hashlib
 from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
@@ -26,7 +26,7 @@ class Detection(Process):
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:
-            with Connection('amqp://guest:guest@localhost:5672//') as connection:
+            with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:

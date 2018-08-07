@@ -13,6 +13,8 @@ if os.path.exists('configs/logging.json'):
 
 log = logging.getLogger(__name__)
 
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+
 def flatten(items, seqtypes=(list, tuple)):
     if not isinstance(items, seqtypes):
         return [items]

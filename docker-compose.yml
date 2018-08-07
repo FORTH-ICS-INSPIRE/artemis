@@ -1,0 +1,26 @@
+version: '3'
+services:
+    artemis:
+        build: .
+        container_name: artemis
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+        depends_on:
+            - rabbitmq
+        volumes:
+            - .:/root/.
+        networks:
+            - rabbitmq
+        command: ["./wait-for", "rabbitmq:5672", "--", "python3", "artemis.py"]
+    rabbitmq:
+        image: "rabbitmq:3-alpine"
+        container_name: rabbitmq
+        hostname: rabbitmq
+        networks:
+            rabbitmq:
+                aliases:
+                    - rabbitmq
+
+
+networks:
+    rabbitmq:

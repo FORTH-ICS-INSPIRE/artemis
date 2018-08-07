@@ -2,7 +2,7 @@ from ipaddress import ip_network as str2ip
 import os
 import sys
 from yaml import load as yload
-from utils import flatten, log, ArtemisError
+from utils import flatten, log, ArtemisError, RABBITMQ_HOST
 from socketIO_client_nexus import SocketIO
 from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid
@@ -26,7 +26,7 @@ class Configuration(Process):
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:
-            with Connection('amqp://guest:guest@localhost:5672//') as connection:
+            with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:

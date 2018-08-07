@@ -1,6 +1,6 @@
 import radix
 import subprocess
-from utils import log
+from utils import log, RABBITMQ_HOST
 from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
@@ -22,7 +22,7 @@ class Mitigation(Process):
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:
-            with Connection('amqp://guest:guest@localhost:5672//') as connection:
+            with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:

@@ -1,15 +1,11 @@
 amqp==2.3.2
 certifi==2018.4.16
 chardet==3.0.4
-grpcio==1.13.0
-grpcio-tools==1.13.0
 idna==2.7
 kombu==4.2.1
 netaddr==0.7.19
 pamqp==1.6.1
 profilehooks==1.10.0
-protobuf==3.6.0
-protobuf3-to-dict==0.1.5
 py-radix==0.10.0
 PyYAML==3.13
 requests==2.19.1

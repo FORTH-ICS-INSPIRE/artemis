@@ -5,7 +5,7 @@ from core.configuration import Configuration
 from core.monitor import Monitor
 from core.detection import Detection
 from core.mitigation import Mitigation
-from utils import log
+from utils import log, RABBITMQ_HOST
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 
 
@@ -38,7 +38,7 @@ def main():
     log.info('Send SIGTERM signal to end..\n')
 
 
-    with Connection('amqp://guest:guest@localhost:5672//') as conn:
+    with Connection(RABBITMQ_HOST) as conn:
         with conn.SimpleQueue('modules_control') as queue:
             while True:
                 try:

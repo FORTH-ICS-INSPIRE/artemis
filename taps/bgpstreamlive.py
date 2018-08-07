@@ -87,6 +87,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                     else:
                         as_path = ''
                         communities = []
+                    timestamp = float(elem.time)
 
                     for prefix in prefixes:
                         base_ip, mask_length = this_prefix.split('/')

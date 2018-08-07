@@ -5,6 +5,7 @@ import hashlib
 import traceback
 import signal
 import sys
+from utils import mformat_validator
 
 
 def parse_ripe_ris(connection, prefix, host):
@@ -21,11 +22,12 @@ def parse_ripe_ris(connection, prefix, host):
                 str(msg['service']),
                 str(msg['timestamp'])
             ]))
-            producer.publish(
-                msg,
-                exchange=exchange,
-                routing_key='update',
-                serializer='json')
+            if mformat_validator(msg):
+                producer.publish(
+                    msg,
+                    exchange=exchange,
+                    routing_key='update',
+                    serializer='json')
         except Exception:
             pass
             # traceback.print_exc()

@@ -7,7 +7,7 @@ import json
 import argparse
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from netaddr import IPNetwork, IPAddress
-
+from utils import mformat_validator
 
 def as_mapper(asn_str):
     if asn_str != '':
@@ -42,26 +42,28 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                         base_ip, mask_length = this_prefix.split('/')
                         our_prefix = IPNetwork(prefix)
                         if IPAddress(base_ip) in our_prefix and int(mask_length) >= our_prefix.prefixlen:
-                            producer.publish(
-                                    {
-                                        'type': type_,
-                                        'timestamp': timestamp,
-                                        'path': as_path,
-                                        'service': service,
-                                        'communities': communities,
-                                        'prefix': this_prefix,
-                                        'key': hash(frozenset([
-                                            str(this_prefix),
-                                            str(as_path),
-                                            str(type_),
-                                            str(service),
-                                            str(timestamp)
-                                        ]))
-                                    },
+                            msg = {
+                                'type': type_,
+                                'timestamp': timestamp,
+                                'path': as_path,
+                                'service': service,
+                                'communities': communities,
+                                'prefix': this_prefix,
+                                'key': hash(frozenset([
+                                    str(this_prefix),
+                                    str(as_path),
+                                    str(type_),
+                                    str(service),
+                                    str(timestamp)
+                                ]))
+                            }
+                            if mformat_validator(msg):
+                                producer.publish(
+                                    msg,
                                     exchange=exchange,
                                     routing_key='update',
                                     serializer='json'
-                            )
+                                )
 
 
 if __name__ == '__main__':

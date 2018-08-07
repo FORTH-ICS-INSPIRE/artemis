@@ -21,9 +21,9 @@ RUN ./configure && make && make install && ldconfig
 
 WORKDIR ..
 
-RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/bgpstream-1.2.0.tar.gz && \
-    tar zxf bgpstream-1.2.0.tar.gz
-WORKDIR bgpstream-1.2.0
+RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/bgpstream-1.2.1.tar.gz && \
+    tar zxf bgpstream-1.2.1.tar.gz
+WORKDIR bgpstream-1.2.1
 RUN ./configure && make && make install && ldconfig
 RUN pip3 install pybgpstream
 

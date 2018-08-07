@@ -158,8 +158,12 @@ class Detection(Process):
             raw = message.payload
             # ignore withdrawals for now
             if monitor_event['type'] == 'A':
+                monitor_event['peer_asn'] = -1
+                if len(monitor_event['path']) > 1:
+                    monitor_event['peer_asn'] = monitor_event['path'][0]
                 monitor_event['path'] = Detection.Worker.__clean_as_path(monitor_event['path'])
                 prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
+
 
                 if prefix_node is not None:
                     monitor_event['matched_prefix'] = prefix_node.prefix
@@ -266,6 +270,8 @@ class Detection(Process):
             hijack_key = hash(frozenset([monitor_event['prefix'], hijacker, hij_type]))
             hijack_value = {
                     'prefix': monitor_event['prefix'],
+                    'hijacker': hijacker,
+                    'hij_type': hij_type,
                     'time_started': monitor_event['timestamp'],
                     'time_last': monitor_event['timestamp'],
                     'peers_seen': {monitor_event['peer_asn']},

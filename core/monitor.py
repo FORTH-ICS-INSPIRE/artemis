@@ -62,10 +62,10 @@ class Monitor(Process):
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.callback_queue = Queue(uuid(), durable=False, max_priority=9,
-                    consumer_arguments={'x-priority': 9})
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=9,
-                    consumer_arguments={'x-priority': 9})
+            self.callback_queue = Queue(uuid(), durable=False, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
             self.flag = True
@@ -139,8 +139,8 @@ class Monitor(Process):
                 reply_to = self.callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=9)],
-                priority = 9
+                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                priority = 2
             )
             with Consumer(self.connection,
                         on_message=self.handle_config_request_reply,

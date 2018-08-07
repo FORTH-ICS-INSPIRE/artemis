@@ -5,8 +5,9 @@
 # Start of Prefix Definitions
 prefixes:
     forth_prefix_main: &forth_prefix_main
-        139.91.0.0/16
-        # [0.0.0.0/0, '::/0']
+        # 139.91.0.0/16
+        # 139.0.0.0/8
+        [0.0.0.0/0, '::/0']
     forth_prefix_lamda: &forth_prefix_lamda
         139.91.250.0/24
     forth_prefix_vod: &forth_prefix_vod

@@ -5,7 +5,7 @@ from kombu import Connection, Exchange, Queue, Consumer, eventloop, uuid
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
 exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
-queue = Queue(uuid(), exchange, routing_key='update', durable=False)
+queue = Queue(uuid(), exchange, routing_key='update', durable=False, max_priority=1)
 
 
 def pretty(obj):

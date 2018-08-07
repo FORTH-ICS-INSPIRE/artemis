@@ -14,7 +14,7 @@ def parse_ripe_ris(connection, prefix, host):
         global msg_num
         try:
             producer = Producer(connection)
-            msg['key_hash'] = hash(frozenset([
+            msg['key'] = hash(frozenset([
                 str(msg['prefix']),
                 str(msg['path']),
                 str(msg['type']),

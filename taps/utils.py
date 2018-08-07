@@ -1,4 +1,52 @@
 from ipaddress import ip_network as str2ip
+import copy
+
+def decompose_path(path):
+    decomposed_paths = []
+    for hop in path:
+        hop = str(hop)
+        # AS-sets
+        if '{' in hop:
+            decomposed_hops = hop.lstrip('{').rstrip('}').split(',')
+        # AS Confederation Set
+        elif '[' in hop:
+            decomposed_hops = hop.lstrip('[').rstrip(']').split(',')
+        # AS Sequence Set
+        elif '(' in hop:
+            decomposed_hops = hop.lstrip('(').rstrip(')').split(' ')
+        # simple ASN
+        else:
+            decomposed_hops = [hop]
+        new_paths = []
+        if len(decomposed_paths) == 0:
+            for dec_hop in decomposed_hops:
+                new_paths.append([dec_hop])
+        else:
+            for prev_path in decomposed_paths:
+                if '(' in hop:
+                    new_path = prev_path + decomposed_hops
+                    new_paths.append(new_path)
+                else:
+                    for dec_hop in decomposed_hops:
+                        new_path = prev_path + [dec_hop]
+                        new_paths.append(new_path)
+        decomposed_paths = new_paths
+    return decomposed_paths
+
+def update_msg_path(msg):
+    msgs = []
+    path = msg['path']
+    dec_paths = decompose_path(path)
+    if isinstance(path, list):
+        if len(dec_paths) < 2:
+            msgs = [msg]
+        else:
+            for dec_path in dec_paths:
+                copied_msg = copy.deepcopy(msg)
+                copied_msg['path'] = dec_path
+                copied_msg['orig_path'] = path
+                msgs.append(copied_msg)
+    return msgs
 
 def mformat_validator(msg):
 

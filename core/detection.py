@@ -276,6 +276,7 @@ class Detection(Process):
                     'time_started': monitor_event['timestamp'],
                     'time_last': monitor_event['timestamp'],
                     'peers_seen': {monitor_event['peer_asn']},
+                    'monitor_keys': {monitor_event['key']}
             }
 
             if hij_type in {'S','Q'}:
@@ -288,6 +289,7 @@ class Detection(Process):
                 self.future_memcache[hijack_key]['time_last'] = max(self.future_memcache[hijack_key]['time_last'], hijack_value['time_last'])
                 self.future_memcache[hijack_key]['peers_seen'].update(hijack_value['peers_seen'])
                 self.future_memcache[hijack_key]['inf_asns'].update(hijack_value['inf_asns'])
+                self.future_memcache[hijack_key]['monitor_keys'].update(hijack_value['monitor_keys'])
             else:
                 self.future_memcache[hijack_key] = hijack_value
 

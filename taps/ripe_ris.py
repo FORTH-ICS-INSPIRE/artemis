@@ -1,9 +1,11 @@
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Producer, Exchange, Queue, uuid
 import argparse
+import hashlib
 import traceback
 import signal
 import sys
+from utils import mformat_validator
 
 
 def parse_ripe_ris(connection, prefix, host):
@@ -13,11 +15,19 @@ def parse_ripe_ris(connection, prefix, host):
         global msg_num
         try:
             producer = Producer(connection)
-            producer.publish(
-                msg,
-                exchange=exchange,
-                routing_key='update',
-                serializer='json')
+            msg['key'] = hash(frozenset([
+                str(msg['prefix']),
+                str(msg['path']),
+                str(msg['type']),
+                str(msg['service']),
+                str(msg['timestamp'])
+            ]))
+            if mformat_validator(msg):
+                producer.publish(
+                    msg,
+                    exchange=exchange,
+                    routing_key='update',
+                    serializer='json')
         except Exception:
             pass
             # traceback.print_exc()

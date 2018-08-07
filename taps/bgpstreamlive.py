@@ -1,11 +1,13 @@
 import sys
 import os
 import argparse
+import hashlib
 import time
 from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange, Queue, uuid
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
+from utils import mformat_validator
 
 
 START_TIME_OFFSET = 3600 # seconds
@@ -87,24 +89,34 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                     else:
                         as_path = ''
                         communities = []
+                    timestamp = float(elem.time)
 
                     for prefix in prefixes:
                         base_ip, mask_length = this_prefix.split('/')
                         our_prefix = IPNetwork(prefix)
                         if IPAddress(base_ip) in our_prefix and int(mask_length) >= our_prefix.prefixlen:
-                            producer.publish(
-                                    {
-                                        'type': type_,
-                                        'timestamp': timestamp,
-                                        'path': as_path,
-                                        'service': service,
-                                        'communities': communities,
-                                        'prefix': this_prefix
-                                    },
-                                    exchange=exchange,
-                                    routing_key='update',
-                                    serializer='json'
-                            )
+                            msg = {
+                                'type': type_,
+                                'timestamp': timestamp,
+                                'path': as_path,
+                                'service': service,
+                                'communities': communities,
+                                'prefix': this_prefix,
+                                'key': hash(frozenset([
+                                    str(this_prefix),
+                                    str(as_path),
+                                    str(type_),
+                                    str(service),
+                                    str(timestamp)
+                                ]))
+                            }
+                            if mformat_validator(msg):
+                                producer.publish(
+                                        msg,
+                                        exchange=exchange,
+                                        routing_key='update',
+                                        serializer='json'
+                                )
 
                 try:
                     elem = rec.get_next_elem()

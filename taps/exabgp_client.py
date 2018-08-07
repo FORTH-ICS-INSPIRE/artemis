@@ -2,7 +2,9 @@ import sys
 import os
 from socketIO_client import SocketIO
 import argparse
+import hashlib
 from kombu import Connection, Producer, Exchange, Queue, uuid
+from utils import mformat_validator
 
 
 class ExaBGP():
@@ -37,15 +39,24 @@ class ExaBGP():
             socketIO.emit("ping")
 
         def exabgp_msg(bgp_message):
-            producer = Producer(connection)
-            producer.publish(
-                    {
-                        'type': bgp_message['type'],
-                        'timestamp': bgp_message['timestamp'],
-                        'path': bgp_message['path'],
-                        'service': 'ExaBGP {}'.format(self.config['host']),
-                        'prefix': bgp_message['prefix']
-                    },
+            msg = {
+                'type': bgp_message['type'],
+                'timestamp': bgp_message['timestamp'],
+                'path': bgp_message['path'],
+                'service': 'ExaBGP {}'.format(self.config['host']),
+                'prefix': bgp_message['prefix'],
+                'key': hash(frozenset([
+                    str(bgp_message['prefix']),
+                    str(bgp_message['path']),
+                    str(bgp_message['type']),
+                    'ExaBGP {}'.format(self.config['host']),
+                    str(bgp_message['timestamp'])
+                ]))
+            }
+            if mformat_validator(msg):
+                producer = Producer(connection)
+                producer.publish(
+                    msg,
                     exchange=exchange,
                     routing_key='update',
                     serializer='json'

@@ -269,6 +269,7 @@ class Detection(Process):
         def commit_hijack(self, monitor_event, hijacker, hij_type):
             hijack_key = hash(frozenset([monitor_event['prefix'], hijacker, hij_type]))
             hijack_value = {
+                    'pre_key': hijack_key, # not final key since will need also time ended info!
                     'prefix': monitor_event['prefix'],
                     'hijacker': hijacker,
                     'hij_type': hij_type,

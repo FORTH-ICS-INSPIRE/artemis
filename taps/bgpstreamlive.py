@@ -1,6 +1,7 @@
 import sys
 import os
 import argparse
+import hashlib
 import time
 from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange, Queue, uuid
@@ -100,7 +101,14 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                         'path': as_path,
                                         'service': service,
                                         'communities': communities,
-                                        'prefix': this_prefix
+                                        'prefix': this_prefix,
+                                        'key': hash(frozenset([
+                                            str(this_prefix),
+                                            str(as_path),
+                                            str(type_),
+                                            str(service),
+                                            str(timestamp)
+                                        ]))
                                     },
                                     exchange=exchange,
                                     routing_key='update',

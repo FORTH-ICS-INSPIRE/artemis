@@ -1,6 +1,7 @@
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Producer, Exchange, Queue, uuid
 import argparse
+import hashlib
 import traceback
 import signal
 import sys
@@ -13,6 +14,13 @@ def parse_ripe_ris(connection, prefix, host):
         global msg_num
         try:
             producer = Producer(connection)
+            msg['key_hash'] = hash(frozenset([
+                str(msg['prefix']),
+                str(msg['path']),
+                str(msg['type']),
+                str(msg['service']),
+                str(msg['timestamp'])
+            ]))
             producer.publish(
                 msg,
                 exchange=exchange,

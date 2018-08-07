@@ -2,6 +2,7 @@ import sys
 import os
 import glob
 import csv
+import hashlib
 import json
 import argparse
 from kombu import Connection, Producer, Exchange, Queue, uuid
@@ -48,7 +49,14 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                         'path': as_path,
                                         'service': service,
                                         'communities': communities,
-                                        'prefix': this_prefix
+                                        'prefix': this_prefix,
+                                        'key': hash(frozenset([
+                                            str(this_prefix),
+                                            str(as_path),
+                                            str(type_),
+                                            str(service),
+                                            str(timestamp)
+                                        ]))
                                     },
                                     exchange=exchange,
                                     routing_key='update',

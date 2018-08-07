@@ -267,16 +267,16 @@ class Detection(Process):
 
 
         def commit_hijack(self, monitor_event, hijacker, hij_type):
-            hijack_key = hash(frozenset([monitor_event['prefix'], hijacker, hij_type]))
+            future_memcache_hijack_key = hash(frozenset([monitor_event['prefix'], hijacker, hij_type]))
             hijack_value = {
-                    'pre_key': hijack_key, # not final key since will need also time ended info!
-                    'prefix': monitor_event['prefix'],
-                    'hijacker': hijacker,
-                    'hij_type': hij_type,
-                    'time_started': monitor_event['timestamp'],
-                    'time_last': monitor_event['timestamp'],
-                    'peers_seen': {monitor_event['peer_asn']},
-                    'monitor_keys': {monitor_event['key']}
+                'key': None,
+                'prefix': monitor_event['prefix'],
+                'hijacker': hijacker,
+                'hij_type': hij_type,
+                'time_started': monitor_event['timestamp'],
+                'time_last': monitor_event['timestamp'],
+                'peers_seen': {monitor_event['peer_asn']},
+                'monitor_keys': {monitor_event['key']}
             }
 
             if hij_type in {'S','Q'}:
@@ -284,17 +284,22 @@ class Detection(Process):
             else:
                 hijack_value['inf_asns'] = set(monitor_event['path'][:-(hij_type+1)])
 
-            if hijack_key in self.future_memcache:
-                self.future_memcache[hijack_key]['time_started'] = min(self.future_memcache[hijack_key]['time_started'], hijack_value['time_started'])
-                self.future_memcache[hijack_key]['time_last'] = max(self.future_memcache[hijack_key]['time_last'], hijack_value['time_last'])
-                self.future_memcache[hijack_key]['peers_seen'].update(hijack_value['peers_seen'])
-                self.future_memcache[hijack_key]['inf_asns'].update(hijack_value['inf_asns'])
-                self.future_memcache[hijack_key]['monitor_keys'].update(hijack_value['monitor_keys'])
+            if future_memcache_hijack_key in self.future_memcache:
+                self.future_memcache[future_memcache_hijack_key]['time_started'] = min(self.future_memcache[future_memcache_hijack_key]['time_started'],
+                                                                                       hijack_value['time_started'])
+                self.future_memcache[future_memcache_hijack_key]['time_last'] = max(self.future_memcache[future_memcache_hijack_key]['time_last'],
+                                                                                    hijack_value['time_last'])
+                self.future_memcache[future_memcache_hijack_key]['peers_seen'].update(hijack_value['peers_seen'])
+                self.future_memcache[future_memcache_hijack_key]['inf_asns'].update(hijack_value['inf_asns'])
+                self.future_memcache[future_memcache_hijack_key]['monitor_keys'] = hijack_value['monitor_keys'] # no update since db already knows!
             else:
-                self.future_memcache[hijack_key] = hijack_value
+                first_trigger = monitor_event['timestamp']
+                hijack_value['key'] = hash(frozenset([monitor_event['prefix'], hijacker, hij_type, first_trigger]))
+                self.future_memcache[future_memcache_hijack_key] = hijack_value
+            log.info(str(self.future_memcache[future_memcache_hijack_key]))
 
             self.producer.publish(
-                    self.future_memcache[hijack_key],
+                    self.future_memcache[future_memcache_hijack_key],
                     exchange=self.hijack_queue.exchange,
                     routing_key=self.hijack_queue.routing_key,
                     declare=[self.hijack_queue],

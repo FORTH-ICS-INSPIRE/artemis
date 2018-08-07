@@ -41,6 +41,7 @@ class ExaBGP():
         def exabgp_msg(bgp_message):
             msg = {
                 'type': bgp_message['type'],
+                'communities': [], # TODO: mark them according to the m-format!
                 'timestamp': bgp_message['timestamp'],
                 'path': bgp_message['path'],
                 'service': 'ExaBGP {}'.format(self.config['host']),

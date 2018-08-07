@@ -7,6 +7,15 @@ import signal
 import sys
 from utils import mformat_validator
 
+def normalize_ripe_ris(msg):
+    if isinstance(msg, dict):
+        msg['key'] = None # initial placeholder before passing the validator
+        if 'community' in msg:
+            msg['communities'] = [{'asn': comm[0], 'value': comm[1]} for comm in msg['community']]
+            del msg['community']
+        if 'host' in msg:
+            msg['service'] = 'ripe-ris|' + msg['host']
+            del msg['host']
 
 def parse_ripe_ris(connection, prefix, host):
     exchange = Exchange('bgp_update', type='direct', durable=False)
@@ -15,7 +24,7 @@ def parse_ripe_ris(connection, prefix, host):
         global msg_num
         try:
             producer = Producer(connection)
-            msg['key'] = None
+            normalize_ripe_ris(msg)
             if mformat_validator(msg):
                 msg['key'] = hash(frozenset([
                     str(msg['prefix']),

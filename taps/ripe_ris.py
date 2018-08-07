@@ -5,7 +5,7 @@ import hashlib
 import traceback
 import signal
 import sys
-from utils import mformat_validator
+from utils import mformat_validator, RABBITMQ_HOST
 
 def normalize_ripe_ris(msg):
     if isinstance(msg, dict):
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     host = args.host
 
     try:
-        with Connection('amqp://guest:guest@localhost:5672//') as connection:
+        with Connection(RABBITMQ_HOST) as connection:
             parse_ripe_ris(connection, prefix, host)
     except KeyboardInterrupt:
         pass

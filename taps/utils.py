@@ -1,4 +1,7 @@
 from ipaddress import ip_network as str2ip
+import os
+
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 
 def mformat_validator(msg):
 

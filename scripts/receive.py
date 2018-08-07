@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from pprint import pformat
 from kombu import Connection, Exchange, Queue, Consumer, eventloop, uuid
+import os
 
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
@@ -22,7 +23,7 @@ def handle_message(body, message):
 #: If hostname, userid, password and virtual_host is not specified
 #: the values below are the default, but listed here so it can
 #: be easily changed.
-with Connection('amqp://guest:guest@localhost:5672//') as connection:
+with Connection(os.getenv('RABBITMQ_HOST', 'localhost') as connection:
 
     #: Create consumer using our callback and queue.
     #: Second argument can also be a list to consume from

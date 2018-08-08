@@ -18,7 +18,6 @@ def key_generator(msg):
 def mformat_validator(msg):
 
     mformat_fields = [
-        'key',
         'service',
         'type',
         'prefix',

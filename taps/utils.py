@@ -8,7 +8,7 @@ def decompose_path(path):
 
     # first do an ultra-fast check if the path is a normal one
     # (simple sequence of ASNs)
-    str_path = ''.join(map(str, path))
+    str_path = ' '.join(map(str, path))
     if '{' not in str_path and '[' not in str_path and '(' not in str_path:
         return [path]
 
@@ -23,8 +23,8 @@ def decompose_path(path):
         elif '[' in hop:
             decomposed_hops = hop.lstrip('[').rstrip(']').split(',')
         # AS Sequence Set
-        elif '(' in hop:
-            decomposed_hops = hop.lstrip('(').rstrip(')').split(' ')
+        elif '(' in hop or ')' in hop:
+            decomposed_hops = hop.lstrip('(').rstrip(')').split(',')
         # simple ASN
         else:
             decomposed_hops = [hop]
@@ -34,7 +34,7 @@ def decompose_path(path):
                 new_paths.append([dec_hop])
         else:
             for prev_path in decomposed_paths:
-                if '(' in hop:
+                if '(' in hop or ')' in hop:
                     new_path = prev_path + decomposed_hops
                     new_paths.append(new_path)
                 else:
@@ -44,7 +44,7 @@ def decompose_path(path):
         decomposed_paths = new_paths
     return decomposed_paths
 
-def update_msg_path(msg):
+def normalize_msg_path(msg):
     msgs = []
     path = msg['path']
     if isinstance(path, list):
@@ -54,7 +54,7 @@ def update_msg_path(msg):
         else:
             for dec_path in dec_paths:
                 copied_msg = copy.deepcopy(msg)
-                copied_msg['path'] = dec_path
+                copied_msg['path'] = list(map(int, dec_path))
                 copied_msg['orig_path'] = path
                 msgs.append(copied_msg)
     else:

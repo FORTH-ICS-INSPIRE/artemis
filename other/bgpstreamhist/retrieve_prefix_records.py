@@ -81,7 +81,7 @@ def run_bgpstream(prefix, start, end, out_file):
                             str(elem.fields['prefix']),
                             str(elem.fields['as-path'].split(" ")[-1]),
                             str(elem.peer_asn),
-                            ",".join(elem.fields['as-path'].split(" ")),
+                            str(elem.fields['as-path']),
                             str(rec.project),
                             str(rec.collector),
                             str(elem.type),

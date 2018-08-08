@@ -7,16 +7,9 @@ from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange, Queue, uuid
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
-from utils import mformat_validator, RABBITMQ_HOST
-
+from utils import mformat_validator, normalize_msg_path, RABBITMQ_HOST
 
 START_TIME_OFFSET = 3600 # seconds
-
-
-def as_mapper(asn_str):
-    if asn_str != '':
-        return int(asn_str)
-    return 0
 
 def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     """
@@ -84,7 +77,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                     service = "bgpstream|{}|{}".format(str(rec.project), str(rec.collector))
                     type_ = elem.type
                     if elem.type == "A":
-                        as_path = list(map(as_mapper, elem.fields['as-path'].split(" ")))
+                        as_path = elem.fields['as-path'].split(' ')
                         communities = elem.fields['communities']
                     else:
                         as_path = ''
@@ -111,12 +104,14 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                 ]))
                             }
                             if mformat_validator(msg):
-                                producer.publish(
-                                        msg,
-                                        exchange=exchange,
-                                        routing_key='update',
-                                        serializer='json'
-                                )
+                                msgs = normalize_msg_path(msg)
+                                for msg in msgs:
+                                    producer.publish(
+                                            msg,
+                                            exchange=exchange,
+                                            routing_key='update',
+                                            serializer='json'
+                                    )
 
                 try:
                     elem = rec.get_next_elem()

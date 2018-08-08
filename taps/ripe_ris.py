@@ -5,7 +5,7 @@ import hashlib
 import traceback
 import signal
 import sys
-from utils import mformat_validator, RABBITMQ_HOST
+from utils import mformat_validator, normalize_msg_path, RABBITMQ_HOST
 
 def normalize_ripe_ris(msg):
     if isinstance(msg, dict):
@@ -33,11 +33,14 @@ def parse_ripe_ris(connection, prefix, host):
                     str(msg['service']),
                     str(msg['timestamp'])
                 ]))
-                producer.publish(
-                    msg,
-                    exchange=exchange,
-                    routing_key='update',
-                    serializer='json')
+                msgs = normalize_msg_path(msg)
+                for msg in msgs:
+                    producer.publish(
+                        msg,
+                        exchange=exchange,
+                        routing_key='update',
+                        serializer='json'
+                    )
         except Exception:
             pass
             # traceback.print_exc()

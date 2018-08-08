@@ -4,7 +4,7 @@ from socketIO_client import SocketIO
 import argparse
 import hashlib
 from kombu import Connection, Producer, Exchange, Queue, uuid
-from utils import mformat_validator, RABBITMQ_HOST
+from utils import mformat_validator, normalize_msg_path, RABBITMQ_HOST
 
 
 class ExaBGP():
@@ -56,12 +56,14 @@ class ExaBGP():
             }
             if mformat_validator(msg):
                 producer = Producer(connection)
-                producer.publish(
-                    msg,
-                    exchange=exchange,
-                    routing_key='update',
-                    serializer='json'
-            )
+                msgs = normalize_msg_path(msg)
+                for msg in msgs:
+                    producer.publish(
+                        msg,
+                        exchange=self.exchange,
+                        routing_key='update',
+                        serializer='json'
+                    )
 
         # not used yet (TODO)
         def on_reconnecting():

@@ -7,7 +7,7 @@ from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange, Queue, uuid
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
-from utils import mformat_validator, RABBITMQ_HOST
+from utils import mformat_validator, key_generator, RABBITMQ_HOST
 
 
 START_TIME_OFFSET = 3600 # seconds
@@ -101,16 +101,10 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                 'path': as_path,
                                 'service': service,
                                 'communities': communities,
-                                'prefix': this_prefix,
-                                'key': hash(frozenset([
-                                    str(this_prefix),
-                                    str(as_path),
-                                    str(type_),
-                                    str(service),
-                                    str(timestamp)
-                                ]))
+                                'prefix': this_prefix
                             }
                             if mformat_validator(msg):
+                                key_generator(msg)
                                 producer.publish(
                                         msg,
                                         exchange=exchange,

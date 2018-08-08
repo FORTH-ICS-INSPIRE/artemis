@@ -7,7 +7,8 @@ import json
 import argparse
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from netaddr import IPNetwork, IPAddress
-from utils import mformat_validator, RABBITMQ_HOST
+from utils import mformat_validator, key_generator, RABBITMQ_HOST
+
 
 def as_mapper(asn_str):
     if asn_str != '':
@@ -48,16 +49,10 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                 'path': as_path,
                                 'service': service,
                                 'communities': communities,
-                                'prefix': this_prefix,
-                                'key': hash(frozenset([
-                                    str(this_prefix),
-                                    str(as_path),
-                                    str(type_),
-                                    str(service),
-                                    str(timestamp)
-                                ]))
+                                'prefix': this_prefix
                             }
                             if mformat_validator(msg):
+                                key_generator(msg)
                                 producer.publish(
                                     msg,
                                     exchange=exchange,

@@ -4,7 +4,7 @@ from socketIO_client import SocketIO
 import argparse
 import hashlib
 from kombu import Connection, Producer, Exchange, Queue, uuid
-from utils import mformat_validator
+from utils import mformat_validator, RABBITMQ_HOST
 
 
 class ExaBGP():
@@ -18,7 +18,7 @@ class ExaBGP():
 
 
     def start_loop(self):
-        with Connection('amqp://guest:guest@localhost:5672//') as connection:
+        with Connection(RABBITMQ_HOST) as connection:
             while(self.flag):
                 self.start(connection)
 

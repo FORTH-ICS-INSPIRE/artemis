@@ -1,10 +1,11 @@
 from kombu import Connection
+import os
 
 #: Create connection
 #: If hostname, userid, password and virtual_host is not specified
 #: the values below are the default, but listed here so it can
 #: be easily changed.
-with Connection('amqp://guest:guest@localhost:5672//') as conn:
+with Connection(os.getenv('RABBITMQ_HOST', 'localhost') as connection:
 
     #: SimpleQueue mimics the interface of the Python Queue module.
     #: First argument can either be a queue name or a kombu.Queue object.

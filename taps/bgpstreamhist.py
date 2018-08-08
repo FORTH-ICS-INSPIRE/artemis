@@ -7,7 +7,7 @@ import json
 import argparse
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from netaddr import IPNetwork, IPAddress
-from utils import mformat_validator
+from utils import mformat_validator, RABBITMQ_HOST
 
 def as_mapper(asn_str):
     if asn_str != '':
@@ -17,7 +17,7 @@ def as_mapper(asn_str):
 
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
 
-    with Connection('amqp://guest:guest@localhost:5672//') as connection:
+    with Connection(RABBITMQ_HOST) as connection:
         exchange = Exchange('bgp_update', type='direct', durable=False)
         producer = Producer(connection)
 

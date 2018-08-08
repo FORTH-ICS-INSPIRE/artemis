@@ -7,7 +7,7 @@ from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange, Queue, uuid
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
-from utils import mformat_validator
+from utils import mformat_validator, RABBITMQ_HOST
 
 
 START_TIME_OFFSET = 3600 # seconds
@@ -60,7 +60,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     # print('Start ' + str(start))
     # print('End ' + str(end))
 
-    with Connection('amqp://guest:guest@localhost:5672//') as connection:
+    with Connection(RABBITMQ_HOST) as connection:
         exchange = Exchange('bgp_update', type='direct', durable=False)
         producer = Producer(connection)
         while True:

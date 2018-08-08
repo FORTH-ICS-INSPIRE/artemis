@@ -1,5 +1,7 @@
+import os
 from ipaddress import ip_network as str2ip
 import copy
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 
 def decompose_path(path):
     decomposed_paths = []

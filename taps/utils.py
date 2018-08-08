@@ -49,7 +49,11 @@ def normalize_msg_path(msg):
     path = msg['path']
     if isinstance(path, list):
         dec_paths = decompose_path(path)
-        if len(dec_paths) < 2:
+        if len(dec_paths) == 0:
+            msg['path'] = []
+            msgs = [msg]
+        elif len(dec_paths) == 1:
+            msg['path'] = list(map(int, dec_paths[0]))
             msgs = [msg]
         else:
             for dec_path in dec_paths:

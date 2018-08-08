@@ -1,11 +1,10 @@
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Producer, Exchange, Queue, uuid
 import argparse
-import hashlib
 import traceback
 import signal
 import sys
-from utils import mformat_validator, normalize_msg_path, RABBITMQ_HOST
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 
 def normalize_ripe_ris(msg):
     if isinstance(msg, dict):
@@ -21,26 +20,20 @@ def parse_ripe_ris(connection, prefix, host):
     exchange = Exchange('bgp_update', type='direct', durable=False)
 
     def on_ris_msg(msg):
-        global msg_num
         try:
             producer = Producer(connection)
             normalize_ripe_ris(msg)
             if mformat_validator(msg):
-                msg['key'] = hash(frozenset([
-                    str(msg['prefix']),
-                    str(msg['path']),
-                    str(msg['type']),
-                    str(msg['service']),
-                    str(msg['timestamp'])
-                ]))
                 msgs = normalize_msg_path(msg)
                 for msg in msgs:
+                    key_generator(msg)
                     producer.publish(
                         msg,
                         exchange=exchange,
                         routing_key='update',
                         serializer='json'
                     )
+       
         except Exception:
             pass
             # traceback.print_exc()

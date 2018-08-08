@@ -55,8 +55,6 @@ class Mitigation(Process):
             # QUEUES
             self.callback_queue = Queue(uuid(), durable=False, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
-                    consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
@@ -72,13 +70,6 @@ class Mitigation(Process):
                         on_message=self.handle_config_notify,
                         prefetch_count=1,
                         no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.hijack_queue],
-                        on_message=self.handle_hijack_update,
-                        prefetch_count=1,
-                        no_ack=True,
-                        accept=['pickle']
                         )
                     ]
 
@@ -130,21 +121,4 @@ class Mitigation(Process):
                     node = self.prefix_tree.add(prefix)
                     node.data['mitigation'] = rule['mitigation']
 
-
-        def handle_hijack_update(self, message):
-            hijack_event = message.payload
-            log.info(hijack_event)
-
-            hijack_event['mitigation_started'] = time.time()
-            prefix_node = self.prefix_tree.search_best(
-                hijack_event['prefix'])
-            if prefix_node is not None:
-                mitigation_action = prefix_node.data['mitigation']
-                if mitigation_action == 'manual':
-                    log.info('Starting manual mitigation of Hijack')
-                else:
-                    log.info('Starting custom mitigation of Hijack')
-                    hijack_event_str = json.dumps(hijack_event)
-                    subprocess.Popen([mitigation_action, '-i', hijack_event_str])
-            hijack_event['to_mitigate'] = False
 

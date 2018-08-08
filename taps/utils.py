@@ -1,8 +1,19 @@
 import os
 import copy
+import pickle
+import hashlib
 from ipaddress import ip_network as str2ip
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+
+def key_generator(msg):
+    msg['key'] = hashlib.md5(pickle.dumps([
+        msg['prefix'],
+        msg['path'],
+        msg['type'],
+        msg['service'],
+        msg['timestamp']
+    ])).hexdigest()
 
 def decompose_path(path):
 
@@ -69,7 +80,6 @@ def normalize_msg_path(msg):
 def mformat_validator(msg):
 
     mformat_fields = [
-        'key',
         'service',
         'type',
         'prefix',

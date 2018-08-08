@@ -5,13 +5,21 @@ services:
         container_name: artemis
         environment:
             - RABBITMQ_HOST=rabbitmq
+            - MEMCACHED_HOST=memcached
         depends_on:
             - rabbitmq
+            - memcached
         volumes:
-            - .:/root/.
+            - ./core/:/root/core/
+            - ./configs/:/root/configs/
+            - ./utils/:/root/utils/
+            - ./taps/:/root/taps/
+            - ./webapp/:/root/webapp/
+            - ./scripts/:/root/scripts/
         networks:
             - rabbitmq
-        entrypoint: ["./wait-for", "rabbitmq:5672", "-t", "60", "--", "python3", "artemis.py"]
+            - memcached
+        entrypoint: ["./wait-for", "rabbitmq:5672", "-t", "60", "--", "./wait-for", "memcached:11211", "-t", "60", "--", "python3", "artemis.py"]
     rabbitmq:
         image: "rabbitmq:3-alpine"
         container_name: rabbitmq
@@ -20,7 +28,16 @@ services:
             rabbitmq:
                 aliases:
                     - rabbitmq
+    memcached:
+        image: "memcached:alpine"
+        container_name: memcached
+        hostname: memcached
+        networks:
+            memcached:
+                aliases:
+                    - memcached
 
 
 networks:
     rabbitmq:
+    memcached:

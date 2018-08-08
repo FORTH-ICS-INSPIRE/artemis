@@ -23,7 +23,7 @@ def handle_message(body, message):
 #: If hostname, userid, password and virtual_host is not specified
 #: the values below are the default, but listed here so it can
 #: be easily changed.
-with Connection(os.getenv('RABBITMQ_HOST', 'localhost') as connection:
+with Connection(os.getenv('RABBITMQ_HOST', 'localhost')) as connection:
 
     #: Create consumer using our callback and queue.
     #: Second argument can also be a list to consume from

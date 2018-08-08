@@ -2,10 +2,8 @@ import sys
 import os
 from socketIO_client import SocketIO
 import argparse
-import hashlib
 from kombu import Connection, Producer, Exchange, Queue, uuid
-from utils import mformat_validator, normalize_msg_path, RABBITMQ_HOST
-
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 
 class ExaBGP():
 
@@ -45,19 +43,13 @@ class ExaBGP():
                 'timestamp': bgp_message['timestamp'],
                 'path': bgp_message['path'],
                 'service': 'ExaBGP {}'.format(self.config['host']),
-                'prefix': bgp_message['prefix'],
-                'key': hash(frozenset([
-                    str(bgp_message['prefix']),
-                    str(bgp_message['path']),
-                    str(bgp_message['type']),
-                    'ExaBGP {}'.format(self.config['host']),
-                    str(bgp_message['timestamp'])
-                ]))
+                'prefix': bgp_message['prefix']
             }
             if mformat_validator(msg):
                 producer = Producer(connection)
                 msgs = normalize_msg_path(msg)
                 for msg in msgs:
+                    key_generator(msg)
                     producer.publish(
                         msg,
                         exchange=self.exchange,

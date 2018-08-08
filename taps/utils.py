@@ -1,9 +1,18 @@
 import os
-from ipaddress import ip_network as str2ip
 import copy
+from ipaddress import ip_network as str2ip
+
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 
 def decompose_path(path):
+
+    # first do an ultra-fast check if the path is a normal one
+    # (simple sequence of ASNs)
+    str_path = ''.join(map(str, path))
+    if '{' not in str_path and '[' not in str_path and '(' not in str_path:
+        return [path]
+
+    # otherwise, check how to decompose
     decomposed_paths = []
     for hop in path:
         hop = str(hop)
@@ -38,8 +47,8 @@ def decompose_path(path):
 def update_msg_path(msg):
     msgs = []
     path = msg['path']
-    dec_paths = decompose_path(path)
     if isinstance(path, list):
+        dec_paths = decompose_path(path)
         if len(dec_paths) < 2:
             msgs = [msg]
         else:
@@ -48,6 +57,9 @@ def update_msg_path(msg):
                 copied_msg['path'] = dec_path
                 copied_msg['orig_path'] = path
                 msgs.append(copied_msg)
+    else:
+        msgs = [msg]
+
     return msgs
 
 def mformat_validator(msg):

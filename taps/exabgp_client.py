@@ -3,8 +3,7 @@ import os
 from socketIO_client import SocketIO
 import argparse
 from kombu import Connection, Producer, Exchange, Queue, uuid
-from utils import mformat_validator, key_generator, RABBITMQ_HOST
-
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 
 class ExaBGP():
 
@@ -47,14 +46,16 @@ class ExaBGP():
                 'prefix': bgp_message['prefix']
             }
             if mformat_validator(msg):
-                key_generator(msg)
                 producer = Producer(connection)
-                producer.publish(
-                    msg,
-                    exchange=exchange,
-                    routing_key='update',
-                    serializer='json'
-            )
+                msgs = normalize_msg_path(msg)
+                for msg in msgs:
+                    key_generator(msg)
+                    producer.publish(
+                        msg,
+                        exchange=self.exchange,
+                        routing_key='update',
+                        serializer='json'
+                    )
 
         # not used yet (TODO)
         def on_reconnecting():

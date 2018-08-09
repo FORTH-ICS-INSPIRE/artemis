@@ -196,8 +196,8 @@ class Detection(Process):
                         traceback.print_exc()
                         print(monitor_event)
                 self.mark_handled(raw)
-            log.info('finished mon #{}'.format(self.mon_num))
-            self.mon_num += 1
+                log.info('finished mon #{}'.format(self.mon_num))
+                self.mon_num += 1
 
 
         def __detection_generator(self, path_len, prefix_node):
@@ -315,7 +315,7 @@ class Detection(Process):
             else:
                 first_trigger = monitor_event['timestamp']
                 hijack_value['key'] = hashlib.md5(pickle.dumps([monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()
-            result = hijack_value
+                result = hijack_value
 
             self.memcache.set(future_memcache_hijack_key, result)
 

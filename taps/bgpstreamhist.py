@@ -7,14 +7,7 @@ import json
 import argparse
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from netaddr import IPNetwork, IPAddress
-from utils import mformat_validator, key_generator, RABBITMQ_HOST
-
-
-def as_mapper(asn_str):
-    if asn_str != '':
-        return int(asn_str)
-    return 0
-
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
 
@@ -28,10 +21,10 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                 for row in csv_reader:
                     if len(row) != 9:
                         continue
-                    # example row: 139.91.0.0/16|8522|1403|1403,6461,2603,21320,5408,8522|routeviews|route-views2|A|"[{""asn"":1403,""value"":6461}]"|1517446677
+                    # example row: 139.91.0.0/16|8522|1403|1403 6461 2603 21320 5408 8522|routeviews|route-views2|A|"[{""asn"":1403,""value"":6461}]"|1517446677
                     this_prefix = row[0]
                     if row[6] == 'A':
-                        as_path = list(map(as_mapper, row[3].split(',')))
+                        as_path = row[3].split(' ')
                         communities = json.loads(row[7])
                     else:
                         as_path = None
@@ -52,14 +45,15 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                 'prefix': this_prefix
                             }
                             if mformat_validator(msg):
-                                key_generator(msg)
-                                producer.publish(
-                                    msg,
-                                    exchange=exchange,
-                                    routing_key='update',
-                                    serializer='json'
-                                )
-
+                                msgs = normalize_msg_path(msg)
+                                for msg in msgs:
+                                    key_generator(msg)
+                                    producer.publish(
+                                        msg,
+                                        exchange=exchange,
+                                        routing_key='update',
+                                        serializer='json'
+                                    )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='BGPStream Historical Monitor')

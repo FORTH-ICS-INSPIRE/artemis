@@ -5,6 +5,8 @@ from core.configuration import Configuration
 from core.monitor import Monitor
 from core.detection import Detection
 from core.mitigation import Mitigation
+from core.sqlite_db import SQLite_db
+from core.scheduler import Scheduler
 from utils import log, RABBITMQ_HOST
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 
@@ -24,12 +26,11 @@ def main():
     modules = {}
 
     modules['configuration'] = Configuration()
+    modules['scheduler'] = Scheduler()
     modules['monitor'] = Monitor()
     modules['detection'] = Detection()
-    modules['mitigation'] = Mitigation()
-    # modules['detection3'] = Detection()
-    # modules['detection4'] = Detection()
-
+    #modules['mitigation'] = Mitigation()
+    modules['sqlite_db'] = SQLite_db()
 
     for name, module in modules.items():
         module.start()

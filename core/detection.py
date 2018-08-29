@@ -1,8 +1,6 @@
 import radix
 import ipaddress
-from profilehooks import profile
-from utils import log, exception_handler, RABBITMQ_HOST
-import hashlib
+from utils import log, exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet
 from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
@@ -10,6 +8,23 @@ import signal
 import time
 from setproctitle import setproctitle
 import traceback
+from pymemcache.client.base import Client
+import pickle
+import hashlib
+
+
+def pickle_serializer(key, value):
+     if type(value) == str:
+         return value, 1
+     return pickle.dumps(value), 2
+
+
+def pickle_deserializer(key, value, flags):
+    if flags == 1:
+        return value
+    if flags == 2:
+        return pickle.loads(value)
+    raise Exception("Unknown serialization format")
 
 
 class Detection(Process):
@@ -49,11 +64,14 @@ class Detection(Process):
             self.connection = connection
             self.flag = False
             self.timestamp = -1
-            # self.h_num = 0
-            # self.j_num = 0
             self.rules = None
             self.prefix_tree = None
-            self.future_memcache = {}
+            self.monitors_seen = TimedSet()
+            self.mon_num = 1
+
+            self.memcache = Client((MEMCACHED_HOST, 11211),
+                    serializer=pickle_serializer,
+                    deserializer=pickle_deserializer)
 
 
             # EXCHANGES
@@ -155,27 +173,31 @@ class Detection(Process):
         def handle_bgp_update(self, message):
             # log.info(' [x] Detection - Received BGP update: {}'.format(message))
             monitor_event = message.payload
-            raw = message.payload
-            # ignore withdrawals for now
-            if monitor_event['type'] == 'A':
-                monitor_event['peer_asn'] = -1
-                if len(monitor_event['path']) > 1:
-                    monitor_event['peer_asn'] = monitor_event['path'][0]
-                monitor_event['path'] = Detection.Worker.__clean_as_path(monitor_event['path'])
-                prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
+
+            if monitor_event['key'] not in self.monitors_seen:
+                raw = message.payload
+                # ignore withdrawals for now
+                if monitor_event['type'] == 'A':
+                    monitor_event['peer_asn'] = -1
+                    if len(monitor_event['path']) > 1:
+                        monitor_event['peer_asn'] = monitor_event['path'][0]
+                    monitor_event['path'] = Detection.Worker.__clean_as_path(monitor_event['path'])
+                    prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
 
 
-                if prefix_node is not None:
-                    monitor_event['matched_prefix'] = prefix_node.prefix
+                    if prefix_node is not None:
+                        monitor_event['matched_prefix'] = prefix_node.prefix
 
-                try:
-                    for func in self.__detection_generator(len(monitor_event['path']), prefix_node):
-                        if func(monitor_event, prefix_node):
-                            break
-                except:
-                    traceback.print_exc()
-                    print(monitor_event)
-            self.mark_handled(raw)
+                    try:
+                        for func in self.__detection_generator(len(monitor_event['path']), prefix_node):
+                            if func(monitor_event, prefix_node):
+                                break
+                    except:
+                        traceback.print_exc()
+                        print(monitor_event)
+                self.mark_handled(raw)
+                log.info('finished mon #{}'.format(self.mon_num))
+                self.mon_num += 1
 
 
         def __detection_generator(self, path_len, prefix_node):
@@ -267,9 +289,8 @@ class Detection(Process):
 
 
         def commit_hijack(self, monitor_event, hijacker, hij_type):
-            future_memcache_hijack_key = hash(frozenset([monitor_event['prefix'], hijacker, hij_type]))
+            future_memcache_hijack_key = hashlib.md5(pickle.dumps([monitor_event['prefix'], hijacker, hij_type])).hexdigest()
             hijack_value = {
-                'key': None,
                 'prefix': monitor_event['prefix'],
                 'hijacker': hijacker,
                 'hij_type': hij_type,
@@ -284,22 +305,22 @@ class Detection(Process):
             else:
                 hijack_value['inf_asns'] = set(monitor_event['path'][:-(hij_type+1)])
 
-            if future_memcache_hijack_key in self.future_memcache:
-                self.future_memcache[future_memcache_hijack_key]['time_started'] = min(self.future_memcache[future_memcache_hijack_key]['time_started'],
-                                                                                       hijack_value['time_started'])
-                self.future_memcache[future_memcache_hijack_key]['time_last'] = max(self.future_memcache[future_memcache_hijack_key]['time_last'],
-                                                                                    hijack_value['time_last'])
-                self.future_memcache[future_memcache_hijack_key]['peers_seen'].update(hijack_value['peers_seen'])
-                self.future_memcache[future_memcache_hijack_key]['inf_asns'].update(hijack_value['inf_asns'])
-                self.future_memcache[future_memcache_hijack_key]['monitor_keys'] = hijack_value['monitor_keys'] # no update since db already knows!
+            result = self.memcache.get(future_memcache_hijack_key)
+            if result is not None:
+                result['time_started'] = min(result['time_started'], hijack_value['time_started'])
+                result['time_last'] = max(result['time_last'], hijack_value['time_last'])
+                result['peers_seen'].update(hijack_value['peers_seen'])
+                result['inf_asns'].update(hijack_value['inf_asns'])
+                result['monitor_keys'] = hijack_value['monitor_keys'] # no update since db already knows!
             else:
                 first_trigger = monitor_event['timestamp']
-                hijack_value['key'] = hash(frozenset([monitor_event['prefix'], hijacker, hij_type, first_trigger]))
-                self.future_memcache[future_memcache_hijack_key] = hijack_value
-            log.info(str(self.future_memcache[future_memcache_hijack_key]))
+                hijack_value['key'] = hashlib.md5(pickle.dumps([monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()
+                result = hijack_value
+
+            self.memcache.set(future_memcache_hijack_key, result)
 
             self.producer.publish(
-                    self.future_memcache[future_memcache_hijack_key],
+                    result,
                     exchange=self.hijack_queue.exchange,
                     routing_key=self.hijack_queue.routing_key,
                     declare=[self.hijack_queue],
@@ -307,7 +328,6 @@ class Detection(Process):
                     priority=0
             )
             # log.info('Published Hijack #{}'.format(self.j_num))
-            # self.j_num += 1
 
 
         def mark_handled(self, monitor_event):
@@ -318,7 +338,7 @@ class Detection(Process):
                     declare=[self.handled_queue],
                     priority=1
             )
+            self.monitors_seen.add(monitor_event['key'])
             # log.info('Published Handled #{}'.format(self.h_num))
-            # self.h_num += 1
 
 

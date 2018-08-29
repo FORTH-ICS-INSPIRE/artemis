@@ -3,24 +3,60 @@ services:
     artemis:
         build: .
         container_name: artemis
+        hostname: artemis
         environment:
             - RABBITMQ_HOST=rabbitmq
+            - MEMCACHED_HOST=memcached
+            - POSTGRES_HOST=postgres
         depends_on:
             - rabbitmq
+            - memcached
+            - postgres
         volumes:
-            - .:/root/.
+            - ./core/:/root/core/
+            - ./configs/:/root/configs/
+            - ./utils/:/root/utils/
+            - ./taps/:/root/taps/
+            - ./webapp/:/root/webapp/
+            - ./scripts/:/root/scripts/
         networks:
             - rabbitmq
-        entrypoint: ["./wait-for", "rabbitmq:5672", "-t", "60", "--", "python3", "artemis.py"]
+            - memcached
+            - postgres
+        entrypoint: ["./wait-for", "rabbitmq:5672", "-t", "60", "--", "./wait-for", "memcached:11211", "-t", "60",
+            "--", "./wait-for", "postgres:5432", "-t", "60", "--", "python3", "artemis.py"]
     rabbitmq:
         image: "rabbitmq:3-alpine"
         container_name: rabbitmq
         hostname: rabbitmq
+        restart: always
         networks:
             rabbitmq:
                 aliases:
                     - rabbitmq
+    memcached:
+        image: "memcached:alpine"
+        container_name: memcached
+        hostname: memcached
+        restart: always
+        networks:
+            memcached:
+                aliases:
+                    - memcached
+    postgres:
+        image: "postgres:alpine"
+        container_name: postgres
+        hostname: postgres
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: example
+        networks:
+            postgres:
+                aliases:
+                    - postgres
 
 
 networks:
     rabbitmq:
+    memcached:
+    postgres:

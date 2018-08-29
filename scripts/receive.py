@@ -6,7 +6,7 @@ import os
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
 exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
-queue = Queue(uuid(), exchange, routing_key='update', durable=False, max_priority=1)
+queue = Queue('hijack_update_queue', exchange, routing_key='update', exclusive=True, durable=False, max_priority=1)
 
 
 def pretty(obj):
@@ -23,7 +23,7 @@ def handle_message(body, message):
 #: If hostname, userid, password and virtual_host is not specified
 #: the values below are the default, but listed here so it can
 #: be easily changed.
-with Connection(os.getenv('RABBITMQ_HOST', 'localhost') as connection:
+with Connection(os.getenv('RABBITMQ_HOST', 'localhost')) as connection:
 
     #: Create consumer using our callback and queue.
     #: Second argument can also be a list to consume from

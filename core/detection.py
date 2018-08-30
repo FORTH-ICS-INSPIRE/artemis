@@ -122,7 +122,7 @@ class Detection(Process):
                         ),
                     Consumer(
                         queues=[self.hijack_resolved_queue],
-                        on_message=self.handled_resolved_hijack,
+                        on_message=self.handle_resolved_hijack,
                         prefetch_count=1,
                         no_ack=True
                         )

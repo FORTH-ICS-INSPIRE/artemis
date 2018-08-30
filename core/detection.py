@@ -82,16 +82,18 @@ class Detection(Process):
 
 
             # QUEUES
-            self.callback_queue = Queue(uuid(), durable=False, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
             self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
+            self.update_unhandled_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='unhandled', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
             self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
+            self.hijack_resolved_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
             self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
+                    consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
             self.flag = True
@@ -111,6 +113,18 @@ class Detection(Process):
                         on_message=self.handle_bgp_update,
                         prefetch_count=1,
                         no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.update_unhandled_queue],
+                        on_message=self.handle_unhandled_bgp_updates,
+                        prefetch_count=1,
+                        no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.hijack_resolved_queue],
+                        on_message=self.handled_resolved_hijack,
+                        prefetch_count=1,
+                        no_ack=True
                         )
                     ]
 
@@ -126,23 +140,35 @@ class Detection(Process):
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
+            callback_queue = Queue(uuid(), durable=False, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
 
             self.producer.publish(
                 '',
                 exchange = '',
                 routing_key = 'config_request_queue',
-                reply_to = self.callback_queue.name,
+                reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,
                         on_message=self.handle_config_request_reply,
-                        queues=[self.callback_queue],
+                        queues=[callback_queue],
                         no_ack=True):
                 while self.rules is None:
                     self.connection.drain_events()
+
+
+        def handle_config_request_reply(self, message):
+            log.info(' [x] Detection - Received Configuration')
+            if self.correlation_id == message.properties['correlation_id']:
+                raw = message.payload
+                if raw['timestamp'] > self.timestamp:
+                    self.timestamp = raw['timestamp']
+                    self.rules = raw.get('rules', [])
+                    self.init_detection()
 
 
         def init_detection(self):
@@ -160,14 +186,9 @@ class Detection(Process):
             log.debug('Detection configuration: {}'.format(self.rules))
 
 
-        def handle_config_request_reply(self, message):
-            log.info(' [x] Detection - Received Configuration')
-            if self.correlation_id == message.properties['correlation_id']:
-                raw = message.payload
-                if raw['timestamp'] > self.timestamp:
-                    self.timestamp = raw['timestamp']
-                    self.rules = raw.get('rules', [])
-                    self.init_detection()
+        def handle_unhandled_bgp_updates(self, message):
+            for update in message.payload:
+                self.handle_bgp_update(update)
 
 
         def handle_bgp_update(self, message):
@@ -340,5 +361,9 @@ class Detection(Process):
             )
             self.monitors_seen.add(monitor_event['key'])
             # log.info('Published Handled #{}'.format(self.h_num))
+
+
+        def handle_resolved_hijack(self, message):
+            self.memcache.delete(message.payload)
 
 

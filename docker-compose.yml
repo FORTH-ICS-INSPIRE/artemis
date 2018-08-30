@@ -13,12 +13,7 @@ services:
             - memcached
             - postgres
         volumes:
-            - ./core/:/root/core/
-            - ./configs/:/root/configs/
-            - ./utils/:/root/utils/
-            - ./taps/:/root/taps/
-            - ./webapp/:/root/webapp/
-            - ./scripts/:/root/scripts/
+            - ./:/root/
         networks:
             - rabbitmq
             - memcached
@@ -49,12 +44,13 @@ services:
         hostname: postgres
         restart: always
         environment:
-            POSTGRES_PASSWORD: example
+            POSTGRES_DB: artemis_db
+            POSTGRES_USER: artemis_user
+            POSTGRES_PASSWORD: Art3m1s
         networks:
             postgres:
                 aliases:
                     - postgres
-
 
 networks:
     rabbitmq:

@@ -5,11 +5,10 @@ from core.configuration import Configuration
 from core.monitor import Monitor
 from core.detection import Detection
 from core.mitigation import Mitigation
-from core.sqlite_db import SQLite_db
 from core.scheduler import Scheduler
+from core.postgresql_db import Postgresql_db
 from utils import log, RABBITMQ_HOST
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
-
 
 class GracefulKiller:
     def __init__(self):
@@ -30,7 +29,9 @@ def main():
     modules['monitor'] = Monitor()
     modules['detection'] = Detection()
     #modules['mitigation'] = Mitigation()
-    modules['sqlite_db'] = SQLite_db()
+    modules['postgresql_db'] = Postgresql_db()
+    #modules['webapp'] = WebApplication()
+
 
     for name, module in modules.items():
         module.start()

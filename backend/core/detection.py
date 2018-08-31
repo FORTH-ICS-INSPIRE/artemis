@@ -187,6 +187,7 @@ class Detection(Process):
 
 
         def handle_unhandled_bgp_updates(self, message):
+            log.info('Received {} unhandled events'.format(len(message.payload)))
             for update in message.payload:
                 self.handle_bgp_update(update)
 

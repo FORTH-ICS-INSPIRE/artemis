@@ -193,7 +193,10 @@ class Detection(Process):
 
         def handle_bgp_update(self, message):
             # log.info(' [x] Detection - Received BGP update: {}'.format(message))
-            monitor_event = message.payload
+            if isinstance(message, dict):
+                monitor_event = message
+            else:
+                monitor_event = message.payload
 
             if monitor_event['key'] not in self.monitors_seen:
                 raw = message.payload

@@ -68,8 +68,6 @@ class Postgresql_db(Process):
             #self.hijack_mit_started = Exchange('hijack_mit_started', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.callback_queue = Queue(uuid(), durable=False, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
             self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
             self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
@@ -123,27 +121,29 @@ class Postgresql_db(Process):
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
+            callback_queue = Queue(uuid(), durable=False, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
 
             self.producer.publish(
                 '',
                 exchange = '',
                 routing_key = 'config_request_queue',
-                reply_to = self.callback_queue.name,
+                reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,
                         on_message=self.handle_config_request_reply,
-                        queues=[self.callback_queue],
+                        queues=[callback_queue],
                         no_ack=True):
                 while self.rules is None:
                     self.connection.drain_events()
 
         def handle_bgp_update(self, message):
             msg_ = message.payload
-            # prefix, ckey, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
+            # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
             extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
                 msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, False, self.find_best_prefix_match(msg_['prefix']) )
             self.insert_bgp_entries.append(extract_msg)
@@ -170,7 +170,7 @@ class Postgresql_db(Process):
 
         def handle_handled_bgp_update(self, message):
             msg_ = message.payload
-            # prefix, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix, ckey
+            # prefix, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix, key
             extract_msg = (msg_['prefix'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
                 msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, True, self.find_best_prefix_match(msg_['prefix']),  msg_['key'])
             self.handled_bgp_entries.append(extract_msg)
@@ -215,7 +215,7 @@ class Postgresql_db(Process):
         def create_tables(self):
             bgp_updates_table = "CREATE TABLE IF NOT EXISTS bgp_updates ( " + \
                 "id INTEGER GENERATED ALWAYS AS IDENTITY, " + \
-                "ckey VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
+                "key VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
                 "prefix inet, " + \
                 "origin_as VARCHAR ( 6 ), " + \
                 "peer_asn   VARCHAR ( 6 ), " + \
@@ -224,13 +224,13 @@ class Postgresql_db(Process):
                 "type  VARCHAR ( 1 ), " + \
                 "communities  json, " + \
                 "timestamp REAL, " + \
-                "hijack_ckey VARCHAR ( 32 ), " + \
+                "hijack_key VARCHAR ( 32 ), " + \
                 "handled   BOOLEAN, " + \
                 "matched_prefix inet )"
 
             bgp_hijacks_table = "CREATE TABLE IF NOT EXISTS hijacks ( " + \
                 "id   INTEGER GENERATED ALWAYS AS IDENTITY, " + \
-                "ckey VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
+                "key VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
                 "type  VARCHAR ( 1 ), " + \
                 "prefix    inet, " + \
                 "hijack_as VARCHAR ( 6 ), " + \
@@ -261,8 +261,8 @@ class Postgresql_db(Process):
 
         def _insert_bgp_updates(self):
             try:
-                self.db_cur.executemany("INSERT INTO bgp_updates (prefix, ckey, origin_as, peer_asn, as_path, service, type, communities, " + \
-                    "timestamp, hijack_ckey, handled, matched_prefix) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
+                self.db_cur.executemany("INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, " + \
+                    "timestamp, hijack_key, handled, matched_prefix) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
                 self.db_conn.commit()
             except Exception as e:
                 log.info("error on _insert_bgp_updates " + str(e))
@@ -276,14 +276,14 @@ class Postgresql_db(Process):
         def _update_bgp_updates(self):
             num_of_updates = 0
             # Update the BGP entries using the hijack messages
-            for hijack_ckey in self.tmp_hijacks_dict:
-                for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_ckey]['monitor_keys']:
+            for hijack_key in self.tmp_hijacks_dict:
+                for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                     num_of_updates += 1
-                    self.update_bgp_entries.append((True, str(hijack_ckey), bgp_entry_to_update))
-            
+                    self.update_bgp_entries.append((True, str(hijack_key), bgp_entry_to_update))
+
             if len(self.update_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET handled=%s, hijack_ckey=%s WHERE ckey=%s ", self.update_bgp_entries)
+                    self.db_cur.executemany("UPDATE bgp_updates SET handled=%s, hijack_key=%s WHERE key=%s ", self.update_bgp_entries)
                     self.db_conn.commit()
                 except Exception as e:
                     log.info("error on 1_update_bgp_updates " + str(e))
@@ -293,8 +293,8 @@ class Postgresql_db(Process):
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_ckey=%s, handled=%s, matched_prefix=%s " \
-                        + " WHERE ckey=%s", self.handled_bgp_entries)
+                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_key=%s, handled=%s, matched_prefix=%s " \
+                        + " WHERE key=%s", self.handled_bgp_entries)
                     self.db_conn.commit()
                 except Exception as e:
                     log.info("error on 2_update_bgp_updates " + str(e))
@@ -303,19 +303,19 @@ class Postgresql_db(Process):
 
             num_of_updates += len(self.handled_bgp_entries)
             self.handled_bgp_entries.clear()
-            return num_of_updates           
+            return num_of_updates
 
-            
+
         def _insert_update_hijacks(self):
-            for ckey in self.tmp_hijacks_dict:
+            for key in self.tmp_hijacks_dict:
                 try:
-                    cmd_ = "INSERT INTO hijacks (ckey, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
+                    cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, to_mitigate) VALUES ("
-                    cmd_ += "'" + str(ckey) + "','" + self.tmp_hijacks_dict[ckey]['hij_type'] + "','" + self.tmp_hijacks_dict[ckey]['prefix'] + "','" + self.tmp_hijacks_dict[ckey]['hijacker'] + "'," 
-                    cmd_ += str(len(self.tmp_hijacks_dict[ckey]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[ckey]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[ckey]['time_started']) + "," 
-                    cmd_ += str(self.tmp_hijacks_dict[ckey]['time_last']) + ",0,0,false) "
-                    cmd_ += "ON CONFLICT(ckey) DO UPDATE SET num_peers_seen=" + str(len(self.tmp_hijacks_dict[ckey]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[ckey]['inf_asns']))
-                    cmd_ += ", time_started=" + str(self.tmp_hijacks_dict[ckey]['time_started']) + ", time_last=" + str(self.tmp_hijacks_dict[ckey]['time_last'])
+                    cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + self.tmp_hijacks_dict[key]['prefix'] + "','" + self.tmp_hijacks_dict[key]['hijacker'] + "'," 
+                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + "," 
+                    cmd_ += str(self.tmp_hijacks_dict[key]['time_last']) + ",0,0,false) "
+                    cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=" + str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[key]['inf_asns']))
+                    cmd_ += ", time_started=" + str(self.tmp_hijacks_dict[key]['time_started']) + ", time_last=" + str(self.tmp_hijacks_dict[key]['time_last'])
 
                     self.db_cur.execute(cmd_)
                     self.db_conn.commit()
@@ -333,7 +333,7 @@ class Postgresql_db(Process):
             self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id ASC LIMIT(" + str(self.unhadled_to_feed_to_detection) + ");")
             entries = self.db_cur.fetchall()
             for entry in entries:
-                results.append({ 'ckey' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'as_path': entry[5], \
+                results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'as_path': entry[5], \
                   'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : entry[9]})
 
             self.producer.publish(
@@ -349,7 +349,7 @@ class Postgresql_db(Process):
             details = "\n - \tBGP Entries: Inserted %d | Updated %d" % (self._insert_bgp_updates(), self._update_bgp_updates())
             details += "\n - \tHijacks Entries: Inserted/Updated %d" % (self._insert_update_hijacks())
             log.info("[.] SQLite bulk-query execution:" + details)
-            
+
         def _scheduler_instruction(self, message):
             msg_ = message.payload
             if (msg_ == 'bulk_operation'):

@@ -62,8 +62,6 @@ class Monitor(Process):
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.callback_queue = Queue(uuid(), durable=False, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
             self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
@@ -131,20 +129,22 @@ class Monitor(Process):
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
+            callback_queue = Queue(uuid(), durable=False, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
 
             self.producer.publish(
                 '',
                 exchange = '',
                 routing_key = 'config_request_queue',
-                reply_to = self.callback_queue.name,
+                reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,
                         on_message=self.handle_config_request_reply,
-                        queues=[self.callback_queue], no_ack=True):
+                        queues=[callback_queue], no_ack=True):
                 while self.rules is None and self.monitors is None:
                     self.connection.drain_events()
 

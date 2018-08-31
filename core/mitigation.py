@@ -50,12 +50,15 @@ class Mitigation(Process):
 
             # EXCHANGES
             self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
+            self.mitigation_exchange = Exchange('mitigation', type='direct', durable=False, delivery_mode=1)
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.callback_queue = Queue(uuid(), durable=False, max_priority=2,
+            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
+                    consumer_arguments={'x-priority': 3})
+            self.mitigate_queue = Queue(uuid(), exchange=self.mitigation_exchange, routing_key='mitigate', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+            self.mitigate_start_queue = Queue(uuid(), exchange=self.mitigation_exchange, routing_key='mit_start', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
@@ -68,6 +71,12 @@ class Mitigation(Process):
                     Consumer(
                         queues=[self.config_queue],
                         on_message=self.handle_config_notify,
+                        prefetch_count=1,
+                        no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.mitigate_queue],
+                        on_message=self.handle_mitigation_request,
                         prefetch_count=1,
                         no_ack=True
                         )
@@ -85,20 +94,22 @@ class Mitigation(Process):
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
+            callback_queue = Queue(uuid(), durable=False, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
 
             self.producer.publish(
                 '',
                 exchange = '',
                 routing_key = 'config_request_queue',
-                reply_to = self.callback_queue.name,
+                reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [self.callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,
                         on_message=self.handle_config_request_reply,
-                        queues=[self.callback_queue],
+                        queues=[callback_queue],
                         no_ack=True):
                 while self.rules is None:
                     self.connection.drain_events()
@@ -120,5 +131,16 @@ class Mitigation(Process):
                 for prefix in rule['prefixes']:
                     node = self.prefix_tree.add(prefix)
                     node.data['mitigation'] = rule['mitigation']
+
+
+        def handle_mitigation_request(self, message):
+            # do something
+            mit_started = {'key': message.payload['key'], 'time': time.time()}
+            self.producer.publish(
+                    mit_started,
+                    exchange=self.mitigation_start_queue.exchange,
+                    routing_key=self.mitigation_start_queue.routing_key,
+                    priority=2
+            )
 
 

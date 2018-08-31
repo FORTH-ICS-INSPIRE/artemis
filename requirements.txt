@@ -13,6 +13,7 @@ pytz==2018.5
 PyYAML==3.13
 requests==2.19.1
 setproctitle==1.1.10
+ruamel.yaml==0.15.47 
 six==1.11.0
 socketIO-client-nexus==0.7.6
 urllib3==1.23

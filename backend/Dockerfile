@@ -29,5 +29,5 @@ RUN pip3 install pybgpstream
 
 WORKDIR ../..
 
-ENTRYPOINT ["python3", "artemis.py"]
+CMD ["./entrypoint"]
 

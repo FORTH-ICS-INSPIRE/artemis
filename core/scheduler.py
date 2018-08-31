@@ -46,6 +46,7 @@ class Scheduler(Process):
             self.connection = connection
             self.flag = False
             self.time_to_wait = 1 # Time in secs to gather entries to perform a bulk operation
+            self.time_to_wait_to_send_unhadled = 5
 
             self.db_clock_exchange = Exchange('db_clock', type='direct', durable=False, delivery_mode=1)
 
@@ -54,15 +55,26 @@ class Scheduler(Process):
             self.db_clock_send()
 
         def db_clock_send(self):
+            unhandled_cnt = 0
+
             while 1:
                 time.sleep(self.time_to_wait)
                 self.producer.publish(
-                    'proceed',
+                    'bulk_operation',
                     exchange = self.db_clock_exchange,
                     routing_key = 'db_clock',
                     retry = True,
                     priority = 3
                 )
-
+                if(unhandled_cnt == 5):
+                    self.producer.publish(
+                        'send_unhandled',
+                        exchange = self.db_clock_exchange,
+                        routing_key = 'db_clock',
+                        retry = True,
+                        priority = 2
+                    )
+                    unhandled_cnt = 0
+                unhandled_cnt += 1
 
 

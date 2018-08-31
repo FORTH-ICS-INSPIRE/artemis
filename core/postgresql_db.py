@@ -46,6 +46,7 @@ class Postgresql_db(Process):
             self.prefix_tree = None
             self.rules = None
             self.timestamp = -1
+            self.unhadled_to_feed_to_detection = 10
             self.insert_bgp_entries = []
             self.update_bgp_entries = []
             self.handled_bgp_entries = []
@@ -108,7 +109,7 @@ class Postgresql_db(Process):
                         ),
                     Consumer(
                         queues=[self.db_clock_queue],
-                        on_message=self._update_bulk,
+                        on_message=self._scheduler_instruction,
                         prefetch_count=1,
                         no_ack=True
                         ),
@@ -143,7 +144,7 @@ class Postgresql_db(Process):
         def handle_bgp_update(self, message):
             msg_ = message.payload
             # prefix, ckey, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
-            extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), str(msg_['path']), msg_['service'], \
+            extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
                 msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, False, self.find_best_prefix_match(msg_['prefix']) )
             self.insert_bgp_entries.append(extract_msg)
 
@@ -170,7 +171,7 @@ class Postgresql_db(Process):
         def handle_handled_bgp_update(self, message):
             msg_ = message.payload
             # prefix, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix, ckey
-            extract_msg = (msg_['prefix'], str(msg_['path'][-1]), str(msg_['peer_asn']), str(msg_['path']), msg_['service'], \
+            extract_msg = (msg_['prefix'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
                 msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, True, self.find_best_prefix_match(msg_['prefix']),  msg_['key'])
             self.handled_bgp_entries.append(extract_msg)
 
@@ -217,8 +218,8 @@ class Postgresql_db(Process):
                 "ckey VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
                 "prefix inet, " + \
                 "origin_as VARCHAR ( 6 ), " + \
-                "peer_as   VARCHAR ( 6 ), " + \
-                "as_path   VARCHAR ( 140 ), " + \
+                "peer_asn   VARCHAR ( 6 ), " + \
+                "as_path   text[], " + \
                 "service   VARCHAR ( 50 ), " + \
                 "type  VARCHAR ( 1 ), " + \
                 "communities  json, " + \
@@ -260,7 +261,7 @@ class Postgresql_db(Process):
 
         def _insert_bgp_updates(self):
             try:
-                self.db_cur.executemany("INSERT INTO bgp_updates (prefix, ckey, origin_as, peer_as, as_path, service, type, communities, " + \
+                self.db_cur.executemany("INSERT INTO bgp_updates (prefix, ckey, origin_as, peer_asn, as_path, service, type, communities, " + \
                     "timestamp, hijack_ckey, handled, matched_prefix) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
                 self.db_conn.commit()
             except Exception as e:
@@ -292,7 +293,7 @@ class Postgresql_db(Process):
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_as=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_ckey=%s, handled=%s, matched_prefix=%s " \
+                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_ckey=%s, handled=%s, matched_prefix=%s " \
                         + " WHERE ckey=%s", self.handled_bgp_entries)
                     self.db_conn.commit()
                 except Exception as e:
@@ -327,9 +328,55 @@ class Postgresql_db(Process):
             self.tmp_hijacks_dict.clear()
             return num_of_entries
 
-        def _update_bulk(self, message):
+        def _retrieve_unhandled(self):
+            results = []
+            self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id ASC LIMIT(" + str(self.unhadled_to_feed_to_detection) + ");")
+            entries = self.db_cur.fetchall()
+            for entry in entries:
+                results.append({ 'ckey' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'as_path': entry[5], \
+                  'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : entry[9]})
+
+            self.producer.publish(
+                results,
+                exchange = self.update_exchange,
+                routing_key = 'unhandled',
+                retry = False,
+                priority = 2
+            )
+
+
+        def _update_bulk(self):
             details = "\n - \tBGP Entries: Inserted %d | Updated %d" % (self._insert_bgp_updates(), self._update_bgp_updates())
             details += "\n - \tHijacks Entries: Inserted/Updated %d" % (self._insert_update_hijacks())
             log.info("[.] SQLite bulk-query execution:" + details)
             
+        def _scheduler_instruction(self, message):
+            msg_ = message.payload
+            if (msg_ == 'bulk_operation'):
+                self._update_bulk()
+                return
+            elif(msg_ == 'send_unhandled'):
+                self._retrieve_unhandled()
+                return
+            else:
+                log.info("Received uknown instruction from scheduler.")
+                log.info(msg_)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

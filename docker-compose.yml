@@ -1,7 +1,7 @@
 version: '2'
 services:
     artemis:
-        build: .
+        build: ./backend/
         container_name: artemis
         hostname: artemis
         environment:

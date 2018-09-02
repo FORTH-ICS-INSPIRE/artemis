@@ -33,7 +33,6 @@ def parse_ripe_ris(connection, prefix, host):
                         routing_key='update',
                         serializer='json'
                     )
-       
         except Exception:
             pass
             # traceback.print_exc()

@@ -50,6 +50,8 @@ class Scheduler(Process):
 
             self.db_clock_exchange = Exchange('db_clock', type='direct', durable=False, delivery_mode=1)
 
+            self.db_clock_queue = Queue(uuid(), exchange=self.db_clock_exchange, routing_key='db_clock', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 3})
             self.flag = True
             log.info('Scheduler Started..')
             self.db_clock_send()
@@ -61,16 +63,18 @@ class Scheduler(Process):
                 time.sleep(self.time_to_wait)
                 self.producer.publish(
                     'bulk_operation',
-                    exchange = self.db_clock_exchange,
-                    routing_key = 'db_clock',
+                    exchange = self.db_clock_queue.exchange,
+                    routing_key = self.db_clock_queue.routing_key,
                     retry = True,
+                    declare = [self.db_clock_queue],
                     priority = 3
                 )
                 if(unhandled_cnt == 5):
                     self.producer.publish(
                         'send_unhandled',
-                        exchange = self.db_clock_exchange,
-                        routing_key = 'db_clock',
+                        exchange = self.db_clock_queue.exchange,
+                        routing_key = self.db_clock_queue.routing_key,
+                        declare = [self.db_clock_queue],
                         retry = True,
                         priority = 2
                     )

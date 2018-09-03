@@ -26,10 +26,10 @@ def main():
 
     modules['configuration'] = Configuration()
     modules['scheduler'] = Scheduler()
-    modules['monitor'] = Monitor()
+    # modules['monitor'] = Monitor()
     modules['detection'] = Detection()
     #modules['mitigation'] = Mitigation()
-    modules['postgresql_db'] = Postgresql_db()
+    # modules['postgresql_db'] = Postgresql_db()
     #modules['webapp'] = WebApplication()
 
 

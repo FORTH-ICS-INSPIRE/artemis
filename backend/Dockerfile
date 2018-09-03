@@ -29,5 +29,5 @@ RUN pip3 install pybgpstream
 
 WORKDIR ../..
 
-CMD ["./entrypoint"]
+ENTRYPOINT ["./entrypoint"]
 

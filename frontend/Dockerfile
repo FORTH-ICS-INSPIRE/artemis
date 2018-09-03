@@ -1,7 +1,6 @@
-FROM python:3
+FROM python:3-alpine
 
-RUN apt-get update && \
-    apt-get -y install python3-pip
+LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 WORKDIR /root
 
@@ -9,7 +8,5 @@ COPY . ./
 
 RUN pip3 --no-cache-dir install -r requirements.txt
 
-WORKDIR ..
-
-CMD ["./entrypoint"]
+ENTRYPOINT ["./entrypoint"]
 

@@ -1,7 +1,7 @@
 version: '2'
 services:
     artemis:
-        build: .
+        build: ./backend/
         container_name: artemis
         hostname: artemis
         environment:
@@ -13,10 +13,26 @@ services:
             - memcached
             - postgres
         volumes:
-            - ./:/root/
+            - ./backend/:/root/
         networks:
             - rabbitmq
             - memcached
+            - postgres
+    artemis_webapp:
+        build: ./frontend/
+        container_name: artemis_webapp
+        hostname: artemis_webapp
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            POSTGRES_HOST: postgres
+        expose:
+            - 8000
+        ports:
+            - "8000:8000"
+        volumes:
+            - ./frontend/:/root/
+        networks:
+            - rabbitmq
             - postgres
     rabbitmq:
         image: "rabbitmq:3-alpine"

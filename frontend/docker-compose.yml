@@ -1,0 +1,18 @@
+version: '2'
+services:
+    artemis_webapp:
+        build: .
+        container_name: artemis_webapp
+        hostname: artemis_webapp
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            POSTGRES_HOST: postgres
+        volumes:
+            - ./:/root/
+        networks:
+            - rabbitmq
+            - postgres
+
+networks:
+    rabbitmq:
+    postgres:

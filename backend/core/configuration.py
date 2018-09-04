@@ -4,25 +4,24 @@ import sys
 from yaml import load as yload
 from utils import flatten, log, ArtemisError, RABBITMQ_HOST
 from socketIO_client_nexus import SocketIO
-from multiprocessing import Process
+from service import Service
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
 import signal
 import time
-from setproctitle import setproctitle
 import traceback
 
-class Configuration(Process):
+class Configuration(Service):
 
 
-    def __init__(self):
+    def __init__(self, name='Configuration', pid_dir='/tmp'):
+        super().__init__(name, pid_dir)
         super().__init__()
         self.worker = None
         self.stopping = False
 
 
     def run(self):
-        setproctitle(self.name)
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:

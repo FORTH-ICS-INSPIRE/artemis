@@ -1,26 +1,24 @@
 import psycopg2
 import radix
 from utils import log, exception_handler, RABBITMQ_HOST
-from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
+from service import Service
 import signal
 import time
-from setproctitle import setproctitle
 import traceback
 import pickle
 import json
 
-class Postgresql_db(Process):
+class Postgresql_db(Service):
 
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name='Postgresql', pid_dir='/tmp'):
+        super().__init__(name, pid_dir)
         self.worker = None
         self.stopping = False
 
     def run(self):
-        setproctitle(self.name)
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:

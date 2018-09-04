@@ -1,24 +1,22 @@
 from utils import log, exception_handler, RABBITMQ_HOST
-from multiprocessing import Process
+from service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import signal
 import time
-from setproctitle import setproctitle
 import traceback
 
 
-class Scheduler(Process):
+class Scheduler(Service):
 
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name='Scheduler', pid_dir='/tmp'):
+        super().__init__(name, pid_dir)
         self.worker = None
         self.stopping = False
 
 
     def run(self):
-        setproctitle(self.name)
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:

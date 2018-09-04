@@ -1,6 +1,5 @@
 amqp==2.3.2
 billiard==3.5.0.4
-celery==4.2.1
 certifi==2018.4.16
 chardet==3.0.4
 idna==2.7
@@ -12,12 +11,11 @@ pymemcache==1.4.4
 pytz==2018.5
 PyYAML==3.13
 requests==2.19.1
-setproctitle==1.1.10
-ruamel.yaml==0.15.47 
+ruamel.yaml==0.15.47
 six==1.11.0
 socketIO-client-nexus==0.7.6
 urllib3==1.23
 vine==1.1.4
 websocket-client==0.48.0
 psycopg2-binary==2.7.5
-Flask==1.0.2
+service==0.5.1

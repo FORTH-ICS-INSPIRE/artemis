@@ -26,11 +26,11 @@ def main():
 
     modules['configuration'] = Configuration()
     modules['scheduler'] = Scheduler()
-    # modules['monitor'] = Monitor()
+    modules['monitor'] = Monitor()
     modules['detection'] = Detection()
-    #modules['mitigation'] = Mitigation()
+    # modules['mitigation'] = Mitigation()
     # modules['postgresql_db'] = Postgresql_db()
-    #modules['webapp'] = WebApplication()
+    # modules['webapp'] = WebApplication()
 
 
     for name, module in modules.items():
@@ -50,17 +50,16 @@ def main():
                     if message.payload['module'] in modules:
                         module = modules[message.payload['module']]
                         if message.payload['action'] == 'stop':
-                            if not module.is_alive():
+                            if not module.is_running():
                                 log.warning('Module already stopped..')
                             else:
-                                module.terminate()
-                                while module.is_alive():
+                                module.stop()
+                                while module.is_running():
                                     time.sleep(1)
                         elif message.payload['action'] == 'start':
-                            if module.is_alive():
+                            if module.is_running():
                                 log.warning('Module already running..')
                             else:
-                                modules[message.payload['module']] = module.__class__()
                                 modules[message.payload['module']].start()
                     else:
                         log.warning('Unrecognized module name {}'.format(message.payload['module']))

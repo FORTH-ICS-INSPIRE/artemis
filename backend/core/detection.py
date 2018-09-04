@@ -1,12 +1,11 @@
 import radix
 import ipaddress
 from utils import log, exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet
-from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
+from service import Service
 import signal
 import time
-from setproctitle import setproctitle
 import traceback
 from pymemcache.client.base import Client
 import pickle
@@ -27,17 +26,16 @@ def pickle_deserializer(key, value, flags):
     raise Exception("Unknown serialization format")
 
 
-class Detection(Process):
+class Detection(Service):
 
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name='Detection', pid_dir='/tmp'):
+        super().__init__(name, pid_dir)
         self.worker = None
         self.stopping = False
 
 
     def run(self):
-        setproctitle(self.name)
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:

@@ -3,26 +3,24 @@ import os
 import radix
 from subprocess import Popen
 from utils import exception_handler, log, RABBITMQ_HOST
-from multiprocessing import Process
+from service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import signal
 import time
-from setproctitle import setproctitle
 import traceback
 
 
-class Monitor(Process):
+class Monitor(Service):
 
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name='Monitor', pid_dir='/tmp'):
+        super().__init__(name, pid_dir)
         self.worker = None
         self.stopping = False
 
 
     def run(self):
-        setproctitle(self.name)
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         try:

@@ -15,8 +15,7 @@ class Configuration(Service):
 
 
     def __init__(self, name='Configuration', pid_dir='/tmp'):
-        super().__init__(name, pid_dir)
-        super().__init__()
+        super().__init__(name=name, pid_dir=pid_dir)
         self.worker = None
         self.stopping = False
 

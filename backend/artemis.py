@@ -71,10 +71,9 @@ def main():
 
     # Stop all modules and web application
     for name, module in modules.items():
-        module.terminate()
+        if module.is_running():
+            module.stop()
 
-    for name, module in modules.items():
-        module.join()
     log.info('Bye..!')
 
 

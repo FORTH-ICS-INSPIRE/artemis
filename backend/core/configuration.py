@@ -14,12 +14,9 @@ class Configuration(Service):
 
 
     def run_worker(self):
-        try:
-            with Connection(RABBITMQ_HOST) as connection:
-                self.worker = self.Worker(connection)
-                self.worker.run()
-        except Exception:
-            traceback.print_exc()
+        with Connection(RABBITMQ_HOST) as connection:
+            self.worker = self.Worker(connection)
+            self.worker.run()
         log.info('Configuration Stopped..')
 
 

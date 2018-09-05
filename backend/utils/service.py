@@ -212,7 +212,8 @@ class Service(Process):
     def run(self):
         pid = self.get_pid()
         if pid:
-            raise ValueError('Daemon is already running at PID %d.' % pid)
+            if self.is_running():
+                raise ValueError('Daemon is already running at PID %d.' % pid)
 
         # The default is to place the PID file into ``/var/run``. This
         # requires root privileges. Since not having these is a common

@@ -34,7 +34,8 @@ def main():
 
 
     for name, module in modules.items():
-        module.start()
+        if not module.is_running():
+            module.start()
 
     killer = GracefulKiller()
     log.info('Send SIGTERM signal to end..\n')
@@ -50,17 +51,14 @@ def main():
                     if message.payload['module'] in modules:
                         module = modules[message.payload['module']]
                         if message.payload['action'] == 'stop':
-                            if not module.is_alive():
+                            if not module.is_running():
                                 log.warning('Module already stopped..')
                             else:
-                                module.terminate()
-                                while module.is_alive():
-                                    time.sleep(1)
+                                module.stop(block=True)
                         elif message.payload['action'] == 'start':
-                            if module.is_alive():
+                            if module.is_running():
                                 log.warning('Module already running..')
                             else:
-                                modules[message.payload['module']] = module.__class__()
                                 modules[message.payload['module']].start()
                     else:
                         log.warning('Unrecognized module name {}'.format(message.payload['module']))
@@ -72,10 +70,8 @@ def main():
 
     # Stop all modules and web application
     for name, module in modules.items():
-        module.terminate()
+        module.stop(block=True)
 
-    for name, module in modules.items():
-        module.join()
     log.info('Bye..!')
 
 

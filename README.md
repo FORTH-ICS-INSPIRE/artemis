@@ -4,21 +4,32 @@ ARTEMIS is a defense approach versus BGP prefix hijacking attacks (a) based on a
 
 You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis.
 
+The current version of ARTEMIS as a tool includes the following features:
+
+* Real-time monitoring of the inter-domain routing control plane using feed from BGP route collectors via [RIPE RIS](http://stream-dev.ris.ripe.net/demo), [BGPStream](https://bgpstream.caida.org/) (RouteViews + RIPE RIS) and [exaBGP](https://github.com/Exa-Networks/exabgp) (local monitor) interfaces.
+* Detection of basic types of BGP prefix hijacking attacks/events, i.e., exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
+* Manual mitigation of BGP prefix hijacking attacks.
+* User interface to configure the tool, have an overview of the inter-domain control plane state related to the IP prefixes of interest, and get notified about BGP hijacks against the prefixes of the network which is running ARTEMIS.
+* Support for both IPv4 and IPv6 prefixes.
+* Modularity/extensibility by design.
+
+*Note*: All current development is taking place on the kombu branch, which contains a significant refactoring of the tool's code. The master branch will be up-to-date by September the 13th, 2018.
+
 ## Getting Started
 
-These instructions will get you a copy of the ARTEMIS tool up and running on your local machine for testing purposes. For a detailed view of the ARTEMIS system architecture please check architecture.txt. We highly recommend using the containerized approach.
+ARTEMIS is built as a multi-container Docker application. The following instructions will get you a containerized copy of the ARTEMIS tool up and running on your local machine for testing purposes. For a detailed view of the ARTEMIS system architecture please check [here](https://docs.google.com/presentation/d/104ENSvv7c-4jZ14BDAAqvK8bSUIWHV7g0TiNqT71J4s/edit?usp=sharing).
 
-## ARTEMIS as Container (Recommended)
+## How to run
 
-### How to run
-
-First, if not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install the latest version of docker.
+First, if not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install the latest version of docker, and [here](https://docs.docker.com/compose/install/#install-compose) to install the docker-compose tool for supporting multi-container Docker applications.
 
 If you would like to run docker without using sudo, please add the local user to the default docker group:
 
 ```
 sudo usermod -aG docker $USER
 ```
+
+NOTE: THE FOLLOWING INSTRUCTIONS ARE DEPRECATED: TO BE REPLACED WITH DOCKER-COMPOSE COMMANDS
 
 If you do not have access to the inspiregroup/artemis-tool image you can build your own by running:
 
@@ -71,15 +82,12 @@ using the SIGTERM signal.
 
 Note: to run the mininet demo (optional) please follow the instructions under mininet-demo/README.md
 
-### Development Testing
 
-TBD
-
-### SSL/TLS Support
+## SSL/TLS Support
 
 The following process, based on Flask-accessed certificates/keys, is to be used only in testing environments.
 
-In production, a scalable nginx/apache-based reverse proxy will be used to terminate SSL connections.
+In production, a scalable nginx/apache-based reverse proxy will be used to terminate SSL connections (TBD).
 
 For testing, simply configure the following in configs/webapp.cfg:
 ```
@@ -87,7 +95,7 @@ WEBAPP_KEY = '<path_to_key_file>'
 WEBAPP_CRT = '<path_to_cert_file>'
 ```
 
-### Known Issues
+## Known Issues
 
 1. iptables: No chain/target/match by that name
 
@@ -104,13 +112,12 @@ iptables -t filter -X
 systemctl restart docker
 ```
 
-2. BGPStream and IPv6
-
-Due to a bug related to IPv6 support with the current BGPStream release, we would recommend not using BGPStream to monitor IPv6 prefixes.
-
 ## Contributing
 
 ### Implementing additional Monitors (taps)
+
+
+NOTE: THE FOLLOWING INSTRUCTIONS ARE DEPRECATED: TO BE REPLACED WITH RABBITMQ AND TAPS INSTRUCTIONS
 
 In order to add new monitors you need to send the BGP Update messages to the GRPC Server which runs on port 50051. The .proto file is provided and you only need to compile and use the `queryMformat` function with the provided format:
 

@@ -32,12 +32,13 @@ class Detection(Service):
     def __init__(self, name='Detection', pid_dir='/tmp'):
         super().__init__(name=name, pid_dir=pid_dir)
         self.worker = None
-        self.stopping = False
+        # self.stopping = False
+        self.cwd = os.getcwd()
 
 
     def run(self):
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
+        os.chdir(self.cwd)
+        # signal.signal(signal.SIGTERM, self.exit)
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
@@ -45,14 +46,13 @@ class Detection(Service):
         except Exception:
             traceback.print_exc()
         log.info('Detection Stopped..')
-        self.stopping = True
 
 
-    def exit(self, signum, frame):
-        if self.worker is not None:
-            self.worker.should_stop = True
-            while(self.stopping):
-                time.sleep(1)
+    # def exit(self, signum, frame):
+    #     if self.worker is not None:
+    #         self.worker.should_stop = True
+    #         while self.stopping:
+    #             time.sleep(1)
 
 
     class Worker(ConsumerProducerMixin):

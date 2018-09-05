@@ -17,22 +17,24 @@ class Monitor(Service):
     def __init__(self, name='Monitor', pid_dir='/tmp'):
         super().__init__(name=name, pid_dir=pid_dir)
         self.worker = None
-        self.stopping = False
+        # self.stopping = False
+        self.cwd = os.getcwd()
 
 
     def run(self):
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
+        os.chdir(self.cwd)
+        # signal.signal(signal.SIGTERM, self.exit)
+        # signal.signal(signal.SIGINT, self.exit)
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:
             traceback.print_exc()
-        if self.worker is not None:
-            self.worker.stop()
+        # if self.worker is not None:
+        #     self.worker.stop()
         log.info('Monitors Stopped..')
-        self.stopping = True
+        # self.stopping = True
 
 
     def exit(self, signum, frame):

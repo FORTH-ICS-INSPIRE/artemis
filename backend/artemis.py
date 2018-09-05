@@ -53,7 +53,7 @@ def main():
                             if not module.is_running():
                                 log.warning('Module already stopped..')
                             else:
-                                module.stop()
+                                module.kill()
                                 while module.is_running():
                                     time.sleep(1)
                         elif message.payload['action'] == 'start':
@@ -72,7 +72,7 @@ def main():
     # Stop all modules and web application
     for name, module in modules.items():
         if module.is_running():
-            module.stop()
+            module.kill()
 
     log.info('Bye..!')
 

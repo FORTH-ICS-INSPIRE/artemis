@@ -1,4 +1,5 @@
 from utils import log, exception_handler, RABBITMQ_HOST
+import os
 from service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin

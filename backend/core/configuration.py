@@ -4,7 +4,7 @@ import sys
 from yaml import load as yload
 from utils import flatten, log, ArtemisError, RABBITMQ_HOST
 from socketIO_client_nexus import SocketIO
-from service2 import Service, find_syslog
+from service import Service, find_syslog
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
 import time

@@ -1,4 +1,5 @@
 import radix
+import os
 import subprocess
 from utils import log, RABBITMQ_HOST
 from service import Service

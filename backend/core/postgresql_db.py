@@ -1,4 +1,5 @@
 import psycopg2
+import os
 import radix
 from utils import log, exception_handler, RABBITMQ_HOST
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer

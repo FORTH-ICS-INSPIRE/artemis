@@ -5,18 +5,15 @@ from yaml import load as yload
 from utils import flatten, log, ArtemisError, RABBITMQ_HOST
 from utils.service import Service
 from socketIO_client_nexus import SocketIO
-from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
-import signal
 import time
-from setproctitle import setproctitle
 import traceback
 
 class Configuration(Service):
 
 
-    def run(self):
+    def run_worker(self):
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)

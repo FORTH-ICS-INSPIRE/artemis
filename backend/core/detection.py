@@ -27,7 +27,7 @@ def pickle_deserializer(key, value, flags):
     raise Exception("Unknown serialization format")
 
 
-class Detection(Process):
+class Detection(Service):
 
 
     def __init__(self):

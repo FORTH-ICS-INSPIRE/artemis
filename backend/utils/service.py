@@ -1,25 +1,4 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2014-2018 Florian Brucker (www.florianbrucker.de)
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
+import traceback
 import errno
 import logging
 import os
@@ -230,26 +209,7 @@ class Service(Process):
             self.pid_file.release()
 
 
-    def start(self, block=False):
-        """
-        Start the daemon process.
-
-        The daemon process is started in the background and the calling
-        process returns.
-
-        Once the daemon process is initialized it calls the
-        :py:meth:`run` method.
-
-        If ``block`` is true then the call blocks until the daemon
-        process has started. ``block`` can either be ``True`` (in which
-        case it blocks indefinitely) or a timeout in seconds.
-
-        The return value is ``True`` if the daemon process has been
-        started and ``False`` otherwise.
-
-        .. versionadded:: 0.3
-            The ``block`` parameter
-        """
+    def run(self):
         pid = self.get_pid()
         if pid:
             raise ValueError('Daemon is already running at PID %d.' % pid)
@@ -269,12 +229,9 @@ class Service(Process):
                 # existence is used to verify whether the service
                 # is running.
                 self.pid_file.acquire()
-                self.run()
-                self.stopping = True
-            except Exception:
-                traceback.print_exc()
-            try:
+                self.run_worker()
                 self.pid_file.release()
+                self.stopping = True
             except Exception:
                 traceback.print_exc()
 
@@ -286,35 +243,8 @@ class Service(Process):
         except Exception as e:
             traceback.print_exc()
 
-        # We need to shutdown the daemon process at this point, because
-        # otherwise it will continue executing from after the original
-        # call to ``start``.
-        os._exit(os.EX_OK)
-
-    def run(self):
-        """
-        Main daemon method.
-
-        This method is called once the daemon is initialized and
-        running. Subclasses should override this method and provide the
-        implementation of the daemon's functionality. The default
-        implementation does nothing and immediately returns.
-
-        Once this method returns the daemon process automatically exits.
-        Typical implementations therefore contain some kind of loop.
-
-        The daemon may also be terminated by sending it the SIGTERM
-        signal, in which case :py:meth:`run` should terminate after
-        performing any necessary clean up routines. You can use
-        :py:meth:`got_sigterm` and :py:meth:`wait_for_sigterm` to
-        check whether SIGTERM has been received.
-        """
-        pass
-
-
     def exit(self, signum, frame):
         if self.worker is not None:
             self.worker.should_stop = True
             while self.stopping:
                 time.sleep(1)
-

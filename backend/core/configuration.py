@@ -3,6 +3,7 @@ import os
 import sys
 from yaml import load as yload
 from utils import flatten, log, ArtemisError, RABBITMQ_HOST
+from utils.service import Service
 from socketIO_client_nexus import SocketIO
 from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid
@@ -12,19 +13,10 @@ import time
 from setproctitle import setproctitle
 import traceback
 
-class Configuration(Process):
-
-
-    def __init__(self):
-        super().__init__()
-        self.worker = None
-        self.stopping = False
+class Configuration(Service):
 
 
     def run(self):
-        setproctitle(self.name)
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
@@ -32,14 +24,6 @@ class Configuration(Process):
         except Exception:
             traceback.print_exc()
         log.info('Configuration Stopped..')
-        self.stopping = True
-
-
-    def exit(self, signum, frame):
-        if self.worker is not None:
-            self.worker.should_stop = True
-            while(self.stopping):
-                time.sleep(1)
 
 
     class Worker(ConsumerProducerMixin):

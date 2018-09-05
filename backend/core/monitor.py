@@ -3,38 +3,38 @@ import os
 import radix
 from subprocess import Popen
 from utils import exception_handler, log, RABBITMQ_HOST
-from service import Service
+from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import signal
 import time
+from setproctitle import setproctitle
 import traceback
 
 
-class Monitor(Service):
+class Monitor(Process):
 
 
-    def __init__(self, name='Monitor', pid_dir='/tmp'):
-        super().__init__(name=name, pid_dir=pid_dir)
+    def __init__(self):
+        super().__init__()
         self.worker = None
-        # self.stopping = False
-        self.cwd = os.getcwd()
+        self.stopping = False
 
 
     def run(self):
-        os.chdir(self.cwd)
-        # signal.signal(signal.SIGTERM, self.exit)
-        # signal.signal(signal.SIGINT, self.exit)
+        setproctitle(self.name)
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:
             traceback.print_exc()
-        # if self.worker is not None:
-        #     self.worker.stop()
+        if self.worker is not None:
+            self.worker.stop()
         log.info('Monitors Stopped..')
-        # self.stopping = True
+        self.stopping = True
 
 
     def exit(self, signum, frame):

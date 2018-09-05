@@ -4,50 +4,42 @@ import sys
 from yaml import load as yload
 from utils import flatten, log, ArtemisError, RABBITMQ_HOST
 from socketIO_client_nexus import SocketIO
-from service import Service, find_syslog
+from multiprocessing import Process
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
-import time
-import logging
-from logging.handlers import SysLogHandler
-import traceback
-import logging
-import threading
 import signal
+import time
+from setproctitle import setproctitle
+import traceback
+
+class Configuration(Process):
 
 
-class Configuration(Service):
-
-
-    def __init__(self, name='Configuration', pid_dir='/tmp'):
-        super().__init__(name=name, pid_dir=pid_dir)
+    def __init__(self):
+        super().__init__()
         self.worker = None
-        # self.stopping = False
-        self.cwd = os.getcwd()
-        # self.logger.addHandler(SysLogHandler(address=find_syslog(),
-        #                        facility=SysLogHandler.LOG_DAEMON))
-        # self.logger.setLevel(logging.INFO)
+        self.stopping = False
 
 
     def run(self):
-        os.chdir(self.cwd)
-        # signal.signal(signal.SIGTERM, self.exit)
+        setproctitle(self.name)
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:
             traceback.print_exc()
-            # self.logger.info(traceback.format_exc())
         log.info('Configuration Stopped..')
-        # self.stopping = True
+        self.stopping = True
 
 
-    # def exit(self, signum, frame):
-    #     if self.worker is not None:
-    #         self.worker.should_stop = True
-    #         while self.stopping:
-    #             time.sleep(1)
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
+            while(self.stopping):
+                time.sleep(1)
 
 
     class Worker(ConsumerProducerMixin):

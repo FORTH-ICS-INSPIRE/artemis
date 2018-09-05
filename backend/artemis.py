@@ -26,11 +26,11 @@ def main():
 
     modules['configuration'] = Configuration()
     modules['scheduler'] = Scheduler()
-    modules['monitor'] = Monitor()
+    # modules['monitor'] = Monitor()
     modules['detection'] = Detection()
-    # modules['mitigation'] = Mitigation()
+    #modules['mitigation'] = Mitigation()
     # modules['postgresql_db'] = Postgresql_db()
-    # modules['webapp'] = WebApplication()
+    #modules['webapp'] = WebApplication()
 
 
     for name, module in modules.items():
@@ -50,16 +50,17 @@ def main():
                     if message.payload['module'] in modules:
                         module = modules[message.payload['module']]
                         if message.payload['action'] == 'stop':
-                            if not module.is_running():
+                            if not module.is_alive():
                                 log.warning('Module already stopped..')
                             else:
-                                module.kill()
-                                while module.is_running():
+                                module.terminate()
+                                while module.is_alive():
                                     time.sleep(1)
                         elif message.payload['action'] == 'start':
-                            if module.is_running():
+                            if module.is_alive():
                                 log.warning('Module already running..')
                             else:
+                                modules[message.payload['module']] = module.__class__()
                                 modules[message.payload['module']].start()
                     else:
                         log.warning('Unrecognized module name {}'.format(message.payload['module']))
@@ -71,9 +72,10 @@ def main():
 
     # Stop all modules and web application
     for name, module in modules.items():
-        if module.is_running():
-            module.kill()
+        module.terminate()
 
+    for name, module in modules.items():
+        module.join()
     log.info('Bye..!')
 
 

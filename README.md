@@ -15,6 +15,10 @@ The current version of ARTEMIS as a tool includes the following features:
 
 *Note*: All current development is taking place on the kombu branch, which contains a significant refactoring of the tool's code. The master branch will be up-to-date by September the 13th, 2018.
 
+## ARTEMIS architecture
+
+![Architecture](docs/images/modular_artemis_arch.png)
+
 ## Getting Started
 
 ARTEMIS is built as a multi-container Docker application. The following instructions will get you a containerized copy of the ARTEMIS tool up and running on your local machine for testing purposes. For a detailed view of the ARTEMIS system architecture please check [here](https://docs.google.com/presentation/d/104ENSvv7c-4jZ14BDAAqvK8bSUIWHV7g0TiNqT71J4s/edit?usp=sharing).

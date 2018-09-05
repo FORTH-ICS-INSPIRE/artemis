@@ -6,15 +6,6 @@ The following demo has been tested on an Ubuntu Server 16.04 VM
 ## install artemis
 see README 1 level up
 
-## install requirements
-sudo apt-get install python3-pip -y
-
-sudo apt-get install python-pip -y
-
-sudo -H pip3 install -r requirement3.txt
-
-sudo -H pip install -r requirement2.txt
-
 ## install exabgp
 cd ~
 

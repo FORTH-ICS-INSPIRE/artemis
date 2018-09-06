@@ -27,7 +27,7 @@ The current version of ARTEMIS as a tool includes the following features:
 
 ARTEMIS is built as a multi-container Docker application. The following instructions will get you a containerized copy of the ARTEMIS tool up and running on your local machine for testing purposes.
 
-## Technical requirements (TBD)
+## Technical requirements of testing server/VM (TBD)
 
 * CPU: ...
 * RAM: ...
@@ -45,8 +45,6 @@ If you would like to run docker without using sudo, please add the local user to
 ```
 sudo usermod -aG docker $USER
 ```
-
-NOTE: THE FOLLOWING INSTRUCTIONS ARE DEPRECATED: TO BE REPLACED WITH DOCKER-COMPOSE COMMANDS
 
 If you do not have access to the inspiregroup/artemis-tool image you can build your own by running:
 

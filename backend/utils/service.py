@@ -1,6 +1,5 @@
 import traceback
 import errno
-import logging
 import os
 import os.path
 import signal
@@ -247,5 +246,5 @@ class Service(Process):
     def exit(self, signum, frame):
         if self.worker is not None:
             self.worker.should_stop = True
-            while self.stopping:
+            while not self.stopping:
                 time.sleep(1)

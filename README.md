@@ -41,7 +41,6 @@ First, if not already installed, follow the instructions [here](https://docs.doc
 the docker tool for managing containers, and [here](https://docs.docker.com/compose/install/#install-compose) to install the docker-compose tool for supporting multi-container Docker applications.
 
 If you would like to run docker without using sudo, please add the local user to the default docker group:
-
 ```
 sudo usermod -aG docker $USER
 ```
@@ -53,7 +52,7 @@ docker-compose build
 ```
 after you have entered the root folder of the cloned artermis repo.
 
-Otherwise, you can simply pull the latest build from dockerhub:
+Otherwise, you can simply pull the latest build from dockerhub (TBD):
 ```
 docker login
 docker pull inspiregroup/artemis-tool
@@ -64,12 +63,18 @@ Before starting ARTEMIS, you can configure the web application (used to configur
 TBD
 ```
 
-You can start ARTEMIS as a multic-container application by running:
+You can start ARTEMIS as a multi-container application by running:
 ```
 docker-compose up
 ```
 
-You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
+You can control ARTEMIS (if required) via a CLI, by executing the following command(s):
+```
+docker exec -it artemis python3 scripts/module_control.py -m <module> -a <action>
+```
+Note that module = 'all'|''configuration'|'scheduler'|'postgresql_db'|'monitor'|'detection'|'mitigation', and action='start'|'stop'|'status'
+
+Visually, you can now configure, control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT> (TBD).
 
 Note that to gracefully terminate ARTEMIS and all its services you can use the following commands:
 
@@ -93,14 +98,12 @@ WEBAPP_CRT = '<path_to_cert_file>'
 ## Known Issues
 
 1. iptables: No chain/target/match by that name
-
 ```
 docker: Error response from daemon: driver failed programming external connectivity on endpoint artemistest (4980f6b7fe169a16e8ebe5f5e01a31700409d17258da0ee19ea060060d3f3db9):  (iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2 --dport 5000 -j ACCEPT: iptables: No chain/target/match by that name.
  (exit status 1)).
 ```
 
 To fix, clear all chains and then restart Docker Service:
-
 ```
 iptables -t filter -F
 iptables -t filter -X
@@ -131,5 +134,3 @@ TBD (closed source until further notice; considering BSD-3 license but not defin
 This work is supported by the following sources:
 * European Research Council (ERC) grant agreement no. 338402 (NetVolution Project)
 * RIPE NCC Community Projects Fund
-* National Science Foundation (NSF) grant CNS-1423659
-* Department of Homeland Security (DHS) Science and Technology Directorate, Cyber Security Division (DHS S&T/CSD) via contract number HHSP233201600012C

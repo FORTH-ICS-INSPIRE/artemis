@@ -1,42 +1,23 @@
 import psycopg2
 import radix
 from utils import log, exception_handler, RABBITMQ_HOST
-from multiprocessing import Process
+from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
-import signal
 import time
-from setproctitle import setproctitle
 import traceback
 import pickle
 import json
 
-class Postgresql_db(Process):
+class Postgresql_db(Service):
 
 
-    def __init__(self):
-        super().__init__()
-        self.worker = None
-        self.stopping = False
-
-    def run(self):
-        setproctitle(self.name)
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
-        try:
-            with Connection(RABBITMQ_HOST) as connection:
-                self.worker = self.Worker(connection)
-                self.worker.run()
-        except Exception:
-            traceback.print_exc()
+    def run_worker(self):
+        with Connection(RABBITMQ_HOST) as connection:
+            self.worker = self.Worker(connection)
+            self.worker.run()
         log.info('SQLite_db Stopped..')
-        self.stopping = True
 
-    def exit(self, signum, frame):
-        if self.worker is not None:
-            self.worker.should_stop = True
-            while(self.stopping):
-                time.sleep(1)
 
     class Worker(ConsumerProducerMixin):
 

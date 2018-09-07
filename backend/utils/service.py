@@ -112,7 +112,6 @@ class Service(Process):
         super().__init__()
         self.pid_file = _PIDFile(os.path.join(pid_dir, self.name + '.pid'))
         self.worker = None
-        self.stopping = False
 
 
     def is_running(self):
@@ -231,7 +230,6 @@ class Service(Process):
                 self.pid_file.acquire()
                 self.run_worker()
                 self.pid_file.release()
-                self.stopping = True
             except Exception:
                 traceback.print_exc()
 
@@ -246,5 +244,3 @@ class Service(Process):
     def exit(self, signum, frame):
         if self.worker is not None:
             self.worker.should_stop = True
-            while not self.stopping:
-                time.sleep(1)

@@ -24,7 +24,8 @@ class Controller(Service):
         for name, module in self.worker.modules.items():
             if module.is_running():
                 module.stop(block=True)
-        log.info('Bye..!')
+
+        log.info('Controller Stopped..')
 
 
     class Worker(ConsumerProducerMixin):
@@ -48,8 +49,7 @@ class Controller(Service):
             #         module.start()
             #
             # QUEUES
-            self.controller_queue = Queue('controller_queue', routing_key='action', durable=False, exclusive=True, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
+            self.controller_queue = Queue('controller_queue')
 
             log.info('Controller Started..')
 
@@ -69,40 +69,42 @@ class Controller(Service):
             log.info(' [x] Controller - Received an action request')
 
             respose = ''
-            if message.payload['module'] in modules:
+            if message.payload['module'] in self.modules:
                 name = message.payload['module']
-                module = modules[name]
+                module = self.modules[name]
                 if message.payload['action'] == 'stop':
                     if not module.is_running():
-                        response = '{} already stopped'.format(name)
+                        response = {'result': 'fail',
+                                'reason': 'already stopped'}
                     else:
                         module.stop(block=True)
-                        respose = '{} stopped'.format(name)
+                        response = {'result': 'success'}
                 elif message.payload['action'] == 'start':
                     if module.is_running():
-                        response = '{} already running'.format(name)
+                        response = {'result': 'fail',
+                                'reason': 'already running'}
                     else:
-                        modules[message.payload['module']].start()
-                        response = '{} started'.format(name)
+                        self.modules[message.payload['module']] = module.__class__()
+                        self.modules[message.payload['module']].start()
+                        response = {'result': 'success'}
                 elif message.payload['action'] == 'status':
                     if module.is_running():
-                        response = '{} is running'.format(name)
+                        response = {'result': 'success', 'status': 'up'}
                     else:
-                        response = '{} is not running'.format(name)
+                        response = {'result': 'success', 'status': 'down'}
             else:
-                response = '{} is not registered'.format(name)
+                response = {'result': 'fail',
+                        'reason': 'not registered module'}
 
+            message.payload['response'] = response
             self.producer.publish(
-                response,
+                message.payload,
                 exchange='',
                 routing_key = message.properties['reply_to'],
                 correlation_id = message.properties['correlation_id'],
                 retry = True,
                 priority = 2
             )
-
-
-
 
 if __name__ == '__main__':
     c = Controller()

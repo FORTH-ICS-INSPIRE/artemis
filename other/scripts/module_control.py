@@ -42,7 +42,7 @@ class ControllerCLI(object):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='BGPStream Historical Monitor')
+    parser = argparse.ArgumentParser(description='Module Controller Script')
     parser.add_argument('-m', '--module', type=str, dest='module', required=True,
                     help='Module name for the desired action')
     parser.add_argument('-a', '--action', type=str, dest='action', required=True,

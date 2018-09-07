@@ -40,13 +40,9 @@ class Controller(Service):
             self.modules['configuration'] = Configuration()
             self.modules['configuration'].start()
 
-            self.modules['scheduler'] = Scheduler()
-            self.modules['scheduler'].start()
-
-            self.modules['postgresql_db'] = Postgresql_db()
-            self.modules['postgresql_db'].start()
-
             # Optional Modules
+            self.modules['scheduler'] = Scheduler()
+            self.modules['postgresql_db'] = Postgresql_db()
             self.modules['monitor'] = Monitor()
             self.modules['detection'] = Detection()
             self.modules['mitigation'] = Mitigation()
@@ -95,6 +91,28 @@ class Controller(Service):
                         response = {'result': 'success', 'status': 'up'}
                     else:
                         response = {'result': 'success', 'status': 'down'}
+                else:
+                    response = {'result': 'fail', 'reason': 'unknown action'}
+            elif message.payload['module'] == 'all':
+                if message.payload['action'] == 'stop':
+                    for name, module in self.modules.items():
+                        if module.is_running:
+                            module.stop()
+                    response = {'result': 'success'}
+                elif message.payload['action'] == 'start':
+                    for name, module in self.modules.items():
+                        if not module.is_running:
+                            module.start()
+                    response = {'result': 'success'}
+                elif message.payload['action'] == 'status':
+                    response = {'result': 'success'}
+                    for name, module in self.modules.items():
+                        if module.is_running():
+                            response[name] = 'up'
+                        else:
+                            response[name] = 'down'
+                else:
+                    response = {'result': 'fail', 'reason': 'unknown action'}
             else:
                 response = {'result': 'fail',
                         'reason': 'not registered module'}

@@ -96,6 +96,8 @@ docker pull inspiregroup/artemis-tool
 
 ## How to run
 
+### Configuring the web application
+
 Before starting ARTEMIS, you should configure the web application
 (used to configure/control ARTEMIS and view its state),
 by editing the following file (TBD):
@@ -107,31 +109,9 @@ and adjusting the following parameters (TBD):
 TBD
 ```
 
-You can start ARTEMIS as a multi-container application
-by running:
-```
-docker-compose up
-```
+### SSL/TLS Support (optional; TBD)
 
-Visually, you can now configure, control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT> (TBD).
-
-You can also control ARTEMIS (if required) via a CLI, by executing the following command(s):
-```
-docker exec -it artemis python3 scripts/module_control.py -m <module> -a <action>
-```
-Note that module = all|configuration|scheduler|postgresql_db|monitor|detection|mitigation,
-and action=start|stop|status.
-
-Note that to gracefully terminate ARTEMIS and all its services you can use the following commands:
-
-```
-Ctrl+C # on the terminal running ARTEMIS
-docker-compose down # afterwards, same terminal
-```
-
-## SSL/TLS Support (TBD)
-
-The ARTEMIS UI support https to ensure secure access to the application state.
+The ARTEMIS web application supports https to ensure secure access to the application state.
 
 *Note:* The following associated process, based on Flask-accessed certificates/keys,
 is to be used only termporarily in testing environments.
@@ -142,6 +122,36 @@ For testing, simply configure the following in the web application configuration
 ```
 WEBAPP_KEY = '<path_to_key_file>'
 WEBAPP_CRT = '<path_to_cert_file>'
+```
+
+### Starting ARTEMIS
+
+You can start ARTEMIS as a multi-container application
+by running:
+```
+docker-compose up
+```
+
+### Using the web application
+
+Visually, you can now configure, control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT> (TBD).
+
+### CLI controls
+
+You can also control ARTEMIS (if required) via a CLI, by executing the following command(s):
+```
+docker exec -it artemis python3 scripts/module_control.py -m <module> -a <action>
+```
+Note that module = all|configuration|scheduler|postgresql_db|monitor|detection|mitigation,
+and action=start|stop|status.
+
+### Exiting ARTEMIS
+
+Note that to gracefully terminate ARTEMIS and all its services you can use the following commands:
+
+```
+Ctrl+C # on the terminal running ARTEMIS
+docker-compose down # afterwards, same terminal
 ```
 
 ## Known Issues

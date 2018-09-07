@@ -1,0 +1,102 @@
+{% extends "layout.htm" %}
+{% import "bootstrap/utils.html" as utils %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">System</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <form method="post" class="col-lg-12" id="system_modules">
+                {{ form.hidden_tag() }}
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <i class="fa fa-bell fa-fw"></i> Monitor Module
+                            </div>
+                            <div class="panel-body">
+                                <label class="switch">
+                                    {{ form.monitor(**{'data-toggle': 'toggle'}) }}
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <i class="fa fa-bell fa-fw"></i> Detection Module
+                            </div>
+                            <div class="panel-body">
+                                <label class="switch">
+                                    {{ form.detector(**{'data-toggle': 'toggle'}) }}
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <i class="fa fa-bell fa-fw"></i> Mitigation Module
+                            </div>
+                            <div class="panel-body">
+                                <label class="switch">
+                                    {{ form.mitigator(**{'data-toggle': 'toggle'}) }}
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Current configuration
+                    </div>
+                    <div class="panel-body">
+                        {{ config.config(rows='20', class_="textarea-full-width") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if form.erros %}
+            <div class="panel-footer">{{ form.errors }}</div>
+        {% endif %}
+
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            $('#monitor').on('click', function (event, state) {
+                $("#system_modules").submit();
+            });
+            $('#detector').on('click', function (event, state) {
+                $("#system_modules").submit();
+            });
+            $('#mitigator').on('click', function (event, state) {
+                $("#system_modules").submit();
+            });
+        </script>
+    {% endblock %}
+{% endblock %}
+

@@ -1,0 +1,205 @@
+{% extends "layout.htm" %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
+    
+    
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Hijacks</h1>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <div class="col-lg-1 offset-lg-1">
+                <p id="display_entries_time"> Select prefix: </p>
+            </div>
+
+            <div class="col-lg-2">
+                <div class="form-group">
+                    <select class="form-control" id="prefixes_selection">
+                        <option>All</option>
+                        {% for prefix in prefixes %}
+                            <option>{{ prefix }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-lg-1 offset-lg-4">
+                <p id="display_entries_time"> Timewindow: </p>
+            </div>
+            <div class="col-lg-3">
+                
+                <div id="timewindow_buttons">
+                    <button type="button" id="select_timewindow_all" class="btn btn-outline-primary">All</button>
+                    <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary">1h</button>
+                    <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary">24h</button>
+                    <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary">48h</button>
+                    <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary">Custom</button>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                
+                <table class="table table-striped table-bordered" id="bgpentries">
+                    <thead>
+                        <th>ID</th>
+                        <th>Prefix</th>
+                        <th>Origin AS</th>
+                        <th>AS Path</th>
+                        <th>PEER AS</th>
+                        <th>Service</th>
+                        <th>Type</th>
+                        <th>Timestamp</th>
+                        <th>Hijack ID</th>
+                        <th>More</th>
+                    </thead>
+                </table>
+                
+
+            </div>
+        </div>
+    
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+
+            $('#select_timewindow_all').on('click', function(event) {
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+            });
+            $('#select_timewindow_1h').on('click', function(event) {
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+            });
+
+            $('#select_timewindow_24h').on('click', function(event) {
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+            });
+
+            $('#select_timewindow_48h').on('click', function(event) {
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+            });
+            
+            $(document).ready(function(){
+                var table = $('#bgpentries').DataTable( {
+                    "processing": true,
+                    "serverSide": true,
+                    ajax: function(data, callback, settings) {
+                        // make a regular ajax request using data.start and data.length
+                        $.get('http://localhost:5000/api/hijacks', {
+                            page: (data.start / data.length) + 1,
+                            results_per_page: data.length
+                        }, function(res) {
+                            // map your server's response to the DataTables format and pass it to
+                            // DataTables' callback
+                            callback({
+                                recordsTotal: res.num_results,
+                                recordsFiltered: res.num_results,
+                                data: res.objects
+                            });
+                        });
+                    },
+                    "columns": [
+                        { data: 'id' },
+                        { data: 'prefix' },
+                        { data: 'origin_as' },
+                        { data: 'as_path' },
+                        { data: 'peer_as' },
+                        { data: 'service' },
+                        { data: 'type' },
+                        { data: 'timestamp' },
+                        { data: 'hijack_id' },
+                        {
+                            "className":      'details-control',
+                            "orderable":      false,
+                            "data":           null,
+                            "defaultContent": ''
+                        }
+                    ],
+                    "language": {
+                        "emptyTable": "<img src=\"./../../static/images/checkmark.png\"></img></br><h3>No hijack alerts. Go grab a beer!</h3></br>"
+                    }
+                });
+                
+                $('#bgpentries tbody').on('click', 'td.details-control', function () {
+                    var tr = $(this).closest('tr');
+                    var row = table.row( tr );
+             
+                    if ( row.child.isShown() ) {
+                        // This row is already open - close it
+                        row.child.hide();
+                        tr.removeClass('shown');
+                    }
+                    else {
+                        // Open this row
+                        row.child( format(row.data()) ).show();
+                        tr.addClass('shown');
+                    }
+                } );
+            });
+
+            function format ( d ) {
+                // `d` is the original data object for the row
+                return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
+                    '<tr>'+
+                        '<td><b>Prefix:</b></td>'+
+                        '<td>'+ d.prefix +'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Origin AS:</b></td>'+
+                        '<td>'+d.origin_as+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>AS Path:</b></td>'+
+                        '<td>'+d.as_path+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Peer AS:</b></td>'+
+                        '<td>'+d.peer_as+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Service:</b></td>'+
+                        '<td>'+d.service+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Type:</b></td>'+
+                        '<td>'+d.type+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Communities:</b></td>'+
+                        '<td>'+d.communities+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Timestamp:</b></td>'+
+                        '<td>'+d.timestamp+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Hijack ID:</b></td>'+
+                        '<td>'+d.hijack_id+'</td>'+
+                    '</tr>'+
+                '</table>';
+            }
+
+
+        </script>
+        
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
+    {% endblock %}
+{% endblock %}

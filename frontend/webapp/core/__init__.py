@@ -6,36 +6,38 @@ from flask_security import current_user
 from flask_security.utils import hash_password, verify_password
 from flask_security.decorators import login_required
 from flask_babel import Babel
-from flask_restless import APIManager
 from flask_jwt import JWT, jwt_required
-from webapp.data.models import db, Monitor, Hijack
-from webapp.utils import get_instance_folder_path
-from webapp.config import configure_app
-from webapp.cache import cache
+from flask import send_from_directory
+from webapp.data.models import db
+from webapp.utils.path import get_app_base_path
+from webapp.configs.config import configure_app
 import time
-from core import log
+from webapp.utils import log
+
 
 app = Flask(__name__,
-            instance_path=get_instance_folder_path(),
+            instance_path=get_app_base_path(),
             instance_relative_config=True,
-            template_folder='templates')
-
+            template_folder='../templates', 
+            static_url_path='',
+            static_folder='../static')
 
 with app.app_context():
     configure_app(app)
-    cache.init_app(app)
     db.init_app(app)
     Bootstrap(app)
     babel = Babel(app)
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
-    manager = APIManager(app, flask_sqlalchemy_db=db)
     data_store = app.security.datastore
 
 from webapp.main.controllers import main
 from webapp.admin.controllers import admin
 from webapp.templates.forms import CheckboxForm, ConfigForm
+
+app.register_blueprint(main, url_prefix='/main')
+app.register_blueprint(admin, url_prefix='/admin')
 
 def authenticate(username, password):
     user = data_store.find_user(email=username)
@@ -88,13 +90,6 @@ def setupDatabase():
                 ctx.commit()
         create_users(data_store)
 
-        def add_monitors():
-            from webapp.data.models import Monitor
-            msg = {'prefix':'192.168.0.0/24', 'service':'custom', 'type':'W', 'timestamp':time.time()}
-            monitor = Monitor(msg)
-            db.session.add(monitor)
-            db.session.commit()
-        add_monitors()
 
 
 @app.errorhandler(404)
@@ -123,6 +118,14 @@ def unhandled_exception(error):
 def inject_user():
     return dict(user=current_user)
 
+@app.context_processor
+def inject_version():
+    return dict(version=app.config['VERSION'])
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='../static/favicon.ico')
 
 @babel.timezoneselector
 def get_timezone():
@@ -135,43 +138,6 @@ def get_timezone():
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
-    form = CheckboxForm()
-    config_form = ConfigForm()
+    return render_template('index.htm')
 
-    with open('configs/config.yaml', 'r') as f:
-        config_form.config.data = f.read()
-
-    if form.validate_on_submit():
-        if form.monitor.data:
-            app.config['monitor'].start()
-        else:
-            app.config['monitor'].stop()
-        if form.detector.data:
-            app.config['detector'].start()
-        else:
-            app.config['detector'].stop()
-        if form.mitigator.data:
-            app.config['mitigator'].start()
-        else:
-            app.config['mitigator'].stop()
-    else:
-        form.monitor.data = app.config['monitor'].flag
-        form.detector.data = app.config['detector'].flag
-        form.mitigator.data = app.config['mitigator'].flag
-
-    return render_template('index.htm', config=config_form, form=form)
-
-monitor_api = manager.create_api_blueprint(Monitor,
-        methods=['GET'],
-        preprocessors=dict(GET_SINGLE=[auth_func], GET_MANY=[auth_func])
-        )
-hijack_api = manager.create_api_blueprint(Hijack,
-        methods=['GET'],
-        preprocessors=dict(GET_SINGLE=[auth_func], GET_MANY=[auth_func])
-        )
-
-app.register_blueprint(main, url_prefix='/main')
-app.register_blueprint(admin, url_prefix='/admin')
-app.register_blueprint(monitor_api)
-app.register_blueprint(hijack_api)
 

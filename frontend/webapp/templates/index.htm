@@ -1,52 +1,73 @@
 {% extends "layout.htm" %}
-{% import "bootstrap/utils.html" as utils %}
+
 {% block head %}
     {{super()}}
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 {% endblock %}
-{% block content %}
+
+{% block page_content %}
     {{super()}}
-    <div class="container">
-        <div class="panel panel-primary">
-            <div class="panel-heading">Control Panel</div>
-            <div class="panel-body">
-                <div class="row">
-                    <form method="post">
-                        <div class="col-md-10">
-                            <label for="config-div">Configuration</label>
-                            <div class="form-group" id="config-div">
-                                {{ config.config(cols='130',rows='18') }}
-                            </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Dashboard</h1>
+            </div>
+
+
+            <div class="col-lg-8">
+                
+
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Activity
                         </div>
-                        <div class="col-md-2">
-                            <label for="modules-div">Modules</label>
-                            <div class="form-group" id="modules-div">
-                                {{ form.hidden_tag() }}
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">Monitor</div>
-                                    <div class="panel-body"><center>{{ form.monitor(**{'data-toggle': 'toggle'}) }}</center></div>
-                                </div>
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">Detector</div>
-                                    <div class="panel-body"><center>{{ form.detector(**{'data-toggle': 'toggle'}) }}</center></div>
-                                </div>
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">Mitigator</div>
-                                    <div class="panel-body"><center>{{ form.mitigator(**{'data-toggle': 'toggle'}) }}</center></div>
-                                </div>
-                                {{ form.submit(class_='btn btn-primary pull-right') }}
-                            </div>
+                        <div class="panel-body">
+                            Welcome back <b>{{ current_user.email }}</b>, your last login was at <b>
+                            {% if current_user.last_login_at != None %}
+                                {{ current_user.last_login_at.strftime('%d, %b %Y (%H:%M)' ) }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                            </b> from {{ current_user.last_login_ip }}.
                         </div>
-                        {% if form.erros %}
-                            <div class="panel-footer">{{ form.errors }}</div>
-                        {% endif %}
-                    </form>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-lg-4">
+                <div id="monitors">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Monitors
+                        </div>
+                        <div class="panel-body">
+                            Monitors running:
+
+                        </div>
+                    </div>
+                </div>
+
+                <div id="systemstatus">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> System Status
+                        </div>
+                        <div class="panel-body">
+                            <div class="list-group">
+
+                                <ul>
+                                    <li class="list-group-item">Uptime: </li>
+                                    <li class="list-group-item">Database size: </li>
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+
+
+    
 {% endblock %}
-{% block scripts %}
-    {{super()}}
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-{% endblock %}
+

@@ -19,35 +19,41 @@ class BaseConfig(object):
     SUPPORTED_LANGUAGES = {'en': 'English'}
     BABEL_DEFAULT_LOCALE = 'en'
     BABEL_DEFAULT_TIMEZONE = 'UTC'
+    SECURITY_TRACKABLE = True
+    POSTS_PER_PAGE = 25
 
     DEBUG = False
     TESTING = False
     LOGGING_LEVEL = logging.INFO
-    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/dev.db'
     SECRET_KEY = b':\xce!\x8ec\xaa\xa2T\xf2W\xa4F=\xb3\xd9\xb6D\xc3\x8a\x9b\xd5h\x85\x06'
 
 class ProductionConfig(BaseConfig):
-    DEBUG = False
-    TESTING = False
+    DEBUG = True
+    TESTING = True
     ENV = 'prod'
 
     if not os.path.exists('db'):
         os.makedirs('db')
 
     LOGGING_LEVEL = logging.INFO
-    VERSION = "0.0.0"
+    WEBAPP_HOST = '0.0.0.0'
+    WEBAPP_PORT = 8000
+
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////root/db/artemis.db'
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
+    SECURITY_TRACKABLE = True
+    POSTS_PER_PAGE = 25
+    VERSION = "0.0.0"
 
 
 config = {
     'default': 'webapp.config.ProductionConfig'
 }
 
-
 def configure_app(app):
-    app.config.from_object(config['default'])
-    log.info('Loading configuration..')
-
+    app.config.from_object('webapp.configs.config.ProductionConfig')
+    log.info('Loading default configuration..')
+    
     log.info('Reading additional configuration from webapp.cfg..')
     app.config.from_pyfile('configs/webapp.cfg', silent=False)
 

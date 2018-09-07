@@ -2,5 +2,6 @@
 ./wait-for rabbitmq:5672 -t 60
 ./wait-for memcached:11211 -t 60
 ./wait-for postgres:5432 -t 60
-python3 controller.py &
+python controller.py &
 python scripts/module_control.py -m configuration -a stop
+python bgp_updates_tester.py

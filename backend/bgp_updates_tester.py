@@ -1,7 +1,8 @@
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from kombu.mixins import ConsumerProducerMixin
-from utils import RABBITMQ_HOST
+from utils import RABBITMQ_HOST, log
 import json
+import time
 import traceback
 
 
@@ -56,16 +57,6 @@ class Worker(ConsumerProducerMixin):
         self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
 
-        with open('bgp_updates.json', 'r') as f:
-            msgs = json.load(f)
-
-        for msg in msgs:
-            self.producer.publish(
-                msg,
-                exchange=self.update_exchange,
-                routing_key='update',
-                serializer='json'
-            )
 
 
     def get_consumers(self, Consumer, channel):
@@ -103,6 +94,20 @@ class Worker(ConsumerProducerMixin):
             retry = True,
             priority = 2
         )
+
+        time.sleep(2)
+
+        with open('bgp_updates.json', 'r') as f:
+            msgs = json.load(f)
+
+        for msg in msgs:
+            self.producer.publish(
+                msg,
+                exchange=self.update_exchange,
+                routing_key='update',
+                serializer='json',
+                declare=[self.update_queue]
+            )
 
 
     def handle_hijack(self, message):

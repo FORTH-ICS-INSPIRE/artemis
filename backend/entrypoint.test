@@ -3,6 +3,7 @@
 ./wait-for memcached:11211 -t 60
 ./wait-for postgres:5432 -t 60
 python controller.py &
+sleep 2
 python scripts/module_control.py -m configuration -a stop
 python scripts/module_control.py -m detection -a start &
 python bgp_updates_tester.py

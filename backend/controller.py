@@ -67,7 +67,7 @@ class Controller(Service):
         def controller_handler(self, message):
             log.info(' [x] Controller - Received an action request')
 
-            respose = ''
+            response = {}
             if message.payload['module'] in self.modules:
                 name = message.payload['module']
                 module = self.modules[name]
@@ -96,12 +96,12 @@ class Controller(Service):
             elif message.payload['module'] == 'all':
                 if message.payload['action'] == 'stop':
                     for name, module in self.modules.items():
-                        if module.is_running:
+                        if module.is_running():
                             module.stop()
                     response = {'result': 'success'}
                 elif message.payload['action'] == 'start':
                     for name, module in self.modules.items():
-                        if not module.is_running:
+                        if not module.is_running():
                             module.start()
                     response = {'result': 'success'}
                 elif message.payload['action'] == 'status':

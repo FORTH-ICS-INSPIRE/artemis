@@ -36,18 +36,21 @@ class Controller(Service):
             # Instatiate Modules
             self.modules = {}
 
+            # Required Modules
             self.modules['configuration'] = Configuration()
+            self.modules['configuration'].start()
+
             self.modules['scheduler'] = Scheduler()
+            self.modules['scheduler'].start()
+
+            self.modules['postgresql_db'] = Postgresql_db()
+            self.modules['postgresql_db'].start()
+
+            # Optional Modules
             self.modules['monitor'] = Monitor()
             self.modules['detection'] = Detection()
             self.modules['mitigation'] = Mitigation()
-            self.modules['postgresql_db'] = Postgresql_db()
 
-
-            # for name, module in modules.items():
-            #     if not module.is_running():
-            #         module.start()
-            #
             # QUEUES
             self.controller_queue = Queue('controller_queue')
 

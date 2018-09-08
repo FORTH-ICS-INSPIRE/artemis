@@ -177,7 +177,7 @@ class Detection(Service):
                 monitor_event = message.payload
 
             if monitor_event['key'] not in self.monitors_seen:
-                raw = message.payload
+                raw = monitor_event.copy()
                 # ignore withdrawals for now
                 if monitor_event['type'] == 'A':
                     monitor_event['peer_asn'] = -1

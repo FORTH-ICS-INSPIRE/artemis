@@ -42,13 +42,6 @@
                 "timestamp": 0
         },
         {
-                "prefix":"10.0.0.0/24",
-                "service":"testing",
-                "type":"A",
-                "path": [ 9, 8, 7, 6, 5, 7, 6, 4, 1 ],
-                "timestamp": 0
-        },
-        {
                 "prefix":"10.0.0.0/25",
                 "service":"testing",
                 "type":"A",
@@ -83,20 +76,12 @@
                 "path": [ 9, 8, 7, 6, 5, 4, 666 ],
                 "timestamp": 1
         },
-
         {
                 "prefix":"10.0.0.0/20",
                 "service":"testing",
                 "type":"A",
                 "path": [ 9, 8, 7, 6, 5, 4, 777 ],
                 "timestamp": 2
-        },
-        {
-                "prefix":"10.0.0.0/24",
-                "service":"testing",
-                "type":"A",
-                "path": [ 9, 8, 7, 6, 5, 4, 1, 1, 1 ],
-                "timestamp": 1
         },
         {
                 "prefix":"90.0.0.0/24",
@@ -111,13 +96,6 @@
                 "type":"A",
                 "path": [ 9, 8, 7, 6, 5, 4, 1 ],
                 "timestamp": 2
-        },
-        {
-                "prefix":"10.0.0.0/24",
-                "service":"testing",
-                "type":"A",
-                "path": [ 9, 8, 7, 6, 5, 4, 4, 1, 1, 1 ],
-                "timestamp": 0
         },
         {
                 "prefix":"10.0.0.0/25",
@@ -180,13 +158,6 @@
                 "service":"testing",
                 "type":"A",
                 "path": [ 9, 8, 7, 6, 5, 4, 4, 1, 1, 1 ],
-                "timestamp": 0
-        },
-        {
-                "prefix":"dead:beef::/32",
-                "service":"testing",
-                "type":"A",
-                "path": [ 9, 8, 7, 6, 5, 7, 6, 4, 1 ],
                 "timestamp": 0
         },
         {

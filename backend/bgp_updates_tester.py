@@ -1,10 +1,14 @@
+import hashlib
+import pickle
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import RABBITMQ_HOST, log
 import json
 import time
 import traceback
+import sys
 
+success_flag = False
 
 class Worker(ConsumerProducerMixin):
 
@@ -12,12 +16,12 @@ class Worker(ConsumerProducerMixin):
         self.config = {
                 'rules': [
                     {
-                        'prefixes': ['10.0.0.0/24'],
+                        'prefixes': ['10.0.0.0/24', 'dead:beef::/32'],
                         'origin_asns': [1],
                         'neighbors': [2, 3, 4],
                         'mitigation': 'manual'
                     },{
-                        'prefixes': ['10.0.0.0/24'],
+                        'prefixes': ['10.0.0.0/24', 'dead:beef::/32'],
                         'origin_asns': [15],
                         'neighbors': [16, 17, 18],
                         'mitigation': 'manual'
@@ -26,21 +30,12 @@ class Worker(ConsumerProducerMixin):
                         'origin_asns': [],
                         'neighbors': [],
                         'mitigation': 'manual'
-                    },{
-                        'prefixes': ['deaf:beef::/32'],
-                        'origin_asns': [1],
-                        'neighbors': [2, 3, 4],
-                        'mitigation': 'manual'
-                    },{
-                        'prefixes': ['deaf:beef::/32'],
-                        'origin_asns': [15],
-                        'neighbors': [16, 17, 18],
-                        'mitigation': 'manual'
-                    }],
+                    }
+                    ],
                 'timestamp': 1
         }
         self.handled_counter = 0
-        self.hijacks_counter = 0
+        self.hijacks = {}
         self.connection = connection
 
         # EXCHANGES
@@ -123,13 +118,17 @@ class Worker(ConsumerProducerMixin):
 
     def handle_hijack(self, message):
         msg_ = message.payload
-        log.info(msg_)
-        self.hijacks_counter += 1
+        self.hijacks[msg_['key']] = msg_
 
 
     def handle_handled_bgp_update(self, message):
         self.handled_counter += 1
-        if self.handled_counter == 37:
+        if self.handled_counter == 32:
+            # for name, hijack in self.hijacks.items():
+            #     log.info(hijack)
+            if len(self.hijacks) == 16:
+                global success_flag
+                success_flag = True
             self.should_stop = True
 
 try:
@@ -138,3 +137,7 @@ try:
         worker.run()
 except:
     traceback.print_exc()
+
+if not success_flag:
+    sys.exit(-1)
+

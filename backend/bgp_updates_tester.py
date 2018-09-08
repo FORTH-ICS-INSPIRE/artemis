@@ -36,6 +36,7 @@ class Worker(ConsumerProducerMixin):
         }
         self.handled_counter = 0
         self.hijacks = {}
+        self.pkts_test = 0
         self.connection = connection
 
         # EXCHANGES
@@ -95,10 +96,8 @@ class Worker(ConsumerProducerMixin):
         with open('bgp_updates.json', 'r') as f:
             msgs = json.load(f)
 
-        for msg in msgs:
-
-            def key_generator(msg):
-                msg['key'] = hashlib.md5(pickle.dumps([
+        def key_generator(msg):
+            msg['key'] = hashlib.md5(pickle.dumps([
                     msg['prefix'],
                     msg['path'],
                     msg['type'],
@@ -106,6 +105,7 @@ class Worker(ConsumerProducerMixin):
                     msg['timestamp']
                 ])).hexdigest()
 
+        for msg in msgs:
             key_generator(msg)
             self.producer.publish(
                 msg,
@@ -115,6 +115,24 @@ class Worker(ConsumerProducerMixin):
                 declare=[self.update_queue]
             )
 
+        # THROUGHPUT TEST
+        self.pkts_test = 10000
+        for i in range(self.pkts_test):
+            msg = {
+                "prefix":"10.0.0.0/24",
+                "service":"testing{}".format(i),
+                "type":"A",
+                "path": [ 9, 8, 7, 6, 5, 4, 1 ],
+                "timestamp": 0
+            }
+            key_generator(msg)
+            self.producer.publish(
+                msg,
+                exchange=self.update_exchange,
+                routing_key='update',
+                serializer='json',
+                declare=[self.update_queue]
+            )
 
     def handle_hijack(self, message):
         msg_ = message.payload
@@ -123,7 +141,7 @@ class Worker(ConsumerProducerMixin):
 
     def handle_handled_bgp_update(self, message):
         self.handled_counter += 1
-        if self.handled_counter == 32:
+        if self.handled_counter == 32 + self.pkts_test:
             # for name, hijack in self.hijacks.items():
             #     log.info(hijack)
             if len(self.hijacks) == 16:

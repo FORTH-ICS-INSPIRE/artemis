@@ -176,8 +176,6 @@ class Detection(Service):
             else:
                 monitor_event = message.payload
 
-            if 'key' not in monitor_event:
-                monitor_event['key'] = str(self.mon_num)
             if monitor_event['key'] not in self.monitors_seen:
                 raw = message.payload
                 # ignore withdrawals for now

@@ -101,6 +101,17 @@ class Worker(ConsumerProducerMixin):
             msgs = json.load(f)
 
         for msg in msgs:
+
+            def key_generator(msg):
+                msg['key'] = hashlib.md5(pickle.dumps([
+                    msg['prefix'],
+                    msg['path'],
+                    msg['type'],
+                    msg['service'],
+                    msg['timestamp']
+                ])).hexdigest()
+
+            key_generator(msg)
             self.producer.publish(
                 msg,
                 exchange=self.update_exchange,

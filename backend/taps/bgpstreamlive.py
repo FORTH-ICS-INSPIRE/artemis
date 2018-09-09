@@ -6,7 +6,7 @@ import time
 from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange, Queue, uuid
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
-from _pybgpstream import BGPStream, BGPRecord, BGPElem
+import _pybgpstream
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 
 START_TIME_OFFSET = 3600 # seconds
@@ -24,8 +24,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     """
 
     # create a new bgpstream instance and a reusable bgprecord instance
-    stream = BGPStream()
-    rec = BGPRecord()
+    stream = _pybgpstream.BGPStream()
 
     # consider collectors from given projects
     for project in projects:
@@ -59,7 +58,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
         while True:
             # get next record
             try:
-                stream.get_next_record(rec)
+                rec = stream.get_next_record()
             except:
                 continue
             if (rec.status != "valid") or (rec.type != "update"):

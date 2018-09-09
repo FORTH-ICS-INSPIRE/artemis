@@ -3,6 +3,7 @@ FROM python:3
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
+    apt-get -y install build-essential zlib1g-dev libbz2-dev libcurl4-openssl-dev python-dev && \
     apt-get -y install python3-pip
 
 WORKDIR /root
@@ -21,11 +22,24 @@ RUN ./configure && make && make install && ldconfig
 
 WORKDIR ..
 
-RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/bgpstream-1.2.1.tar.gz && \
-    tar zxf bgpstream-1.2.1.tar.gz
-WORKDIR bgpstream-1.2.1
+RUN curl -LO https://github.com/edenhill/librdkafka/archive/v0.11.1.tar.gz && \
+    tar zxf v0.11.1.tar.gz
+WORKDIR librdkafka-0.11.1
 RUN ./configure && make && make install && ldconfig
-RUN pip3 install pybgpstream
+
+WORKDIR ..
+
+RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/libbgpstream-2.0.0-beta-5.tar.gz && \
+    tar zxf libbgpstream-2.0.0-beta-5.tar.gz
+WORKDIR libbgpstream-2.0.0
+RUN ./configure && make && make install && ldconfig
+
+WORKDIR ..
+
+RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/pybgpstream-2.0.0-beta-1.tar.gz && \
+    tar zxf pybgpstream-2.0.0-beta-1.tar.gz
+WORKDIR pybgpstream-2.0.0
+RUN python setup.py build_ext && python setup.py install
 
 WORKDIR ../..
 

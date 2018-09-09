@@ -93,7 +93,7 @@ def run_bgpstream(prefix, start, end, out_file):
                             str(rec.collector),
                             str(elem.type),
                             ujson.dumps([]),
-                            str(elem.time),
+                            str(rec.time),
                         ]
                     csv_writer.writerow(elem_csv_list)
 

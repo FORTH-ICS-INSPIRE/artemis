@@ -1,31 +1,63 @@
 # ARTEMIS
 
-## The Tool
+## General
 
-ARTEMIS is a defense approach versus BGP prefix hijacking attacks (a) based on accurate and fast detection operated by the AS itself, leveraging the pervasiveness of publicly available BGP monitoring services and their recent shift towards real-time streaming, thus (b) enabling flexible and fast mitigation of hijacking events. Compared to existing approaches/tools, ARTEMIS combines characteristics desirable to network operators such as comprehensiveness, accuracy, speed, privacy, and flexibility. With the ARTEMIS approach, prefix hijacking can be neutralized within a minute!
+ARTEMIS is a defense approach versus BGP prefix hijacking attacks
+(a) based on accurate and fast detection operated by the AS itself,
+leveraging the pervasiveness of publicly available BGP monitoring
+services and their recent shift towards real-time streaming,
+thus (b) enabling flexible and fast mitigation of hijacking events.
+Compared to existing approaches/tools, ARTEMIS combines characteristics
+desirable to network operators such as comprehensiveness, accuracy, speed,
+privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
+can be neutralized within a minute!
 
-You can read more on INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis.
+You can read more about ARTEMIS (and check e.g., news and related publications)
+on the INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis.
+
+This repository contains the software of ARTEMIS as a tool (essentially a highly
+modular, multi-container application).
 
 ## Features
 
 The current version of ARTEMIS as a tool includes the following features:
 
-* Real-time monitoring of the inter-domain routing control plane using feed from BGP route collectors via [RIPE RIS](http://stream-dev.ris.ripe.net/demo), [BGPStream](https://bgpstream.caida.org/) (RouteViews + RIPE RIS) and [exaBGP](https://github.com/Exa-Networks/exabgp) (local monitor) interfaces.
-* Detection of basic types of BGP prefix hijacking attacks/events, i.e., exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
+* Real-time monitoring of the inter-domain routing control plane using
+feed from BGP route collectors via [RIPE RIS](http://stream-dev.ris.ripe.net/demo),
+[BGPStream](https://bgpstream.caida.org/) (RouteViews + RIPE RIS) and
+[exaBGP](https://github.com/Exa-Networks/exabgp) (local monitor) interfaces.
+* Detection of basic types of BGP prefix hijacking attacks/events,
+i.e., exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
 * Manual mitigation of BGP prefix hijacking attacks.
-* User interface to configure the tool, have an overview of the inter-domain control plane state related to the IP prefixes of interest, and get notified about BGP hijacks against the prefixes of the network which is running ARTEMIS.
+* User interface to configure the tool, have an overview of the
+inter-domain control plane state related to the IP prefixes of interest,
+and get notified about BGP hijacks against the prefixes of the network
+which is running ARTEMIS.
 * Support for both IPv4 and IPv6 prefixes.
 * Modularity/extensibility by design.
+* (TBD)
 
-*Note*: All current development is taking place on the kombu branch, which is a significant refactoring of the tool's code. The master branch will be up-to-date by September the 13th, 2018.
+## Development
 
-## Architecture (current)
+We follow a custom Agile approach for our development.
+All current development sprints are taking place on the
+kombu branch, which is a significant refactoring of the
+tool's code. The master branch will be up-to-date with the
+revised software by September the 13th, 2018.
+
+## Architecture (current, tentative)
 
 ![Architecture](docs/images/modular_artemis_arch.png)
 
+More details on the design of ARTEMIS and how its different modules
+interact with each other will be added to this README soon.
+
 ## Getting Started
 
-ARTEMIS is built as a multi-container Docker application. The following instructions will get you a containerized copy of the ARTEMIS tool up and running on your local machine for testing purposes.
+ARTEMIS is built as a multi-container Docker application.
+The following instructions will get you a containerized
+copy of the ARTEMIS tool up and running on your local machine
+for testing purposes.
 
 ## Technical requirements of testing server/VM (TBD)
 
@@ -34,42 +66,86 @@ ARTEMIS is built as a multi-container Docker application. The following instruct
 * HDD: ...
 * NETWORK: ...
 * OS: Ubuntu Linux 16.04+
+* Other: TBD
 
-## How to run
+## How to install
 
-First, if not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install the latest version of 
-the docker tool for managing containers, and [here](https://docs.docker.com/compose/install/#install-compose) to install the docker-compose tool for supporting multi-container Docker applications.
+First, if not already installed, follow the instructions
+[here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce)
+to install the latest version of the docker tool for managing containers,
+and [here](https://docs.docker.com/compose/install/#install-compose)
+to install the docker-compose tool for supporting multi-container Docker applications.
 
-If you would like to run docker without using sudo, please add the local user to the default docker group:
-
+If you would like to run docker without using sudo, please add
+the local user to the default docker group:
 ```
 sudo usermod -aG docker $USER
 ```
 
 If you do not have access to the inspiregroup/artemis-tool image you can build your own by running:
-
 ```
 docker-compose build
 ```
-after you have entered the root folder of the cloned artermis repo.
+after you have entered the root folder of the cloned ARTEMIS repo.
 
-Otherwise, you can simply pull the latest build from dockerhub:
+Otherwise, you can simply pull the latest build from dockerhub (TBD):
 ```
 docker login
 docker pull inspiregroup/artemis-tool
 ```
 
-Before starting ARTEMIS, you can configure the web application (used to configure ARTEMIS and view its state), by editing the following file (TBD):
+## How to run
+
+### Configuring the web application
+
+Before starting ARTEMIS, you should configure the web application
+(used to configure/control ARTEMIS and view its state),
+by editing the following file (TBD):
+```
+TBD
+```
+and adjusting the following parameters (TBD):
 ```
 TBD
 ```
 
-You can start ARTEMIS as a multic-container application by running:
+### SSL/TLS Support (optional; TBD)
+
+The ARTEMIS web application supports https to ensure secure access to the application state.
+
+*Note:* The following associated process, based on Flask-accessed certificates/keys,
+is to be used only termporarily in testing environments.
+In production, a scalable nginx/apache-based reverse proxy will be used
+to terminate SSL connections (TBD).
+
+For testing, simply configure the following in the web application configuration file (TBD):
+```
+WEBAPP_KEY = '<path_to_key_file>'
+WEBAPP_CRT = '<path_to_cert_file>'
+```
+
+### Starting ARTEMIS
+
+You can start ARTEMIS as a multi-container application
+by running:
 ```
 docker-compose up
 ```
 
-You can now control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT>.
+### Using the web application
+
+Visually, you can now configure, control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT> (TBD).
+
+### CLI controls
+
+You can also control ARTEMIS (if required) via a CLI, by executing the following command(s):
+```
+docker exec -it artemis python3 scripts/module_control.py -m <module> -a <action>
+```
+Note that module = all|configuration|scheduler|postgresql_db|monitor|detection|mitigation,
+and action=start|stop|status.
+
+### Exiting ARTEMIS
 
 Note that to gracefully terminate ARTEMIS and all its services you can use the following commands:
 
@@ -78,29 +154,18 @@ Ctrl+C # on the terminal running ARTEMIS
 docker-compose down # afterwards, same terminal
 ```
 
-## SSL/TLS Support
-
-The following process, based on Flask-accessed certificates/keys, is to be used only termporarily in testing environments.
-
-In production, a scalable nginx/apache-based reverse proxy will be used to terminate SSL connections (TBD).
-
-For testing, simply configure the following in the webapp configuration file (TBD):
-```
-WEBAPP_KEY = '<path_to_key_file>'
-WEBAPP_CRT = '<path_to_cert_file>'
-```
-
 ## Known Issues
 
 1. iptables: No chain/target/match by that name
-
 ```
-docker: Error response from daemon: driver failed programming external connectivity on endpoint artemistest (4980f6b7fe169a16e8ebe5f5e01a31700409d17258da0ee19ea060060d3f3db9):  (iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2 --dport 5000 -j ACCEPT: iptables: No chain/target/match by that name.
- (exit status 1)).
+docker: Error response from daemon: driver failed programming
+external connectivity on endpoint artemistest (4980f6b7fe169a16e8ebe5f5e01a31700409d17258da0ee19ea060060d3f3db9):
+(iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2
+--dport 5000 -j ACCEPT: iptables: No chain/target/match by that name.
+(exit status 1)).
 ```
 
 To fix, clear all chains and then restart Docker Service:
-
 ```
 iptables -t filter -F
 iptables -t filter -X
@@ -113,8 +178,16 @@ systemctl restart docker
 ```
 TBD
 ```
+For example take a look at the `backend/taps/exabgp_client.py`
+which implements the exaBGP monitor publisher or
+the `backend/taps/ripe_ris.js` which implements the
+RIPE RIS monitor publisher. Please edit only the code
+in the taps folder.
 
-For example take a look at the `backend/taps/exabgp_client.py` which implements the exaBGP monitor publisher or `backend/taps/ripe_ris.js` which implements the RIPE RIS monitor publisher. Please edit only the code in the taps folder.
+### Adding custom modules
+```
+TBD
+```
 
 ## Versioning
 TBD (for now working on the bleeding edge of the master branch, version tags to-be-released)
@@ -131,5 +204,3 @@ TBD (closed source until further notice; considering BSD-3 license but not defin
 This work is supported by the following sources:
 * European Research Council (ERC) grant agreement no. 338402 (NetVolution Project)
 * RIPE NCC Community Projects Fund
-* National Science Foundation (NSF) grant CNS-1423659
-* Department of Homeland Security (DHS) Science and Technology Directorate, Cyber Security Division (DHS S&T/CSD) via contract number HHSP233201600012C

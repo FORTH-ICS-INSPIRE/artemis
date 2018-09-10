@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 
-
 import argparse
 import netaddr
 import os
 import sys
 import csv
 import ujson
-# install as described in https://bgpstream.caida.org/docs/install/pybgpstream
-from _pybgpstream import BGPStream, BGPRecord, BGPElem
-
+import _pybgpstream
 
 def is_valid_ip_prefix(pref_str=None):
     """
@@ -26,7 +23,6 @@ def is_valid_ip_prefix(pref_str=None):
 
     return True
 
-
 def run_bgpstream(prefix, start, end, out_file):
     """
     Retrieve all records related to a certain prefix for a certain time period
@@ -41,9 +37,8 @@ def run_bgpstream(prefix, start, end, out_file):
 
     :return: -
     """
-    # create a new bgpstream instance and a reusable bgprecord instance
-    stream = BGPStream()
-    rec = BGPRecord()
+    # create a new bgpstream instance
+    stream = _pybgpstream.BGPStream()
 
     # consider collectors from routeviews and ris
     stream.add_filter('project','routeviews')
@@ -66,13 +61,13 @@ def run_bgpstream(prefix, start, end, out_file):
         csv_writer = csv.writer(f, delimiter="|")
 
         # get next record
-        while stream.get_next_record(rec):
+        rec = stream.get_next_record()
+        while rec:
             if (rec.status != "valid") or (rec.type != "update"):
                 continue
 
             # get next element
             elem = rec.get_next_elem()
-
             while elem:
                 if elem.type in ["A", "W"]:
                     elem_csv_list = []
@@ -98,16 +93,13 @@ def run_bgpstream(prefix, start, end, out_file):
                             str(rec.collector),
                             str(elem.type),
                             ujson.dumps([]),
-                            str(elem.time),
+                            str(rec.time),
                         ]
                     csv_writer.writerow(elem_csv_list)
 
                 elem = rec.get_next_elem()
 
-    #release resources
-    del rec
-    del stream
-
+            rec = stream.get_next_record()
 
 def main():
     parser = argparse.ArgumentParser(description="retrieve all records related to a specific IP prefix")

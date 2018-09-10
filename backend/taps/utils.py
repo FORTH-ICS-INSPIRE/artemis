@@ -58,6 +58,7 @@ def decompose_path(path):
 def normalize_msg_path(msg):
     msgs = []
     path = msg['path']
+    msg['orig_path'] = None
     if isinstance(path, list):
         dec_paths = decompose_path(path)
         if len(dec_paths) == 0:

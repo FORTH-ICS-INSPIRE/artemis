@@ -11,7 +11,7 @@ import time
 
 main = Blueprint('main', __name__, template_folder='templates')
 
-@main.route('/monitors/', methods=['GET', 'POST'])
+@main.route('/bgpupdates/', methods=['GET', 'POST'])
 @login_required
 def display_monitors():
     #prefixes_list = app.config['config'].getPrefixes_list()

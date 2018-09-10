@@ -56,7 +56,7 @@
                         <th>Prefix</th>
                         <th>Origin AS</th>
                         <th>AS Path</th>
-                        <th>PEER AS</th>
+                        <th>Peer AS</th>
                         <th>Service</th>
                         <th>Type</th>
                         <th>Timestamp</th>
@@ -95,24 +95,47 @@
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
             });
+
             
             $(document).ready(function(){
+                var columns = [
+                        { data: 'id' },
+                        { data: 'prefix' },
+                        { data: 'origin_as' },
+                        { data: 'as_path' },
+                        { data: 'peer_asn' },
+                        { data: 'service' },
+                        { data: 'type' },
+                        { data: 'timestamp' },
+                        { data: 'hijack_key' }];
+
                 var table = $('#bgpentries').DataTable( {
                     "processing": true,
                     "serverSide": true,
                     ajax: function(data, callback, settings) {
-                        // make a regular ajax request using data.start and data.length
-                        $.get('http://localhost:5000/api/monitors', {
-                            page: (data.start / data.length) + 1,
-                            results_per_page: data.length
-                        }, function(res) {
-                            // map your server's response to the DataTables format and pass it to
-                            // DataTables' callback
-                            callback({
-                                recordsTotal: res.num_results,
-                                recordsFiltered: res.num_results,
-                                data: res.objects
-                            });
+                        console.log(data)
+
+                        col_order = columns[data.order[0].column].data + "." + data.order[0].dir
+                        test = { "offset":data.start  , "limit": data.length, "order": col_order  }
+                             
+                        $.ajax({
+                            type: "GET",
+                            url: 'http://localhost:3000/bgp_updates',
+                            dataType: "json",
+                            headers: { 'Prefer': 'count=exact' },
+                            data: test,
+
+                            success: function(data, status, xhr){
+                                console.log(xhr.getResponseHeader("Content-Range"))
+                                total_str = xhr.getResponseHeader("Content-Range").split('/')[1];
+                                total = parseInt(total_str);
+                                console.log(total)
+                                callback({
+                                    recordsTotal: total,
+                                    recordsFiltered: total,
+                                    data: data
+                                });
+                            }
                         });
                     },
                     "columns": [
@@ -120,18 +143,23 @@
                         { data: 'prefix' },
                         { data: 'origin_as' },
                         { data: 'as_path' },
-                        { data: 'peer_as' },
+                        { data: 'peer_asn' },
                         { data: 'service' },
                         { data: 'type' },
-                        { data: 'timestamp' },
-                        { data: 'hijack_id' },
+                        { data: 'timestamp',
+                            render: function(data, type, row){
+                                var stillUtc = moment.utc(data).toDate();
+                                return moment(stillUtc).local().format("MM-DD-YYYY HH:mm:ss");
+                            } 
+                        },
+                        { data: 'hijack_key' },
                         {
                             "className":      'details-control',
                             "orderable":      false,
                             "data":           null,
                             "defaultContent": ''
                         }
-                    ]
+                    ],
                 });
                 
                 $('#bgpentries tbody').on('click', 'td.details-control', function () {
@@ -149,6 +177,11 @@
                         tr.addClass('shown');
                     }
                 } );
+
+                /*setInterval( function () {
+                    table.ajax.reload();
+                }, 35000 );
+                */
             });
 
             function format ( d ) {
@@ -168,7 +201,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Peer AS:</b></td>'+
-                        '<td>'+d.peer_as+'</td>'+
+                        '<td>'+d.peer_asn+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Service:</b></td>'+
@@ -187,16 +220,20 @@
                         '<td>'+d.timestamp+'</td>'+
                     '</tr>'+
                     '<tr>'+
-                        '<td><b>Hijack ID:</b></td>'+
-                        '<td>'+d.hijack_id+'</td>'+
+                        '<td><b>Hijack Key:</b></td>'+
+                        '<td>'+d.hijack_key+'</td>'+
                     '</tr>'+
                 '</table>';
             }
+
+            
 
 
         </script>
         
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
     {% endblock %}
 {% endblock %}

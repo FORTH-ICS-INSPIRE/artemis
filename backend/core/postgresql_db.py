@@ -198,13 +198,13 @@ class Postgresql_db(Service):
                 "id INTEGER GENERATED ALWAYS AS IDENTITY, " + \
                 "key VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
                 "prefix inet, " + \
-                "origin_as VARCHAR ( 6 ), " + \
-                "peer_asn   VARCHAR ( 6 ), " + \
+                "origin_as INTEGER, " + \
+                "peer_asn   INTEGER, " + \
                 "as_path   text[], " + \
                 "service   VARCHAR ( 50 ), " + \
                 "type  VARCHAR ( 1 ), " + \
                 "communities  json, " + \
-                "timestamp REAL, " + \
+                "timestamp TIMESTAMP, " + \
                 "hijack_key VARCHAR ( 32 ), " + \
                 "handled   BOOLEAN, " + \
                 "matched_prefix inet )"
@@ -217,10 +217,10 @@ class Postgresql_db(Service):
                 "hijack_as VARCHAR ( 6 ), " + \
                 "num_peers_seen   INTEGER, " + \
                 "num_asns_inf INTEGER, " + \
-                "time_started REAL, " + \
-                "time_last REAL, " + \
-                "time_ended   REAL, " + \
-                "mitigation_started   REAL, " + \
+                "time_started TIMESTAMP, " + \
+                "time_last TIMESTAMP, " + \
+                "time_ended   TIMESTAMP, " + \
+                "mitigation_started   TIMESTAMP, " + \
                 "to_mitigate  BOOLEAN)"
 
             self.db_cur.execute(bgp_updates_table)
@@ -243,7 +243,7 @@ class Postgresql_db(Service):
         def _insert_bgp_updates(self):
             try:
                 self.db_cur.executemany("INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, " + \
-                    "timestamp, hijack_key, handled, matched_prefix) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
+                    "timestamp, hijack_key, handled, matched_prefix) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
                 self.db_conn.commit()
             except Exception as e:
                 log.info("error on _insert_bgp_updates " + str(e))
@@ -274,7 +274,7 @@ class Postgresql_db(Service):
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_key=%s, handled=%s, matched_prefix=%s " \
+                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=to_timestamp(%s), hijack_key=%s, handled=%s, matched_prefix=%s " \
                         + " WHERE key=%s", self.handled_bgp_entries)
                     self.db_conn.commit()
                 except Exception as e:
@@ -293,10 +293,10 @@ class Postgresql_db(Service):
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, to_mitigate) VALUES ("
                     cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + self.tmp_hijacks_dict[key]['prefix'] + "','" + self.tmp_hijacks_dict[key]['hijacker'] + "'," 
-                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + "," 
-                    cmd_ += str(self.tmp_hijacks_dict[key]['time_last']) + ",0,0,false) "
+                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + ",to_timestamp(" + str(self.tmp_hijacks_dict[key]['time_started']) + "), to_timestamp(" 
+                    cmd_ += str(self.tmp_hijacks_dict[key]['time_last']) + "),to_timestamp(0),to_timestamp(0),false) "
                     cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=" + str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[key]['inf_asns']))
-                    cmd_ += ", time_started=" + str(self.tmp_hijacks_dict[key]['time_started']) + ", time_last=" + str(self.tmp_hijacks_dict[key]['time_last'])
+                    cmd_ += ", time_started=to_timestamp(" + str(self.tmp_hijacks_dict[key]['time_started']) + "), time_last=to_timestamp(" + str(self.tmp_hijacks_dict[key]['time_last']) + ")"
 
                     self.db_cur.execute(cmd_)
                     self.db_conn.commit()

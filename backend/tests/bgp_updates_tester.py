@@ -2,11 +2,16 @@ import hashlib
 import pickle
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from kombu.mixins import ConsumerProducerMixin
-from utils import RABBITMQ_HOST, log
 import json
 import time
 import traceback
+import os
 import sys
+
+this_script_path = os.path.realpath(__file__)
+upper_dir = '/'.join(this_script_path.split('/')[:-2])
+sys.path.insert(0, upper_dir)
+from utils import RABBITMQ_HOST, log
 
 success_flag = False
 
@@ -93,7 +98,7 @@ class Worker(ConsumerProducerMixin):
 
         time.sleep(2)
 
-        with open('bgp_updates.json', 'r') as f:
+        with open('tests/bgp_updates.json', 'r') as f:
             msgs = json.load(f)
 
         def key_generator(msg):

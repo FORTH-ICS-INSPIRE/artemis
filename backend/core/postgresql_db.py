@@ -126,7 +126,7 @@ class Postgresql_db(Service):
             msg_ = message.payload
             # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
             extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
-                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, False, self.find_best_prefix_match(msg_['prefix']) )
+                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, False, self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'] )
             self.insert_bgp_entries.append(extract_msg)
 
         def handle_hijack(self, message):
@@ -137,14 +137,14 @@ class Postgresql_db(Service):
                 self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
                 self.tmp_hijacks_dict[key]['hijacker'] = str(msg_['hijacker'])
                 self.tmp_hijacks_dict[key]['hij_type'] = str(msg_['hij_type'])
-                self.tmp_hijacks_dict[key]['time_started'] = msg_['time_started']
-                self.tmp_hijacks_dict[key]['time_last'] = msg_['time_last']
+                self.tmp_hijacks_dict[key]['time_started'] = int(msg_['time_started'])
+                self.tmp_hijacks_dict[key]['time_last'] = int(msg_['time_last'])
                 self.tmp_hijacks_dict[key]['peers_seen'] = msg_['peers_seen']
                 self.tmp_hijacks_dict[key]['inf_asns'] = msg_['inf_asns']
                 self.tmp_hijacks_dict[key]['monitor_keys'] = msg_['monitor_keys']
             else:
-                self.tmp_hijacks_dict[key]['time_started'] = min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started'])
-                self.tmp_hijacks_dict[key]['time_last'] = max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last'])
+                self.tmp_hijacks_dict[key]['time_started'] = int(min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
+                self.tmp_hijacks_dict[key]['time_last'] = int(max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
                 self.tmp_hijacks_dict[key]['peers_seen'].update(msg_['peers_seen'])
                 self.tmp_hijacks_dict[key]['inf_asns'].update(msg_['inf_asns'])
                 self.tmp_hijacks_dict[key]['monitor_keys'].update(msg_['monitor_keys'])
@@ -153,7 +153,7 @@ class Postgresql_db(Service):
             msg_ = message.payload
             # prefix, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix, key
             extract_msg = (msg_['prefix'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
-                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, True, self.find_best_prefix_match(msg_['prefix']),  msg_['key'])
+                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), int(msg_['timestamp']), 0, True, self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'], msg_['key'])
             self.handled_bgp_entries.append(extract_msg)
 
 
@@ -204,10 +204,11 @@ class Postgresql_db(Service):
                 "service   VARCHAR ( 50 ), " + \
                 "type  VARCHAR ( 1 ), " + \
                 "communities  json, " + \
-                "timestamp TIMESTAMP, " + \
+                "timestamp BIGINT, " + \
                 "hijack_key VARCHAR ( 32 ), " + \
                 "handled   BOOLEAN, " + \
-                "matched_prefix inet )"
+                "matched_prefix inet, " + \
+                "orig_path json )"
 
             bgp_hijacks_table = "CREATE TABLE IF NOT EXISTS hijacks ( " + \
                 "id   INTEGER GENERATED ALWAYS AS IDENTITY, " + \
@@ -217,10 +218,10 @@ class Postgresql_db(Service):
                 "hijack_as VARCHAR ( 6 ), " + \
                 "num_peers_seen   INTEGER, " + \
                 "num_asns_inf INTEGER, " + \
-                "time_started TIMESTAMP, " + \
-                "time_last TIMESTAMP, " + \
-                "time_ended   TIMESTAMP, " + \
-                "mitigation_started   TIMESTAMP, " + \
+                "time_started BIGINT, " + \
+                "time_last BIGINT, " + \
+                "time_ended   BIGINT, " + \
+                "mitigation_started   BIGINT, " + \
                 "to_mitigate  BOOLEAN)"
 
             self.db_cur.execute(bgp_updates_table)
@@ -243,7 +244,7 @@ class Postgresql_db(Service):
         def _insert_bgp_updates(self):
             try:
                 self.db_cur.executemany("INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, " + \
-                    "timestamp, hijack_key, handled, matched_prefix) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
+                    "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
                 self.db_conn.commit()
             except Exception as e:
                 log.info("error on _insert_bgp_updates " + str(e))
@@ -274,7 +275,7 @@ class Postgresql_db(Service):
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=to_timestamp(%s), hijack_key=%s, handled=%s, matched_prefix=%s " \
+                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_key=%s, handled=%s, matched_prefix=%s, orig_path=%s " \
                         + " WHERE key=%s", self.handled_bgp_entries)
                     self.db_conn.commit()
                 except Exception as e:
@@ -293,10 +294,10 @@ class Postgresql_db(Service):
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, to_mitigate) VALUES ("
                     cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + self.tmp_hijacks_dict[key]['prefix'] + "','" + self.tmp_hijacks_dict[key]['hijacker'] + "'," 
-                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + ",to_timestamp(" + str(self.tmp_hijacks_dict[key]['time_started']) + "), to_timestamp(" 
-                    cmd_ += str(self.tmp_hijacks_dict[key]['time_last']) + "),to_timestamp(0),to_timestamp(0),false) "
+                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + "," 
+                    cmd_ += str(int(self.tmp_hijacks_dict[key]['time_last'])) + ",0,0,false) "
                     cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=" + str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[key]['inf_asns']))
-                    cmd_ += ", time_started=to_timestamp(" + str(self.tmp_hijacks_dict[key]['time_started']) + "), time_last=to_timestamp(" + str(self.tmp_hijacks_dict[key]['time_last']) + ")"
+                    cmd_ += ", time_started=" + str(int(self.tmp_hijacks_dict[key]['time_started'])) + ", time_last=" + str(int(self.tmp_hijacks_dict[key]['time_last']))
 
                     self.db_cur.execute(cmd_)
                     self.db_conn.commit()
@@ -315,7 +316,7 @@ class Postgresql_db(Service):
             entries = self.db_cur.fetchall()
             for entry in entries:
                 results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'as_path': entry[5], \
-                  'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : entry[9]})
+                  'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : int(entry[9])})
 
             self.producer.publish(
                 results,

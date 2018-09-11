@@ -314,7 +314,7 @@ class Postgresql_db(Service):
             self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id ASC LIMIT(" + str(self.unhadled_to_feed_to_detection) + ");")
             entries = self.db_cur.fetchall()
             for entry in entries:
-                results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'as_path': entry[5], \
+                results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'path': entry[5], \
                   'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : entry[9]})
 
             self.producer.publish(

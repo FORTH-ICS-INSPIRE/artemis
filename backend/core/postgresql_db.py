@@ -315,9 +315,9 @@ class Postgresql_db(Service):
             self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id ASC LIMIT(" + str(self.unhadled_to_feed_to_detection) + ");")
             entries = self.db_cur.fetchall()
             for entry in entries:
-                results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'as_path': entry[5], \
+                log.info(entry)
+                results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'path': entry[5], \
                   'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : int(entry[9])})
-
             self.producer.publish(
                 results,
                 exchange = self.update_exchange,
@@ -325,7 +325,6 @@ class Postgresql_db(Service):
                 retry = False,
                 priority = 2
             )
-
 
         def _update_bulk(self):
             details = "\n - \tBGP Entries: Inserted %d | Updated %d" % (self._insert_bgp_updates(), self._update_bgp_updates())

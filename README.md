@@ -40,10 +40,6 @@ which is running ARTEMIS.
 ## Development
 
 We follow a custom Agile approach for our development.
-All current development sprints are taking place on the
-kombu branch, which is a significant refactoring of the
-tool's code. The master branch will be up-to-date with the
-revised software by September the 13th, 2018.
 
 ## Architecture (current, tentative)
 
@@ -59,17 +55,28 @@ The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine
 for testing purposes.
 
-## Technical requirements of testing server/VM (TBD)
+## Min. technical requirements of testing server/VM (TBD)
 
-* CPU: ...
-* RAM: ...
-* HDD: ...
-* NETWORK: ...
+* CPU: 4 cores
+* RAM: 4 GB
+* HDD: 30 GB
+* NETWORK: 2 network interfaces
 * OS: Ubuntu Linux 16.04+
 * Other: TBD
 
-## How to install
+Moreover, one needs to configure the following firewall rules related to the testing server/VM (TBD):
 
+| Service | Direction** | Action | Reason |
+| --- | --- | --- | --- |
+| ssh | Internet to Server | Allow| Access server from specific IPs |
+| ping (ICMP) |Internet to Server | Allow | Ping server from specific IPs
+| http/https | Server to Internet | Allow | Access to external monitors
+| https | Internet to Server | Allow | Access web UI from specific IPs |
+| TCP port 179 | Internal: server to/from route reflector | Allow | exaBGP local monitor communication with route reflector |
+| any | any | Deny | --- |
+**: + related direction for bilateral session over stateful firewall
+
+## How to install
 First, if not already installed, follow the instructions
 [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce)
 to install the latest version of the docker tool for managing containers,
@@ -82,22 +89,16 @@ the local user to the default docker group:
 sudo usermod -aG docker $USER
 ```
 
-If you do not have access to the inspiregroup/artemis-tool image you can build your own by running:
+Then you can build ARTEMIS by running:
 ```
 docker-compose build
 ```
 after you have entered the root folder of the cloned ARTEMIS repo.
 
-Otherwise, you can simply pull the latest build from dockerhub (TBD):
-```
-docker login
-docker pull inspiregroup/artemis-tool
-```
 
 ## How to run
 
 ### Configuring the web application
-
 Before starting ARTEMIS, you should configure the web application
 (used to configure/control ARTEMIS and view its state),
 by editing the following file (TBD):
@@ -110,7 +111,6 @@ TBD
 ```
 
 ### SSL/TLS Support (optional; TBD)
-
 The ARTEMIS web application supports https to ensure secure access to the application state.
 
 *Note:* The following associated process, based on Flask-accessed certificates/keys,
@@ -118,14 +118,13 @@ is to be used only termporarily in testing environments.
 In production, a scalable nginx/apache-based reverse proxy will be used
 to terminate SSL connections (TBD).
 
-For testing, simply configure the following in the web application configuration file (TBD):
+For testing, simply configure the following in the web application configuration file (TBD) as environment variables:
 ```
 WEBAPP_KEY = '<path_to_key_file>'
 WEBAPP_CRT = '<path_to_cert_file>'
 ```
 
 ### Starting ARTEMIS
-
 You can start ARTEMIS as a multi-container application
 by running:
 ```
@@ -133,8 +132,14 @@ docker-compose up
 ```
 
 ### Using the web application
+Visually, you can now configure, control and view ARTEMIS on https://<WEBAPP_HOST>:<WEBAPP_PORT> (TBD). More instructions on how to use the ARTEMIS web application will be available soon.
 
-Visually, you can now configure, control and view ARTEMIS on <WEBAPP_HOST>:<WEBAPP_PORT> (TBD).
+*Note*: Please use only the web application forms to configure ARTEMIS.
+
+### Configuring ARTEMIS through the web application
+```
+TBD
+```
 
 ### CLI controls
 
@@ -144,6 +149,16 @@ docker exec -it artemis python3 scripts/module_control.py -m <module> -a <action
 ```
 Note that module = all|configuration|scheduler|postgresql_db|monitor|detection|mitigation,
 and action=start|stop|status.
+
+Also note that the web application operates in its own separate container; to stop and e.g., restart it, please run the following commands:
+```
+TBD
+```
+
+### Receiving BGP feed from local route reflector via exaBGP
+```
+TBD
+```
 
 ### Exiting ARTEMIS
 

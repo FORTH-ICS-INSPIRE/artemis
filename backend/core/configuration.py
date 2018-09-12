@@ -151,6 +151,7 @@ class Configuration(Service):
                         raise ArtemisError('invalid-prefix', prefix)
                 rule['origin_asns'] = flatten(rule.get('origin_asns', []))
                 rule['neighbors'] = flatten(rule.get('neighbors', []))
+                rule['mitigation'] = flatten(rule.get('mitigation', 'manual'))
                 for asn in (rule['origin_asns'] + rule['neighbors']):
                     if not isinstance(asn, int):
                         raise ArtemisError('invalid-asn', asn)

@@ -115,17 +115,17 @@ class Mitigation(Service):
         def handle_mitigation_request(self, message):
             hijack_event = message.payload
             prefix_node = self.prefix_tree.search_best(
-                        hijack_event.prefix)
+                        hijack_event['prefix'])
             if prefix_node is not None:
                 mitigation_action = prefix_node.data['mitigation']
                 if mitigation_action == 'manual':
                     log.info('Starting manual mitigation of hijack {}'.format(hijack_event))
                 else:
                     log.info('Starting custom mitigation of hijack {}'.format(hijack_event))
-                    hijack_event_str = json.dumps(hijack_event.to_dict())
+                    hijack_event_str = json.dumps(hijack_event)
                     subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 # do something
-                mit_started = {'key': message.payload['key'], 'time': time.time()}
+                mit_started = {'key': hijack_event['key'], 'time': time.time()}
                 self.producer.publish(
                         mit_started,
                         exchange=self.mitigation_start_queue.exchange,

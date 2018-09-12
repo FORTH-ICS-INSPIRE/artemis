@@ -1,0 +1,70 @@
+#
+# ARTEMIS Configuration File
+#
+
+# Start of Prefix Definitions
+prefixes:
+    forth_prefix_main: &forth_prefix_main
+        # 139.91.0.0/16
+        # 139.0.0.0/8
+        [0.0.0.0/0, '::/0']
+    forth_prefix_lamda: &forth_prefix_lamda
+        139.91.250.0/24
+    forth_prefix_vod: &forth_prefix_vod
+        139.91.2.0/24
+# End of Prefix Definitions
+
+# Start of Monitor Definitions
+monitors:
+    riperis: ['']
+    # bgpstreamlive:
+    # - routeviews
+    # - ris
+    # exabgp:
+    # - ip: 192.168.1.1
+    #   port: 5000
+    # - ip: 192.168.5.1
+    #   port: 5000
+    # bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
+# End of Monitor Definitions
+
+# Start of ASN Definitions
+asns:
+    forth_asn: &forth_asn
+        8522
+    grnet_forth_upstream: &grnet_forth_upstream
+        5408
+    lamda_forth_upstream_back: &lamda_forth_upstream_back
+        56910
+    vodafone_forth_upstream_back: &vodafone_forth_upstream_back
+        12361
+# End of ASN Definitions
+
+# Start of Rule Definitions
+rules:
+- prefixes:
+  - *forth_prefix_main
+  origin_asns:
+  - *forth_asn
+  neighbors:
+  - *grnet_forth_upstream
+  - *vodafone_forth_upstream_back
+  mitigation:
+      manual
+- prefixes:
+  - *forth_prefix_lamda
+  origin_asns:
+  - *forth_asn
+  neighbors:
+  - *lamda_forth_upstream_back
+  mitigation:
+      manual
+- prefixes:
+  - *forth_prefix_vod
+  origin_asns:
+  - *forth_asn
+  neighbors:
+  - *vodafone_forth_upstream_back
+  mitigation:
+      manual
+# End of Rule Definitions

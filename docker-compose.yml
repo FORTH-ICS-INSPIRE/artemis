@@ -1,0 +1,95 @@
+version: '2'
+services:
+    artemis:
+        build: ./backend/
+        container_name: artemis
+        hostname: artemis
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            MEMCACHED_HOST: memcached
+            POSTGRES_HOST: postgres
+        depends_on:
+            - rabbitmq
+            - memcached
+            - postgres
+        volumes:
+            - ./backend/:/root/
+        networks:
+            - rabbitmq
+            - memcached
+            - postgres
+    artemis_webapp:
+        build: ./frontend/
+        container_name: artemis_webapp
+        hostname: artemis_webapp
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            POSTGRES_HOST: postgres
+        expose:
+            - 8000
+        ports:
+            - "8000:8000"
+        volumes:
+            - ./frontend/:/root/
+        networks:
+            - rabbitmq
+            - postgres
+    rabbitmq:
+        image: "rabbitmq:3-alpine"
+        container_name: rabbitmq
+        hostname: rabbitmq
+        restart: always
+        networks:
+            - rabbitmq
+        expose:
+            - 5672
+        ports:
+            - "5672:5672"
+    memcached:
+        image: "memcached:alpine"
+        container_name: memcached
+        hostname: memcached
+        restart: always
+        networks:
+            - memcached
+        expose:
+            - 11211
+        ports:
+            - "11211:11211"
+    postgres:
+        image: "postgres:alpine"
+        container_name: postgres
+        hostname: postgres
+        restart: always
+        environment:
+            POSTGRES_DB: artemis_db
+            POSTGRES_USER: artemis_user
+            POSTGRES_PASSWORD: Art3m1s
+        networks:
+            - postgres
+        expose:
+            - 5432
+        ports:
+            - "5432:5432"
+    postgrest:
+        image: "postgrest/postgrest"
+        container_name: postgrest
+        hostname: postgrest
+        restart: always
+        expose:
+            - 3000
+        ports:
+            - "3000:3000"
+        networks:
+            - postgres
+        depends_on:
+            - postgres
+        environment:
+            PGRST_DB_URI: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
+            PGRST_DB_SCHEMA: public
+            PGRST_DB_ANON_ROLE: artemis_user
+
+networks:
+    rabbitmq:
+    memcached:
+    postgres:

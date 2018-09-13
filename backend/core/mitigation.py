@@ -28,7 +28,6 @@ class Mitigation(Service):
             self.prefix_tree = None
 
             # EXCHANGES
-            self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
             self.mitigation_exchange = Exchange('mitigation', type='direct', durable=False, delivery_mode=1)
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
@@ -36,8 +35,6 @@ class Mitigation(Service):
             self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
                     consumer_arguments={'x-priority': 3})
             self.mitigate_queue = Queue(uuid(), exchange=self.mitigation_exchange, routing_key='mitigate', durable=False, exclusive=True, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
-            self.mitigate_start_queue = Queue(uuid(), exchange=self.mitigation_exchange, routing_key='mit_start', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
@@ -128,8 +125,8 @@ class Mitigation(Service):
                 mit_started = {'key': hijack_event['key'], 'time': time.time()}
                 self.producer.publish(
                         mit_started,
-                        exchange=self.mitigation_start_queue.exchange,
-                        routing_key=self.mitigation_start_queue.routing_key,
+                        exchange=self.mitigation_exchange,
+                        routing_key='mit_start',
                         priority=2
                 )
             else:

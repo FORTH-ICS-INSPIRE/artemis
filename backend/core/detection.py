@@ -67,12 +67,23 @@ class Detection(Service):
                     consumer_arguments={'x-priority': 1})
             self.hijack_resolved_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
+            self.hijack_fetch_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='fetch', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
             self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
                     consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
+
+            self.producer.publish(
+                    '',
+                    exchange=self.hijack_fetch_queue.exchange,
+                    routing_key='fetch_hijacks',
+                    declare=[self.hijack_fetch_queue],
+                    priority=0
+            )
+
             self.flag = True
             log.info('Detection Started..')
 
@@ -94,6 +105,12 @@ class Detection(Service):
                     Consumer(
                         queues=[self.update_unhandled_queue],
                         on_message=self.handle_unhandled_bgp_updates,
+                        prefetch_count=1,
+                        no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.hijack_fetch_queue],
+                        on_message=self.fetch_ongoing_hijacks,
                         prefetch_count=1,
                         no_ack=True
                         ),
@@ -342,6 +359,11 @@ class Detection(Service):
             )
             self.monitors_seen.add(monitor_event['key'])
             # log.info('Published Handled #{}'.format(self.h_num))
+
+
+        def fetch_ongoing_hijacks(self, message):
+            hijacks = message.payload
+            self.memcache.set_many(hijacks)
 
 
         def handle_resolved_hijack(self, message):

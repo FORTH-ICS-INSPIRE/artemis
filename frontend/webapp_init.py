@@ -1,11 +1,10 @@
 from webapp.core import app
 from webapp.utils import log
 from webapp.core.rabbitmq import Configuration_request
+from webapp.core.modules import Modules_status
 import _thread
 import signal
 import time
-import tornado.ioloop
-import tornado.web
 
 class GracefulKiller:
     def __init__(self):
@@ -20,9 +19,22 @@ class GracefulKiller:
 class WebApplication():
     def __init__(self):
         self.app = app
+        
         self.conf_request = Configuration_request()
         self.conf_request.config_request_rpc()
-        self.app.config['CONFIG'] = self.conf_request.get_conf()
+        self.app.config['configuration'] = self.conf_request.get_conf()
+
+        self.modules = Modules_status()
+        log.info("Starting Scheduler..")
+        self.modules.call('scheduler', 'start')
+        log.info("Starting Postgresql_db..")
+        self.modules.call('postgresql_db', 'start')
+        
+        log.info("Request status of all modules..")
+        self.status_request = Modules_status()
+        self.status_request.call('all', 'status')
+        self.app.config['status'] = self.status_request.get_response_all()
+        
         self.webapp_ = None
         self.flag = False
 

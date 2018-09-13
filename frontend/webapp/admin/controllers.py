@@ -6,36 +6,50 @@ from webapp.cache import cache
 from webapp.data.models import User, db
 from webapp.templates.forms import CheckboxForm, ConfigForm
 from webapp.core import app
+from webapp.core.modules import Modules_status 
 import yaml
 
 admin = Blueprint('admin', __name__, template_folder='templates')
 
 
-@admin.route('/system', methods=['GET'])
+@admin.route('/system', methods=['GET', 'POST'])
 @roles_required('admin')
 def index():
     form = CheckboxForm()
     config_form = ConfigForm()
+    config_form.config.data = yaml.dump(app.config['configuration'].get_raw_config())
 
-    config_form.config.data = yaml.dump(app.config['CONFIG'].get_raw_config())
+    status_request = Modules_status()
+    status_request.call('all', 'status')
+    app.config['status'] = status_request.get_response_all()
 
     if form.validate_on_submit():
         if form.monitor.data:
-            app.config['monitor'].start()
+            status_request.call('monitor', 'start')
         else:
-            app.config['monitor'].stop()
+            status_request.call('monitor', 'stop')
         if form.detector.data:
-            app.config['detector'].start()
+            status_request.call('detection', 'start')
         else:
-            app.config['detector'].stop()
+            status_request.call('detection', 'stop')
         if form.mitigator.data:
-            app.config['mitigator'].start()
+            status_request.call('mitigation', 'start')
         else:
-            app.config['mitigator'].stop()
+            status_request.call('mitigation', 'stop')
     else:
-        form.monitor.data = app.config['monitor'].flag
-        form.detector.data = app.config['detector'].flag
-        form.mitigator.data = app.config['mitigator'].flag
+        if app.config['status']['monitor'] == 'up':
+            form.monitor.data = True
+        else:
+            form.monitor.data = False
+        if app.config['status']['detection'] == 'up':
+            form.detector.data = True
+        else:
+            form.detector.data = False
+        if app.config['status']['mitigation'] == 'up':
+            form.mitigator.data = True
+        else:
+            form.mitigator.data = False
+
     return render_template('system.htm', form=form, config=config_form)
 
 

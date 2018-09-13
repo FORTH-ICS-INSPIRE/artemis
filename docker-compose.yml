@@ -41,6 +41,10 @@ services:
         restart: always
         networks:
             - rabbitmq
+        expose:
+            - 5672
+        ports:
+            - "5672:5672"
     memcached:
         image: "memcached:alpine"
         container_name: memcached
@@ -48,6 +52,10 @@ services:
         restart: always
         networks:
             - memcached
+        expose:
+            - 11211
+        ports:
+            - "11211:11211"
     postgres:
         image: "postgres:alpine"
         container_name: postgres
@@ -59,6 +67,10 @@ services:
             POSTGRES_PASSWORD: Art3m1s
         networks:
             - postgres
+        expose:
+            - 5432
+        ports:
+            - "5432:5432"
     postgrest:
         image: "postgrest/postgrest"
         container_name: postgrest

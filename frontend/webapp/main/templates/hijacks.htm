@@ -4,7 +4,8 @@
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
-    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
+
     
 {% endblock %}
 
@@ -43,7 +44,18 @@
                     <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary">1h</button>
                     <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary">24h</button>
                     <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary">48h</button>
-                    <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary disabled">Custom</button>
+                    <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary">Custom</button>
+                </div>
+                <div id="custom_time">
+                    <div class="row">
+                        <div class="col-lg-10">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    <input class="form-control" type="text" name="datetimes"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,8 +93,10 @@
         <script>
             var table;
             var display_settings = { 'prefixes': null, 'time': null };
+            $('#custom_time').hide();
 
             $('#select_timewindow_all').on('click', function(event) {
+                $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
                 display_settings['time'] = null;
@@ -91,6 +105,7 @@
             });
             
             $('#select_timewindow_1h').on('click', function(event) {
+                $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
                 var now = Math.floor(Date.now() / 1000);
@@ -101,6 +116,7 @@
             });
 
             $('#select_timewindow_24h').on('click', function(event) {
+                $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
                 var now = Math.floor(Date.now() / 1000);
@@ -111,6 +127,7 @@
             });
 
             $('#select_timewindow_48h').on('click', function(event) {
+                $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
                 var now = Math.floor(Date.now() / 1000);
@@ -118,8 +135,26 @@
                 display_settings['time'] = { 'start_time': start_time, 'end_time': now};
                 $('#hijacks').DataTable().destroy()
                 render_table(display_settings);
-            }); 
-            
+            });
+
+            $('#select_timewindow_other').on('click', function(event) {
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+                $('#custom_time').show();                
+            });
+
+            $("#prefixes_selection").change(function () {
+                var option = this.value;
+                if(option == "All"){
+                    display_settings['prefixes'] = null;
+                }else{
+                    display_settings['prefixes'] = option;
+                }
+                $('#bgp_updates').DataTable().destroy()
+                render_table(display_settings);
+            });
+
+
             
             var columns = [
                 { data: 'id' },
@@ -135,13 +170,24 @@
                 { data: 'to_mitigate' }];
 
             function render_table(settings){
+                var parameters = {};
+
+                if(settings['time'] != null && settings['prefixes'] == null){
+                    parameters = { 'and': '(timestamp.gte.' + settings['time']['start_time'] + ',timestamp.lte.' + settings['time']['end_time'] + ')' }
+                }else if(settings['time'] == null && settings['prefixes'] != null){
+                    parameters = { 'and': '(matched_prefix.eq.' + settings['prefixes'] + ')' }
+                }else if(settings['time'] != null && settings['prefixes'] != null){
+                    parameters = { 'and': '(timestamp.gte.' + settings['time']['start_time'] + ',timestamp.lte.' + settings['time']['end_time'] + ',matched_prefix.eq.' + settings['prefixes'] + ')' }
+                }
+                
                 table = $('#hijacks').DataTable( {
                     "processing": true,
                     "serverSide": true,
                     ajax: function(data, callback, settings) {
                         col_order = columns[data.order[0].column].data + "." + data.order[0].dir
-                        parameters = { "offset":data.start  , "limit": data.length, "order": col_order  }
-                             
+                        parameters['offset'] = data.start;
+                        parameters['limit'] = data.length;
+                        parameters['order'] = col_order;
                         $.ajax({
                             type: "GET",
                             url: 'http://localhost:3000/hijacks',
@@ -198,12 +244,30 @@
             
             $(document).ready(function(){
                 render_table({})
+                $('input[name="datetimes"]').daterangepicker({
+                    timePicker: true,
+                    startDate: moment().startOf('hour'),
+                    endDate: moment().startOf('hour').add(32, 'hour'),
+                    locale: {
+                        format: 'M/DD hh:mm A'
+                    }
+                },  function(start, end, label) {
+                    display_settings['time'] = { 'start_time': moment(start).unix(), 'end_time': moment(end).unix()};
+                    console.log(display_settings)
+                    $('#hijacks').DataTable().destroy()
+                    render_table(display_settings);
+                    }
+                );
+
             });
 
         </script>
+        
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}"></script>
     {% endblock %}
 {% endblock %}

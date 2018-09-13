@@ -27,7 +27,7 @@ class Postgresql_db(Service):
             self.prefix_tree = None
             self.rules = None
             self.timestamp = -1
-            self.unhadled_to_feed_to_detection = 10
+            self.unhadled_to_feed_to_detection = 15
             self.insert_bgp_entries = []
             self.update_bgp_entries = []
             self.handled_bgp_entries = []
@@ -312,7 +312,7 @@ class Postgresql_db(Service):
 
         def _retrieve_unhandled(self):
             results = []
-            self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id ASC LIMIT(" + str(self.unhadled_to_feed_to_detection) + ");")
+            self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id DESC LIMIT(" + str(self.unhadled_to_feed_to_detection) + ");")
             entries = self.db_cur.fetchall()
             for entry in entries:
                 log.info(entry)

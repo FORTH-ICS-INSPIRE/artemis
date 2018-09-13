@@ -15,8 +15,6 @@ if os.path.exists('webapp/configs/logging.json'):
 log = logging.getLogger(__name__)
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
-MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
-
 
 # https://stackoverflow.com/questions/16136979/set-class-with-timed-auto-remove-of-elements
 class TimedSet(set):

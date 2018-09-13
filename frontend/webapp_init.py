@@ -1,8 +1,11 @@
 from webapp.core import app
 from webapp.utils import log
+from webapp.core.rabbitmq import Configuration_request
 import _thread
 import signal
 import time
+import tornado.ioloop
+import tornado.web
 
 class GracefulKiller:
     def __init__(self):
@@ -17,6 +20,9 @@ class GracefulKiller:
 class WebApplication():
     def __init__(self):
         self.app = app
+        self.conf_request = Configuration_request()
+        self.conf_request.config_request_rpc()
+        self.app.config['CONFIG'] = self.conf_request.get_conf()
         self.webapp_ = None
         self.flag = False
 
@@ -43,7 +49,6 @@ class WebApplication():
     def start(self):
         log.info("WebApplication Starting..")
         if not self.flag:
-
             self.webapp_ = _thread.start_new_thread(self.run, ())
             self.flag = True
             log.info('WebApplication Started..')

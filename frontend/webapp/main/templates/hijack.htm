@@ -273,6 +273,12 @@
                     hijack_key = d.hijack_key
                     view_hijack_link = '<a href="../hijack?id=' + d.hijack_key + '">View</a>'
                 }
+
+                var communities = new Array();
+                (d.communities).forEach(function (item) {
+                    communities.push({ 'asn': item[0], 'value': item[1] })
+                })
+
                 return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
                     '<tr>'+
                         '<td><b>Prefix:</b></td>'+
@@ -300,7 +306,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Communities:</b></td>'+
-                        '<td>'+d.communities+'</td>'+
+                        '<td>'+communities+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+
@@ -338,7 +344,6 @@
                     $( "#info_time_ended" ).html( result[0]['time_ended'] );
                     $( "#info_mitigation_started" ).html( result[0]['mitigation_started'] );
                 }});
-
             }
 
 

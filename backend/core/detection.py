@@ -80,7 +80,6 @@ class Detection(Service):
                     '',
                     exchange=self.hijack_fetch_queue.exchange,
                     routing_key='fetch_hijacks',
-                    declare=[self.hijack_fetch_queue],
                     priority=0
             )
 

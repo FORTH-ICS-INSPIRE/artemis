@@ -18,7 +18,7 @@ def display_monitors():
 @main.route('/hijacks/', methods=['GET'])
 @login_required
 def display_hijacks():
-	prefixes_list = app.config['CONFIG'].get_prefixes_list()
+    prefixes_list = app.config['CONFIG'].get_prefixes_list()
     return render_template('hijacks.htm', prefixes=prefixes_list)
 
 @main.route('/hijack', methods=['GET'])

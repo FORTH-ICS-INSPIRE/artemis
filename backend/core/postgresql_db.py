@@ -53,6 +53,8 @@ class Postgresql_db(Service):
                     consumer_arguments={'x-priority': 1})
             self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
+            self.hijack_update = Queue(uuid(), exchange=self.hijack_exchange, routing_key='fetch_hijacks', durable=False, exclusive=True, max_priority=1,
+                    consumer_arguments={'x-priority': 1})
             self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
@@ -95,6 +97,12 @@ class Postgresql_db(Service):
                     Consumer(
                         queues=[self.handled_queue],
                         on_message=self.handle_handled_bgp_update,
+                        prefetch_count=1,
+                        no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.hijack_update],
+                        on_message=self.handle_hijack_update,
                         prefetch_count=1,
                         no_ack=True
                         ),
@@ -193,6 +201,21 @@ class Postgresql_db(Service):
                     self.rules = raw.get('rules', [])
                     self.build_radix_tree()
 
+        def handle_hijack_update(self, message):
+            results = []
+            self.db_cur.execute("SELECT time_started, time_last, peers_seen, inf_asns, key  FROM hijacks WHERE active = true;")
+            entries = self.db_cur.fetchall()
+            for entry in entries:
+                results.append({ 'time_started' : entry[0], 'time_last' : entry[1], 'peers_seen' : entry[2], 'inf_asns' : entry[3], 'key': entry[4]})
+            self.producer.publish(
+                results,
+                exchange = self.hijack_exchange,
+                routing_key = 'fetch_hijacks',
+                retry = True,
+                priority = 1
+            )
+
+
         def create_tables(self):
             bgp_updates_table = "CREATE TABLE IF NOT EXISTS bgp_updates ( " + \
                 "id INTEGER GENERATED ALWAYS AS IDENTITY, " + \
@@ -222,7 +245,8 @@ class Postgresql_db(Service):
                 "time_last BIGINT, " + \
                 "time_ended   BIGINT, " + \
                 "mitigation_started   BIGINT, " + \
-                "to_mitigate  BOOLEAN)"
+                "to_mitigate  BOOLEAN, " + \
+                "active   BOOLEAN) "
 
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)
@@ -292,10 +316,10 @@ class Postgresql_db(Service):
             for key in self.tmp_hijacks_dict:
                 try:
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
-                    cmd_ += "time_started, time_last, time_ended, mitigation_started, to_mitigate) VALUES ("
+                    cmd_ += "time_started, time_last, time_ended, mitigation_started, to_mitigate, active) VALUES ("
                     cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + self.tmp_hijacks_dict[key]['prefix'] + "','" + self.tmp_hijacks_dict[key]['hijacker'] + "'," 
                     cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + "," 
-                    cmd_ += str(int(self.tmp_hijacks_dict[key]['time_last'])) + ",0,0,false) "
+                    cmd_ += str(int(self.tmp_hijacks_dict[key]['time_last'])) + ",0,0,false, false) "
                     cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=" + str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[key]['inf_asns']))
                     cmd_ += ", time_started=" + str(int(self.tmp_hijacks_dict[key]['time_started'])) + ", time_last=" + str(int(self.tmp_hijacks_dict[key]['time_last']))
 
@@ -315,7 +339,6 @@ class Postgresql_db(Service):
             self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id DESC LIMIT(" + str(self.unhadled_to_feed_to_detection) + ");")
             entries = self.db_cur.fetchall()
             for entry in entries:
-                log.info(entry)
                 results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'path': entry[5], \
                   'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : int(entry[9])})
             self.producer.publish(
@@ -344,6 +367,7 @@ class Postgresql_db(Service):
                 log.info(msg_)
 
 
+        
 
 
 

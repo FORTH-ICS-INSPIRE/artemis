@@ -1,6 +1,51 @@
-{% extends 'layout.htm' %}
-{% block container %}
-  <div class="top-pad">
-    <a class="navbar-brand" href="{{ url_for('admin.create_user') }}">{{ _('Create new User') }}</a>
-  </div>
+{% extends "layout.htm" %}
+{% import "bootstrap/utils.html" as utils %}
+{% block head %}
+    {{super()}}
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+    {{super()}}
+    <div class="container">
+        <div class="panel panel-primary">
+            <div class="panel-heading">Control Panel</div>
+            <div class="panel-body">
+                <div class="row">
+                    <form method="post">
+                        <div class="col-md-10">
+                            <label for="config-div">Configuration</label>
+                            <div class="form-group" id="config-div">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="modules-div">Modules</label>
+                            <div class="form-group" id="modules-div">
+                                {{ form.hidden_tag() }}
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">Monitor</div>
+                                    <div class="panel-body"><center>{{ form.monitor(**{'data-toggle': 'toggle'}) }}</center></div>
+                                </div>
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">Detector</div>
+                                    <div class="panel-body"><center>{{ form.detector(**{'data-toggle': 'toggle'}) }}</center></div>
+                                </div>
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">Mitigator</div>
+                                    <div class="panel-body"><center>{{ form.mitigator(**{'data-toggle': 'toggle'}) }}</center></div>
+                                </div>
+                                {{ form.submit(class_='btn btn-primary pull-right') }}
+                            </div>
+                        </div>
+                        {% if form.erros %}
+                            <div class="panel-footer">{{ form.errors }}</div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 {% endblock %}

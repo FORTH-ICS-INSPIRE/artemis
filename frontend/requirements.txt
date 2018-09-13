@@ -21,3 +21,4 @@ Flask-Table==0.5.0
 Flask-WTF==0.14.2
 WTForms==2.1
 SQLAlchemy==1.2.5
+ruamel.yaml==0.15.47

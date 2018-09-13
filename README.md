@@ -37,9 +37,6 @@ which is running ARTEMIS.
 * Modularity/extensibility by design.
 * (TBD)
 
-## Development
-
-We follow a custom Agile approach for our development.
 
 ## Architecture (current, tentative)
 
@@ -58,15 +55,15 @@ for testing purposes.
 ## Min. technical requirements of testing server/VM (TBD)
 
 * CPU: 4 cores
-* RAM: 4 GB
+* RAM: 4-8 GB
 * HDD: 30 GB
 * NETWORK: 2 network interfaces
 * OS: Ubuntu Linux 16.04+
-* Other: TBD
+* Other: SW package manager, SSH server (optional)
 
 Moreover, one needs to configure the following firewall rules related to the testing server/VM (TBD):
 
-| Service | Direction** | Action | Reason |
+| Service | Direction+ | Action | Reason |
 | --- | --- | --- | --- |
 | ssh | Internet to Server | Allow| Access server from specific IPs |
 | ping (ICMP) |Internet to Server | Allow | Ping server from specific IPs
@@ -74,7 +71,8 @@ Moreover, one needs to configure the following firewall rules related to the tes
 | https | Internet to Server | Allow | Access web UI from specific IPs |
 | TCP port 179 | Internal: server to/from route reflector | Allow | exaBGP local monitor communication with route reflector |
 | any | any | Deny | --- |
-**: + related direction for bilateral session over stateful firewall
+
++: related reverse direction for bilateral session over stateful firewall needs also to pass though
 
 ## How to install
 First, if not already installed, follow the instructions
@@ -105,7 +103,7 @@ by editing the following file (TBD):
 ```
 TBD
 ```
-and adjusting the following parameters (TBD):
+and adjusting the following parameters/environment variables (TBD):
 ```
 TBD
 ```
@@ -132,11 +130,27 @@ docker-compose up
 ```
 
 ### Using the web application
-Visually, you can now configure, control and view ARTEMIS on https://<WEBAPP_HOST>:<WEBAPP_PORT> (TBD). More instructions on how to use the ARTEMIS web application will be available soon.
+Visually, you can now configure, control and view ARTEMIS on https://<WEBAPP_HOST>:<WEBAPP_PORT> (TBD). 
+More instructions on how to use the ARTEMIS web application will be available soon.
 
 *Note*: Please use only the web application forms to configure ARTEMIS.
 
 ### Configuring ARTEMIS through the web application
+```
+TBD
+```
+
+### Controlling ARTEMIS through the web application
+```
+TBD
+```
+
+### Viewing BGP updates and hijacks
+```
+TBD
+```
+
+### Other (TBD)
 ```
 TBD
 ```
@@ -156,6 +170,12 @@ TBD
 ```
 
 ### Receiving BGP feed from local route reflector via exaBGP
+For instructions on how to set up an exaBGP-based local monitor,
+getting BGP updates' feed from your local router or route reflector,
+please check [here](https://github.com/slowr/ExaBGP-Monitor)
+
+In ARTEMIS, you should configure the monitor using the web application form,
+by setting its IP address and port (default=TBD). An example is the following:
 ```
 TBD
 ```
@@ -199,10 +219,13 @@ the `backend/taps/ripe_ris.js` which implements the
 RIPE RIS monitor publisher. Please edit only the code
 in the taps folder.
 
-### Adding custom modules
+### Adding custom (containerized) modules
 ```
 TBD
 ```
+
+## Development
+We follow a custom Agile approach for our development.
 
 ## Versioning
 TBD (for now working on the bleeding edge of the master branch, version tags to-be-released)

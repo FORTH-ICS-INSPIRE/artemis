@@ -1,10 +1,10 @@
 from flask import Blueprint
-from webapp.cache import cache
 from webapp.core import app
 from flask_security.decorators import login_required, roles_required
 from flask import url_for, render_template, request, redirect
+from webapp.core.actions import Resolve_hijack, Mitigate_hijack
 from webapp.utils import log
-
+from flask import jsonify
 import time
 
 main = Blueprint('main', __name__, template_folder='templates')
@@ -27,16 +27,20 @@ def display_hijack():
     id_ = request.args.get('id')
     return render_template('hijack.htm', hijack_key = id_)
 
+@main.route('/hijacks/resolve/', methods=['GET'])
+@roles_required('admin')
+def resolved_hijack():
+    hijack_key = request.args.get('id')
+    resolve_hijack_ = Resolve_hijack(hijack_key)
+    resolve_hijack_.resolve()
+    return jsonify({'status': 'success'})
+
 
 @main.route('/hijacks/mitigate/', methods=['GET'])
 @roles_required('admin')
 def mitigate_hijack():
-    hijack_id = request.args.get('id')
-    return redirect('/main/hijacks?id={}&action=mitigate'.format(hijack_id))
-
-
-@main.route('/hijacks/resolved/', methods=['GET'])
-@roles_required('admin')
-def resolved_hijack():
-    hijack_id = request.args.get('id')
-    return redirect('/main/hijacks?id={}&action=resolved'.format(hijack_id))
+    hijack_key = request.args.get('id')
+    prefix = request.args.get('prefix')
+    mitigate_hijack_ = Mitigate_hijack(hijack_key, prefix)
+    mitigate_hijack_.mitigate()
+    return jsonify({'status': 'success'})

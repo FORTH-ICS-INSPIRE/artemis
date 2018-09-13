@@ -2,7 +2,6 @@ from sqlalchemy import exc
 from flask import Blueprint, render_template, flash
 from flask import current_app, redirect, request, url_for
 from flask_security.decorators import roles_required
-from webapp.cache import cache
 from webapp.data.models import User, db
 from webapp.templates.forms import CheckboxForm, ConfigForm
 from webapp.core import app

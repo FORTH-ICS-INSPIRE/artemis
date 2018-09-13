@@ -7,12 +7,12 @@ from flask_security.utils import hash_password, verify_password
 from flask_security.decorators import login_required
 from flask_babel import Babel
 from flask_jwt import JWT, jwt_required
-from flask import send_from_directory
 from webapp.data.models import db
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
-import time
+from webapp.core.modules import Modules_status 
 from webapp.utils import log
+import time
 
 
 app = Flask(__name__,
@@ -122,11 +122,6 @@ def inject_user():
 def inject_version():
     return dict(version=app.config['VERSION'])
 
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='../static/favicon.ico')
-
 @babel.timezoneselector
 def get_timezone():
     user = g.get('user', None)
@@ -138,6 +133,9 @@ def get_timezone():
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
-    return render_template('index.htm')
+    status_request = Modules_status()
+    status_request.call('all', 'status')
+    app.config['status'] = status_request.get_response_all()
+    return render_template('index.htm', modules = app.config['status'])
 
 

@@ -27,7 +27,7 @@ class Postgresql_db(Service):
             self.prefix_tree = None
             self.rules = None
             self.timestamp = -1
-            self.unhadled_to_feed_to_detection = 15
+            self.unhadled_to_feed_to_detection = 50
             self.insert_bgp_entries = []
             self.update_bgp_entries = []
             self.handled_bgp_entries = []
@@ -44,23 +44,25 @@ class Postgresql_db(Service):
             self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
             self.handled_exchange = Exchange('handled_update', type='direct', durable=False, delivery_mode=1)
             self.db_clock_exchange = Exchange('db_clock', type='direct', durable=False, delivery_mode=1)
-
-            #self.hijack_resolve = Exchange('hijack_resolve', type='direct', durable=False, delivery_mode=1)
-            #self.hijack_mit_started = Exchange('hijack_mit_started', type='direct', durable=False, delivery_mode=1)
+            self.mitigation_exchange = Exchange('mitigation', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
             self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
             self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
-                    consumer_arguments={'x-priority': 1})
+                    consumer_arguments={'x-priority': 2})
             self.hijack_update = Queue(uuid(), exchange=self.hijack_exchange, routing_key='fetch_hijacks', durable=False, exclusive=True, max_priority=1,
-                    consumer_arguments={'x-priority': 1})
+                    consumer_arguments={'x-priority': 2})
+            self.hijack_resolved_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
             self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
             self.db_clock_queue = Queue(uuid(), exchange=self.db_clock_exchange, routing_key='db_clock', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 3})
+            self.mitigate_queue = Queue(uuid(), exchange=self.mitigation_exchange, routing_key='mit_start', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
             self.flag = True
@@ -106,6 +108,18 @@ class Postgresql_db(Service):
                         prefetch_count=1,
                         no_ack=True
                         ),
+                    Consumer(
+                        queues=[self.hijack_resolved_queue],
+                        on_message=self.handle_resolved_hijack,
+                        prefetch_count=1,
+                        no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.mitigate_queue],
+                        on_message=self.handle_mitigation_request,
+                        prefetch_count=1,
+                        no_ack=True
+                        )
                     ]
 
         def config_request_rpc(self):
@@ -159,9 +173,8 @@ class Postgresql_db(Service):
 
         def handle_handled_bgp_update(self, message):
             msg_ = message.payload
-            # prefix, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix, key
-            extract_msg = (msg_['prefix'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
-                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), int(msg_['timestamp']), 0, True, self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'], msg_['key'])
+            #handled, key
+            extract_msg = (True, msg_['key'])
             self.handled_bgp_entries.append(extract_msg)
 
 
@@ -203,7 +216,7 @@ class Postgresql_db(Service):
 
         def handle_hijack_update(self, message):
             results = []
-            self.db_cur.execute("SELECT time_started, time_last, peers_seen, inf_asns, key  FROM hijacks WHERE active = true;")
+            self.db_cur.execute("SELECT time_started, time_last, num_peers_seen, num_asns_inf, key  FROM hijacks WHERE active = true;")
             entries = self.db_cur.fetchall()
             for entry in entries:
                 results.append({ 'time_started' : entry[0], 'time_last' : entry[1], 'peers_seen' : entry[2], 'inf_asns' : entry[3], 'key': entry[4]})
@@ -215,6 +228,21 @@ class Postgresql_db(Service):
                 priority = 1
             )
 
+        def handle_resolved_hijack(self, message):
+            raw = message.payload
+            try:
+                self.db_cur.execute("UPDATE hijacks SET active=false, time_ended=" + str(int(time.time())) + " WHERE key='" + str(raw) + "';" )
+                self.db_conn.commit()
+            except Exception as e:
+                log.info("error on handle_resolved_hijack " + str(e))
+        
+        def handle_mitigation_request(self, message):
+            raw = message.payload
+            try:
+                self.db_cur.execute("UPDATE hijacks SET time_started=" + str(int(raw['time'])) + " WHERE key=" + str(raw['key']) + ";" )
+                self.db_conn.commit()
+            except Exception as e:
+                log.info("error on handle_mitigation_request " + str(e))
 
         def create_tables(self):
             bgp_updates_table = "CREATE TABLE IF NOT EXISTS bgp_updates ( " + \
@@ -299,7 +327,7 @@ class Postgresql_db(Service):
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_key=%s, handled=%s, matched_prefix=%s, orig_path=%s " \
+                    self.db_cur.executemany("UPDATE bgp_updates SET handled=%s " \
                         + " WHERE key=%s", self.handled_bgp_entries)
                     self.db_conn.commit()
                 except Exception as e:
@@ -365,23 +393,3 @@ class Postgresql_db(Service):
             else:
                 log.info("Received uknown instruction from scheduler.")
                 log.info(msg_)
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

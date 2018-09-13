@@ -45,6 +45,7 @@ class WebApplication():
             # https://www.digitalocean.com/community/tutorials/openssl-essentials-working-with-ssl-certificates-private-keys-and-csrs
             context = (self.app.config['WEBAPP_CRT'], self.app.config['WEBAPP_KEY'])
             self.app.run(
+                threaded=True,
                 host=self.app.config['WEBAPP_HOST'],
                 port=self.app.config['WEBAPP_PORT'],
                 ssl_context=context,
@@ -53,6 +54,7 @@ class WebApplication():
         else:
             log.info('SSL: disabled')
             self.app.run(
+                threaded=True,
                 host=self.app.config['WEBAPP_HOST'],
                 port=self.app.config['WEBAPP_PORT'],
                 use_reloader=False
@@ -61,7 +63,7 @@ class WebApplication():
     def start(self):
         log.info("WebApplication Starting..")
         if not self.flag:
-            self.webapp_ = _thread.start_new_thread(self.run, ())
+            self.run()
             self.flag = True
             log.info('WebApplication Started..')
 

@@ -101,6 +101,14 @@
                                     <div class="col-lg-8">
                                         <p id="info_key"></p>
                                     </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Mitigation Started:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_mitigation_started"></p>
+                                    </div>
                                 </div>    
                             </div>
                         </div>
@@ -115,10 +123,10 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-lg-4 offset-lg-2">
-                                <button type="button" class="btn btn-success">Resolve</button>
+                                <button id="resolved_button" type="button" class="btn btn-success">Resolved</button>
                             </div>
                             <div class="col-lg-4">
-                                <button type="button" class="btn btn-danger">Mitigate</button>
+                                <button id="mitigation_button" type="button" class="btn btn-danger">Mitigate</button>
                             </div>
 
                         </div>
@@ -167,7 +175,7 @@
         <script>
             var parameters = {};
             parameters['hijack_key'] = "eq.{{ hijack_key }}"
-
+            var prefix;
 
             function render_table(settings){
                 var columns = [
@@ -331,6 +339,7 @@
             function retrieve_hijack(key){
                 var url_ = "http://localhost:3000/hijacks?key=" + key;
                 $.ajax({url: url_, success: function(result){
+                    prefix = result[0]['prefix'];
                     $( "#info_hijack_id" ).html( result[0]['id'] );
                     $( "#info_key" ).html( result[0]['key'] );
                     $( "#info_type" ).html( result[0]['type'] );
@@ -338,13 +347,48 @@
                     $( "#info_hijack_as" ).html( result[0]['hijack_as'] );
                     $( "#info_num_peers_seen" ).html( result[0]['num_peers_seen'] );
                     $( "#info_num_asns_inf" ).html( result[0]['num_asns_inf'] );
-                    var time_started = moment.unix(result[0]['time_started']);
-                    $( "#info_time_started" ).html( moment(time_started).local().format("MM-DD-YYYY HH:mm:ss"));
-                    $( "#info_time_last" ).html( result[0]['time_last'] );
-                    $( "#info_time_ended" ).html( result[0]['time_ended'] );
-                    $( "#info_mitigation_started" ).html( result[0]['mitigation_started'] );
+                    $( "#info_time_started" ).html( transform_time( result[0]['time_started'] ) );
+                    $( "#info_time_last" ).html( transform_time( result[0]['time_last'] ) );
+                    $( "#info_time_ended" ).html( transform_time( result[0]['time_ended'] ) );
+                    $( "#info_mitigation_started" ).html( transform_time( result[0]['mitigation_started'] ) );
+
+                    if(result[0]['time_ended'] != 0){
+                        $("#resolved_button").prop("disabled", true);
+                        $("#mitigation_button").prop("disabled", true);
+                    }else if(result[0]['mitigation_started'] != 0){
+                        $("#mitigation_button").prop("disabled", true);
+                    }
+                        
+
                 }});
             }
+            
+
+            function transform_time(timestamp){
+                if(timestamp != 0){
+                    var tunix = moment.unix(timestamp);
+                    return moment(tunix).local().format("MM-DD-YYYY HH:mm:ss")
+                }else{
+                    return "Never"
+                }
+                
+            }
+
+            $( "#resolved_button" ).click(function() {
+                var url_ = "../main/hijacks/resolve/?id={{ hijack_key }}";
+                $.ajax({url: url_, success: function(result){
+                    console.log(result)
+                }
+                });
+            });
+
+            $( "#mitigation_button" ).click(function() {
+                var url_ = "../main/hijacks/mitigate/?id={{ hijack_key }}&prefix=" + prefix;
+                $.ajax({url: url_, success: function(result){
+                    console.log(result)
+                }
+                });
+            });
 
 
         </script>

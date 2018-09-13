@@ -39,11 +39,28 @@
                 <div id="monitors">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Monitors
+                            <i class="fa fa-bell fa-fw"></i> System Status
                         </div>
                         <div class="panel-body">
-                            Monitors running:
+                            <div class="list-group">
+                                <ul>
+                                    {% for module in modules %}
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-5 offset-lg-1">{{ module }}</div>
 
+
+                                            <div class="col-lg-6">{% if modules[module] == 'up': %}
+                                                   <b style="color:#008000">Running </b>
+                                                {% else %} 
+                                                    <b style="color:#ff0000">Down</b>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -51,14 +68,13 @@
                 <div id="systemstatus">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> System Status
+                            <i class="fa fa-bell fa-fw"></i> Database
                         </div>
                         <div class="panel-body">
                             <div class="list-group">
 
                                 <ul>
-                                    <li class="list-group-item">Uptime: </li>
-                                    <li class="list-group-item">Database size: </li>
+                                    <li class="list-group-item"># BGP Updates: </li>
                                 </ul>
                             </div>
 

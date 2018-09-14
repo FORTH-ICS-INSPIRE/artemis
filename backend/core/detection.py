@@ -345,7 +345,7 @@ class Detection(Service):
 
         def mark_handled(self, monitor_event):
             self.producer.publish(
-                    monitor_event,
+                    monitor_event['key'],
                     exchange=self.handled_exchange,
                     routing_key='update',
                     priority=1

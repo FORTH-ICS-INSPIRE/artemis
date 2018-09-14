@@ -85,6 +85,32 @@ class Configuration(Service):
                     priority = 2
                 )
 
+                self.producer.publish(
+                    {
+                        'status': 'accepted',
+                        'config:': self.data
+                    },
+                    exchange='',
+                    routing_key = message.properties['reply_to'],
+                    correlation_id = message.properties['correlation_id'],
+                    serializer = 'json',
+                    retry = True,
+                    priority = 2
+                )
+            else:
+                self.producer.publish(
+                    {
+                        'status': 'rejected'
+                    },
+                    exchange='',
+                    routing_key = message.properties['reply_to'],
+                    correlation_id = message.properties['correlation_id'],
+                    serializer = 'json',
+                    retry = True,
+                    priority = 2
+                )
+
+
 
 
         def handle_config_request(self, message):
@@ -123,7 +149,7 @@ class Configuration(Service):
                 return data
             except Exception as e:
                 traceback.print_exc()
-                return {}
+                return None
 
 
         def check(self, data):

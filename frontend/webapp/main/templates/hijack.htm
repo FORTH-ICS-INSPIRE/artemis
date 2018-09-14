@@ -377,7 +377,7 @@
             $( "#resolved_button" ).click(function() {
                 var url_ = "../main/hijacks/resolve/?id={{ hijack_key }}";
                 $.ajax({url: url_, success: function(result){
-                    console.log(result)
+                    retrieve_hijack(parameters['hijack_key']);
                 }
                 });
             });
@@ -385,7 +385,7 @@
             $( "#mitigation_button" ).click(function() {
                 var url_ = "../main/hijacks/mitigate/?id={{ hijack_key }}&prefix=" + prefix;
                 $.ajax({url: url_, success: function(result){
-                    console.log(result)
+                    retrieve_hijack(parameters['hijack_key']);
                 }
                 });
             });

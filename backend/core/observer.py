@@ -3,8 +3,6 @@ import os
 import sys
 from watchdog.observers import Observer as WatchObserver
 from watchdog.events import FileSystemEventHandler
-from kombu import Connection, Queue, Exchange, uuid
-from kombu.mixins import ConsumerProducerMixin
 import traceback
 from utils.service import Service
 from utils import log
@@ -58,5 +56,7 @@ class Observer(Service):
                     text = 'CONFIGURATION FILE MODIFICATION\n{}'.format(changes)
                     log.info(text)
                     self.content = content
+                    with open('./snapshots/config-snapshot-{}.yaml'.format(int(time.time())), 'w') as f:
+                        f.write(''.join(self.content))
 
 

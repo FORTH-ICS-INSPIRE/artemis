@@ -7,6 +7,9 @@ import time
 if not os.path.exists('logs'):
     os.makedirs('logs')
 
+if not os.path.exists('snapshots'):
+    os.makedirs('snapshots')
+
 if os.path.exists('configs/logging.json'):
     with open('configs/logging.json', 'r') as f:
         config = json.load(f)

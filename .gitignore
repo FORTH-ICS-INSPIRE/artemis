@@ -1,5 +1,6 @@
 *.pyc
 */logs/*
+*/snapshots/*
 node_modules/
 artemis.db
 webapp.log

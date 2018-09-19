@@ -7,6 +7,7 @@ from core.detection import Detection
 from core.mitigation import Mitigation
 from core.scheduler import Scheduler
 from core.postgresql_db import Postgresql_db
+from core.observer import Observer
 from utils import log, RABBITMQ_HOST
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid
@@ -39,6 +40,8 @@ class Controller(Service):
             # Required Modules
             self.modules['configuration'] = Configuration()
             self.modules['configuration'].start()
+            self.modules['observer'] = Observer()
+            self.modules['observer'].start()
 
             # Optional Modules
             self.modules['scheduler'] = Scheduler()

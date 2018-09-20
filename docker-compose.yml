@@ -2,26 +2,25 @@ version: '2'
 services:
     artemis:
         build: ./backend/
-        container_name: artemis
-        hostname: artemis
         environment:
             RABBITMQ_HOST: rabbitmq
             MEMCACHED_HOST: memcached
             POSTGRES_HOST: postgres
+            SYSLOG_HOST: syslog
         depends_on:
             - rabbitmq
             - memcached
             - postgres
+            - syslog
         volumes:
             - ./backend/:/root/
         networks:
             - rabbitmq
             - memcached
             - postgres
+            - syslog
     artemis_webapp:
         build: ./frontend/
-        container_name: artemis_webapp
-        hostname: artemis_webapp
         environment:
             RABBITMQ_HOST: rabbitmq
             POSTGRES_HOST: postgres
@@ -34,10 +33,13 @@ services:
         networks:
             - rabbitmq
             - postgres
+    syslog:
+        image: "mumblepins/syslog-ng-alpine"
+        restart: always
+        networks:
+            - syslog
     rabbitmq:
         image: "rabbitmq:3-alpine"
-        container_name: rabbitmq
-        hostname: rabbitmq
         restart: always
         networks:
             - rabbitmq
@@ -47,8 +49,6 @@ services:
             - "5672:5672"
     memcached:
         image: "memcached:alpine"
-        container_name: memcached
-        hostname: memcached
         restart: always
         networks:
             - memcached
@@ -58,8 +58,6 @@ services:
             - "11211:11211"
     postgres:
         image: "postgres:alpine"
-        container_name: postgres
-        hostname: postgres
         restart: always
         environment:
             POSTGRES_DB: artemis_db
@@ -73,8 +71,6 @@ services:
             - "5432:5432"
     postgrest:
         image: "postgrest/postgrest"
-        container_name: postgrest
-        hostname: postgrest
         restart: always
         expose:
             - 3000
@@ -90,6 +86,7 @@ services:
             PGRST_DB_ANON_ROLE: artemis_user
 
 networks:
+    syslog:
     rabbitmq:
     memcached:
     postgres:

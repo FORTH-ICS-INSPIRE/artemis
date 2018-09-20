@@ -1,20 +1,26 @@
 import radix
 import subprocess
-from utils import log, RABBITMQ_HOST
+from utils import get_logger, RABBITMQ_HOST
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
-import traceback
+
+
+log = get_logger(__name__)
 
 class Mitigation(Service):
 
 
     def run_worker(self):
-        with Connection(RABBITMQ_HOST) as connection:
-            self.worker = self.Worker(connection)
-            self.worker.run()
-        log.info('Mitigation Stopped..')
+        try:
+            with Connection(RABBITMQ_HOST) as connection:
+                self.worker = self.Worker(connection)
+                self.worker.run()
+        except:
+            log.exception('exception')
+        finally:
+            log.info('stopped')
 
 
     class Worker(ConsumerProducerMixin):
@@ -22,7 +28,6 @@ class Mitigation(Service):
 
         def __init__(self, connection):
             self.connection = connection
-            self.flag = False
             self.timestamp = -1
             self.rules = None
             self.prefix_tree = None
@@ -38,8 +43,7 @@ class Mitigation(Service):
                     consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
-            self.flag = True
-            log.info('Mitigation Started..')
+            log.info('started')
 
 
         def get_consumers(self, Consumer, channel):
@@ -60,7 +64,7 @@ class Mitigation(Service):
 
 
         def handle_config_notify(self, message):
-            log.info(' [x] Mitigation - Config Notify')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             raw = message.payload
             if raw['timestamp'] > self.timestamp:
                 self.timestamp = raw['timestamp']
@@ -92,7 +96,7 @@ class Mitigation(Service):
 
 
         def handle_config_request_reply(self, message):
-            log.info(' [x] Mitigation - Received Configuration')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
                 if raw['timestamp'] > self.timestamp:
@@ -116,9 +120,9 @@ class Mitigation(Service):
             if prefix_node is not None:
                 mitigation_action = prefix_node.data['mitigation']
                 if mitigation_action == 'manual':
-                    log.info('Starting manual mitigation of hijack {}'.format(hijack_event))
+                    log.info('starting manual mitigation of hijack {}'.format(hijack_event))
                 else:
-                    log.info('Starting custom mitigation of hijack {}'.format(hijack_event))
+                    log.info('starting custom mitigation of hijack {}'.format(hijack_event))
                     hijack_event_str = json.dumps(hijack_event)
                     subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 # do something
@@ -130,6 +134,6 @@ class Mitigation(Service):
                         priority=2
                 )
             else:
-                log.warn('No rule for hijack {}'.format(hijack_event))
+                log.warn('no rule for hijack {}'.format(hijack_event))
 
 

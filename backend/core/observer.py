@@ -3,11 +3,12 @@ import os
 import sys
 from watchdog.observers import Observer as WatchObserver
 from watchdog.events import FileSystemEventHandler
-import traceback
 from utils.service import Service
-from utils import log
+from utils import get_logger
 import difflib
 
+
+log = get_logger(__name__)
 
 class Observer(Service):
 
@@ -21,13 +22,13 @@ class Observer(Service):
 
         self.observer.schedule(event_handler, dirname, recursive=False)
         self.observer.start()
-        log.info('Observer Started..')
+        log.info('started')
         self.should_stop = False
         while not self.should_stop:
             time.sleep(5)
         self.observer.stop()
         self.observer.join()
-        log.info('Observer Stopped..')
+        log.info('stopped')
 
 
     def exit(self, signum, frame):

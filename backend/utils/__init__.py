@@ -1,25 +1,24 @@
-import logging
-import logging.config
 import json
 import os
 import time
-
-if not os.path.exists('logs'):
-    os.makedirs('logs')
+import logging
 
 if not os.path.exists('snapshots'):
     os.makedirs('snapshots')
 
-if os.path.exists('configs/logging.json'):
-    with open('configs/logging.json', 'r') as f:
-        config = json.load(f)
-        logging.config.dictConfig(config)
-
-log = logging.getLogger(__name__)
-
+SYSLOG_HOST = os.getenv('SYSLOG_HOST', 'localhost')
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 
+
+def get_logger(name):
+    log = logging.getLogger(name)
+    log.setLevel(logging.DEBUG)
+    handler = logging.handlers.SysLogHandler(address= (SYSLOG_HOST,514))
+    formatter = logging.Formatter('%(module)s @ %(funcName)s: %(message)s')
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    return log
 
 # https://stackoverflow.com/questions/16136979/set-class-with-timed-auto-remove-of-elements
 class TimedSet(set):
@@ -56,11 +55,13 @@ class ArtemisError(Exception):
         # Call the base class constructor with the parameters it needs
         super().__init__(message)
 
-def exception_handler(f):
-    def wrapper(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            log.error('Exception', exc_info=True)
-            return True
-    return wrapper
+def exception_handler(log):
+    def function_wrapper(f):
+        def wrapper(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except Exception as e:
+                log.exception('exception')
+                return True
+        return wrapper
+    return function_wrapper

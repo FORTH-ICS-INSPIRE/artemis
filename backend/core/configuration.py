@@ -2,22 +2,28 @@ from ipaddress import ip_network as str2ip
 import os
 import sys
 from yaml import load as yload
-from utils import flatten, log, ArtemisError, RABBITMQ_HOST
+from utils import flatten, get_logger, ArtemisError, RABBITMQ_HOST
 from utils.service import Service
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
 import time
-import traceback
+
+
+log = get_logger(__name__)
 
 class Configuration(Service):
 
 
     def run_worker(self):
-        with Connection(RABBITMQ_HOST) as connection:
-            self.worker = self.Worker(connection)
-            self.worker.run()
-        log.info('Configuration Stopped..')
+        try:
+            with Connection(RABBITMQ_HOST) as connection:
+                self.worker = self.Worker(connection)
+                self.worker.run()
+        except:
+            log.exception('exception')
+        finally:
+            log.info('stopped')
 
 
     class Worker(ConsumerProducerMixin):
@@ -25,7 +31,6 @@ class Configuration(Service):
 
         def __init__(self, connection):
             self.connection = connection
-            self.flag = False
             self.file = 'configs/config.yaml'
             self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
             self.supported_fields = {'prefixes',
@@ -49,8 +54,7 @@ class Configuration(Service):
                     consumer_arguments={'x-priority': 2})
 
             self.parse_rrcs()
-            self.flag = True
-            log.info('Configuration Started..')
+            log.info('started')
 
 
         def get_consumers(self, Consumer, channel):
@@ -71,7 +75,7 @@ class Configuration(Service):
 
 
         def handle_config_modify(self, message):
-            log.info(' [x] Configuration - Config Modify')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             raw = message.payload
             data = self.parse(raw)
             if data is not None:
@@ -114,7 +118,7 @@ class Configuration(Service):
 
 
         def handle_config_request(self, message):
-            log.info(' [x] Configuration - Received configuration request')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             self.producer.publish(
                 self.data,
                 exchange='',
@@ -148,7 +152,7 @@ class Configuration(Service):
                 data['timestamp'] = time.time()
                 return data
             except Exception as e:
-                traceback.print_exc()
+                log.exception('exception')
                 return None
 
 
@@ -168,7 +172,7 @@ class Configuration(Service):
             for rule in data['rules']:
                 for field in rule:
                     if field not in self.supported_fields:
-                        log.warning('Unsupported field found {} in {}'.format(field, rule))
+                        log.warning('unsupported field found {} in {}'.format(field, rule))
                 rule['prefixes'] = flatten(rule['prefixes'])
                 for prefix in rule['prefixes']:
                     try:

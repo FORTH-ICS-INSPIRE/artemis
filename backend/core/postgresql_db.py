@@ -1,29 +1,34 @@
 import psycopg2
 import radix
-from utils import log, exception_handler, RABBITMQ_HOST
+from utils import get_logger, exception_handler, RABBITMQ_HOST
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
-import traceback
 import pickle
 import json
+
+
+log = get_logger(__name__)
 
 class Postgresql_db(Service):
 
 
     def run_worker(self):
-        with Connection(RABBITMQ_HOST) as connection:
-            self.worker = self.Worker(connection)
-            self.worker.run()
-        log.info('SQLite_db Stopped..')
+        try:
+            with Connection(RABBITMQ_HOST) as connection:
+                self.worker = self.Worker(connection)
+                self.worker.run()
+        except:
+            log.exception('exception')
+        finally:
+            log.info('stopped')
 
 
     class Worker(ConsumerProducerMixin):
 
         def __init__(self, connection):
             self.connection = connection
-            self.flag = False
             self.prefix_tree = None
             self.rules = None
             self.timestamp = -1
@@ -61,8 +66,7 @@ class Postgresql_db(Service):
                     consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
-            self.flag = True
-            log.info('SQLite Started..')
+            log.info('started')
 
 
         def get_consumers(self, Consumer, channel):
@@ -123,6 +127,7 @@ class Postgresql_db(Service):
                     self.connection.drain_events()
 
         def handle_bgp_update(self, message):
+            # log.info('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
             extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
@@ -130,6 +135,7 @@ class Postgresql_db(Service):
             self.insert_bgp_entries.append(extract_msg)
 
         def handle_hijack(self, message):
+            # log.info('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             key = msg_['key']
             if key not in self.tmp_hijacks_dict:
@@ -150,6 +156,7 @@ class Postgresql_db(Service):
                 self.tmp_hijacks_dict[key]['monitor_keys'].update(msg_['monitor_keys'])
 
         def handle_handled_bgp_update(self, message):
+            # log.info('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             # prefix, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix, key
             extract_msg = (msg_['prefix'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
@@ -177,7 +184,7 @@ class Postgresql_db(Service):
                 return ""
 
         def handle_config_notify(self, message):
-            log.info(' [x] PostgreSQL_db - Config Notify')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             raw = message.payload
             if raw['timestamp'] > self.timestamp:
                 self.timestamp = raw['timestamp']
@@ -185,7 +192,7 @@ class Postgresql_db(Service):
                 self.build_radix_tree()
 
         def handle_config_request_reply(self, message):
-            log.info(' [x] PostgreSQL_db - Received Configuration')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
                 if raw['timestamp'] > self.timestamp:
@@ -234,8 +241,8 @@ class Postgresql_db(Service):
                 self.db_conn = psycopg2.connect(connect_str)
                 self.db_cur = self.db_conn.cursor()
                 self.create_tables()
-            except Exception as e:
-                log.info('Error on Postgresql_db creation/connection: ' + str(e))
+            except:
+                log.exception('exception')
             finally:
                 log.info('PostgreSQL DB created/connected..')
 
@@ -245,8 +252,8 @@ class Postgresql_db(Service):
                 self.db_cur.executemany("INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, " + \
                     "timestamp, hijack_key, handled, matched_prefix) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
                 self.db_conn.commit()
-            except Exception as e:
-                log.info("error on _insert_bgp_updates " + str(e))
+            except:
+                log.exception('exception')
                 self.db_conn.rollback()
                 return -1
             finally:
@@ -266,8 +273,8 @@ class Postgresql_db(Service):
                 try:
                     self.db_cur.executemany("UPDATE bgp_updates SET handled=%s, hijack_key=%s WHERE key=%s ", self.update_bgp_entries)
                     self.db_conn.commit()
-                except Exception as e:
-                    log.info("error on 1_update_bgp_updates " + str(e))
+                except:
+                    log.exception('exception')
                     self.db_conn.rollback()
                     return -1
 
@@ -277,8 +284,8 @@ class Postgresql_db(Service):
                     self.db_cur.executemany("UPDATE bgp_updates SET prefix=%s, origin_as=%s, peer_asn=%s, as_path=%s, service=%s, type=%s, communities=%s, timestamp=%s, hijack_key=%s, handled=%s, matched_prefix=%s " \
                         + " WHERE key=%s", self.handled_bgp_entries)
                     self.db_conn.commit()
-                except Exception as e:
-                    log.info("error on 2_update_bgp_updates " + str(e))
+                except:
+                    log.exception('exception')
                     self.db_conn.rollback()
                     return -1
 
@@ -292,16 +299,16 @@ class Postgresql_db(Service):
                 try:
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, to_mitigate) VALUES ("
-                    cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + self.tmp_hijacks_dict[key]['prefix'] + "','" + self.tmp_hijacks_dict[key]['hijacker'] + "'," 
-                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + "," 
+                    cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + self.tmp_hijacks_dict[key]['prefix'] + "','" + self.tmp_hijacks_dict[key]['hijacker'] + "',"
+                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + ","
                     cmd_ += str(self.tmp_hijacks_dict[key]['time_last']) + ",0,0,false) "
                     cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=" + str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[key]['inf_asns']))
                     cmd_ += ", time_started=" + str(self.tmp_hijacks_dict[key]['time_started']) + ", time_last=" + str(self.tmp_hijacks_dict[key]['time_last'])
 
                     self.db_cur.execute(cmd_)
                     self.db_conn.commit()
-                except Exception as e:
-                    log.info("error on _insert_update_hijacks " + str(e))
+                except:
+                    log.exception('exception')
                     self.db_conn.rollback()
                     return -1
 
@@ -329,7 +336,7 @@ class Postgresql_db(Service):
         def _update_bulk(self):
             details = "\n - \tBGP Entries: Inserted %d | Updated %d" % (self._insert_bgp_updates(), self._update_bgp_updates())
             details += "\n - \tHijacks Entries: Inserted/Updated %d" % (self._insert_update_hijacks())
-            log.info("[.] SQLite bulk-query execution:" + details)
+            log.info('{}'.format(details))
 
         def _scheduler_instruction(self, message):
             msg_ = message.payload
@@ -340,24 +347,5 @@ class Postgresql_db(Service):
                 self._retrieve_unhandled()
                 return
             else:
-                log.info("Received uknown instruction from scheduler.")
-                log.info(msg_)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                log.info('Received uknown instruction from scheduler: {}'.format(msg_))
 

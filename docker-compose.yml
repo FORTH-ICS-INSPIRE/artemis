@@ -6,7 +6,7 @@ services:
             RABBITMQ_HOST: rabbitmq
             MEMCACHED_HOST: memcached
             POSTGRES_HOST: postgres
-            SYSLOG_HOST: syslog
+            SYSLOG_HOST: "syslog:514"
         depends_on:
             - rabbitmq
             - memcached

@@ -6,7 +6,7 @@ import logging
 if not os.path.exists('snapshots'):
     os.makedirs('snapshots')
 
-SYSLOG_HOST = os.getenv('SYSLOG_HOST', 'localhost')
+SYSLOG_HOST, SYSLOG_PORT = os.getenv('SYSLOG_HOST', 'localhost:514').split(':')
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 
@@ -14,7 +14,7 @@ MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 def get_logger(name):
     log = logging.getLogger(name)
     log.setLevel(logging.DEBUG)
-    handler = logging.handlers.SysLogHandler(address= (SYSLOG_HOST,514))
+    handler = logging.handlers.SysLogHandler(address=(SYSLOG_HOST, int(SYSLOG_PORT)))
     formatter = logging.Formatter('%(module)s @ %(funcName)s: %(message)s')
     handler.setFormatter(formatter)
     log.addHandler(handler)

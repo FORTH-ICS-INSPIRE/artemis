@@ -28,9 +28,9 @@ class Scheduler(Service):
             self.time_to_wait = 1 # Time in secs to gather entries to perform a bulk operation
             self.time_to_wait_to_send_unhadled = 5
 
-            self.db_clock_exchange = Exchange('db_clock', type='direct', durable=False, delivery_mode=1)
+            self.db_clock_exchange = Exchange('db-clock', type='direct', durable=False, delivery_mode=1)
 
-            self.db_clock_queue = Queue(uuid(), exchange=self.db_clock_exchange, routing_key='db_clock', durable=False, exclusive=True, max_priority=2,
+            self.db_clock_queue = Queue('scheduler-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 3})
             log.info('started')
             self.db_clock_send()

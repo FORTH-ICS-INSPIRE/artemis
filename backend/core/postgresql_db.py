@@ -45,24 +45,25 @@ class Postgresql_db(Service):
 
             # EXCHANGES
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
-            self.update_exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
-            self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
-            self.handled_exchange = Exchange('handled_update', type='direct', durable=False, delivery_mode=1)
-            self.db_clock_exchange = Exchange('db_clock', type='direct', durable=False, delivery_mode=1)
+            self.update_exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False, delivery_mode=1)
+            self.update_exchange.declare()
+            self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
+            self.handled_exchange = Exchange('handled-update', type='direct', durable=False, delivery_mode=1)
+            self.db_clock_exchange = Exchange('db-clock', type='direct', durable=False, delivery_mode=1)
 
             #self.hijack_resolve = Exchange('hijack_resolve', type='direct', durable=False, delivery_mode=1)
             #self.hijack_mit_started = Exchange('hijack_mit_started', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
-            self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
-            self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.db_clock_queue = Queue(uuid(), exchange=self.db_clock_exchange, routing_key='db_clock', durable=False, exclusive=True, max_priority=2,
+            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
@@ -112,11 +113,11 @@ class Postgresql_db(Service):
             self.producer.publish(
                 '',
                 exchange = '',
-                routing_key = 'config_request_queue',
+                routing_key = 'config-request-queue',
                 reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config-request-queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,
@@ -181,7 +182,7 @@ class Postgresql_db(Service):
             if prefix_node is not None:
                 return prefix_node.prefix
             else:
-                return ""
+                return ''
 
         def handle_config_notify(self, message):
             log.info('message: {}\npayload: {}'.format(message, message.payload))
@@ -336,7 +337,7 @@ class Postgresql_db(Service):
         def _update_bulk(self):
             details = "\n - \tBGP Entries: Inserted %d | Updated %d" % (self._insert_bgp_updates(), self._update_bgp_updates())
             details += "\n - \tHijacks Entries: Inserted/Updated %d" % (self._insert_update_hijacks())
-            log.info('{}'.format(details))
+            log.debug('{}'.format(details))
 
         def _scheduler_instruction(self, message):
             msg_ = message.payload

@@ -73,7 +73,7 @@ class Observer(Service):
                         producer.publish(
                             content,
                             exchange='',
-                            routing_key='config_modify_queue',
+                            routing_key='config-modify-queue',
                             serializer='yaml',
                             retry=True,
                             declare=[callback_queue],
@@ -88,13 +88,13 @@ class Observer(Service):
                             self.connection.drain_events()
 
                     if self.response['status'] == 'accepted':
-                        text = 'new configuration accepted: {}'.format(changes)
+                        text = 'new configuration accepted:\n{}'.format(changes)
                         log.info(text)
                         self.content = content
                         with open('./snapshots/config-snapshot-{}.yaml'.format(int(time.time())), 'w') as f:
                             f.write(''.join(self.content))
                     else:
-                        log.error('invalid configuration: {}'.format(content))
+                        log.error('invalid configuration:\n{}'.format(content))
                     self.response = None
 
 

@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from core.configuration import Configuration
 from core.monitor import Monitor
@@ -11,6 +12,7 @@ from utils import get_logger, RABBITMQ_HOST
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
+import importlib
 
 
 log = get_logger(__name__)
@@ -52,7 +54,7 @@ class Controller(Service):
             self.modules['mitigation'] = Mitigation()
 
             # QUEUES
-            self.controller_queue = Queue('controller_queue')
+            self.controller_queue = Queue('controller-queue', auto_delete=True)
 
             log.info('started')
 
@@ -88,6 +90,7 @@ class Controller(Service):
                             response = {'result': 'fail',
                                     'reason': 'already running'}
                         else:
+                            importlib.reload(sys.modules[module.__module__])
                             self.modules[message.payload['module']] = module.__class__()
                             self.modules[message.payload['module']].start()
                             response = {'result': 'success'}
@@ -123,6 +126,7 @@ class Controller(Service):
                             'reason': 'not registered module'}
             except:
                 log.exception('exception')
+                response = {'result': 'fail', 'reason': 'controller exception'}
             finally:
                 message.payload['response'] = response
                 log.debug('response: {}'.format(response))

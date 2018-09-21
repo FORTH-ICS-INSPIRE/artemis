@@ -112,6 +112,11 @@ class Service(Process):
         super().__init__()
         self.pid_file = _PIDFile(os.path.join(pid_dir, self.name + '.pid'))
         self.worker = None
+        self.start_time = None
+
+
+    def get_uptime(self):
+        return time.time() - self.start_time
 
 
     def is_running(self):
@@ -234,6 +239,7 @@ class Service(Process):
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+        self.start_time = time.time()
         runner()
 
     def exit(self, signum, frame):

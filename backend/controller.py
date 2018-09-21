@@ -22,6 +22,8 @@ class Controller(Service):
         with Connection(RABBITMQ_HOST) as connection:
             self.worker = self.Worker(connection)
             self.worker.run()
+
+        log.debug('stopping all running modules')
         # Stop all modules and web application
         for name, module in self.worker.modules.items():
             if module.is_running():
@@ -93,7 +95,11 @@ class Controller(Service):
                             response = {'result': 'success'}
                     elif message.payload['action'] == 'status':
                         if module.is_running():
-                            response = {'result': 'success', 'status': 'up'}
+                            response = {
+                                    'result': 'success',
+                                    'status': 'up',
+                                    'uptime': module.get_uptime()
+                            }
                         else:
                             response = {'result': 'success', 'status': 'down'}
                     else:

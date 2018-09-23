@@ -27,7 +27,7 @@ class ControllerCLI(object):
                     'action': action
                     },
                 exchange='',
-                routing_key='controller_queue',
+                routing_key='controller-queue',
                 declare=[callback_queue],
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,

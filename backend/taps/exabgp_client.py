@@ -20,7 +20,8 @@ class ExaBGP():
 
     def start(self, connection):
         self.connection = connection
-        self.exchange = Exchange('bgp_update', type='direct', durable=False)
+        self.exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+        self.exchange.declare()
 
         with SocketIO('http://' + self.host, namespace=BaseNamespace, wait_for_connection=False) as sio:
 

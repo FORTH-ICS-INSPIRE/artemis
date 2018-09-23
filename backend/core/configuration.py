@@ -45,12 +45,13 @@ class Configuration(Service):
                 self.data = self.parse(raw, yaml=True)
 
             # EXCHANGES
-            self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
+            self.config_exchange = Exchange('config', type='direct', channel=connection, durable=False, delivery_mode=1)
+            self.config_exchange.declare()
 
             # QUEUES
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='modify', durable=False, exclusive=True, max_priority=2,
+            self.config_modify_queue = Queue('config-modify-queue', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.config_request_queue = Queue('config_request_queue', durable=False, max_priority=2,
+            self.config_request_queue = Queue('config-request-queue', durable=False, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
             self.parse_rrcs()
@@ -60,10 +61,11 @@ class Configuration(Service):
         def get_consumers(self, Consumer, channel):
             return [
                     Consumer(
-                        queues=[self.config_queue],
+                        queues=[self.config_modify_queue],
                         on_message=self.handle_config_modify,
                         prefetch_count=1,
-                        no_ack=True
+                        no_ack=True,
+                        accept=['yaml']
                         ),
                     Consumer(
                         queues=[self.config_request_queue],
@@ -77,8 +79,14 @@ class Configuration(Service):
         def handle_config_modify(self, message):
             log.info('message: {}\npayload: {}'.format(message, message.payload))
             raw = message.payload
-            data = self.parse(raw)
+            if 'yaml' in message.content_type:
+                from io import StringIO
+                stream = StringIO(''.join(raw))
+                data = self.parse(stream, yaml=True)
+            else:
+                data = self.parse(raw)
             if data is not None:
+                log.debug('accepted new configuration')
                 self.data = data
                 self.producer.publish(
                     self.data,
@@ -102,6 +110,7 @@ class Configuration(Service):
                     priority = 2
                 )
             else:
+                log.debug('rejected new configuration')
                 self.producer.publish(
                     {
                         'status': 'rejected'

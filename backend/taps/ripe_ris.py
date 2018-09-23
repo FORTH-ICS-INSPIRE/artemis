@@ -17,7 +17,8 @@ def normalize_ripe_ris(msg):
             del msg['host']
 
 def parse_ripe_ris(connection, prefix, host):
-    exchange = Exchange('bgp_update', type='direct', durable=False)
+    exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+    exchange.declare()
 
     def on_ris_msg(msg):
         try:

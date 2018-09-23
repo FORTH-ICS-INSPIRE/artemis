@@ -44,7 +44,7 @@ class Monitor(Service):
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+            self.config_queue = Queue('monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
@@ -116,11 +116,11 @@ class Monitor(Service):
             self.producer.publish(
                 '',
                 exchange = '',
-                routing_key = 'config_request_queue',
+                routing_key = 'config-request-queue',
                 reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config-request-queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,

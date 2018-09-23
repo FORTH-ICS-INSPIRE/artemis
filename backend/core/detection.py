@@ -56,22 +56,24 @@ class Detection(Service):
 
 
             # EXCHANGES
-            self.update_exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
-            self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
-            self.handled_exchange = Exchange('handled_update', type='direct', durable=False, delivery_mode=1)
-            self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
+            self.update_exchange = Exchange('bgp-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.hijack_exchange = Exchange('hijack-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.hijack_exchange.declare()
+            self.handled_exchange = Exchange('handled-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.handled_exchnage.declare()
+            self.config_exchange = Exchange('config', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
 
 
             # QUEUES
-            self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.update_queue = Queue('detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
-            self.update_unhandled_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='unhandled', durable=False, exclusive=True, max_priority=2,
+            self.update_unhandled_queue = Queue('detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+            self.hijack_resolved_queue = Queue('detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.hijack_fetch_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='fetch', durable=False, exclusive=True, max_priority=2,
+            self.hijack_fetch_queue = Queue('detection-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
+            self.config_queue = Queue('detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
                     consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
@@ -79,7 +81,7 @@ class Detection(Service):
             self.producer.publish(
                     '',
                     exchange=self.hijack_exchange,
-                    routing_key='fetch_hijacks',
+                    routing_key='fetch-hijacks',
                     priority=0
             )
             log.info('started')
@@ -137,11 +139,11 @@ class Detection(Service):
             self.producer.publish(
                 '',
                 exchange = '',
-                routing_key = 'config_request_queue',
+                routing_key = 'config-request-queue',
                 reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config-request-queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,

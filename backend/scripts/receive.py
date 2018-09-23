@@ -5,8 +5,8 @@ import os
 
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
-exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
-queue = Queue('hijack_update_queue', exchange, routing_key='update', exclusive=True, durable=False, max_priority=1)
+exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
+queue = Queue('hijack-update-queue', exchange, routing_key='update', exclusive=True, durable=False, max_priority=1)
 
 
 def pretty(obj):

@@ -128,7 +128,7 @@ class Postgresql_db(Service):
                     self.connection.drain_events()
 
         def handle_bgp_update(self, message):
-            # log.info('message: {}\npayload: {}'.format(message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
             extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
@@ -136,7 +136,7 @@ class Postgresql_db(Service):
             self.insert_bgp_entries.append(extract_msg)
 
         def handle_hijack(self, message):
-            # log.info('message: {}\npayload: {}'.format(message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             key = msg_['key']
             if key not in self.tmp_hijacks_dict:
@@ -157,7 +157,7 @@ class Postgresql_db(Service):
                 self.tmp_hijacks_dict[key]['monitor_keys'].update(msg_['monitor_keys'])
 
         def handle_handled_bgp_update(self, message):
-            # log.info('message: {}\npayload: {}'.format(message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             # prefix, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix, key
             extract_msg = (msg_['prefix'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \

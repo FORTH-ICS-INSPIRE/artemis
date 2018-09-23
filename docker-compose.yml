@@ -19,20 +19,28 @@ services:
             - memcached
             - postgres
             - syslog
-    artemis_webapp:
-        build: ./frontend/
-        environment:
-            RABBITMQ_HOST: rabbitmq
-            POSTGRES_HOST: postgres
-        expose:
-            - 8000
-        ports:
-            - "8000:8000"
-        volumes:
-            - ./frontend/:/root/
-        networks:
-            - rabbitmq
-            - postgres
+    # grafana:
+    #     image: grafana/grafana
+    #     restart: always
+    #     ports:
+    #         - 8001:3000
+    #     networks:
+    #         - rabbitmq
+    #         - postgres
+    # artemis_webapp:
+    #     build: ./frontend/
+    #     environment:
+    #         RABBITMQ_HOST: rabbitmq
+    #         POSTGRES_HOST: postgres
+    #     expose:
+    #         - 8000
+    #     ports:
+    #         - "8000:8000"
+    #     volumes:
+    #         - ./frontend/:/root/
+    #     networks:
+    #         - rabbitmq
+    #         - postgres
     syslog:
         image: "mumblepins/syslog-ng-alpine"
         restart: always

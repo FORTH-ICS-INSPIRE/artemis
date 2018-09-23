@@ -211,6 +211,9 @@ class Service(Process):
         finally:
             self.pid_file.release()
 
+    def start(self):
+        self.start_time = time.time()
+        super().start()
 
     def run(self):
         pid = self.get_pid()
@@ -239,7 +242,6 @@ class Service(Process):
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-        self.start_time = time.time()
         runner()
 
     def exit(self, signum, frame):

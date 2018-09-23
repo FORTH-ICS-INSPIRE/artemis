@@ -7,9 +7,10 @@ from kombu.mixins import ConsumerProducerMixin
 import time
 import pickle
 import json
+import logging
 
 
-log = get_logger(__name__)
+log = logging.getLogger('artemis_logger')
 
 class Postgresql_db(Service):
 

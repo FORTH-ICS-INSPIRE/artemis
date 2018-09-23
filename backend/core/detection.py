@@ -8,9 +8,10 @@ import time
 from pymemcache.client.base import Client
 import pickle
 import hashlib
+import logging
 
 
-log = get_logger(__name__)
+log = logging.getLogger('artemis_logger')
 
 def pickle_serializer(key, value):
      if type(value) == str:

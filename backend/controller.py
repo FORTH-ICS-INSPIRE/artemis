@@ -47,10 +47,12 @@ class Controller(Service):
             self.modules['configuration'].start()
             self.modules['observer'] = Observer()
             self.modules['observer'].start()
+            self.modules['scheduler'] = Scheduler()
+            self.modules['scheduler'].start()
+            self.modules['postgresql_db'] = Postgresql_db()
+            self.modules['postgresql_db'].start()
 
             # Optional Modules
-            self.modules['scheduler'] = Scheduler()
-            self.modules['postgresql_db'] = Postgresql_db()
             self.modules['monitor'] = Monitor()
             self.modules['detection'] = Detection()
             self.modules['mitigation'] = Mitigation()

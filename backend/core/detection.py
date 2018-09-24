@@ -180,7 +180,7 @@ class Detection(Service):
 
 
         def handle_unhandled_bgp_updates(self, message):
-            log.info('{} unhandled events'.format(len(message.payload)))
+            log.debug('{} unhandled events'.format(len(message.payload)))
             for update in message.payload:
                 self.handle_bgp_update(update)
 
@@ -344,7 +344,7 @@ class Detection(Service):
                     serializer='pickle',
                     priority=0
             )
-            log.info('{}'.format(result))
+            # log.debug('{}'.format(result))
 
 
         def mark_handled(self, monitor_event):
@@ -355,17 +355,17 @@ class Detection(Service):
                     priority=1
             )
             self.monitors_seen.add(monitor_event['key'])
-            log.info('{}'.format(monitor_event['key']))
+            # log.debug('{}'.format(monitor_event['key']))
 
 
         def fetch_ongoing_hijacks(self, message):
-            log.info('message: {}\npayload: {}'.format(message, message.payload))
+            # log.info('message: {}\npayload: {}'.format(message, message.payload))
             hijacks = message.payload
             self.memcache.set_many(hijacks)
 
 
         def handle_resolved_hijack(self, message):
-            log.info('message: {}\npayload: {}'.format(message, message.payload))
+            # log.info('message: {}\npayload: {}'.format(message, message.payload))
             self.memcache.delete(message.payload)
 
 

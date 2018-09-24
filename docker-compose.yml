@@ -53,8 +53,6 @@ services:
             - rabbitmq
         expose:
             - 5672
-        ports:
-            - "5672:5672"
     memcached:
         image: "memcached:alpine"
         restart: always
@@ -62,8 +60,6 @@ services:
             - memcached
         expose:
             - 11211
-        ports:
-            - "11211:11211"
     postgres:
         image: "postgres:alpine"
         restart: always
@@ -75,15 +71,11 @@ services:
             - postgres
         expose:
             - 5432
-        ports:
-            - "5432:5432"
     postgrest:
         image: "postgrest/postgrest"
         restart: always
         expose:
             - 3000
-        ports:
-            - "3000:3000"
         networks:
             - postgres
         depends_on:

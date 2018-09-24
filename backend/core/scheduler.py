@@ -29,10 +29,9 @@ class Scheduler(Service):
             self.time_to_wait = 1 # Time in secs to gather entries to perform a bulk operation
             self.time_to_wait_to_send_unhadled = 5
 
-            self.db_clock_exchange = Exchange('db-clock', type='direct', durable=False, delivery_mode=1)
-
-            self.db_clock_queue = Queue('scheduler-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock', durable=False, exclusive=True, max_priority=2,
-                    consumer_arguments={'x-priority': 3})
+            self.db_clock_exchange = Exchange('db-clock', type='direct', channel=connection, durable=False, delivery_mode=1)
+            self.db_clock_exchange.declare()
+            
             log.info('started')
             self._db_clock_send()
 
@@ -73,22 +72,21 @@ class Scheduler(Service):
                 time.sleep(self.time_to_wait)
                 self.producer.publish(
                     'bulk_operation',
-                    exchange = self.db_clock_queue.exchange,
-                    routing_key = self.db_clock_queue.routing_key,
+                    exchange = self.db_clock_exchange,
+                    routing_key = 'db-clock-message',
                     retry = True,
-                    declare = [self.db_clock_queue],
                     priority = 3
                 )
                 if(unhandled_cnt > 5 and self._get_module_status('detection')):
                     self.producer.publish(
                         'send_unhandled',
-                        exchange = self.db_clock_queue.exchange,
-                        routing_key = self.db_clock_queue.routing_key,
-                        declare = [self.db_clock_queue],
+                        exchange = self.db_clock_exchange,
+                        routing_key = 'db-clock-message',
                         retry = True,
                         priority = 2
                     )
                     unhandled_cnt = 0
                 unhandled_cnt += 1
+
 
 

@@ -34,11 +34,38 @@ class Scheduler(Service):
             self.db_clock_queue = Queue('scheduler-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 3})
             log.info('started')
-            self.db_clock_send()
+            self._db_clock_send()
 
-        def db_clock_send(self):
+        def _get_module_status(self, module):
+            self.response = None
+            self.correlation_id = uuid()
+            callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
+            with Producer(self.connection) as producer:
+                producer.publish(
+                    {
+                        'module': module,
+                        'action': 'status'
+                        },
+                    exchange='',
+                    routing_key='controller-queue',
+                    declare=[callback_queue],
+                    reply_to=callback_queue.name,
+                    correlation_id=self.correlation_id,
+                )
+            with Consumer(self.connection,
+                          on_message=self.on_response,
+                          queues=[callback_queue],
+                          no_ack=True):
+                while self.response is None:
+                    self.connection.drain_events()
+            if 'response' in self.response:
+                if 'status' in self.response['response']:
+                    if self.response['response']['status'] == 'up':
+                        return True
+            return False
+
+        def _db_clock_send(self):
             unhandled_cnt = 0
-
             while 1:
                 time.sleep(self.time_to_wait)
                 self.producer.publish(
@@ -49,7 +76,7 @@ class Scheduler(Service):
                     declare = [self.db_clock_queue],
                     priority = 3
                 )
-                if(unhandled_cnt == 5):
+                if(unhandled_cnt == 5 and _get_module_status('detection')):
                     self.producer.publish(
                         'send_unhandled',
                         exchange = self.db_clock_queue.exchange,

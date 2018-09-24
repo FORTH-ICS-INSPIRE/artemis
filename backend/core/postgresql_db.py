@@ -181,7 +181,7 @@ class Postgresql_db(Service):
 
         def handle_handled_bgp_update(self, message):
             log.debug('message: {}\npayload: {}'.format(message, message.payload))
-            key_ = message
+            key_ = message.payload
             #handled, key
             extract_msg = (True, key_)
             self.handled_bgp_entries.append(extract_msg)
@@ -378,18 +378,26 @@ class Postgresql_db(Service):
             for entry in entries:
                 results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'path': entry[5], \
                   'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : int(entry[9])})
-            self.producer.publish(
-                results,
-                exchange = self.update_exchange,
-                routing_key = 'unhandled',
-                retry = False,
-                priority = 2
-            )
+            if(len(results)):
+                self.producer.publish(
+                    results,
+                    exchange = self.update_exchange,
+                    routing_key = 'unhandled',
+                    retry = False,
+                    priority = 2
+                )
 
         def _update_bulk(self):
-            details = "\n - \tBGP Entries: Inserted %d | Updated %d" % (self._insert_bgp_updates(), self._update_bgp_updates())
-            details += "\n - \tHijacks Entries: Inserted/Updated %d" % (self._insert_update_hijacks())
-            log.debug('{}'.format(details))
+            inserts, updates, hijacks = self._insert_bgp_updates(), self._update_bgp_updates(), self._insert_update_hijacks()
+            str_ = ""
+            if inserts > 0:
+                str_ += "BGP Updates Inserted: {}\n".format(inserts)
+            if updates > 0:
+                str_ += "BGP Updates Updated: {}\n".format(updates)
+            if hijacks > 0:
+                str_ += "Hijacks Inserted: {}".format(hijacks)
+            if(str_ != ""):
+                log.debug('{}'.format(str_))
 
         def _scheduler_instruction(self, message):
             msg_ = message.payload
@@ -400,4 +408,4 @@ class Postgresql_db(Service):
                 self._retrieve_unhandled()
                 return
             else:
-                log.debug('Received uknown instruction from scheduler: {}'.format(msg_))
+                log.warning('Received uknown instruction from scheduler: {}'.format(msg_))

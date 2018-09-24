@@ -11,8 +11,8 @@ RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 
 
-def get_logger(name):
-    log = logging.getLogger(name)
+def get_logger():
+    log = logging.getLogger('artemis_logger')
     log.setLevel(logging.DEBUG)
     handler = logging.handlers.SysLogHandler(address=(SYSLOG_HOST, int(SYSLOG_PORT)))
     formatter = logging.Formatter('%(module)s @ %(funcName)s: %(message)s')

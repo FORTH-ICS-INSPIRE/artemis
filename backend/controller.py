@@ -15,7 +15,7 @@ from kombu.mixins import ConsumerProducerMixin
 import importlib
 
 
-log = get_logger(__name__)
+log = get_logger()
 
 class Controller(Service):
 

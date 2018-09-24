@@ -8,9 +8,10 @@ import time
 from pymemcache.client.base import Client
 import pickle
 import hashlib
+import logging
 
 
-log = get_logger(__name__)
+log = logging.getLogger('artemis_logger')
 
 def pickle_serializer(key, value):
      if type(value) == str:
@@ -56,12 +57,12 @@ class Detection(Service):
 
 
             # EXCHANGES
-            self.update_exchange = Exchange('bgp-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
-            self.hijack_exchange = Exchange('hijack-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.update_exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False, delivery_mode=1)
+            self.hijack_exchange = Exchange('hijack-update', channel=connection, type='direct', durable=False, delivery_mode=1)
             self.hijack_exchange.declare()
-            self.handled_exchange = Exchange('handled-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
-            self.handled_exchnage.declare()
-            self.config_exchange = Exchange('config', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.handled_exchange = Exchange('handled-update', channel=connection, type='direct', durable=False, delivery_mode=1)
+            self.handled_exchange.declare()
+            self.config_exchange = Exchange('config', channel=connection, type='direct', durable=False, delivery_mode=1)
 
 
             # QUEUES

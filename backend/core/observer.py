@@ -7,9 +7,10 @@ from utils.service import Service
 from utils import get_logger, RABBITMQ_HOST
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 import difflib
+import logging
 
 
-log = get_logger(__name__)
+log = logging.getLogger('artemis_logger')
 
 class Observer(Service):
 

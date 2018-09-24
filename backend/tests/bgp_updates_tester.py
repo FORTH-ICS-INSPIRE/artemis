@@ -11,7 +11,7 @@ import sys
 this_script_path = os.path.realpath(__file__)
 upper_dir = '/'.join(this_script_path.split('/')[:-2])
 sys.path.insert(0, upper_dir)
-from utils import RABBITMQ_HOST, log
+from utils import RABBITMQ_HOST
 
 success_flag = False
 
@@ -85,7 +85,6 @@ class Worker(ConsumerProducerMixin):
 
 
     def handle_config_request(self, message):
-        log.info(' [x] Configuration - Received configuration request')
         self.producer.publish(
             self.config,
             exchange='',
@@ -148,7 +147,6 @@ class Worker(ConsumerProducerMixin):
         self.handled_counter += 1
         if self.handled_counter == 32 + self.pkts_test:
             # for name, hijack in self.hijacks.items():
-            #     log.info(hijack)
             if len(self.hijacks) == 16:
                 global success_flag
                 success_flag = True

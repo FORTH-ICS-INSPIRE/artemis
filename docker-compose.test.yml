@@ -19,22 +19,22 @@ services:
             - memcached
             - postgres
         entrypoint: ["./entrypoint.test"]
-    artemis_webapp:
-        build: ./frontend/
-        container_name: artemis_webapp
-        hostname: artemis_webapp
-        environment:
-            RABBITMQ_HOST: rabbitmq
-            POSTGRES_HOST: postgres
-        expose:
-            - 8000
-        ports:
-            - "8000:8000"
-        volumes:
-            - ./frontend/:/root/
-        networks:
-            - rabbitmq
-            - postgres
+    # artemis_webapp:
+    #     build: ./frontend/
+    #     container_name: artemis_webapp
+    #     hostname: artemis_webapp
+    #     environment:
+    #         RABBITMQ_HOST: rabbitmq
+    #         POSTGRES_HOST: postgres
+    #     expose:
+    #         - 8000
+    #     ports:
+    #         - "8000:8000"
+    #     volumes:
+    #         - ./frontend/:/root/
+    #     networks:
+    #         - rabbitmq
+    #         - postgres
     rabbitmq:
         image: "rabbitmq:3-alpine"
         container_name: rabbitmq

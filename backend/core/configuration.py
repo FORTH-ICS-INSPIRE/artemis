@@ -8,9 +8,10 @@ from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
 import time
+import logging
 
 
-log = get_logger(__name__)
+log = logging.getLogger('artemis_logger')
 
 class Configuration(Service):
 

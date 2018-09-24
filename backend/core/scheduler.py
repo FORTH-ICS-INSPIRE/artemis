@@ -3,9 +3,10 @@ from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
+import logging
 
 
-log = get_logger(__name__)
+log = logging.getLogger('artemis_logger')
 
 class Scheduler(Service):
 

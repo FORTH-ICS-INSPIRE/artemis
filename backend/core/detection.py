@@ -1,15 +1,16 @@
 import radix
 import ipaddress
-from utils import log, exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet
+from utils import get_logger, exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
-import traceback
 from pymemcache.client.base import Client
 import pickle
 import hashlib
 
+
+log = get_logger(__name__)
 
 def pickle_serializer(key, value):
      if type(value) == str:
@@ -22,16 +23,20 @@ def pickle_deserializer(key, value, flags):
         return value
     if flags == 2:
         return pickle.loads(value)
-    raise Exception("Unknown serialization format")
+    raise Exception('Unknown serialization format')
 
 class Detection(Service):
 
 
     def run_worker(self):
-        with Connection(RABBITMQ_HOST) as connection:
-            self.worker = self.Worker(connection)
-            self.worker.run()
-        log.info('Detection Stopped..')
+        try:
+            with Connection(RABBITMQ_HOST) as connection:
+                self.worker = self.Worker(connection)
+                self.worker.run()
+        except:
+            log.exception('exception')
+        finally:
+            log.info('stopped')
 
 
     class Worker(ConsumerProducerMixin):
@@ -39,7 +44,6 @@ class Detection(Service):
 
         def __init__(self, connection):
             self.connection = connection
-            self.flag = False
             self.timestamp = -1
             self.rules = None
             self.prefix_tree = None
@@ -52,22 +56,24 @@ class Detection(Service):
 
 
             # EXCHANGES
-            self.update_exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
-            self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
-            self.handled_exchange = Exchange('handled_update', type='direct', durable=False, delivery_mode=1)
-            self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
+            self.update_exchange = Exchange('bgp-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.hijack_exchange = Exchange('hijack-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.hijack_exchange.declare()
+            self.handled_exchange = Exchange('handled-update', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
+            self.handled_exchnage.declare()
+            self.config_exchange = Exchange('config', channel=connection, type='direct', auto_delete=True, durable=False, delivery_mode=1)
 
 
             # QUEUES
-            self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.update_queue = Queue('detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
-            self.update_unhandled_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='unhandled', durable=False, exclusive=True, max_priority=2,
+            self.update_unhandled_queue = Queue('detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+            self.hijack_resolved_queue = Queue('detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.hijack_fetch_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='fetch', durable=False, exclusive=True, max_priority=2,
+            self.hijack_fetch_queue = Queue('detection-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
+            self.config_queue = Queue('detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
                     consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
@@ -75,12 +81,10 @@ class Detection(Service):
             self.producer.publish(
                     '',
                     exchange=self.hijack_exchange,
-                    routing_key='fetch_hijacks',
+                    routing_key='fetch-hijacks',
                     priority=0
             )
-
-            self.flag = True
-            log.info('Detection Started..')
+            log.info('started')
 
 
         def get_consumers(self, Consumer, channel):
@@ -119,7 +123,7 @@ class Detection(Service):
 
 
         def handle_config_notify(self, message):
-            log.info(' [x] Detection - Config Notify')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             raw = message.payload
             if raw['timestamp'] > self.timestamp:
                 self.timestamp = raw['timestamp']
@@ -135,11 +139,11 @@ class Detection(Service):
             self.producer.publish(
                 '',
                 exchange = '',
-                routing_key = 'config_request_queue',
+                routing_key = 'config-request-queue',
                 reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config-request-queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,
@@ -148,10 +152,11 @@ class Detection(Service):
                         no_ack=True):
                 while self.rules is None:
                     self.connection.drain_events()
+            log.debug('{}'.format(self.rules))
 
 
         def handle_config_request_reply(self, message):
-            log.info(' [x] Detection - Received Configuration')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
                 if raw['timestamp'] > self.timestamp:
@@ -172,17 +177,15 @@ class Detection(Service):
                     conf_obj = {'origin_asns': rule['origin_asns'], 'neighbors': rule['neighbors']}
                     node.data['confs'].append(conf_obj)
 
-            log.debug('Detection configuration: {}'.format(self.rules))
-
 
         def handle_unhandled_bgp_updates(self, message):
-            log.info('Received {} unhandled events'.format(len(message.payload)))
+            log.info('{} unhandled events'.format(len(message.payload)))
             for update in message.payload:
                 self.handle_bgp_update(update)
 
 
         def handle_bgp_update(self, message):
-            # log.info(' [x] Detection - Received BGP update: {}'.format(message))
+            # log.debug('{}'.format(message))
             if isinstance(message, dict):
                 monitor_event = message
             else:
@@ -207,11 +210,11 @@ class Detection(Service):
                             if func(monitor_event, prefix_node):
                                 break
                     except:
-                        traceback.print_exc()
-                        print(monitor_event)
+                        log.exception('exception')
                 self.mark_handled(raw)
-                log.info('finished mon #{}'.format(self.mon_num))
                 self.mon_num += 1
+            else:
+                log.debug('already handled {}'.format(monitor_event['key']))
 
 
         def __detection_generator(self, path_len, prefix_node):
@@ -259,11 +262,11 @@ class Detection(Service):
             (clean_as_path, is_loopy) = Detection.Worker.__remove_prepending(path)
             if is_loopy:
                 clean_as_path = Detection.Worker.__clean_loops(clean_as_path)
-            log.debug('__clean_as_path - before: {} / after: {}'.format(path, clean_as_path))
+            # log.debug('before: {} / after: {}'.format(path, clean_as_path))
             return clean_as_path
 
 
-        @exception_handler
+        @exception_handler(log)
         def detect_squatting(self, monitor_event, prefix_node, *args, **kwargs):
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
@@ -273,7 +276,7 @@ class Detection(Service):
             return True
 
 
-        @exception_handler
+        @exception_handler(log)
         def detect_origin_hijack(self, monitor_event, prefix_node, *args, **kwargs):
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
@@ -283,7 +286,7 @@ class Detection(Service):
             return True
 
 
-        @exception_handler
+        @exception_handler(log)
         def detect_type_1_hijack(self, monitor_event, prefix_node, *args, **kwargs):
             origin_asn = monitor_event['path'][-1]
             first_neighbor_asn = monitor_event['path'][-2]
@@ -294,7 +297,7 @@ class Detection(Service):
             return True
 
 
-        @exception_handler
+        @exception_handler(log)
         def detect_subprefix_hijack(self, monitor_event, prefix_node, *args, **kwargs):
             mon_prefix = ipaddress.ip_network(monitor_event['prefix'])
             if prefix_node.prefixlen < mon_prefix.prefixlen:
@@ -340,26 +343,28 @@ class Detection(Service):
                     serializer='pickle',
                     priority=0
             )
-            # log.info('Published Hijack #{}'.format(self.j_num))
+            log.info('{}'.format(result))
 
 
         def mark_handled(self, monitor_event):
             self.producer.publish(
-                    monitor_event,
+                    monitor_event['key'],
                     exchange=self.handled_exchange,
                     routing_key='update',
                     priority=1
             )
             self.monitors_seen.add(monitor_event['key'])
-            # log.info('Published Handled #{}'.format(self.h_num))
+            log.info('{}'.format(monitor_event['key']))
 
 
         def fetch_ongoing_hijacks(self, message):
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             hijacks = message.payload
             self.memcache.set_many(hijacks)
 
 
         def handle_resolved_hijack(self, message):
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             self.memcache.delete(message.payload)
 
 

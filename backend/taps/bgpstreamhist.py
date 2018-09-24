@@ -12,7 +12,8 @@ from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
 
     with Connection(RABBITMQ_HOST) as connection:
-        exchange = Exchange('bgp_update', type='direct', durable=False)
+        exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+        exchange.declare()
         producer = Producer(connection)
 
         for csv_file in glob.glob("{}/*.csv".format(input_dir)):

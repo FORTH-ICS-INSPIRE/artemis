@@ -9,7 +9,7 @@ class Resolve_hijack():
     def __init__(self, hijack_key):
         self.connection = None
         self.hijack_key = hijack_key
-        self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
+        self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
         self.init_conn()
 
 

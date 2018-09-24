@@ -2,23 +2,29 @@ import sys
 import os
 import radix
 from subprocess import Popen
-from utils import exception_handler, log, RABBITMQ_HOST
+from utils import exception_handler, RABBITMQ_HOST, get_logger
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
-import traceback
+
+
+log = get_logger(__name__)
 
 class Monitor(Service):
 
 
     def run_worker(self):
-        with Connection(RABBITMQ_HOST) as connection:
-            self.worker = self.Worker(connection)
-            self.worker.run()
-        if self.worker is not None:
-            self.worker.stop()
-        log.info('Monitors Stopped..')
+        try:
+            with Connection(RABBITMQ_HOST) as connection:
+                self.worker = self.Worker(connection)
+                self.worker.run()
+        except:
+            log.exception('exception')
+        finally:
+            if self.worker is not None:
+                self.worker.stop()
+            log.info('stopped')
 
 
     class Worker(ConsumerProducerMixin):
@@ -26,7 +32,6 @@ class Monitor(Service):
 
         def __init__(self, connection):
             self.connection = connection
-            self.flag = False
             self.timestamp = -1
             self.prefix_tree = None
             self.process_ids = []
@@ -39,12 +44,11 @@ class Monitor(Service):
             self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+            self.config_queue = Queue('monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
-            self.flag = True
-            log.info('Monitor Started..')
+            log.info('started')
 
 
         def get_consumers(self, Consumer, channel):
@@ -59,7 +63,7 @@ class Monitor(Service):
 
 
         def handle_config_notify(self, message):
-            log.info(' [x] Monitor - Config Notify')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             raw = message.payload
             if raw['timestamp'] > self.timestamp:
                 self.timestamp = raw['timestamp']
@@ -112,11 +116,11 @@ class Monitor(Service):
             self.producer.publish(
                 '',
                 exchange = '',
-                routing_key = 'config_request_queue',
+                routing_key = 'config-request-queue',
                 reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config-request-queue', durable=False, max_priority=2)],
                 priority = 2
             )
             with Consumer(self.connection,
@@ -127,7 +131,7 @@ class Monitor(Service):
 
 
         def handle_config_request_reply(self, message):
-            log.info(' [x] Monitor - Received Configuration')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
                 if raw['timestamp'] > self.timestamp:
@@ -137,9 +141,9 @@ class Monitor(Service):
                     self.start_monitors()
 
 
-        @exception_handler
+        @exception_handler(log)
         def init_ris_instances(self):
-            log.debug('Starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
+            log.debug('starting {} for {}'.format(self.monitors.get('riperis', []), self.prefixes))
             for ris_monitor in self.monitors.get('riperis', []):
                 for prefix in self.prefixes:
                         p = Popen(['python3', 'taps/ripe_ris.py',
@@ -147,9 +151,9 @@ class Monitor(Service):
                         self.process_ids.append(('RIPEris {} {}'.format(ris_monitor, prefix), p))
 
 
-        @exception_handler
+        @exception_handler(log)
         def init_exabgp_instances(self):
-            log.debug('Starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
+            log.debug('starting {} for {}'.format(self.monitors.get('exabgp', []), self.prefixes))
             for exabgp_monitor in self.monitors.get('exabgp', []):
                 exabgp_monitor_str = '{}:{}'.format(exabgp_monitor['ip'] ,exabgp_monitor['port'])
                 p = Popen(['python3', 'taps/exabgp_client.py',
@@ -157,20 +161,20 @@ class Monitor(Service):
                 self.process_ids.append(('ExaBGP {} {}'.format(exabgp_monitor_str, self.prefixes), p))
 
 
-        @exception_handler
+        @exception_handler(log)
         def init_bgpstreamhist_instance(self):
             if 'bgpstreamhist' in self.monitors:
-                log.debug('Starting {} for {}'.format(self.monitors['bgpstreamhist'], self.prefixes))
+                log.debug('starting {} for {}'.format(self.monitors['bgpstreamhist'], self.prefixes))
                 bgpstreamhist_dir = self.monitors['bgpstreamhist']
                 p = Popen(['python3', 'taps/bgpstreamhist.py',
                         '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir])
                 self.process_ids.append(('BGPStreamHist {} {}'.format(bgpstreamhist_dir, self.prefixes), p))
 
 
-        @exception_handler
+        @exception_handler(log)
         def init_bgpstreamlive_instance(self):
             if 'bgpstreamlive' in self.monitors:
-                log.debug('Starting {} for {}'.format(self.monitors['bgpstreamlive'], self.prefixes))
+                log.debug('starting {} for {}'.format(self.monitors['bgpstreamlive'], self.prefixes))
                 bgpstream_projects = ','.join(self.monitors['bgpstreamlive'])
                 p = Popen(['python3', 'taps/bgpstreamlive.py',
                         '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects])

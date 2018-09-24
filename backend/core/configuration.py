@@ -2,22 +2,28 @@ from ipaddress import ip_network as str2ip
 import os
 import sys
 from yaml import load as yload
-from utils import flatten, log, ArtemisError, RABBITMQ_HOST
+from utils import flatten, get_logger, ArtemisError, RABBITMQ_HOST
 from utils.service import Service
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
 import time
-import traceback
+
+
+log = get_logger(__name__)
 
 class Configuration(Service):
 
 
     def run_worker(self):
-        with Connection(RABBITMQ_HOST) as connection:
-            self.worker = self.Worker(connection)
-            self.worker.run()
-        log.info('Configuration Stopped..')
+        try:
+            with Connection(RABBITMQ_HOST) as connection:
+                self.worker = self.Worker(connection)
+                self.worker.run()
+        except:
+            log.exception('exception')
+        finally:
+            log.info('stopped')
 
 
     class Worker(ConsumerProducerMixin):
@@ -25,7 +31,6 @@ class Configuration(Service):
 
         def __init__(self, connection):
             self.connection = connection
-            self.flag = False
             self.file = 'configs/config.yaml'
             self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
             self.supported_fields = {'prefixes',
@@ -40,26 +45,27 @@ class Configuration(Service):
                 self.data = self.parse(raw, yaml=True)
 
             # EXCHANGES
-            self.config_exchange = Exchange('config', type='direct', durable=False, delivery_mode=1)
+            self.config_exchange = Exchange('config', type='direct', channel=connection, durable=False, delivery_mode=1)
+            self.config_exchange.declare()
 
             # QUEUES
-            self.config_queue = Queue(uuid(), exchange=self.config_exchange, routing_key='modify', durable=False, exclusive=True, max_priority=2,
+            self.config_modify_queue = Queue('config-modify-queue', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            self.config_request_queue = Queue('config_request_queue', durable=False, max_priority=2,
+            self.config_request_queue = Queue('config-request-queue', durable=False, max_priority=2,
                     consumer_arguments={'x-priority': 2})
 
             self.parse_rrcs()
-            self.flag = True
-            log.info('Configuration Started..')
+            log.info('started')
 
 
         def get_consumers(self, Consumer, channel):
             return [
                     Consumer(
-                        queues=[self.config_queue],
+                        queues=[self.config_modify_queue],
                         on_message=self.handle_config_modify,
                         prefetch_count=1,
-                        no_ack=True
+                        no_ack=True,
+                        accept=['yaml']
                         ),
                     Consumer(
                         queues=[self.config_request_queue],
@@ -71,10 +77,16 @@ class Configuration(Service):
 
 
         def handle_config_modify(self, message):
-            log.info(' [x] Configuration - Config Modify')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             raw = message.payload
-            data = self.parse(raw)
+            if 'yaml' in message.content_type:
+                from io import StringIO
+                stream = StringIO(''.join(raw))
+                data = self.parse(stream, yaml=True)
+            else:
+                data = self.parse(raw)
             if data is not None:
+                log.debug('accepted new configuration')
                 self.data = data
                 self.producer.publish(
                     self.data,
@@ -85,10 +97,37 @@ class Configuration(Service):
                     priority = 2
                 )
 
+                self.producer.publish(
+                    {
+                        'status': 'accepted',
+                        'config:': self.data
+                    },
+                    exchange='',
+                    routing_key = message.properties['reply_to'],
+                    correlation_id = message.properties['correlation_id'],
+                    serializer = 'json',
+                    retry = True,
+                    priority = 2
+                )
+            else:
+                log.debug('rejected new configuration')
+                self.producer.publish(
+                    {
+                        'status': 'rejected'
+                    },
+                    exchange='',
+                    routing_key = message.properties['reply_to'],
+                    correlation_id = message.properties['correlation_id'],
+                    serializer = 'json',
+                    retry = True,
+                    priority = 2
+                )
+
+
 
 
         def handle_config_request(self, message):
-            log.info(' [x] Configuration - Received configuration request')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
             self.producer.publish(
                 self.data,
                 exchange='',
@@ -122,8 +161,8 @@ class Configuration(Service):
                 data['timestamp'] = time.time()
                 return data
             except Exception as e:
-                traceback.print_exc()
-                return {}
+                log.exception('exception')
+                return None
 
 
         def check(self, data):
@@ -142,7 +181,7 @@ class Configuration(Service):
             for rule in data['rules']:
                 for field in rule:
                     if field not in self.supported_fields:
-                        log.warning('Unsupported field found {} in {}'.format(field, rule))
+                        log.warning('unsupported field found {} in {}'.format(field, rule))
                 rule['prefixes'] = flatten(rule['prefixes'])
                 for prefix in rule['prefixes']:
                     try:

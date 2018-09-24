@@ -112,6 +112,11 @@ class Service(Process):
         super().__init__()
         self.pid_file = _PIDFile(os.path.join(pid_dir, self.name + '.pid'))
         self.worker = None
+        self.start_time = None
+
+
+    def get_uptime(self):
+        return time.time() - self.start_time
 
 
     def is_running(self):
@@ -223,23 +228,19 @@ class Service(Process):
 
 
         def runner():
-            try:
-                # We acquire the PID as late as possible, since its
-                # existence is used to verify whether the service
-                # is running.
-                self.pid_file.acquire()
-                self.run_worker()
-                self.pid_file.release()
-            except Exception:
-                traceback.print_exc()
+            # We acquire the PID as late as possible, since its
+            # existence is used to verify whether the service
+            # is running.
+            self.pid_file.acquire()
+            self.run_worker()
+            self.pid_file.release()
 
-        try:
-            setproctitle.setproctitle(self.name)
-            signal.signal(signal.SIGTERM, self.exit)
-            signal.signal(signal.SIGINT, self.exit)
-            runner()
-        except Exception as e:
-            traceback.print_exc()
+        setproctitle.setproctitle(self.name)
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+        self.start_time = time.time()
+        runner()
 
     def exit(self, signum, frame):
         if self.worker is not None:

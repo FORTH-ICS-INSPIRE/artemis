@@ -53,7 +53,8 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     # print('End ' + str(end))
 
     with Connection(RABBITMQ_HOST) as connection:
-        exchange = Exchange('bgp_update', type='direct', durable=False)
+        exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+        exchange.declare()
         producer = Producer(connection)
         while True:
             # get next record

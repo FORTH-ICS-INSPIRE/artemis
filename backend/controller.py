@@ -1,5 +1,5 @@
 import os
-import signal
+import sys
 import time
 from core.configuration import Configuration
 from core.monitor import Monitor
@@ -7,11 +7,15 @@ from core.detection import Detection
 from core.mitigation import Mitigation
 from core.scheduler import Scheduler
 from core.postgresql_db import Postgresql_db
-from utils import log, RABBITMQ_HOST
+from core.observer import Observer
+from utils import get_logger, RABBITMQ_HOST
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
+import importlib
 
+
+log = get_logger(__name__)
 
 class Controller(Service):
 
@@ -20,12 +24,14 @@ class Controller(Service):
         with Connection(RABBITMQ_HOST) as connection:
             self.worker = self.Worker(connection)
             self.worker.run()
+
+        log.debug('stopping all running modules')
         # Stop all modules and web application
         for name, module in self.worker.modules.items():
             if module.is_running():
                 module.stop(block=True)
 
-        log.info('Controller Stopped..')
+        log.info('stopped')
 
 
     class Worker(ConsumerProducerMixin):
@@ -39,6 +45,8 @@ class Controller(Service):
             # Required Modules
             self.modules['configuration'] = Configuration()
             self.modules['configuration'].start()
+            self.modules['observer'] = Observer()
+            self.modules['observer'].start()
 
             # Optional Modules
             self.modules['scheduler'] = Scheduler()
@@ -48,9 +56,9 @@ class Controller(Service):
             self.modules['mitigation'] = Mitigation()
 
             # QUEUES
-            self.controller_queue = Queue('controller_queue')
+            self.controller_queue = Queue('controller-queue', auto_delete=True)
 
-            log.info('Controller Started..')
+            log.info('started')
 
 
         def get_consumers(self, Consumer, channel):
@@ -65,67 +73,78 @@ class Controller(Service):
 
 
         def controller_handler(self, message):
-            log.info(' [x] Controller - Received an action request')
+            log.info('message: {}\npayload: {}'.format(message, message.payload))
 
             response = {}
-            if message.payload['module'] in self.modules:
-                name = message.payload['module']
-                module = self.modules[name]
-                if message.payload['action'] == 'stop':
-                    if not module.is_running():
-                        response = {'result': 'fail',
-                                'reason': 'already stopped'}
-                    else:
-                        module.stop(block=True)
-                        response = {'result': 'success'}
-                elif message.payload['action'] == 'start':
-                    if module.is_running():
-                        response = {'result': 'fail',
-                                'reason': 'already running'}
-                    else:
-                        self.modules[message.payload['module']] = module.__class__()
-                        self.modules[message.payload['module']].start()
-                        response = {'result': 'success'}
-                elif message.payload['action'] == 'status':
-                    if module.is_running():
-                        response = {'result': 'success', 'status': 'up'}
-                    else:
-                        response = {'result': 'success', 'status': 'down'}
-                else:
-                    response = {'result': 'fail', 'reason': 'unknown action'}
-            elif message.payload['module'] == 'all':
-                if message.payload['action'] == 'stop':
-                    for name, module in self.modules.items():
-                        if module.is_running():
-                            module.stop()
-                    response = {'result': 'success'}
-                elif message.payload['action'] == 'start':
-                    for name, module in self.modules.items():
+            try:
+                if message.payload['module'] in self.modules:
+                    name = message.payload['module']
+                    module = self.modules[name]
+                    if message.payload['action'] == 'stop':
                         if not module.is_running():
-                            module.start()
-                    response = {'result': 'success'}
-                elif message.payload['action'] == 'status':
-                    response = {'result': 'success'}
-                    for name, module in self.modules.items():
-                        if module.is_running():
-                            response[name] = 'up'
+                            response = {'result': 'fail',
+                                    'reason': 'already stopped'}
                         else:
-                            response[name] = 'down'
+                            module.stop(block=True)
+                            response = {'result': 'success'}
+                    elif message.payload['action'] == 'start':
+                        if module.is_running():
+                            response = {'result': 'fail',
+                                    'reason': 'already running'}
+                        else:
+                            importlib.reload(sys.modules[module.__module__])
+                            self.modules[message.payload['module']] = module.__class__()
+                            self.modules[message.payload['module']].start()
+                            response = {'result': 'success'}
+                    elif message.payload['action'] == 'status':
+                        if module.is_running():
+                            response = {
+                                    'result': 'success',
+                                    'status': 'up',
+                                    'uptime': module.get_uptime()
+                            }
+                        else:
+                            response = {'result': 'success', 'status': 'down'}
+                    else:
+                        response = {'result': 'fail', 'reason': 'unknown action'}
+                elif message.payload['module'] == 'all':
+                    if message.payload['action'] == 'stop':
+                        for name, module in self.modules.items():
+                            if module.is_running():
+                                module.stop()
+                        response = {'result': 'success'}
+                    elif message.payload['action'] == 'start':
+                        for name, module in self.modules.items():
+                            if not module.is_running():
+                                module.start()
+                        response = {'result': 'success'}
+                    elif message.payload['action'] == 'status':
+                        response = {'result': 'success'}
+                        for name, module in self.modules.items():
+                            if module.is_running():
+                                response[name] = 'up'
+                            else:
+                                response[name] = 'down'
+                    else:
+                        response = {'result': 'fail', 'reason': 'unknown action'}
                 else:
-                    response = {'result': 'fail', 'reason': 'unknown action'}
-            else:
-                response = {'result': 'fail',
-                        'reason': 'not registered module'}
-
-            message.payload['response'] = response
-            self.producer.publish(
-                message.payload,
-                exchange='',
-                routing_key = message.properties['reply_to'],
-                correlation_id = message.properties['correlation_id'],
-                retry = True,
-                priority = 2
-            )
+                    response = {'result': 'fail',
+                            'reason': 'not registered module'}
+            except:
+                log.exception('exception')
+                response = {'result': 'fail', 'reason': 'controller exception'}
+            finally:
+                message.payload['response'] = response
+                log.debug('response: {}'.format(response))
+                self.producer.publish(
+                    message.payload,
+                    exchange='',
+                    routing_key = message.properties['reply_to'],
+                    correlation_id = message.properties['correlation_id'],
+                    retry = True,
+                    priority = 2
+                )
+            log.debug('rpc finish')
 
 if __name__ == '__main__':
     c = Controller()

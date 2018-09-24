@@ -45,17 +45,17 @@ class Worker(ConsumerProducerMixin):
         self.connection = connection
 
         # EXCHANGES
-        self.update_exchange = Exchange('bgp_update', type='direct', durable=False, delivery_mode=1)
-        self.hijack_exchange = Exchange('hijack_update', type='direct', durable=False, delivery_mode=1)
-        self.handled_exchange = Exchange('handled_update', type='direct', durable=False, delivery_mode=1)
+        self.update_exchange = Exchange('bgp-update', type='direct', durable=False, delivery_mode=1)
+        self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
+        self.handled_exchange = Exchange('handled-update', type='direct', durable=False, delivery_mode=1)
 
         # QUEUES
-        self.config_request_queue = Queue('config_request_queue', durable=False, max_priority=2, consumer_arguments={'x-priority': 2})
-        self.update_queue = Queue(uuid(), exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+        self.config_request_queue = Queue('config-request-queue', durable=False, max_priority=2, consumer_arguments={'x-priority': 2})
+        self.update_queue = Queue('tester-update-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
-        self.hijack_queue = Queue(uuid(), exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+        self.hijack_queue = Queue('tester-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
-        self.handled_queue = Queue(uuid(), exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+        self.handled_queue = Queue('tester-hanlded-update', exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
 
 
@@ -124,11 +124,11 @@ class Worker(ConsumerProducerMixin):
         self.pkts_test = 10000
         for i in range(self.pkts_test):
             msg = {
-                "prefix":"10.0.0.0/24",
-                "service":"testing{}".format(i),
-                "type":"A",
-                "path": [ 9, 8, 7, 6, 5, 4, 1 ],
-                "timestamp": 0
+                'prefix':'10.0.0.0/24',
+                'service':'testing{}'.format(i),
+                'type':'A',
+                'path': [ 9, 8, 7, 6, 5, 4, 1 ],
+                'timestamp': 0
             }
             key_generator(msg)
             self.producer.publish(

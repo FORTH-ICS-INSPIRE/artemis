@@ -53,7 +53,7 @@ class Scheduler(Service):
                     correlation_id=self.correlation_id,
                 )
             with Consumer(self.connection,
-                          on_message=self.on_response,
+                          on_message=self._on_response,
                           queues=[callback_queue],
                           no_ack=True):
                 while self.response is None:
@@ -63,6 +63,9 @@ class Scheduler(Service):
                     if self.response['response']['status'] == 'up':
                         return True
             return False
+
+        def _on_response(self, message):
+            self.response = message.payload
 
         def _db_clock_send(self):
             unhandled_cnt = 0
@@ -76,7 +79,7 @@ class Scheduler(Service):
                     declare = [self.db_clock_queue],
                     priority = 3
                 )
-                if(unhandled_cnt == 5 and _get_module_status('detection')):
+                if(unhandled_cnt > 5 and self._get_module_status('detection')):
                     self.producer.publish(
                         'send_unhandled',
                         exchange = self.db_clock_queue.exchange,

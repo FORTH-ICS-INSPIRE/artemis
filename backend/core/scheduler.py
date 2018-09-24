@@ -53,7 +53,7 @@ class Scheduler(Service):
                     correlation_id=self.correlation_id,
                 )
             with Consumer(self.connection,
-                          on_message=self._on_response,
+                          on_message=self.handle_module_status,
                           queues=[callback_queue],
                           no_ack=True):
                 while self.response is None:
@@ -64,7 +64,7 @@ class Scheduler(Service):
                         return True
             return False
 
-        def _on_response(self, message):
+        def handle_module_status(self, message):
             self.response = message.payload
 
         def _db_clock_send(self):

@@ -39,6 +39,7 @@ class Monitor(Service):
             self.rules = None
             self.prefixes = set()
             self.monitors = None
+            self.flag = True
 
 
             # EXCHANGES

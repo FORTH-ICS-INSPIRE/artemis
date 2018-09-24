@@ -15,7 +15,7 @@ def get_logger():
     log = logging.getLogger('artemis_logger')
     log.setLevel(logging.DEBUG)
     handler = logging.handlers.SysLogHandler(address=(SYSLOG_HOST, int(SYSLOG_PORT)))
-    formatter = logging.Formatter('%(module)s @ %(funcName)s: %(message)s')
+    formatter = logging.Formatter('%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s')
     handler.setFormatter(formatter)
     log.addHandler(handler)
     return log
@@ -30,7 +30,10 @@ class TimedSet(set):
         set.add(self, item)
 
     def __contains__(self, item):
-        return time.time() < self.__table.get(item, -1)
+        if time.time() < self.__table.get(item, -1):
+            self.__table[item] = time.time() + timeout
+            return True
+        return False
 
     def __iter__(self):
         for item in set.__iter__(self):

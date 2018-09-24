@@ -70,7 +70,7 @@ class Postgresql_db(Service):
                     consumer_arguments={'x-priority': 3})
             self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
-            
+
             self.config_request_rpc()
             log.info('started')
 
@@ -151,15 +151,15 @@ class Postgresql_db(Service):
                     self.connection.drain_events()
 
         def handle_bgp_update(self, message):
-            log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
             extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
-                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, False, self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'] )
+                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, 'false', self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'] )
             self.insert_bgp_entries.append(extract_msg)
 
         def handle_hijack(self, message):
-            log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             key = msg_['key']
             if key not in self.tmp_hijacks_dict:
@@ -180,11 +180,10 @@ class Postgresql_db(Service):
                 self.tmp_hijacks_dict[key]['monitor_keys'].update(msg_['monitor_keys'])
 
         def handle_handled_bgp_update(self, message):
-            log.debug('message: {}\npayload: {}'.format(message, message.payload))
-            key_ = message.payload
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            key_ = (message.payload,)
             #handled, key
-            extract_msg = (True, key_)
-            self.handled_bgp_entries.append(extract_msg)
+            self.handled_bgp_entries.append(key_)
 
 
         def build_radix_tree(self):
@@ -242,16 +241,16 @@ class Postgresql_db(Service):
             try:
                 self.db_cur.execute("UPDATE hijacks SET active=false, time_ended=" + str(int(time.time())) + " WHERE key='" + str(raw) + "';" )
                 self.db_conn.commit()
-            except Exception as e:
-                log.debug("Error on handle_resolved_hijack " + str(e))
+            except Exception:
+                log.exception('exception')
 
         def handle_mitigation_request(self, message):
             raw = message.payload
             try:
                 self.db_cur.execute("UPDATE hijacks SET time_started=" + str(int(raw['time'])) + " WHERE key=" + str(raw['key']) + ";" )
                 self.db_conn.commit()
-            except Exception as e:
-                log.debug("Error on handle_mitigation_request " + str(e))
+            except Exception:
+                log.exception('exception')
 
         def create_tables(self):
             bgp_updates_table = "CREATE TABLE IF NOT EXISTS bgp_updates ( " + \
@@ -322,11 +321,11 @@ class Postgresql_db(Service):
             for hijack_key in self.tmp_hijacks_dict:
                 for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                     num_of_updates += 1
-                    self.update_bgp_entries.append((True, str(hijack_key), bgp_entry_to_update))
+                    self.update_bgp_entries.append((str(hijack_key), bgp_entry_to_update))
 
             if len(self.update_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET handled=%s, hijack_key=%s WHERE key=%s ", self.update_bgp_entries)
+                    self.db_cur.executemany("UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ", self.update_bgp_entries)
                     self.db_conn.commit()
                 except:
                     log.exception('exception')
@@ -336,11 +335,10 @@ class Postgresql_db(Service):
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany("UPDATE bgp_updates SET handled=%s " \
-                        + " WHERE key=%s", self.handled_bgp_entries)
+                    self.db_cur.executemany("UPDATE bgp_updates SET handled=true WHERE key=%s", self.handled_bgp_entries)
                     self.db_conn.commit()
                 except:
-                    log.exception('exception')
+                    log.exception('handled bgp entries {}'.format(self.handled_bgp_entries))
                     self.db_conn.rollback()
                     return -1
 
@@ -378,7 +376,7 @@ class Postgresql_db(Service):
             for entry in entries:
                 results.append({ 'key' : entry[1], 'prefix' : entry[2], 'origin_as' : entry[3], 'peer_asn' : entry[4], 'path': entry[5], \
                   'service' : entry[6], 'type' : entry[7], 'communities' : entry[8], 'timestamp' : int(entry[9])})
-            if(len(results)):
+            if len(results):
                 self.producer.publish(
                     results,
                     exchange = self.update_exchange,
@@ -396,7 +394,7 @@ class Postgresql_db(Service):
                 str_ += "BGP Updates Updated: {}\n".format(updates)
             if hijacks > 0:
                 str_ += "Hijacks Inserted: {}".format(hijacks)
-            if(str_ != ""):
+            if str_ != "":
                 log.debug('{}'.format(str_))
 
         def _scheduler_instruction(self, message):

@@ -87,18 +87,10 @@ for testing purposes.
 and docker should have sudo privileges, if only non-sudo user is allowed
 * Other: SSH server (optional)
 
-Moreover, one needs to configure the following firewall rules related to the testing server/VM (TBD):
-
-| Service | Direction+ | Action | Reason |
-| --- | --- | --- | --- |
-| ssh | Internet to Server | Allow| Access server from specific IPs |
-| ping (ICMP) |Internet to Server | Allow | Ping server from specific IPs
-| https | Internet to Server | Allow | Access web UI from specific IPs |
-| http/https | Server to Internet | Allow | Access to external monitors
-| TCP port 179 (Optional) | Internal: server to/from RR | Allow | exaBGP local monitor communication with RR |
-| any | any | Deny | --- |
-
-+: related reverse direction for bilateral session over stateful firewall needs also to pass though
+Moreover, one needs to configure firewall rules related to the testing server/VM (please set the corresponding <> fields in the file before running):
+```
+sudo sh ufw_setup.sh
+```
 
 ## How to install
 First, if not already installed, follow the instructions

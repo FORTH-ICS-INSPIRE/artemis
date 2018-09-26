@@ -27,20 +27,28 @@ services:
     #     networks:
     #         - rabbitmq
     #         - postgres
-    # artemis_webapp:
-    #     build: ./frontend/
-    #     environment:
-    #         RABBITMQ_HOST: rabbitmq
-    #         POSTGRES_HOST: postgres
-    #     expose:
-    #         - 8000
-    #     ports:
-    #         - "8000:8000"
-    #     volumes:
-    #         - ./frontend/:/root/
-    #     networks:
-    #         - rabbitmq
-    #         - postgres
+    artemis_webapp:
+        build: ./frontend/
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            POSTGRES_HOST: postgres
+            SYSLOG_HOST: "syslog:514"
+        expose:
+            - 8000
+        ports:
+            - "8000:8000"
+        volumes:
+            - ./frontend/:/root/
+        depends_on:
+            - rabbitmq
+            - postgres
+            - postgrest
+            - syslog
+        networks:
+            - rabbitmq
+            - postgres
+            - postgrest
+            - syslog
     syslog:
         image: "mumblepins/syslog-ng-alpine"
         restart: always
@@ -76,8 +84,11 @@ services:
         restart: always
         expose:
             - 3000
+        ports:
+            - "3000:3000"
         networks:
             - postgres
+            - postgrest
         depends_on:
             - postgres
         environment:
@@ -90,3 +101,4 @@ networks:
     rabbitmq:
     memcached:
     postgres:
+    postgrest:

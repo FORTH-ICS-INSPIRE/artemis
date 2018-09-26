@@ -11,8 +11,10 @@ from webapp.data.models import db
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
 from webapp.core.modules import Modules_status 
-from webapp.utils import log
 import time
+
+
+log = logging.getLogger('artemis_logger')
 
 
 app = Flask(__name__,

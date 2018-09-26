@@ -1,8 +1,9 @@
-from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
-from kombu.mixins import ConsumerProducerMixin
-from webapp.utils import log, exception_handler, RABBITMQ_HOST
+from kombu import Connection, uuid, Queue, Exchange, Consumer, Producer
+from webapp.utils import RABBITMQ_HOST
 from webapp.utils.conf import Config
+import logging
 
+log = logging.getLogger('artemis_logger')
 
 class Modules_status():
 
@@ -15,7 +16,7 @@ class Modules_status():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except:
-            log.info('Modules_status failed to connect to rabbitmq..')
+            log.error('Modules_status failed to connect to rabbitmq..')
 
     def call(self, module, action):
         self.correlation_id = uuid()
@@ -27,7 +28,7 @@ class Modules_status():
                     'action': action
                     },
                 exchange='',
-                routing_key='controller_queue',
+                routing_key='controller-queue',
                 declare=[callback_queue],
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
@@ -38,6 +39,15 @@ class Modules_status():
                       no_ack=True):
             while self.response is None:
                 self.connection.drain_events()
+
+    def is_up(self, module):
+        log.debug(self.response)
+        if 'response' in self.response:
+            if 'status' in self.response['response']:
+                if self.response['response']['status'] == 'up':
+                    return True
+        return False
+
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:

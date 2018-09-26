@@ -1,7 +1,9 @@
-from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
-from kombu.mixins import ConsumerProducerMixin
-from webapp.utils import log, exception_handler, RABBITMQ_HOST
+from kombu import Connection, Exchange, Consumer, Producer
+from webapp.utils import RABBITMQ_HOST
 from webapp.utils.conf import Config
+import logging
+
+log = logging.getLogger('artemis_logger')
 
 
 class Resolve_hijack():
@@ -17,7 +19,7 @@ class Resolve_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except:
-            log.info('Resolve_hijack failed to connect to rabbitmq..')
+            log.error('Resolve_hijack failed to connect to rabbitmq..')
 
     def resolve(self):
         with Producer(self.connection) as producer:
@@ -41,7 +43,7 @@ class Mitigate_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except:
-            log.info('Resolve_hijack failed to connect to rabbitmq..')
+            log.error('Resolve_hijack failed to connect to rabbitmq..')
 
     def mitigate(self):
         with Producer(self.connection) as producer:

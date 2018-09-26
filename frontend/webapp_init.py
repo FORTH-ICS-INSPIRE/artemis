@@ -1,10 +1,14 @@
 from webapp.core import app
-from webapp.utils import log
 from webapp.core.rabbitmq import Configuration_request
 from webapp.core.modules import Modules_status
+from webapp.utils import get_logger
+from webapp.core.fetch_config import Configuration
 import _thread
 import signal
 import time
+
+
+log = get_logger()
 
 class GracefulKiller:
     def __init__(self):
@@ -19,70 +23,61 @@ class GracefulKiller:
 class WebApplication():
     def __init__(self):
         self.app = app
-        
-        self.conf_request = Configuration_request()
-        self.conf_request.config_request_rpc()
-        self.app.config['configuration'] = self.conf_request.get_conf()
+        self.app.config['configuration'] = Configuration()
+        self.app.config['configuration'].get_newest_config()
+        log.debug(self.app.config['configuration'].get_prefixes_list())
 
-        self.modules = Modules_status()
-        log.info("Starting Scheduler..")
-        self.modules.call('scheduler', 'start')
-        log.info("Starting Postgresql_db..")
-        self.modules.call('postgresql_db', 'start')
+        try:
+            log.debug("Starting Scheduler..")
+            self.modules = Modules_status()
+            self.modules.call('scheduler', 'start')
+            if not self.modules.is_up('scheduler'):
+                log.error("Couldn't start scheduler.")
+        except:
+            log.exception("exception while starting scheduler")
+            exit(-1)
         
-        log.info("Request status of all modules..")
-        self.status_request = Modules_status()
-        self.status_request.call('all', 'status')
-        self.app.config['status'] = self.status_request.get_response_all()
-        
+        try:
+            log.debug("Starting Postgresql_db..")
+            self.modules.call('postgresql_db', 'start')
+            
+            if not self.modules.is_up('postgresql_db'):
+                log.error("Couldn't start postgresql_db.")
+        except:
+            log.exception("exception while starting postgresql_db")
+            exit(-1)
+
+        try:
+            log.debug("Request status of all modules..")
+            self.status_request = Modules_status()
+            self.status_request.call('all', 'status')
+            self.app.config['status'] = self.status_request.get_response_all()
+        except:
+            log.exception("exception while retrieving status of modules..")
+            exit(-1)
+
         self.webapp_ = None
-        self.flag = False
-
-    def run(self):
-        if 'WEBAPP_KEY' in self.app.config and 'WEBAPP_CRT' in self.app.config:
-            log.info('SSL: enabled')
-            # http://flask.pocoo.org/snippets/111/
-            # https://www.digitalocean.com/community/tutorials/openssl-essentials-working-with-ssl-certificates-private-keys-and-csrs
-            context = (self.app.config['WEBAPP_CRT'], self.app.config['WEBAPP_KEY'])
-            self.app.run(
-                threaded=True,
-                host=self.app.config['WEBAPP_HOST'],
-                port=self.app.config['WEBAPP_PORT'],
-                ssl_context=context,
-                use_reloader=False
-            )
-        else:
-            log.info('SSL: disabled')
-            self.app.run(
-                threaded=True,
-                host=self.app.config['WEBAPP_HOST'],
-                port=self.app.config['WEBAPP_PORT'],
-                use_reloader=False
-            )
 
     def start(self):
         log.info("WebApplication Starting..")
-        if not self.flag:
-            self.run()
-            self.flag = True
-            log.info('WebApplication Started..')
-
-    def stop(self):
-        if self.flag:
-            self.flag = False
-            log.info('WebApplication Stopped..')
+        self.app.run(
+            threaded=True,
+            host=self.app.config['WEBAPP_HOST'],
+            port=self.app.config['WEBAPP_PORT'],
+            use_reloader=False
+        )
+        log.info('WebApplication Started..')
 
 
 if __name__ == '__main__':
+    time.sleep(20)
     webapp_ = WebApplication()
     webapp_.start()
 
     killer = GracefulKiller()
-    log.info('Send SIGTERM signal to end..\n')
+    log.debug('Send SIGTERM signal to end..\n')
     
     while True:
         time.sleep(1)
         if killer.kill_now:
             break
-    
-    webapp_.stop()

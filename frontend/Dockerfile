@@ -4,7 +4,7 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
     apt-get -y install python3-pip
-
+    
 WORKDIR /root
 
 COPY . ./

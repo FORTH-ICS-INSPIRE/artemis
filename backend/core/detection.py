@@ -333,6 +333,7 @@ class Detection(Service):
             else:
                 first_trigger = monitor_event['timestamp']
                 hijack_value['key'] = hashlib.md5(pickle.dumps([monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()
+                hijack_value['time_detected'] = time.time()
                 result = hijack_value
 
             self.memcache.set(future_memcache_hijack_key, result)

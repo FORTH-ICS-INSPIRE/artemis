@@ -1,8 +1,11 @@
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
-from webapp.utils import log, exception_handler, RABBITMQ_HOST
+from webapp.utils import RABBITMQ_HOST
 from webapp.utils.conf import Config
+import logging
 
+
+log = logging.getLogger('artemis_logger')
 
 class Configuration_request():
 
@@ -26,11 +29,11 @@ class Configuration_request():
             producer.publish(
                 '',
                 exchange = '',
-                routing_key = 'config_request_queue',
+                routing_key = 'config-request-queue',
                 reply_to = callback_queue.name,
                 correlation_id = self.correlation_id,
                 retry = True,
-                declare = [callback_queue, Queue('config_request_queue', durable=False, max_priority=2)],
+                declare = [callback_queue, Queue('config-request-queue', durable=False, max_priority=2)],
                 priority = 2
             )
         with Consumer(self.connection,

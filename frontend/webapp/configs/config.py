@@ -3,8 +3,8 @@ import logging
 from flask_compress import Compress
 from flask_security import Security, SQLAlchemyUserDatastore
 from webapp.data.models import db, Role, User
-from webapp.utils import log
 
+log = logging.getLogger('artemis_logger')
 
 class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False

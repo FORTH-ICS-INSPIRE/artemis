@@ -13,7 +13,8 @@ admin = Blueprint('admin', __name__, template_folder='templates')
 
 @admin.route('/system', methods=['GET', 'POST'])
 @roles_required('admin')
-def index():
+def index():    
+    #log info
     form = CheckboxForm()
     config_form = ConfigForm()
     config_form.config.data = yaml.dump(app.config['configuration'].get_raw_config())
@@ -52,7 +53,6 @@ def index():
     return render_template('system.htm', form=form, config=config_form)
 
 
-### EXAMPLE
 @admin.route('/user/create', methods=['GET'])
 @roles_required('admin')
 def create_user():

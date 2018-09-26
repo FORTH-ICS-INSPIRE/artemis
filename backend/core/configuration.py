@@ -43,7 +43,7 @@ class Configuration(Service):
 
             with open(self.file, 'r') as f:
                 raw = f.read()
-                self.data = self.parse(raw, yaml=True)
+                self.data, _flag = self.parse(raw, yaml=True)
 
             # EXCHANGES
             self.config_exchange = Exchange('config', type='direct', channel=connection, durable=False, delivery_mode=1)
@@ -83,10 +83,10 @@ class Configuration(Service):
             if 'yaml' in message.content_type:
                 from io import StringIO
                 stream = StringIO(''.join(raw))
-                data = self.parse(stream, yaml=True)
+                data, _flag = self.parse(stream, yaml=True)
             else:
-                data = self.parse(raw)
-            if data is not None:
+                data, _flag = self.parse(raw)
+            if _flag:
                 log.debug('accepted new configuration')
                 self.data = data
                 self.producer.publish(
@@ -124,9 +124,6 @@ class Configuration(Service):
                     priority = 2
                 )
 
-
-
-
         def handle_config_request(self, message):
             log.info('message: {}\npayload: {}'.format(message, message.payload))
             self.producer.publish(
@@ -160,10 +157,10 @@ class Configuration(Service):
                     data = raw
                 data = self.check(data)
                 data['timestamp'] = time.time()
-                return data
+                return data, True
             except Exception as e:
                 log.exception('exception')
-                return None
+                return {'timestamp': time.time()}, False
 
 
         def check(self, data):
@@ -223,5 +220,4 @@ class Configuration(Service):
                     if not isinstance(asn, int):
                         raise ArtemisError('invalid-asn', asn)
             return data
-
 

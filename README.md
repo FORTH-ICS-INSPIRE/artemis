@@ -85,11 +85,11 @@ for testing purposes.
 * OS: Ubuntu Linux 16.04+
 * SW PACKAGES: docker-ce and docker-compose should be pre-installed
 and docker should have sudo privileges, if only non-sudo user is allowed
-* Other: SSH server (optional)
+* Other: SSH server
 
-Moreover, one needs to configure firewall rules related to the testing server/VM (please set the corresponding <> fields in the file before running):
+Moreover, one needs to configure firewall rules related to the testing server/VM. We recommend using [ufw](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-ubuntu-16-04) for this task. Please check the comments in the respective script we provide and set the corresponding <> fields in the file before running:
 ```
-sudo sh ufw_setup.sh
+sudo ./ufw_setup.sh
 ```
 
 ## How to install

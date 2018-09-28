@@ -283,8 +283,8 @@ TBD (version tags to-be-released)
 * Vasileios Kotronis, FORTH-ICS
 
 ## License
-We are finalizing the process of open-sourcing the ARTEMIS software under the BSD-3 license.
-During the testing phase, the tester is allowed to have access to the code and use it,
+We are finalizing the process of open-sourcing the ARTEMIS software under the BSD-3 license. A provisional [license](LICENSE) has been added to the code.
+During the testing phase and until ARTEMIS is fully open-sourced, the tester is allowed to have access to the code and use it,
 but is not allowed to disclose the code to third parties.
 
 ## Acknowledgements

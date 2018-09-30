@@ -68,6 +68,9 @@ def configure_app(app):
     app.config.from_pyfile('configs/webapp.cfg', silent=False)
 
     # Configure logging
+    logging_dir = '/'.join(app.config['LOGGING_LOCATION'].split('/')[:-1])
+    if logging_dir != '' and not os.path.isdir(logging_dir):
+        os.mkdir(logging_dir)
     handler = logging.FileHandler(app.config['LOGGING_LOCATION'])
     handler.setLevel(app.config['LOGGING_LEVEL'])
     formatter = logging.Formatter(app.config['LOGGING_FORMAT'])

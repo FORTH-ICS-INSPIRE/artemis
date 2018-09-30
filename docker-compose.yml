@@ -1,6 +1,6 @@
 version: '3'
 services:
-    artemis:
+    artemis_backend:
         build: ./backend/
         environment:
             RABBITMQ_HOST: rabbitmq
@@ -27,7 +27,7 @@ services:
     #     networks:
     #         - rabbitmq
     #         - postgres
-    artemis_webapp:
+    artemis_frontend:
         build: ./frontend/
         environment:
             RABBITMQ_HOST: rabbitmq
@@ -50,7 +50,7 @@ services:
             - postgres
             - postgrest
             - syslog
-            - artemis
+            - artemis_backend
         networks:
             - rabbitmq
             - postgres
@@ -61,10 +61,10 @@ services:
         image: nginx:latest
         container_name: production_nginx
         environment:
-            ARTEMIS_WEBAPP_HOST: artemis_webapp
+            ARTEMIS_FRONTEND_HOST: artemis_frontend
             POSTGREST_HOST: postgrest
         depends_on:
-            - artemis_webapp
+            - artemis_frontend
             - postgrest
         volumes:
             - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
@@ -75,7 +75,7 @@ services:
         expose:
             - 443
         networks:
-            - artemis_webapp
+            - artemis_frontend
             - postgrest
         restart: always
     syslog:
@@ -134,5 +134,5 @@ networks:
     postgres:
     postgrest:
     nginx:
-    artemis_webapp:
+    artemis_frontend:
 

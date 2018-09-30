@@ -30,7 +30,7 @@ class TimedSet(set):
         self.__table[item] = time.time() + self.timeout
         set.add(self, item)
 
-    def __contains__(self, item, timeout=10):
+    def __contains__(self, item):
         if time.time() < self.__table.get(item, -1):
             self.__table[item] = time.time() + self.timeout
             return True

@@ -22,16 +22,17 @@ def get_logger():
 
 # https://stackoverflow.com/questions/16136979/set-class-with-timed-auto-remove-of-elements
 class TimedSet(set):
-    def __init__(self):
+    def __init__(self, timeout=10):
         self.__table = {}
+        self.timeout = timeout
 
-    def add(self, item, timeout=10):
-        self.__table[item] = time.time() + timeout
+    def add(self, item):
+        self.__table[item] = time.time() + self.timeout
         set.add(self, item)
 
     def __contains__(self, item):
         if time.time() < self.__table.get(item, -1):
-            self.__table[item] = time.time() + timeout
+            self.__table[item] = time.time() + self.timeout
             return True
         return False
 

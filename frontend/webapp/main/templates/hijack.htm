@@ -230,7 +230,7 @@
                         parameters["order"] = col_order;
                         $.ajax({
                             type: "GET",
-                            url: 'http://{{ API_url }}/bgp_updates',
+                            url: 'https://{{ API_url }}/bgp_updates',
                             dataType: "json",
                             headers: { 'Prefer': 'count=exact' },
                             data: parameters,
@@ -369,7 +369,7 @@
 
 
             function retrieve_hijack(key){
-                var url_ = 'http://{{ API_url }}/hijacks?key=' + key;
+                var url_ = 'https://{{ API_url }}/hijacks?key=' + key;
                 $.ajax({url: url_, success: function(result){
                     update_hijack_details(result[0]);
                 }});

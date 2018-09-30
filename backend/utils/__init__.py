@@ -69,8 +69,3 @@ def exception_handler(log):
                 return True
         return wrapper
     return function_wrapper
-
-def removekey(d, key):
-    r = dict(d)
-    del r[key]
-    return r

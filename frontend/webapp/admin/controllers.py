@@ -11,7 +11,7 @@ import yaml
 import logging
 import json
 
-log = logging.getLogger('artemis_logger')
+log = logging.getLogger('webapp_logger')
 
 admin = Blueprint('admin', __name__, template_folder='templates')
 

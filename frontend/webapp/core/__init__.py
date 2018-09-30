@@ -14,7 +14,7 @@ from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
 from flask_security import user_registered
 import time
 
-log = logging.getLogger('artemis_logger')
+log = logging.getLogger('webapp_logger')
 
 
 app = Flask(__name__,
@@ -115,7 +115,7 @@ def inject_version():
 
 @app.context_processor
 def inject_API_url():
-    return dict(API_url=app.config['API_URL'])
+    return dict(API_url=app.config['CLIENT_API_URL'])
 
 @babel.timezoneselector
 def get_timezone():

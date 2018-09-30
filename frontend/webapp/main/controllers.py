@@ -10,7 +10,7 @@ import logging
 import time
 import json
 
-log = logging.getLogger('artemis_logger')
+log = logging.getLogger('webapp_logger')
 
 main = Blueprint('main', __name__, template_folder='templates')
 

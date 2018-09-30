@@ -5,13 +5,12 @@ from wtforms.fields.html5 import EmailField
 from flask_security.forms import RegisterForm, LoginForm, Required
 import logging
 
-log = logging.getLogger('artemis_logger')
+log = logging.getLogger('webapp_logger')
 
 class CheckboxForm(FlaskForm):
     monitor = BooleanField('Monitor', default=False)
     detector = BooleanField('Detector', default=False)
     mitigator = BooleanField('Mitigator', default=False)
-
 
 class ExtendedRegisterForm(RegisterForm):
     username = StringField('Username', [Required()])

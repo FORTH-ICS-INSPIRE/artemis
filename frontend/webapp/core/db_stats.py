@@ -2,11 +2,11 @@ import logging
 import requests
 import json
 import time
+from webapp.utils import API_URL_FLASK
 
-log = logging.getLogger('artemis_logger')
+log = logging.getLogger('webapp_logger')
 
-PROTOCOL = "http"
-CONFIG_URL = "://postgrest:3000/"
+API_PATH = "http://" + API_URL_FLASK
 
 class DB_statistics():
 
@@ -18,14 +18,14 @@ class DB_statistics():
         self.total_hijacks_under_mitigation = 0
         self.total_hijacks_active = 0
         self.total_hijacks_ignored = 0
-        self.url_ = PROTOCOL + CONFIG_URL
+        self.url_ = API_PATH
         self.timestamp_last_update = 0
         self.refresh_rate_seconds = 3
     
     def get_total_bgp_updates(self):
         try:
             log.debug("send request for total total_bgp_updates") 
-            url_ = self.url_ + "bgp_updates?limit=1"
+            url_ = self.url_ + "/bgp_updates?limit=1"
             response = requests.get(url=url_, headers={"Prefer": "count=exact"})
             if 'Content-Range' in response.headers:
                 self.total_bgp_updates = int(response.headers['Content-Range'].split('/')[1])
@@ -35,7 +35,7 @@ class DB_statistics():
     def get_total_bgp_unhandled_updates(self):
         try:
             log.debug("send request for total total_bgp_unhandled_updates") 
-            url_ = self.url_ + "bgp_updates?handled=eq.false&limit=1"
+            url_ = self.url_ + "/bgp_updates?handled=eq.false&limit=1"
             response = requests.get(url=url_, headers={"Prefer": "count=exact"})
             if 'Content-Range' in response.headers:
                 self.total_bgp_unhandled_updates = int(response.headers['Content-Range'].split('/')[1])
@@ -45,7 +45,7 @@ class DB_statistics():
     def get_total_hijacks(self):
         try:
             log.debug("send request for total total_hijacks") 
-            url_ = self.url_ + "hijacks?limit=1"
+            url_ = self.url_ + "/hijacks?limit=1"
             response = requests.get(url=url_, headers={"Prefer": "count=exact"})
             if 'Content-Range' in response.headers:
                 self.total_hijacks = int(response.headers['Content-Range'].split('/')[1])
@@ -55,7 +55,7 @@ class DB_statistics():
     def get_total_hijacks_resolved(self):
         try:
             log.debug("send request for total total_hijacks_resolved") 
-            url_ = self.url_ + "hijacks?resolved=eq.true&limit=1"
+            url_ = self.url_ + "/hijacks?resolved=eq.true&limit=1"
             response = requests.get(url=url_, headers={"Prefer": "count=exact"})
             if 'Content-Range' in response.headers:
                 self.total_hijacks_resolved = int(response.headers['Content-Range'].split('/')[1])
@@ -65,7 +65,7 @@ class DB_statistics():
     def get_total_hijacks_under_mitigation(self):
         try:
             log.debug("send request for total total_hijacks_under_mitigation") 
-            url_ = self.url_ + "hijacks?under_mitigation=eq.true&limit=1"
+            url_ = self.url_ + "/hijacks?under_mitigation=eq.true&limit=1"
             response = requests.get(url=url_, headers={"Prefer": "count=exact"})
             if 'Content-Range' in response.headers:
                 self.total_hijacks_under_mitigation = int(response.headers['Content-Range'].split('/')[1])
@@ -75,7 +75,7 @@ class DB_statistics():
     def get_total_hijacks_active(self):
         try:
             log.debug("send request for total total_hijacks_active") 
-            url_ = self.url_ + "hijacks?active=eq.true&limit=1"
+            url_ = self.url_ + "/hijacks?active=eq.true&limit=1"
             response = requests.get(url=url_, headers={"Prefer": "count=exact"})
             if 'Content-Range' in response.headers:
                 self.total_hijacks_active = int(response.headers['Content-Range'].split('/')[1])
@@ -85,7 +85,7 @@ class DB_statistics():
     def get_total_hijacks_ignored(self):
         try:
             log.debug("send request for total total_hijacks_ignored") 
-            url_ = self.url_ + "hijacks?ignored=eq.true&limit=1"
+            url_ = self.url_ + "/hijacks?ignored=eq.true&limit=1"
             response = requests.get(url=url_, headers={"Prefer": "count=exact"})
             if 'Content-Range' in response.headers:
                 self.total_hijacks_ignored = int(response.headers['Content-Range'].split('/')[1])

@@ -1,6 +1,6 @@
 import psycopg2
 import radix
-from utils import get_logger, exception_handler, RABBITMQ_HOST, removekey
+from utils import get_logger, exception_handler, RABBITMQ_HOST
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
@@ -166,39 +166,54 @@ class Postgresql_db(Service):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
-            extract_msg = (msg_['prefix'], msg_['key'], str(msg_['path'][-1]), str(msg_['peer_asn']), msg_['path'], msg_['service'], \
-                msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, 'false', self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'] )
-            self.insert_bgp_entries.append(extract_msg)
+            origin_as = -1
+            if len(msg_['path']) >= 1:
+                origin_as = sg_['path'][-1]
+            peer_asn = -1
+            if len(msg_['path']) >= 1:
+                peer_asn = msg_['path'][0]
+
+            try:
+                extract_msg = (msg_['prefix'], msg_['key'], str(origin_as), str(peer_asn), msg_['path'], msg_['service'], \
+                    msg_['type'], json.dumps([(k['asn'],k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, 'false', self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'] )
+                self.insert_bgp_entries.append(extract_msg)
+            except:
+                log.debug("exception: {}".format(msg_))
 
         def handle_hijack(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
-            key = msg_['key']
-            if key not in self.tmp_hijacks_dict:
-                self.tmp_hijacks_dict[key] = {}
-                self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
-                self.tmp_hijacks_dict[key]['hijacker'] = str(msg_['hijacker'])
-                self.tmp_hijacks_dict[key]['hij_type'] = str(msg_['hij_type'])
-                self.tmp_hijacks_dict[key]['time_started'] = int(msg_['time_started'])
-                self.tmp_hijacks_dict[key]['time_last'] = int(msg_['time_last'])
-                self.tmp_hijacks_dict[key]['peers_seen'] = msg_['peers_seen']
-                self.tmp_hijacks_dict[key]['inf_asns'] = msg_['inf_asns']
-                self.tmp_hijacks_dict[key]['monitor_keys'] = msg_['monitor_keys']
-                self.tmp_hijacks_dict[key]['time_detected'] = int(msg_['time_detected'])
-                self.tmp_hijacks_dict[key]['configured_prefix'] = msg_['configured_prefix']
-                self.tmp_hijacks_dict[key]['timestamp_of_config'] = int(msg_['timestamp_of_config'])
-            else:
-                self.tmp_hijacks_dict[key]['time_started'] = int(min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
-                self.tmp_hijacks_dict[key]['time_last'] = int(max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
-                self.tmp_hijacks_dict[key]['peers_seen'].update(msg_['peers_seen'])
-                self.tmp_hijacks_dict[key]['inf_asns'].update(msg_['inf_asns'])
-                self.tmp_hijacks_dict[key]['monitor_keys'].update(msg_['monitor_keys'])
+            try:
+                key = msg_['key']
+                if key not in self.tmp_hijacks_dict:
+                    self.tmp_hijacks_dict[key] = {}
+                    self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
+                    self.tmp_hijacks_dict[key]['hijacker'] = str(msg_['hijacker'])
+                    self.tmp_hijacks_dict[key]['hij_type'] = str(msg_['hij_type'])
+                    self.tmp_hijacks_dict[key]['time_started'] = int(msg_['time_started'])
+                    self.tmp_hijacks_dict[key]['time_last'] = int(msg_['time_last'])
+                    self.tmp_hijacks_dict[key]['peers_seen'] = msg_['peers_seen']
+                    self.tmp_hijacks_dict[key]['inf_asns'] = msg_['inf_asns']
+                    self.tmp_hijacks_dict[key]['monitor_keys'] = msg_['monitor_keys']
+                    self.tmp_hijacks_dict[key]['time_detected'] = int(msg_['time_detected'])
+                    self.tmp_hijacks_dict[key]['configured_prefix'] = msg_['configured_prefix']
+                    self.tmp_hijacks_dict[key]['timestamp_of_config'] = int(msg_['timestamp_of_config'])
+                else:
+                    self.tmp_hijacks_dict[key]['time_started'] = int(min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
+                    self.tmp_hijacks_dict[key]['time_last'] = int(max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
+                    self.tmp_hijacks_dict[key]['peers_seen'].update(msg_['peers_seen'])
+                    self.tmp_hijacks_dict[key]['inf_asns'].update(msg_['inf_asns'])
+                    self.tmp_hijacks_dict[key]['monitor_keys'].update(msg_['monitor_keys'])
+            except:
+                log.debug("exception: {}".format(msg_))
 
         def handle_handled_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
-            key_ = (message.payload,)
-            self.handled_bgp_entries.append(key_)
-
+            try:
+                key_ = (message.payload,)
+                self.handled_bgp_entries.append(key_)
+            except:
+                log.debug("exception: {}".format(message))
 
         def build_radix_tree(self):
             self.prefix_tree = radix.Radix()
@@ -222,23 +237,7 @@ class Postgresql_db(Service):
         def handle_config_notify(self, message):
             log.debug('Message: {}\npayload: {}'.format(message, message.payload))
             config = message.payload
-            if config['timestamp'] > self.timestamp:
-                self.timestamp = config['timestamp']
-                self.rules = config.get('rules', [])
-                self.build_radix_tree()
-                if 'timestamp' in config:
-                    del config['timestamp']
-                raw_config = ""
-                if 'raw_config' in config:
-                    raw_config = config['raw_config']
-                    del config['raw_config']
-                config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
-                self._save_config(config_hash, config, raw_config)
-
-        def handle_config_request_reply(self, message):
-            log.debug('Message: {}\npayload: {}'.format(message, message.payload))
-            if self.correlation_id == message.properties['correlation_id']:
-                config = message.payload
+            try:
                 if config['timestamp'] > self.timestamp:
                     self.timestamp = config['timestamp']
                     self.rules = config.get('rules', [])
@@ -250,11 +249,34 @@ class Postgresql_db(Service):
                         raw_config = config['raw_config']
                         del config['raw_config']
                     config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
-                    latest_config_in_db_hash = self._retrieve_most_recent_config_hash()
-                    if config_hash != latest_config_in_db_hash:
-                        self._save_config(config_hash, config, raw_config)
-                    else:
-                        log.debug("database config is up-to-date")
+                    self._save_config(config_hash, config, raw_config)
+            except:
+                log.debug("exception: {}".format(config))
+
+
+        def handle_config_request_reply(self, message):
+            log.debug('Message: {}\npayload: {}'.format(message, message.payload))
+            config = message.payload
+            try:
+                if self.correlation_id == message.properties['correlation_id']:
+                    if config['timestamp'] > self.timestamp:
+                        self.timestamp = config['timestamp']
+                        self.rules = config.get('rules', [])
+                        self.build_radix_tree()
+                        if 'timestamp' in config:
+                            del config['timestamp']
+                        raw_config = ""
+                        if 'raw_config' in config:
+                            raw_config = config['raw_config']
+                            del config['raw_config']
+                        config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
+                        latest_config_in_db_hash = self._retrieve_most_recent_config_hash()
+                        if config_hash != latest_config_in_db_hash:
+                            self._save_config(config_hash, config, raw_config)
+                        else:
+                            log.debug("database config is up-to-date")
+            except:
+                log.debug("exception: {}".format(config))
 
         def handle_hijack_update(self, message):
             """
@@ -283,7 +305,7 @@ class Postgresql_db(Service):
                 self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=" + str(int(time.time())) + " WHERE key='" + str(raw) + "';" )
                 self.db_conn.commit()
             except Exception:
-                log.exception('exception')
+                log.exception('exception: {}'.format(raw))
 
 
         def handle_mitigation_request(self, message):
@@ -293,7 +315,7 @@ class Postgresql_db(Service):
                 self.db_cur.execute("UPDATE hijacks SET mitigation_started=" + str(int(raw['time'])) + ", under_mitigation=true WHERE key='" + str(raw['key']) + "';" )
                 self.db_conn.commit()
             except Exception:
-                log.exception('exception')
+                log.exception('exception: {}'.format(raw))
 
         def handle_hijack_ignore_request(self, message):
             raw = message.payload
@@ -302,7 +324,7 @@ class Postgresql_db(Service):
                 self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, ignored=true WHERE key='" + str(raw['key']) + "';" )
                 self.db_conn.commit()
             except Exception:
-                log.exception('exception')
+                log.exception('exception: {}'.format(raw))
 
         def create_tables(self):
             bgp_updates_table = "CREATE TABLE IF NOT EXISTS bgp_updates ( " + \

@@ -4,8 +4,9 @@ from flask_compress import Compress
 from flask_security import Security, SQLAlchemyUserDatastore
 from webapp.data.models import db, Role, User
 from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
+from webapp.utils import API_URL_CLIENT, API_URL_FLASK
 
-log = logging.getLogger('artemis_logger')
+log = logging.getLogger('webapp_logger')
 
 class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = True
@@ -49,7 +50,8 @@ class ProductionConfig(BaseConfig):
     SECURITY_RECOVERABLE=False
     LOGGING_LEVEL = logging.INFO
     WEBAPP_HOST = os.getenv('MACHINE_IP', '0.0.0.0')
-    API_URL = os.getenv('API_URL', '0.0.0.0:3000')
+    FLASK_API_URL = API_URL_FLASK
+    CLIENT_API_URL = API_URL_CLIENT
     WEBAPP_PORT = 8000
 
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"

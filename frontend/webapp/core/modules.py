@@ -4,7 +4,7 @@ from webapp.utils.conf import Config
 import logging
 import datetime
 
-log = logging.getLogger('artemis_logger')
+log = logging.getLogger('webapp_logger')
 
 intervals = (
     ('W', 604800),  # 60 * 60 * 24 * 7

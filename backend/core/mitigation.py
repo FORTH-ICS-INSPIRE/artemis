@@ -126,8 +126,8 @@ class Mitigation(Service):
                     log.info('starting manual mitigation of hijack {}'.format(hijack_event))
                 else:
                     log.info('starting custom mitigation of hijack {}'.format(hijack_event))
-                    #hijack_event_str = json.dumps(hijack_event)
-                    #subprocess.Popen([mitigation_action, '-i', hijack_event_str])
+                    hijack_event_str = json.dumps(hijack_event)
+                    subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 # do something
                 mit_started = {'key': hijack_event['key'], 'time': time.time()}
                 self.producer.publish(

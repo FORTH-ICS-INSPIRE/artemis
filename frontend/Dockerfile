@@ -6,8 +6,7 @@ WORKDIR /root
 
 COPY . ./
 
-RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl
+RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
 RUN pip --no-cache-dir install -r requirements.txt
 
 ENTRYPOINT ["./entrypoint"]
-

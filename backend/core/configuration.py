@@ -45,6 +45,7 @@ class Configuration(Service):
                 raw = f.read()
                 self.data, _flag, _error = self.parse(raw, yaml=True)
 
+
             # EXCHANGES
             self.config_exchange = Exchange('config', type='direct', channel=connection, durable=False, delivery_mode=1)
             self.config_exchange.declare()
@@ -86,6 +87,7 @@ class Configuration(Service):
                 data, _flag, _error = self.parse(stream, yaml=True)
             else:
                 data, _flag, _error = self.parse(raw)
+
             if _flag:
                 log.debug('accepted new configuration')
                 self.data = data
@@ -167,6 +169,7 @@ class Configuration(Service):
             except Exception as e:
                 log.exception('exception')
                 return {'timestamp': time.time()}, False, str(e)
+
 
 
         def check(self, data):

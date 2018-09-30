@@ -168,7 +168,7 @@ class Postgresql_db(Service):
             # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
             origin_as = -1
             if len(msg_['path']) >= 1:
-                origin_as = sg_['path'][-1]
+                origin_as = msg_['path'][-1]
             peer_asn = -1
             if len(msg_['path']) >= 1:
                 peer_asn = msg_['path'][0]

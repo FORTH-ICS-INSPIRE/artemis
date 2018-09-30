@@ -13,7 +13,7 @@
                 <h1 class="page-header">Viewing Hijack <small id="hijack_status"></small></h1>
                 {% if mitigate == True and configured != True %}                                
                 <div class="alert alert-warning">
-                    <strong>Warning!</strong> The prefix that initiated this hijack does not exist in the current configuration file.
+                    <strong>Warning!</strong> The prefix that is related to this hijack does not exist in the current configuration file.
                 </div>
                 {% endif %}
             </div>
@@ -427,7 +427,7 @@
             }
             {% if current_user.has_roles('admin') %}
             $( "#resolved_button" ).click(function() {
-                var url_ = "../main/hijacks/resolve/?id={{ hijack_key }}";
+                var url_ = "../main/hijacks/resolve/?id=" + initial_data['key'];
                 $.ajax({url: url_, success: function(result){
                     retrieve_hijack(parameters['hijack_key']);
                 }
@@ -435,7 +435,7 @@
             });
 
             $( "#mitigation_button" ).click(function() {
-                var url_ = "../main/hijacks/mitigate/?id={{ hijack_key }}&prefix=" + prefix;
+                var url_ = "../main/hijacks/mitigate/?id=" + initial_data['key'] + "&prefix=" + prefix;
                 $.ajax({url: url_, success: function(result){
                     retrieve_hijack(parameters['hijack_key']);
                 }
@@ -443,7 +443,7 @@
             });
 
             $( "#ignored_button" ).click(function() {
-                var url_ = "../main/hijacks/ignore/?id={{ hijack_key }}"
+                var url_ = "../main/hijacks/ignore/?id=" + initial_data['key']
                 $.ajax({url: url_, success: function(result){
                     retrieve_hijack(parameters['hijack_key']);
                 }

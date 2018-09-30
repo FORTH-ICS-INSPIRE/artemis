@@ -124,6 +124,7 @@ services:
             - postgrest
         depends_on:
             - postgres
+            - artemis_backend
         environment:
             PGRST_DB_URI: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
             PGRST_DB_SCHEMA: public

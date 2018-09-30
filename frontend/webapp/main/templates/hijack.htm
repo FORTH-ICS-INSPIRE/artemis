@@ -1,0 +1,462 @@
+{% extends "layout.htm" %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Viewing Hijack <small id="hijack_status"></small></h1>
+                {% if mitigate == True and configured != True %}                                
+                <div class="alert alert-warning">
+                    <strong>Warning!</strong> The prefix that is related to this hijack does not exist in the current configuration file.
+                </div>
+                {% endif %}
+            </div>
+            {% if current_user.has_roles('admin') %}
+            <div class="col-lg-9">
+            {% else %}
+            <div class="col-lg-12">
+            {% endif %}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Hijack Information
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Hijack ID:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div id="info_hijack_id"></div>
+                                    </div>
+                                </div>                
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Hijacker AS:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_hijack_as"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Type:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_type"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Prefix:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_prefix"></p>
+                                    </div>
+                                </div>
+                            
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b># Peers Seen:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div id="info_num_peers_seen"></div>
+                                    </div>
+                                </div>                
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b># ASes Infected:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_num_asns_inf"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Time Started:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_time_started"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Time Ended:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_time_ended"></p>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="col-lg-4">             
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <p><b>Hijack key:</b></p>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <p id="info_key"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Mitigation Started:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_mitigation_started"></p>
+                                    </div>
+                                </div> 
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Matched Prefix:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_matched_prefix"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Config Matched:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_config_timestamp"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if current_user.has_roles('admin') %}
+            <div class="col-lg-3">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Actions
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-4 ">
+                                <button id="resolved_button" type="button" class="btn btn-success">Resolve</button>
+                            </div>
+                            <div class="col-lg-4">
+                                {% if mitigate == True and configured == True %}
+                                <button id="mitigation_button" type="button" class="btn btn-danger">Mitigate</button>
+                                {% endif %}
+                            </div>
+                            <div class="col-lg-4">
+                                <button id="ignored_button" type="button" class="btn btn-warning">Ignore</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Related BGP Updates
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-striped table-bordered" id="hijack_table">
+                            <thead>
+                                <th>ID</th>
+                                <th>Prefix</th>
+                                <th>Origin AS</th>
+                                <th>AS Path</th>
+                                <th>Peer AS</th>
+                                <th>Service</th>
+                                <th>Type</th>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                                <th>More</th>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    </hr>
+                    <p><i>Times are shown in your local time zone.</i></p>
+                </div>
+            </div>
+        </div>
+
+    
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            var parameters = {};
+            var initial_data = $.parseJSON('{{ data|safe }}');
+            parameters['hijack_key'] = "eq." + initial_data['key']
+            var prefix;
+            var table;
+
+            function render_table(settings){
+                var columns = [
+                        { data: 'id' },
+                        { data: 'prefix' },
+                        { data: 'origin_as' },
+                        { data: 'as_path' },
+                        { data: 'peer_asn' },
+                        { data: 'service' },
+                        { data: 'type' },
+                        { data: 'timestamp' },
+                        { data: 'hijack_key' }];
+
+                table = $('#hijack_table').DataTable( {
+                    "processing": true,
+                    "serverSide": true,
+                    ajax: function(data, callback, settings) {
+                        col_order = columns[data.order[0].column].data + "." + data.order[0].dir
+                        parameters["offset"] = data.start;
+                        parameters["limit"] = data.length;
+                        parameters["order"] = col_order;
+                        $.ajax({
+                            type: "GET",
+                            url: 'https://{{ API_url }}/bgp_updates',
+                            dataType: "json",
+                            headers: { 'Prefer': 'count=exact' },
+                            data: parameters,
+
+                            success: function(data, status, xhr){
+                                total_str = xhr.getResponseHeader("Content-Range").split('/')[1];
+                                total = parseInt(total_str);
+                                callback({
+                                    recordsTotal: total,
+                                    recordsFiltered: total,
+                                    data: data
+                                });
+                            }
+                        });
+                    },
+                    "columns": [
+                        { data: 'id' },
+                        { data: 'prefix' },
+                        { data: 'origin_as' },
+                        { data: 'as_path' },
+                        { data: 'peer_asn' },
+                        { data: 'service' },
+                        { data: 'type' },
+                        { data: 'timestamp',
+                            render: function(data, type, row){
+                                var stillUtc = moment.unix(data).toDate();
+                                return moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
+                            } 
+                        },
+                        { data: 'handled', 
+                            render: function(data, type, row){
+                                if(true == data){
+                                    return '<img src="../../images/handled.png"/>'
+                                }else{
+                                    return '<img src="../../images/unhadled.png"/>'
+                                }
+                            } 
+                        },
+                        {
+                            "className":      'details-control',
+                            "orderable":      false,
+                            "data":           null,
+                            "defaultContent": ''
+                        }
+                    ],
+                });
+                
+            }
+
+            $(document).ready(function(){
+                render_table(parameters);
+                update_hijack_details(initial_data);
+
+                $('#hijack_table tbody').on('click', 'td.details-control', function () {
+                    var tr = $(this).closest('tr');
+                    var row = table.row(tr);
+                    if (row.child.isShown()) {
+                        row.child.hide();
+                        tr.removeClass('shown');
+                    }else {
+                        row.child( format(row.data()) ).show();
+                        tr.addClass('shown');
+                    }
+                });
+            });
+
+        
+            function format ( d ) {
+                var stillUtc = moment.unix(d.timestamp).toDate();
+                var timestamp = moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
+                
+                var orig_path = "";
+                if (d.orig_path != null){
+                    orig_path = d.orig_path;
+                }
+
+                var view_hijack_link = ""
+                var hijack_key = ""
+                if('0' != d.hijack_key){
+                    hijack_key = d.hijack_key
+                    view_hijack_link = '<a href="../hijack?key=' + d.hijack_key + '">View</a>'
+                }
+
+                var communities = new Array();
+                (d.communities).forEach(function (item) {
+                    communities.push({ 'asn': item[0], 'value': item[1] })
+                })
+
+                return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
+                    '<tr>'+
+                        '<td><b>Prefix:</b></td>'+
+                        '<td>'+ d.prefix +'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Origin AS:</b></td>'+
+                        '<td>'+d.origin_as+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>AS Path:</b></td>'+
+                        '<td>'+d.as_path+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Peer AS:</b></td>'+
+                        '<td>'+d.peer_asn+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Service:</b></td>'+
+                        '<td>'+d.service+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Type:</b></td>'+
+                        '<td>'+d.type+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Communities:</b></td>'+
+                        '<td>'+communities+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Timestamp:</b></td>'+
+                        '<td>'+timestamp+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Original Path:</b></td>'+
+                        '<td>'+orig_path+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Hijack Key:</b></td>'+
+                        '<td>'+hijack_key+'</td>'+
+                    '</tr>'+
+                    '<tr>'+
+                        '<td><b>Hijack:</b></td>'+
+                        '<td>'+view_hijack_link+'</td>'+
+                    '</tr>'+
+                '</table>';
+            }
+
+
+            function retrieve_hijack(key){
+                var url_ = 'https://{{ API_url }}/hijacks?key=' + key;
+                $.ajax({url: url_, success: function(result){
+                    update_hijack_details(result[0]);
+                }});
+            }
+
+            function update_hijack_details(data){
+                $( "#hijack_status" ).html( hijack_status(data)) ;
+                prefix = data['prefix'];
+                $( "#info_hijack_id" ).html( data['id'] );
+                $( "#info_key" ).html( data['key'] );
+                $( "#info_type" ).html( data['type'] );
+                $( "#info_prefix" ).html( data['prefix'] );
+                $( "#info_hijack_as" ).html( data['hijack_as'] );
+                $( "#info_num_peers_seen" ).html( data['num_peers_seen'] );
+                $( "#info_num_asns_inf" ).html( data['num_asns_inf'] );
+                $( "#info_time_started" ).html( transform_time( data['time_started'] ) );
+                $( "#info_time_last" ).html( transform_time( data['time_last'] ) );
+                $( "#info_time_ended" ).html( transform_time( data['time_ended'] ) );
+                $( "#info_mitigation_started" ).html( transform_time( data['mitigation_started'] ) );
+                $( "#info_matched_prefix" ).html( data['configured_prefix'] );
+                $( "#info_config_timestamp" ).html( transform_time( data['timestamp_of_config'] )  );
+
+
+                if(data['resolved'] == true || data['ignored'] == true){
+                    $("#resolved_button").prop("disabled", true);
+                    $("#mitigation_button").prop("disabled", true);
+                    $("#ignored_button").prop("disabled", true);
+
+                }else if(data['mitigation_started'] != 0){
+                    $("#mitigation_button").prop("disabled", true);
+                }
+            }     
+
+            function hijack_status(data){
+                if(data['under_mitigation'] == true){
+                    return '<b style="color:blue">(Under Mitigation)</b>'
+                }else if(data['resolved'] == true){
+                    return '<b style="color:green">(Resolved)</b>'
+                }else if(data['active'] == true){
+                    return '<b style="color:red">(Ongoing)</b>'
+                }else if(data['ignored'] == true){
+                    return '<b style="color:orange">(Ignored)</b>'
+                }else{
+                    return "Uknown"
+                }
+            } 
+
+            function transform_time(timestamp){
+                if(timestamp != 0){
+                    var tunix = moment.unix(timestamp);
+                    return moment(tunix).local().format("DD-MM-YYYY HH:mm:ss")
+                }else{
+                    return "Never"
+                }
+            }
+            {% if current_user.has_roles('admin') %}
+            $( "#resolved_button" ).click(function() {
+                var url_ = "../main/hijacks/resolve/?id=" + initial_data['key'];
+                $.ajax({url: url_, success: function(result){
+                    retrieve_hijack(parameters['hijack_key']);
+                }
+                });
+            });
+
+            $( "#mitigation_button" ).click(function() {
+                var url_ = "../main/hijacks/mitigate/?id=" + initial_data['key'] + "&prefix=" + prefix;
+                $.ajax({url: url_, success: function(result){
+                    retrieve_hijack(parameters['hijack_key']);
+                }
+                });
+            });
+
+            $( "#ignored_button" ).click(function() {
+                var url_ = "../main/hijacks/ignore/?id=" + initial_data['key']
+                $.ajax({url: url_, success: function(result){
+                    retrieve_hijack(parameters['hijack_key']);
+                }
+                });
+            });
+            {% endif %}
+
+        </script>
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
+    {% endblock %}
+{% endblock %}
+
+

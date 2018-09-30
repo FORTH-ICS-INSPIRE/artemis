@@ -1,52 +1,173 @@
 {% extends "layout.htm" %}
-{% import "bootstrap/utils.html" as utils %}
+
 {% block head %}
     {{super()}}
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
 {% endblock %}
-{% block content %}
+
+{% block page_content %}
     {{super()}}
-    <div class="container">
-        <div class="panel panel-primary">
-            <div class="panel-heading">Control Panel</div>
-            <div class="panel-body">
-                <div class="row">
-                    <form method="post">
-                        <div class="col-md-10">
-                            <label for="config-div">Configuration</label>
-                            <div class="form-group" id="config-div">
-                                {{ config.config(cols='130',rows='18') }}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Dashboard</h1>
+            </div>
+
+
+            <div class="col-lg-8">
+                
+
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Activity
+                        </div>
+                        <div class="panel-body">
+                            Welcome back <b>{{ current_user.email }}</b>, your last login was at <b>
+                            {% if current_user.last_login_at != None %}
+                                {{ current_user.last_login_at.strftime('%d, %b %Y (%H:%M)' ) }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                            </b> from {{ current_user.last_login_ip }}.
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Current Configuration
+                        </div>
+                        <div class="panel-body">
+                            <div id="config_alert_box"></div>
+
+                            <form><textarea id="code_yaml" name="code_yaml">{{ config }}</textarea></form>
+
+                            </br>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    </hr>
+                                    <div id="conf_timestamp"></div>
+                                </div>
+                                <div class="col-lg-6">
+                                    </hr>
+                                    <p class="float-right"><i>Times are shown in your local time zone.</i></p>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-2">
-                            <label for="modules-div">Modules</label>
-                            <div class="form-group" id="modules-div">
-                                {{ form.hidden_tag() }}
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">Monitor</div>
-                                    <div class="panel-body"><center>{{ form.monitor(**{'data-toggle': 'toggle'}) }}</center></div>
-                                </div>
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">Detector</div>
-                                    <div class="panel-body"><center>{{ form.detector(**{'data-toggle': 'toggle'}) }}</center></div>
-                                </div>
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">Mitigator</div>
-                                    <div class="panel-body"><center>{{ form.mitigator(**{'data-toggle': 'toggle'}) }}</center></div>
-                                </div>
-                                {{ form.submit(class_='btn btn-primary pull-right') }}
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-lg-4">
+                <div id="monitors">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> System Status
+                        </div>
+                        <div class="panel-body">
+                            <div class="list-group">
+                                <ul>
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-4"><strong>Module</strong></div>
+                                            <div class="col-lg-8">
+                                                <div class="row">
+                                                    <div class="col-lg-4"> <strong>Status</strong> </div>
+                                                    <div class="col-lg-8"> <strong>Uptime</strong> </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {% for module in modules %}
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-4">{{ module }}</div>
+
+                                            <div class="col-lg-8">{% if modules[module]['status'] == 'up': %}
+                                                    <div class="row">
+                                                        <div class="col-lg-4">
+                                                             <b style="color:#008000">Running</b>
+                                                        </div> 
+                                                        <div class="col-lg-8">
+                                                            {{ modules[module]['uptime'] }}
+                                                        </div>  
+                                                    </div>
+                                                {% else %}
+                                                    <div class="row">
+                                                        <div class="col-lg-4">
+                                                            <b style="color:#ff0000">Down</b>
+                                                        </div> 
+                                                        <div class="col-lg-8">
+                                                            {{ modules[module]['uptime'] }}
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
                             </div>
                         </div>
-                        {% if form.erros %}
-                            <div class="panel-footer">{{ form.errors }}</div>
-                        {% endif %}
-                    </form>
+                    </div>
+                </div>
+
+                <div id="systemstatus">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Statistics
+                        </div>
+                        <div class="panel-body">
+                            <div class="list-group">
+
+                                <ul>
+                                    {% for stat in db_stats %}
+                                    <li class="list-group-item"> 
+                                        <div class="row">
+                                            <div class="col-lg-7">{{ stat[0] }}:</div>
+
+
+                                            <div class="col-lg-5">
+                                                <b>{{ stat[1] }}</b>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+    {% block scripts %}
+        {{super()}}
+        <script>
+            function transform_time(timestamp){
+                if(timestamp != 0){
+                    var tunix = moment.unix(timestamp);
+                    return moment(tunix).local().format("DD-MM-YYYY HH:mm:ss")
+                }else{
+                    return "Never"
+                }
+            }
+            function update_config_timestamp(){
+                $("#conf_timestamp").html("Last Update: " + transform_time( '{{ config_timestamp }}' )) 
+            }
+
+            $(document).ready(function(){ 
+                update_config_timestamp();
+                editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
+                editor.setSize(null, 633);
+            });
+
+        </script>
+        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+
+    {% endblock %}
 {% endblock %}
-{% block scripts %}
-    {{super()}}
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-{% endblock %}
+        

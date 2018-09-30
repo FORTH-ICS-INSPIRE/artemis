@@ -28,7 +28,7 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                         as_path = row[3].split(' ')
                         communities = json.loads(row[7])
                     else:
-                        as_path = None
+                        as_path = []
                         communities = []
                     service = "historical|{}|{}".format(row[4], row[5])
                     type_ = row[6]

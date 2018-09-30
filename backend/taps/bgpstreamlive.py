@@ -76,11 +76,12 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                     this_prefix = str(elem.fields['prefix'])
                     service = "bgpstream|{}|{}".format(str(rec.project), str(rec.collector))
                     type_ = elem.type
-                    if elem.type == "A":
+                    if type_ == "A":
                         as_path = elem.fields['as-path'].split(' ')
-                        communities = elem.fields['communities']
+                        communities = [{'asn': int(comm.split(':')[0]), 'value': int(comm.split(':')[1])}
+                                       for comm in elem.fields['communities']]
                     else:
-                        as_path = ''
+                        as_path = []
                         communities = []
                     timestamp = float(rec.time)
 

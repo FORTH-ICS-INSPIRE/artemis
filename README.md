@@ -179,7 +179,7 @@ More instructions on how to use the ARTEMIS web application will be available so
 
 ### Registering users (ADMIN/VIEWER)
 ```
-TBD
+<ROOT_PATH>/create_account
 ```
 
 ### Configuring ARTEMIS through the web application

@@ -5,6 +5,7 @@ from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
+import json
 import logging
 
 
@@ -120,7 +121,7 @@ class Mitigation(Service):
             prefix_node = self.prefix_tree.search_best(
                         hijack_event['prefix'])
             if prefix_node is not None:
-                mitigation_action = prefix_node.data['mitigation']
+                mitigation_action = prefix_node.data['mitigation'][0]
                 if mitigation_action == 'manual':
                     log.info('starting manual mitigation of hijack {}'.format(hijack_event))
                 else:
@@ -137,5 +138,4 @@ class Mitigation(Service):
                 )
             else:
                 log.warn('no rule for hijack {}'.format(hijack_event))
-
 

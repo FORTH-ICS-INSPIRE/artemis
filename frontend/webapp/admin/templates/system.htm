@@ -1,0 +1,189 @@
+{% extends "layout.htm" %}
+{% import "bootstrap/utils.html" as utils %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">System</h1>
+            </div>
+        </div>
+        <div class="row">
+            <form method="post" class="col-lg-12" id="system_modules">
+                {{ form.hidden_tag() }}
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <i class="fa fa-bell fa-fw"></i> Monitor Module
+                            </div>
+                            <div class="panel-body">
+                                <label class="switch">
+                                    {{ form.monitor(**{'data-toggle': 'toggle'}) }}
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <i class="fa fa-bell fa-fw"></i> Detection Module
+                            </div>
+                            <div class="panel-body">
+                                <label class="switch">
+                                    {{ form.detector(**{'data-toggle': 'toggle'}) }}
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <i class="fa fa-bell fa-fw"></i> Mitigation Module
+                            </div>
+                            <div class="panel-body">
+                                <label class="switch">
+                                    {{ form.mitigator(**{'data-toggle': 'toggle'}) }}
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Current Configuration <button type="button" id="config_action" class="btn btn-primary btn-sm float-right">Edit</button>
+                    </div>
+                    <div class="panel-body">
+                        <div id="config_alert_box"></div>
+
+                        <form><textarea id="code_yaml" name="code_yaml">{{ config }}</textarea></form>
+                        </br>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                </hr>
+                                <div id="conf_timestamp"></div>
+                            </div>
+                            <div class="col-lg-6">
+                                </hr>
+                                <p class="float-right"><i>Times are shown in your local time zone.</i></p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if form.erros %}
+            <div class="panel-footer">{{ form.errors }}</div>
+        {% endif %}
+
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            var editor = null;
+            var initial_conf = null;
+
+            $('#monitor').on('click', function (event, state) {
+                $("#system_modules").submit();
+            });
+            $('#detector').on('click', function (event, state) {
+                $("#system_modules").submit();
+            });
+            $('#mitigator').on('click', function (event, state) {
+                $("#system_modules").submit();
+            });
+
+            $('#config_action').on('click', function (event, state) {
+                if($(this).hasClass("btn-primary")){
+                    $('#config_action').removeClass('btn-primary').addClass('btn-danger')
+                    $('#config_action').html('Save');
+                    editor.options.readOnly = false;
+                }else if($(this).hasClass("btn-danger")){
+                    var new_config = {"new_config": editor.getValue()};
+                    $('#config_action').removeClass('btn-danger').addClass('btn-warning')
+                    $('#config_action').html('Pending');
+                    submit_new_config(new_config)
+                    
+
+                }
+            });
+
+            function submit_new_config(new_config){
+                $.ajax({
+                    type: "POST",
+                    url: "../admin/config/",
+                    data: new_config,
+                    success: function(result){
+                        console.log(result)
+                        if(result["status"] == "fail"){
+                            var message = '<div class="alert alert-danger alert-dismissible">'
+                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                            message += result["response"] + '</div>'
+                            $('#config_action').removeClass('btn-warning').addClass('btn-danger')
+                            $('#config_action').html('Save');
+
+                        }else{
+                            var message = '<div class="alert alert-success alert-dismissible">'
+                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                            message += result["response"] + '</div>'
+                            $('#config_action').removeClass('btn-warning').addClass('btn-primary')
+                            $('#config_action').html('Edit');
+                            editor.setValue(result["data"])
+                            editor.options.readOnly = true;
+                            //update_config_timestamp();
+                        }
+                        $("#config_alert_box").html(message)
+                        
+                    },
+                    dataType: "json"
+                });
+            }
+            
+            function transform_time(timestamp){
+                if(timestamp != 0){
+                    var tunix = moment.unix(timestamp);
+                    return moment(tunix).local().format("DD-MM-YYYY HH:mm:ss")
+                }else{
+                    return "Never"
+                }
+            }
+
+            function update_config_timestamp(){
+                $("#conf_timestamp").html("Last Update: " + transform_time( '{{ config_timestamp }}' )) 
+            }
+
+            $(document).ready(function(){
+                update_config_timestamp();
+                editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
+                //$("#conf_timestamp").html("<p><i>Config last updated:  </i></p>")
+            });
+
+        </script>
+        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>>
+
+    {% endblock %}
+{% endblock %}
+

@@ -43,7 +43,7 @@ class Configuration(Service):
 
             with open(self.file, 'r') as f:
                 raw = f.read()
-                self.data, _flag = self.parse(raw, yaml=True)
+                self.data, _flag, _error = self.parse(raw, yaml=True)
 
             # EXCHANGES
             self.config_exchange = Exchange('config', type='direct', channel=connection, durable=False, delivery_mode=1)
@@ -83,12 +83,13 @@ class Configuration(Service):
             if 'yaml' in message.content_type:
                 from io import StringIO
                 stream = StringIO(''.join(raw))
-                data, _flag = self.parse(stream, yaml=True)
+                data, _flag, _error = self.parse(stream, yaml=True)
             else:
-                data, _flag = self.parse(raw)
+                data, _flag, _error = self.parse(raw)
             if _flag:
                 log.debug('accepted new configuration')
                 self.data = data
+                self._update_local_config_file()
                 self.producer.publish(
                     self.data,
                     exchange = self.config_exchange,
@@ -114,7 +115,8 @@ class Configuration(Service):
                 log.debug('rejected new configuration')
                 self.producer.publish(
                     {
-                        'status': 'rejected'
+                        'status': 'rejected',
+                        'reason': _error
                     },
                     exchange='',
                     routing_key = message.properties['reply_to'],
@@ -157,10 +159,14 @@ class Configuration(Service):
                     data = raw
                 data = self.check(data)
                 data['timestamp'] = time.time()
-                return data, True
+                if isinstance(raw, str):
+                    data['raw_config'] = raw
+                else:
+                    data['raw_config'] = raw.getvalue()
+                return data, True, None
             except Exception as e:
                 log.exception('exception')
-                return {'timestamp': time.time()}, False
+                return {'timestamp': time.time()}, False, str(e)
 
 
         def check(self, data):
@@ -221,3 +227,6 @@ class Configuration(Service):
                         raise ArtemisError('invalid-asn', asn)
             return data
 
+        def _update_local_config_file(self):
+            with open(self.file, 'w') as f:
+                f.write(self.data['raw_config'])

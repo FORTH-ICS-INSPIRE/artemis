@@ -1,6 +1,6 @@
 import psycopg2
 import radix
-from utils import get_logger, exception_handler, RABBITMQ_HOST
+from utils import get_logger, exception_handler, RABBITMQ_HOST, removekey
 from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
@@ -38,6 +38,7 @@ class Postgresql_db(Service):
             self.update_bgp_entries = []
             self.handled_bgp_entries = []
             self.tmp_hijacks_dict = dict()
+            self.time_sleep_connection_retry = 2
 
             # DB variables
             self.db_conn = None
@@ -54,7 +55,6 @@ class Postgresql_db(Service):
             self.db_clock_exchange = Exchange('db-clock', type='direct', durable=False, delivery_mode=1)
             self.mitigation_exchange = Exchange('mitigation', type='direct', durable=False, delivery_mode=1)
 
-
             # QUEUES
             self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
@@ -63,6 +63,8 @@ class Postgresql_db(Service):
             self.hijack_update = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 2})
             self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
+            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
             self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
@@ -128,6 +130,12 @@ class Postgresql_db(Service):
                         on_message=self.handle_mitigation_request,
                         prefetch_count=1,
                         no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.hijack_ignored_queue],
+                        on_message=self.handle_hijack_ignore_request,
+                        prefetch_count=1,
+                        no_ack=True
                         )
                     ]
 
@@ -176,6 +184,8 @@ class Postgresql_db(Service):
                 self.tmp_hijacks_dict[key]['inf_asns'] = msg_['inf_asns']
                 self.tmp_hijacks_dict[key]['monitor_keys'] = msg_['monitor_keys']
                 self.tmp_hijacks_dict[key]['time_detected'] = int(msg_['time_detected'])
+                self.tmp_hijacks_dict[key]['configured_prefix'] = msg_['configured_prefix']
+                self.tmp_hijacks_dict[key]['timestamp_of_config'] = int(msg_['timestamp_of_config'])
             else:
                 self.tmp_hijacks_dict[key]['time_started'] = int(min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
                 self.tmp_hijacks_dict[key]['time_last'] = int(max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
@@ -215,7 +225,14 @@ class Postgresql_db(Service):
                 self.timestamp = config['timestamp']
                 self.rules = config.get('rules', [])
                 self.build_radix_tree()
-                self._save_config(config)
+                if 'timestamp' in config:
+                    del config['timestamp']
+                raw_config = ""
+                if 'raw_config' in config:
+                    raw_config = config['raw_config']
+                    del config['raw_config']
+                config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
+                self._save_config(config_hash, config, raw_config)
 
         def handle_config_request_reply(self, message):
             log.debug('Message: {}\npayload: {}'.format(message, message.payload))
@@ -225,9 +242,25 @@ class Postgresql_db(Service):
                     self.timestamp = config['timestamp']
                     self.rules = config.get('rules', [])
                     self.build_radix_tree()
-                    self._save_config(config)
+                    if 'timestamp' in config:
+                        del config['timestamp']
+                    raw_config = ""
+                    if 'raw_config' in config:
+                        raw_config = config['raw_config']
+                        del config['raw_config']
+                    config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
+                    latest_config_in_db_hash = self._retrieve_most_recent_config_hash()
+                    if config_hash != latest_config_in_db_hash:
+                        self._save_config(config_hash, config, raw_config)
+                    else:
+                        log.debug("database config is up-to-date")
 
         def handle_hijack_update(self, message):
+            """
+            handle_hijack_update:
+            Return all active hijacks
+            Used in detection memcache
+            """
             results = []
             self.db_cur.execute("SELECT time_started, time_last, num_peers_seen, num_asns_inf, key  FROM hijacks WHERE active = true;")
             entries = self.db_cur.fetchall()
@@ -241,18 +274,31 @@ class Postgresql_db(Service):
                 priority = 1
             )
 
+
         def handle_resolved_hijack(self, message):
             raw = message.payload
+            log.debug("payload: {}".format(raw))
             try:
-                self.db_cur.execute("UPDATE hijacks SET active=false, time_ended=" + str(int(time.time())) + " WHERE key='" + str(raw) + "';" )
+                self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=" + str(int(time.time())) + " WHERE key='" + str(raw) + "';" )
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
 
+
         def handle_mitigation_request(self, message):
             raw = message.payload
+            log.debug("payload: {}".format(raw))
             try:
-                self.db_cur.execute("UPDATE hijacks SET time_started=" + str(int(raw['time'])) + " WHERE key=" + str(raw['key']) + ";" )
+                self.db_cur.execute("UPDATE hijacks SET mitigation_started=" + str(int(raw['time'])) + ", under_mitigation=true WHERE key='" + str(raw['key']) + "';" )
+                self.db_conn.commit()
+            except Exception:
+                log.exception('exception')
+
+        def handle_hijack_ignore_request(self, message):
+            raw = message.payload
+            log.debug("payload: {}".format(raw))
+            try:
+                self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, ignored=true WHERE key='" + str(raw['key']) + "';" )
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
@@ -290,14 +336,20 @@ class Postgresql_db(Service):
                 "under_mitigation BOOLEAN, " + \
                 "resolved  BOOLEAN, " + \
                 "active  BOOLEAN, " + \
-                "ignored BOOLEAN ) "
-                
+                "ignored BOOLEAN,  " + \
+                "configured_prefix  inet, " + \
+                "timestamp_of_config BIGINT  " + \
+                "CONSTRAINT possible_states CHECK ( (active=true and under_mitigation=false and resolved=false and ignored=false) or " + \
+                "(active=true and under_mitigation=true and resolved=false and ignored=false) or " + \
+                "(active=false and under_mitigation=false and resolved=true and ignored=false) or " + \
+                "(active=false and under_mitigation=false and resolved=false and ignored=true)))"
 
             configs_table = "CREATE TABLE IF NOT EXISTS configs ( " + \
                 "id   INTEGER GENERATED ALWAYS AS IDENTITY, " + \
-                "key VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
+                "key VARCHAR ( 32 ) NOT NULL, " + \
                 "config_data  json, " + \
-                "time_modified BIGINT)"
+                "raw_config  text, " + \
+                "time_modified BIGINT) " 
 
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)
@@ -305,16 +357,20 @@ class Postgresql_db(Service):
             self.db_conn.commit()
 
         def create_connect_db(self):
-            try:
-                connect_str = "dbname='artemis_db' user='artemis_user' host='postgres' " + \
-                    "password='Art3m1s'"
-                self.db_conn = psycopg2.connect(connect_str)
-                self.db_cur = self.db_conn.cursor()
-                self.create_tables()
-            except:
-                log.exception('exception')
-            finally:
-                log.debug('PostgreSQL DB created/connected..')
+            _connected = False
+            while(not _connected):
+                time.sleep(self.time_sleep_connection_retry)
+                try:
+                    connect_str = "dbname='artemis_db' user='artemis_user' host='postgres' " + \
+                        "password='Art3m1s'"
+                    self.db_conn = psycopg2.connect(connect_str)
+                    self.db_cur = self.db_conn.cursor()
+                    self.create_tables()
+                except:
+                    log.exception('exception')
+                finally:
+                    log.debug('PostgreSQL DB created/connected..')
+                    _connected = True
 
 
         def _insert_bgp_updates(self):
@@ -367,10 +423,11 @@ class Postgresql_db(Service):
             for key in self.tmp_hijacks_dict:
                 try:
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
-                    cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, active, resolved, ignored) VALUES ("
+                    cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, active, resolved, ignored, configured_prefix, timestamp_of_config) VALUES ("
                     cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + self.tmp_hijacks_dict[key]['prefix'] + "','" + self.tmp_hijacks_dict[key]['hijacker'] + "'," 
                     cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + "," 
-                    cmd_ += str(int(self.tmp_hijacks_dict[key]['time_last'])) + ", 0, 0, " + str(self.tmp_hijacks_dict[key]['time_detected']) + ", false, true, false, false )"
+                    cmd_ += str(int(self.tmp_hijacks_dict[key]['time_last'])) + ", 0, 0, " + str(self.tmp_hijacks_dict[key]['time_detected']) + ", false, true, false, false, '" + str(self.tmp_hijacks_dict[key]['configured_prefix']) + "', "
+                    cmd_ += str(int(self.tmp_hijacks_dict[key]['timestamp_of_config'])) + " )"
                     cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=" + str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[key]['inf_asns']))
                     cmd_ += ", time_started=" + str(int(self.tmp_hijacks_dict[key]['time_started'])) + ", time_last=" + str(int(self.tmp_hijacks_dict[key]['time_last']))
 
@@ -424,17 +481,21 @@ class Postgresql_db(Service):
             else:
                 log.warning('Received uknown instruction from scheduler: {}'.format(msg_))
 
-        def _save_config(self, config):
+        def _save_config(self, config_hash, yaml_config, raw_config):
             try:
                 log.debug("Config Store..")
-                config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
-                self.db_cur.execute("INSERT INTO configs (key, config_data, time_modified) VALUES (%s, %s, %s) ON CONFLICT (key) DO NOTHING;", (config_hash, json.dumps(config), int(time.time())))
+                self.db_cur.execute("INSERT INTO configs (key, config_data, raw_config, time_modified) VALUES (%s, %s, %s, %s);", (config_hash, json.dumps(yaml_config), raw_config, int(time.time())))
                 self.db_conn.commit()
             except:
                 log.exception("failed to save config in db")
 
-
-
-
-
+        def _retrieve_most_recent_config_hash(self):
+            try:
+                self.db_cur.execute("SELECT key from configs ORDER BY id DESC LIMIT 1")
+                hash_ = self.db_cur.fetchone()
+                if isinstance(hash_, tuple):
+                    return hash_[0] 
+            except:
+                log.exception("failed to retrieved most recent config hash in db")
+            return None
 

@@ -1,8 +1,10 @@
 from webapp.core import app
 from webapp.core.rabbitmq import Configuration_request
 from webapp.core.modules import Modules_status
+from webapp.core.db_stats import DB_statistics
 from webapp.utils import get_logger
 from webapp.core.fetch_config import Configuration
+import os
 import _thread
 import signal
 import time
@@ -25,13 +27,21 @@ class WebApplication():
         self.app = app
         self.app.config['configuration'] = Configuration()
         self.app.config['configuration'].get_newest_config()
-        log.debug(self.app.config['configuration'].get_prefixes_list())
+
+        self.app.config['db_stats'] = DB_statistics()
+
+
+        try:
+            self.app.config['VERSION'] = os.getenv("SYSTEM_VERSION")
+        except:
+            self.app.config['VERSION'] = "Fail"
+            log.debug("failed to get version")
 
         try:
             log.debug("Starting Scheduler..")
             self.modules = Modules_status()
             self.modules.call('scheduler', 'start')
-            if not self.modules.is_up('scheduler'):
+            if not self.modules.is_up_or_running('scheduler'):
                 log.error("Couldn't start scheduler.")
         except:
             log.exception("exception while starting scheduler")
@@ -41,7 +51,7 @@ class WebApplication():
             log.debug("Starting Postgresql_db..")
             self.modules.call('postgresql_db', 'start')
             
-            if not self.modules.is_up('postgresql_db'):
+            if not self.modules.is_up_or_running('postgresql_db'):
                 log.error("Couldn't start postgresql_db.")
         except:
             log.exception("exception while starting postgresql_db")
@@ -70,7 +80,6 @@ class WebApplication():
 
 
 if __name__ == '__main__':
-    time.sleep(20)
     webapp_ = WebApplication()
     webapp_.start()
 

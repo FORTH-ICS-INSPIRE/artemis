@@ -3,6 +3,7 @@
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
 {% endblock %}
 
 {% block page_content %}
@@ -32,6 +33,30 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Current Configuration
+                        </div>
+                        <div class="panel-body">
+                            <div id="config_alert_box"></div>
+
+                            <form><textarea id="code_yaml" name="code_yaml">{{ config }}</textarea></form>
+
+                            </br>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    </hr>
+                                    <div id="conf_timestamp"></div>
+                                </div>
+                                <div class="col-lg-6">
+                                    </hr>
+                                    <p class="float-right"><i>Times are shown in your local time zone.</i></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             </div>
 
@@ -44,16 +69,40 @@
                         <div class="panel-body">
                             <div class="list-group">
                                 <ul>
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-4"><strong>Module</strong></div>
+                                            <div class="col-lg-8">
+                                                <div class="row">
+                                                    <div class="col-lg-4"> <strong>Status</strong> </div>
+                                                    <div class="col-lg-8"> <strong>Uptime</strong> </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
                                     {% for module in modules %}
                                     <li class="list-group-item">
                                         <div class="row">
-                                            <div class="col-lg-5 offset-lg-1">{{ module }}</div>
+                                            <div class="col-lg-4">{{ module }}</div>
 
-
-                                            <div class="col-lg-6">{% if modules[module] == 'up': %}
-                                                   <b style="color:#008000">Running </b>
-                                                {% else %} 
-                                                    <b style="color:#ff0000">Down</b>
+                                            <div class="col-lg-8">{% if modules[module]['status'] == 'up': %}
+                                                    <div class="row">
+                                                        <div class="col-lg-4">
+                                                             <b style="color:#008000">Running</b>
+                                                        </div> 
+                                                        <div class="col-lg-8">
+                                                            {{ modules[module]['uptime'] }}
+                                                        </div>  
+                                                    </div>
+                                                {% else %}
+                                                    <div class="row">
+                                                        <div class="col-lg-4">
+                                                            <b style="color:#ff0000">Down</b>
+                                                        </div> 
+                                                        <div class="col-lg-8">
+                                                            {{ modules[module]['uptime'] }}
+                                                        </div>
+                                                    </div>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -68,13 +117,24 @@
                 <div id="systemstatus">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Database
+                            <i class="fa fa-bell fa-fw"></i> Statistics
                         </div>
                         <div class="panel-body">
                             <div class="list-group">
 
                                 <ul>
-                                    <li class="list-group-item"># BGP Updates: </li>
+                                    {% for stat in db_stats %}
+                                    <li class="list-group-item"> 
+                                        <div class="row">
+                                            <div class="col-lg-7">{{ stat[0] }}:</div>
+
+
+                                            <div class="col-lg-5">
+                                                <b>{{ stat[1] }}</b>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
                                 </ul>
                             </div>
 
@@ -82,8 +142,32 @@
                     </div>
                 </div>
             </div>
+    {% block scripts %}
+        {{super()}}
+        <script>
+            function transform_time(timestamp){
+                if(timestamp != 0){
+                    var tunix = moment.unix(timestamp);
+                    return moment(tunix).local().format("DD-MM-YYYY HH:mm:ss")
+                }else{
+                    return "Never"
+                }
+            }
+            function update_config_timestamp(){
+                $("#conf_timestamp").html("Last Update: " + transform_time( '{{ config_timestamp }}' )) 
+            }
 
+            $(document).ready(function(){ 
+                update_config_timestamp();
+                editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
+                editor.setSize(null, 633);
+            });
 
-    
+        </script>
+        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+
+    {% endblock %}
 {% endblock %}
-
+        

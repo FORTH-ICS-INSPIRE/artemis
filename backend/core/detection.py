@@ -315,7 +315,9 @@ class Detection(Service):
                 'time_started': monitor_event['timestamp'],
                 'time_last': monitor_event['timestamp'],
                 'peers_seen': {monitor_event['peer_asn']},
-                'monitor_keys': {monitor_event['key']}
+                'monitor_keys': {monitor_event['key']},
+                'configured_prefix': monitor_event['matched_prefix'],
+                'timestamp_of_config': self.timestamp
             }
 
             if hij_type in {'S','Q'}:

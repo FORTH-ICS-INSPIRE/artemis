@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 services:
     artemis:
         build: ./backend/
@@ -33,22 +33,51 @@ services:
             RABBITMQ_HOST: rabbitmq
             POSTGRES_HOST: postgres
             SYSLOG_HOST: "syslog:514"
+            SYSTEM_VERSION: "v0.1"
+            MACHINE_IP: "0.0.0.0"
+            USER_ROOT_USERNAME: "admin"
+            USER_ROOT_PASSWORD: "admin"
+            USER_ROOT_EMAIL: "admin@admin"
         expose:
             - 8000
         ports:
             - "8000:8000"
         volumes:
             - ./frontend/:/root/
+            - ./frontend/db/:/etc/webapp/db/
         depends_on:
             - rabbitmq
             - postgres
             - postgrest
             - syslog
+            - artemis
         networks:
             - rabbitmq
             - postgres
             - postgrest
             - syslog
+            - nginx
+    nginx:
+        image: nginx:latest
+        container_name: production_nginx
+        environment:
+            ARTEMIS_WEBAPP_HOST: artemis_webapp
+            POSTGREST_HOST: postgrest
+        depends_on:
+            - artemis_webapp
+            - postgrest
+        volumes:
+            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
+            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+        ports:
+            - 443:443
+            - 12000:12000
+        expose:
+            - 443
+        networks:
+            - artemis_webapp
+            - postgrest
+        restart: always
     syslog:
         image: "mumblepins/syslog-ng-alpine"
         restart: always
@@ -75,6 +104,8 @@ services:
             POSTGRES_DB: artemis_db
             POSTGRES_USER: artemis_user
             POSTGRES_PASSWORD: Art3m1s
+        volumes:
+            - ./postgres-data:/var/lib/postgresql/data
         networks:
             - postgres
         expose:
@@ -102,3 +133,6 @@ networks:
     memcached:
     postgres:
     postgrest:
+    nginx:
+    artemis_webapp:
+

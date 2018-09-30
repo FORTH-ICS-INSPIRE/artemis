@@ -1,18 +1,18 @@
 import os
 import logging
-from flask import abort, Flask, g, render_template, request, current_app
+from flask import abort, Flask, g, render_template, request, current_app, jsonify, redirect
 from flask_bootstrap import Bootstrap
-from flask_security import current_user
+from flask_security import current_user, login_user
 from flask_security.utils import hash_password, verify_password
-from flask_security.decorators import login_required
+from flask_security.decorators import login_required, roles_accepted
 from flask_babel import Babel
-from flask_jwt import JWT, jwt_required
-from webapp.data.models import db
+from webapp.data.models import db, User
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
 from webapp.core.modules import Modules_status 
+from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
+from flask_security import user_registered
 import time
-
 
 log = logging.getLogger('artemis_logger')
 
@@ -36,84 +36,73 @@ with app.app_context():
 
 from webapp.main.controllers import main
 from webapp.admin.controllers import admin
-from webapp.templates.forms import CheckboxForm, ConfigForm
 
 app.register_blueprint(main, url_prefix='/main')
 app.register_blueprint(admin, url_prefix='/admin')
 
-def authenticate(username, password):
-    user = data_store.find_user(email=username)
-    if user and username == user.email and verify_password(password, user.password):
-        return user
-    return None
 
 def load_user(payload):
+    log.debug("payload: {0}".format(payload))
     user = data_store.find_user(id=payload['identity'])
     return user
 
-jwt = JWT(app, authenticate, load_user)
-
-@jwt_required()
-def auth_func(**kw):
-    pass
 
 @app.before_first_request
 def setupDatabase():
-
-    if app.config['ENV'] in ['testing', 'dev']:
-        if os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]):
-            os.remove(app.config['SQLALCHEMY_DATABASE_URI'][10:])
-
-    if not os.path.exists(app.config['SQLALCHEMY_DATABASE_URI'][10:]):
+    log.debug("setting database for the first time")
+    if not os.path.isfile(app.config['DB_FULL_PATH']):
         db.create_all()
-
         def create_roles(ctx):
             ctx.create_role(name='admin')
             ctx.commit()
+            ctx.create_role(name='pending')
+            ctx.commit()
+            ctx.create_role(name='user')
+            ctx.commit()
         create_roles(data_store)
 
-        def create_users(ctx):
-            users = [('a', 'a', 'a', ['admin'], True),
-                    ('u', 'u', 'u', [], True)]
-            for user in users:
-                email = user[0]
-                username = user[1]
-                password = user[2]
-                is_active = user[4]
+        def create_user(ctx):
+
+            try:
+                email = os.getenv('USER_ROOT_EMAIL', '')
+                username = os.getenv('USER_ROOT_USERNAME', 'admin')
+                password = os.getenv('USER_ROOT_PASSWORD', 'admin')
+                is_active = True
                 if password is not None:
                     password = hash_password(password)
-                roles = [ctx.find_or_create_role(rn) for rn in user[3]]
-                ctx.commit()
-                user = ctx.create_user(
+
+                user = ctx.create_user(username=username,
                     email=email, password=password, active=is_active)
                 ctx.commit()
-                for role in roles:
-                    ctx.add_role_to_user(user, role)
+                role = ctx.find_or_create_role('admin')
+
+                ctx.add_role_to_user(user, role)
                 ctx.commit()
-        create_users(data_store)
+            except:
+                log.exception("exception")
+        
+        create_user(data_store)
 
 
 
 @app.errorhandler(404)
 def page_not_found(error):
     current_app.logger.error('Page not found: %s', (request.path, error))
-    return '{}'.format(error)
-    # return render_template('404.htm'), 404
+    log.debug('{}'.format(error))
+    return render_template('404.htm')
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
     current_app.logger.error('Server Error: %s', (error))
-    return '{}'.format(error)
-    # return render_template('500.htm'), 500
+    return render_template('500.htm')
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     current_app.logger.error('Unhandled Exception: %s', (error))
     log.error('Unhandled Exception', exc_info=True)
-    return '{}'.format(error)
-    # return render_template('500.htm'), 500
+    return render_template('500.htm')
 
 
 @app.context_processor
@@ -124,6 +113,10 @@ def inject_user():
 def inject_version():
     return dict(version=app.config['VERSION'])
 
+@app.context_processor
+def inject_API_url():
+    return dict(API_url=app.config['API_URL'])
+
 @babel.timezoneselector
 def get_timezone():
     user = g.get('user', None)
@@ -131,13 +124,47 @@ def get_timezone():
         return user.timezone
     return 'UTC'
 
+@user_registered.connect_via(app)
+def on_user_registered(app, user, confirm_token):
+    default_role = data_store.find_role("pending")
+    data_store.add_role_to_user(user, default_role)
+    db.session.commit()
+
 
 @app.route('/', methods=['GET', 'POST'])
+def index():    
+    if not current_user.is_authenticated:
+        return redirect("/login")
+    elif current_user.has_role(data_store.find_role("pending")):
+        return redirect("/pending")
+    else:
+        return redirect("/overview")
+
+
+@app.route('/pending', methods=['GET', 'POST'])
 @login_required
-def index():
+@roles_accepted('pending')
+def pending():    
+    return render_template('pending.htm')
+
+
+@app.route('/overview', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin', 'user')
+def overview():
+    log.debug("url: /")
     status_request = Modules_status()
     status_request.call('all', 'status')
-    app.config['status'] = status_request.get_response_all()
-    return render_template('index.htm', modules = app.config['status'])
+    modules_formmated = status_request.get_response_formmated_all()
+    app.config['configuration'].get_newest_config()
+    newest_config = app.config['configuration'].get_raw_config()
+    db_stats = app.config['db_stats'].get_all_formatted_list()
+    return render_template('index.htm', 
+        modules = modules_formmated, 
+        config = newest_config, 
+        db_stats = db_stats,
+        config_timestamp = app.config['configuration'].get_config_last_modified())
 
-
+@app.login_manager.unauthorized_handler
+def unauth_handler():
+    return render_template('401.htm')

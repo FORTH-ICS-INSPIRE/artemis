@@ -124,9 +124,14 @@ class Controller(Service):
                         response = {'result': 'success'}
                         for name, module in self.modules.items():
                             if module.is_running():
-                                response[name] = 'up'
+                                response[name] = {
+                                    'status': 'up',
+                                    'uptime': module.get_uptime()
+                                }
                             else:
-                                response[name] = 'down'
+                                response[name] = {
+                                    'status': 'down'
+                                }
                     else:
                         response = {'result': 'fail', 'reason': 'unknown action'}
                 else:

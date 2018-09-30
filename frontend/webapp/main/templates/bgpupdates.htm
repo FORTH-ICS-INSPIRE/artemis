@@ -195,7 +195,7 @@
                         parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
                         $.ajax({
                             type: "GET",
-                            url: 'http://localhost:3000/bgp_updates',
+                            url: 'http://{{ API_url }}/bgp_updates',
                             dataType: "json",
                             headers: { 'Prefer': 'count=exact' },
                             data: parameters,
@@ -222,7 +222,7 @@
                         {   data: 'timestamp',
                             render: function(data, type, row){
                                 var stillUtc = moment.unix(data).toDate();
-                                return moment(stillUtc).local().format("MM-DD-YYYY HH:mm:ss");
+                                return moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
                             } 
                         },
                         {   data: 'hijack_key',
@@ -230,7 +230,7 @@
                                 if('0' == data){
                                     return ''
                                 }else{
-                                    return '<a href="../hijack?id=' + data + '">View</a>'
+                                    return '<a href="../hijack?key=' + data + '">View</a>'
                                 }
                             } 
                         },
@@ -255,23 +255,11 @@
                         "orderable": false
                         } 
                     ],
-                });
-                $('#bgp_updates tbody').on('click', 'td.details-control', function () {
-                    var tr = $(this).closest('tr');
-                    var row = table.row(tr);
-                    if (row.child.isShown()) {
-                        row.child.hide();
-                        refresh_status = true;
-                        tr.removeClass('shown');
-                    }else {
-                        row.child( format(row.data()) ).show();
-                        refresh_status = false;
-                        tr.addClass('shown');
+                    "language": {
+                        "emptyTable": "<h3>No BGP Updates to display.</h3>"
                     }
                 });
             }
-            
-
 
             setInterval( function () {
                 if(refresh_status){
@@ -291,16 +279,29 @@
                     }
                 },  function(start, end, label) {
                     display_settings['time'] = { 'start_time': moment(start).unix(), 'end_time': moment(end).unix()};
-                    console.log(display_settings)
-                    $('#hijacks').DataTable().destroy()
+                    $('#bgp_updates').DataTable().destroy()
                     render_table(display_settings);
                     }
                 );
+
+                $('#bgp_updates tbody').on('click', 'td.details-control', function () {
+                    var tr = $(this).closest('tr');
+                    var row = table.row(tr);
+                    if (row.child.isShown()) {
+                        row.child.hide();
+                        refresh_status = true;
+                        tr.removeClass('shown');
+                    }else {
+                        row.child( format(row.data()) ).show();
+                        refresh_status = false;
+                        tr.addClass('shown');
+                    }
+                });
             });
 
             function format ( d ) {
                 var stillUtc = moment.unix(d.timestamp).toDate();
-                var timestamp = moment(stillUtc).local().format("MM-DD-YYYY HH:mm:ss");
+                var timestamp = moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
                 
                 var orig_path = "";
                 if (d.orig_path != null){
@@ -311,7 +312,7 @@
                 var hijack_key = ""
                 if('0' != d.hijack_key){
                     hijack_key = d.hijack_key
-                    view_hijack_link = '<a href="../hijack?id=' + d.hijack_key + '">View</a>'
+                    view_hijack_link = '<a href="../hijack?key=' + d.hijack_key + '">View</a>'
                 }
 
                 var communities = new Array();

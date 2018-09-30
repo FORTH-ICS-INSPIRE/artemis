@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import UserMixin, RoleMixin
+from flask_security import RoleMixin, UserMixin
 
 db = SQLAlchemy()
 
@@ -22,8 +22,10 @@ class Role(db.Model, RoleMixin):
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(255),  unique=True, index=True)
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
+    valid = db.Column(db.Boolean(), default=False)
     active = db.Column(db.Boolean())
     last_login_at = db.Column(db.DateTime(timezone=False))
     current_login_at = db.Column(db.DateTime(timezone=False))
@@ -33,7 +35,8 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
 
-    def __init__(self, email, password, active, roles):
+    def __init__(self, username, email, password, active, roles):
+        self.username = username
         self.email = email
         self.password = password
         self.active = active
@@ -41,3 +44,6 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return '<User %r>' % (self.email)
+
+    def has_roles(self, *args):
+        return set(args).issubset({role.name for role in self.roles})

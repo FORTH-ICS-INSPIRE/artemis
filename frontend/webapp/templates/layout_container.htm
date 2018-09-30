@@ -13,14 +13,15 @@
         <header>
             <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
                 <div class="container">
-                    <a class="navbar-brand" href="#">ARTEMIS</a>
+                    <a class="navbar-brand" href="{{ url_for('overview') }}">ARTEMIS</a>
                     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="navbarCollapse">
                         <ul class="navbar-nav mr-auto">
+                            {% if user.has_role('admin') or user.has_role('user') %}
                             <li class="nav-item">
-                                <a class="navbar-brand" href="{{ url_for('index') }}">{{ _('Overview') }}</a>
+                                <a class="navbar-brand" href="{{ url_for('overview') }}">{{ _('Overview') }}</a>
                             </li>
                             <li class="nav-item">
                                 <a class="navbar-brand" href="{{ url_for('main.display_monitors') }}">{{ _('BGP Updates') }}</a>
@@ -28,6 +29,7 @@
                             <li class="nav-item">
                                 <a class="navbar-brand" href="{{ url_for('main.display_hijacks') }}">{{ _('Hijacks') }}</a>
                             </li>
+                            {% endif %}
                         </ul>
                         <ul class="nav navbar-nav navbar-right">
                             {% if user.has_role('admin') %}
@@ -36,11 +38,14 @@
                             </li>
                             {% endif %} {% if not user.is_authenticated %}
                             <li class="nav-item">
-                                <a class="navbar-brand" href="/login">{{ _('Log In') }}</a>
+                                <a class="navbar-brand" href="/login">{{ _('Login') }}</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="navbar-brand" href="/create_account">{{ _('Create account') }}</a>
                             </li>
                             {% else %}
                             <li class="nav-item">
-                                <a class="navbar-brand" href="/logout">{{ _('Log Out') }}</a>
+                                <a class="navbar-brand" href="/logout">{{ _('Logout') }}</a>
                             </li>
                             {% endif %}
                         </ul>

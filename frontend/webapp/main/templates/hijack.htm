@@ -4,18 +4,24 @@
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
-    
-    
 {% endblock %}
 
 {% block page_content %}
     {{super()}}
         <div class="row">
             <div class="col-lg-12">
-                <h1 class="page-header">Viewing Hijack {{ hijack_id }}</h1>
+                <h1 class="page-header">Viewing Hijack <small id="hijack_status"></small></h1>
+                {% if mitigate == True and configured != True %}                                
+                <div class="alert alert-warning">
+                    <strong>Warning!</strong> The prefix that initiated this hijack does not exist in the current configuration file.
+                </div>
+                {% endif %}
             </div>
-
+            {% if current_user.has_roles('admin') %}
             <div class="col-lg-9">
+            {% else %}
+            <div class="col-lg-12">
+            {% endif %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Hijack Information
@@ -109,12 +115,29 @@
                                     <div class="col-lg-6">
                                         <p id="info_mitigation_started"></p>
                                     </div>
-                                </div>    
+                                </div> 
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Matched Prefix:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_matched_prefix"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Config Matched:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_config_timestamp"></p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {% if current_user.has_roles('admin') %}
             <div class="col-lg-3">
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -122,16 +145,22 @@
                     </div>
                     <div class="panel-body">
                         <div class="row">
-                            <div class="col-lg-4 offset-lg-2">
-                                <button id="resolved_button" type="button" class="btn btn-success">Resolved</button>
+                            <div class="col-lg-4 ">
+                                <button id="resolved_button" type="button" class="btn btn-success">Resolve</button>
                             </div>
                             <div class="col-lg-4">
+                                {% if mitigate == True and configured == True %}
                                 <button id="mitigation_button" type="button" class="btn btn-danger">Mitigate</button>
+                                {% endif %}
+                            </div>
+                            <div class="col-lg-4">
+                                <button id="ignored_button" type="button" class="btn btn-warning">Ignore</button>
                             </div>
 
                         </div>
                     </div>
                 </div>
+                {% endif %}
         </div>
         <div class="row">
             <div class="col-lg-12">
@@ -174,8 +203,10 @@
         {{super()}}
         <script>
             var parameters = {};
-            parameters['hijack_key'] = "eq.{{ hijack_key }}"
+            var initial_data = $.parseJSON('{{ data|safe }}');
+            parameters['hijack_key'] = "eq." + initial_data['key']
             var prefix;
+            var table;
 
             function render_table(settings){
                 var columns = [
@@ -189,7 +220,7 @@
                         { data: 'timestamp' },
                         { data: 'hijack_key' }];
 
-                var table = $('#hijack_table').DataTable( {
+                table = $('#hijack_table').DataTable( {
                     "processing": true,
                     "serverSide": true,
                     ajax: function(data, callback, settings) {
@@ -199,7 +230,7 @@
                         parameters["order"] = col_order;
                         $.ajax({
                             type: "GET",
-                            url: 'http://localhost:3000/bgp_updates',
+                            url: 'http://{{ API_url }}/bgp_updates',
                             dataType: "json",
                             headers: { 'Prefer': 'count=exact' },
                             data: parameters,
@@ -226,7 +257,7 @@
                         { data: 'timestamp',
                             render: function(data, type, row){
                                 var stillUtc = moment.unix(data).toDate();
-                                return moment(stillUtc).local().format("MM-DD-YYYY HH:mm:ss");
+                                return moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
                             } 
                         },
                         { data: 'handled', 
@@ -246,7 +277,14 @@
                         }
                     ],
                 });
-                 $('#hijack_table tbody').on('click', 'td.details-control', function () {
+                
+            }
+
+            $(document).ready(function(){
+                render_table(parameters);
+                update_hijack_details(initial_data);
+
+                $('#hijack_table tbody').on('click', 'td.details-control', function () {
                     var tr = $(this).closest('tr');
                     var row = table.row(tr);
                     if (row.child.isShown()) {
@@ -257,18 +295,12 @@
                         tr.addClass('shown');
                     }
                 });
-            }
-
-            $(document).ready(function(){
-                render_table(parameters);
-                retrieve_hijack(parameters['hijack_key']);
             });
 
-           
-
+        
             function format ( d ) {
                 var stillUtc = moment.unix(d.timestamp).toDate();
-                var timestamp = moment(stillUtc).local().format("MM-DD-YYYY HH:mm:ss");
+                var timestamp = moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
                 
                 var orig_path = "";
                 if (d.orig_path != null){
@@ -279,7 +311,7 @@
                 var hijack_key = ""
                 if('0' != d.hijack_key){
                     hijack_key = d.hijack_key
-                    view_hijack_link = '<a href="../hijack?id=' + d.hijack_key + '">View</a>'
+                    view_hijack_link = '<a href="../hijack?key=' + d.hijack_key + '">View</a>'
                 }
 
                 var communities = new Array();
@@ -337,43 +369,63 @@
 
 
             function retrieve_hijack(key){
-                var url_ = "http://localhost:3000/hijacks?key=" + key;
+                var url_ = 'http://{{ API_url }}/hijacks?key=' + key;
                 $.ajax({url: url_, success: function(result){
-                    prefix = result[0]['prefix'];
-                    $( "#info_hijack_id" ).html( result[0]['id'] );
-                    $( "#info_key" ).html( result[0]['key'] );
-                    $( "#info_type" ).html( result[0]['type'] );
-                    $( "#info_prefix" ).html( result[0]['prefix'] );
-                    $( "#info_hijack_as" ).html( result[0]['hijack_as'] );
-                    $( "#info_num_peers_seen" ).html( result[0]['num_peers_seen'] );
-                    $( "#info_num_asns_inf" ).html( result[0]['num_asns_inf'] );
-                    $( "#info_time_started" ).html( transform_time( result[0]['time_started'] ) );
-                    $( "#info_time_last" ).html( transform_time( result[0]['time_last'] ) );
-                    $( "#info_time_ended" ).html( transform_time( result[0]['time_ended'] ) );
-                    $( "#info_mitigation_started" ).html( transform_time( result[0]['mitigation_started'] ) );
-
-                    if(result[0]['time_ended'] != 0){
-                        $("#resolved_button").prop("disabled", true);
-                        $("#mitigation_button").prop("disabled", true);
-                    }else if(result[0]['mitigation_started'] != 0){
-                        $("#mitigation_button").prop("disabled", true);
-                    }
-                        
-
+                    update_hijack_details(result[0]);
                 }});
             }
-            
+
+            function update_hijack_details(data){
+                $( "#hijack_status" ).html( hijack_status(data)) ;
+                prefix = data['prefix'];
+                $( "#info_hijack_id" ).html( data['id'] );
+                $( "#info_key" ).html( data['key'] );
+                $( "#info_type" ).html( data['type'] );
+                $( "#info_prefix" ).html( data['prefix'] );
+                $( "#info_hijack_as" ).html( data['hijack_as'] );
+                $( "#info_num_peers_seen" ).html( data['num_peers_seen'] );
+                $( "#info_num_asns_inf" ).html( data['num_asns_inf'] );
+                $( "#info_time_started" ).html( transform_time( data['time_started'] ) );
+                $( "#info_time_last" ).html( transform_time( data['time_last'] ) );
+                $( "#info_time_ended" ).html( transform_time( data['time_ended'] ) );
+                $( "#info_mitigation_started" ).html( transform_time( data['mitigation_started'] ) );
+                $( "#info_matched_prefix" ).html( data['configured_prefix'] );
+                $( "#info_config_timestamp" ).html( transform_time( data['timestamp_of_config'] )  );
+
+
+                if(data['resolved'] == true || data['ignored'] == true){
+                    $("#resolved_button").prop("disabled", true);
+                    $("#mitigation_button").prop("disabled", true);
+                    $("#ignored_button").prop("disabled", true);
+
+                }else if(data['mitigation_started'] != 0){
+                    $("#mitigation_button").prop("disabled", true);
+                }
+            }     
+
+            function hijack_status(data){
+                if(data['under_mitigation'] == true){
+                    return '<b style="color:blue">(Under Mitigation)</b>'
+                }else if(data['resolved'] == true){
+                    return '<b style="color:green">(Resolved)</b>'
+                }else if(data['active'] == true){
+                    return '<b style="color:red">(Ongoing)</b>'
+                }else if(data['ignored'] == true){
+                    return '<b style="color:orange">(Ignored)</b>'
+                }else{
+                    return "Uknown"
+                }
+            } 
 
             function transform_time(timestamp){
                 if(timestamp != 0){
                     var tunix = moment.unix(timestamp);
-                    return moment(tunix).local().format("MM-DD-YYYY HH:mm:ss")
+                    return moment(tunix).local().format("DD-MM-YYYY HH:mm:ss")
                 }else{
                     return "Never"
                 }
-                
             }
-
+            {% if current_user.has_roles('admin') %}
             $( "#resolved_button" ).click(function() {
                 var url_ = "../main/hijacks/resolve/?id={{ hijack_key }}";
                 $.ajax({url: url_, success: function(result){
@@ -390,6 +442,14 @@
                 });
             });
 
+            $( "#ignored_button" ).click(function() {
+                var url_ = "../main/hijacks/ignore/?id={{ hijack_key }}"
+                $.ajax({url: url_, success: function(result){
+                    retrieve_hijack(parameters['hijack_key']);
+                }
+                });
+            });
+            {% endif %}
 
         </script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>

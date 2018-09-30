@@ -5,6 +5,7 @@ from utils.service import Service
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
+import json
 import logging
 
 
@@ -125,8 +126,8 @@ class Mitigation(Service):
                     log.info('starting manual mitigation of hijack {}'.format(hijack_event))
                 else:
                     log.info('starting custom mitigation of hijack {}'.format(hijack_event))
-                    hijack_event_str = json.dumps(hijack_event)
-                    subprocess.Popen([mitigation_action, '-i', hijack_event_str])
+                    #hijack_event_str = json.dumps(hijack_event)
+                    #subprocess.Popen([mitigation_action, '-i', hijack_event_str])
                 # do something
                 mit_started = {'key': hijack_event['key'], 'time': time.time()}
                 self.producer.publish(
@@ -137,5 +138,4 @@ class Mitigation(Service):
                 )
             else:
                 log.warn('no rule for hijack {}'.format(hijack_event))
-
 

@@ -13,7 +13,7 @@ privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
 can be neutralized within a minute!
 
 You can read more about ARTEMIS (and check e.g., news and related publications)
-on the INSPIRE Group ARTEMIS webpage: http://www.inspire.edu.gr/artemis.
+on the INSPIRE Group ARTEMIS [webpage](http://www.inspire.edu.gr/artemis.)
 
 This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a testing server/VM as a modular
@@ -33,12 +33,13 @@ Optionally, it connects to and receives BGP information from local routers throu
 exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
 * Manual mitigation of BGP prefix hijacking attacks. Upon the detection of a
 suspicious event (potential hijack), the network operator is immediately
-sent an email detailing the following information:
+sent a notification (e.g., UI entry or email) detailing the following information:
 ```
 {
 'prefix': ...,
 'hijacker_AS': ...,
 'hijack_type':...,
+'time_detected':...,
 'time_started': ...,
 'time_last_updated': ...,
 'peers_seen': ...,
@@ -52,8 +53,10 @@ information (ASNs, prefixes, routing policies, etc.) via a web form or text edit
 (ii) control ARTEMIS modules (start/stop/status),
 (iii) monitor in real-time the BGP state related to the IP prefixes of interest,
 (iv) view details of BGP hijacks of monitored prefixes,
-(v) monitor in real-time the status of ongoing, unresolved BGP hijacks, and
-(vi) press button to trigger a custom mitigation process, or mark as manually mitigated.
+(v) monitor in real-time the status of ongoing, unresolved BGP hijacks,
+(vi) press button to trigger a custom mitigation process, mark as manually mitigated ("resolve")
+or ignore the event as a false positive,
+(vii) register and manage users (ADMIN|VIEWER).
 * Configuration file editable by the operator (directly or via the web interface),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX advertises prefix P to ASY").
 * CLI to start/stop ARTEMIS modules and query their status (running state, uptime).
@@ -82,20 +85,12 @@ for testing purposes.
 * OS: Ubuntu Linux 16.04+
 * SW PACKAGES: docker-ce and docker-compose should be pre-installed
 and docker should have sudo privileges, if only non-sudo user is allowed
-* Other: SSH server (optional)
+* Other: SSH server
 
-Moreover, one needs to configure the following firewall rules related to the testing server/VM (TBD):
-
-| Service | Direction+ | Action | Reason |
-| --- | --- | --- | --- |
-| ssh | Internet to Server | Allow| Access server from specific IPs |
-| ping (ICMP) |Internet to Server | Allow | Ping server from specific IPs
-| https | Internet to Server | Allow | Access web UI from specific IPs |
-| http/https | Server to Internet | Allow | Access to external monitors
-| TCP port 179 (Optional) | Internal: server to/from RR | Allow | exaBGP local monitor communication with RR |
-| any | any | Deny | --- |
-
-+: related reverse direction for bilateral session over stateful firewall needs also to pass though
+Moreover, one needs to configure firewall rules related to the testing server/VM. We recommend using [ufw](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-ubuntu-16-04) for this task. Please check the comments in the respective script we provide and set the corresponding <> fields in the file before running:
+```
+sudo ./ufw_setup.sh
+```
 
 ## How to install
 First, if not already installed, follow the instructions
@@ -104,11 +99,17 @@ to install the latest version of the docker tool for managing containers,
 and [here](https://docs.docker.com/compose/install/#install-compose)
 to install the docker-compose tool for supporting multi-container Docker applications.
 
-If you would like to run docker without using sudo, please add
-the local user to the default docker group:
+If you would like to run docker without using sudo, please create
+a docker group, if not existing:
+```
+sudo groupadd docker
+```
+and then add the user to the docker group:
 ```
 sudo usermod -aG docker $USER
 ```
+For more instructions and potential debugging on this please consult this
+[webpage](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user).
 
 Then you can build ARTEMIS by running:
 ```
@@ -282,8 +283,8 @@ TBD (version tags to-be-released)
 * Vasileios Kotronis, FORTH-ICS
 
 ## License
-We are finalizing the process of open-sourcing the ARTEMIS software under the BSD-3 license.
-During the testing phase, the tester is allowed to have access to the code and use it,
+We are finalizing the process of open-sourcing the ARTEMIS software under the BSD-3 license. A provisional [license](LICENSE) has been added to the code.
+During the testing phase and until ARTEMIS is fully open-sourced, the tester is allowed to have access to the code and use it,
 but is not allowed to disclose the code to third parties.
 
 ## Acknowledgements

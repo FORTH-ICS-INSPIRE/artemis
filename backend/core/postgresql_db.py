@@ -55,6 +55,7 @@ class Postgresql_db(Service):
             self.db_clock_exchange = Exchange('db-clock', type='direct', durable=False, delivery_mode=1)
             self.mitigation_exchange = Exchange('mitigation', type='direct', durable=False, delivery_mode=1)
 
+
             # QUEUES
             self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
@@ -350,7 +351,7 @@ class Postgresql_db(Service):
                 "config_data  json, " + \
                 "raw_config  text, " + \
                 "time_modified BIGINT) " 
-
+            
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)
             self.db_cur.execute(configs_table)

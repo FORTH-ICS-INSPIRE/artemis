@@ -99,7 +99,7 @@ class Service(Process):
         attached to :py:attr:`logger` are automatically preserved.
     """
 
-    def __init__(self, pid_dir='/tmp'):
+    def __init__(self, pid_dir='/dev/shm'):
         """
         Constructor.
 

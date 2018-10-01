@@ -370,13 +370,18 @@ class Detection(Service):
 
 
         def fetch_ongoing_hijacks(self, message):
-            # log.info('message: {}\npayload: {}'.format(message, message.payload))
-            hijacks = message.payload
-            self.memcache.set_many(hijacks)
-
+            log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            try:
+                hijacks = message.payload
+                self.memcache.set_many(hijacks)
+            except:
+                log.exception("couldn't fetch data: {}".format(message.payload))
 
         def handle_resolved_or_ignored_hijack(self, message):
             # log.info('message: {}\npayload: {}'.format(message, message.payload))
-            self.memcache.delete(message.payload)
-
+            try:
+                data = message.payload
+                self.memcache.delete(data['key'])
+            except:
+                log.exception("couldn't erase data: {}".format(message.payload))
 

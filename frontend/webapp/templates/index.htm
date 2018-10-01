@@ -23,13 +23,13 @@
                             <i class="fa fa-bell fa-fw"></i> Activity
                         </div>
                         <div class="panel-body">
-                            Welcome back <b>{{ current_user.email }}</b>, your last login was at <b id="last_login">(
+                            Welcome back <b>{{ current_user.email }}</b>, your last login was at <b id="last_login">
                             {% if current_user.last_login_at != None %}
                                 {{ current_user.last_login_at.timestamp() }}
                             {% else %}
                                 0
                             {% endif %}
-                            )</b> from {{ current_user.last_login_ip }}.
+                            </b> from {{ current_user.last_login_ip }}.
                         </div>
                     </div>
                 </div>
@@ -159,7 +159,7 @@
 
             $(document).ready(function(){ 
                 update_config_timestamp();
-                $("#last_login").html(transform_time($("#last_login").text()))
+                $("#last_login").html("(" + transform_time($("#last_login").text()) + ")")
 
                 editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
                 editor.setSize(null, 633);

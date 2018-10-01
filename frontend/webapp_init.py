@@ -1,8 +1,9 @@
+from webapp.utils import get_logger
+log = get_logger()
 from webapp.core import app
 from webapp.core.rabbitmq import Configuration_request
 from webapp.core.modules import Modules_status
 from webapp.core.db_stats import DB_statistics
-from webapp.utils import get_logger
 from webapp.core.fetch_config import Configuration
 import os
 import _thread
@@ -10,7 +11,6 @@ import signal
 import time
 
 
-log = get_logger()
 
 class GracefulKiller:
     def __init__(self):
@@ -43,6 +43,7 @@ class WebApplication():
             self.modules.call('scheduler', 'start')
             if not self.modules.is_up_or_running('scheduler'):
                 log.error("Couldn't start scheduler.")
+                exit(-1)
         except:
             log.exception("exception while starting scheduler")
             exit(-1)
@@ -53,6 +54,7 @@ class WebApplication():
             
             if not self.modules.is_up_or_running('postgresql_db'):
                 log.error("Couldn't start postgresql_db.")
+                exit(-1)
         except:
             log.exception("exception while starting postgresql_db")
             exit(-1)

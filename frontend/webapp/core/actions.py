@@ -25,7 +25,9 @@ class Resolve_hijack():
         log.debug("send resolve hijack message with key: {}".format(self.hijack_key))
         with Producer(self.connection) as producer:
             producer.publish(
-                self.hijack_key,
+                {
+                    'key': self.hijack_key,
+                },
                 exchange=self.hijack_exchange,
                 routing_key='resolved',
                 priority=2

@@ -50,7 +50,8 @@ class Postgresql_db(Service):
             self.update_exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False, delivery_mode=1)
             self.update_exchange.declare()
 
-            self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
+            self.hijack_exchange = Exchange('hijack-update', channel=connection, type='direct', durable=False, delivery_mode=1)
+            self.hijack_exchange.declare()
             self.handled_exchange = Exchange('handled-update', type='direct', durable=False, delivery_mode=1)
             self.db_clock_exchange = Exchange('db-clock', type='direct', durable=False, delivery_mode=1)
             self.mitigation_exchange = Exchange('mitigation', type='direct', durable=False, delivery_mode=1)
@@ -61,7 +62,7 @@ class Postgresql_db(Service):
                     consumer_arguments={'x-priority': 1})
             self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 1})
-            self.hijack_update = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, exclusive=True, max_priority=1,
+            self.hijack_update_retrieve = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, exclusive=True, max_priority=1,
                     consumer_arguments={'x-priority': 2})
             self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
@@ -97,7 +98,7 @@ class Postgresql_db(Service):
                         ),
                     Consumer(
                         queues=[self.hijack_queue],
-                        on_message=self.handle_hijack,
+                        on_message=self.handle_hijack_update,
                         prefetch_count=1,
                         no_ack=True,
                         accept=['pickle']
@@ -115,8 +116,8 @@ class Postgresql_db(Service):
                         no_ack=True
                         ),
                     Consumer(
-                        queues=[self.hijack_update],
-                        on_message=self.handle_hijack_update,
+                        queues=[self.hijack_update_retrieve],
+                        on_message=self.handle_hijack_retrieve,
                         prefetch_count=1,
                         no_ack=True
                         ),
@@ -180,7 +181,7 @@ class Postgresql_db(Service):
             except:
                 log.debug("exception: {}".format(msg_))
 
-        def handle_hijack(self, message):
+        def handle_hijack_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             try:
@@ -278,31 +279,35 @@ class Postgresql_db(Service):
             except:
                 log.debug("exception: {}".format(config))
 
-        def handle_hijack_update(self, message):
+        def handle_hijack_retrieve(self, message):
             """
-            handle_hijack_update:
+            handle_hijack_retrieve:
             Return all active hijacks
             Used in detection memcache
             """
-            results = []
-            self.db_cur.execute("SELECT time_started, time_last, num_peers_seen, num_asns_inf, key  FROM hijacks WHERE active = true;")
-            entries = self.db_cur.fetchall()
-            for entry in entries:
-                results.append({ 'time_started' : entry[0], 'time_last' : entry[1], 'peers_seen' : entry[2], 'inf_asns' : entry[3], 'key': entry[4]})
-            self.producer.publish(
-                results,
-                exchange = self.hijack_exchange,
-                routing_key = 'fetch-hijacks',
-                retry = True,
-                priority = 1
-            )
-
+            time.sleep(5)
+            log.debug("received hijack_retrieve")
+            try:
+                results = {}
+                self.db_cur.execute("SELECT time_started, time_last, num_peers_seen, num_asns_inf, key  FROM hijacks WHERE active = true;")
+                entries = self.db_cur.fetchall()
+                for entry in entries:
+                    results[entry[4]] = { 'time_started' : entry[0], 'time_last' : entry[1], 'peers_seen' : entry[2], 'inf_asns' : entry[3], 'key': entry[4] }
+                self.producer.publish(
+                    results,
+                    exchange = self.hijack_exchange,
+                    routing_key = 'fetch',
+                    retry = False,
+                    priority = 2
+                )
+            except:
+                log.exception("exception")
 
         def handle_resolved_hijack(self, message):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-                self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=" + str(int(time.time())) + " WHERE key='" + str(raw) + "';" )
+                self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=" + str(int(time.time())) + " WHERE key='" + str(raw['key']) + "';" )
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception: {}'.format(raw))

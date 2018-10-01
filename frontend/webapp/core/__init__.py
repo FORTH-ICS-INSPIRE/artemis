@@ -12,6 +12,7 @@ from webapp.configs.config import configure_app
 from webapp.core.modules import Modules_status 
 from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
 from flask_security import user_registered
+from webapp.core.proxy_api import get_proxy_api
 import time
 
 log = logging.getLogger('webapp_logger')
@@ -168,3 +169,13 @@ def overview():
 @app.login_manager.unauthorized_handler
 def unauth_handler():
     return render_template('401.htm')
+
+
+@login_required
+@roles_accepted('admin', 'user')
+@app.route('/proxy_api', methods=['POST'])
+def proxy_api():
+    log.debug("/proxy_api")
+    parameters = request.values.get('parameters')
+    action = request.values.get('action')
+    return jsonify(get_proxy_api(action, parameters))

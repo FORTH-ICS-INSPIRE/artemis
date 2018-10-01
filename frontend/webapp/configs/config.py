@@ -4,7 +4,7 @@ from flask_compress import Compress
 from flask_security import Security, SQLAlchemyUserDatastore
 from webapp.data.models import db, Role, User
 from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
-from webapp.utils import API_URL_CLIENT, API_URL_FLASK
+from webapp.utils import API_URL_FLASK
 
 log = logging.getLogger('webapp_logger')
 
@@ -51,7 +51,10 @@ class ProductionConfig(BaseConfig):
     LOGGING_LEVEL = logging.INFO
     WEBAPP_HOST = os.getenv('MACHINE_IP', '0.0.0.0')
     FLASK_API_URL = API_URL_FLASK
-    CLIENT_API_URL = API_URL_CLIENT
+    if(WEBAPP_HOST == '0.0.0.0'):
+        CLIENT_API_URL = 'localhost/proxy_api'
+    else:
+        CLIENT_API_URL = WEBAPP_HOST + '/proxy_api'
     WEBAPP_PORT = 8000
 
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"

@@ -72,6 +72,8 @@ class Detection(Service):
                     consumer_arguments={'x-priority': 2})
             self.hijack_resolved_queue = Queue('detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
+            self.hijack_ignored_queue = Queue('detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, exclusive=True, max_priority=2,
+                    consumer_arguments={'x-priority': 2})
             self.hijack_fetch_queue = Queue('detection-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
             self.config_queue = Queue('detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
@@ -116,7 +118,13 @@ class Detection(Service):
                         ),
                     Consumer(
                         queues=[self.hijack_resolved_queue],
-                        on_message=self.handle_resolved_hijack,
+                        on_message=self.handle_resolved_or_ignored_hijack,
+                        prefetch_count=1,
+                        no_ack=True
+                        ),
+                    Consumer(
+                        queues=[self.hijack_ignored_queue],
+                        on_message=self.handle_resolved_or_ignored_hijack,
                         prefetch_count=1,
                         no_ack=True
                         )
@@ -361,13 +369,18 @@ class Detection(Service):
 
 
         def fetch_ongoing_hijacks(self, message):
+            log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            try:
+                hijacks = message.payload
+                self.memcache.set_many(hijacks)
+            except:
+                log.exception("couldn't fetch data: {}".format(message.payload))
+
+        def handle_resolved_or_ignored_hijack(self, message):
             # log.info('message: {}\npayload: {}'.format(message, message.payload))
-            hijacks = message.payload
-            self.memcache.set_many(hijacks)
-
-
-        def handle_resolved_hijack(self, message):
-            # log.info('message: {}\npayload: {}'.format(message, message.payload))
-            self.memcache.delete(message.payload)
-
+            try:
+                data = message.payload
+                self.memcache.delete(data['key'])
+            except:
+                log.exception("couldn't erase data: {}".format(message.payload))
 

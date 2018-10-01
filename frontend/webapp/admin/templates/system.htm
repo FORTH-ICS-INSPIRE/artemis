@@ -135,7 +135,6 @@
                     url: "../admin/config/",
                     data: new_config,
                     success: function(result){
-                        console.log(result)
                         if(result["status"] == "fail"){
                             var message = '<div class="alert alert-danger alert-dismissible">'
                             message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'

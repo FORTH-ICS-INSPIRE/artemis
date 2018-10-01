@@ -41,8 +41,6 @@ services:
             POSTGREST_FLASK_HOST: "postgrest:3000"
         expose:
             - 8000
-        ports:
-            - "8000:8000"
         volumes:
             - ./frontend/:/root/
             - ./frontend/db/:/etc/webapp/db/
@@ -72,7 +70,6 @@ services:
             - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
         ports:
             - 443:443
-            - 12000:12000
         expose:
             - 443
         networks:
@@ -116,8 +113,6 @@ services:
         restart: always
         expose:
             - 3000
-        ports:
-            - "3000:3000"
         networks:
             - postgres
             - postgrest

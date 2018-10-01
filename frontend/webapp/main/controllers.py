@@ -2,7 +2,7 @@ from flask import Blueprint
 from webapp.core import app
 from flask_security.decorators import login_required, roles_required, roles_accepted
 from flask import url_for, render_template, request, redirect
-from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack
+from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack, Comment_hijack
 from webapp.core.modules import Modules_status
 from flask import jsonify
 from webapp.core.fetch_hijack import get_hijack_by_key
@@ -57,7 +57,15 @@ def display_hijack():
     if mitigation_status_request.is_up_or_running('mitigation'):
         _mitigation_flag = True
 
-    return render_template('hijack.htm', data = json.dumps(hijack_data), mitigate = _mitigation_flag, configured = _configured )
+    _comment = hijack_data['comment']
+    del hijack_data['comment']
+
+
+    return render_template('hijack.htm', 
+        data = json.dumps(hijack_data), 
+        mitigate = _mitigation_flag, 
+        configured = _configured,
+        comment = _comment )
 
 
 
@@ -105,5 +113,23 @@ def ignore_hijack():
         log.debug("ignore_hijack failed")
     
     return jsonify({'status': 'success'})
+
+
+
+@main.route('/submit_comment/', methods=['POST'])
+@roles_required('admin')
+def handle_new_comment():
+    #log info
+    new_comment = request.values.get('new_comment')
+    hijack_key = request.values.get('hijack_key')
+    log.debug("hijack_key: {0} new_comment: {1}".format(hijack_key, new_comment))
+
+    comment_ =  Comment_hijack()
+    response, success = comment_.send(hijack_key, new_comment)
+
+    if success == True:
+        return jsonify({'status': 'success', 'data': new_comment, 'response': response})
+    else:
+        return jsonify({'status': 'fail', 'data': new_comment, 'response': response})
 
 

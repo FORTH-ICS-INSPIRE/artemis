@@ -4,6 +4,7 @@
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
 {% endblock %}
 
 {% block page_content %}
@@ -160,6 +161,17 @@
                         </div>
                     </div>
                 </div>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Comments<button type="button" id="comment_action" class="btn btn-primary btn-sm float-right">Edit</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div id="comment_alert_box"></div>
+                            <form><textarea id="code_comment_box" name="code_comment_box">{{ comment }}</textarea></form>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
         </div>
         <div class="row">
@@ -203,7 +215,7 @@
         {{super()}}
         <script>
             var parameters = {};
-            var initial_data = $.parseJSON('{{ data|safe }}');
+            var initial_data = $.parseJSON('{{ data | safe }}');
             parameters['hijack_key'] = "eq." + initial_data['key']
             var prefix;
             var table;
@@ -292,6 +304,9 @@
                         tr.addClass('shown');
                     }
                 });
+
+                editor = CodeMirror.fromTextArea(document.getElementById("code_comment_box"), {lineNumbers: true, indentUnit: 4, readOnly: true})
+                editor.setSize("100%", 96);
             });
 
         
@@ -395,7 +410,7 @@
                 $( "#info_mitigation_started" ).html( transform_time( data['mitigation_started'] ) );
                 $( "#info_matched_prefix" ).html( data['configured_prefix'] );
                 $( "#info_config_timestamp" ).html( transform_time( data['timestamp_of_config'] )  );
-
+                $( "#code_comment_box").html( data['comment'] );
 
                 if(data['resolved'] == true || data['ignored'] == true){
                     $("#resolved_button").prop("disabled", true);
@@ -453,6 +468,50 @@
                 }
                 });
             });
+
+            $('#comment_action').on('click', function (event, state) {
+                if($(this).hasClass("btn-primary")){
+                    $('#comment_action').removeClass('btn-primary').addClass('btn-danger')
+                    $('#comment_action').html('Save');
+                    editor.options.readOnly = false;
+                }else if($(this).hasClass("btn-danger")){
+                    var new_comment = {"new_comment": editor.getValue(), "hijack_key" : initial_data['key']};
+                    $('#comment_action').removeClass('btn-danger').addClass('btn-warning')
+                    $('#comment_action').html('Pending');
+                    submit_new_comment(new_comment)
+
+                }
+            });
+
+            function submit_new_comment(new_comment){
+                $.ajax({
+                    type: "POST",
+                    url: "../main/submit_comment/",
+                    data: new_comment,
+                    success: function(result){
+                        if(result["status"] == "fail"){
+                            var message = '<div class="alert alert-danger alert-dismissible">'
+                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                            message += result["response"] + '</div>'
+                            $('#comment_action').removeClass('btn-warning').addClass('btn-danger')
+                            $('#comment_action').html('Save');
+
+                        }else{
+                            var message = '<div class="alert alert-success alert-dismissible">'
+                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                            message += result["response"] + '</div>'
+                            $('#comment_action').removeClass('btn-warning').addClass('btn-primary')
+                            $('#comment_action').html('Edit');
+                            editor.setValue(result["data"])
+                            editor.options.readOnly = true;
+                            //update_config_timestamp();
+                        }
+                        $("#code_comment_box").html(message)
+                    },
+                    dataType: "json"
+                });
+            }
+
             {% endif %}
 
         </script>
@@ -460,6 +519,8 @@
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/textile.js') }}"></script>
     {% endblock %}
 {% endblock %}
 

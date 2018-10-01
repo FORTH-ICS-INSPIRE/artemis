@@ -91,6 +91,56 @@ class Ignore_hijack():
                 priority=2
             )
 
+
+class Comment_hijack():
+
+    def __init__(self):
+        self.connection = None
+        self.init_conn()
+        self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
+        
+    def init_conn(self):
+        try:
+            self.connection = Connection(RABBITMQ_HOST)
+        except:
+            log.error('Comment_hijack failed to connect to rabbitmq..')
+
+    def on_response(self, message):
+        if message.properties['correlation_id'] == self.correlation_id:
+            self.response = message.payload
+
+    def send(self, hijack_key, comment):
+        log.debug("sending")
+        self.response = None
+        self.correlation_id = uuid()
+        callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
+        with Producer(self.connection) as producer:
+            producer.publish(
+                {
+                    'key' : hijack_key,
+                    'comment': comment
+                },
+                exchange=self.hijack_exchange,
+                routing_key='comment',
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=self.correlation_id
+            )
+        with Consumer(self.connection,
+                on_message=self.on_response,
+                queues=[callback_queue],
+                no_ack=True):
+            while self.response is None:
+                self.connection.drain_events()
+        log.debug("got response")
+        if self.response['status'] == 'accepted':
+            return 'Comment saved.', True
+        else:
+            return "Error while saving.", False
+
+
+
 class New_config():
 
     def __init__(self):

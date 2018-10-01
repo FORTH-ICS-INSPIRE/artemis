@@ -87,7 +87,6 @@ def mitigate_hijack():
     except:
         log.debug("mitigate_hijack failed")
     
-    
     return jsonify({'status': 'success'})
 
 
@@ -105,5 +104,6 @@ def ignore_hijack():
     except:
         log.debug("ignore_hijack failed")
     
-    
     return jsonify({'status': 'success'})
+
+

@@ -39,7 +39,6 @@ services:
             USER_ROOT_PASSWORD: "admin"
             USER_ROOT_EMAIL: "admin@admin"
             POSTGREST_FLASK_HOST: "postgrest:3000"
-            POSTGREST_CLIENT_HOST: "localhost:12000"
         expose:
             - 8000
         ports:

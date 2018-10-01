@@ -229,19 +229,16 @@
                         parameters["limit"] = data.length;
                         parameters["order"] = col_order;
                         $.ajax({
-                            type: "GET",
-                            url: 'https://{{ API_url }}/bgp_updates',
+                            type: "POST",
+                            url: 'https://{{ API_url }}',
                             dataType: "json",
-                            headers: { 'Prefer': 'count=exact' },
-                            data: parameters,
+                            data: { "action": "bgp_updates", "parameters" : JSON.stringify(parameters) },
 
                             success: function(data, status, xhr){
-                                total_str = xhr.getResponseHeader("Content-Range").split('/')[1];
-                                total = parseInt(total_str);
                                 callback({
-                                    recordsTotal: total,
-                                    recordsFiltered: total,
-                                    data: data
+                                    recordsTotal: data.total,
+                                    recordsFiltered: data.total,
+                                    data: data.results
                                 });
                             }
                         });
@@ -370,9 +367,16 @@
 
             function retrieve_hijack(key){
                 var url_ = 'https://{{ API_url }}/hijacks?key=' + key;
-                $.ajax({url: url_, success: function(result){
-                    update_hijack_details(result[0]);
-                }});
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'https://{{ API_url }}',
+                    data: { "action": "hijacks", "parameters" : JSON.stringify({ "key": key }) },
+                    success: function(result){
+                        update_hijack_details(result.results[0]);
+                    },
+                    dataType: 'json'
+                });
             }
 
             function update_hijack_details(data){

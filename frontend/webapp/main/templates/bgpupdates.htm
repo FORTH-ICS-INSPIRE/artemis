@@ -194,19 +194,16 @@
                         parameters['limit'] = data.length;
                         parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
                         $.ajax({
-                            type: "GET",
-                            url: 'https://{{ API_url }}/bgp_updates',
+                            type: "POST",
+                            url: 'https://{{ API_url }}',
                             dataType: "json",
-                            headers: { 'Prefer': 'count=exact' },
-                            data: parameters,
+                            data: { "action": "bgp_updates", "parameters" : JSON.stringify(parameters) },
 
                             success: function(data, status, xhr){
-                                total_str = xhr.getResponseHeader("Content-Range").split('/')[1];
-                                total = parseInt(total_str);
                                 callback({
-                                    recordsTotal: total,
-                                    recordsFiltered: total,
-                                    data: data
+                                    recordsTotal: data.total,
+                                    recordsFiltered: data.total,
+                                    data: data.results
                                 });
                             }
                         });

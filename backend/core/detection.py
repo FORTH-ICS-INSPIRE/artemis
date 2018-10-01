@@ -202,7 +202,6 @@ class Detection(Service):
                     monitor_event['path'] = Detection.Worker.__clean_as_path(monitor_event['path'])
                     prefix_node = self.prefix_tree.search_best(monitor_event['prefix'])
 
-
                     if prefix_node is not None:
                         monitor_event['matched_prefix'] = prefix_node.prefix
 
@@ -221,11 +220,11 @@ class Detection(Service):
         def __detection_generator(self, path_len, prefix_node):
             if prefix_node is not None:
                 yield self.detect_squatting
+                yield self.detect_subprefix_hijack
                 if path_len > 0:
                     yield self.detect_origin_hijack
                     if path_len > 1:
                         yield self.detect_type_1_hijack
-                    yield self.detect_subprefix_hijack
 
 
         @staticmethod

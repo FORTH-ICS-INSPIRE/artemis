@@ -193,7 +193,7 @@
                         parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
                         $.ajax({
                             type: "POST",
-                            url: 'https://{{ API_url }}',
+                            url: '{{ url_for('proxy_api') }}',
                             dataType: "json",
                             dataType: "json",
                             data: { "action": "hijacks", "parameters" : JSON.stringify(parameters) },
@@ -238,7 +238,7 @@
                         } 
                     ],
                     "language": {
-                        "emptyTable": "<img src=\"../../images/checkmark.png\"></img></br><h3>No hijack alerts. Go grab a beer!</h3></br>"
+                        "emptyTable": "<img src=\"{{ url_for('static', filename='images/checkmark.png') }}\" ></img></br><h3>No hijack alerts. Go grab a beer!</h3></br>"
                     }
                 });
             }

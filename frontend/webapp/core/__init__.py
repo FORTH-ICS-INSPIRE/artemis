@@ -35,6 +35,8 @@ with app.app_context():
     log.setLevel(logging.ERROR)
     data_store = app.security.datastore
 
+app.login_manager.session_protection = "strong"
+
 from webapp.main.controllers import main
 from webapp.admin.controllers import admin
 
@@ -113,10 +115,6 @@ def inject_user():
 @app.context_processor
 def inject_version():
     return dict(version=app.config['VERSION'])
-
-@app.context_processor
-def inject_API_url():
-    return dict(API_url=app.config['CLIENT_API_URL'])
 
 @babel.timezoneselector
 def get_timezone():

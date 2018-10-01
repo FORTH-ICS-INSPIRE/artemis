@@ -242,7 +242,7 @@
                         parameters["order"] = col_order;
                         $.ajax({
                             type: "POST",
-                            url: 'https://{{ API_url }}',
+                            url: '{{ url_for('proxy_api') }}',
                             dataType: "json",
                             data: { "action": "bgp_updates", "parameters" : JSON.stringify(parameters) },
 
@@ -272,9 +272,9 @@
                         { data: 'handled', 
                             render: function(data, type, row){
                                 if(true == data){
-                                    return '<img src="../../images/handled.png"/>'
+                                    return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
                                 }else{
-                                    return '<img src="../../images/unhadled.png"/>'
+                                    return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'
                                 }
                             } 
                         },
@@ -381,11 +381,11 @@
 
 
             function retrieve_hijack(key){
-                var url_ = 'https://{{ API_url }}/hijacks?key=' + key;
+                var url_ = '{{ url_for('proxy_api') }}/hijacks?key=' + key;
 
                 $.ajax({
                     type: 'POST',
-                    url: 'https://{{ API_url }}',
+                    url: '{{ url_for('proxy_api') }}',
                     data: { "action": "hijacks", "parameters" : JSON.stringify({ "key": key }) },
                     success: function(result){
                         update_hijack_details(result.results[0]);

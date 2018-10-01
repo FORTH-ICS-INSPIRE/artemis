@@ -114,10 +114,6 @@ def inject_user():
 def inject_version():
     return dict(version=app.config['VERSION'])
 
-@app.context_processor
-def inject_API_url():
-    return dict(API_url=app.config['CLIENT_API_URL'])
-
 @babel.timezoneselector
 def get_timezone():
     user = g.get('user', None)

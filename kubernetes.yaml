@@ -55,6 +55,28 @@ items:
     - port: 5672
     selector:
       io.kompose.service: rabbitmq
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: frontend
+    labels:
+      io.kompose.service: frontend
+  spec:
+    ports:
+    - port: 8000
+    selector:
+      io.kompose.service: frontend
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: nginx
+    labels:
+      io.kompose.service: nginx
+  spec:
+    ports:
+    - port: 443
+    selector:
+      io.kompose.service: nginx
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
@@ -63,8 +85,8 @@ items:
       kompose.version: 1.16.0 (0c01309)
     creationTimestamp: null
     labels:
-      io.kompose.service: artemis
-    name: artemis
+      io.kompose.service: backend
+    name: backend
   spec:
     replicas: 1
     strategy:
@@ -73,7 +95,7 @@ items:
       metadata:
         creationTimestamp: null
         labels:
-          io.kompose.service: artemis
+          io.kompose.service: backend
       spec:
         containers:
         - env:
@@ -85,8 +107,8 @@ items:
             value: rabbitmq
           - name: SYSLOG_HOST
             value: syslog:514
-          image: mavromat/artemis
-          name: artemis
+          image: mavromat/backend
+          name: backend
           imagePullPolicy: Never
           volumeMounts:
           - mountPath: /root/configs/
@@ -97,6 +119,89 @@ items:
         - name: config-volume
           configMap:
             name: artemis-config
+  status: {}
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    annotations:
+      kompose.cmd: kompose convert -o deploy.yaml
+      kompose.version: 1.16.0 (0c01309)
+    creationTimestamp: null
+    labels:
+      io.kompose.service: frontend
+    name: frontend
+  spec:
+    replicas: 1
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          io.kompose.service: frontend
+      spec:
+        containers:
+        - env:
+          - name: RABBITMQ_HOST
+            value: rabbitmq
+          - name: POSTGRES_HOST
+            value: postgres
+          - name: SYSLOG_HOST
+            value: "syslog:514"
+          - name: SYSTEM_VERSION
+            value: "v0.1"
+          - name: MACHINE_IP
+            value: "0.0.0.0"
+          - name: USER_ROOT_USERNAME
+            value: "admin"
+          - name: USER_ROOT_PASSWORD
+            value: "admin"
+          - name: USER_ROOT_EMAIL
+            value: "admin@admin"
+          - name: POSTGREST_FLASK_HOST
+            value: "postgrest:3000"
+          image: mavromat/frontend
+          name: frontend
+          imagePullPolicy: Never
+          resources: {}
+        restartPolicy: Always
+  status: {}
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    annotations:
+      kompose.cmd: kompose convert -o deploy.yaml
+      kompose.version: 1.16.0 (0c01309)
+    creationTimestamp: null
+    labels:
+      io.kompose.service: nginx
+    name: nginx
+  spec:
+    replicas: 1
+    strategy: {}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          io.kompose.service: nginx
+      spec:
+        containers:
+        - image: nginx:latest
+          name: nginx
+          resources: {}
+          volumeMounts:
+          - mountPath: /etc/nginx/nginx.conf
+            name: nginx-conf
+          - mountPath: /etc/certs/
+            name: nginx-certs
+        restartPolicy: Always
+        volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-config
+        - name: nginx-certs
+          configMap:
+            name: nginx-certificates
   status: {}
 - apiVersion: extensions/v1beta1
   kind: Deployment

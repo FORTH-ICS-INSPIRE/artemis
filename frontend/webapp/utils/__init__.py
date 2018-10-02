@@ -5,12 +5,12 @@ import os
 import yaml
 
 
-SYSLOG_HOST, SYSLOG_PORT = os.getenv('SYSLOG_HOST', 'localhost:514').split(':')
+SYSLOG_HOST, SYSLOG_PORT = os.getenv('SYSLOG_HOST', 'localhost:/dev/log').split(':')
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 API_URL_FLASK = os.getenv('POSTGREST_FLASK_HOST', 'postgrest:3000')
 
 
-def get_logger(path='configs/logging.yaml'):
+def get_logger(path='webapp/configs/logging.yaml'):
     if os.path.exists(path):
         with open(path, 'r') as f:
             config = yaml.safe_load(f.read())

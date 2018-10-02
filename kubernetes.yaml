@@ -1,94 +1,28 @@
 apiVersion: v1
 items:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: postgrest
-    labels:
-      io.kompose.service: postgrest
-  spec:
-    ports:
-    - port: 3000
-    selector:
-      io.kompose.service: postgrest
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: postgres
-    labels:
-      io.kompose.service: postgres
-  spec:
-    ports:
-    - port: 5432
-    selector:
-      io.kompose.service: postgres
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: syslog
-    labels:
-      io.kompose.service: syslog
-  spec:
-    ports:
-    - port: 514
-    selector:
-      io.kompose.service: syslog
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: memcached
-    labels:
-      io.kompose.service: memcached
-  spec:
-    ports:
-    - port: 11211
-    selector:
-      io.kompose.service: memcached
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: rabbitmq
-    labels:
-      io.kompose.service: rabbitmq
-  spec:
-    ports:
-    - port: 5672
-    selector:
-      io.kompose.service: rabbitmq
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: frontend
-    labels:
-      io.kompose.service: frontend
-  spec:
-    ports:
-    - port: 8000
-    selector:
-      io.kompose.service: frontend
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: nginx
-    labels:
-      io.kompose.service: nginx
-  spec:
-    ports:
-    - port: 443
-    selector:
-      io.kompose.service: nginx
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
     annotations:
+      deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
+    creationTimestamp: 2018-10-02T22:56:18Z
+    generation: 1
     labels:
       io.kompose.service: backend
     name: backend
+    namespace: default
+    resourceVersion: "61377"
+    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/backend
+    uid: 5f4f3df8-c696-11e8-94ba-0800276622b6
   spec:
+    progressDeadlineSeconds: 600
     replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        io.kompose.service: backend
     strategy:
       type: Recreate
     template:
@@ -105,33 +39,67 @@ items:
             value: postgres
           - name: RABBITMQ_HOST
             value: rabbitmq
-          - name: SYSLOG_HOST
-            value: syslog:514
           image: mavromat/backend
-          name: backend
           imagePullPolicy: Never
+          name: backend
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
           volumeMounts:
           - mountPath: /root/configs/
             name: config-volume
-          resources: {}
+        dnsPolicy: ClusterFirst
         restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
         volumes:
-        - name: config-volume
-          configMap:
-            name: artemis-config
-  status: {}
+        - configMap:
+            defaultMode: 420
+            name: artemis-backend
+          name: config-volume
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-10-02T22:56:27Z
+      lastUpdateTime: 2018-10-02T22:56:27Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:27Z
+      message: ReplicaSet "backend-58bbc6cd95" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
     annotations:
+      deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
+    creationTimestamp: 2018-10-02T22:56:18Z
+    generation: 1
     labels:
       io.kompose.service: frontend
     name: frontend
+    namespace: default
+    resourceVersion: "62668"
+    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/frontend
+    uid: 5f52ad3b-c696-11e8-94ba-0800276622b6
   spec:
+    progressDeadlineSeconds: 600
     replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        io.kompose.service: frontend
     strategy:
       type: Recreate
     template:
@@ -146,76 +114,84 @@ items:
             value: rabbitmq
           - name: POSTGRES_HOST
             value: postgres
-          - name: SYSLOG_HOST
-            value: "syslog:514"
           - name: SYSTEM_VERSION
-            value: "v0.1"
+            value: v0.1
           - name: MACHINE_IP
-            value: "0.0.0.0"
+            value: 0.0.0.0
           - name: USER_ROOT_USERNAME
-            value: "admin"
+            value: admin
           - name: USER_ROOT_PASSWORD
-            value: "admin"
+            value: admin
           - name: USER_ROOT_EMAIL
-            value: "admin@admin"
+            value: admin@admin
           - name: POSTGREST_FLASK_HOST
-            value: "postgrest:3000"
+            value: postgrest:3000
           image: mavromat/frontend
-          name: frontend
           imagePullPolicy: Never
+          name: frontend
           resources: {}
-        restartPolicy: Always
-  status: {}
-- apiVersion: extensions/v1beta1
-  kind: Deployment
-  metadata:
-    annotations:
-      kompose.cmd: kompose convert -o deploy.yaml
-      kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
-    labels:
-      io.kompose.service: nginx
-    name: nginx
-  spec:
-    replicas: 1
-    strategy: {}
-    template:
-      metadata:
-        creationTimestamp: null
-        labels:
-          io.kompose.service: nginx
-      spec:
-        containers:
-        - image: nginx:latest
-          name: nginx
-          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
           volumeMounts:
-          - mountPath: /etc/nginx/nginx.conf
-            name: nginx-conf
-          - mountPath: /etc/certs/
-            name: nginx-certs
+          - mountPath: /root/configs/
+            name: config-volume
+        dnsPolicy: ClusterFirst
         restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
         volumes:
-        - name: nginx-conf
-          configMap:
-            name: nginx-config
-        - name: nginx-certs
-          configMap:
-            name: nginx-certificates
-  status: {}
+        - configMap:
+            defaultMode: 420
+            name: artemis-frontend
+          name: config-volume
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:30Z
+      message: ReplicaSet "frontend-57dbb5db5" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: 2018-10-02T23:11:05Z
+      lastUpdateTime: 2018-10-02T23:11:05Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
     annotations:
+      deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
+    creationTimestamp: 2018-10-02T22:56:18Z
+    generation: 1
     labels:
       io.kompose.service: memcached
     name: memcached
+    namespace: default
+    resourceVersion: "61390"
+    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/memcached
+    uid: 5f6d8186-c696-11e8-94ba-0800276622b6
   spec:
+    progressDeadlineSeconds: 600
     replicas: 1
-    strategy: {}
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        io.kompose.service: memcached
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
     template:
       metadata:
         creationTimestamp: null
@@ -224,23 +200,143 @@ items:
       spec:
         containers:
         - image: memcached:alpine
+          imagePullPolicy: IfNotPresent
           name: memcached
           resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
         restartPolicy: Always
-  status: {}
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:18Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:29Z
+      message: ReplicaSet "memcached-7bf8bb885c" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
     annotations:
+      deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
+    creationTimestamp: 2018-10-02T22:56:18Z
+    generation: 1
+    labels:
+      io.kompose.service: nginx
+    name: nginx
+    namespace: default
+    resourceVersion: "61405"
+    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/nginx
+    uid: 5f563ec2-c696-11e8-94ba-0800276622b6
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        io.kompose.service: nginx
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          io.kompose.service: nginx
+      spec:
+        containers:
+        - image: nginx:latest
+          imagePullPolicy: Always
+          name: nginx
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/nginx/nginx.conf
+            name: nginx-conf
+            subPath: nginx.conf
+          - mountPath: /etc/nginx/certs/
+            name: nginx-certs
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: nginx-configuration
+          name: nginx-conf
+        - configMap:
+            defaultMode: 420
+            name: nginx-certificates
+          name: nginx-certs
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:18Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:30Z
+      message: ReplicaSet "nginx-6d56865b4b" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kompose.cmd: kompose convert -o deploy.yaml
+      kompose.version: 1.16.0 (0c01309)
+    creationTimestamp: 2018-10-02T22:56:18Z
+    generation: 1
     labels:
       io.kompose.service: postgres
     name: postgres
+    namespace: default
+    resourceVersion: "61391"
+    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/postgres
+    uid: 5f75a7e0-c696-11e8-94ba-0800276622b6
   spec:
+    progressDeadlineSeconds: 600
     replicas: 1
-    strategy: {}
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        io.kompose.service: postgres
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
     template:
       metadata:
         creationTimestamp: null
@@ -256,23 +352,63 @@ items:
           - name: POSTGRES_USER
             value: artemis_user
           image: postgres:alpine
+          imagePullPolicy: IfNotPresent
           name: postgres
           resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
         restartPolicy: Always
-  status: {}
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:18Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:29Z
+      message: ReplicaSet "postgres-5fbbdd77d5" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
     annotations:
+      deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
+    creationTimestamp: 2018-10-02T22:56:18Z
+    generation: 1
     labels:
       io.kompose.service: postgrest
     name: postgrest
+    namespace: default
+    resourceVersion: "61412"
+    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/postgrest
+    uid: 5f79dca6-c696-11e8-94ba-0800276622b6
   spec:
+    progressDeadlineSeconds: 600
     replicas: 1
-    strategy: {}
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        io.kompose.service: postgrest
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
     template:
       metadata:
         creationTimestamp: null
@@ -288,23 +424,63 @@ items:
           - name: PGRST_DB_URI
             value: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
           image: postgrest/postgrest
+          imagePullPolicy: Always
           name: postgrest
           resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
         restartPolicy: Always
-  status: {}
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:18Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:33Z
+      message: ReplicaSet "postgrest-59bfd79fc9" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
     annotations:
+      deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
+    creationTimestamp: 2018-10-02T22:56:18Z
+    generation: 1
     labels:
       io.kompose.service: rabbitmq
     name: rabbitmq
+    namespace: default
+    resourceVersion: "61397"
+    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/rabbitmq
+    uid: 5f80899d-c696-11e8-94ba-0800276622b6
   spec:
+    progressDeadlineSeconds: 600
     replicas: 1
-    strategy: {}
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        io.kompose.service: rabbitmq
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
     template:
       metadata:
         creationTimestamp: null
@@ -313,35 +489,35 @@ items:
       spec:
         containers:
         - image: rabbitmq:3-alpine
+          imagePullPolicy: IfNotPresent
           name: rabbitmq
           resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
         restartPolicy: Always
-  status: {}
-- apiVersion: extensions/v1beta1
-  kind: Deployment
-  metadata:
-    annotations:
-      kompose.cmd: kompose convert -o deploy.yaml
-      kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: null
-    labels:
-      io.kompose.service: syslog
-    name: syslog
-  spec:
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:18Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: 2018-10-02T22:56:18Z
+      lastUpdateTime: 2018-10-02T22:56:30Z
+      message: ReplicaSet "rabbitmq-66bfc96858" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
     replicas: 1
-    strategy: {}
-    template:
-      metadata:
-        creationTimestamp: null
-        labels:
-          io.kompose.service: syslog
-      spec:
-        containers:
-        - image: mumblepins/syslog-ng-alpine
-          name: syslog
-          resources: {}
-        restartPolicy: Always
-  status: {}
+    updatedReplicas: 1
 - apiVersion: v1
   data:
     config.yaml: |
@@ -352,7 +528,7 @@ items:
       # Start of Prefix Definitions
       prefixes:
           forth_prefix_main: &forth_prefix_main
-              - 139.91.0.0/16
+              - 139.0.0.0/8
               # - 139.0.0.0/8
               # [0.0.0.0/0]
               # [0.0.0.0/0, '::/0']
@@ -366,8 +542,8 @@ items:
       monitors:
           riperis: ['']
           # bgpstreamlive:
-          # - routeviews
-          # - ris
+          #  - routeviews
+          #  - ris
           # exabgp:
           # - ip: 192.168.1.1
           #   port: 5000
@@ -416,14 +592,252 @@ items:
         mitigation:
             manual
       # End of Rule Definitions
+    logging.yaml: |+
+      version: 1
+      disable_existing_loggers: False
+      formatters:
+          simple:
+              format: '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
+
+      handlers:
+          console:
+              class: logging.StreamHandler
+              level: DEBUG
+              formatter: simple
+              stream: ext://sys.stdout
+
+          info_file_handler:
+              class: logging.handlers.RotatingFileHandler
+              level: INFO
+              formatter: simple
+              filename: logs/info.log
+              maxBytes: 10485760 # 10MB
+              backupCount: 20
+              encoding: utf8
+
+          error_file_handler:
+              class: logging.handlers.RotatingFileHandler
+              level: ERROR
+              formatter: simple
+              filename: logs/errors.log
+              maxBytes: 10485760 # 10MB
+              backupCount: 20
+              encoding: utf8
+
+          # syslog_handler:
+          #     class: logging.handlers.SysLogHandler
+          #     level: DEBUG
+          #     formatter: simple
+          #     address: [localhost, /dev/log]
+
+      loggers:
+          artemis_logger:
+              level: INFO
+              handlers: [console, info_file_handler]
+              propagate: no
+
+      root:
+          level: INFO
+          handlers: [console, info_file_handler, error_file_handler]
+
   kind: ConfigMap
   metadata:
-    creationTimestamp: 2018-09-28T22:31:18Z
-    name: artemis-config
+    creationTimestamp: 2018-10-02T22:49:28Z
+    name: artemis-backend
     namespace: default
-    resourceVersion: "826"
-    selfLink: /api/v1/namespaces/default/configmaps/artemis-config
-    uid: 37eaa0f4-c36e-11e8-9f12-0800276622b6
-kind: List
-metadata: {}
+    resourceVersion: "60146"
+    selfLink: /api/v1/namespaces/default/configmaps/artemis-backend
+    uid: 6b29fca5-c695-11e8-94ba-0800276622b6
+- apiVersion: v1
+  data:
+    logging.yaml: |+
+      version: 1
+      disable_existing_loggers: False
+      formatters:
+          simple:
+              format: '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
 
+      handlers:
+          console:
+              class: logging.StreamHandler
+              level: DEBUG
+              formatter: simple
+              stream: ext://sys.stdout
+
+          info_file_handler:
+              class: logging.handlers.RotatingFileHandler
+              level: INFO
+              formatter: simple
+              filename: logs/info.log
+              maxBytes: 10485760 # 10MB
+              backupCount: 20
+              encoding: utf8
+
+          error_file_handler:
+              class: logging.handlers.RotatingFileHandler
+              level: ERROR
+              formatter: simple
+              filename: logs/errors.log
+              maxBytes: 10485760 # 10MB
+              backupCount: 20
+              encoding: utf8
+
+          # syslog_handler:
+          #     class: logging.handlers.SysLogHandler
+          #     level: DEBUG
+          #     formatter: simple
+          #     address: [localhost, /dev/log]
+
+      loggers:
+          artemis_logger:
+              level: INFO
+              handlers: [console, info_file_handler]
+              propagate: no
+
+      root:
+          level: INFO
+          handlers: [console, info_file_handler, error_file_handler]
+
+    webapp.cfg: |
+      SQLALCHEMY_ECHO = False
+      SQLALCHEMY_TRACK_MODIFICATIONS = False
+      WEBAPP_PORT = 8000
+      BABEL_DEFAULT_LOCALE = 'en'
+      BABEL_DEFAULT_TIMEZONE = 'EET'
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: 2018-10-02T22:50:01Z
+    name: artemis-frontend
+    namespace: default
+    resourceVersion: "60184"
+    selfLink: /api/v1/namespaces/default/configmaps/artemis-frontend
+    uid: 7efa015b-c695-11e8-94ba-0800276622b6
+- apiVersion: v1
+  data:
+    cert.pem: |
+      -----BEGIN CERTIFICATE-----
+      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
+      /RhKCg==
+      -----END CERTIFICATE-----
+    key.pem: |
+      -----BEGIN PRIVATE KEY-----
+      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
+      i1VRQWKH0Bt4xqbM7a912eTXf/HX5cEh
+      -----END PRIVATE KEY-----
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: 2018-10-02T19:14:51Z
+    name: nginx-certificates
+    namespace: default
+    resourceVersion: "42572"
+    selfLink: /api/v1/namespaces/default/configmaps/nginx-certificates
+    uid: 6fa1dced-c677-11e8-94ba-0800276622b6
+- apiVersion: v1
+  data:
+    nginx.conf: |
+      worker_processes 1;
+
+      events { worker_connections 1024; }
+
+      http {
+
+          server {
+              listen 443 ssl;
+              resolver localhost;
+              location / {
+                  proxy_pass http://frontend:8000/;
+              }
+              ssl_certificate /etc/nginx/certs/cert.pem;
+              ssl_certificate_key /etc/nginx/certs/key.pem;
+          }
+
+      }
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: 2018-10-02T22:09:40Z
+    name: nginx-configuration
+    namespace: default
+    resourceVersion: "56005"
+    selfLink: /api/v1/namespaces/default/configmaps/nginx-configuration
+    uid: dbf0b430-c68f-11e8-94ba-0800276622b6
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

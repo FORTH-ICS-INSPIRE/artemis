@@ -6,6 +6,7 @@ from ipaddress import ip_network as str2ip
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 
+
 def key_generator(msg):
     msg['key'] = hashlib.md5(pickle.dumps([
         msg['prefix'],
@@ -14,6 +15,7 @@ def key_generator(msg):
         msg['service'],
         msg['timestamp']
     ])).hexdigest()
+
 
 def decompose_path(path):
 
@@ -55,6 +57,7 @@ def decompose_path(path):
         decomposed_paths = new_paths
     return decomposed_paths
 
+
 def normalize_msg_path(msg):
     msgs = []
     path = msg['path']
@@ -77,6 +80,7 @@ def normalize_msg_path(msg):
         msgs = [msg]
 
     return msgs
+
 
 def mformat_validator(msg):
 
@@ -104,7 +108,7 @@ def mformat_validator(msg):
     def valid_prefix(msg):
         try:
             str2ip(msg['prefix'])
-        except:
+        except BaseException:
             return False
         return True
 
@@ -134,7 +138,8 @@ def mformat_validator(msg):
         return True
 
     def valid_timestamp(msg):
-        if not (isinstance(msg['timestamp'], float) or isinstance(msg['timestamp'], int)):
+        if not (isinstance(msg['timestamp'], float)
+                or isinstance(msg['timestamp'], int)):
             return False
         return True
 

@@ -1,27 +1,27 @@
-import sys
-import os
 from socketIO_client import SocketIO, BaseNamespace
 import argparse
-from kombu import Connection, Producer, Exchange, Queue, uuid
+from kombu import Connection, Producer, Exchange
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 import traceback
 
-class ExaBGP():
 
+class ExaBGP():
 
     def __init__(self, prefixes, host):
         self.host = host
         self.prefixes = prefixes
 
-
     def start_loop(self):
         with Connection(RABBITMQ_HOST) as connection:
             self.start(connection)
 
-
     def start(self, connection):
         self.connection = connection
-        self.exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+        self.exchange = Exchange(
+            'bgp-update',
+            channel=connection,
+            type='direct',
+            durable=False)
         self.exchange.declare()
 
         with SocketIO('http://' + self.host, namespace=BaseNamespace, wait_for_connection=False) as sio:
@@ -29,7 +29,7 @@ class ExaBGP():
             def exabgp_msg(bgp_message):
                 msg = {
                     'type': bgp_message['type'],
-                    'communities': bgp_message.get('communities', [])
+                    'communities': bgp_message.get('communities', []),
                     'timestamp': bgp_message['timestamp'],
                     'path': bgp_message['path'],
                     'service': 'ExaBGP {}'.format(self.host),
@@ -67,6 +67,5 @@ if __name__ == '__main__':
         exa.start()
     except KeyboardInterrupt:
         pass
-    except:
+    except BaseException:
         traceback.print_exc()
-

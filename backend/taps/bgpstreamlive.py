@@ -1,15 +1,13 @@
-import sys
-import os
 import argparse
-import hashlib
 import time
 from netaddr import IPNetwork, IPAddress
-from kombu import Connection, Producer, Exchange, Queue, uuid
+from kombu import Connection, Producer, Exchange
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 import _pybgpstream
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 
-START_TIME_OFFSET = 3600 # seconds
+START_TIME_OFFSET = 3600  # seconds
+
 
 def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     """
@@ -53,14 +51,18 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
     # print('End ' + str(end))
 
     with Connection(RABBITMQ_HOST) as connection:
-        exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+        exchange = Exchange(
+            'bgp-update',
+            channel=connection,
+            type='direct',
+            durable=False)
         exchange.declare()
         producer = Producer(connection)
         while True:
             # get next record
             try:
                 rec = stream.get_next_record()
-            except:
+            except BaseException:
                 continue
             if (rec.status != "valid") or (rec.type != "update"):
                 continue
@@ -68,13 +70,14 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
             # get next element
             try:
                 elem = rec.get_next_elem()
-            except:
+            except BaseException:
                 continue
 
             while elem:
                 if elem.type in ["A", "W"]:
                     this_prefix = str(elem.fields['prefix'])
-                    service = "bgpstream|{}|{}".format(str(rec.project), str(rec.collector))
+                    service = "bgpstream|{}|{}".format(
+                        str(rec.project), str(rec.collector))
                     type_ = elem.type
                     if type_ == "A":
                         as_path = elem.fields['as-path'].split(' ')
@@ -88,7 +91,8 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                     for prefix in prefixes:
                         base_ip, mask_length = this_prefix.split('/')
                         our_prefix = IPNetwork(prefix)
-                        if IPAddress(base_ip) in our_prefix and int(mask_length) >= our_prefix.prefixlen:
+                        if IPAddress(base_ip) in our_prefix and int(
+                                mask_length) >= our_prefix.prefixlen:
                             msg = {
                                 'type': type_,
                                 'timestamp': timestamp,
@@ -109,7 +113,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                     )
                 try:
                     elem = rec.get_next_elem()
-                except:
+                except BaseException:
                     continue
 
 
@@ -126,7 +130,12 @@ if __name__ == '__main__':
     projects = args.mon_projects.split(',')
 
     try:
-        run_bgpstream(prefixes, projects, start=int(time.time()) - START_TIME_OFFSET, end=0)
+        run_bgpstream(
+            prefixes,
+            projects,
+            start=int(
+                time.time()) -
+            START_TIME_OFFSET,
+            end=0)
     except KeyboardInterrupt:
         pass
-

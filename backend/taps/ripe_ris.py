@@ -1,23 +1,27 @@
 from socketIO_client_nexus import SocketIO
-from kombu import Connection, Producer, Exchange, Queue, uuid
+from kombu import Connection, Producer, Exchange
 import argparse
-import traceback
-import signal
-import sys
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
+
 
 def normalize_ripe_ris(msg):
     if isinstance(msg, dict):
-        msg['key'] = None # initial placeholder before passing the validator
+        msg['key'] = None  # initial placeholder before passing the validator
         if 'community' in msg:
-            msg['communities'] = [{'asn': comm[0], 'value': comm[1]} for comm in msg['community']]
+            msg['communities'] = [{'asn': comm[0], 'value': comm[1]}
+                                  for comm in msg['community']]
             del msg['community']
         if 'host' in msg:
             msg['service'] = 'ripe-ris|' + msg['host']
             del msg['host']
 
+
 def parse_ripe_ris(connection, prefix, host):
-    exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+    exchange = Exchange(
+        'bgp-update',
+        channel=connection,
+        type='direct',
+        durable=False)
     exchange.declare()
 
     def on_ris_msg(msg):
@@ -41,14 +45,14 @@ def parse_ripe_ris(connection, prefix, host):
     with SocketIO('http://stream-dev.ris.ripe.net/stream', wait_for_connection=False) as socket_io:
         socket_io.on('ris_message', on_ris_msg)
         socket_io.emit('ris_subscribe',
-                {
-                    'host': host,
-                    'prefix': prefix,
-                    'moreSpecific': True,
-                    'lessSpecific': False,
-                    'includeBody': False,
-                }
-        )
+                       {
+                           'host': host,
+                           'prefix': prefix,
+                           'moreSpecific': True,
+                           'lessSpecific': False,
+                           'includeBody': False,
+                       }
+                       )
         socket_io.wait()
 
 

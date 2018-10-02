@@ -8,6 +8,7 @@ import csv
 import ujson
 import _pybgpstream
 
+
 def is_valid_ip_prefix(pref_str=None):
     """
     Check if given prefix (in string format) is a valid IPv4/IPv6 prefix
@@ -17,11 +18,12 @@ def is_valid_ip_prefix(pref_str=None):
     :return: <bool> whether prefix is valid
     """
     try:
-        pref = netaddr.IPNetwork(pref_str)
-    except:
+        netaddr.IPNetwork(pref_str)
+    except BaseException:
         return False
 
     return True
+
 
 def run_bgpstream(prefix, start, end, out_file):
     """
@@ -41,8 +43,8 @@ def run_bgpstream(prefix, start, end, out_file):
     stream = _pybgpstream.BGPStream()
 
     # consider collectors from routeviews and ris
-    stream.add_filter('project','routeviews')
-    stream.add_filter('project','ris')
+    stream.add_filter('project', 'routeviews')
+    stream.add_filter('project', 'ris')
 
     # filter prefix
     stream.add_filter('prefix', prefix)
@@ -101,12 +103,38 @@ def run_bgpstream(prefix, start, end, out_file):
 
             rec = stream.get_next_record()
 
+
 def main():
-    parser = argparse.ArgumentParser(description="retrieve all records related to a specific IP prefix")
-    parser.add_argument('-p', '--prefix', dest='prefix', type=str, help='prefix to check', required=True)
-    parser.add_argument('-s', '--start', dest='start_time', type=int, help='start timestamp (in UNIX epochs)', required=True)
-    parser.add_argument('-e', '--end', dest='end_time', type=int, help='end timestamp (in UNIX epochs)', required=True)
-    parser.add_argument('-o', '--out_dir', dest='output_dir', type=str, help='output dir to store the retrieved information', required=True)
+    parser = argparse.ArgumentParser(
+        description="retrieve all records related to a specific IP prefix")
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        dest='prefix',
+        type=str,
+        help='prefix to check',
+        required=True)
+    parser.add_argument(
+        '-s',
+        '--start',
+        dest='start_time',
+        type=int,
+        help='start timestamp (in UNIX epochs)',
+        required=True)
+    parser.add_argument(
+        '-e',
+        '--end',
+        dest='end_time',
+        type=int,
+        help='end timestamp (in UNIX epochs)',
+        required=True)
+    parser.add_argument(
+        '-o',
+        '--out_dir',
+        dest='output_dir',
+        type=str,
+        help='output dir to store the retrieved information',
+        required=True)
     args = parser.parse_args()
 
     if not is_valid_ip_prefix(args.prefix):
@@ -115,7 +143,10 @@ def main():
 
     # for UNIX epoch timestamps, please check https://www.epochconverter.com/
     if not args.start_time < args.end_time:
-        print("Start time '{}' is greater or equal than end time '{}'".format(args.start_time, args.end_time))
+        print(
+            "Start time '{}' is greater or equal than end time '{}'".format(
+                args.start_time,
+                args.end_time))
         sys.exit(1)
 
     if not os.path.isdir(args.output_dir):

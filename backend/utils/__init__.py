@@ -14,7 +14,6 @@ if not os.path.exists('logs'):
     os.makedirs('logs')
 
 
-SYSLOG_HOST, SYSLOG_PORT = os.getenv('SYSLOG_HOST', 'localhost:514').split(':')
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 
@@ -27,14 +26,9 @@ def get_logger(path='configs/logging.yaml'):
         log = logging.getLogger('artemis_logger')
         log.info('Loaded configuration from {}'.format(path))
     else:
-        log = logging.getLogger('artemis_logger')
-        log.setLevel(logging.DEBUG)
-        handler = logging.handlers.SysLogHandler(
-            address=(SYSLOG_HOST, int(SYSLOG_PORT)))
-        formatter = logging.Formatter(
-            '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s')
-        handler.setFormatter(formatter)
-        log.addHandler(handler)
+        FORMAT = '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
+        logging.basicConfig(format=FORMAT, level=logging.INFO)
+        log = logging
         log.info('Loaded default configuration')
     return log
 

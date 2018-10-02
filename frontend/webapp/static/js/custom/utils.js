@@ -8,7 +8,6 @@ function hijack_as_formmated(value){
 function communities_formmated(value){
 	var str_ = '[';
     (value).forEach(function (item) {
-    	console.log(value);
         str_ += item[0] + ':' + item[1] + ', ';
     })
     return (str_).slice(0,-2) + ']'

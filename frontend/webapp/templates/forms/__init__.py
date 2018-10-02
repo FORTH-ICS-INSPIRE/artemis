@@ -30,7 +30,10 @@ class DeleteUserForm(FlaskForm):
     user_to_delete = SelectField('Select user to delete:', [Required()], choices=[])
 
 class ChangePasswordForm(FlaskForm):
-    old_password = PasswordField('Old Password', [validators.DataRequired()])
+    old_password = PasswordField('Old Password',
+            [validators.DataRequired(),
+            validators.Length(min=6, max=35)]
+        )
     password = PasswordField('New Password', [
         validators.DataRequired(),
         validators.EqualTo('confirm', message='Passwords must match')

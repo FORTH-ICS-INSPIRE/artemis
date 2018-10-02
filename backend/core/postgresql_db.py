@@ -28,10 +28,10 @@ class Postgresql_db(Service):
                 _password = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
 
                 _db_conn = psycopg2.connect(
-                    dbname=_db_name,
-                    user=_user,
-                    host=_host,
-                    password=_password
+                        dbname=_db_name,
+                        user=_user,
+                        host=_host,
+                        password=_password
                     )
 
             except:

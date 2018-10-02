@@ -18,11 +18,7 @@
                 </div>
                 {% endif %}
             </div>
-            {% if current_user.has_roles('admin') %}
             <div class="col-lg-9">
-            {% else %}
-            <div class="col-lg-12">
-            {% endif %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Hijack Information
@@ -171,6 +167,9 @@
                     </div>
                 </div>
                 {% endif %}
+            {% if current_user.has_roles('user') %}
+            <div class="col-lg-3">
+            {% endif %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Comments
@@ -319,7 +318,11 @@
                 });
 
                 editor = CodeMirror.fromTextArea(document.getElementById("code_comment_box"), {lineNumbers: true, indentUnit: 4, readOnly: true})
-                editor.setSize("100%", 96);
+                {% if current_user.has_roles('admin') %}
+                    editor.setSize("100%", 96);
+                {% else %}
+                    editor.setSize("100%", 218);
+                {% endif %}
             });
 
         
@@ -389,8 +392,6 @@
 
 
             function retrieve_hijack(key){
-                var url_ = '{{ url_for('proxy_api') }}/hijacks?key=' + key;
-
                 $.ajax({
                     type: 'POST',
                     url: '{{ url_for('proxy_api') }}',

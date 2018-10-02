@@ -3,20 +3,28 @@ from yaml import load as yload
 from utils import flatten, ArtemisError, RABBITMQ_HOST
 from utils.service import Service
 from socketIO_client_nexus import SocketIO
-from kombu import Connection, Queue, Exchange
+from kombu import Connection, Queue, Exchange, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
 import json
 import copy
 import logging
+from typing import Union, Optional, Dict, TextIO, Text, List
+from io import StringIO
 
 
 log = logging.getLogger('artemis_logger')
 
 
 class Configuration(Service):
+    """
+    Configuration Service.
+    """
 
     def run_worker(self):
+        """
+        Entry function for configuration service that runs a RabbitMQ worker through Kombu.
+        """
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
@@ -27,8 +35,11 @@ class Configuration(Service):
             log.info('stopped')
 
     class Worker(ConsumerProducerMixin):
+        """
+        RabbitMQ Consumer/Producer for Configuration Service.
+        """
 
-        def __init__(self, connection):
+        def __init__(self, connection: Connection):
             self.connection = connection
             self.file = 'configs/config.yaml'
             self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
@@ -42,6 +53,7 @@ class Configuration(Service):
             self.available_ris = set()
             self.available_bgpstreamlive = {'routeviews', 'ris'}
 
+            # reads and parses initial configuration file
             with open(self.file, 'r') as f:
                 raw = f.read()
                 self.data, _flag, _error = self.parse(raw, yaml=True)
@@ -73,7 +85,8 @@ class Configuration(Service):
             self.parse_rrcs()
             log.info('started')
 
-        def get_consumers(self, Consumer, channel):
+        def get_consumers(self, Consumer: Consumer,
+                          channel: Connection) -> List[Consumer]:
             return [
                 Consumer(
                     queues=[self.config_modify_queue],
@@ -90,18 +103,23 @@ class Configuration(Service):
                 )
             ]
 
-        def handle_config_modify(self, message):
+        def handle_config_modify(self, message: Dict):
+            """
+            Consumer for Config-Modify messages that parses and checks if new configuration is correct.
+            Replies back to the sender if the configuration is accepted or rejected and notifies all Subscribers if new configuration is used.
+            """
             log.info(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             raw = message.payload
             if 'yaml' in message.content_type:
-                from io import StringIO
                 stream = StringIO(''.join(raw))
                 data, _flag, _error = self.parse(stream, yaml=True)
             else:
                 data, _flag, _error = self.parse(raw)
 
+            # _flag is True or False depending if the new configuration was
+            # accepted or not.
             if _flag:
                 log.debug('accepted new configuration')
                 # compare current with previous data excluding --obviously-- timestamps
@@ -124,6 +142,8 @@ class Configuration(Service):
                         priority=2
                     )
 
+                # reply back to the sender with a configuration accepted
+                # message.
                 self.producer.publish(
                     {
                         'status': 'accepted',
@@ -138,6 +158,8 @@ class Configuration(Service):
                 )
             else:
                 log.debug('rejected new configuration')
+                # replay back to the sender with a configuration rejected and
+                # reason message.
                 self.producer.publish(
                     {
                         'status': 'rejected',
@@ -151,7 +173,10 @@ class Configuration(Service):
                     priority=2
                 )
 
-        def handle_config_request(self, message):
+        def handle_config_request(self, message: Dict):
+            """
+            Handles all config requests from other Services by replying back with the current configuration.
+            """
             log.info(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
@@ -166,6 +191,9 @@ class Configuration(Service):
             )
 
         def parse_rrcs(self):
+            """
+            SocketIO connection to RIPE RIS to retrieve all active Route Collectors.
+            """
             try:
                 socket_io = SocketIO(
                     'http://stream-dev.ris.ripe.net/stream',
@@ -180,7 +208,11 @@ class Configuration(Service):
             except Exception:
                 log.warning('RIPE RIS server is down. Try again later..')
 
-        def parse(self, raw, yaml=False):
+        def parse(self, raw: Union[Text, TextIO, StringIO],
+                  yaml: Optional[bool]=False) -> Dict:
+            """
+            Parser for the configuration file or string. The format can either be a File, StringIO or String
+            """
             try:
                 if yaml:
                     data = yload(raw)
@@ -188,6 +220,7 @@ class Configuration(Service):
                     data = raw
                 data = self.check(data)
                 data['timestamp'] = time.time()
+                # if raw is string we save it as-is else we get the value.
                 if isinstance(raw, str):
                     data['raw_config'] = raw
                 else:
@@ -197,7 +230,11 @@ class Configuration(Service):
                 log.exception('exception')
                 return {'timestamp': time.time()}, False, str(e)
 
-        def check(self, data):
+        def check(self, data: Text) -> Dict:
+            """
+            Checks if all sections and fields are defined correctly in the parsed configuration.
+            Raises custom exceptions in case a field or section is misdefined.
+            """
             for section in data:
                 if section not in self.sections:
                     raise ArtemisError('invalid-section', section)
@@ -264,5 +301,8 @@ class Configuration(Service):
             return data
 
         def _update_local_config_file(self):
+            """
+            Writes to the local configuration file the new running configuration.
+            """
             with open(self.file, 'w') as f:
                 f.write(self.data['raw_config'])

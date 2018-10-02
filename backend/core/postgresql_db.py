@@ -13,6 +13,7 @@ import os
 
 log = logging.getLogger('artemis_logger')
 
+
 class Postgresql_db(Service):
 
     def create_connect_db(self):
@@ -116,6 +117,8 @@ class Postgresql_db(Service):
                     consumer_arguments={'x-priority': 2})
             self.hijack_comment_queue = Queue('db-hijack-comment', exchange=self.hijack_exchange, routing_key='comment', durable=False, exclusive=True, max_priority=2,
                     consumer_arguments={'x-priority': 2})
+
+
 == == == =
                                               consumer_arguments = {'x-priority': 2})
 >> >>>> > ac68d79... PEP8 on backend dir

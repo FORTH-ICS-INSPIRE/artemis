@@ -51,12 +51,12 @@ class Detection(Service):
             self.mon_num = 1
 
             self.memcache = Client((MEMCACHED_HOST, 11211),
-                    serializer=pickle_serializer,
-                    deserializer=pickle_deserializer)
+                                   serializer=pickle_serializer,
+                                   deserializer=pickle_deserializer)
             self.memcache.flush_all()
 
             # EXCHANGES
-            self.update_exchange=Exchange(
+            self.update_exchange = Exchange(
                 'bgp-update',
                 channel=connection,
                 type='direct',

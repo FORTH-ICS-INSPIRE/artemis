@@ -9,7 +9,7 @@ import time
 import json
 import copy
 import logging
-from typing import Union, Optional, Dict, TextIO, Text, List
+from typing import Union, Optional, Dict, TextIO, Text, List, NoReturn
 from io import StringIO
 
 
@@ -21,9 +21,9 @@ class Configuration(Service):
     Configuration Service.
     """
 
-    def run_worker(self):
+    def run_worker(self) -> NoReturn:
         """
-        Entry function for configuration service that runs a RabbitMQ worker through Kombu.
+        Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
         try:
             with Connection(RABBITMQ_HOST) as connection:
@@ -36,10 +36,10 @@ class Configuration(Service):
 
     class Worker(ConsumerProducerMixin):
         """
-        RabbitMQ Consumer/Producer for Configuration Service.
+        RabbitMQ Consumer/Producer for this Service.
         """
 
-        def __init__(self, connection: Connection):
+        def __init__(self, connection: Connection) -> NoReturn:
             self.connection = connection
             self.file = 'configs/config.yaml'
             self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
@@ -103,7 +103,7 @@ class Configuration(Service):
                 )
             ]
 
-        def handle_config_modify(self, message: Dict):
+        def handle_config_modify(self, message: Dict) -> NoReturn:
             """
             Consumer for Config-Modify messages that parses and checks if new configuration is correct.
             Replies back to the sender if the configuration is accepted or rejected and notifies all Subscribers if new configuration is used.
@@ -173,7 +173,7 @@ class Configuration(Service):
                     priority=2
                 )
 
-        def handle_config_request(self, message: Dict):
+        def handle_config_request(self, message: Dict) -> NoReturn:
             """
             Handles all config requests from other Services by replying back with the current configuration.
             """
@@ -190,7 +190,7 @@ class Configuration(Service):
                 priority=2
             )
 
-        def parse_rrcs(self):
+        def parse_rrcs(self) -> NoReturn:
             """
             SocketIO connection to RIPE RIS to retrieve all active Route Collectors.
             """
@@ -300,7 +300,7 @@ class Configuration(Service):
                         raise ArtemisError('invalid-asn', asn)
             return data
 
-        def _update_local_config_file(self):
+        def _update_local_config_file(self) -> NoReturn:
             """
             Writes to the local configuration file the new running configuration.
             """

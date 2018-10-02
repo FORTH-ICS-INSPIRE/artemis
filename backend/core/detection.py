@@ -9,18 +9,25 @@ from pymemcache.client.base import Client
 import pickle
 import hashlib
 import logging
+from typing import Union, Dict, List, NoReturn, Callable, Tuple
 
 
 log = logging.getLogger('artemis_logger')
 
 
-def pickle_serializer(key, value):
+def pickle_serializer(key: str, value: Union[str, Dict]) -> str:
+    """
+    Pickle Serializer for Memcached.
+    """
     if isinstance(value, str):
         return value, 1
     return pickle.dumps(value), 2
 
 
-def pickle_deserializer(key, value, flags):
+def pickle_deserializer(key: str, value: str, flags: int) -> Union[str, Dict]:
+    """
+    Pickle Serializer for Memcached.
+    """
     if flags == 1:
         return value
     if flags == 2:
@@ -29,8 +36,14 @@ def pickle_deserializer(key, value, flags):
 
 
 class Detection(Service):
+    """
+    Detection Service.
+    """
 
-    def run_worker(self):
+    def run_worker(self) -> NoReturn:
+        """
+        Entry function for this service that runs a RabbitMQ worker through Kombu.
+        """
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
@@ -41,8 +54,11 @@ class Detection(Service):
             log.info('stopped')
 
     class Worker(ConsumerProducerMixin):
+        """
+        RabbitMQ Consumer/Producer for this Service.
+        """
 
-        def __init__(self, connection):
+        def __init__(self, connection: Connection) -> NoReturn:
             self.connection = connection
             self.timestamp = -1
             self.rules = None
@@ -107,7 +123,8 @@ class Detection(Service):
             )
             log.info('started')
 
-        def get_consumers(self, Consumer, channel):
+        def get_consumers(self, Consumer: Consumer,
+                          channel: Connection) -> List[Consumer]:
             return [
                 Consumer(
                     queues=[self.config_queue],
@@ -147,7 +164,11 @@ class Detection(Service):
                 )
             ]
 
-        def handle_config_notify(self, message):
+        def handle_config_notify(self, message: Dict) -> NoReturn:
+            """
+            Consumer for Config-Notify messages that come from the configuration service.
+            Upon arrival this service updates its running configuration.
+            """
             log.info(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
@@ -157,7 +178,11 @@ class Detection(Service):
                 self.rules = raw.get('rules', [])
                 self.init_detection()
 
-        def config_request_rpc(self):
+        def config_request_rpc(self) -> NoReturn:
+            """
+            Initial RPC of this service to request the configuration.
+            The RPC is blocked until the configuration service replies back.
+            """
             self.correlation_id = uuid()
             callback_queue = Queue(uuid(), durable=False, max_priority=2,
                                    consumer_arguments={'x-priority': 2})
@@ -185,7 +210,11 @@ class Detection(Service):
                     self.connection.drain_events()
             log.debug('{}'.format(self.rules))
 
-        def handle_config_request_reply(self, message):
+        def handle_config_request_reply(self, message: Dict):
+            """
+            Callback function for the config request RPC.
+            Updates running configuration upon receiving a new configuration.
+            """
             log.info(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
@@ -196,7 +225,10 @@ class Detection(Service):
                     self.rules = raw.get('rules', [])
                     self.init_detection()
 
-        def init_detection(self):
+        def init_detection(self) -> NoReturn:
+            """
+            Updates rules everytime it receives a new configuration.
+            """
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
                 for prefix in rule['prefixes']:
@@ -210,12 +242,18 @@ class Detection(Service):
                         'neighbors': rule['neighbors']}
                     node.data['confs'].append(conf_obj)
 
-        def handle_unhandled_bgp_updates(self, message):
+        def handle_unhandled_bgp_updates(self, message: Dict) -> NoReturn:
+            """
+            Handles unhanlded bgp updates from the database in batches of 50.
+            """
             # log.debug('{} unhandled events'.format(len(message.payload)))
             for update in message.payload:
                 self.handle_bgp_update(update)
 
-        def handle_bgp_update(self, message):
+        def handle_bgp_update(self, message: Dict) -> NoReturn:
+            """
+            Callback function that runs the main logic of detecting hijacks for every bgp update.
+            """
             # log.debug('{}'.format(message))
             if isinstance(message, dict):
                 monitor_event = message
@@ -249,7 +287,12 @@ class Detection(Service):
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 
-        def __detection_generator(self, path_len, prefix_node):
+        def __detection_generator(self, path_len: int,
+                                  prefix_node: radix.Radix) -> Callable:
+            """
+            Generator that returns detection functions based on rules and path length.
+            Priority: Squatting > Subprefix > Origin > Type-1
+            """
             if prefix_node is not None:
                 yield self.detect_squatting
                 yield self.detect_subprefix_hijack
@@ -259,7 +302,10 @@ class Detection(Service):
                         yield self.detect_type_1_hijack
 
         @staticmethod
-        def __remove_prepending(seq):
+        def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
+            """
+            Static method to remove prepending ASs from AS path.
+            """
             last_add = None
             new_seq = []
             for x in seq:
@@ -274,7 +320,10 @@ class Detection(Service):
             return (new_seq, is_loopy)
 
         @staticmethod
-        def __clean_loops(seq):
+        def __clean_loops(seq: List[int]) -> List[int]:
+            """
+            Static method that remove loops from AS path.
+            """
             # use inverse direction to clean loops in the path of the traffic
             seq_inv = seq[::-1]
             new_seq_inv = []
@@ -287,7 +336,10 @@ class Detection(Service):
             return new_seq_inv[::-1]
 
         @staticmethod
-        def __clean_as_path(path):
+        def __clean_as_path(path: List[int]) -> List[int]:
+            """
+            Static wrapper method for loop and prepending removal.
+            """
             (clean_as_path, is_loopy) = Detection.Worker.__remove_prepending(path)
             if is_loopy:
                 clean_as_path = Detection.Worker.__clean_loops(clean_as_path)
@@ -295,8 +347,12 @@ class Detection(Service):
             return clean_as_path
 
         @exception_handler(log)
-        def detect_squatting(self, monitor_event,
-                             prefix_node, *args, **kwargs):
+        def detect_squatting(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> bool:
+            """
+            Squatting detection.
+            """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
                 if len(item['origin_asns']) > 0 or len(item['neighbors']) > 0:
@@ -306,7 +362,10 @@ class Detection(Service):
 
         @exception_handler(log)
         def detect_origin_hijack(
-                self, monitor_event, prefix_node, *args, **kwargs):
+                self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs) -> bool:
+            """
+            Origin hijack detection.
+            """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
                 if origin_asn in item['origin_asns']:
@@ -316,7 +375,10 @@ class Detection(Service):
 
         @exception_handler(log)
         def detect_type_1_hijack(
-                self, monitor_event, prefix_node, *args, **kwargs):
+                self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs) -> bool:
+            """
+            Type-1 hijack detection.
+            """
             origin_asn = monitor_event['path'][-1]
             first_neighbor_asn = monitor_event['path'][-2]
             for item in prefix_node.data['confs']:
@@ -327,7 +389,10 @@ class Detection(Service):
 
         @exception_handler(log)
         def detect_subprefix_hijack(
-                self, monitor_event, prefix_node, *args, **kwargs):
+                self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs) -> bool:
+            """
+            Subprefix hijack detection.
+            """
             mon_prefix = ipaddress.ip_network(monitor_event['prefix'])
             if prefix_node.prefixlen < mon_prefix.prefixlen:
                 hijacker_asn = -1
@@ -357,7 +422,12 @@ class Detection(Service):
                 return True
             return False
 
-        def commit_hijack(self, monitor_event, hijacker, hij_type):
+        def commit_hijack(self, monitor_event: Dict,
+                          hijacker: int, hij_type: str) -> NoReturn:
+            """
+            Commit new or update an existing hijack to the database.
+            It uses memcache server to store ongoing hijacks information to not stress the db.
+            """
             future_memcache_hijack_key = hashlib.md5(pickle.dumps(
                 [monitor_event['prefix'], hijacker, hij_type])).hexdigest()
             hijack_value = {
@@ -406,7 +476,10 @@ class Detection(Service):
             )
             # log.debug('{}'.format(result))
 
-        def mark_handled(self, monitor_event):
+        def mark_handled(self, monitor_event: Dict) -> NoReturn:
+            """
+            Marks a bgp update as handled on the database.
+            """
             self.producer.publish(
                 monitor_event['key'],
                 exchange=self.handled_exchange,
@@ -416,8 +489,13 @@ class Detection(Service):
             self.monitors_seen.add(monitor_event['key'])
             # log.debug('{}'.format(monitor_event['key']))
 
-        def fetch_ongoing_hijacks(self, message):
-            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+        def fetch_ongoing_hijacks(self, message: Dict) -> NoReturn:
+            """
+            Fetches ongoing hijacks from the database when the service starts.
+            """
+            # log.debug(
+            #     'message: {}\npayload: {}'.format(
+            #         message, message.payload))
             try:
                 hijacks = message.payload
                 self.memcache.set_many(hijacks)
@@ -426,7 +504,10 @@ class Detection(Service):
                     "couldn't fetch data: {}".format(
                         message.payload))
 
-        def handle_resolved_or_ignored_hijack(self, message):
+        def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
+            """
+            Remove for memcache the ongoing hijack entry.
+            """
             log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))

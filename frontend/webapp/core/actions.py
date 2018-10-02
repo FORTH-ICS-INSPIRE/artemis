@@ -133,7 +133,6 @@ class Comment_hijack():
                 no_ack=True):
             while self.response is None:
                 self.connection.drain_events()
-        log.debug("got response")
         if self.response['status'] == 'accepted':
             return 'Comment saved.', True
         else:

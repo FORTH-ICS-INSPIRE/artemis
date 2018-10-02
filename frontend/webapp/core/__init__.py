@@ -3,7 +3,7 @@ import logging
 from flask import abort, Flask, g, render_template, request, current_app, jsonify, redirect
 from flask_bootstrap import Bootstrap
 from flask_security import current_user, login_user
-from flask_security.utils import hash_password, verify_password
+from flask_security.utils import hash_password
 from flask_security.decorators import login_required, roles_accepted
 from flask_babel import Babel
 from webapp.data.models import db, User
@@ -16,7 +16,6 @@ from webapp.core.proxy_api import get_proxy_api
 import time
 
 log = logging.getLogger('webapp_logger')
-
 
 app = Flask(__name__,
             instance_path=get_app_base_path(),
@@ -37,11 +36,13 @@ with app.app_context():
 
 app.login_manager.session_protection = "strong"
 
-from webapp.main.controllers import main
-from webapp.admin.controllers import admin
+from webapp.views.main.main_view import main
+from webapp.views.admin.admin_view import admin
+from webapp.views.actions.actions_view import actions
 
 app.register_blueprint(main, url_prefix='/main')
 app.register_blueprint(admin, url_prefix='/admin')
+app.register_blueprint(actions, url_prefix='/actions')
 
 
 def load_user(payload):
@@ -163,6 +164,8 @@ def overview():
         config = newest_config, 
         db_stats = db_stats,
         config_timestamp = app.config['configuration'].get_config_last_modified())
+
+
 
 @app.login_manager.unauthorized_handler
 def unauth_handler():

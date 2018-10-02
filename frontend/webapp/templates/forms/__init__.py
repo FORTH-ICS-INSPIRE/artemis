@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, StringField, SubmitField, \
-    PasswordField, validators, TextField, SelectField
+    PasswordField, validators, TextField, SelectField, validators
 from wtforms.fields.html5 import EmailField
 from flask_security.forms import RegisterForm, LoginForm, Required
 import logging
@@ -28,3 +28,12 @@ class MakeAdminForm(FlaskForm):
 
 class DeleteUserForm(FlaskForm):
     user_to_delete = SelectField('Select user to delete:', [Required()], choices=[])
+
+class ChangePasswordForm(FlaskForm):
+    old_password = PasswordField('Old Password', [validators.DataRequired()])
+    password = PasswordField('New Password', [
+        validators.DataRequired(),
+        validators.EqualTo('confirm', message='Passwords must match')
+    ])
+    confirm = PasswordField('Repeat Password')
+    submit = SubmitField('Change Password')

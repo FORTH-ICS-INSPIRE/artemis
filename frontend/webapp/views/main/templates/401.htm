@@ -3,7 +3,7 @@
 
 {% block head %}
     {{super()}}
-  	<title>ARTEMIS - Error 404: Unauthorized to access this page</title>
+  	<title>ARTEMIS - Error 401: Unauthorized to access this page</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 {% endblock %}
@@ -15,10 +15,10 @@
 		        <div class="col-6 mx-auto">
 		            <div class="jumbotron vertical-center">
 		            	<p class="lead">
-		                    <img src="{{ url_for('static', filename='images/404_not_found.png') }}"></img>
+		                    <img src="{{ url_for('static', filename='images/401_unauthorized.png') }}"></img>
 		                </p>
-		                <h1 class="display-4">Error 404</h1>
-		                <p class="lead">The requested page was not found on this server.</p>
+		                <h1 class="display-4">Error 401</h1>
+		                <p class="lead">You are not authorized to access this page.</p>
 		            </div>
 		        </div>
 		    </div>
@@ -26,4 +26,9 @@
 
 {% endblock %}
 
-
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+    {% endblock %}
+{% endblock %}

@@ -62,6 +62,14 @@
                                         <p id="info_prefix"></p>
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <p><b>Key:</b></p>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <p id="info_key"></p>
+                                    </div>
+                                </div>
                             
                             </div>
                             <div class="col-lg-4">
@@ -83,10 +91,38 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6">
+                                        <p><b>Matched Prefix:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_matched_prefix"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Config:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_config_timestamp"></p>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="col-lg-4">  
+                                <div class="row">
+                                    <div class="col-lg-6">
                                         <p><b>Time Started:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <p id="info_time_started"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Time Detected:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_time_detected"></p>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -96,19 +132,7 @@
                                     <div class="col-lg-6">
                                         <p id="info_time_ended"></p>
                                     </div>
-                                </div>
-
-                            </div>
-
-                            <div class="col-lg-4">             
-                                <div class="row">
-                                    <div class="col-lg-4">
-                                        <p><b>Hijack key:</b></p>
-                                    </div>
-                                    <div class="col-lg-8">
-                                        <p id="info_key"></p>
-                                    </div>
-                                </div>
+                                </div>           
                                 <div class="row">
                                     <div class="col-lg-6">
                                         <p><b>Mitigation Started:</b></p>
@@ -117,22 +141,7 @@
                                         <p id="info_mitigation_started"></p>
                                     </div>
                                 </div> 
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <p><b>Matched Prefix:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <p id="info_matched_prefix"></p>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <p><b>Config Matched:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <p id="info_config_timestamp"></p>
-                                    </div>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>
@@ -161,18 +170,22 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <i class="fa fa-bell fa-fw"></i> Comments<button type="button" id="comment_action" class="btn btn-primary btn-sm float-right">Edit</button>
+                        <i class="fa fa-bell fa-fw"></i> Comments
+                        {% if current_user.has_roles('admin') %}
+                        <button type="button" id="comment_action" class="btn btn-primary btn-sm float-right">Edit</button>
+                        {% endif %}
                     </div>
                     <div class="panel-body">
                         <div class="row">
+                            <form><textarea id="code_comment_box" name="code_comment_box"></textarea></form>
                             <div id="comment_alert_box"></div>
-                            <form><textarea id="code_comment_box" name="code_comment_box">{{ comment }}</textarea></form>
                         </div>
                     </div>
                 </div>
-                {% endif %}
+                
         </div>
         <div class="row">
             <div class="col-lg-12">
@@ -215,7 +228,7 @@
         {{super()}}
         <script>
             var parameters = {};
-            var initial_data = $.parseJSON('{{ data | safe }}');
+            var initial_data = {{ data | safe }};
             parameters['hijack_key'] = "eq." + initial_data['key']
             var prefix;
             var table;
@@ -323,13 +336,8 @@
                 var hijack_key = ""
                 if('0' != d.hijack_key){
                     hijack_key = d.hijack_key
-                    view_hijack_link = '<a href="../hijack?key=' + d.hijack_key + '">View</a>'
+                    view_hijack_link = '<a href="{{ url_for('main.display_hijack') }}?key=' + d.hijack_key + '">View</a>'
                 }
-
-                var communities = new Array();
-                (d.communities).forEach(function (item) {
-                    communities.push({ 'asn': item[0], 'value': item[1] })
-                })
 
                 return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
                     '<tr>'+
@@ -358,7 +366,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Communities:</b></td>'+
-                        '<td>'+communities+'</td>'+
+                        '<td>'+communities_formmated(d.communities)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+
@@ -401,15 +409,16 @@
                 $( "#info_key" ).html( data['key'] );
                 $( "#info_type" ).html( data['type'] );
                 $( "#info_prefix" ).html( data['prefix'] );
-                $( "#info_hijack_as" ).html( data['hijack_as'] );
+                $( "#info_hijack_as" ).html( transform_unix_timestamp_to_client_local_time(data['hijack_as']) );
                 $( "#info_num_peers_seen" ).html( data['num_peers_seen'] );
                 $( "#info_num_asns_inf" ).html( data['num_asns_inf'] );
-                $( "#info_time_started" ).html( transform_time( data['time_started'] ) );
-                $( "#info_time_last" ).html( transform_time( data['time_last'] ) );
-                $( "#info_time_ended" ).html( transform_time( data['time_ended'] ) );
-                $( "#info_mitigation_started" ).html( transform_time( data['mitigation_started'] ) );
+                $( "#info_time_started" ).html( transform_unix_timestamp_to_client_local_time( data['time_started'] ) );
+                $( "#info_time_last" ).html( transform_unix_timestamp_to_client_local_time( data['time_last'] ) );
+                $( "#info_time_ended" ).html( transform_unix_timestamp_to_client_local_time( data['time_ended'] ) );
+                $( "#info_time_detected" ).html( transform_unix_timestamp_to_client_local_time( data['time_detected'] ) );
+                $( "#info_mitigation_started" ).html( transform_unix_timestamp_to_client_local_time( data['mitigation_started'] ) );
                 $( "#info_matched_prefix" ).html( data['configured_prefix'] );
-                $( "#info_config_timestamp" ).html( transform_time( data['timestamp_of_config'] )  );
+                $( "#info_config_timestamp" ).html( transform_unix_timestamp_to_client_local_time( data['timestamp_of_config'] )  );
                 $( "#code_comment_box").html( data['comment'] );
 
                 if(data['resolved'] == true || data['ignored'] == true){
@@ -436,36 +445,41 @@
                 }
             } 
 
-            function transform_time(timestamp){
-                if(timestamp != 0){
-                    var tunix = moment.unix(timestamp);
-                    return moment(tunix).local().format("DD-MM-YYYY HH:mm:ss")
-                }else{
-                    return "Never"
-                }
-            }
+           
             {% if current_user.has_roles('admin') %}
             $( "#resolved_button" ).click(function() {
-                var url_ = "../main/hijacks/resolve/?id=" + initial_data['key'];
-                $.ajax({url: url_, success: function(result){
-                    retrieve_hijack(parameters['hijack_key']);
-                }
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ url_for('actions.resolve_hijack') }}",
+                    data: { "hijack_key" : initial_data['key'] },
+                    success: function(result){
+                        retrieve_hijack(parameters['hijack_key']);
+                    },
+                    dataType: 'json'
                 });
             });
 
             $( "#mitigation_button" ).click(function() {
-                var url_ = "../main/hijacks/mitigate/?id=" + initial_data['key'] + "&prefix=" + prefix;
-                $.ajax({url: url_, success: function(result){
-                    retrieve_hijack(parameters['hijack_key']);
-                }
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ url_for('actions.mitigate_hijack') }}",
+                    data: { "hijack_key" : initial_data['key'], "prefix" : prefix },
+                    success: function(result){
+                        retrieve_hijack(parameters['hijack_key']);
+                    },
+                    dataType: 'json'
                 });
             });
 
             $( "#ignored_button" ).click(function() {
-                var url_ = "../main/hijacks/ignore/?id=" + initial_data['key']
-                $.ajax({url: url_, success: function(result){
-                    retrieve_hijack(parameters['hijack_key']);
-                }
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ url_for('actions.ignore_hijack') }}",
+                    data: { "hijack_key" : initial_data['key']},
+                    success: function(result){
+                        retrieve_hijack(parameters['hijack_key']);
+                    },
+                    dataType: 'json'
                 });
             });
 
@@ -486,7 +500,7 @@
             function submit_new_comment(new_comment){
                 $.ajax({
                     type: "POST",
-                    url: "../main/submit_comment/",
+                    url: "{{ url_for('actions.submit_new_comment') }}",
                     data: new_comment,
                     success: function(result){
                         if(result["status"] == "fail"){
@@ -504,9 +518,8 @@
                             $('#comment_action').html('Edit');
                             editor.setValue(result["data"])
                             editor.options.readOnly = true;
-                            //update_config_timestamp();
                         }
-                        $("#code_comment_box").html(message)
+                        $("#comment_alert_box").html(message)
                     },
                     dataType: "json"
                 });
@@ -515,6 +528,7 @@
             {% endif %}
 
         </script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>

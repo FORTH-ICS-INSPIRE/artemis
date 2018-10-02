@@ -1,5 +1,4 @@
-from sqlalchemy import exc
-from flask import Blueprint, render_template, flash
+from flask import Blueprint, render_template
 from flask import current_app, redirect, request, url_for, jsonify
 from flask_security.decorators import roles_required
 from webapp.data.models import User, db, Role, roles_users
@@ -7,6 +6,7 @@ from webapp.templates.forms import CheckboxForm, ApproveUserForm, MakeAdminForm,
 from webapp.core import app
 from webapp.core.modules import Modules_status
 from webapp.core.actions import New_config
+from webapp.core.fetch_config import fetch_all_config_timestamps
 import yaml
 import logging
 import json
@@ -108,63 +108,16 @@ def user_management():
     _users_to_delete.user_to_delete.choices = _pending_users_list + _users_list
 
     return render_template('user_management.htm', 
-        users_to_approve_form=_pending_users_form, 
-        users_to_make_admin_form=_users_to_promote_to_admin,
-        users_to_delete_form=_users_to_delete)
+            users_to_approve_form=_pending_users_form, 
+            users_to_make_admin_form=_users_to_promote_to_admin,
+            users_to_delete_form=_users_to_delete
+        )
 
-
-@admin.route('/approve_user', methods=['POST'])
+@admin.route('/config_comparison', methods=['GET'])
 @roles_required('admin')
-def approve_user():
+def config_comparison():
     #log info
-    form = ApproveUserForm(request.form)
-    log.debug("approve_user {}".format(form))
-
-    if form.user_to_approve.data is not None:
-        user = app.security.datastore.find_user(id=form.user_to_approve.data)
-        
-        user_role = app.security.datastore.find_role("user")
-        app.security.datastore.add_role_to_user(user, user_role)
-
-        pending_role = app.security.datastore.find_role("pending")
-        app.security.datastore.remove_role_from_user(user, pending_role)
-
-        app.security.datastore.commit()
-
-    return redirect("admin/user_management")
+    _configs = fetch_all_config_timestamps()
+    return render_template('config_comparison.htm', configs=list(reversed(_configs)))
 
 
-@admin.route('/create_admin', methods=['POST'])
-@roles_required('admin')
-def create_admin():
-    #log info
-    form = MakeAdminForm(request.form)
-    log.debug("create_admin {}".format(form))
-
-    if form.user_to_make_admin.data is not None:
-        user = app.security.datastore.find_user(id=form.user_to_make_admin.data)
-        
-        user_role = app.security.datastore.find_role("admin")
-        app.security.datastore.add_role_to_user(user, user_role)
-
-        pending_role = app.security.datastore.find_role("user")
-        app.security.datastore.remove_role_from_user(user, pending_role)
-
-        app.security.datastore.commit()
-
-    return redirect("admin/user_management")
-
-
-
-@admin.route('/delete_user', methods=['POST'])
-@roles_required('admin')
-def delete_user():
-    #log info
-    form = DeleteUserForm(request.form)
-    log.debug("delete user {}".format(form))
-
-    if form.user_to_delete.data is not None:
-        db.session.query(User).filter(User.id==form.user_to_delete.data).delete()
-        db.session.commit()
-
-    return redirect("admin/user_management")

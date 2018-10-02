@@ -118,7 +118,7 @@ class DB_statistics():
         self.get_new_stats()
         return [ 
             ('Total BGP Updates', self.total_bgp_updates),
-            ('Unhadled BGP Updates', self.total_bgp_unhandled_updates),
+            ('Unhandled BGP Updates', self.total_bgp_unhandled_updates),
             ('Total Hijacks', self.total_hijacks),
             ('Resolved', self.total_hijacks_resolved),
             ('Under mitigation', self.total_hijacks_under_mitigation),

@@ -9,26 +9,57 @@ import pickle
 import json
 import logging
 import hashlib
+import os
 
 log = logging.getLogger('artemis_logger')
 
 class Postgresql_db(Service):
 
+    def create_connect_db(self):
+        _connected = False
+        _db_conn = None
+        time_sleep_connection_retry = 2
+        while(not _connected):
+            time.sleep(time_sleep_connection_retry)
+            try:
+                _db_name = os.getenv('DATABASE_NAME', 'artemis_db')
+                _user = os.getenv('DATABASE_USER', 'artemis_user')
+                _host = os.getenv('DATABASE_HOST', 'postgres')
+                _password = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
+
+                _db_conn = psycopg2.connect(
+                    dbname=_db_name,
+                    user=_user,
+                    host=_host,
+                    password=_password
+                    )
+
+            except:
+                log.exception('exception')
+            finally:
+                log.debug('PostgreSQL DB created/connected..')
+                _connected = True
+        return _db_conn
 
     def run_worker(self):
+        db_conn = self.create_connect_db()
+        db_cursor = db_conn.cursor()
         try:
             with Connection(RABBITMQ_HOST) as connection:
-                self.worker = self.Worker(connection)
+                self.worker = self.Worker(connection, db_conn, db_cursor)
                 self.worker.run()
         except:
             log.exception('exception')
         finally:
             log.info('stopped')
+            db_cursor.close()
+            db_conn.close()
+
 
 
     class Worker(ConsumerProducerMixin):
 
-        def __init__(self, connection):
+        def __init__(self, connection, db_conn, db_cursor):
             self.connection = connection
             self.prefix_tree = None
             self.rules = None
@@ -38,12 +69,11 @@ class Postgresql_db(Service):
             self.update_bgp_entries = []
             self.handled_bgp_entries = []
             self.tmp_hijacks_dict = dict()
-            self.time_sleep_connection_retry = 2
 
             # DB variables
-            self.db_conn = None
-            self.db_cur = None
-            self.create_connect_db()
+            self.db_conn = db_conn
+            self.db_cur = db_cursor
+            self.create_tables()
 
             # EXCHANGES
             self.config_exchange = Exchange('config', channel=connection, type='direct', durable=False, delivery_mode=1)
@@ -347,8 +377,7 @@ class Postgresql_db(Service):
                 self.db_conn.commit()
                 self.producer.publish(
                     {
-                        'status': 'accepted',
-                        'config:': raw['comment']
+                        'status': 'accepted'
                     },
                     exchange='',
                     routing_key = message.properties['reply_to'],
@@ -360,8 +389,7 @@ class Postgresql_db(Service):
             except Exception:
                 self.producer.publish(
                     {
-                        'status': 'fail',
-                        'config:': raw['comment']
+                        'status': 'fail'
                     },
                     exchange='',
                     routing_key = message.properties['reply_to'],
@@ -420,27 +448,15 @@ class Postgresql_db(Service):
                 "config_data  json, " + \
                 "raw_config  text, " + \
                 "time_modified BIGINT) " 
+
+            config_view = "CREATE OR REPLACE VIEW configs_available AS SELECT id, time_modified "
+            config_view += "FROM configs;"
             
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)
             self.db_cur.execute(configs_table)
+            self.db_cur.execute(config_view)
             self.db_conn.commit()
-
-        def create_connect_db(self):
-            _connected = False
-            while(not _connected):
-                time.sleep(self.time_sleep_connection_retry)
-                try:
-                    connect_str = "dbname='artemis_db' user='artemis_user' host='postgres' " + \
-                        "password='Art3m1s'"
-                    self.db_conn = psycopg2.connect(connect_str)
-                    self.db_cur = self.db_conn.cursor()
-                    self.create_tables()
-                except:
-                    log.exception('exception')
-                finally:
-                    log.debug('PostgreSQL DB created/connected..')
-                    _connected = True
 
 
         def _insert_bgp_updates(self):
@@ -516,7 +532,7 @@ class Postgresql_db(Service):
                             False,
                             self.tmp_hijacks_dict[key]['configured_prefix'],
                             int(self.tmp_hijacks_dict[key]['timestamp_of_config']),
-                            None,
+                            '',
                             len(self.tmp_hijacks_dict[key]['peers_seen']),
                             len(self.tmp_hijacks_dict[key]['inf_asns']),
                             int(self.tmp_hijacks_dict[key]['time_started']),

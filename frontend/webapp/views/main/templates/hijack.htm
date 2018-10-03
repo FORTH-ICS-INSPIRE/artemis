@@ -452,7 +452,12 @@
                 $.ajax({
                     type: 'POST',
                     url: "{{ url_for('actions.resolve_hijack') }}",
-                    data: { "hijack_key" : initial_data['key'] },
+                    data: {
+                        "hijack_key" : initial_data['key'],
+                        "hijack_as": initial_data['hijack_as'],
+                        "type_": initial_data['type'],
+                        "prefix": initial_data['prefix']
+                     },
                     success: function(result){
                         retrieve_hijack(parameters['hijack_key']);
                     },
@@ -476,7 +481,12 @@
                 $.ajax({
                     type: 'POST',
                     url: "{{ url_for('actions.ignore_hijack') }}",
-                    data: { "hijack_key" : initial_data['key']},
+                    data: {
+                        "hijack_key" : initial_data['key'],
+                        "hijack_as": initial_data['hijack_as'],
+                        "type_": initial_data['type'],
+                        "prefix": initial_data['prefix']
+                    },
                     success: function(result){
                         retrieve_hijack(parameters['hijack_key']);
                     },

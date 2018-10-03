@@ -526,7 +526,7 @@ class Postgresql_db(Service):
             config_view += "FROM configs;"
 
             hijacks_view = "CREATE OR REPLACE VIEW view_hijacks AS SELECT "
-            hijacks_view += "id, key, type, prefix, hijack_as, num_peers_seen, num_asns_inf "
+            hijacks_view += "id, key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
             hijacks_view += "time_started, time_last, mitigation_started, time_detected, "
             hijacks_view += "under_mitigation, resolved, active, ignored, configured_prefix, "
             hijacks_view += "timestamp_of_config, comment FROM hijacks;"

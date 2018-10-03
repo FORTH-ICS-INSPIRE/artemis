@@ -69,7 +69,7 @@ class Configuration():
 def fetch_all_config_timestamps():
     try:
         log.debug("send request to fetch all config timestamps")
-        url_ = API_PATH + "/configs_available"
+        url_ = API_PATH + "/view_configs"
         response = requests.get(url=url_)
         raw_json = response.json()
         if len(raw_json) > 0:

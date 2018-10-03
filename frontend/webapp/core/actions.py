@@ -8,9 +8,12 @@ log = logging.getLogger('webapp_logger')
 
 class Resolve_hijack():
 
-    def __init__(self, hijack_key):
+    def __init__(self, hijack_key, prefix, type_, hijack_as):
         self.connection = None
         self.hijack_key = hijack_key
+        self.prefix = prefix
+        self.type_ = type_
+        self.hijack_as = hijack_as
         self.init_conn()
         self.hijack_exchange = Exchange(
             'hijack-update',
@@ -32,6 +35,9 @@ class Resolve_hijack():
             producer.publish(
                 {
                     'key': self.hijack_key,
+                    'prefix': self.prefix,
+                    'type': self.type_,
+                    'hijack_as': self.hijack_as
                 },
                 exchange=self.hijack_exchange,
                 routing_key='resolved',
@@ -75,9 +81,12 @@ class Mitigate_hijack():
 
 class Ignore_hijack():
 
-    def __init__(self, hijack_key):
+    def __init__(self, hijack_key, prefix, type_, hijack_as):
         self.connection = None
         self.hijack_key = hijack_key
+        self.prefix = prefix
+        self.type_ = type_
+        self.hijack_as = hijack_as
         self.init_conn()
         self.hijack_exchange = Exchange(
             'hijack-update',
@@ -97,6 +106,9 @@ class Ignore_hijack():
             producer.publish(
                 {
                     'key': self.hijack_key,
+                    'prefix': self.prefix,
+                    'type': self.type_,
+                    'hijack_as': self.hijack_as
                 },
                 exchange=self.hijack_exchange,
                 routing_key='ignored',

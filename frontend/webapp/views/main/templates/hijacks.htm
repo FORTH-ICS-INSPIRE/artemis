@@ -196,7 +196,7 @@
                             url: '{{ url_for('proxy_api') }}',
                             dataType: "json",
                             dataType: "json",
-                            data: { "action": "hijacks", "parameters" : JSON.stringify(parameters) },
+                            data: { "action": "view_hijacks", "parameters" : JSON.stringify(parameters) },
 
                             success: function(data, status, xhr){
                                 callback({

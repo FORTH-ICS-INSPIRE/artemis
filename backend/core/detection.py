@@ -48,7 +48,7 @@ class Detection(Service):
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
-        except BaseException:
+        except Exception:
             log.exception('exception')
         finally:
             log.info('stopped')
@@ -148,6 +148,7 @@ class Detection(Service):
                     queues=[self.hijack_fetch_queue],
                     on_message=self.fetch_ongoing_hijacks,
                     prefetch_count=1,
+                    accept=['pickle'],
                     no_ack=True
                 ),
                 Consumer(
@@ -280,7 +281,7 @@ class Detection(Service):
                                 len(monitor_event['path']), prefix_node):
                             if func(monitor_event, prefix_node):
                                 break
-                    except BaseException:
+                    except Exception:
                         log.exception('exception')
                 self.mark_handled(raw)
                 self.mon_num += 1
@@ -415,7 +416,7 @@ class Detection(Service):
                         hijacker_asn = origin_asn
                     elif first_neighbor_asn is not None and false_first_neighbor:
                         hijacker_asn = first_neighbor_asn
-                except BaseException:
+                except Exception:
                     log.exception(
                         'Problem in subprefix hijack detection, event {}'.format(monitor_event))
                 self.commit_hijack(monitor_event, hijacker_asn, 'S')
@@ -428,12 +429,12 @@ class Detection(Service):
             Commit new or update an existing hijack to the database.
             It uses memcache server to store ongoing hijacks information to not stress the db.
             """
-            future_memcache_hijack_key = hashlib.md5(pickle.dumps(
+            memcache_hijack_key = hashlib.md5(pickle.dumps(
                 [monitor_event['prefix'], hijacker, hij_type])).hexdigest()
             hijack_value = {
                 'prefix': monitor_event['prefix'],
-                'hijacker': hijacker,
-                'hij_type': hij_type,
+                'hijack_as': hijacker,
+                'type': hij_type,
                 'time_started': monitor_event['timestamp'],
                 'time_last': monitor_event['timestamp'],
                 'peers_seen': {monitor_event['peer_asn']},
@@ -443,29 +444,29 @@ class Detection(Service):
             }
 
             if hij_type in {'S', 'Q'}:
-                hijack_value['inf_asns'] = set(monitor_event['path'])
+                hijack_value['asns_inf'] = set(monitor_event['path'])
             else:
-                hijack_value['inf_asns'] = set(
+                hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(hij_type + 1)])
 
-            result = self.memcache.get(future_memcache_hijack_key)
+            result = self.memcache.get(memcache_hijack_key)
             if result is not None:
                 result['time_started'] = min(
                     result['time_started'], hijack_value['time_started'])
                 result['time_last'] = max(
                     result['time_last'], hijack_value['time_last'])
                 result['peers_seen'].update(hijack_value['peers_seen'])
-                result['inf_asns'].update(hijack_value['inf_asns'])
+                result['asns_inf'].update(hijack_value['asns_inf'])
                 # no update since db already knows!
                 result['monitor_keys'] = hijack_value['monitor_keys']
             else:
-                first_trigger = monitor_event['timestamp']
+                first_trigger = int(monitor_event['timestamp'])
                 hijack_value['key'] = hashlib.md5(pickle.dumps(
                     [monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()
                 hijack_value['time_detected'] = time.time()
                 result = hijack_value
 
-            self.memcache.set(future_memcache_hijack_key, result)
+            self.memcache.set(memcache_hijack_key, result)
 
             self.producer.publish(
                 result,
@@ -498,8 +499,13 @@ class Detection(Service):
             #         message, message.payload))
             try:
                 hijacks = message.payload
-                self.memcache.set_many(hijacks)
-            except BaseException:
+                for hijack_key, hijack_value in hijacks.items():
+                    memcache_hijack_key = hashlib.md5(pickle.dumps([
+                        hijack_value['prefix'],
+                        hijack_value['hijack_as'],
+                        hijack_value['type']])).hexdigest()
+                    self.memcache.set(memcache_hijack_key, hijack_value)
+            except Exception:
                 log.exception(
                     "couldn't fetch data: {}".format(
                         message.payload))
@@ -513,8 +519,12 @@ class Detection(Service):
                     message, message.payload))
             try:
                 data = message.payload
-                self.memcache.delete(data['key'])
-            except BaseException:
+                memcache_hijack_key = hashlib.md5(pickle.dumps(
+                    [data['prefix'],
+                     data['hijack_as'],
+                     data['type']])).hexdigest()
+                self.memcache.delete(memcache_hijack_key)
+            except Exception:
                 log.exception(
                     "couldn't erase data: {}".format(
                         message.payload))

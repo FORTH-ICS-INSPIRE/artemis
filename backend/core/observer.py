@@ -28,7 +28,7 @@ class Observer(Service):
                 self.should_stop = False
                 while not self.should_stop:
                     time.sleep(5)
-        except BaseException:
+        except Exception:
             log.exception('exception')
         finally:
             observer.stop()

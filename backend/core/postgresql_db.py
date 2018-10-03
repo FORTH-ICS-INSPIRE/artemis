@@ -35,7 +35,7 @@ class Postgresql_db(Service):
                     password=_password
                 )
 
-            except BaseException:
+            except Exception:
                 log.exception('exception')
             finally:
                 log.debug('PostgreSQL DB created/connected..')
@@ -49,7 +49,7 @@ class Postgresql_db(Service):
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection, db_conn, db_cursor)
                 self.worker.run()
-        except BaseException:
+        except Exception:
             log.exception('exception')
         finally:
             log.info('stopped')
@@ -235,12 +235,11 @@ class Postgresql_db(Service):
                 extract_msg = (msg_['prefix'], msg_['key'], str(origin_as), str(peer_asn), msg_['path'], msg_['service'],
                                msg_['type'], json.dumps([(k['asn'], k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, 'false', self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'])
                 self.insert_bgp_entries.append(extract_msg)
-            except BaseException:
+            except Exception:
                 log.debug("exception: {}".format(msg_))
 
         def handle_hijack_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
-            log.info('payload: {}'.format(message.payload))
             msg_ = message.payload
             try:
                 key = msg_['key']
@@ -255,10 +254,10 @@ class Postgresql_db(Service):
                         msg_['time_started'])
                     self.tmp_hijacks_dict[key]['time_last'] = int(
                         msg_['time_last'])
-                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(msg_[
-                        'peers_seen'])
-                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(msg_[
-                        'asns_inf'])
+                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(list(msg_[
+                        'peers_seen']))
+                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(list(msg_[
+                        'asns_inf']))
                     self.tmp_hijacks_dict[key]['num_peers_seen'] = len(msg_[
                         'peers_seen'])
                     self.tmp_hijacks_dict[key]['num_asns_inf'] = len(msg_[
@@ -276,17 +275,17 @@ class Postgresql_db(Service):
                         min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
                     self.tmp_hijacks_dict[key]['time_last'] = int(
                         max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
-                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(msg_[
-                        'peers_seen'])
-                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(msg_[
-                        'asns_inf'])
+                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(list(msg_[
+                        'peers_seen']))
+                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(list(msg_[
+                        'asns_inf']))
                     self.tmp_hijacks_dict[key]['num_peers_seen'] = len(msg_[
                         'peers_seen'])
                     self.tmp_hijacks_dict[key]['num_asns_inf'] = len(msg_[
                         'asns_inf'])
                     self.tmp_hijacks_dict[key]['monitor_keys'].update(
                         msg_['monitor_keys'])
-            except BaseException:
+            except Exception:
                 log.debug("exception: {}".format(msg_))
 
         def handle_handled_bgp_update(self, message):
@@ -294,7 +293,7 @@ class Postgresql_db(Service):
             try:
                 key_ = (message.payload,)
                 self.handled_bgp_entries.append(key_)
-            except BaseException:
+            except Exception:
                 log.debug("exception: {}".format(message))
 
         def build_radix_tree(self):
@@ -336,7 +335,7 @@ class Postgresql_db(Service):
                         del config['raw_config']
                     config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
                     self._save_config(config_hash, config, raw_config)
-            except BaseException:
+            except Exception:
                 log.debug("exception: {}".format(config))
 
         def handle_config_request_reply(self, message):
@@ -363,7 +362,7 @@ class Postgresql_db(Service):
                             self._save_config(config_hash, config, raw_config)
                         else:
                             log.debug("database config is up-to-date")
-            except BaseException:
+            except Exception:
                 log.debug("exception: {}".format(config))
 
         def handle_hijack_retrieve(self, message):
@@ -399,7 +398,7 @@ class Postgresql_db(Service):
                     retry=False,
                     priority=2
                 )
-            except BaseException:
+            except Exception:
                 log.exception("exception")
 
         def handle_resolved_hijack(self, message):
@@ -544,7 +543,7 @@ class Postgresql_db(Service):
                 self.db_cur.executemany("INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, " +
                                         "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
                 self.db_conn.commit()
-            except BaseException:
+            except Exception:
                 log.exception('exception')
                 self.db_conn.rollback()
                 return -1
@@ -568,7 +567,7 @@ class Postgresql_db(Service):
                         "UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ",
                         self.update_bgp_entries)
                     self.db_conn.commit()
-                except BaseException:
+                except Exception:
                     log.exception('exception')
                     self.db_conn.rollback()
                     return -1
@@ -580,7 +579,7 @@ class Postgresql_db(Service):
                         "UPDATE bgp_updates SET handled=true WHERE key=%s",
                         self.handled_bgp_entries)
                     self.db_conn.commit()
-                except BaseException:
+                except Exception:
                     log.exception(
                         'handled bgp entries {}'.format(
                             self.handled_bgp_entries))
@@ -603,11 +602,11 @@ class Postgresql_db(Service):
 
                     values_ = (
                         key,
-                        self.tmp_hijacks_dict[key]['hij_type'],
+                        self.tmp_hijacks_dict[key]['type'],
                         self.tmp_hijacks_dict[key]['prefix'],
-                        self.tmp_hijacks_dict[key]['hijacker'],
+                        self.tmp_hijacks_dict[key]['hijack_as'],
                         self.tmp_hijacks_dict[key]['num_peers_seen'],
-                        self.tmp_hijacks_dict[key]['num_inf_asns'],
+                        self.tmp_hijacks_dict[key]['num_asns_inf'],
                         int(self.tmp_hijacks_dict[key]['time_started']),
                         int(self.tmp_hijacks_dict[key]['time_last']),
                         0,
@@ -623,7 +622,7 @@ class Postgresql_db(Service):
                         self.tmp_hijacks_dict[key]['peers_seen'],
                         self.tmp_hijacks_dict[key]['asns_inf'],
                         self.tmp_hijacks_dict[key]['num_peers_seen'],
-                        self.tmp_hijacks_dict[key]['num_inf_asns'],
+                        self.tmp_hijacks_dict[key]['num_asns_inf'],
                         int(self.tmp_hijacks_dict[key]['time_started']),
                         int(self.tmp_hijacks_dict[key]['time_last']),
                         self.tmp_hijacks_dict[key]['peers_seen'],
@@ -632,7 +631,7 @@ class Postgresql_db(Service):
 
                     self.db_cur.execute(cmd_, values_)
                     self.db_conn.commit()
-                except BaseException:
+                except Exception:
                     log.exception('exception')
                     self.db_conn.rollback()
                     return -1
@@ -696,7 +695,7 @@ class Postgresql_db(Service):
                         int(
                          time.time())))
                 self.db_conn.commit()
-            except BaseException:
+            except Exception:
                 log.exception("failed to save config in db")
 
         def _retrieve_most_recent_config_hash(self):
@@ -706,7 +705,7 @@ class Postgresql_db(Service):
                 hash_ = self.db_cur.fetchone()
                 if isinstance(hash_, tuple):
                     return hash_[0]
-            except BaseException:
+            except Exception:
                 log.exception(
                     "failed to retrieved most recent config hash in db")
             return None

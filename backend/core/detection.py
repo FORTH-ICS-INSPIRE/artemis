@@ -48,7 +48,7 @@ class Detection(Service):
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
-        except BaseException:
+        except Exception:
             log.exception('exception')
         finally:
             log.info('stopped')
@@ -281,7 +281,7 @@ class Detection(Service):
                                 len(monitor_event['path']), prefix_node):
                             if func(monitor_event, prefix_node):
                                 break
-                    except BaseException:
+                    except Exception:
                         log.exception('exception')
                 self.mark_handled(raw)
                 self.mon_num += 1
@@ -416,7 +416,7 @@ class Detection(Service):
                         hijacker_asn = origin_asn
                     elif first_neighbor_asn is not None and false_first_neighbor:
                         hijacker_asn = first_neighbor_asn
-                except BaseException:
+                except Exception:
                     log.exception(
                         'Problem in subprefix hijack detection, event {}'.format(monitor_event))
                 self.commit_hijack(monitor_event, hijacker_asn, 'S')
@@ -468,7 +468,6 @@ class Detection(Service):
 
             self.memcache.set(memcache_hijack_key, result)
 
-            log.info('{}'.format(result))
             self.producer.publish(
                 result,
                 exchange=self.hijack_exchange,
@@ -507,7 +506,7 @@ class Detection(Service):
                         hijack_value['type']])).hexdigest()
                     assert self.memcache.get(memcache_hijack_key) is None
                     self.memcache.set(memcache_hijack_key, hijack_value)
-            except BaseException:
+            except Exception:
                 log.exception(
                     "couldn't fetch data: {}".format(
                         message.payload))
@@ -524,7 +523,7 @@ class Detection(Service):
                 memcache_hijack_key = hashlib.md5(pickle.dumps(
                     [data['prefix'], hijacker, hij_type])).hexdigest()
                 self.memcache.delete(data['key'])
-            except BaseException:
+            except Exception:
                 log.exception(
                     "couldn't erase data: {}".format(
                         message.payload))

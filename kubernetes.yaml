@@ -673,6 +673,7 @@ items:
               resolver localhost;
               location / {
                   proxy_pass http://frontend:8000/;
+                  proxy_set_header Host $host:$server_port;
               }
               ssl_certificate /etc/nginx/certs/cert.pem;
               ssl_certificate_key /etc/nginx/certs/key.pem;

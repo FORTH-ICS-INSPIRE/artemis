@@ -110,10 +110,53 @@ def user_management():
     _users_to_delete = DeleteUserForm()
     _users_to_delete.user_to_delete.choices = _pending_users_list + _users_list
 
+    user_list = []
+    _admins = User.query.filter(User.roles.any(Role.id.in_(
+        [(app.security.datastore.find_role("admin")).id]))).all()
+
+    for user in _pending_users:
+        user_list.append(
+            (
+                {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': 'pending',
+                    'last_login_at': user.last_login_at.timestamp()
+                }
+            )
+        )
+
+    for user in _users:
+        user_list.append(
+            (
+                {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': 'user',
+                    'last_login_at': user.last_login_at.timestamp()
+                }
+            )
+        )
+    for user in _admins:
+        user_list.append(
+            (
+                {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': 'admin',
+                    'last_login_at': user.last_login_at.timestamp()
+                }
+            )
+        )
+
     return render_template('user_management.htm',
                            users_to_approve_form=_pending_users_form,
                            users_to_make_admin_form=_users_to_promote_to_admin,
-                           users_to_delete_form=_users_to_delete
+                           users_to_delete_form=_users_to_delete,
+                           users_list=user_list
                            )
 
 

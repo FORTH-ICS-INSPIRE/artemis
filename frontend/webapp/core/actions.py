@@ -1,6 +1,5 @@
 from kombu import Connection, Exchange, Consumer, Producer, Queue, uuid
 from webapp.utils import RABBITMQ_HOST
-from webapp.utils.conf import Config
 import logging
 import difflib
 
@@ -13,16 +12,22 @@ class Resolve_hijack():
         self.connection = None
         self.hijack_key = hijack_key
         self.init_conn()
-        self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
+        self.hijack_exchange = Exchange(
+            'hijack-update',
+            type='direct',
+            durable=False,
+            delivery_mode=1)
 
     def init_conn(self):
         try:
             self.connection = Connection(RABBITMQ_HOST)
-        except:
+        except BaseException:
             log.error('Resolve_hijack failed to connect to rabbitmq..')
 
     def resolve(self):
-        log.debug("send resolve hijack message with key: {}".format(self.hijack_key))
+        log.debug(
+            "send resolve hijack message with key: {}".format(
+                self.hijack_key))
         with Producer(self.connection) as producer:
             producer.publish(
                 {
@@ -33,19 +38,21 @@ class Resolve_hijack():
                 priority=2
             )
 
+
 class Mitigate_hijack():
 
     def __init__(self, hijack_key, prefix):
         self.connection = None
         self.hijack_key = hijack_key
         self.prefix = prefix
-        self.mitigation_exchange = Exchange('mitigation', type='direct', durable=False, delivery_mode=1)
+        self.mitigation_exchange = Exchange(
+            'mitigation', type='direct', durable=False, delivery_mode=1)
         self.init_conn()
 
     def init_conn(self):
         try:
             self.connection = Connection(RABBITMQ_HOST)
-        except:
+        except BaseException:
             log.error('Resolve_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
@@ -65,18 +72,23 @@ class Mitigate_hijack():
                 priority=2
             )
 
+
 class Ignore_hijack():
 
     def __init__(self, hijack_key):
         self.connection = None
         self.hijack_key = hijack_key
         self.init_conn()
-        self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
+        self.hijack_exchange = Exchange(
+            'hijack-update',
+            type='direct',
+            durable=False,
+            delivery_mode=1)
 
     def init_conn(self):
         try:
             self.connection = Connection(RABBITMQ_HOST)
-        except:
+        except BaseException:
             log.error('Ignore_hijack failed to connect to rabbitmq..')
 
     def ignore(self):
@@ -97,12 +109,16 @@ class Comment_hijack():
     def __init__(self):
         self.connection = None
         self.init_conn()
-        self.hijack_exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
-        
+        self.hijack_exchange = Exchange(
+            'hijack-update',
+            type='direct',
+            durable=False,
+            delivery_mode=1)
+
     def init_conn(self):
         try:
             self.connection = Connection(RABBITMQ_HOST)
-        except:
+        except BaseException:
             log.error('Comment_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
@@ -117,7 +133,7 @@ class Comment_hijack():
         with Producer(self.connection) as producer:
             producer.publish(
                 {
-                    'key' : hijack_key,
+                    'key': hijack_key,
                     'comment': comment
                 },
                 exchange=self.hijack_exchange,
@@ -128,16 +144,15 @@ class Comment_hijack():
                 correlation_id=self.correlation_id
             )
         with Consumer(self.connection,
-                on_message=self.on_response,
-                queues=[callback_queue],
-                no_ack=True):
+                      on_message=self.on_response,
+                      queues=[callback_queue],
+                      no_ack=True):
             while self.response is None:
                 self.connection.drain_events()
         if self.response['status'] == 'accepted':
             return 'Comment saved.', True
         else:
             return "Error while saving.", False
-
 
 
 class New_config():
@@ -149,7 +164,7 @@ class New_config():
     def init_conn(self):
         try:
             self.connection = Connection(RABBITMQ_HOST)
-        except:
+        except BaseException:
             log.error('New_config failed to connect to rabbitmq..')
 
     def on_response(self, message):
@@ -175,9 +190,9 @@ class New_config():
                     correlation_id=self.correlation_id
                 )
             with Consumer(self.connection,
-                    on_message=self.on_response,
-                    queues=[callback_queue],
-                    no_ack=True):
+                          on_message=self.on_response,
+                          queues=[callback_queue],
+                          no_ack=True):
                 while self.response is None:
                     self.connection.drain_events()
 
@@ -187,17 +202,7 @@ class New_config():
                 return 'Configuration file updated.', True
             else:
                 log.error('invalid configuration:\n{}'.format(new_config))
-                return "Invalid configuration file.\n{}".format(self.response['reason']), False
+                return "Invalid configuration file.\n{}".format(
+                    self.response['reason']), False
         else:
             return "No changes found on the new configuration.", False
-
-
-
-
-
-
-
-
-
-
-

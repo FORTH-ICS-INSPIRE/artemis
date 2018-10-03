@@ -20,7 +20,9 @@ class Configuration():
 
     def get_newest_config(self):
         try:
-            log.debug("send request for newest config: {}".format(self.raw_json)) 
+            log.debug(
+                "send request for newest config: {}".format(
+                    self.raw_json))
             url_ = API_PATH + "/configs?order=id.desc&limit=1"
             response = requests.get(url=url_)
             self.raw_json = response.json()
@@ -31,15 +33,14 @@ class Configuration():
                 self.raw_config = self.raw_json[0]['raw_config']
             if 'time_modified' in self.raw_json[0]:
                 self.time_modified = self.raw_json[0]['time_modified']
-        
-        except:
+
+        except BaseException:
             log.exception("failed to fetch newest config")
-        
+
         try:
             self.config_yaml = yload(json.dumps(self.raw_json_config))
-        except:
+        except BaseException:
             log.exception("yaml failed to parse new config")
-
 
     def get_prefixes_list(self):
         if self.config_yaml is None:
@@ -48,7 +49,8 @@ class Configuration():
             prefixes_list = []
             if 'prefixes' in self.config_yaml:
                 for prefix_group in self.config_yaml['prefixes']:
-                    prefixes_list.extend((self.config_yaml['prefixes'][prefix_group]))
+                    prefixes_list.extend(
+                        (self.config_yaml['prefixes'][prefix_group]))
             return prefixes_list
 
     def get_raw_response(self):
@@ -65,7 +67,6 @@ class Configuration():
 
 
 def fetch_all_config_timestamps():
-    ret_obj = None
     try:
         log.debug("send request to fetch all config timestamps")
         url_ = API_PATH + "/configs_available"
@@ -75,6 +76,6 @@ def fetch_all_config_timestamps():
             return raw_json
         else:
             return None
-    except:
+    except BaseException:
         log.exception("failed to fetch all config timestamps")
     return None

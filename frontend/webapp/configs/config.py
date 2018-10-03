@@ -4,9 +4,9 @@ from flask_compress import Compress
 from flask_security import Security, SQLAlchemyUserDatastore
 from webapp.data.models import db, Role, User
 from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
-from webapp.utils import API_URL_FLASK
 
 log = logging.getLogger('webapp_logger')
+
 
 class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = True
@@ -33,6 +33,7 @@ class BaseConfig(object):
 
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
 
+
 class ProductionConfig(BaseConfig):
     if not os.path.exists('/etc/webapp/db'):
         os.makedirs('/etc/webapp/db')
@@ -41,7 +42,7 @@ class ProductionConfig(BaseConfig):
     DB_FULL_PATH = "/etc/webapp/db/" + DB_NAME
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + DB_FULL_PATH
 
-    SECURITY_USER_IDENTITY_ATTRIBUTES = ('username','email')
+    SECURITY_USER_IDENTITY_ATTRIBUTES = ('username', 'email')
     SECURITY_SEND_REGISTER_EMAIL = False
     SECURITY_RECOVERABLE = False
     LOGGING_LEVEL = logging.INFO
@@ -55,10 +56,11 @@ config = {
     'default': 'webapp.config.ProductionConfig'
 }
 
+
 def configure_app(app):
     app.config.from_object('webapp.configs.config.ProductionConfig')
     log.info('Loading default configuration..')
-    
+
     log.info('Reading additional configuration from webapp.cfg..')
     app.config.from_pyfile('configs/webapp.cfg', silent=False)
 
@@ -73,7 +75,10 @@ def configure_app(app):
     app.logger.addHandler(handler)
     # Configure Security
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-    app.security = Security(app, user_datastore, register_form=ExtendedRegisterForm, login_form=ExtendedLoginForm)
+    app.security = Security(
+        app,
+        user_datastore,
+        register_form=ExtendedRegisterForm,
+        login_form=ExtendedLoginForm)
     # Configure Compressing
     Compress(app)
-

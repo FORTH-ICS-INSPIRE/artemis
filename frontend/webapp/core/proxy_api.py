@@ -7,8 +7,8 @@ log = logging.getLogger('webapp_logger')
 
 API_PATH = "http://" + API_URL_FLASK
 
+
 def get_proxy_api(action, parameters):
-    ret_obj = None
     try:
         total_count = 0
         url_ = API_PATH + "/" + action + build_arguments(parameters)
@@ -20,15 +20,18 @@ def get_proxy_api(action, parameters):
         ret['results'] = response.json()
         ret['total'] = total_count
         return ret
-    except:
-        log.exception("action: {0}, parameters: {1}".format(action, parameters))
+    except BaseException:
+        log.exception(
+            "action: {0}, parameters: {1}".format(
+                action, parameters))
     return None
+
 
 def build_arguments(parameters):
     url_ = "?"
     try:
         params_ = json.loads(parameters)
-    except:
+    except BaseException:
         log.exception("couldn't json load: {}".format(parameters))
     for parameter in params_:
         url_ += parameter + "=" + str(params_[parameter]) + "&"

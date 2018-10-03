@@ -1,26 +1,24 @@
 import os
 import logging
-from flask import abort, Flask, g, render_template, request, current_app, jsonify, redirect
+from flask import Flask, g, render_template, request, current_app, jsonify, redirect
 from flask_bootstrap import Bootstrap
-from flask_security import current_user, login_user
+from flask_security import current_user
 from flask_security.utils import hash_password
 from flask_security.decorators import login_required, roles_accepted
 from flask_babel import Babel
-from webapp.data.models import db, User
+from webapp.data.models import db
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
-from webapp.core.modules import Modules_status 
-from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
+from webapp.core.modules import Modules_status
 from flask_security import user_registered
 from webapp.core.proxy_api import get_proxy_api
-import time
 
 log = logging.getLogger('webapp_logger')
 
 app = Flask(__name__,
             instance_path=get_app_base_path(),
             instance_relative_config=True,
-            template_folder='../templates', 
+            template_folder='../templates',
             static_url_path='',
             static_folder='../static')
 
@@ -56,6 +54,7 @@ def setupDatabase():
     log.debug("setting database for the first time")
     if not os.path.isfile(app.config['DB_FULL_PATH']):
         db.create_all()
+
         def create_roles(ctx):
             ctx.create_role(name='admin')
             ctx.commit()
@@ -76,17 +75,16 @@ def setupDatabase():
                     password = hash_password(password)
 
                 user = ctx.create_user(username=username,
-                    email=email, password=password, active=is_active)
+                                       email=email, password=password, active=is_active)
                 ctx.commit()
                 role = ctx.find_or_create_role('admin')
 
                 ctx.add_role_to_user(user, role)
                 ctx.commit()
-            except:
+            except BaseException:
                 log.exception("exception")
-        
-        create_user(data_store)
 
+        create_user(data_store)
 
 
 @app.errorhandler(404)
@@ -113,9 +111,11 @@ def unhandled_exception(error):
 def inject_user():
     return dict(user=current_user)
 
+
 @app.context_processor
 def inject_version():
     return dict(version=app.config['VERSION'])
+
 
 @babel.timezoneselector
 def get_timezone():
@@ -123,6 +123,7 @@ def get_timezone():
     if user is not None:
         return user.timezone
     return 'UTC'
+
 
 @user_registered.connect_via(app)
 def on_user_registered(app, user, confirm_token):
@@ -132,7 +133,7 @@ def on_user_registered(app, user, confirm_token):
 
 
 @app.route('/', methods=['GET', 'POST'])
-def index():    
+def index():
     if not current_user.is_authenticated:
         return redirect("/login")
     elif current_user.has_role(data_store.find_role("pending")):
@@ -144,7 +145,7 @@ def index():
 @app.route('/pending', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('pending')
-def pending():    
+def pending():
     return render_template('pending.htm')
 
 
@@ -159,12 +160,11 @@ def overview():
     app.config['configuration'].get_newest_config()
     newest_config = app.config['configuration'].get_raw_config()
     db_stats = app.config['db_stats'].get_all_formatted_list()
-    return render_template('index.htm', 
-        modules = modules_formmated, 
-        config = newest_config, 
-        db_stats = db_stats,
-        config_timestamp = app.config['configuration'].get_config_last_modified())
-
+    return render_template('index.htm',
+                           modules=modules_formmated,
+                           config=newest_config,
+                           db_stats=db_stats,
+                           config_timestamp=app.config['configuration'].get_config_last_modified())
 
 
 @app.login_manager.unauthorized_handler

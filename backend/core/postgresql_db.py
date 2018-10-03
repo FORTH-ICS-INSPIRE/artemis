@@ -29,13 +29,13 @@ class Postgresql_db(Service):
                 _password = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
 
                 _db_conn = psycopg2.connect(
-                        dbname=_db_name,
-                        user=_user,
-                        host=_host,
-                        password=_password
-                    )
+                    dbname=_db_name,
+                    user=_user,
+                    host=_host,
+                    password=_password
+                )
 
-            except:
+            except BaseException:
                 log.exception('exception')
             finally:
                 log.debug('PostgreSQL DB created/connected..')
@@ -113,16 +113,10 @@ class Postgresql_db(Service):
             self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
             self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, exclusive=True, max_priority=2,
-<< << << < HEAD
-                    consumer_arguments={'x-priority': 2})
+                                              consumer_arguments={'x-priority': 2})
             self.hijack_comment_queue = Queue('db-hijack-comment', exchange=self.hijack_exchange, routing_key='comment', durable=False, exclusive=True, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
-
-
-== == == =
-                                              consumer_arguments = {'x-priority': 2})
->> >>>> > ac68d79... PEP8 on backend dir
-            self.handled_queue=Queue('db-handled-update', exchange = self.handled_exchange, routing_key = 'update', durable = False, exclusive = True, max_priority = 1,
+                                              consumer_arguments={'x-priority': 2})
+            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                                        consumer_arguments={'x-priority': 1})
             self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
                                       consumer_arguments={'x-priority': 2})
@@ -136,70 +130,6 @@ class Postgresql_db(Service):
 
         def get_consumers(self, Consumer, channel):
             return [
-<<<<<<< HEAD
-                    Consumer(
-                        queues=[self.config_queue],
-                        on_message=self.handle_config_notify,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.update_queue],
-                        on_message=self.handle_bgp_update,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.hijack_queue],
-                        on_message=self.handle_hijack_update,
-                        prefetch_count=1,
-                        no_ack=True,
-                        accept=['pickle']
-                        ),
-                    Consumer(
-                        queues=[self.db_clock_queue],
-                        on_message=self._scheduler_instruction,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.handled_queue],
-                        on_message=self.handle_handled_bgp_update,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.hijack_update_retrieve],
-                        on_message=self.handle_hijack_retrieve,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.hijack_resolved_queue],
-                        on_message=self.handle_resolved_hijack,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.mitigate_queue],
-                        on_message=self.handle_mitigation_request,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.hijack_ignored_queue],
-                        on_message=self.handle_hijack_ignore_request,
-                        prefetch_count=1,
-                        no_ack=True
-                        ),
-                    Consumer(
-                        queues=[self.hijack_comment_queue],
-                        on_message=self.handle_hijack_comment,
-                        prefetch_count=1,
-                        no_ack=True
-                        )
-                    ]
-=======
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
@@ -254,9 +184,14 @@ class Postgresql_db(Service):
                     on_message=self.handle_hijack_ignore_request,
                     prefetch_count=1,
                     no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_comment_queue],
+                    on_message=self.handle_hijack_comment,
+                    prefetch_count=1,
+                    no_ack=True
                 )
             ]
->>>>>>> ac68d79... PEP8 on backend dir
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
@@ -454,12 +389,11 @@ class Postgresql_db(Service):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-<<<<<<< HEAD
-                self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=%s WHERE key=%s;", (int(time.time()), raw['key']) )
-=======
-                self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=" + str(
-                    int(time.time())) + " WHERE key='" + str(raw['key']) + "';")
->>>>>>> ac68d79... PEP8 on backend dir
+                self.db_cur.execute(
+                    "UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=%s WHERE key=%s;",
+                    (int(
+                        time.time()),
+                        raw['key']))
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception: {}'.format(raw))
@@ -468,15 +402,11 @@ class Postgresql_db(Service):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-<<<<<<< HEAD
-                self.db_cur.execute("UPDATE hijacks SET mitigation_started=%s, under_mitigation=true WHERE key=%s;", (int(raw['time']), raw['key']) )
-=======
-                self.db_cur.execute("UPDATE hijacks SET mitigation_started=" +
-                                    str(int(raw['time'])) +
-                                    ", under_mitigation=true WHERE key='" +
-                                    str(raw['key']) +
-                                    "';")
->>>>>>> ac68d79... PEP8 on backend dir
+                self.db_cur.execute(
+                    "UPDATE hijacks SET mitigation_started=%s, under_mitigation=true WHERE key=%s;",
+                    (int(
+                        raw['time']),
+                        raw['key']))
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception: {}'.format(raw))
@@ -485,8 +415,10 @@ class Postgresql_db(Service):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-<<<<<<< HEAD
-                self.db_cur.execute("UPDATE hijacks SET active=false, under_mitigation=false, ignored=true WHERE key=%s;", (raw['key'], ) )
+                self.db_cur.execute(
+                    "UPDATE hijacks SET active=false, under_mitigation=false, ignored=true WHERE key=%s;",
+                    (raw['key'],
+                     ))
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception: {}'.format(raw))
@@ -495,25 +427,19 @@ class Postgresql_db(Service):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-                self.db_cur.execute("UPDATE hijacks SET comment=%s WHERE key=%s;", (raw['comment'],raw['key'] ) )
-=======
                 self.db_cur.execute(
-                    "UPDATE hijacks SET active=false, under_mitigation=false, ignored=true WHERE key='" +
-                    str(
-                        raw['key']) +
-                    "';")
->>>>>>> ac68d79... PEP8 on backend dir
+                    "UPDATE hijacks SET comment=%s WHERE key=%s;", (raw['comment'], raw['key']))
                 self.db_conn.commit()
                 self.producer.publish(
                     {
                         'status': 'accepted'
                     },
                     exchange='',
-                    routing_key = message.properties['reply_to'],
-                    correlation_id = message.properties['correlation_id'],
-                    serializer = 'json',
-                    retry = True,
-                    priority = 2
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    serializer='json',
+                    retry=True,
+                    priority=2
                 )
             except Exception:
                 self.producer.publish(
@@ -521,11 +447,11 @@ class Postgresql_db(Service):
                         'status': 'fail'
                     },
                     exchange='',
-                    routing_key = message.properties['reply_to'],
-                    correlation_id = message.properties['correlation_id'],
-                    serializer = 'json',
-                    retry = True,
-                    priority = 2
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    serializer='json',
+                    retry=True,
+                    priority=2
                 )
                 log.exception('exception: {}'.format(raw))
 
@@ -576,40 +502,15 @@ class Postgresql_db(Service):
                 "key VARCHAR ( 32 ) NOT NULL, " + \
                 "config_data  json, " + \
                 "raw_config  text, " + \
-<<<<<<< HEAD
-                "time_modified BIGINT) " 
+                "time_modified BIGINT) "
 
             config_view = "CREATE OR REPLACE VIEW configs_available AS SELECT id, time_modified "
             config_view += "FROM configs;"
-            
-=======
-                "time_modified BIGINT) "
-
->>>>>>> ac68d79... PEP8 on backend dir
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)
             self.db_cur.execute(configs_table)
             self.db_cur.execute(config_view)
             self.db_conn.commit()
-
-<<<<<<< HEAD
-=======
-        def create_connect_db(self):
-            _connected = False
-            while(not _connected):
-                time.sleep(self.time_sleep_connection_retry)
-                try:
-                    connect_str = "dbname='artemis_db' user='artemis_user' host='postgres' " + \
-                        "password='Art3m1s'"
-                    self.db_conn = psycopg2.connect(connect_str)
-                    self.db_cur = self.db_conn.cursor()
-                    self.create_tables()
-                except BaseException:
-                    log.exception('exception')
-                finally:
-                    log.debug('PostgreSQL DB created/connected..')
-                    _connected = True
->>>>>>> ac68d79... PEP8 on backend dir
 
         def _insert_bgp_updates(self):
             try:
@@ -667,56 +568,37 @@ class Postgresql_db(Service):
             for key in self.tmp_hijacks_dict:
                 try:
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
-<<<<<<< HEAD
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
                     cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment) "
                     cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
                     cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, time_last=%s;"
 
                     values_ = (
-                            key,
-                            self.tmp_hijacks_dict[key]['hij_type'],
-                            self.tmp_hijacks_dict[key]['prefix'],
-                            self.tmp_hijacks_dict[key]['hijacker'],
-                            len(self.tmp_hijacks_dict[key]['peers_seen']),
-                            len(self.tmp_hijacks_dict[key]['inf_asns']),
-                            int(self.tmp_hijacks_dict[key]['time_started']),
-                            int(self.tmp_hijacks_dict[key]['time_last']),
-                            0,
-                            0,
-                            int(self.tmp_hijacks_dict[key]['time_detected']),
-                            False,
-                            True,
-                            False,
-                            False,
-                            self.tmp_hijacks_dict[key]['configured_prefix'],
-                            int(self.tmp_hijacks_dict[key]['timestamp_of_config']),
-                            '',
-                            len(self.tmp_hijacks_dict[key]['peers_seen']),
-                            len(self.tmp_hijacks_dict[key]['inf_asns']),
-                            int(self.tmp_hijacks_dict[key]['time_started']),
-                            int(self.tmp_hijacks_dict[key]['time_last'])
-                        )
+                        key,
+                        self.tmp_hijacks_dict[key]['hij_type'],
+                        self.tmp_hijacks_dict[key]['prefix'],
+                        self.tmp_hijacks_dict[key]['hijacker'],
+                        len(self.tmp_hijacks_dict[key]['peers_seen']),
+                        len(self.tmp_hijacks_dict[key]['inf_asns']),
+                        int(self.tmp_hijacks_dict[key]['time_started']),
+                        int(self.tmp_hijacks_dict[key]['time_last']),
+                        0,
+                        0,
+                        int(self.tmp_hijacks_dict[key]['time_detected']),
+                        False,
+                        True,
+                        False,
+                        False,
+                        self.tmp_hijacks_dict[key]['configured_prefix'],
+                        int(self.tmp_hijacks_dict[key]['timestamp_of_config']),
+                        '',
+                        len(self.tmp_hijacks_dict[key]['peers_seen']),
+                        len(self.tmp_hijacks_dict[key]['inf_asns']),
+                        int(self.tmp_hijacks_dict[key]['time_started']),
+                        int(self.tmp_hijacks_dict[key]['time_last'])
+                    )
 
                     self.db_cur.execute(cmd_, values_)
-=======
-                    cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, active, resolved, ignored, configured_prefix, timestamp_of_config) VALUES ("
-                    cmd_ += "'" + str(key) + "','" + self.tmp_hijacks_dict[key]['hij_type'] + "','" + \
-                        self.tmp_hijacks_dict[key]['prefix'] + "','" + \
-                            self.tmp_hijacks_dict[key]['hijacker'] + "',"
-                    cmd_ += str(len(self.tmp_hijacks_dict[key]['peers_seen'])) + "," + str(len(
-                        self.tmp_hijacks_dict[key]['inf_asns'])) + "," + str(self.tmp_hijacks_dict[key]['time_started']) + ","
-                    cmd_ += str(int(self.tmp_hijacks_dict[key]['time_last'])) + ", 0, 0, " + str(
-                        self.tmp_hijacks_dict[key]['time_detected']) + ", false, true, false, false, '" + str(self.tmp_hijacks_dict[key]['configured_prefix']) + "', "
-                    cmd_ += str(int(self.tmp_hijacks_dict[key]
-                                    ['timestamp_of_config'])) + " )"
-                    cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=" + str(len(
-                        self.tmp_hijacks_dict[key]['peers_seen'])) + ", num_asns_inf=" + str(len(self.tmp_hijacks_dict[key]['inf_asns']))
-                    cmd_ += ", time_started=" + str(int(self.tmp_hijacks_dict[key]['time_started'])) + ", time_last=" + str(
-                        int(self.tmp_hijacks_dict[key]['time_last']))
-
-                    self.db_cur.execute(cmd_)
->>>>>>> ac68d79... PEP8 on backend dir
                     self.db_conn.commit()
                 except BaseException:
                     log.exception('exception')
@@ -729,13 +611,10 @@ class Postgresql_db(Service):
 
         def _retrieve_unhandled(self):
             results = []
-<<<<<<< HEAD
-            self.db_cur.execute("SELECT * FROM bgp_updates WHERE handled = false ORDER BY id DESC LIMIT(%s);", (self.unhadled_to_feed_to_detection, ) )
-=======
             self.db_cur.execute(
-                "SELECT * FROM bgp_updates WHERE handled = false ORDER BY id DESC LIMIT(" + str(
-                    self.unhadled_to_feed_to_detection) + ");")
->>>>>>> ac68d79... PEP8 on backend dir
+                "SELECT * FROM bgp_updates WHERE handled = false ORDER BY id DESC LIMIT(%s);",
+                (self.unhadled_to_feed_to_detection,
+                 ))
             entries = self.db_cur.fetchall()
             for entry in entries:
                 results.append({'key': entry[1], 'prefix': entry[2], 'origin_as': entry[3], 'peer_asn': entry[4], 'path': entry[5],
@@ -794,15 +673,8 @@ class Postgresql_db(Service):
                     "SELECT key from configs ORDER BY id DESC LIMIT 1")
                 hash_ = self.db_cur.fetchone()
                 if isinstance(hash_, tuple):
-<<<<<<< HEAD
-                    return hash_[0] 
-            except:
-                log.exception("failed to retrieved most recent config hash in db")
-            return None
-=======
                     return hash_[0]
             except BaseException:
                 log.exception(
                     "failed to retrieved most recent config hash in db")
             return None
->>>>>>> ac68d79... PEP8 on backend dir

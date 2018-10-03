@@ -95,7 +95,7 @@ def main():
                     print(
                         'Deactivated GRE tunnel from MOAS helper for prefix %s' % prefix)
             conn.close()
-    except:
+    except BaseException:
         print("Error with connection!")
 
 

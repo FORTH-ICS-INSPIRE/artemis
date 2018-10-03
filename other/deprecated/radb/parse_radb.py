@@ -26,7 +26,7 @@ def is_valid_ip_prefix(pref_str=None):
     """
     try:
         pref = netaddr.IPNetwork(pref_str)
-    except:
+    except BaseException:
         return False
 
     return True
@@ -62,10 +62,29 @@ def dump_data(data=None, file=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="parse information from RADB for a specific prefix or ASN")
-    parser.add_argument('-p', '--prefix', dest='prefix', type=str, help='prefix to check (do not set if asn)', default='')
-    parser.add_argument('-a', '--asn', dest='asn', type=str, help='asn to check (do not set if prefix)', default='')
-    parser.add_argument('-o', '--output_dir', dest='output_dir', type=str, help='folder where the output json will be stored', default='.')
+    parser = argparse.ArgumentParser(
+        description="parse information from RADB for a specific prefix or ASN")
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        dest='prefix',
+        type=str,
+        help='prefix to check (do not set if asn)',
+        default='')
+    parser.add_argument(
+        '-a',
+        '--asn',
+        dest='asn',
+        type=str,
+        help='asn to check (do not set if prefix)',
+        default='')
+    parser.add_argument(
+        '-o',
+        '--output_dir',
+        dest='output_dir',
+        type=str,
+        help='folder where the output json will be stored',
+        default='.')
     args = parser.parse_args()
 
     query_prefix = None
@@ -86,7 +105,8 @@ def main():
     if not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
     out_file = '{}/query_value_{}_timestamp_{}'.format(args.output_dir,
-                                                       str(query_value).replace('/','+'),
+                                                       str(query_value).replace(
+                                                           '/', '+'),
                                                        int(time.time()))
     post_params = {
         'keywords': query_value
@@ -96,7 +116,7 @@ def main():
     try:
         post_req = urllib.request.Request(RADB_QUERY_URL, post_args)
         resp = urllib.request.urlopen(post_req)
-    except:
+    except BaseException:
         print('ERROR: Could not fetch data from RADB')
         dump_data(parsed_data, out_file)
         sys.exit(0)

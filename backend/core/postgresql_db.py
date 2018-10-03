@@ -248,8 +248,8 @@ class Postgresql_db(Service):
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
                     self.tmp_hijacks_dict[key]['hijack_as'] = str(
                         msg_['hijack_as'])
-                    self.tmp_hijacks_dict[key]['hij_type'] = str(
-                        msg_['hij_type'])
+                    self.tmp_hijacks_dict[key]['type'] = str(
+                        msg_['type'])
                     self.tmp_hijacks_dict[key]['time_started'] = int(
                         msg_['time_started'])
                     self.tmp_hijacks_dict[key]['time_last'] = int(
@@ -386,7 +386,7 @@ class Postgresql_db(Service):
                             'inf_asns': set(json.loads(entry[3])),
                             'key': entry[4],
                             'prefix': str(entry[5]),
-                            'hijack_as': entry[6],
+                            'hijack_as': int(entry[6]),
                             'type': entry[7]
                         }
 
@@ -394,7 +394,7 @@ class Postgresql_db(Service):
                     results,
                     exchange=self.hijack_exchange,
                     routing_key='fetch',
-                    serializer='pickle'
+                    serializer='pickle',
                     retry=False,
                     priority=2
                 )

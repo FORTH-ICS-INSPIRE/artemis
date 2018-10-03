@@ -54,6 +54,7 @@ class Detection(Service):
             self.memcache = Client((MEMCACHED_HOST, 11211),
                     serializer=pickle_serializer,
                     deserializer=pickle_deserializer)
+            self.memcache.flush_all()
 
 
             # EXCHANGES

@@ -501,9 +501,9 @@ class Detection(Service):
                 hijacks = message.payload
                 for hijack_key, hijack_value in hijacks.items():
                     memcache_hijack_key = hashlib.md5(pickle.dumps([
-                        hijack_value['prefix'],
-                        hijack_value['hijack_as'],
-                        hijack_value['type']])).hexdigest()
+                        str(hijack_value['prefix']),
+                        int(hijack_value['hijack_as']),
+                        str(hijack_value['type'])])).hexdigest()
                     self.memcache.set(memcache_hijack_key, hijack_value)
             except Exception:
                 log.exception(
@@ -520,9 +520,10 @@ class Detection(Service):
             try:
                 data = message.payload
                 memcache_hijack_key = hashlib.md5(pickle.dumps(
-                    [data['prefix'],
-                     data['hijack_as'],
-                     data['type']])).hexdigest()
+                    [str(data['prefix']),
+                     int(data['hijack_as']),
+                     str(data['type'])])).hexdigest()
+                assert self.memcache.get(memcache_hijack_key) is not None
                 self.memcache.delete(memcache_hijack_key)
             except Exception:
                 log.exception(

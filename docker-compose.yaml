@@ -24,7 +24,6 @@ services:
             - postgres
             # - syslog
             # - exabgp
-
     # grafana:
     #     image: grafana/grafana
     #     restart: always
@@ -142,10 +141,9 @@ services:
     #         - exabgp
     #     ports:
     #         - 179:179
-    #     environment:
-    #         LOCAL_HOST: <LOCAL_IP_ADDRESS>
-    #         LOCAL_AS: <LOCAL_AND_PEER_ASN>
-    #         REMOTE_HOST: <PEER_IP_ADDRESS>
+    #     volumes:
+    #         - ./other/exabgp.conf:/home/config/exabgp.conf
+
 
 networks:
     # syslog:

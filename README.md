@@ -92,7 +92,7 @@ We recommend using [ufw](https://www.digitalocean.com/community/tutorials/how-to
 for this task. Please check the comments in the respective script we provide and
 set the corresponding <> fields in the file before running:
 ```
-sudo ./ufw_setup.sh
+sudo ./other/ufw_setup.sh
 ```
 
 ## How to install

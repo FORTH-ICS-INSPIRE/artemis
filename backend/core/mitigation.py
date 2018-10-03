@@ -19,7 +19,7 @@ class Mitigation(Service):
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
-        except BaseException:
+        except Exception:
             log.exception('exception')
         finally:
             log.info('stopped')

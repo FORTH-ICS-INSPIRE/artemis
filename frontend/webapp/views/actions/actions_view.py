@@ -18,8 +18,11 @@ actions = Blueprint('actions', __name__, template_folder='templates')
 def resolve_hijack():
     # log info
     hijack_key = request.values.get('hijack_key')
+    prefix = request.values.get('prefix')
+    type_ = request.values.get('type_')
+    hijack_as = request.values.get('hijack_as')
     log.debug('url: /hijacks/resolve/{}'.format(hijack_key))
-    resolve_hijack_ = Resolve_hijack(hijack_key)
+    resolve_hijack_ = Resolve_hijack(hijack_key, prefix, type_, hijack_as)
     resolve_hijack_.resolve()
     return jsonify({'status': 'success'})
 
@@ -45,9 +48,12 @@ def mitigate_hijack():
 def ignore_hijack():
     # log info
     hijack_key = request.values.get('hijack_key')
+    prefix = request.values.get('prefix')
+    type_ = request.values.get('type_')
+    hijack_as = request.values.get('hijack_as')
 
     try:
-        _ignore_hijack = Ignore_hijack(hijack_key)
+        _ignore_hijack = Ignore_hijack(hijack_key, prefix, type_, hijack_as)
         _ignore_hijack.ignore()
 
     except BaseException:

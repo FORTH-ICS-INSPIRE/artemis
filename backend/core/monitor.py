@@ -17,7 +17,7 @@ class Monitor(Service):
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
-        except BaseException:
+        except Exception:
             log.exception('exception')
         finally:
             if self.worker is not None:

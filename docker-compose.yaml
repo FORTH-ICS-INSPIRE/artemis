@@ -6,23 +6,22 @@ services:
             RABBITMQ_HOST: rabbitmq
             MEMCACHED_HOST: memcached
             POSTGRES_HOST: postgres
-            SYSLOG_HOST: "syslog:514"
-            DATABASE_NAME: "artemis_db"
-            DATABASE_USER: "artemis_user"
-            DATABASE_HOST: "postgres"
-            DATABASE_PASSWORD: "Art3m1s"
+            DATABASE_NAME: artemis_db
+            DATABASE_USER: artemis_user
+            DATABASE_HOST: postgres
+            DATABASE_PASSWORD: Art3m1s
         depends_on:
             - rabbitmq
             - memcached
             - postgres
-            - syslog
+            # - syslog
         volumes:
             - ./backend/:/root/
         networks:
             - rabbitmq
             - memcached
             - postgres
-            - syslog
+            # - syslog
     # grafana:
     #     image: grafana/grafana
     #     restart: always
@@ -36,7 +35,7 @@ services:
         environment:
             RABBITMQ_HOST: rabbitmq
             POSTGRES_HOST: postgres
-            SYSLOG_HOST: "syslog:514"
+            # SYSLOG_HOST: "syslog:514"
             SYSTEM_VERSION: "v0.1"
             MACHINE_IP: "0.0.0.0"
             USER_ROOT_USERNAME: "admin"
@@ -52,13 +51,13 @@ services:
             - rabbitmq
             - postgres
             - postgrest
-            - syslog
+            # - syslog
             - artemis_backend
         networks:
             - rabbitmq
             - postgres
             - postgrest
-            - syslog
+            # - syslog
             - nginx
     nginx:
         image: nginx:latest
@@ -80,11 +79,11 @@ services:
             - artemis_frontend
             - postgrest
         restart: always
-    syslog:
-        image: "mumblepins/syslog-ng-alpine"
-        restart: always
-        networks:
-            - syslog
+    # syslog:
+    #     image: "mumblepins/syslog-ng-alpine"
+    #     restart: always
+    #     networks:
+    #         - syslog
     rabbitmq:
         image: "rabbitmq:3-alpine"
         restart: always
@@ -129,7 +128,7 @@ services:
             PGRST_DB_ANON_ROLE: artemis_user
 
 networks:
-    syslog:
+    # syslog:
     rabbitmq:
     memcached:
     postgres:

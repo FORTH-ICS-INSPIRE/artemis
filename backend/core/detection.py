@@ -309,8 +309,31 @@ class Detection(Service):
         def detect_subprefix_hijack(self, monitor_event, prefix_node, *args, **kwargs):
             mon_prefix = ipaddress.ip_network(monitor_event['prefix'])
             if prefix_node.prefixlen < mon_prefix.prefixlen:
-                self.commit_hijack(monitor_event, -1, 'S')
+                hijacker_asn = -1
+                try:
+                    origin_asn = None
+                    first_neighbor_asn = None
+                    if len(monitor_event['path']) > 0:
+                        origin_asn = monitor_event['path'][-1]
+                    if len(monitor_event['path']) > 1:
+                        first_neighbor_asn = monitor_event['path'][-2]
+                    false_origin = True
+                    false_first_neighbor = True
+                    for item in prefix_node.data['confs']:
+                        if origin_asn in item['origin_asns']:
+                            false_origin = False
+                            if first_neighbor_asn in item['neighbors']:
+                                false_first_neighbor = False
+                            break
+                    if origin_asn is not None and false_origin:
+                        hijacker_asn = origin_asn
+                    elif first_neighbor_asn is not None and false_first_neighbor:
+                        hijacker_asn = first_neighbor_asn
+                except:
+                    log.exception('Problem in subprefix hijack detection, event {}'.format(monitor_event))
+                self.commit_hijack(monitor_event, hijacker_asn, 'S')
                 return True
+            return False
 
 
         def commit_hijack(self, monitor_event, hijacker, hij_type):
@@ -376,8 +399,9 @@ class Detection(Service):
             except:
                 log.exception("couldn't fetch data: {}".format(message.payload))
 
+
         def handle_resolved_or_ignored_hijack(self, message):
-            # log.info('message: {}\npayload: {}'.format(message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(message, message.payload))
             try:
                 data = message.payload
                 self.memcache.delete(data['key'])

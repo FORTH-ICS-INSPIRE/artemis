@@ -76,7 +76,7 @@ The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine
 for testing purposes.
 
-## Min. technical requirements of testing server/VM (TBD)
+## Min. technical requirements of testing server/VM
 
 * CPU: 4 cores
 * RAM: 4 GB
@@ -87,7 +87,10 @@ for testing purposes.
 and docker should have sudo privileges, if only non-sudo user is allowed
 * Other: SSH server
 
-Moreover, one needs to configure firewall rules related to the testing server/VM. We recommend using [ufw](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-ubuntu-16-04) for this task. Please check the comments in the respective script we provide and set the corresponding <> fields in the file before running:
+Moreover, one needs to configure firewall rules related to the testing server/VM.
+We recommend using [ufw](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-ubuntu-16-04)
+for this task. Please check the comments in the respective script we provide and
+set the corresponding <> fields in the file before running:
 ```
 sudo ./ufw_setup.sh
 ```
@@ -120,38 +123,31 @@ after you have entered the root folder of the cloned ARTEMIS repo.
 ## How to run
 
 ### Configuring the web application
-Before starting ARTEMIS, you should configure the web application
+Before starting ARTEMIS, you should configure access to the web application
 (used to configure/control ARTEMIS and view its state),
-by editing the following file (TBD):
+by editing the following file:
 ```
 docker-compose.yml
 ```
-and adjusting the following parameters/environment variables (TBD):
+and adjusting the following parameters/environment variables related
+to the artemis_frontend container:
 ```
-TBD
+USER_ROOT_USERNAME: "admin"
+USER_ROOT_PASSWORD: "admin"
+USER_ROOT_EMAIL: "admin@admin"
 ```
-
-You should also edit the following file (TBD):
-```
-frontend/webapp/configs/webapp.cfg
-```
-and adjust the following parameters (TBD):
-```
-TBD
-```
-
-### SSL/TLS Support (optional; TBD)
 The ARTEMIS web application supports https to ensure secure access to the application.
-
-*Note:* The following associated process, based on Flask-accessed certificates/keys,
-is to be used only termporarily in testing environments.
-In production, a scalable nginx/apache-based reverse proxy will be used
-to terminate SSL connections (TBD).
-For testing, simply configure the following in the web application configuration file:
+We use a nginx reverse proxy to terminate SSL connections before forwarding the requests
+to Flask. To configure your own certificates, please place in the following folder:
 ```
-WEBAPP_KEY = '<path_to_key_file>'
-WEBAPP_CRT = '<path_to_cert_file>'
+frontend/webapp/configs/certs
 ```
+the following files:
+```
+cert.pem
+key.pem
+```
+You do not need to modify any other configuration file for now.
 
 ### Configuring logging (syslog)
 You should edit the following file:
@@ -162,47 +158,196 @@ and adjust the following environment variables:
 ```
 SYSLOG_HOST=<IP>:<PORT>
 ```
-for the artemis and artemis_webapp services.
+in the environment variable section of
+the artemis_frontend and artemis_backend services.
+Note that setting this to anything other than the default is under testing.
 
 ### Starting ARTEMIS
-You can start ARTEMIS as a multi-container application
+You can now start ARTEMIS as a multi-container application
 by running:
 ```
 docker-compose up
 ```
+in interactive mode, or:
+```
+docker-compose up -d
+```
+in detached mode (to run it as a daemon).
 
 ### Using the web application
-Visually, you can now configure, control and view ARTEMIS on https://<WEBAPP_HOST>:<WEBAPP_PORT> (TBD). 
-More instructions on how to use the ARTEMIS web application will be available soon.
+Visually, you can now configure, control and view ARTEMIS on https://<ARTEMIS_HOST>.
 
 *Note*: Please use only the web application forms to configure ARTEMIS.
 
 ### Registering users (ADMIN/VIEWER)
 ```
-<ROOT_PATH>/create_account
+https://<ARTEMIS_HOST>/create_account
+```
+Here you can input your credentials and request a new account. The new account has to be approved
+by an ADMIN user. The default role for new users is VIEWER.
+
+### Managing users (ADMIN-only)
+```
+https://<ARTEMIS_HOST>/admin/user_management
+```
+Here the ADMIN user can approve pending users, promote users to admins, as well as delete users.
+An ADMIN can delete VIEWER users, but not ADMIN users.
+
+### User account actions (ADMIN-VIEWER)
+Currently the current account-specific actions are supported:
+* Password change (TBD)
+* ... (TBD)
+
+### Configuring and Controlling ARTEMIS through the web application (ADMIN-only)
+```
+https://<ARTEMIS_HOST>/admin/system
+```
+Here the ADMIN may switch the Monitor, Detection and Mitigation modules of ARTEMIS on and off,
+as well as edit the configuration. The configuration file has the following (yaml) format:
+```
+#
+# ARTEMIS Configuration File
+#
+
+# Start of Prefix Definitions
+prefixes:
+  <prefix_group_1>: &prefix_group_1
+    - <prefix_1>
+    - <prefix_2>
+    - ...
+    - <prefix_N>
+  ...: &...
+    - ...
+# End of Prefix Definitions
+
+# Start of Monitor Definitions
+monitors:
+  riperis: ['']
+  bgpstreamlive:
+    - routeviews
+    - ris
+  exabgp:
+    - ip: <IP_1>
+      port: <PORT_1>
+    - ip: ...
+      port: ...
+  # bgpstreamhist: <path_to_csv_dir>
+# End of Monitor Definitions
+
+# Start of ASN Definitions
+asns:
+  <asn_group_1>: &asn_group_1
+    - <asn_1>
+    - ...
+    - <asn_N>
+  ...: &...
+    - ...
+    - ...
+# End of ASN Definitions
+
+# Start of Rule Definitions
+rules:
+- prefixes:
+  - *<prefix_group_k>
+  - *...
+  origin_asns:
+  - *<asn_group_j>
+  - *...
+  neighbors:
+  - *<asn_group_l>
+  - *...
+  mitigation:
+    manual
+- ...
+# End of Rule Definitions
 ```
 
-### Configuring ARTEMIS through the web application
+### Viewing ARTEMIS state
+After being successfully logged-in to ARTEMIS, you will be redirected to the following webpage:
 ```
-TBD
+https://<ARTEMIS_HOST>/admin/system
 ```
+Here you can view info about:
+* your last login information (time and IP address)
+* the system status (status of modules and uptime information)
+* the current configuration of the system (and its last update time)
+* the ARTEMIS version you are running
+* statistics about the ARTEMIS db, in particular:
+** Total number of BGP updates, as well as of unhandled (by the detection) updates
+** Total number of detected BGP hijacks (as well as a break-down in "resolved",
+"under mitigation", "ognoing" and "ignored").
 
-### Controlling ARTEMIS through the web application
+### Viewing BGP updates
+All BGP updates captured by the monitoring system in real-time can be seen here:
 ```
-TBD
+https://<ARTEMIS_HOST>/main/bgpupdates/
 ```
+The following fields are supported:
+* ID (DB-related)
+* Prefix (IPv4/IPv6)
+* Origin AS
+* AS Path (only for BGP announcements)
+* Peer AS (from where the information was learned)
+* Service, in the format <data_source>|<collector_name>
+* Type (A|W - Announcement|Withdrawal)
+* Timestamp (displayed in local time zone)
+* Hijack (if present, redirects to a corresponding Hijack entry)
+* Status (blue if the detector has seen the update, grey if examination is pending)
+* Additional information: Communities ([{'asn':..., 'value':...}, ...])
+* Additional information: Original Path (if the original path e.g., contains AS-SETs, etc.)
+* Additional information: Hijack Key (unique hijack identifier)
 
-### Viewing BGP updates and hijacks
-```
-TBD
-```
+You can sort the BGP updates table by the ID, Prefix, Origin AS, AS Path, Peer AS, Service, Type and
+Timestamp fields. The information is paginated and the number of shown entries is tunable.
+You can further select updates related to a certain configured prefix (or all prefixes related to your network),
+as well as based on a tunable time window.
 
-### Other (TBD)
+### Viewing BGP hijacks
+All BGP hijacks detected by the detection system in real-time can be seen here:
 ```
-TBD
+https://<ARTEMIS_HOST>/main/hijacks/
 ```
+The following fields are supported:
+* ID (DB-related)
+* Status (ongoing|under mitigation|ignored|resolved)
+* Prefix (IPv4/IPv6)
+* Type (S - Subprefix|Q - Squatting|0 - Origin|1 - fake first hop)
+* Hijack AS (-1 for Type-S hijacks)
+* Number of Peers Seen (the ones that have seen the event)
+* Number of ASes Infected (the ones that seemingly route to the hijacker)
+* Time Started (when the event actually started)
+* Additional information: Time Ended (this is set only for resolved hijacks)
+* Additional information: Hijack Key (unique hijack identifier)
+* Additional information: Mitigation Started (this is set only for hijacks under mitigation)
+* Additional information: Matched Prefix (the prefix that best matched configuration, if applicable)
+* Additional information: Config Matched (the timestamp of the configuration against which the hijack was generated)
+* Additional information: Time Detected (the timestamp when the hijack was actually detected)
 
-### CLI controls
+You can sort the BGP hijacks table by the ID, Status, Prefix, Type, Hijack AS, Number of Peers Seen,
+Number of ASes Infected and Time Started fields. The information is paginated and the number of shown entries is tunable.
+You can further select hijacks related to a certain configured prefix (or all prefixes related to your network),
+as well as based on a tunable time window.
+
+Note that after the details of a hijack, you can also see details on the BGP updates that triggered it.
+
+### Actions on BGP hijacks (ADMIN-only)
+The ADMIN user can use the following buttons:
+* Resolve: The hijack has finished (by successful mitigation or other actions). It marks the Time Ended
+field and sets an ongoing or under mitigation hijack to resolved state.
+* Mitigate: Start the mitigation process for this hijack. It sets the Mitigation Started field and sets an ongoing
+hijack to under mitigation state. Note that the mitigation module should be active for this to work.
+* Ignore: the hijack is a false positive. It sets an ongoing or under mitigation hijack to ignored state.
+
+Note that only the following state transitions are enabled:
+* ongoing --> under mitigation
+* ongoing --> resolved
+* ongoing --> ignored
+* under mitigation --> resolved
+* under mitigation --> ignored
+
+The VIEWER use can see the status of a hijack but cannot activate any buttons.
+
+### CLI controls [optional]
 
 You can also control ARTEMIS (if required) via a CLI, by executing the following command(s):
 ```
@@ -211,9 +356,11 @@ docker exec -it artemis python3 scripts/module_control.py -m <module> -a <action
 Note that module = all|configuration|scheduler|postgresql_db|monitor|detection|mitigation,
 and action=start|stop|status.
 
-Also note that the web application operates in its own separate container; to stop and e.g., restart it, please run the following commands:
+Also note that the web application (frontend) and the backend operate in their own separate containers; to e.g.,
+restart them, please run the following command:
 ```
-TBD
+docker-compose restart artemis_frontend
+docker-compose restart artemis_backend
 ```
 
 ### Receiving BGP feed from local route reflector via exaBGP
@@ -221,10 +368,19 @@ For instructions on how to set up an exaBGP-based local monitor,
 getting BGP updates' feed from your local router or route reflector,
 please check [here](https://github.com/slowr/ExaBGP-Monitor)
 
-In ARTEMIS, you should configure the monitor using the web application form,
-by setting its IP address and port (default=TBD). An example is the following:
+In ARTEMIS, you should configure the monitor using the web application form in
 ```
-TBD
+https://<ARTEMIS_HOST>/admin/system
+```
+by setting its IP address and port. An example is the following:
+```
+...
+monitors:
+  ...
+  exabgp:
+    - ip: 192.168.1.1
+      port: 5000
+...
 ```
 
 ### Exiting ARTEMIS
@@ -283,9 +439,10 @@ TBD (version tags to-be-released)
 * Vasileios Kotronis, FORTH-ICS
 
 ## License
-We are finalizing the process of open-sourcing the ARTEMIS software under the BSD-3 license. A provisional [license](LICENSE) has been added to the code.
-During the testing phase and until ARTEMIS is fully open-sourced, the tester is allowed to have access to the code and use it,
-but is not allowed to disclose the code to third parties.
+We are finalizing the process of open-sourcing the ARTEMIS software under the BSD-3 license.
+A provisional [license](LICENSE) has been added to the code.
+During the testing phase and until ARTEMIS is fully open-sourced, the tester is allowed to have access
+to the code and use it, but is not allowed to disclose the code to third parties.
 
 ## Acknowledgements
 This work is supported by the following sources:

@@ -8,6 +8,8 @@ from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, uuid
 from kombu.mixins import ConsumerProducerMixin
 import time
+import json
+import copy
 import logging
 
 
@@ -90,16 +92,26 @@ class Configuration(Service):
 
             if _flag:
                 log.debug('accepted new configuration')
-                self.data = data
-                self._update_local_config_file()
-                self.producer.publish(
-                    self.data,
-                    exchange = self.config_exchange,
-                    routing_key = 'notify',
-                    serializer = 'json',
-                    retry = True,
-                    priority = 2
-                )
+
+                # compare current with previous data excluding --obviously-- timestamps
+                # TODO: change to sth better
+                prev_data = copy.deepcopy(data)
+                del prev_data['timestamp']
+                new_data = copy.deepcopy(self.data)
+                del new_data['timestamp']
+                prev_data_str = json.dumps(prev_data, sort_keys=True)
+                new_data_str = json.dumps(new_data, sort_keys=True)
+                if prev_data_str != new_data_str:
+                    self.data = data
+                    self._update_local_config_file()
+                    self.producer.publish(
+                        self.data,
+                        exchange = self.config_exchange,
+                        routing_key = 'notify',
+                        serializer = 'json',
+                        retry = True,
+                        priority = 2
+                    )
 
                 self.producer.publish(
                     {

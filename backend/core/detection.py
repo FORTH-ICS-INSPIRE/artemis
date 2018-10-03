@@ -54,6 +54,7 @@ class Detection(Service):
             self.memcache = Client((MEMCACHED_HOST, 11211),
                     serializer=pickle_serializer,
                     deserializer=pickle_deserializer)
+            self.memcache.flush_all()
 
 
             # EXCHANGES
@@ -188,7 +189,7 @@ class Detection(Service):
 
 
         def handle_unhandled_bgp_updates(self, message):
-            log.debug('{} unhandled events'.format(len(message.payload)))
+            # log.debug('{} unhandled events'.format(len(message.payload)))
             for update in message.payload:
                 self.handle_bgp_update(update)
 
@@ -392,7 +393,7 @@ class Detection(Service):
 
 
         def fetch_ongoing_hijacks(self, message):
-            log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             try:
                 hijacks = message.payload
                 self.memcache.set_many(hijacks)

@@ -6,19 +6,24 @@ services:
             RABBITMQ_HOST: rabbitmq
             MEMCACHED_HOST: memcached
             POSTGRES_HOST: postgres
-            SYSLOG_HOST: "syslog:514"
+            DATABASE_NAME: artemis_db
+            DATABASE_USER: artemis_user
+            DATABASE_HOST: postgres
+            DATABASE_PASSWORD: Art3m1s
         depends_on:
             - rabbitmq
             - memcached
             - postgres
-            - syslog
+            # - syslog
         volumes:
             - ./backend/:/root/
         networks:
             - rabbitmq
             - memcached
             - postgres
-            - syslog
+            # - syslog
+            # - exabgp
+
     # grafana:
     #     image: grafana/grafana
     #     restart: always
@@ -32,7 +37,7 @@ services:
         environment:
             RABBITMQ_HOST: rabbitmq
             POSTGRES_HOST: postgres
-            SYSLOG_HOST: "syslog:514"
+            # SYSLOG_HOST: "syslog:514"
             SYSTEM_VERSION: "v0.1"
             MACHINE_IP: "0.0.0.0"
             USER_ROOT_USERNAME: "admin"
@@ -48,13 +53,13 @@ services:
             - rabbitmq
             - postgres
             - postgrest
-            - syslog
+            # - syslog
             - artemis_backend
         networks:
             - rabbitmq
             - postgres
             - postgrest
-            - syslog
+            # - syslog
             - nginx
     nginx:
         image: nginx:latest
@@ -76,11 +81,11 @@ services:
             - artemis_frontend
             - postgrest
         restart: always
-    syslog:
-        image: "mumblepins/syslog-ng-alpine"
-        restart: always
-        networks:
-            - syslog
+    # syslog:
+    #     image: "mumblepins/syslog-ng-alpine"
+    #     restart: always
+    #     networks:
+    #         - syslog
     rabbitmq:
         image: "rabbitmq:3-alpine"
         restart: always
@@ -123,13 +128,25 @@ services:
             PGRST_DB_URI: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
             PGRST_DB_SCHEMA: public
             PGRST_DB_ANON_ROLE: artemis_user
+    # exabgp_monitor:
+    #     container_name: exabgp_monitor
+    #     image: mavromat/exabgp-monitor
+    #     restart: always
+    #     networks:
+    #         - exabgp
+    #     ports:
+    #         - 179:179
+    #     environment:
+    #         LOCAL_HOST: <LOCAL_IP_ADDRESS>
+    #         LOCAL_AS: <LOCAL_AND_PEER_ASN>
+    #         REMOTE_HOST: <PEER_IP_ADDRESS>
 
 networks:
-    syslog:
+    # syslog:
     rabbitmq:
     memcached:
     postgres:
     postgrest:
     nginx:
     artemis_frontend:
-
+    # exabgp:

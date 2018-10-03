@@ -63,4 +63,18 @@ class Configuration():
     def get_config_last_modified(self):
         return self.time_modified
 
-        
+
+def fetch_all_config_timestamps():
+    ret_obj = None
+    try:
+        log.debug("send request to fetch all config timestamps")
+        url_ = API_PATH + "/configs_available"
+        response = requests.get(url=url_)
+        raw_json = response.json()
+        if len(raw_json) > 0:
+            return raw_json
+        else:
+            return None
+    except:
+        log.exception("failed to fetch all config timestamps")
+    return None

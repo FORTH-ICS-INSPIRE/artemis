@@ -1,9 +1,10 @@
 import sys
 import os
-from socketIO_client import SocketIO
+from socketIO_client import SocketIO, BaseNamespace
 import argparse
 from kombu import Connection, Producer, Exchange, Queue, uuid
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
+import traceback
 
 class ExaBGP():
 
@@ -31,7 +32,7 @@ class ExaBGP():
                     'communities': bgp_message.get('communities', [])
                     'timestamp': bgp_message['timestamp'],
                     'path': bgp_message['path'],
-                    'service': 'ExaBGP {}'.format(self.config['host']),
+                    'service': 'ExaBGP {}'.format(self.host),
                     'prefix': bgp_message['prefix']
                 }
                 if mformat_validator(msg):
@@ -67,5 +68,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
     except:
-        traceback_print_exc()
+        traceback.print_exc()
 

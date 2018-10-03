@@ -207,6 +207,7 @@
                             }
                         });
                     },
+                    "order": [[ 0, "desc" ]],
                     "columns": [
                         { data: 'id' },
                         {   
@@ -216,7 +217,11 @@
                         },
                         { data: 'prefix' },
                         { data: 'type' },
-                        { data: 'hijack_as' },
+                        { data: 'hijack_as',
+                            render: function(data, type, row){
+                                return hijack_as_formmated(data)
+                            } 
+                        },
                         { data: 'num_peers_seen' },
                         { data: 'num_asns_inf' },
                         { data: 'time_started',
@@ -228,7 +233,7 @@
                         {
                             data: 'key',
                             render: function(data, type, row){
-                                return '<a href="../hijack?key=' + data + '">View</a>'
+                                return '<a href="{{ url_for('main.display_hijack') }}?key=' + data + '">View</a>'
                             }
                         }
                     ],
@@ -238,7 +243,7 @@
                         } 
                     ],
                     "language": {
-                        "emptyTable": "<img src=\"../../images/checkmark.png\"></img></br><h3>No hijack alerts. Go grab a beer!</h3></br>"
+                        "emptyTable": "<img src=\"{{ url_for('static', filename='images/checkmark.png') }}\" ></img></br><h3>No hijack alerts. Go grab a beer!</h3></br>"
                     }
                 });
             }
@@ -280,7 +285,7 @@
             });
 
         </script>
-        
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>

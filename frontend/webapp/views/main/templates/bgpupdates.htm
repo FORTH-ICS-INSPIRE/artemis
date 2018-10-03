@@ -5,8 +5,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
-
-    
 {% endblock %}
 
 {% block page_content %}
@@ -208,6 +206,7 @@
                             }
                         });
                     },
+                    "order": [[ 0, "desc" ]],
                     "columns": [
                         { data: 'id' },
                         { data: 'prefix' },
@@ -234,9 +233,9 @@
                         {   data: 'handled', 
                             render: function(data, type, row){
                                 if(true == data){
-                                    return '<img src="../../images/handled.png"/>'
+                                    return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
                                 }else{
-                                    return '<img src="../../images/unhadled.png"/>'
+                                    return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'
                                 }
                             } 
                         },
@@ -309,13 +308,10 @@
                 var hijack_key = ""
                 if('0' != d.hijack_key){
                     hijack_key = d.hijack_key
-                    view_hijack_link = '<a href="../hijack?key=' + d.hijack_key + '">View</a>'
+                    view_hijack_link = '<a href="{{ url_for('main.display_hijack') }}?key=' + d.hijack_key + '">View</a>'
                 }
 
-                var communities = new Array();
-                (d.communities).forEach(function (item) {
-                    communities.push({ 'asn': item[0], 'value': item[1] })
-                })
+                
 
                 return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
                     '<tr>'+
@@ -344,7 +340,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Communities:</b></td>'+
-                        '<td>'+JSON.stringify(communities)+'</td>'+
+                        '<td>'+communities_formatted(d.communities)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+
@@ -365,6 +361,7 @@
                 '</table>';
             }
         </script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>

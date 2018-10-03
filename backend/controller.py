@@ -75,7 +75,7 @@ class Controller(Service):
 
 
         def controller_handler(self, message):
-            log.info('message: {}\npayload: {}'.format(message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(message, message.payload))
 
             response = {}
             try:

@@ -3,7 +3,7 @@
 
 {% block head %}
     {{super()}}
-  	<title>ARTEMIS - Error 401: Unauthorized to access this page</title>
+  	<title>ARTEMIS - Pending Administrator Approval</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 {% endblock %}
@@ -15,10 +15,10 @@
 		        <div class="col-6 mx-auto">
 		            <div class="jumbotron vertical-center">
 		            	<p class="lead">
-		                    <img src="../images/401_unauthorized.png"></img>
+		                    <img src="../images/pending_approval.png"></img>
 		                </p>
-		                <h1 class="display-4">Error 401</h1>
-		                <p class="lead">You are not authorized to access this page.</p>
+		                <h1 class="display-4">Pending Approval</h1>
+		                <p class="lead">Your registration is pending approval from an administrator.</p>
 		            </div>
 		        </div>
 		    </div>
@@ -27,3 +27,9 @@
 {% endblock %}
 
 
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+    {% endblock %}
+{% endblock %}

@@ -2,6 +2,7 @@
 ./wait-for rabbitmq:5672 -t 60
 ./wait-for postgres:5432 -t 60
 ./wait-for postgrest:3000 -t 60
+#./wait-for syslog:514 -t 60
 # TODO: find better solution!
 sleep 30
 python3 webapp_init.py

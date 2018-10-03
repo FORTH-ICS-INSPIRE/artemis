@@ -1,0 +1,169 @@
+{% extends "layout.htm" %}
+{% import "bootstrap/utils.html" as utils %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/merge.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Configuration Comparison</h1>
+            </div>
+
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="config_a">Select config:</label>
+                                    <select class="form-control w-75 p-3" id="config_a">
+                                        {% for config_ in configs %}
+                                        <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="config_a">Select config:</label>
+                                    <select class="form-control w-75 p-3" id="config_b">
+                                        {% for config_ in configs %}
+                                        <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                	   </div>
+                       <div class ="row">
+                            <div class="col-lg-12">
+                                <div id="view_diffs"></div>
+                            </div>
+                       </div>
+                    </div>
+            	</div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            
+            var config_a_data, config_b_data; 
+            var connect = "align", collapse = false, highlight = true;
+            var target = document.getElementById("view_diffs");
+            var cache_configs = {};
+            var dv;
+
+            $(document).ready(function(){
+                $.ajax({
+                    type: 'POST',
+                    url: '{{ url_for('proxy_api') }}',
+                    data: { "action": "configs", "parameters" : JSON.stringify({ "id": 'eq.' + "{{ configs[0]['id'] }}" }) },
+                    success: function(result){
+                        if(result.total > 0){
+                            config_a_data = result.results[0]['raw_config'];
+                            config_b_data = result.results[0]['raw_config'];
+                            cache_configs[result.results[0]['id']] = result.results[0]['raw_config'];
+                            render_diffs();
+                        }
+                    },
+                    dataType: 'json'
+                });
+
+                $("#config_a > option").each(function() {
+                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_unix_timestamp_to_client_local_time(this.value))
+                });
+                $("#config_b > option").each(function() {
+                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_unix_timestamp_to_client_local_time(this.value))
+                });
+            });
+
+
+            function render_diffs(){
+                dv = CodeMirror.MergeView(target, {
+                    value: config_a_data,
+                    orig: config_b_data,
+                    lineNumbers: true,
+                    mode: "yaml",
+                    highlightDifferences: highlight,
+                    connect: connect,
+                    collapseIdentical: collapse
+                });
+            }
+
+            $( "#config_a" ).on('change', function() {
+                var id = $(this).children(":selected").attr("id");
+                if (id in cache_configs){
+                    config_a_data = cache_configs[id];
+                    $('#view_diffs').html('');
+                    render_diffs();
+                }else{
+                    $.ajax({
+                        type: 'POST',
+                        url: '{{ url_for('proxy_api') }}',
+                        data: { "action": "configs", "parameters" : JSON.stringify({ "id": 'eq.' + id }) },
+                        success: function(result){
+                            if(result.total > 0){
+                                cache_configs[result.results[0]['id']] = result.results[0]['raw_config'];
+                                config_a_data = result.results[0]['raw_config'];
+                                $('#view_diffs').html('');
+                                render_diffs();
+                            }
+                        },
+                        dataType: 'json'
+                    }); 
+                } 
+            });
+
+            $( "#config_b" ).on('change', function() {
+                var id = $(this).children(":selected").attr("id");
+                if (id in cache_configs){
+                    config_b_data = cache_configs[id];
+                    $('#view_diffs').html('');
+                    render_diffs();
+                }else{
+                    $.ajax({
+                        type: 'POST',
+                        url: '{{ url_for('proxy_api') }}',
+                        data: { "action": "configs", "parameters" : JSON.stringify({ "id": 'eq.' + id }) },
+                        success: function(result){
+                            if(result.total > 0){
+                                cache_configs[result.results[0]['id']] = result.results[0]['raw_config'];
+                                config_b_data = result.results[0]['raw_config'];
+                                $('#view_diffs').html('');
+                                render_diffs();
+                            }
+                        },
+                        dataType: 'json'
+                    });
+                }
+            });
+
+            function toggleDifferences() {
+                dv.setShowDifferences(highlight = !highlight);
+            }
+ 
+
+        </script>
+
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/diff_match_patch.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/merge.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>
+    {% endblock %}
+{% endblock %}
+

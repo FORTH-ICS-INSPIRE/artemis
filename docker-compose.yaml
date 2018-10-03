@@ -76,8 +76,10 @@ services:
             - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
         ports:
             - 443:443
+            - 80:80
         expose:
             - 443
+            - 80
         networks:
             - frontend
             - postgrest

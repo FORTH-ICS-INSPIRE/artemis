@@ -5,12 +5,12 @@ function hijack_as_formmated(value){
 	return value
 }
 
-function communities_formmated(value){
-	var str_ = '[';
+function communities_formatted(value){
+	var str_ = '';
     (value).forEach(function (item) {
         str_ += item[0] + ':' + item[1] + ', ';
     })
-    return (str_).slice(0,-2) + ']'
+    return '[' + (str_).slice(0,-2) + ']'
 }
 
 function transform_unix_timestamp_to_client_local_time(timestamp){

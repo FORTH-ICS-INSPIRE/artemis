@@ -5,6 +5,10 @@ import os
 import yaml
 
 
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 API_URL_FLASK = os.getenv('POSTGREST_FLASK_HOST', 'postgrest:3000')
 

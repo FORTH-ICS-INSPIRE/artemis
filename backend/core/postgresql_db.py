@@ -376,18 +376,19 @@ class Postgresql_db(Service):
             try:
                 results = {}
                 self.db_cur.execute(
-                    "SELECT time_started, time_last, peers_seen, asns_inf, key, prefix, hijack_as, type  FROM hijacks WHERE active = true;")
+                    "SELECT time_started, time_last, peers_seen, asns_inf, key, prefix, hijack_as, type, time_detected FROM hijacks WHERE active = true;")
                 entries = self.db_cur.fetchall()
                 for entry in entries:
                     results[entry[4]] = {
                             'time_started': entry[0],
                             'time_last': entry[1],
-                            'peers_seen': set(json.loads(entry[2])),
-                            'inf_asns': set(json.loads(entry[3])),
+                            'peers_seen': set(entry[2]),
+                            'asns_inf': set(entry[3]),
                             'key': entry[4],
                             'prefix': str(entry[5]),
                             'hijack_as': int(entry[6]),
-                            'type': entry[7]
+                            'type': entry[7],
+                            'time_detected': entry[8]
                         }
 
                 self.producer.publish(
@@ -527,7 +528,7 @@ class Postgresql_db(Service):
 
             hijacks_view = "CREATE OR REPLACE VIEW view_hijacks AS SELECT "
             hijacks_view += "id, key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
-            hijacks_view += "time_started, time_last, mitigation_started, time_detected, "
+            hijacks_view += "time_started, time_ended, time_last, mitigation_started, time_detected, "
             hijacks_view += "under_mitigation, resolved, active, ignored, configured_prefix, "
             hijacks_view += "timestamp_of_config, comment FROM hijacks;"
 

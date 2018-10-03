@@ -36,7 +36,7 @@ class Resolve_hijack():
                 {
                     'key': self.hijack_key,
                     'prefix': self.prefix,
-                    'type': self.type,
+                    'type': self.type_,
                     'hijack_as': self.hijack_as
                 },
                 exchange=self.hijack_exchange,
@@ -107,7 +107,7 @@ class Ignore_hijack():
                 {
                     'key': self.hijack_key,
                     'prefix': self.prefix,
-                    'type': self.type,
+                    'type': self.type_,
                     'hijack_as': self.hijack_as
                 },
                 exchange=self.hijack_exchange,

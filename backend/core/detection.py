@@ -504,7 +504,6 @@ class Detection(Service):
                         hijack_value['prefix'],
                         hijack_value['hijack_as'],
                         hijack_value['type']])).hexdigest()
-                    assert self.memcache.get(memcache_hijack_key) is None
                     self.memcache.set(memcache_hijack_key, hijack_value)
             except Exception:
                 log.exception(
@@ -521,8 +520,10 @@ class Detection(Service):
             try:
                 data = message.payload
                 memcache_hijack_key = hashlib.md5(pickle.dumps(
-                    [data['prefix'], hijacker, hij_type])).hexdigest()
-                self.memcache.delete(data['key'])
+                    [data['prefix'],
+                     data['hijack_as'],
+                     data['type']])).hexdigest()
+                self.memcache.delete(memcache_hijack_key)
             except Exception:
                 log.exception(
                     "couldn't erase data: {}".format(

@@ -22,7 +22,7 @@ def resolve_hijack():
     type_ = request.values.get('type_')
     hijack_as = request.values.get('hijack_as')
     log.debug('url: /hijacks/resolve/{}'.format(hijack_key))
-    resolve_hijack_ = Resolve_hijack(hijack_key)
+    resolve_hijack_ = Resolve_hijack(hijack_key, prefix, type_, hijack_as)
     resolve_hijack_.resolve()
     return jsonify({'status': 'success'})
 

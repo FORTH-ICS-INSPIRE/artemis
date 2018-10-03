@@ -43,7 +43,7 @@ services:
             SYSTEM_VERSION: v0.1
             MACHINE_IP: 0.0.0.0
             USER_ROOT_USERNAME: admin
-            USER_ROOT_PASSWORD: admin
+            USER_ROOT_PASSWORD: admin123
             USER_ROOT_EMAIL: admin@admin
             POSTGREST_FLASK_HOST: 'postgrest:3000'
         expose:

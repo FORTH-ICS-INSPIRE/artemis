@@ -376,18 +376,25 @@ class Postgresql_db(Service):
             try:
                 results = {}
                 self.db_cur.execute(
-                    "SELECT time_started, time_last, num_peers_seen, num_asns_inf, key  FROM hijacks WHERE active = true;")
+                    "SELECT time_started, time_last, peers_seen, asns_inf, key, prefix, hijack_as, type  FROM hijacks WHERE active = true;")
                 entries = self.db_cur.fetchall()
                 for entry in entries:
-                    results[entry[4]] = {'time_started': entry[0],
-                                         'time_last': entry[1],
-                                         'peers_seen': entry[2],
-                                         'inf_asns': entry[3],
-                                         'key': entry[4]}
+                    results[entry[4]] = {
+                            'time_started': entry[0],
+                            'time_last': entry[1],
+                            'peers_seen': set(json.loads(entry[2])),
+                            'inf_asns': set(json.loads(entry[3])),
+                            'key': entry[4],
+                            'prefix': str(entry[5]),
+                            'hijack_as': entry[6],
+                            'type': entry[7]
+                        }
+
                 self.producer.publish(
                     results,
                     exchange=self.hijack_exchange,
                     routing_key='fetch',
+                    serializer='pickle'
                     retry=False,
                     priority=2
                 )

@@ -29,6 +29,21 @@ handlers:
         backupCount: 20
         encoding: utf8
 
+    smtps_handler:
+        class: utils.SMTPSHandler
+        level: INFO
+        formatter: simple
+        mailhost:
+        - smtp.server.com
+        - port
+        fromaddr: from
+        toaddrs: to
+        subject: subject
+        credentials:
+        - username
+        - password
+        secure: True
+
     # syslog_handler:
     #     class: logging.handlers.SysLogHandler
     #     level: DEBUG
@@ -39,6 +54,10 @@ loggers:
     artemis_logger:
         level: INFO
         handlers: [console, info_file_handler]
+        propagate: no
+    mail_logger:
+        level: INFO
+        handlers: [smtps_handler]
         propagate: no
 
 root:

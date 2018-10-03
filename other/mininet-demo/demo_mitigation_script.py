@@ -19,10 +19,10 @@ MOAS_PORT = 3001
 
 
 def announce_prefix(
-    prefix=None,
-    local_asn=None,
-    local_telnet_ip=None,
-    local_telnet_port=None):
+        prefix=None,
+        local_asn=None,
+        local_telnet_ip=None,
+        local_telnet_port=None):
 
     os.system('{} {} -th {} -tp {} -la {} -ap {}'.format(
         PY_BIN,
@@ -32,11 +32,12 @@ def announce_prefix(
         local_asn,
         prefix))
 
+
 def deaggregate_prefix(
-    prefix=None,
-    local_asn=None,
-    local_telnet_ip=None,
-    local_telnet_port=None):
+        prefix=None,
+        local_asn=None,
+        local_telnet_ip=None,
+        local_telnet_port=None):
 
     deaggr_prefixes = Deaggr(prefix, 24).get_subprefixes()
     if len(deaggr_prefixes) > 0:
@@ -47,11 +48,12 @@ def deaggregate_prefix(
                 local_telnet_ip=local_telnet_ip,
                 local_telnet_port=local_telnet_port)
 
+
 def moas_outsource(
-    prefix=None,
-    moas_asn=None,
-    moas_ip=None,
-    moas_port=None):
+        prefix=None,
+        moas_asn=None,
+        moas_ip=None,
+        moas_port=None):
 
     os.system('{} {} -r {} -p {} -m {}'.format(
         PY_BIN,
@@ -91,8 +93,15 @@ class Deaggr:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="mininet demo mitigation script that performs deaggregation + MOAS")
-    parser.add_argument('-i', '--input_hijack', dest='hijack', type=str, help='hijack info in json format', required=True)
+    parser = argparse.ArgumentParser(
+        description="mininet demo mitigation script that performs deaggregation + MOAS")
+    parser.add_argument(
+        '-i',
+        '--input_hijack',
+        dest='hijack',
+        type=str,
+        help='hijack info in json format',
+        required=True)
     args = parser.parse_args()
 
     # format of decode hijack info
@@ -109,15 +118,21 @@ def main():
     hijack_info = json.loads(args.hijack)
 
     if IPNetwork(hijack_info['prefix']).prefixlen < 24:
-        print('[CUSTOM MITIGATION] Resolving hijack {} via prefix deaggregation...'.format(hijack_info['id']))
+        print(
+            '[CUSTOM MITIGATION] Resolving hijack {} via prefix deaggregation...'.format(
+                hijack_info['id']))
         deaggregate_prefix(
             prefix=hijack_info['prefix'],
             local_asn=LOCAL_ASN,
             local_telnet_ip=LOCAL_TELNET_IP,
             local_telnet_port=LOCAL_TELNET_PORT)
     else:
-        print('[CUSTOM MITIGATION] Cannot deaggregate prefix {} due to filtering!'.format(hijack_info['prefix']))
-        print('[CUSTOM MITIGATION] Resolving hijack {} via MOAS outsourcing...'.format(hijack_info['id']))
+        print(
+            '[CUSTOM MITIGATION] Cannot deaggregate prefix {} due to filtering!'.format(
+                hijack_info['prefix']))
+        print(
+            '[CUSTOM MITIGATION] Resolving hijack {} via MOAS outsourcing...'.format(
+                hijack_info['id']))
         announce_prefix(
             prefix=hijack_info['prefix'],
             local_asn=LOCAL_ASN,
@@ -129,6 +144,7 @@ def main():
             moas_asn=MOAS_ASN,
             moas_ip=MOAS_IP,
             moas_port=MOAS_PORT)
+
 
 if __name__ == '__main__':
     main()

@@ -1,12 +1,22 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from pprint import pformat
-from kombu import Connection, Exchange, Queue, Consumer, eventloop, uuid
+from kombu import Connection, Exchange, Queue, Consumer, eventloop
 import os
 
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
-exchange = Exchange('hijack-update', type='direct', durable=False, delivery_mode=1)
-queue = Queue('hijack-update-queue', exchange, routing_key='update', exclusive=True, durable=False, max_priority=1)
+exchange = Exchange(
+    'hijack-update',
+    type='direct',
+    durable=False,
+    delivery_mode=1)
+queue = Queue(
+    'hijack-update-queue',
+    exchange,
+    routing_key='update',
+    exclusive=True,
+    durable=False,
+    max_priority=1)
 
 
 def pretty(obj):
@@ -18,6 +28,7 @@ def handle_message(body, message):
     print('Received message: {0!r}'.format(body))
     print('  properties:\n{0}'.format(pretty(message.properties)))
     print('  delivery_info:\n{0}'.format(pretty(message.delivery_info)))
+
 
 #: Create a connection and a channel.
 #: If hostname, userid, password and virtual_host is not specified

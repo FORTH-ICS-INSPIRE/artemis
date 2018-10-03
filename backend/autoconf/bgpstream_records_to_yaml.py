@@ -29,7 +29,7 @@ def __clean_loops(seq):
             new_seq_inv.append(x)
         else:
             x_index = new_seq_inv.index(x)
-            new_seq_inv = new_seq_inv[:x_index+1]
+            new_seq_inv = new_seq_inv[:x_index + 1]
     return new_seq_inv[::-1]
 
 
@@ -44,7 +44,7 @@ def __as_mapper(asn_str):
     if asn_str != '':
         try:
             return int(asn_str)
-        except:
+        except BaseException:
             return 0
     return 0
 
@@ -60,7 +60,8 @@ def parse_bgpstreamhist_csvs(input_dir=None):
             for row in csv_reader:
                 if len(row) != 9:
                     continue
-                # example row: 139.91.0.0/16|8522|6830|6830,2603,21320,5408,8522|routeviews|route-views.eqix|A|"[{""asn"":2603,""value"":340},{""asn"":2603,""value"":20965},{""asn"":2603,""value"":64110},{""asn"":2603,""value"":64113},{""asn"":5408,""value"":120},{""asn"":5408,""value"":1003},{""asn"":6830,""value"":16000},{""asn"":6830,""value"":16011},{""asn"":6830,""value"":33104},{""asn"":20965,""value"":155},{""asn"":20965,""value"":64914},{""asn"":20965,""value"":65532},{""asn"":20965,""value"":65533},{""asn"":20965,""value"":65534}]"|1517501179
+                # example row:
+                # 139.91.0.0/16|8522|6830|6830,2603,21320,5408,8522|routeviews|route-views.eqix|A|"[{""asn"":2603,""value"":340},{""asn"":2603,""value"":20965},{""asn"":2603,""value"":64110},{""asn"":2603,""value"":64113},{""asn"":5408,""value"":120},{""asn"":5408,""value"":1003},{""asn"":6830,""value"":16000},{""asn"":6830,""value"":16011},{""asn"":6830,""value"":33104},{""asn"":20965,""value"":155},{""asn"":20965,""value"":64914},{""asn"":20965,""value"":65532},{""asn"":20965,""value"":65533},{""asn"":20965,""value"":65534}]"|1517501179
                 prefix = row[0]
                 if prefix == '0.0.0.0/0':
                     continue
@@ -91,7 +92,10 @@ def parse_bgpstreamhist_csvs(input_dir=None):
 def create_prefix_defs(yaml_conf, prefixes):
     yaml_conf['prefixes'] = ruamel.yaml.comments.CommentedMap()
     for prefix in prefixes:
-        prefix_str = 'prefix_{}'.format(prefix.replace('.', '_').replace('/', '_'))
+        prefix_str = 'prefix_{}'.format(
+            prefix.replace(
+                '.', '_').replace(
+                '/', '_'))
         yaml_conf['prefixes'][prefix_str] = ruamel.yaml.comments.CommentedSeq()
         yaml_conf['prefixes'][prefix_str].append(prefix)
         yaml_conf['prefixes'][prefix_str].yaml_set_anchor(prefix_str)
@@ -100,7 +104,7 @@ def create_prefix_defs(yaml_conf, prefixes):
 def create_monitor_defs(yaml_conf):
     yaml_conf['monitors'] = ruamel.yaml.comments.CommentedMap()
     riperis = []
-    for i in range(1,24):
+    for i in range(1, 24):
         if i < 10:
             riperis.append('rrc0{}'.format(i))
         else:
@@ -124,16 +128,22 @@ def create_rule_defs(yaml_conf, prefix_pols):
     yaml_conf['rules'] = ruamel.yaml.comments.CommentedSeq()
     for prefix in prefix_pols:
         pol_dict = ruamel.yaml.comments.CommentedMap()
-        prefix_str = 'prefix_{}'.format(prefix.replace('.', '_').replace('/', '_'))
+        prefix_str = 'prefix_{}'.format(
+            prefix.replace(
+                '.', '_').replace(
+                '/', '_'))
         pol_dict['prefixes'] = [yaml_conf['prefixes'][prefix_str]]
-        pol_dict['origin_asns'] = [yaml_conf['asns']['AS{}'.format(asn)] for asn in prefix_pols[prefix]['origins']],
-        pol_dict['neighbors'] = [yaml_conf['asns']['AS{}'.format(asn)] for asn in prefix_pols[prefix]['neighbors']],
+        pol_dict['origin_asns'] = [yaml_conf['asns']['AS{}'.format(
+            asn)] for asn in prefix_pols[prefix]['origins']],
+        pol_dict['neighbors'] = [yaml_conf['asns']['AS{}'.format(
+            asn)] for asn in prefix_pols[prefix]['neighbors']],
         pol_dict['mitigation'] = 'manual'
         yaml_conf['rules'].append(pol_dict)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='BGPStream Historical Monitor')
+    parser = argparse.ArgumentParser(
+        description='BGPStream Historical Monitor')
     parser.add_argument('-d', '--dir', type=str, dest='dir', default=None,
                         help='Directory with csvs to read')
     parser.add_argument('-y', '--yaml_file', dest='yaml_file', required=None,

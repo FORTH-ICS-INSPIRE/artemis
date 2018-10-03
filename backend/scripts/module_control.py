@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import sys
-import time
 import os
 from kombu import Connection, Producer, Consumer, Queue, uuid
 import traceback
@@ -25,7 +23,7 @@ class ControllerCLI(object):
                 {
                     'module': module,
                     'action': action
-                    },
+                },
                 exchange='',
                 routing_key='controller-queue',
                 declare=[callback_queue],
@@ -44,9 +42,9 @@ class ControllerCLI(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Module Controller Script')
     parser.add_argument('-m', '--module', type=str, dest='module', required=True,
-                    help='Module name for the desired action')
+                        help='Module name for the desired action')
     parser.add_argument('-a', '--action', type=str, dest='action', required=True,
-                    help='Action to be sent (start, stop, status)')
+                        help='Action to be sent (start, stop, status)')
 
     args = parser.parse_args()
     try:
@@ -56,5 +54,5 @@ if __name__ == '__main__':
         print(' [x] Requesting')
         response = cli.call(args.module, args.action)
         print(' [.] Got {}'.format(response))
-    except:
+    except BaseException:
         traceback.print_exc()

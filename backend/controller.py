@@ -1,6 +1,4 @@
-import os
 import sys
-import time
 from core.configuration import Configuration
 from core.monitor import Monitor
 from core.detection import Detection
@@ -10,15 +8,15 @@ from core.postgresql_db import Postgresql_db
 from core.observer import Observer
 from utils import get_logger, RABBITMQ_HOST
 from utils.service import Service
-from kombu import Connection, Queue, Exchange, uuid
+from kombu import Connection, Queue
 from kombu.mixins import ConsumerProducerMixin
 import importlib
 
 
 log = get_logger()
 
-class Controller(Service):
 
+class Controller(Service):
 
     def run_worker(self):
         with Connection(RABBITMQ_HOST) as connection:
@@ -33,9 +31,7 @@ class Controller(Service):
 
         log.info('stopped')
 
-
     class Worker(ConsumerProducerMixin):
-
 
         def __init__(self, connection):
             self.connection = connection
@@ -62,20 +58,20 @@ class Controller(Service):
 
             log.info('started')
 
-
         def get_consumers(self, Consumer, channel):
             return [
-                    Consumer(
-                        queues=[self.controller_queue],
-                        on_message=self.controller_handler,
-                        prefetch_count=1,
-                        no_ack=True
-                        )
-                    ]
-
+                Consumer(
+                    queues=[self.controller_queue],
+                    on_message=self.controller_handler,
+                    prefetch_count=1,
+                    no_ack=True
+                )
+            ]
 
         def controller_handler(self, message):
-            log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            log.debug(
+                'message: {}\npayload: {}'.format(
+                    message, message.payload))
 
             response = {}
             try:
@@ -85,30 +81,32 @@ class Controller(Service):
                     if message.payload['action'] == 'stop':
                         if not module.is_running():
                             response = {'result': 'fail',
-                                    'reason': 'already stopped'}
+                                        'reason': 'already stopped'}
                         else:
                             module.stop(block=True)
                             response = {'result': 'success'}
                     elif message.payload['action'] == 'start':
                         if module.is_running():
                             response = {'result': 'fail',
-                                    'reason': 'already running'}
+                                        'reason': 'already running'}
                         else:
                             importlib.reload(sys.modules[module.__module__])
-                            self.modules[message.payload['module']] = module.__class__()
+                            self.modules[message.payload['module']
+                                         ] = module.__class__()
                             self.modules[message.payload['module']].start()
                             response = {'result': 'success'}
                     elif message.payload['action'] == 'status':
                         if module.is_running():
                             response = {
-                                    'result': 'success',
-                                    'status': 'up',
-                                    'uptime': module.get_uptime()
+                                'result': 'success',
+                                'status': 'up',
+                                'uptime': module.get_uptime()
                             }
                         else:
                             response = {'result': 'success', 'status': 'down'}
                     else:
-                        response = {'result': 'fail', 'reason': 'unknown action'}
+                        response = {
+                            'result': 'fail', 'reason': 'unknown action'}
                 elif message.payload['module'] == 'all':
                     if message.payload['action'] == 'stop':
                         for name, module in self.modules.items():
@@ -133,11 +131,12 @@ class Controller(Service):
                                     'status': 'down'
                                 }
                     else:
-                        response = {'result': 'fail', 'reason': 'unknown action'}
+                        response = {
+                            'result': 'fail', 'reason': 'unknown action'}
                 else:
                     response = {'result': 'fail',
-                            'reason': 'not registered module'}
-            except:
+                                'reason': 'not registered module'}
+            except BaseException:
                 log.exception('exception')
                 response = {'result': 'fail', 'reason': 'controller exception'}
             finally:
@@ -146,12 +145,13 @@ class Controller(Service):
                 self.producer.publish(
                     message.payload,
                     exchange='',
-                    routing_key = message.properties['reply_to'],
-                    correlation_id = message.properties['correlation_id'],
-                    retry = True,
-                    priority = 2
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    retry=True,
+                    priority=2
                 )
             log.debug('rpc finish')
+
 
 if __name__ == '__main__':
     c = Controller()

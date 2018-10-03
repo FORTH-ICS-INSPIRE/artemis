@@ -1,18 +1,20 @@
-import sys
-import os
 import glob
 import csv
-import hashlib
 import json
 import argparse
-from kombu import Connection, Producer, Exchange, Queue, uuid
+from kombu import Connection, Producer, Exchange
 from netaddr import IPNetwork, IPAddress
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
+
 
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
 
     with Connection(RABBITMQ_HOST) as connection:
-        exchange = Exchange('bgp-update', channel=connection, type='direct', durable=False)
+        exchange = Exchange(
+            'bgp-update',
+            channel=connection,
+            type='direct',
+            durable=False)
         exchange.declare()
         producer = Producer(connection)
 
@@ -22,7 +24,9 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                 for row in csv_reader:
                     if len(row) != 9:
                         continue
-                    # example row: 139.91.0.0/16|8522|1403|1403 6461 2603 21320 5408 8522|routeviews|route-views2|A|"[{""asn"":1403,""value"":6461}]"|1517446677
+                    # example row: 139.91.0.0/16|8522|1403|1403 6461 2603 21320
+                    # 5408
+                    # 8522|routeviews|route-views2|A|"[{""asn"":1403,""value"":6461}]"|1517446677
                     this_prefix = row[0]
                     if row[6] == 'A':
                         as_path = row[3].split(' ')
@@ -36,7 +40,8 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                     for prefix in prefixes:
                         base_ip, mask_length = this_prefix.split('/')
                         our_prefix = IPNetwork(prefix)
-                        if IPAddress(base_ip) in our_prefix and int(mask_length) >= our_prefix.prefixlen:
+                        if IPAddress(base_ip) in our_prefix and int(
+                                mask_length) >= our_prefix.prefixlen:
                             msg = {
                                 'type': type_,
                                 'timestamp': timestamp,
@@ -56,8 +61,10 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                         serializer='json'
                                     )
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='BGPStream Historical Monitor')
+    parser = argparse.ArgumentParser(
+        description='BGPStream Historical Monitor')
     parser.add_argument('-p', '--prefix', type=str, dest='prefix', default=None,
                         help='Prefix to be monitored')
     parser.add_argument('-d', '--dir', type=str, dest='dir', default=None,
@@ -72,4 +79,3 @@ if __name__ == '__main__':
         parse_bgpstreamhist_csvs(prefixes, dir)
     except KeyboardInterrupt:
         pass
-

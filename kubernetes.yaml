@@ -7,15 +7,11 @@ items:
       deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: 2018-10-02T22:56:18Z
     generation: 1
     labels:
       io.kompose.service: backend
     name: backend
     namespace: default
-    resourceVersion: "61377"
-    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/backend
-    uid: 5f4f3df8-c696-11e8-94ba-0800276622b6
   spec:
     progressDeadlineSeconds: 600
     replicas: 1
@@ -27,7 +23,6 @@ items:
       type: Recreate
     template:
       metadata:
-        creationTimestamp: null
         labels:
           io.kompose.service: backend
       spec:
@@ -43,40 +38,14 @@ items:
           imagePullPolicy: Never
           name: backend
           resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
           volumeMounts:
           - mountPath: /root/configs/
-            name: config-volume
-        dnsPolicy: ClusterFirst
+            name: backend-volume
         restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
         volumes:
-        - configMap:
-            defaultMode: 420
+        - name: backend-volume
+          configMap:
             name: artemis-backend
-          name: config-volume
-  status:
-    availableReplicas: 1
-    conditions:
-    - lastTransitionTime: 2018-10-02T22:56:27Z
-      lastUpdateTime: 2018-10-02T22:56:27Z
-      message: Deployment has minimum availability.
-      reason: MinimumReplicasAvailable
-      status: "True"
-      type: Available
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:27Z
-      message: ReplicaSet "backend-58bbc6cd95" has successfully progressed.
-      reason: NewReplicaSetAvailable
-      status: "True"
-      type: Progressing
-    observedGeneration: 1
-    readyReplicas: 1
-    replicas: 1
-    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
@@ -84,19 +53,13 @@ items:
       deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: 2018-10-02T22:56:18Z
     generation: 1
     labels:
       io.kompose.service: frontend
     name: frontend
     namespace: default
-    resourceVersion: "62668"
-    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/frontend
-    uid: 5f52ad3b-c696-11e8-94ba-0800276622b6
   spec:
-    progressDeadlineSeconds: 600
     replicas: 1
-    revisionHistoryLimit: 10
     selector:
       matchLabels:
         io.kompose.service: frontend
@@ -104,7 +67,6 @@ items:
       type: Recreate
     template:
       metadata:
-        creationTimestamp: null
         labels:
           io.kompose.service: frontend
       spec:
@@ -130,40 +92,14 @@ items:
           imagePullPolicy: Never
           name: frontend
           resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
           volumeMounts:
           - mountPath: /root/configs/
-            name: config-volume
-        dnsPolicy: ClusterFirst
+            name: frontend-volume
         restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
         volumes:
-        - configMap:
-            defaultMode: 420
+        - name: frontend-volume
+          configMap:
             name: artemis-frontend
-          name: config-volume
-  status:
-    availableReplicas: 1
-    conditions:
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:30Z
-      message: ReplicaSet "frontend-57dbb5db5" has successfully progressed.
-      reason: NewReplicaSetAvailable
-      status: "True"
-      type: Progressing
-    - lastTransitionTime: 2018-10-02T23:11:05Z
-      lastUpdateTime: 2018-10-02T23:11:05Z
-      message: Deployment has minimum availability.
-      reason: MinimumReplicasAvailable
-      status: "True"
-      type: Available
-    observedGeneration: 1
-    readyReplicas: 1
-    replicas: 1
-    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
@@ -171,19 +107,12 @@ items:
       deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: 2018-10-02T22:56:18Z
-    generation: 1
     labels:
       io.kompose.service: memcached
     name: memcached
     namespace: default
-    resourceVersion: "61390"
-    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/memcached
-    uid: 5f6d8186-c696-11e8-94ba-0800276622b6
   spec:
-    progressDeadlineSeconds: 600
     replicas: 1
-    revisionHistoryLimit: 10
     selector:
       matchLabels:
         io.kompose.service: memcached
@@ -194,7 +123,6 @@ items:
       type: RollingUpdate
     template:
       metadata:
-        creationTimestamp: null
         labels:
           io.kompose.service: memcached
       spec:
@@ -205,30 +133,7 @@ items:
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
-        dnsPolicy: ClusterFirst
         restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-  status:
-    availableReplicas: 1
-    conditions:
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:18Z
-      message: Deployment has minimum availability.
-      reason: MinimumReplicasAvailable
-      status: "True"
-      type: Available
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:29Z
-      message: ReplicaSet "memcached-7bf8bb885c" has successfully progressed.
-      reason: NewReplicaSetAvailable
-      status: "True"
-      type: Progressing
-    observedGeneration: 1
-    readyReplicas: 1
-    replicas: 1
-    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
@@ -236,19 +141,12 @@ items:
       deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: 2018-10-02T22:56:18Z
     generation: 1
     labels:
       io.kompose.service: nginx
     name: nginx
-    namespace: default
-    resourceVersion: "61405"
-    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/nginx
-    uid: 5f563ec2-c696-11e8-94ba-0800276622b6
   spec:
-    progressDeadlineSeconds: 600
     replicas: 1
-    revisionHistoryLimit: 10
     selector:
       matchLabels:
         io.kompose.service: nginx
@@ -259,7 +157,6 @@ items:
       type: RollingUpdate
     template:
       metadata:
-        creationTimestamp: null
         labels:
           io.kompose.service: nginx
       spec:
@@ -268,47 +165,20 @@ items:
           imagePullPolicy: Always
           name: nginx
           resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
           volumeMounts:
           - mountPath: /etc/nginx/nginx.conf
             name: nginx-conf
             subPath: nginx.conf
           - mountPath: /etc/nginx/certs/
             name: nginx-certs
-        dnsPolicy: ClusterFirst
         restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
         volumes:
         - configMap:
-            defaultMode: 420
             name: nginx-configuration
           name: nginx-conf
         - configMap:
-            defaultMode: 420
             name: nginx-certificates
           name: nginx-certs
-  status:
-    availableReplicas: 1
-    conditions:
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:18Z
-      message: Deployment has minimum availability.
-      reason: MinimumReplicasAvailable
-      status: "True"
-      type: Available
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:30Z
-      message: ReplicaSet "nginx-6d56865b4b" has successfully progressed.
-      reason: NewReplicaSetAvailable
-      status: "True"
-      type: Progressing
-    observedGeneration: 1
-    readyReplicas: 1
-    replicas: 1
-    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
@@ -316,19 +186,13 @@ items:
       deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: 2018-10-02T22:56:18Z
     generation: 1
     labels:
       io.kompose.service: postgres
     name: postgres
     namespace: default
-    resourceVersion: "61391"
-    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/postgres
-    uid: 5f75a7e0-c696-11e8-94ba-0800276622b6
   spec:
-    progressDeadlineSeconds: 600
     replicas: 1
-    revisionHistoryLimit: 10
     selector:
       matchLabels:
         io.kompose.service: postgres
@@ -339,7 +203,6 @@ items:
       type: RollingUpdate
     template:
       metadata:
-        creationTimestamp: null
         labels:
           io.kompose.service: postgres
       spec:
@@ -354,33 +217,7 @@ items:
           image: postgres:alpine
           imagePullPolicy: IfNotPresent
           name: postgres
-          resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        dnsPolicy: ClusterFirst
         restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-  status:
-    availableReplicas: 1
-    conditions:
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:18Z
-      message: Deployment has minimum availability.
-      reason: MinimumReplicasAvailable
-      status: "True"
-      type: Available
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:29Z
-      message: ReplicaSet "postgres-5fbbdd77d5" has successfully progressed.
-      reason: NewReplicaSetAvailable
-      status: "True"
-      type: Progressing
-    observedGeneration: 1
-    readyReplicas: 1
-    replicas: 1
-    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
@@ -388,19 +225,14 @@ items:
       deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: 2018-10-02T22:56:18Z
+    creationTimestamp: 2018-10-03T14:44:32Z
     generation: 1
     labels:
       io.kompose.service: postgrest
     name: postgrest
     namespace: default
-    resourceVersion: "61412"
-    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/postgrest
-    uid: 5f79dca6-c696-11e8-94ba-0800276622b6
   spec:
-    progressDeadlineSeconds: 600
     replicas: 1
-    revisionHistoryLimit: 10
     selector:
       matchLabels:
         io.kompose.service: postgrest
@@ -411,7 +243,6 @@ items:
       type: RollingUpdate
     template:
       metadata:
-        creationTimestamp: null
         labels:
           io.kompose.service: postgrest
       spec:
@@ -426,33 +257,7 @@ items:
           image: postgrest/postgrest
           imagePullPolicy: Always
           name: postgrest
-          resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        dnsPolicy: ClusterFirst
         restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-  status:
-    availableReplicas: 1
-    conditions:
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:18Z
-      message: Deployment has minimum availability.
-      reason: MinimumReplicasAvailable
-      status: "True"
-      type: Available
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:33Z
-      message: ReplicaSet "postgrest-59bfd79fc9" has successfully progressed.
-      reason: NewReplicaSetAvailable
-      status: "True"
-      type: Progressing
-    observedGeneration: 1
-    readyReplicas: 1
-    replicas: 1
-    updatedReplicas: 1
 - apiVersion: extensions/v1beta1
   kind: Deployment
   metadata:
@@ -460,19 +265,14 @@ items:
       deployment.kubernetes.io/revision: "1"
       kompose.cmd: kompose convert -o deploy.yaml
       kompose.version: 1.16.0 (0c01309)
-    creationTimestamp: 2018-10-02T22:56:18Z
+    creationTimestamp: 2018-10-03T14:44:32Z
     generation: 1
     labels:
       io.kompose.service: rabbitmq
     name: rabbitmq
     namespace: default
-    resourceVersion: "61397"
-    selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/rabbitmq
-    uid: 5f80899d-c696-11e8-94ba-0800276622b6
   spec:
-    progressDeadlineSeconds: 600
     replicas: 1
-    revisionHistoryLimit: 10
     selector:
       matchLabels:
         io.kompose.service: rabbitmq
@@ -483,7 +283,6 @@ items:
       type: RollingUpdate
     template:
       metadata:
-        creationTimestamp: null
         labels:
           io.kompose.service: rabbitmq
       spec:
@@ -491,33 +290,96 @@ items:
         - image: rabbitmq:3-alpine
           imagePullPolicy: IfNotPresent
           name: rabbitmq
-          resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        dnsPolicy: ClusterFirst
         restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-  status:
-    availableReplicas: 1
-    conditions:
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:18Z
-      message: Deployment has minimum availability.
-      reason: MinimumReplicasAvailable
-      status: "True"
-      type: Available
-    - lastTransitionTime: 2018-10-02T22:56:18Z
-      lastUpdateTime: 2018-10-02T22:56:30Z
-      message: ReplicaSet "rabbitmq-66bfc96858" has successfully progressed.
-      reason: NewReplicaSetAvailable
-      status: "True"
-      type: Progressing
-    observedGeneration: 1
-    readyReplicas: 1
-    replicas: 1
-    updatedReplicas: 1
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      io.kompose.service: frontend
+    name: frontend
+    namespace: default
+  spec:
+    ports:
+    - port: 8000
+      protocol: TCP
+      targetPort: 8000
+    selector:
+      io.kompose.service: frontend
+    type: NodePort
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      io.kompose.service: memcached
+    name: memcached
+    namespace: default
+  spec:
+    ports:
+    - port: 11211
+      protocol: TCP
+      targetPort: 11211
+    selector:
+      io.kompose.service: memcached
+    sessionAffinity: None
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      io.kompose.service: nginx
+    name: nginx
+    namespace: default
+    resourceVersion: "78615"
+  spec:
+    ports:
+    - port: 443
+      protocol: TCP
+      targetPort: 443
+    selector:
+      io.kompose.service: nginx
+    type: NodePort
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      io.kompose.service: postgres
+    name: postgres
+    namespace: default
+  spec:
+    ports:
+    - port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      io.kompose.service: postgres
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      io.kompose.service: postgrest
+    name: postgrest
+    namespace: default
+  spec:
+    ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: 3000
+    selector:
+      io.kompose.service: postgrest
+    sessionAffinity: None
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      io.kompose.service: rabbitmq
+    name: rabbitmq
+    namespace: default
+  spec:
+    ports:
+    - port: 5672
+      protocol: TCP
+      targetPort: 5672
+    selector:
+      io.kompose.service: rabbitmq
 - apiVersion: v1
   data:
     config.yaml: |
@@ -642,12 +504,8 @@ items:
 
   kind: ConfigMap
   metadata:
-    creationTimestamp: 2018-10-02T22:49:28Z
     name: artemis-backend
     namespace: default
-    resourceVersion: "60146"
-    selfLink: /api/v1/namespaces/default/configmaps/artemis-backend
-    uid: 6b29fca5-c695-11e8-94ba-0800276622b6
 - apiVersion: v1
   data:
     logging.yaml: |+
@@ -706,12 +564,8 @@ items:
       BABEL_DEFAULT_TIMEZONE = 'EET'
   kind: ConfigMap
   metadata:
-    creationTimestamp: 2018-10-02T22:50:01Z
     name: artemis-frontend
     namespace: default
-    resourceVersion: "60184"
-    selfLink: /api/v1/namespaces/default/configmaps/artemis-frontend
-    uid: 7efa015b-c695-11e8-94ba-0800276622b6
 - apiVersion: v1
   data:
     cert.pem: |
@@ -803,12 +657,8 @@ items:
       -----END PRIVATE KEY-----
   kind: ConfigMap
   metadata:
-    creationTimestamp: 2018-10-02T19:14:51Z
     name: nginx-certificates
     namespace: default
-    resourceVersion: "42572"
-    selfLink: /api/v1/namespaces/default/configmaps/nginx-certificates
-    uid: 6fa1dced-c677-11e8-94ba-0800276622b6
 - apiVersion: v1
   data:
     nginx.conf: |
@@ -831,12 +681,8 @@ items:
       }
   kind: ConfigMap
   metadata:
-    creationTimestamp: 2018-10-02T22:09:40Z
     name: nginx-configuration
     namespace: default
-    resourceVersion: "56005"
-    selfLink: /api/v1/namespaces/default/configmaps/nginx-configuration
-    uid: dbf0b430-c68f-11e8-94ba-0800276622b6
 kind: List
 metadata:
   resourceVersion: ""

@@ -34,6 +34,8 @@ def get_logger(path='configs/logging.yaml'):
 
 
 # https://stackoverflow.com/questions/16136979/set-class-with-timed-auto-remove-of-elements
+
+
 class TimedSet(set):
     def __init__(self, timeout=10):
         self.__table = {}

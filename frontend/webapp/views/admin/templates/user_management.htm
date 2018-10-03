@@ -4,7 +4,7 @@
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
 {% endblock %}
 
 {% block page_content %}
@@ -75,13 +75,70 @@
                 	</div>
                 </div>
 	       	</div>
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> User list
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-striped" id="users_list">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Username</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Role</th>
+                                    <th scope="col">Last Login</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users_list %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td><b>{{ user.username }}<b></td>
+                                    <td>{{ user.email }}</td>
+                                    <td><b>{{ user.role }}</b></td>
+                                    <td>{{ user.last_login_at }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    </hr>
+                    <p><i>Times are shown in your local time zone.</i></p>
+                </div>
+            </div>
         </div>
+
+
 {% endblock %}
 
 {% block body %}
     {{super()}}
     {% block scripts %}
         {{super()}}
+        <script>
+
+
+            $(document).ready(function() {
+                $("#users_list tr td:nth-child(5)").each(function (index) {
+                    var timestamp = $(this).html();
+                    $(this).text(transform_unix_timestamp_to_client_local_time(timestamp));
+                });
+
+                $('#users_list').DataTable();
+            });
+            
+
+        </script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
     {% endblock %}
 {% endblock %}
 

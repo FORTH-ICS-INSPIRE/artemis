@@ -246,17 +246,22 @@ class Postgresql_db(Service):
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
-                    self.tmp_hijacks_dict[key]['hijacker'] = str(
-                        msg_['hijacker'])
+                    self.tmp_hijacks_dict[key]['hijack_as'] = str(
+                        msg_['hijack_as'])
                     self.tmp_hijacks_dict[key]['hij_type'] = str(
                         msg_['hij_type'])
                     self.tmp_hijacks_dict[key]['time_started'] = int(
                         msg_['time_started'])
                     self.tmp_hijacks_dict[key]['time_last'] = int(
                         msg_['time_last'])
-                    self.tmp_hijacks_dict[key]['peers_seen'] = msg_[
-                        'peers_seen']
-                    self.tmp_hijacks_dict[key]['inf_asns'] = msg_['inf_asns']
+                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(msg_[
+                        'peers_seen'])
+                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(msg_[
+                        'asns_inf'])
+                    self.tmp_hijacks_dict[key]['num_peers_seen'] = len(msg_[
+                        'peers_seen'])
+                    self.tmp_hijacks_dict[key]['num_asns_inf'] = len(msg_[
+                        'asns_inf'])
                     self.tmp_hijacks_dict[key]['monitor_keys'] = msg_[
                         'monitor_keys']
                     self.tmp_hijacks_dict[key]['time_detected'] = int(
@@ -270,10 +275,14 @@ class Postgresql_db(Service):
                         min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
                     self.tmp_hijacks_dict[key]['time_last'] = int(
                         max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
-                    self.tmp_hijacks_dict[key]['peers_seen'].update(
-                        msg_['peers_seen'])
-                    self.tmp_hijacks_dict[key]['inf_asns'].update(
-                        msg_['inf_asns'])
+                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(msg_[
+                        'peers_seen'])
+                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(msg_[
+                        'asns_inf'])
+                    self.tmp_hijacks_dict[key]['num_peers_seen'] = len(msg_[
+                        'peers_seen'])
+                    self.tmp_hijacks_dict[key]['num_asns_inf'] = len(msg_[
+                        'asns_inf'])
                     self.tmp_hijacks_dict[key]['monitor_keys'].update(
                         msg_['monitor_keys'])
             except BaseException:
@@ -480,6 +489,7 @@ class Postgresql_db(Service):
                 "hijack_as VARCHAR ( 6 ), " + \
                 "peers_seen   json, " + \
                 "num_peers_seen INTEGER, " + \
+                "asns_inf json, " + \
                 "num_asns_inf INTEGER, " + \
                 "time_started BIGINT, " + \
                 "time_last BIGINT, " + \
@@ -570,18 +580,18 @@ class Postgresql_db(Service):
                 try:
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                    cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment, peers_seen) "
-                    cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                    cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment, peers_seen, asns_inf) "
+                    cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
                     cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, "
-                    cmd_ += "time_last=%s, peers_seen=%s;"
+                    cmd_ += "time_last=%s, peers_seen=%s, asns_inf=%s;"
 
                     values_ = (
                         key,
                         self.tmp_hijacks_dict[key]['hij_type'],
                         self.tmp_hijacks_dict[key]['prefix'],
                         self.tmp_hijacks_dict[key]['hijacker'],
-                        len(self.tmp_hijacks_dict[key]['peers_seen']),
-                        len(self.tmp_hijacks_dict[key]['inf_asns']),
+                        self.tmp_hijacks_dict[key]['num_peers_seen'],
+                        self.tmp_hijacks_dict[key]['num_inf_asns'],
                         int(self.tmp_hijacks_dict[key]['time_started']),
                         int(self.tmp_hijacks_dict[key]['time_last']),
                         0,
@@ -594,12 +604,14 @@ class Postgresql_db(Service):
                         self.tmp_hijacks_dict[key]['configured_prefix'],
                         int(self.tmp_hijacks_dict[key]['timestamp_of_config']),
                         '',
-                        json.dumps(self.tmp_hijacks_dict[key]['peers_seen']),
-                        len(self.tmp_hijacks_dict[key]['peers_seen']),
-                        len(self.tmp_hijacks_dict[key]['inf_asns']),
+                        self.tmp_hijacks_dict[key]['peers_seen'],
+                        self.tmp_hijacks_dict[key]['asns_inf'],
+                        self.tmp_hijacks_dict[key]['num_peers_seen'],
+                        self.tmp_hijacks_dict[key]['num_inf_asns'],
                         int(self.tmp_hijacks_dict[key]['time_started']),
                         int(self.tmp_hijacks_dict[key]['time_last']),
-                        json.dumps(self.tmp_hijacks_dict[key]['peers_seen'])
+                        self.tmp_hijacks_dict[key]['peers_seen'],
+                        self.tmp_hijacks_dict[key]['asns_inf']
                     )
 
                     self.db_cur.execute(cmd_, values_)

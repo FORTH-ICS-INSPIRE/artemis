@@ -3,7 +3,7 @@
 
 {% block head %}
     {{super()}}
-  	<title>ARTEMIS - Pending Administrator Approval</title>
+  	<title>ARTEMIS - Error 500: Internal Server Error</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 {% endblock %}
@@ -15,10 +15,10 @@
 		        <div class="col-6 mx-auto">
 		            <div class="jumbotron vertical-center">
 		            	<p class="lead">
-		                    <img src="../images/pending_approval.png"></img>
+		                    <img src="{{ url_for('static', filename='images/404_not_found.png') }}"></img>
 		                </p>
-		                <h1 class="display-4">Pending Approval</h1>
-		                <p class="lead">Your registration is pending approval from an administrator.</p>
+		                <h1 class="display-4">Error 500</h1>
+		                <p class="lead">Internal Server Error.</p>
 		            </div>
 		        </div>
 		    </div>
@@ -26,4 +26,9 @@
 
 {% endblock %}
 
-
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+    {% endblock %}
+{% endblock %}

@@ -2,7 +2,6 @@ from flask import Blueprint
 from webapp.core import app
 from flask_security.decorators import login_required, roles_required, roles_accepted
 from flask import url_for, render_template, request, redirect
-from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack
 from webapp.core.modules import Modules_status
 from flask import jsonify
 from webapp.core.fetch_hijack import get_hijack_by_key
@@ -57,53 +56,11 @@ def display_hijack():
     if mitigation_status_request.is_up_or_running('mitigation'):
         _mitigation_flag = True
 
-    return render_template('hijack.htm', data = json.dumps(hijack_data), mitigate = _mitigation_flag, configured = _configured )
 
-
-
-
-@main.route('/hijacks/resolve/', methods=['GET'])
-@roles_required('admin')
-def resolved_hijack():
-    #log info
-    hijack_key = request.args.get('id')
-    log.debug('url: /hijacks/resolve/{}'.format(hijack_key))
-    resolve_hijack_ = Resolve_hijack(hijack_key)
-    resolve_hijack_.resolve()
-    return jsonify({'status': 'success'})
-
-
-
-@main.route('/hijacks/mitigate/', methods=['GET'])
-@roles_required('admin')
-def mitigate_hijack():
-    #log info
-    hijack_key = request.args.get('id')
-    prefix = request.args.get('prefix')
-
-    try:
-        _mitigate_hijack = Mitigate_hijack(hijack_key, prefix)
-        _mitigate_hijack.mitigate()
-    except:
-        log.debug("mitigate_hijack failed")
-    
-    return jsonify({'status': 'success'})
-
-
-
-@main.route('/hijacks/ignore/', methods=['GET'])
-@roles_required('admin')
-def ignore_hijack():
-    #log info
-    hijack_key = request.args.get('id')
-
-    try:
-        _ignore_hijack = Ignore_hijack(hijack_key)
-        _ignore_hijack.ignore()
-
-    except:
-        log.debug("ignore_hijack failed")
-    
-    return jsonify({'status': 'success'})
+    return render_template('hijack.htm', 
+        data = json.dumps(hijack_data), 
+        mitigate = _mitigation_flag, 
+        configured = _configured
+        )
 
 

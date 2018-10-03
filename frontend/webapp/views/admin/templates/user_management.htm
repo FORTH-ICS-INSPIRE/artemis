@@ -4,6 +4,7 @@
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+
 {% endblock %}
 
 {% block page_content %}
@@ -19,7 +20,7 @@
                         <i class="fa fa-bell fa-fw"></i> Approve pending users
                     </div>
                     <div class="panel-body">
-                    	<form action="{{ url_for('admin.approve_user') }}" method="POST" name="approve_user_form">
+                    	<form action="{{ url_for('actions.approve_user') }}" method="POST" name="approve_user_form">
 	                    	{{ users_to_approve_form.hidden_tag() }}
 	                    	{% from "security/_macros.html" import render_field %}
   							<div class="form-group w-50 p-3">
@@ -40,7 +41,7 @@
                         <i class="fa fa-bell fa-fw"></i> Add administrator
                     </div>
                           <div class="panel-body">
-                    	<form action="{{ url_for('admin.create_admin') }}" method="POST" name="create_admin_form">
+                    	<form action="{{ url_for('actions.create_admin') }}" method="POST" name="create_admin_form">
                     		{{ users_to_make_admin_form.hidden_tag() }}
 	                    	{% from "security/_macros.html" import render_field %}
   							<div class="form-group w-50 p-3">
@@ -60,7 +61,7 @@
                         <i class="fa fa-bell fa-fw"></i> Delete user
                     </div>
                           <div class="panel-body">
-                    	<form action="{{ url_for('admin.delete_user') }}" method="POST" name="create_admin_form">
+                    	<form action="{{ url_for('actions.delete_user') }}" method="POST" name="create_admin_form">
                     		{{ users_to_delete_form.hidden_tag() }}
 	                    	{% from "security/_macros.html" import render_field %}
   							<div class="form-group w-50 p-3">
@@ -77,4 +78,10 @@
         </div>
 {% endblock %}
 
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+    {% endblock %}
+{% endblock %}
 

@@ -34,10 +34,6 @@ class BaseConfig(object):
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
 
 class ProductionConfig(BaseConfig):
-    DEBUG = True
-    TESTING = True
-    ENV = 'prod'
-
     if not os.path.exists('/etc/webapp/db'):
         os.makedirs('/etc/webapp/db')
 
@@ -46,15 +42,13 @@ class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + DB_FULL_PATH
 
     SECURITY_USER_IDENTITY_ATTRIBUTES = ('username','email')
-    SECURITY_SEND_REGISTER_EMAIL=False
-    SECURITY_RECOVERABLE=False
+    SECURITY_SEND_REGISTER_EMAIL = False
+    SECURITY_RECOVERABLE = False
     LOGGING_LEVEL = logging.INFO
-    WEBAPP_HOST = os.getenv('MACHINE_IP', '0.0.0.0')
-    FLASK_API_URL = API_URL_FLASK
-    WEBAPP_PORT = 8000
+    WEBAPP_HOST = '0.0.0.0'
+    WEBAPP_PORT = int(os.getenv('FLASK_PORT', '8000'))
 
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
-
 
 
 config = {

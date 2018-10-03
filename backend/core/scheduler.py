@@ -77,15 +77,16 @@ class Scheduler(Service):
                     retry = True,
                     priority = 3
                 )
-                if(unhandled_cnt > 5 and self._get_module_status('detection')):
-                    self.producer.publish(
-                        'send_unhandled',
-                        exchange = self.db_clock_exchange,
-                        routing_key = 'db-clock-message',
-                        retry = True,
-                        priority = 2
-                    )
-                    unhandled_cnt = 0
+                if (unhandled_cnt % 5) == 0:
+                    if self._get_module_status('detection'):
+                        self.producer.publish(
+                            'send_unhandled',
+                            exchange = self.db_clock_exchange,
+                            routing_key = 'db-clock-message',
+                            retry = True,
+                            priority = 2
+                        )
+                        unhandled_cnt = 0
                 unhandled_cnt += 1
 
 

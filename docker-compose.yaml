@@ -6,7 +6,10 @@ services:
             RABBITMQ_HOST: rabbitmq
             MEMCACHED_HOST: memcached
             POSTGRES_HOST: postgres
-            # SYSLOG_HOST: "syslog:514"
+            DATABASE_NAME: artemis_db
+            DATABASE_USER: artemis_user
+            DATABASE_HOST: postgres
+            DATABASE_PASSWORD: Art3m1s
         depends_on:
             - rabbitmq
             - memcached

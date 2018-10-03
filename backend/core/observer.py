@@ -92,8 +92,8 @@ class Observer(Service):
                         text = 'new configuration accepted:\n{}'.format(changes)
                         log.info(text)
                         self.content = content
-                        with open('./snapshots/config-snapshot-{}.yaml'.format(int(time.time())), 'w') as f:
-                            f.write(''.join(self.content))
+                        # with open('./snapshots/config-snapshot-{}.yaml'.format(int(time.time())), 'w') as f:
+                        #     f.write(''.join(self.content))
                     else:
                         log.error('invalid configuration:\n{}'.format(content))
                     self.response = None

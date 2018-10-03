@@ -6,8 +6,8 @@ import logging.config
 import yaml
 
 
-if not os.path.exists('snapshots'):
-    os.makedirs('snapshots')
+# if not os.path.exists('snapshots'):
+#     os.makedirs('snapshots')
 
 
 if not os.path.exists('logs'):

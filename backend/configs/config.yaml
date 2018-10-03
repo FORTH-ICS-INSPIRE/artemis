@@ -1,7 +1,6 @@
 #
 # ARTEMIS Configuration File
 #
-
 # Start of Prefix Definitions
 prefixes:
     forth_prefix_main: &forth_prefix_main
@@ -14,7 +13,6 @@ prefixes:
     forth_prefix_vod: &forth_prefix_vod
         139.91.2.0/24
 # End of Prefix Definitions
-
 # Start of Monitor Definitions
 monitors:
     riperis: ['']
@@ -28,7 +26,6 @@ monitors:
     #   port: 5000
     # bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
 # End of Monitor Definitions
-
 # Start of ASN Definitions
 asns:
     forth_asn: &forth_asn
@@ -40,7 +37,6 @@ asns:
     vodafone_forth_upstream_back: &vodafone_forth_upstream_back
         12361
 # End of ASN Definitions
-
 # Start of Rule Definitions
 rules:
 - prefixes:

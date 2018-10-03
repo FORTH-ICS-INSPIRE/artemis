@@ -240,6 +240,7 @@ class Postgresql_db(Service):
 
         def handle_hijack_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            log.info('payload: {}'.format(message.payload))
             msg_ = message.payload
             try:
                 key = msg_['key']
@@ -529,8 +530,7 @@ class Postgresql_db(Service):
             hijacks_view += "id, key, type, prefix, hijack_as, num_peers_seen, num_asns_inf "
             hijacks_view += "time_started, time_last, mitigation_started, time_detected, "
             hijacks_view += "under_mitigation, resolved, active, ignored, configured_prefix, "
-            hijacks_view += "under_mitigation, resolved, active, ignored, configured_prefix, "
-            hijacks_view += "comment FROM hijacks;"
+            hijacks_view += "timestamp_of_config, comment FROM hijacks;"
 
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)

@@ -20,7 +20,8 @@ CONFIG_DIR = 'configs_policy/'
 # set interfaces and IPs
 class QuaggaRouter(Host):
 
-    def __init__(self, name, quaggaConfFile, zebraConfFile, intfDict, greDict, *args, **kwargs):
+    def __init__(self, name, quaggaConfFile, zebraConfFile,
+                 intfDict, greDict, *args, **kwargs):
         Host.__init__(self, name, *args, **kwargs)
 
         self.quaggaConfFile = quaggaConfFile
@@ -54,10 +55,12 @@ class QuaggaRouter(Host):
                     self.cmd('ip link set %s down' % gre_iface)
                     self.cmd('ip tunnel del %s' % gre_iface)
                     self.cmd('ip tunnel add %s mode gre remote %s local %s ttl 255' % (gre_iface,
-                             gre_params['remote'],
-                             gre_params['local']))
+                                                                                       gre_params['remote'],
+                                                                                       gre_params['local']))
                     self.cmd('ip link set %s up' % gre_iface)
-                    self.cmd('ip addr add %s dev %s' % (gre_params['ip'], gre_iface))
+                    self.cmd(
+                        'ip addr add %s dev %s' %
+                        (gre_params['ip'], gre_iface))
                     self.cmd('sysctl net.ipv4.conf.%s.rp_filter=0' % gre_iface)
 
         self.cmd('sysctl net.ipv4.conf.all.rp_filter=0')
@@ -92,7 +95,8 @@ class ExaBGPRouter(Host):
             for addr in attrs['ipAddrs']:
                 self.cmd('ip addr add %s dev %s' % (addr, intf))
 
-        self.cmd('%s %s > /dev/null 2> %s.log &' % (EXABGP_RUN_EXE, self.exaBGPconf, self.name))
+        self.cmd('%s %s > /dev/null 2> %s.log &' %
+                 (EXABGP_RUN_EXE, self.exaBGPconf, self.name))
 
     def terminate(self):
         self.cmd(
@@ -336,7 +340,11 @@ class ArtemisTopo(Topo):
             '%s-eth2' % name: eth2,
             '%s-eth3' % name: eth3
         }
-        artemis = self.addHost(name, inNamespace=False, cls=Artemis, intfDict=intfs)
+        artemis = self.addHost(
+            name,
+            inNamespace=False,
+            cls=Artemis,
+            intfDict=intfs)
 
         # set up the exaBGP monitor at AS65001
         name = 'exa65001'
@@ -351,8 +359,8 @@ class ArtemisTopo(Topo):
             '%s-eth1' % name: eth1
         }
         exabgp_65001 = self.addHost(name, cls=ExaBGPRouter,
-                              exaBGPconf='%sexabgp-65001.conf' % CONFIG_DIR,
-                              intfDict=intfs)
+                                    exaBGPconf='%sexabgp-65001.conf' % CONFIG_DIR,
+                                    intfDict=intfs)
 
         # set up the exaBGP monitor at AS65005
         name = 'exa65005'
@@ -367,8 +375,8 @@ class ArtemisTopo(Topo):
             '%s-eth1' % name: eth1
         }
         exabgp_65005 = self.addHost(name, cls=ExaBGPRouter,
-                              exaBGPconf='%sexabgp-65005.conf' % CONFIG_DIR,
-                              intfDict=intfs)
+                                    exaBGPconf='%sexabgp-65005.conf' % CONFIG_DIR,
+                                    intfDict=intfs)
 
         # set topology links
 
@@ -381,7 +389,8 @@ class ArtemisTopo(Topo):
         # link L2_SW_1-exabgp_65001: L2_SW_1:eth3 - exabgp_65001:eth0:10.0.0.3
         self.addLink(l2_sw_1, exabgp_65001, port1=3, port2=0)
 
-        # link exabgp_65001-artemis: exabgp_65001:eth1:192.168.1.1 - artemis:eth0:192.168.1.2
+        # link exabgp_65001-artemis: exabgp_65001:eth1:192.168.1.1 -
+        # artemis:eth0:192.168.1.2
         self.addLink(exabgp_65001, artemis, port1=1, port2=0)
 
         # link R1-artemis: R1:eth0:192.168.101.1 - artemis:eth2:192.168.101.2
@@ -417,11 +426,14 @@ class ArtemisTopo(Topo):
         # link L2_SW_5-exabgp_65005: L2_SW_1:eth3 - exabgp_65005:eth0:50.0.0.3
         self.addLink(l2_sw_5, exabgp_65005, port1=3, port2=0)
 
-        # link exabgp_65005-artemis: exabgp_65005:eth1:192.168.5.1 - artemis:eth1:192.168.5.2
+        # link exabgp_65005-artemis: exabgp_65005:eth1:192.168.5.1 -
+        # artemis:eth1:192.168.5.2
         self.addLink(exabgp_65005, artemis, port1=1, port2=1)
 
-        # link artemis-R5 (MOAS agent): artemis:eth3:192.168.201.2-R5:eth3:192.168.201.1
+        # link artemis-R5 (MOAS agent):
+        # artemis:eth3:192.168.201.2-R5:eth3:192.168.201.1
         self.addLink(artemis, r5, port1=3, port2=3)
+
 
 topos = {'artemis': ArtemisTopo}
 

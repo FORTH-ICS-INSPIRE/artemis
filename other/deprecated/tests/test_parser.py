@@ -1,7 +1,6 @@
 import os
 import unittest
 import sys
-import ipaddress
 
 this_script_path = os.path.realpath(__file__)
 upper_dir = '/'.join(this_script_path.split('/')[:-2])
@@ -10,8 +9,6 @@ os.environ['FLASK_CONFIGURATION'] = 'testing'
 
 import mock
 from core.yamlparser import ConfigurationLoader
-from yaml import load as yload
-from core import ArtemisError
 import logging
 
 
@@ -23,7 +20,14 @@ class TestConfParser(unittest.TestCase):
         logging.disable(logging.INFO)
         cls.confParser = ConfigurationLoader()
         cls.confParser.file = 'tests/test_conf.yaml'
-        cls.confParser.available_ris = {'rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'}
+        cls.confParser.available_ris = {
+            'rrc15',
+            'rrc16',
+            'rrc17',
+            'rrc18',
+            'rrc19',
+            'rrc20',
+            'rrc21'}
         cls.confParser.parse()
 
     @classmethod
@@ -56,7 +60,9 @@ class TestConfParser(unittest.TestCase):
         self.assertEqual(group1['neighbors'], [3, 4])
         self.assertEqual(group1['mitigation'], 'manual')
 
-        self.assertEqual(group2['prefixes'], ['10.0.0.0/24', '20.0.0.0/24', '30.0.0.0/24'])
+        self.assertEqual(
+            group2['prefixes'], [
+                '10.0.0.0/24', '20.0.0.0/24', '30.0.0.0/24'])
         self.assertEqual(group2['origin_asns'], [5, 1, 2])
         self.assertEqual(group2['neighbors'], [3])
         self.assertEqual(group2['mitigation'], 'manual')
@@ -65,7 +71,9 @@ class TestConfParser(unittest.TestCase):
         asns_group = self.confParser.getAsns()
         monitors_group = self.confParser.getMonitors()
 
-        self.assertEqual(prefixes_group['forth_prefixes'], ['10.0.0.0/24', '20.0.0.0/24'])
+        self.assertEqual(
+            prefixes_group['forth_prefixes'], [
+                '10.0.0.0/24', '20.0.0.0/24'])
         self.assertEqual(prefixes_group['sample_prefixes'], ['30.0.0.0/24'])
         self.assertEqual(asns_group['forth_asn'], [1, 2])
         self.assertEqual(asns_group['grnet_forth_upstream'], [3])
@@ -76,8 +84,11 @@ class TestConfParser(unittest.TestCase):
         exabgp = monitors_group['exabgp']
         bgpstreamlive = monitors_group['bgpstreamlive']
 
-        self.assertEqual(riperis, ['rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'])
-        self.assertEqual(exabgp, [{'ip':'192.168.1.1','port': 5000}, {'ip':'192.168.5.1','port': 5000}])
+        self.assertEqual(
+            riperis, [
+                'rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21'])
+        self.assertEqual(exabgp, [{'ip': '192.168.1.1', 'port': 5000}, {
+                         'ip': '192.168.5.1', 'port': 5000}])
         self.assertEqual(bgpstreamlive, ['routeviews', 'ris'])
 
 

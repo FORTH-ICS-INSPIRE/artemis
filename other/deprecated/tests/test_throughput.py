@@ -9,7 +9,6 @@ os.environ['FLASK_CONFIGURATION'] = 'testing'
 import unittest
 import mock
 import logging
-from core.yamlparser import ConfigurationLoader
 from core.detection import Detection
 from webapp.webapp import WebApplication
 from webapp import app
@@ -23,28 +22,28 @@ from webapp.data.models import Monitor
 NUM_OF_ENTRIES = 100
 
 mon_fields = {
-        'id':0,
-        'prefix':1,
-        'origin_as':2,
-        'peer_as':3,
-        'as_path':4,
-        'service':5,
-        'type':6,
-        'communities':7,
-        'timestamp':8,
-        'hijack_id':9,
-        'handled':10
+    'id': 0,
+    'prefix': 1,
+    'origin_as': 2,
+    'peer_as': 3,
+    'as_path': 4,
+    'service': 5,
+    'type': 6,
+    'communities': 7,
+    'timestamp': 8,
+    'hijack_id': 9,
+    'handled': 10
 }
 
 hij_fields = {
-        'id':0,
-        'type':1,
-        'prefix':2,
-        'hijack_as':3,
-        'num_peers_seen':4,
-        'num_asns_inf':5,
-        'time_started':6,
-        'time_last_updated':7
+    'id': 0,
+    'type': 1,
+    'prefix': 2,
+    'hijack_as': 3,
+    'num_peers_seen': 4,
+    'num_asns_inf': 5,
+    'time_started': 6,
+    'time_last_updated': 7
 }
 
 
@@ -56,16 +55,14 @@ class TestDetection(unittest.TestCase):
         try:
             cls.webapp = WebApplication()
             cls.webapp.start()
-        except:
+        except BaseException:
             pass
-
 
     @classmethod
     def tearDownClass(cls):
         cls.webapp.stop()
         os.remove(app.config['SQLALCHEMY_DATABASE_URI'][10:])
         logging.disable(logging.NOTSET)
-
 
     def setUp(self):
         self.detection = Detection(None)
@@ -74,7 +71,7 @@ class TestDetection(unittest.TestCase):
         node = self.detection.prefix_tree.add('10.0.0.0/24')
         node.data['confs'] = []
 
-        conf_obj = {'origin_asns': {1}, 'neighbors': {2,3,4}}
+        conf_obj = {'origin_asns': {1}, 'neighbors': {2, 3, 4}}
         node.data['confs'].append(conf_obj)
 
         with app.app_context():
@@ -93,11 +90,11 @@ class TestDetection(unittest.TestCase):
         def pushMonitor(time):
             try:
                 mon = Monitor({
-                        'prefix':'10.0.0.0/25',
-                        'service':'testing',
-                        'type':'A',
-                        'as_path': [ 9, 8, 7, 6, 5, 4, 1 ],
-                        'timestamp': time
+                    'prefix': '10.0.0.0/25',
+                    'service': 'testing',
+                    'type': 'A',
+                    'as_path': [9, 8, 7, 6, 5, 4, 1],
+                    'timestamp': time
                 })
 
                 with app.app_context():

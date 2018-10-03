@@ -1,98 +1,127 @@
 from ipaddress import ip_network as str2ip
-import os
-import sys
 from yaml import load as yload
-from utils import flatten, get_logger, ArtemisError, RABBITMQ_HOST
+from utils import flatten, ArtemisError, RABBITMQ_HOST
 from utils.service import Service
 from socketIO_client_nexus import SocketIO
-from kombu import Connection, Queue, Exchange, uuid
+from kombu import Connection, Queue, Exchange, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
 import json
 import copy
 import logging
+from typing import Union, Optional, Dict, TextIO, Text, List, NoReturn
+from io import StringIO
 
 
 log = logging.getLogger('artemis_logger')
 
+
 class Configuration(Service):
+    """
+    Configuration Service.
+    """
 
-
-    def run_worker(self):
+    def run_worker(self) -> NoReturn:
+        """
+        Entry function for this service that runs a RabbitMQ worker through Kombu.
+        """
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
-        except:
+        except Exception:
             log.exception('exception')
         finally:
             log.info('stopped')
 
-
     class Worker(ConsumerProducerMixin):
+        """
+        RabbitMQ Consumer/Producer for this Service.
+        """
 
-
-        def __init__(self, connection):
+        def __init__(self, connection: Connection) -> NoReturn:
             self.connection = connection
             self.file = 'configs/config.yaml'
             self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
-            self.supported_fields = {'prefixes',
-                                    'origin_asns', 'neighbors', 'mitigation'}
+            self.supported_fields = {
+                'prefixes',
+                'origin_asns',
+                'neighbors',
+                'mitigation'}
             self.supported_monitors = {
                 'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive'}
             self.available_ris = set()
             self.available_bgpstreamlive = {'routeviews', 'ris'}
 
+            # reads and parses initial configuration file
             with open(self.file, 'r') as f:
                 raw = f.read()
                 self.data, _flag, _error = self.parse(raw, yaml=True)
 
-
             # EXCHANGES
-            self.config_exchange = Exchange('config', type='direct', channel=connection, durable=False, delivery_mode=1)
+            self.config_exchange = Exchange(
+                'config',
+                type='direct',
+                channel=connection,
+                durable=False,
+                delivery_mode=1)
             self.config_exchange.declare()
 
             # QUEUES
-            self.config_modify_queue = Queue('config-modify-queue', durable=False, exclusive=True, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
-            self.config_request_queue = Queue('config-request-queue', durable=False, max_priority=2,
-                    consumer_arguments={'x-priority': 2})
+            self.config_modify_queue = Queue(
+                'config-modify-queue',
+                durable=False,
+                exclusive=True,
+                max_priority=2,
+                consumer_arguments={
+                    'x-priority': 2})
+            self.config_request_queue = Queue(
+                'config-request-queue',
+                durable=False,
+                max_priority=2,
+                consumer_arguments={
+                    'x-priority': 2})
 
             self.parse_rrcs()
             log.info('started')
 
-
-        def get_consumers(self, Consumer, channel):
+        def get_consumers(self, Consumer: Consumer,
+                          channel: Connection) -> List[Consumer]:
             return [
-                    Consumer(
-                        queues=[self.config_modify_queue],
-                        on_message=self.handle_config_modify,
-                        prefetch_count=1,
-                        no_ack=True,
-                        accept=['yaml']
-                        ),
-                    Consumer(
-                        queues=[self.config_request_queue],
-                        on_message=self.handle_config_request,
-                        prefetch_count=1,
-                        no_ack=True
-                        )
-                    ]
+                Consumer(
+                    queues=[self.config_modify_queue],
+                    on_message=self.handle_config_modify,
+                    prefetch_count=1,
+                    no_ack=True,
+                    accept=['yaml']
+                ),
+                Consumer(
+                    queues=[self.config_request_queue],
+                    on_message=self.handle_config_request,
+                    prefetch_count=1,
+                    no_ack=True
+                )
+            ]
 
-
-        def handle_config_modify(self, message):
-            log.info('message: {}\npayload: {}'.format(message, message.payload))
+        def handle_config_modify(self, message: Dict) -> NoReturn:
+            """
+            Consumer for Config-Modify messages that parses and checks if new configuration is correct.
+            Replies back to the sender if the configuration is accepted or rejected and notifies all Subscribers if new configuration is used.
+            """
+            log.info(
+                'message: {}\npayload: {}'.format(
+                    message, message.payload))
             raw = message.payload
             if 'yaml' in message.content_type:
-                from io import StringIO
                 stream = StringIO(''.join(raw))
                 data, _flag, _error = self.parse(stream, yaml=True)
             else:
                 data, _flag, _error = self.parse(raw)
 
+            # _flag is True or False depending if the new configuration was
+            # accepted or not.
             if _flag:
                 log.debug('accepted new configuration')
-
                 # compare current with previous data excluding --obviously-- timestamps
                 # TODO: change to sth better
                 prev_data = copy.deepcopy(data)
@@ -106,66 +135,84 @@ class Configuration(Service):
                     self._update_local_config_file()
                     self.producer.publish(
                         self.data,
-                        exchange = self.config_exchange,
-                        routing_key = 'notify',
-                        serializer = 'json',
-                        retry = True,
-                        priority = 2
+                        exchange=self.config_exchange,
+                        routing_key='notify',
+                        serializer='json',
+                        retry=True,
+                        priority=2
                     )
 
+                # reply back to the sender with a configuration accepted
+                # message.
                 self.producer.publish(
                     {
                         'status': 'accepted',
                         'config:': self.data
                     },
                     exchange='',
-                    routing_key = message.properties['reply_to'],
-                    correlation_id = message.properties['correlation_id'],
-                    serializer = 'json',
-                    retry = True,
-                    priority = 2
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    serializer='json',
+                    retry=True,
+                    priority=2
                 )
             else:
                 log.debug('rejected new configuration')
+                # replay back to the sender with a configuration rejected and
+                # reason message.
                 self.producer.publish(
                     {
                         'status': 'rejected',
                         'reason': _error
                     },
                     exchange='',
-                    routing_key = message.properties['reply_to'],
-                    correlation_id = message.properties['correlation_id'],
-                    serializer = 'json',
-                    retry = True,
-                    priority = 2
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    serializer='json',
+                    retry=True,
+                    priority=2
                 )
 
-        def handle_config_request(self, message):
-            log.info('message: {}\npayload: {}'.format(message, message.payload))
+        def handle_config_request(self, message: Dict) -> NoReturn:
+            """
+            Handles all config requests from other Services by replying back with the current configuration.
+            """
+            log.info(
+                'message: {}\npayload: {}'.format(
+                    message, message.payload))
             self.producer.publish(
                 self.data,
                 exchange='',
-                routing_key = message.properties['reply_to'],
-                correlation_id = message.properties['correlation_id'],
-                serializer = 'json',
-                retry = True,
-                priority = 2
+                routing_key=message.properties['reply_to'],
+                correlation_id=message.properties['correlation_id'],
+                serializer='json',
+                retry=True,
+                priority=2
             )
 
-
-        def parse_rrcs(self):
+        def parse_rrcs(self) -> NoReturn:
+            """
+            SocketIO connection to RIPE RIS to retrieve all active Route Collectors.
+            """
             try:
-                socket_io = SocketIO('http://stream-dev.ris.ripe.net/stream', wait_for_connection=False)
+                socket_io = SocketIO(
+                    'http://stream-dev.ris.ripe.net/stream',
+                    wait_for_connection=False)
+
                 def on_msg(msg):
                     self.available_ris = set(msg)
                     socket_io.disconnect()
+
                 socket_io.on('ris_rrc_list', on_msg)
                 socket_io.wait(seconds=3)
             except Exception:
                 log.warning('RIPE RIS server is down. Try again later..')
 
-
-        def parse(self, raw, yaml=False):
+        def parse(self, raw: Union[Text, TextIO, StringIO],
+                  yaml: Optional[bool]=False) -> Dict:
+            """
+            Parser for the configuration file or string. The format can either be a File, StringIO or String
+            """
             try:
                 if yaml:
                     data = yload(raw)
@@ -173,6 +220,7 @@ class Configuration(Service):
                     data = raw
                 data = self.check(data)
                 data['timestamp'] = time.time()
+                # if raw is string we save it as-is else we get the value.
                 if isinstance(raw, str):
                     data['raw_config'] = raw
                 else:
@@ -182,30 +230,35 @@ class Configuration(Service):
                 log.exception('exception')
                 return {'timestamp': time.time()}, False, str(e)
 
-
-
-        def check(self, data):
+        def check(self, data: Text) -> Dict:
+            """
+            Checks if all sections and fields are defined correctly in the parsed configuration.
+            Raises custom exceptions in case a field or section is misdefined.
+            """
             for section in data:
                 if section not in self.sections:
                     raise ArtemisError('invalid-section', section)
 
-            data['prefixes'] = {k:flatten(v) for k, v in data['prefixes'].items()}
+            data['prefixes'] = {k: flatten(v)
+                                for k, v in data['prefixes'].items()}
             for prefix_group, prefixes in data['prefixes'].items():
                 for prefix in prefixes:
                     try:
                         str2ip(prefix)
-                    except:
+                    except Exception:
                         raise ArtemisError('invalid-prefix', prefix)
 
             for rule in data['rules']:
                 for field in rule:
                     if field not in self.supported_fields:
-                        log.warning('unsupported field found {} in {}'.format(field, rule))
+                        log.warning(
+                            'unsupported field found {} in {}'.format(
+                                field, rule))
                 rule['prefixes'] = flatten(rule['prefixes'])
                 for prefix in rule['prefixes']:
                     try:
                         str2ip(prefix)
-                    except:
+                    except Exception:
                         raise ArtemisError('invalid-prefix', prefix)
                 rule['origin_asns'] = flatten(rule.get('origin_asns', []))
                 rule['neighbors'] = flatten(rule.get('neighbors', []))
@@ -214,34 +267,42 @@ class Configuration(Service):
                     if not isinstance(asn, int):
                         raise ArtemisError('invalid-asn', asn)
 
-
             for key, info in data['monitors'].items():
                 if key not in self.supported_monitors:
                     raise ArtemisError('invalid-monitor', key)
                 elif key == 'riperis':
-                    for unavailable in set(info).difference(self.available_ris):
-                        log.warning('unavailable monitor {}'.format(unavailable))
+                    for unavailable in set(info).difference(
+                            self.available_ris):
+                        log.warning(
+                            'unavailable monitor {}'.format(unavailable))
                 elif key == 'bgpstreamlive':
-                    if len(info) == 0 or not set(info).issubset(self.available_bgpstreamlive):
-                        raise ArtemisError('invalid-bgpstreamlive-project', info)
+                    if len(info) == 0 or not set(info).issubset(
+                            self.available_bgpstreamlive):
+                        raise ArtemisError(
+                            'invalid-bgpstreamlive-project', info)
                 elif key == 'exabgp':
                     for entry in info:
                         if 'ip' not in entry and 'port' not in entry:
                             raise ArtemisError('invalid-exabgp-info', entry)
                         try:
                             str2ip(entry['ip'])
-                        except:
-                            raise ArtemisError('invalid-exabgp-ip', entry['ip'])
+                        except Exception:
+                            raise ArtemisError(
+                                'invalid-exabgp-ip', entry['ip'])
                         if not isinstance(entry['port'], int):
-                            raise ArtemisError('invalid-exabgp-port', entry['port'])
+                            raise ArtemisError(
+                                'invalid-exabgp-port', entry['port'])
 
-            data['asns'] = {k:flatten(v) for k, v in data['asns'].items()}
+            data['asns'] = {k: flatten(v) for k, v in data['asns'].items()}
             for name, asns in data['asns'].items():
                 for asn in asns:
                     if not isinstance(asn, int):
                         raise ArtemisError('invalid-asn', asn)
             return data
 
-        def _update_local_config_file(self):
+        def _update_local_config_file(self) -> NoReturn:
+            """
+            Writes to the local configuration file the new running configuration.
+            """
             with open(self.file, 'w') as f:
                 f.write(self.data['raw_config'])

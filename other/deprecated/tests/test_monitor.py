@@ -38,7 +38,7 @@ class TestMonitor(unittest.TestCase):
         mock_conf.getMonitors.return_value = {
             'riperis': ['rrc01', 'rrc02', 'rrc03'],
             'bgpstreamlive': ['routeviews', 'ris'],
-            'exabgp': [{'ip':'192.168.0.0', 'port':5000}],
+            'exabgp': [{'ip': '192.168.0.0', 'port': 5000}],
             'bgpstreamhist': ['/tmp/test']
         }
 
@@ -74,6 +74,7 @@ class TestMonitor(unittest.TestCase):
         self.assertFalse('10.0.0.0/25' in ' '.join(exa[0]))
         self.assertFalse('10.0.0.0/25' in ' '.join(live[0]))
         self.assertFalse('10.0.0.0/25' in ' '.join(hist[0]))
+
 
 if __name__ == '__main__':
     unittest.main()

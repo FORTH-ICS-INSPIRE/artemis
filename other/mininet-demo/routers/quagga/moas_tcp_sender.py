@@ -63,7 +63,7 @@ def main():
             sock.send(args.moas_prefix + "-no")
         sock.close()
         print("Message sent!")
-    except:
+    except BaseException:
         print("Could not connect!")
 
 

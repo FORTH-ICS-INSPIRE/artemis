@@ -1,11 +1,7 @@
-import traceback
 import errno
 import os
 import os.path
 import signal
-import socket
-import sys
-import threading
 import time
 from pid import PidFile
 from multiprocessing import Process
@@ -18,6 +14,7 @@ class _PIDFile(object):
 
     The PID is stored when the lock is acquired, not when it is created.
     """
+
     def __init__(self, path):
         self._path = path
         self._lock = None
@@ -114,10 +111,8 @@ class Service(Process):
         self.worker = None
         self.start_time = None
 
-
     def get_uptime(self):
         return time.time() - self.start_time
-
 
     def is_running(self):
         """
@@ -141,13 +136,11 @@ class Service(Process):
             # exist, which is all we care about here.
         return True
 
-
     def get_pid(self):
         """
         Get PID of daemon process or ``None`` if daemon is not running.
         """
         return self.pid_file.read_pid()
-
 
     def stop(self, block=False):
         """
@@ -173,7 +166,6 @@ class Service(Process):
             raise ValueError('Daemon is not running.')
         os.kill(pid, signal.SIGTERM)
         return _block(lambda: not self.is_running(), block)
-
 
     def kill(self, block=False):
         """
@@ -228,7 +220,6 @@ class Service(Process):
             self.pid_file.acquire()
         finally:
             self.pid_file.release()
-
 
         def runner():
             # We acquire the PID as late as possible, since its

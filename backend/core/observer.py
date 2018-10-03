@@ -1,19 +1,17 @@
 import time
-import os
-import sys
 from watchdog.observers import Observer as WatchObserver
 from watchdog.events import FileSystemEventHandler
 from utils.service import Service
-from utils import get_logger, RABBITMQ_HOST
-from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
+from utils import RABBITMQ_HOST
+from kombu import Connection, Queue, uuid, Consumer, Producer
 import difflib
 import logging
 
 
 log = logging.getLogger('artemis_logger')
 
-class Observer(Service):
 
+class Observer(Service):
 
     def run_worker(self):
         observer = WatchObserver()
@@ -30,20 +28,17 @@ class Observer(Service):
                 self.should_stop = False
                 while not self.should_stop:
                     time.sleep(5)
-        except:
+        except BaseException:
             log.exception('exception')
         finally:
             observer.stop()
             observer.join()
             log.info('stopped')
 
-
     def exit(self, signum, frame):
         self.should_stop = True
 
-
     class Handler(FileSystemEventHandler):
-
 
         def __init__(self, d, f, connection):
             super().__init__()
@@ -52,11 +47,9 @@ class Observer(Service):
             with open(self.path, 'r') as f:
                 self.content = f.readlines()
 
-
         def on_response(self, message):
             if message.properties['correlation_id'] == self.correlation_id:
                 self.response = message.payload
-
 
         def on_modified(self, event):
             if event.is_directory:
@@ -69,7 +62,8 @@ class Observer(Service):
                 if len(changes) > 0:
                     self.response = None
                     self.correlation_id = uuid()
-                    callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
+                    callback_queue = Queue(
+                        uuid(), exclusive=True, auto_delete=True)
                     with Producer(self.connection) as producer:
                         producer.publish(
                             content,
@@ -82,14 +76,15 @@ class Observer(Service):
                             correlation_id=self.correlation_id
                         )
                     with Consumer(self.connection,
-                            on_message=self.on_response,
-                            queues=[callback_queue],
-                            no_ack=True):
+                                  on_message=self.on_response,
+                                  queues=[callback_queue],
+                                  no_ack=True):
                         while self.response is None:
                             self.connection.drain_events()
 
                     if self.response['status'] == 'accepted':
-                        text = 'new configuration accepted:\n{}'.format(changes)
+                        text = 'new configuration accepted:\n{}'.format(
+                            changes)
                         log.info(text)
                         self.content = content
                         # with open('./snapshots/config-snapshot-{}.yaml'.format(int(time.time())), 'w') as f:
@@ -97,5 +92,3 @@ class Observer(Service):
                     else:
                         log.error('invalid configuration:\n{}'.format(content))
                     self.response = None
-
-

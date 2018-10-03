@@ -1,7 +1,8 @@
 version: '3'
 services:
-    artemis_backend:
+    backend:
         build: ./backend/
+        container_name: backend
         environment:
             RABBITMQ_HOST: rabbitmq
             MEMCACHED_HOST: memcached
@@ -32,18 +33,19 @@ services:
     #     networks:
     #         - rabbitmq
     #         - postgres
-    artemis_frontend:
+    frontend:
         build: ./frontend/
+        container_name: frontend
         environment:
             RABBITMQ_HOST: rabbitmq
             POSTGRES_HOST: postgres
-            # SYSLOG_HOST: "syslog:514"
-            SYSTEM_VERSION: "v0.1"
-            MACHINE_IP: "0.0.0.0"
-            USER_ROOT_USERNAME: "admin"
-            USER_ROOT_PASSWORD: "admin"
-            USER_ROOT_EMAIL: "admin@admin"
-            POSTGREST_FLASK_HOST: "postgrest:3000"
+            # SYSLOG_HOST: 'syslog:514'
+            SYSTEM_VERSION: v0.1
+            MACHINE_IP: 0.0.0.0
+            USER_ROOT_USERNAME: admin
+            USER_ROOT_PASSWORD: admin
+            USER_ROOT_EMAIL: admin@admin
+            POSTGREST_FLASK_HOST: 'postgrest:3000'
         expose:
             - 8000
         volumes:
@@ -54,7 +56,7 @@ services:
             - postgres
             - postgrest
             # - syslog
-            - artemis_backend
+            - backend
         networks:
             - rabbitmq
             - postgres
@@ -65,10 +67,10 @@ services:
         image: nginx:latest
         container_name: production_nginx
         environment:
-            ARTEMIS_FRONTEND_HOST: artemis_frontend
+            ARTEMIS_FRONTEND_HOST: frontend
             POSTGREST_HOST: postgrest
         depends_on:
-            - artemis_frontend
+            - frontend
             - postgrest
         volumes:
             - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
@@ -78,7 +80,7 @@ services:
         expose:
             - 443
         networks:
-            - artemis_frontend
+            - frontend
             - postgrest
         restart: always
     # syslog:
@@ -87,21 +89,24 @@ services:
     #     networks:
     #         - syslog
     rabbitmq:
-        image: "rabbitmq:3-alpine"
+        image: rabbitmq:3-alpine
+        container_name: rabbitmq
         restart: always
         networks:
             - rabbitmq
         expose:
             - 5672
     memcached:
-        image: "memcached:alpine"
+        image: memcached:alpine
+        container_name: memcached
         restart: always
         networks:
             - memcached
         expose:
             - 11211
     postgres:
-        image: "postgres:alpine"
+        image: postgres:alpine
+        container_name: postgres
         restart: always
         environment:
             POSTGRES_DB: artemis_db
@@ -114,7 +119,8 @@ services:
         expose:
             - 5432
     postgrest:
-        image: "postgrest/postgrest"
+        image: postgrest/postgrest
+        container_name: postgrest
         restart: always
         expose:
             - 3000
@@ -123,7 +129,7 @@ services:
             - postgrest
         depends_on:
             - postgres
-            - artemis_backend
+            - backend
         environment:
             PGRST_DB_URI: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
             PGRST_DB_SCHEMA: public
@@ -148,5 +154,5 @@ networks:
     postgres:
     postgrest:
     nginx:
-    artemis_frontend:
     # exabgp:
+    frontend:

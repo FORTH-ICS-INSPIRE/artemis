@@ -478,7 +478,8 @@ class Postgresql_db(Service):
                 "type  VARCHAR ( 1 ), " + \
                 "prefix    inet, " + \
                 "hijack_as VARCHAR ( 6 ), " + \
-                "num_peers_seen   INTEGER, " + \
+                "peers_seen   json, " + \
+                "num_peers_seen INTEGER, " + \
                 "num_asns_inf INTEGER, " + \
                 "time_started BIGINT, " + \
                 "time_last BIGINT, " + \
@@ -569,9 +570,10 @@ class Postgresql_db(Service):
                 try:
                     cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                    cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment) "
-                    cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-                    cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, time_last=%s;"
+                    cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment, peers_seen) "
+                    cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                    cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, "
+                    cmd_ += "time_last=%s, peers_seen=%s;"
 
                     values_ = (
                         key,
@@ -592,10 +594,12 @@ class Postgresql_db(Service):
                         self.tmp_hijacks_dict[key]['configured_prefix'],
                         int(self.tmp_hijacks_dict[key]['timestamp_of_config']),
                         '',
+                        json.dumps(self.tmp_hijacks_dict[key]['peers_seen']),
                         len(self.tmp_hijacks_dict[key]['peers_seen']),
                         len(self.tmp_hijacks_dict[key]['inf_asns']),
                         int(self.tmp_hijacks_dict[key]['time_started']),
-                        int(self.tmp_hijacks_dict[key]['time_last'])
+                        int(self.tmp_hijacks_dict[key]['time_last']),
+                        json.dumps(self.tmp_hijacks_dict[key]['peers_seen'])
                     )
 
                     self.db_cur.execute(cmd_, values_)

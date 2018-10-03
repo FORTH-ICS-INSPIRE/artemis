@@ -522,12 +522,21 @@ class Postgresql_db(Service):
                 "raw_config  text, " + \
                 "time_modified BIGINT) "
 
-            config_view = "CREATE OR REPLACE VIEW configs_available AS SELECT id, time_modified "
+            config_view = "CREATE OR REPLACE VIEW view_configs AS SELECT id, time_modified "
             config_view += "FROM configs;"
+
+            hijacks_view = "CREATE OR REPLACE VIEW view_hijacks AS SELECT "
+            hijacks_view += "id, key, type, prefix, hijack_as, num_peers_seen, num_asns_inf "
+            hijacks_view += "time_started, time_last, mitigation_started, time_detected, "
+            hijacks_view += "under_mitigation, resolved, active, ignored, configured_prefix, "
+            hijacks_view += "under_mitigation, resolved, active, ignored, configured_prefix, "
+            hijacks_view += "comment FROM hijacks;"
+
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)
             self.db_cur.execute(configs_table)
             self.db_cur.execute(config_view)
+            self.db_cur.execute(hijacks_view)
             self.db_conn.commit()
 
         def _insert_bgp_updates(self):

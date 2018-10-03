@@ -395,7 +395,7 @@
                 $.ajax({
                     type: 'POST',
                     url: '{{ url_for('proxy_api') }}',
-                    data: { "action": "hijacks", "parameters" : JSON.stringify({ "key": key }) },
+                    data: { "action": "view_hijacks", "parameters" : JSON.stringify({ "key": key }) },
                     success: function(result){
                         update_hijack_details(result.results[0]);
                     },

@@ -222,7 +222,8 @@ class Postgresql_db(Service):
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
-            # prefix, key, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_pat
+            # prefix, key, origin_as, peer_asn, as_path, service, type, communities,
+            # timestamp, hijack_key, handled, matched_prefix, orig_path
             origin_as = -1
             if len(msg_['path']) >= 1:
                 origin_as = msg_['path'][-1]
@@ -244,7 +245,7 @@ class Postgresql_db(Service):
                             None, # hijack_key
                             False, # handled
                             self.find_best_prefix_match(msg_['prefix']), # matched_prefix
-                            msg_['orig_path'] # orig_pat
+                            msg_['orig_path'] # orig_path
                         )
                 self.insert_bgp_entries.append(extract_msg)
             except Exception:
@@ -390,7 +391,6 @@ class Postgresql_db(Service):
                 cmd_ = "SELECT time_started, time_last, peers_seen, "
                 cmd_ += "asns_inf, key, prefix, hijack_as, type, time_detected "
                 cmd_ += "FROM hijacks WHERE active = true;"
-                entries = self.db_cur.fetchall()
                 self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()
                 for entry in entries:

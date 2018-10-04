@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
 from flask import redirect, request, jsonify
-from flask_security.decorators import roles_required
+from flask_security.decorators import roles_required, roles_accepted
 from webapp.data.models import User, Role
 from webapp.templates.forms import CheckboxForm, ApproveUserForm, MakeAdminForm, DeleteUserForm
 from webapp.core import app
@@ -161,7 +161,7 @@ def user_management():
 
 
 @admin.route('/config_comparison', methods=['GET'])
-@roles_required('admin')
+@roles_accepted('admin', 'user')
 def config_comparison():
     # log info
     _configs = fetch_all_config_timestamps()

@@ -1,3 +1,5 @@
+from utils import get_logger, RABBITMQ_HOST
+log = get_logger()
 import sys
 from core.configuration import Configuration
 from core.monitor import Monitor
@@ -6,14 +8,10 @@ from core.mitigation import Mitigation
 from core.scheduler import Scheduler
 from core.postgresql_db import Postgresql_db
 from core.observer import Observer
-from utils import get_logger, RABBITMQ_HOST
 from utils.service import Service
 from kombu import Connection, Queue
 from kombu.mixins import ConsumerProducerMixin
 import importlib
-
-
-log = get_logger()
 
 
 class Controller(Service):

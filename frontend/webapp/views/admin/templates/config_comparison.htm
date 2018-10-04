@@ -26,7 +26,7 @@
                                 <div class="form-group">
                                     <label for="config_a">Select config:</label>
                                     <form name="config_a_form">
-                                        <select class="form-control_custom w-75 p-3" id="config_a">
+                                        <select class="form-control_custom w-75 p-1" id="config_a">
                                             {% for config_ in configs %}
                                             <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
                                             {% endfor %}
@@ -38,7 +38,7 @@
                                 <div class="form-group">
                                     <label for="config_a">Select config:</label>
                                     <form name="config_b_form">
-                                        <select class="form-control_custom w-75 p-3" id="config_b" autocomplete="off">
+                                        <select class="form-control_custom w-75 p-1" id="config_b" autocomplete="off">
                                             {% for config_ in configs %}
                                             <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
                                             {% endfor %}

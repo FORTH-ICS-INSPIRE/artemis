@@ -1,5 +1,5 @@
 version: 1
-disable_existing_loggers: False
+disable_existing_loggers: True
 formatters:
     simple:
         format: '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
@@ -37,11 +37,10 @@ handlers:
 
 loggers:
     artemis_logger:
-        level: INFO
-        handlers: [console, info_file_handler]
-        propagate: true
+        level: DEBUG
+        handlers: [console, info_file_handler, error_file_handler]
 
 root:
     level: INFO
-    handlers: [console, info_file_handler, error_file_handler]
+    handlers: []
 

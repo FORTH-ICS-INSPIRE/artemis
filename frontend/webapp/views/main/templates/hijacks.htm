@@ -113,9 +113,10 @@
                 $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 1);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 1);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#hijacks').DataTable().destroy();
                 render_table(display_settings);
             });
@@ -124,9 +125,10 @@
                 $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 24);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 24);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#hijacks').DataTable().destroy()
                 render_table(display_settings);
             });
@@ -135,9 +137,10 @@
                 $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 48);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 48);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#hijacks').DataTable().destroy()
                 render_table(display_settings);
             });
@@ -226,8 +229,7 @@
                         { data: 'num_asns_inf' },
                         { data: 'time_started',
                             render: function(data, type, row){
-                                var stillUtc = moment.unix(data).toDate();
-                                return moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
+                                return transform_date_to_local_(data);
                             }
                         },
                         {
@@ -276,13 +278,22 @@
                         format: 'M/DD hh:mm A'
                     }
                 },  function(start, end, label) {
-                    display_settings['time'] = { 'start_time': moment(start).unix(), 'end_time': moment(end).unix()};
+                    display_settings['time'] = { 'start_time': start.toISOString(), 'end_time': end.toISOString()};
                     $('#hijacks').DataTable().destroy()
                     render_table(display_settings);
                     }
                 );
 
             });
+
+            function transform_date_to_local_(date){
+                var date_ = moment.utc(date)
+                if(date_._isValid){
+                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+                    return local;
+                }
+                return "Never";
+            }
 
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    

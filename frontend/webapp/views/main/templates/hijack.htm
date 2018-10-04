@@ -256,7 +256,7 @@
                             type: "POST",
                             url: '{{ url_for('proxy_api') }}',
                             dataType: "json",
-                            data: { "action": "bgp_updates", "parameters" : JSON.stringify(parameters) },
+                            data: { "action": "view_bgpupdates", "parameters" : JSON.stringify(parameters) },
 
                             success: function(data, status, xhr){
                                 callback({
@@ -277,8 +277,7 @@
                         { data: 'type' },
                         { data: 'timestamp',
                             render: function(data, type, row){
-                                var stillUtc = moment.unix(data).toDate();
-                                return moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
+                                return transform_date_to_local_(data);
                             } 
                         },
                         { data: 'handled', 
@@ -296,7 +295,7 @@
                             "data":           null,
                             "defaultContent": ''
                         }
-                    ],
+                    ]
                 });
                 
             }
@@ -327,19 +326,9 @@
 
         
             function format ( d ) {
-                var stillUtc = moment.unix(d.timestamp).toDate();
-                var timestamp = moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
-                
                 var orig_path = "";
                 if (d.orig_path != null){
                     orig_path = d.orig_path;
-                }
-
-                var view_hijack_link = ""
-                var hijack_key = ""
-                if('0' != d.hijack_key){
-                    hijack_key = d.hijack_key
-                    view_hijack_link = '<a href="{{ url_for('main.display_hijack') }}?key=' + d.hijack_key + '">View</a>'
                 }
 
                 return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
@@ -373,7 +362,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+
-                        '<td>'+timestamp+'</td>'+
+                        '<td>'+transform_date_to_local_(d.timestamp)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Original Path:</b></td>'+
@@ -381,11 +370,11 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Hijack Key:</b></td>'+
-                        '<td>'+hijack_key+'</td>'+
+                        '<td>'+display_hijack_key(d.hijack_key)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Hijack:</b></td>'+
-                        '<td>'+view_hijack_link+'</td>'+
+                        '<td>'+hijack_key_create_link("{{ url_for('main.display_hijack') }}", d.hijack_key)+'</td>'+
                     '</tr>'+
                 '</table>';
             }
@@ -413,13 +402,13 @@
                 $( "#info_hijack_as" ).html( data['hijack_as'] );
                 $( "#info_num_peers_seen" ).html( data['num_peers_seen'] );
                 $( "#info_num_asns_inf" ).html( data['num_asns_inf'] );
-                $( "#info_time_started" ).html( transform_unix_timestamp_to_client_local_time( data['time_started'] ) );
-                $( "#info_time_last" ).html( transform_unix_timestamp_to_client_local_time( data['time_last'] ) );
-                $( "#info_time_ended" ).html( transform_unix_timestamp_to_client_local_time( data['time_ended'] ) );
-                $( "#info_time_detected" ).html( transform_unix_timestamp_to_client_local_time( data['time_detected'] ) );
-                $( "#info_mitigation_started" ).html( transform_unix_timestamp_to_client_local_time( data['mitigation_started'] ) );
+                $( "#info_time_started" ).html( transform_date_to_local_( data['time_started'] ) );
+                $( "#info_time_last" ).html( transform_date_to_local_( data['time_last'] ) );
+                $( "#info_time_ended" ).html( transform_date_to_local_( data['time_ended'] ) );
+                $( "#info_time_detected" ).html( transform_date_to_local_( data['time_detected'] ) );
+                $( "#info_mitigation_started" ).html( transform_date_to_local_( data['mitigation_started'] ) );
                 $( "#info_matched_prefix" ).html( data['configured_prefix'] );
-                $( "#info_config_timestamp" ).html( transform_unix_timestamp_to_client_local_time( data['timestamp_of_config'] )  );
+                $( "#info_config_timestamp" ).html( transform_date_to_local_( data['timestamp_of_config'] )  );
                 $( "#code_comment_box").html( data['comment'] );
 
                 if(data['resolved'] == true || data['ignored'] == true){
@@ -537,6 +526,15 @@
             }
 
             {% endif %}
+
+            function transform_date_to_local_(date){
+                var date_ = moment.utc(date)
+                if(date_._isValid){
+                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+                    return local;
+                }
+                return "Never";
+            }
 
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>

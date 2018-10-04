@@ -21,3 +21,32 @@ function transform_unix_timestamp_to_client_local_time(timestamp){
         return "Never"
     }
 }
+
+function isValidDate(d) {
+  return d instanceof Date && !isNaN(d);
+}
+
+function transform_date_to_local(date){
+    var date_ = moment.utc(date)
+    if(date_._isValid){
+        var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+        return local;
+    }
+    return "Never";
+}
+
+function hijack_key_create_link(url, hijack_key){
+    var view_hijack_link = ""
+    if( hijack_key != null && hijack_key != '0' ){
+        view_hijack_link = '<a href="' + url + '"?key=' + hijack_key + '">View</a>'
+    }
+    return view_hijack_link;
+}
+
+function display_hijack_key(hijack_key){
+    if(null != hijack_key && hijack_key != '0' ){
+        return hijack_key
+    }else{
+        return ''
+    }
+}

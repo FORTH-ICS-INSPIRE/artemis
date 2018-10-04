@@ -10,6 +10,7 @@ import json
 import logging
 import hashlib
 import os
+import datetime
 
 log = logging.getLogger('artemis_logger')
 
@@ -17,10 +18,9 @@ log = logging.getLogger('artemis_logger')
 class Postgresql_db(Service):
 
     def create_connect_db(self):
-        _connected = False
         _db_conn = None
-        time_sleep_connection_retry = 2
-        while(not _connected):
+        time_sleep_connection_retry = 5
+        while(_db_conn is None):
             time.sleep(time_sleep_connection_retry)
             try:
                 _db_name = os.getenv('DATABASE_NAME', 'artemis_db')
@@ -39,7 +39,6 @@ class Postgresql_db(Service):
                 log.exception('exception')
             finally:
                 log.debug('PostgreSQL DB created/connected..')
-                _connected = True
         return _db_conn
 
     def run_worker(self):
@@ -63,7 +62,7 @@ class Postgresql_db(Service):
             self.prefix_tree = None
             self.rules = None
             self.timestamp = -1
-            self.unhadled_to_feed_to_detection = 50
+            self.num_of_unhadled_to_feed_to_detection = 50
             self.insert_bgp_entries = []
             self.update_bgp_entries = []
             self.handled_bgp_entries = []
@@ -223,7 +222,8 @@ class Postgresql_db(Service):
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
-            # prefix, key, origin_as, peer_as, as_path, service, type, communities, timestamp, hijack_id, handled, matched_prefix
+            # prefix, key, origin_as, peer_asn, as_path, service, type, communities,
+            # timestamp, hijack_key, handled, matched_prefix, orig_path
             origin_as = -1
             if len(msg_['path']) >= 1:
                 origin_as = msg_['path'][-1]
@@ -232,8 +232,21 @@ class Postgresql_db(Service):
                 peer_asn = msg_['path'][0]
 
             try:
-                extract_msg = (msg_['prefix'], msg_['key'], str(origin_as), str(peer_asn), msg_['path'], msg_['service'],
-                               msg_['type'], json.dumps([(k['asn'], k['value']) for k in msg_['communities']]), float(msg_['timestamp']), 0, 'false', self.find_best_prefix_match(msg_['prefix']), msg_['orig_path'])
+                extract_msg = (
+                            msg_['prefix'], # prefix
+                            msg_['key'], # key
+                            str(origin_as), # origin_as
+                            str(peer_asn),  # peer_asn
+                            msg_['path'], # as_path
+                            msg_['service'], # service
+                            msg_['type'],   # type
+                            json.dumps([(k['asn'], k['value']) for k in msg_['communities']]), # communities
+                            datetime.datetime.fromtimestamp((int(msg_['timestamp']))), # timestamp
+                            None, # hijack_key
+                            False, # handled
+                            self.find_best_prefix_match(msg_['prefix']), # matched_prefix
+                            msg_['orig_path'] # orig_path
+                        )
                 self.insert_bgp_entries.append(extract_msg)
             except Exception:
                 log.debug("exception: {}".format(msg_))
@@ -375,20 +388,22 @@ class Postgresql_db(Service):
             log.debug("received hijack_retrieve")
             try:
                 results = {}
-                self.db_cur.execute(
-                    "SELECT time_started, time_last, peers_seen, asns_inf, key, prefix, hijack_as, type, time_detected FROM hijacks WHERE active = true;")
+                cmd_ = "SELECT time_started, time_last, peers_seen, "
+                cmd_ += "asns_inf, key, prefix, hijack_as, type, time_detected "
+                cmd_ += "FROM hijacks WHERE active = true;"
+                self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()
                 for entry in entries:
                     results[entry[4]] = {
-                            'time_started': entry[0],
-                            'time_last': entry[1],
+                            'time_started': int(entry[0].timestamp()),
+                            'time_last': int(entry[1].timestamp()),
                             'peers_seen': set(entry[2]),
                             'asns_inf': set(entry[3]),
                             'key': entry[4],
                             'prefix': str(entry[5]),
                             'hijack_as': int(entry[6]),
                             'type': entry[7],
-                            'time_detected': entry[8]
+                            'time_detected': int(entry[8].timestamp()),
                         }
 
                 self.producer.publish(
@@ -408,9 +423,7 @@ class Postgresql_db(Service):
             try:
                 self.db_cur.execute(
                     "UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=%s WHERE key=%s;",
-                    (int(
-                        time.time()),
-                        raw['key']))
+                    (datetime.datetime.now(), raw['key'],))
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception: {}'.format(raw))
@@ -421,8 +434,8 @@ class Postgresql_db(Service):
             try:
                 self.db_cur.execute(
                     "UPDATE hijacks SET mitigation_started=%s, under_mitigation=true WHERE key=%s;",
-                    (int(
-                        raw['time']),
+                    (datetime.datetime.fromtimestamp(
+                        int(raw['time'])) ,
                         raw['key']))
                 self.db_conn.commit()
             except Exception:
@@ -483,7 +496,7 @@ class Postgresql_db(Service):
                 "service   VARCHAR ( 50 ), " + \
                 "type  VARCHAR ( 1 ), " + \
                 "communities  json, " + \
-                "timestamp BIGINT, " + \
+                "timestamp TIMESTAMP, " + \
                 "hijack_key VARCHAR ( 32 ), " + \
                 "handled   BOOLEAN, " + \
                 "matched_prefix inet, " + \
@@ -499,17 +512,17 @@ class Postgresql_db(Service):
                 "num_peers_seen INTEGER, " + \
                 "asns_inf json, " + \
                 "num_asns_inf INTEGER, " + \
-                "time_started BIGINT, " + \
-                "time_last BIGINT, " + \
-                "time_ended   BIGINT, " + \
-                "mitigation_started   BIGINT, " + \
-                "time_detected BIGINT," + \
+                "time_started TIMESTAMP, " + \
+                "time_last TIMESTAMP, " + \
+                "time_ended   TIMESTAMP, " + \
+                "mitigation_started   TIMESTAMP, " + \
+                "time_detected TIMESTAMP," + \
                 "under_mitigation BOOLEAN, " + \
                 "resolved  BOOLEAN, " + \
                 "active  BOOLEAN, " + \
                 "ignored BOOLEAN,  " + \
                 "configured_prefix  inet, " + \
-                "timestamp_of_config BIGINT, " + \
+                "timestamp_of_config TIMESTAMP, " + \
                 "comment text " + \
                 "CONSTRAINT possible_states CHECK ( (active=true and under_mitigation=false and resolved=false and ignored=false) or " + \
                 "(active=true and under_mitigation=true and resolved=false and ignored=false) or " + \
@@ -521,28 +534,37 @@ class Postgresql_db(Service):
                 "key VARCHAR ( 32 ) NOT NULL, " + \
                 "config_data  json, " + \
                 "raw_config  text, " + \
-                "time_modified BIGINT) "
+                "comment text, " + \
+                "time_modified TIMESTAMP) "
 
             config_view = "CREATE OR REPLACE VIEW view_configs AS SELECT id, time_modified "
             config_view += "FROM configs;"
 
-            hijacks_view = "CREATE OR REPLACE VIEW view_hijacks AS SELECT "
-            hijacks_view += "id, key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
-            hijacks_view += "time_started, time_ended, time_last, mitigation_started, time_detected, "
-            hijacks_view += "under_mitigation, resolved, active, ignored, configured_prefix, "
-            hijacks_view += "timestamp_of_config, comment FROM hijacks;"
+            hijacks_view = "CREATE OR REPLACE VIEW view_hijacks AS SELECT id, key,"
+            hijacks_view += "type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
+            hijacks_view += "time_started, time_ended, time_last, mitigation_started, "
+            hijacks_view += "time_detected, timestamp_of_config, under_mitigation, resolved, active, "
+            hijacks_view += "ignored, configured_prefix, comment FROM hijacks;"
+
+            bgp_updates_view = "CREATE OR REPLACE VIEW view_bgpupdates AS SELECT id, prefix, origin_as, peer_asn, "
+            bgp_updates_view += "as_path, service, type, communities, timestamp, "
+            bgp_updates_view += "hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;"
 
             self.db_cur.execute(bgp_updates_table)
             self.db_cur.execute(bgp_hijacks_table)
             self.db_cur.execute(configs_table)
             self.db_cur.execute(config_view)
+            self.db_cur.execute(bgp_updates_view)
             self.db_cur.execute(hijacks_view)
+
             self.db_conn.commit()
 
         def _insert_bgp_updates(self):
             try:
-                self.db_cur.executemany("INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, " +
-                                        "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;", self.insert_bgp_entries)
+                cmd_ = "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
+                cmd_ += "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES "
+                cmd_ += "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
+                self.db_cur.executemany(cmd_, self.insert_bgp_entries)
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
@@ -602,32 +624,32 @@ class Postgresql_db(Service):
                     cmd_ += "time_last=%s, peers_seen=%s, asns_inf=%s;"
 
                     values_ = (
-                        key,
-                        self.tmp_hijacks_dict[key]['type'],
-                        self.tmp_hijacks_dict[key]['prefix'],
-                        self.tmp_hijacks_dict[key]['hijack_as'],
-                        self.tmp_hijacks_dict[key]['num_peers_seen'],
-                        self.tmp_hijacks_dict[key]['num_asns_inf'],
-                        int(self.tmp_hijacks_dict[key]['time_started']),
-                        int(self.tmp_hijacks_dict[key]['time_last']),
-                        0,
-                        0,
-                        int(self.tmp_hijacks_dict[key]['time_detected']),
-                        False,
-                        True,
-                        False,
-                        False,
-                        self.tmp_hijacks_dict[key]['configured_prefix'],
-                        int(self.tmp_hijacks_dict[key]['timestamp_of_config']),
-                        '',
-                        self.tmp_hijacks_dict[key]['peers_seen'],
-                        self.tmp_hijacks_dict[key]['asns_inf'],
-                        self.tmp_hijacks_dict[key]['num_peers_seen'],
-                        self.tmp_hijacks_dict[key]['num_asns_inf'],
-                        int(self.tmp_hijacks_dict[key]['time_started']),
-                        int(self.tmp_hijacks_dict[key]['time_last']),
-                        self.tmp_hijacks_dict[key]['peers_seen'],
-                        self.tmp_hijacks_dict[key]['asns_inf']
+                        key, # key
+                        self.tmp_hijacks_dict[key]['type'], # type
+                        self.tmp_hijacks_dict[key]['prefix'], # prefix
+                        self.tmp_hijacks_dict[key]['hijack_as'], # hijack_as
+                        self.tmp_hijacks_dict[key]['num_peers_seen'], # num_peers_seen
+                        self.tmp_hijacks_dict[key]['num_asns_inf'], # num_asns_inf
+                        datetime.datetime.fromtimestamp(int(self.tmp_hijacks_dict[key]['time_started'])), # time_started
+                        datetime.datetime.fromtimestamp(int(self.tmp_hijacks_dict[key]['time_last'])), # time_last
+                        None, # time_ended
+                        None, # mitigation_started
+                        datetime.datetime.fromtimestamp(int(self.tmp_hijacks_dict[key]['time_detected'])), # time_detected
+                        False, # under_mitigation
+                        True, # active
+                        False, # resolved
+                        False, # ignored
+                        self.tmp_hijacks_dict[key]['configured_prefix'], # configured_prefix
+                        datetime.datetime.fromtimestamp(int(self.tmp_hijacks_dict[key]['timestamp_of_config'])), # timestamp_of_config
+                        '', # comment
+                        self.tmp_hijacks_dict[key]['peers_seen'], # peers_seen
+                        self.tmp_hijacks_dict[key]['asns_inf'], # asns_inf
+                        self.tmp_hijacks_dict[key]['num_peers_seen'], # num_peers_seen
+                        self.tmp_hijacks_dict[key]['num_asns_inf'], # num_asns_inf
+                        datetime.datetime.fromtimestamp(int(self.tmp_hijacks_dict[key]['time_started'])), # time_started
+                        datetime.datetime.fromtimestamp(int(self.tmp_hijacks_dict[key]['time_last'])), # time_last
+                        self.tmp_hijacks_dict[key]['peers_seen'], # peers_seen
+                        self.tmp_hijacks_dict[key]['asns_inf'] # asns_inf
                     )
 
                     self.db_cur.execute(cmd_, values_)
@@ -643,14 +665,23 @@ class Postgresql_db(Service):
 
         def _retrieve_unhandled(self):
             results = []
-            self.db_cur.execute(
-                "SELECT * FROM bgp_updates WHERE handled = false ORDER BY id DESC LIMIT(%s);",
-                (self.unhadled_to_feed_to_detection,
-                 ))
+            cmd_ = "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
+            cmd_ += "type, communities, timestamp FROM bgp_updates WHERE "
+            cmd_ += "handled = false ORDER BY id DESC LIMIT(%s);"
+            self.db_cur.execute(cmd_, (self.num_of_unhadled_to_feed_to_detection,))
             entries = self.db_cur.fetchall()
             for entry in entries:
-                results.append({'key': entry[1], 'prefix': entry[2], 'origin_as': entry[3], 'peer_asn': entry[4], 'path': entry[5],
-                                'service': entry[6], 'type': entry[7], 'communities': entry[8], 'timestamp': int(entry[9])})
+                results.append({
+                            'key': entry[0], # key
+                            'prefix': entry[1], # prefix
+                            'origin_as': entry[2], # origin_as
+                            'peer_asn': entry[3], # peer_asn
+                            'path': entry[4], # as_path
+                            'service': entry[5], # service
+                            'type': entry[6], # type
+                            'communities': entry[7], # communities
+                            'timestamp': int(entry[8].timestamp())
+                        })
             if len(results):
                 self.producer.publish(
                     results,
@@ -688,13 +719,9 @@ class Postgresql_db(Service):
         def _save_config(self, config_hash, yaml_config, raw_config):
             try:
                 log.debug("Config Store..")
-                self.db_cur.execute(
-                    "INSERT INTO configs (key, config_data, raw_config, time_modified) VALUES (%s, %s, %s, %s);",
-                    (config_hash,
-                     json.dumps(yaml_config),
-                        raw_config,
-                        int(
-                         time.time())))
+                cmd_ = "INSERT INTO configs (key, config_data, raw_config, time_modified)"
+                cmd_ += "VALUES (%s, %s, %s, %s);"
+                self.db_cur.execute(cmd_, (config_hash, json.dumps(yaml_config), raw_config, datetime.datetime.now()) )
                 self.db_conn.commit()
             except Exception:
                 log.exception("failed to save config in db")

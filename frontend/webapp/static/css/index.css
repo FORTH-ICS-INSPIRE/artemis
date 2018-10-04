@@ -82,3 +82,15 @@ tr.shown td.details-control {
   text-align: center;
   margin-top: 80px;
 }
+
+.form-control_custom {
+    height: calc(2.25rem + 2px);
+}
+
+@-moz-document url-prefix() {
+  .form-control_custom {
+    height: auto;
+    min-height: 36px;
+
+  }
+}

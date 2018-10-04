@@ -145,27 +145,20 @@
     {% block scripts %}
         {{super()}}
         <script>
-            function transform_time(timestamp){
-                if(timestamp != 0){
-                    var tunix = moment.unix(timestamp);
-                    return moment(tunix).local().format("DD-MM-YYYY HH:mm:ss")
-                }else{
-                    return "Never"
-                }
-            }
             function update_config_timestamp(){
-                $("#conf_timestamp").html("Last Update: " + transform_time( '{{ config_timestamp }}' )) 
+                $("#conf_timestamp").html("Last Update: " + transform_date_to_local( '{{ config_timestamp }}' ))
             }
 
             $(document).ready(function(){ 
                 update_config_timestamp();
-                $("#last_login").html("(" + transform_time($("#last_login").text()) + ")")
+                $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
 
                 editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
                 editor.setSize(null, 633);
             });
 
         </script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
         <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>

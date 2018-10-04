@@ -25,7 +25,7 @@ class DB_statistics():
     def get_total_bgp_updates(self):
         try:
             log.debug("send request for total total_bgp_updates")
-            url_ = self.url_ + "/bgp_updates?limit=1"
+            url_ = self.url_ + "/view_bgpupdates?limit=1"
             response = requests.get(
                 url=url_, headers={
                     "Prefer": "count=exact"})
@@ -38,7 +38,7 @@ class DB_statistics():
     def get_total_bgp_unhandled_updates(self):
         try:
             log.debug("send request for total total_bgp_unhandled_updates")
-            url_ = self.url_ + "/bgp_updates?handled=eq.false&limit=1"
+            url_ = self.url_ + "/view_bgpupdates?handled=eq.false&limit=1"
             response = requests.get(
                 url=url_, headers={
                     "Prefer": "count=exact"})

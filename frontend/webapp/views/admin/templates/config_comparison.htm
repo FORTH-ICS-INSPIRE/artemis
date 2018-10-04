@@ -83,10 +83,10 @@
                 });
 
                 $("#config_a > option").each(function() {
-                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_unix_timestamp_to_client_local_time(this.value))
+                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_date_to_local(this.value))
                 });
                 $("#config_b > option").each(function() {
-                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_unix_timestamp_to_client_local_time(this.value))
+                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_date_to_local(this.value))
                 });
             });
 

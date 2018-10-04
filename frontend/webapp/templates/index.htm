@@ -146,7 +146,16 @@
         {{super()}}
         <script>
             function update_config_timestamp(){
-                $("#conf_timestamp").html("Last Update: " + transform_date_to_local( '{{ config_timestamp }}' ))
+                $("#conf_timestamp").html("Last Update: " + transform_date_to_local_( '{{ config_timestamp }}' ))
+            }
+            
+            function transform_date_to_local_(date){
+                var date_ = moment.utc(date)
+                if(date_._isValid){
+                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+                    return local;
+                }
+                return "Never";
             }
 
             $(document).ready(function(){ 

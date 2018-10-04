@@ -195,7 +195,6 @@
                     <div class="panel-body">
                         <table class="table table-striped table-bordered" id="hijack_table">
                             <thead>
-                                <th>ID</th>
                                 <th>Prefix</th>
                                 <th>Origin AS</th>
                                 <th>AS Path</th>
@@ -234,14 +233,13 @@
 
             function render_table(settings){
                 var columns = [
-                        { data: 'id' },
+                        { data: 'timestamp' },
                         { data: 'prefix' },
                         { data: 'origin_as' },
                         { data: 'as_path' },
                         { data: 'peer_asn' },
                         { data: 'service' },
                         { data: 'type' },
-                        { data: 'timestamp' },
                         { data: 'hijack_key' }];
 
                 table = $('#hijack_table').DataTable( {
@@ -268,18 +266,17 @@
                         });
                     },
                     "columns": [
-                        { data: 'id' },
+                        { data: 'timestamp',
+                            render: function(data, type, row){
+                                return transform_date_to_local_(data);
+                            } 
+                        },
                         { data: 'prefix' },
                         { data: 'origin_as' },
                         { data: 'as_path' },
                         { data: 'peer_asn' },
                         { data: 'service' },
                         { data: 'type' },
-                        { data: 'timestamp',
-                            render: function(data, type, row){
-                                return transform_date_to_local_(data);
-                            } 
-                        },
                         { data: 'handled', 
                             render: function(data, type, row){
                                 if(true == data){
@@ -395,7 +392,6 @@
             function update_hijack_details(data){
                 $( "#hijack_status" ).html( hijack_status(data)) ;
                 prefix = data['prefix'];
-                $( "#info_hijack_id" ).html( data['id'] );
                 $( "#info_key" ).html( data['key'] );
                 $( "#info_type" ).html( data['type'] );
                 $( "#info_prefix" ).html( data['prefix'] );

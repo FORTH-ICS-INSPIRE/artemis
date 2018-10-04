@@ -13,6 +13,9 @@ from typing import Union, Optional, Dict, TextIO, Text, List, NoReturn
 from io import StringIO
 
 
+log = logging.getLogger('artemis_logger')
+
+
 class Configuration(Service):
     """
     Configuration Service.

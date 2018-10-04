@@ -23,7 +23,7 @@ class Configuration():
             log.debug(
                 "send request for newest config: {}".format(
                     self.raw_json))
-            url_ = API_PATH + "/configs?order=id.desc&limit=1"
+            url_ = API_PATH + "/configs?order=time_modified.desc&limit=1"
             response = requests.get(url=url_)
             self.raw_json = response.json()
             log.debug("received config json: {}".format(self.raw_json))

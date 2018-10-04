@@ -64,14 +64,13 @@
                 
                 <table class="table table-striped table-bordered" id="hijacks">
                     <thead>
-                        <th>ID</th>
+                        <th>Time Detected</th>
                         <th>Status</th>
                         <th>Prefix</th>
                         <th>Type</th>
                         <th>Hijack AS</th>
                         <th># Peers Seen</th>
                         <th># ASes Infected</th>
-                        <th>Time Started</th>
                         <th>More</th>
                     </thead>
                 </table>
@@ -165,7 +164,7 @@
 
             
             var columns = [
-                { data: 'id' },
+                { data: 'time_detected' },
                 { data: 'prefix' },
                 { data: 'type' },
                 { data: 'hijack_as' },
@@ -212,7 +211,11 @@
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
-                        { data: 'id' },
+                        { data: 'time_detected',
+                            render: function(data, type, row){
+                                return transform_date_to_local_(data);
+                            }
+                        },
                         {   
                             data: function( row, type, val, meta ) {
                                 return hijack_status(row)
@@ -227,11 +230,6 @@
                         },
                         { data: 'num_peers_seen' },
                         { data: 'num_asns_inf' },
-                        { data: 'time_started',
-                            render: function(data, type, row){
-                                return transform_date_to_local_(data);
-                            }
-                        },
                         {
                             data: 'key',
                             render: function(data, type, row){

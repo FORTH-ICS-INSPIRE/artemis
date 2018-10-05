@@ -64,7 +64,7 @@ if __name__ == '__main__':
     prefixes = args.prefix.split(',')
     exa = ExaBGP(prefixes, args.host)
     try:
-        exa.start()
+        exa.start_loop()
     except KeyboardInterrupt:
         pass
     except BaseException:

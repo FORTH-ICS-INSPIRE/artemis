@@ -259,7 +259,7 @@ class Postgresql_db(Service):
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
-                    self.tmp_hijacks_dict[key]['hijack_as'] = str(
+                    self.tmp_hijacks_dict[key]['hijack_as'] = int(
                         msg_['hijack_as'])
                     self.tmp_hijacks_dict[key]['type'] = str(
                         msg_['type'])
@@ -507,7 +507,7 @@ class Postgresql_db(Service):
                 "key VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
                 "type  VARCHAR ( 1 ), " + \
                 "prefix    inet, " + \
-                "hijack_as VARCHAR ( 6 ), " + \
+                "hijack_as INTEGER, " + \
                 "peers_seen   json, " + \
                 "num_peers_seen INTEGER, " + \
                 "asns_inf json, " + \

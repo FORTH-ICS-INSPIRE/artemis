@@ -32,7 +32,7 @@ class ExaBGP():
                     'communities': bgp_message.get('communities', []),
                     'timestamp': bgp_message['timestamp'],
                     'path': bgp_message['path'],
-                    'service': 'ExaBGP {}'.format(self.host),
+                    'service': 'exabgp|{}'.format(self.host),
                     'prefix': bgp_message['prefix']
                 }
                 if mformat_validator(msg):

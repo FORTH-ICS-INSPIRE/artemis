@@ -38,7 +38,7 @@ function transform_date_to_local(date){
 function hijack_key_create_link(url, hijack_key){
     var view_hijack_link = ""
     if( hijack_key != null && hijack_key != '0' ){
-        view_hijack_link = '<a href="' + url + '"?key=' + hijack_key + '">View</a>'
+        view_hijack_link = '<a href="' + url + '?key=' + hijack_key + '">View</a>'
     }
     return view_hijack_link;
 }

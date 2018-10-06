@@ -328,7 +328,7 @@ class Postgresql_db(Service):
             if prefix_node is not None:
                 return prefix_node.prefix
             else:
-                return ''
+                return None
 
         def handle_config_notify(self, message):
             log.debug(

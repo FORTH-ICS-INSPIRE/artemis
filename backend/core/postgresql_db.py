@@ -232,8 +232,8 @@ class Postgresql_db(Service):
                 extract_msg = (
                             msg_['prefix'], # prefix
                             msg_['key'], # key
-                            str(origin_as), # origin_as
-                            msg_['peer_asn'],  # peer_asn
+                            int(origin_as), # origin_as
+                            int(msg_['peer_asn']),  # peer_asn
                             msg_['path'], # as_path
                             msg_['service'], # service
                             msg_['type'],   # type

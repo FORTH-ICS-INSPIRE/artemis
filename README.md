@@ -171,7 +171,7 @@ key.pem
 If you want selective access to the UI from certain IP ranges, please adjust and comment out
 the nginx ACL-related lines in:
 ```
-frontend/configs/nginx.conf
+frontend/webapp/configs/nginx.conf
 ```
 You do not need to modify any other configuration file for now.
 

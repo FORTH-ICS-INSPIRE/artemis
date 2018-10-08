@@ -265,9 +265,6 @@ class Detection(Service):
                 raw = monitor_event.copy()
                 # ignore withdrawals for now
                 if monitor_event['type'] == 'A':
-                    monitor_event['peer_asn'] = -1
-                    if len(monitor_event['path']) > 1:
-                        monitor_event['peer_asn'] = monitor_event['path'][0]
                     monitor_event['path'] = Detection.Worker.__clean_as_path(
                         monitor_event['path'])
                     prefix_node = self.prefix_tree.search_best(

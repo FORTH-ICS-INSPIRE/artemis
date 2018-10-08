@@ -37,6 +37,7 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                     service = "historical|{}|{}".format(row[4], row[5])
                     type_ = row[6]
                     timestamp = float(row[8])
+                    peer_asn = int(row[2])
                     for prefix in prefixes:
                         base_ip, mask_length = this_prefix.split('/')
                         our_prefix = IPNetwork(prefix)
@@ -48,7 +49,8 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                 'path': as_path,
                                 'service': service,
                                 'communities': communities,
-                                'prefix': this_prefix
+                                'prefix': this_prefix,
+                                'peer_asn': peer_asn
                             }
                             if mformat_validator(msg):
                                 msgs = normalize_msg_path(msg)

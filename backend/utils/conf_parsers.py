@@ -63,6 +63,7 @@ def parse_prefixes(filepath, format_number):
 
     return prefixes
 
+
 def format_1_parser(filepath):
     """
     TODO: COMMENT
@@ -76,8 +77,28 @@ def format_2_parser(filepath):
     TODO: COMMENT
     """
     prefixes = set()
-    return set()
 
+    with open(filepath, 'r') as f:
+        for line in f:
+            line = line.lstrip(' ')
+            if line.startswith('Prefix'):
+                continue
+            elems = list(filter(None, [elem.strip() for elem in line.strip().split('  ')]))
+
+            prefix = elems[0].lstrip(' *')
+            as_path = elems[-1]
+            if as_path != 'I':
+                continue
+            try:
+                (netip, netmask) = prefix.split('/')
+                str2ip(prefix)
+            except:
+                continue
+
+            pp(prefix)
+            prefixes.add(prefix)
+
+    return prefixes
 
 def format_3_parser(filepath):
     """
@@ -255,8 +276,9 @@ if __name__=='__main__':
         if file_metadata is not None:
             hour_timestamp = file_metadata['time']['hour_timestamp']
 
-            if hour_timestamp in created_conf_timestamps:
-                continue
+            # UNCOMMENT IN PRODUCTION TO AVOID REPARSING THE SAME INFO!
+            #if hour_timestamp in created_conf_timestamps:
+            #   continue
 
             if hour_timestamp not in configurations:
                 configurations[hour_timestamp] = {

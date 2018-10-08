@@ -227,16 +227,13 @@ class Postgresql_db(Service):
             origin_as = -1
             if len(msg_['path']) >= 1:
                 origin_as = msg_['path'][-1]
-            peer_asn = -1
-            if len(msg_['path']) >= 1:
-                peer_asn = msg_['path'][0]
 
             try:
                 extract_msg = (
                             msg_['prefix'], # prefix
                             msg_['key'], # key
-                            str(origin_as), # origin_as
-                            str(peer_asn),  # peer_asn
+                            int(origin_as), # origin_as
+                            int(msg_['peer_asn']),  # peer_asn
                             msg_['path'], # as_path
                             msg_['service'], # service
                             msg_['type'],   # type

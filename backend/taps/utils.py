@@ -13,7 +13,8 @@ def key_generator(msg):
         msg['path'],
         msg['type'],
         msg['service'],
-        msg['timestamp']
+        msg['timestamp'],
+        msg['peer_asn']
     ])).hexdigest()
 
 
@@ -90,7 +91,8 @@ def mformat_validator(msg):
         'prefix',
         'path',
         'communities',
-        'timestamp'
+        'timestamp',
+        'peer_asn'
     ]
     type_values = ['A', 'W']
     community_keys = set(['asn', 'value'])
@@ -143,6 +145,11 @@ def mformat_validator(msg):
             return False
         return True
 
+    def valid_peer_asn(msg):
+        if not isinstance(msg['peer_asn'], int):
+            return False
+        return True
+
     def valid_generator(msg):
         yield valid_msg
         yield valid_fields
@@ -152,6 +159,7 @@ def mformat_validator(msg):
         yield valid_path
         yield valid_communities
         yield valid_timestamp
+        yield valid_peer_asn
 
     for func in valid_generator(msg):
         if not func(msg):

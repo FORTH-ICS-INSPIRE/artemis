@@ -76,10 +76,8 @@ services:
             - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
         ports:
             - 443:443
-            - 80:80
         expose:
             - 443
-            - 80
         networks:
             - frontend
             - postgrest
@@ -135,16 +133,16 @@ services:
             PGRST_DB_URI: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
             PGRST_DB_SCHEMA: public
             PGRST_DB_ANON_ROLE: artemis_user
-    # exabgp_monitor:
-    #     container_name: exabgp_monitor
-    #     image: mavromat/exabgp-monitor
-    #     restart: always
-    #     networks:
-    #         - exabgp
-    #     ports:
+    # exabgp:
+    #     container_name: exabgp
+    #      image: mavromat/exabgp-monitor:latest
+    #      restart: always
+    #      networks:
+    #          - exabgp
+    #      volumes:
+    #          - ./backend/configs/exabgp.conf:/home/config/exabgp.conf
+    #      ports:
     #         - 179:179
-    #     volumes:
-    #         - ./other/exabgp.conf:/home/config/exabgp.conf
 
 
 networks:

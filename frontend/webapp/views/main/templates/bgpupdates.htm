@@ -114,9 +114,10 @@
                 $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 1);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 1);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#bgp_updates').DataTable().destroy();
                 render_table(display_settings);
             });
@@ -125,9 +126,10 @@
                 $('#custom_time').hide();                
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 24);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 24);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#bgp_updates').DataTable().destroy()
                 render_table(display_settings);
             });
@@ -136,9 +138,10 @@
                 $('#custom_time').hide();                
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 48);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 48);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#bgp_updates').DataTable().destroy()
                 render_table(display_settings);
             });
@@ -195,7 +198,7 @@
                             type: "POST",
                             url: '{{ url_for('proxy_api') }}',
                             dataType: "json",
-                            data: { "action": "bgp_updates", "parameters" : JSON.stringify(parameters) },
+                            data: { "action": "view_bgpupdates", "parameters" : JSON.stringify(parameters) },
 
                             success: function(data, status, xhr){
                                 callback({
@@ -217,17 +220,12 @@
                         { data: 'type' },
                         {   data: 'timestamp',
                             render: function(data, type, row){
-                                var stillUtc = moment.unix(data).toDate();
-                                return moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
+                                return transform_date_to_local_(data);
                             } 
                         },
                         {   data: 'hijack_key',
                             render: function(data, type, row){
-                                if('0' == data){
-                                    return ''
-                                }else{
-                                    return '<a href="../hijack?key=' + data + '">View</a>'
-                                }
+                                return hijack_key_create_link("{{ url_for('main.display_hijack') }}", data);
                             } 
                         },
                         {   data: 'handled', 
@@ -265,7 +263,7 @@
             
             
             $(document).ready(function(){
-                render_table({})
+                render_table({});
                 $('input[name="datetimes"]').daterangepicker({
                     timePicker: true,
                     startDate: moment().startOf('hour'),
@@ -274,7 +272,7 @@
                         format: 'M/DD hh:mm A'
                     }
                 },  function(start, end, label) {
-                    display_settings['time'] = { 'start_time': moment(start).unix(), 'end_time': moment(end).unix()};
+                    display_settings['time'] = { 'start_time': start.toISOString(), 'end_time': end.toISOString()};
                     $('#bgp_updates').DataTable().destroy()
                     render_table(display_settings);
                     }
@@ -295,23 +293,11 @@
                 });
             });
 
-            function format ( d ) {
-                var stillUtc = moment.unix(d.timestamp).toDate();
-                var timestamp = moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
-                
+            function format ( d ) {    
                 var orig_path = "";
                 if (d.orig_path != null){
                     orig_path = d.orig_path;
                 }
-
-                var view_hijack_link = ""
-                var hijack_key = ""
-                if('0' != d.hijack_key){
-                    hijack_key = d.hijack_key
-                    view_hijack_link = '<a href="{{ url_for('main.display_hijack') }}?key=' + d.hijack_key + '">View</a>'
-                }
-
-                
 
                 return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
                     '<tr>'+
@@ -344,7 +330,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+
-                        '<td>'+timestamp+'</td>'+
+                        '<td>'+transform_date_to_local_(d.timestamp)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Original Path:</b></td>'+
@@ -352,16 +338,25 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Hijack Key:</b></td>'+
-                        '<td>'+hijack_key+'</td>'+
+                        '<td>'+display_hijack_key(d.hijack_key)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Hijack:</b></td>'+
-                        '<td>'+view_hijack_link+'</td>'+
+                        '<td>'+hijack_key_create_link("{{ url_for('main.display_hijack') }}", d.hijack_key)+'</td>'+
                     '</tr>'+
                 '</table>';
             }
+
+        function transform_date_to_local_(date){
+            var date_ = moment.utc(date)
+            if(date_._isValid){
+                var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+                return local;
+            }
+            return "Never";
+        }
         </script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    
+        <script defer src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>

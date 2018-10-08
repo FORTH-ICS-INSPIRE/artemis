@@ -32,8 +32,9 @@ class ExaBGP():
                     'communities': bgp_message.get('communities', []),
                     'timestamp': bgp_message['timestamp'],
                     'path': bgp_message['path'],
-                    'service': 'ExaBGP {}'.format(self.host),
-                    'prefix': bgp_message['prefix']
+                    'service': 'exabgp|{}'.format(self.host),
+                    'prefix': bgp_message['prefix'],
+                    'peer_asn': int(bgp_message['peer_asn'])
                 }
                 if mformat_validator(msg):
                     with Producer(connection) as producer:
@@ -64,7 +65,7 @@ if __name__ == '__main__':
     prefixes = args.prefix.split(',')
     exa = ExaBGP(prefixes, args.host)
     try:
-        exa.start()
+        exa.start_loop()
     except KeyboardInterrupt:
         pass
     except BaseException:

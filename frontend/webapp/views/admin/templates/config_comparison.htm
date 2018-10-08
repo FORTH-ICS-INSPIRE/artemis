@@ -25,21 +25,25 @@
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="config_a">Select config:</label>
-                                    <select class="form-control w-75 p-3" id="config_a">
-                                        {% for config_ in configs %}
-                                        <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
-                                        {% endfor %}
-                                    </select>
+                                    <form name="config_a_form">
+                                        <select class="form-control_custom w-75 p-1" id="config_a">
+                                            {% for config_ in configs %}
+                                            <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
+                                            {% endfor %}
+                                        </select>
+                                    </form>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="config_a">Select config:</label>
-                                    <select class="form-control w-75 p-3" id="config_b">
-                                        {% for config_ in configs %}
-                                        <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
-                                        {% endfor %}
-                                    </select>
+                                    <form name="config_b_form">
+                                        <select class="form-control_custom w-75 p-1" id="config_b" autocomplete="off">
+                                            {% for config_ in configs %}
+                                            <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
+                                            {% endfor %}
+                                        </select>
+                                    </form>
                                 </div>
                             </div>
                 	   </div>
@@ -83,10 +87,10 @@
                 });
 
                 $("#config_a > option").each(function() {
-                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_unix_timestamp_to_client_local_time(this.value))
+                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_date_to_local_(this.value))
                 });
                 $("#config_b > option").each(function() {
-                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_unix_timestamp_to_client_local_time(this.value))
+                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_date_to_local_(this.value))
                 });
             });
 
@@ -105,6 +109,7 @@
 
             $( "#config_a" ).on('change', function() {
                 var id = $(this).children(":selected").attr("id");
+                $(this).children(":selected").prop('selected',true);
                 if (id in cache_configs){
                     config_a_data = cache_configs[id];
                     $('#view_diffs').html('');
@@ -129,6 +134,7 @@
 
             $( "#config_b" ).on('change', function() {
                 var id = $(this).children(":selected").attr("id");
+                $(this).children(":selected").prop('selected',true);
                 if (id in cache_configs){
                     config_b_data = cache_configs[id];
                     $('#view_diffs').html('');
@@ -153,6 +159,15 @@
 
             function toggleDifferences() {
                 dv.setShowDifferences(highlight = !highlight);
+            }
+
+            function transform_date_to_local_(date){
+                var date_ = moment.utc(date)
+                if(date_._isValid){
+                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+                    return local;
+                }
+                return "Never";
             }
  
 

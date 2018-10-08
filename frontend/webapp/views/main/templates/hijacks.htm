@@ -81,7 +81,11 @@
         <div class="row">
             <div class="col-lg-6">
                 </hr>
-                <p> <i><a style="color:red" href="#">Ongoing</a> / <a style="color:green" href="#">Resolved</a> / <a style="color:orange" href="#">Ignored</a> / <a style="color:blue" href="#">Under Mitigation</a> </i></p>
+                <p> <i>
+                    <a id="status_active_text" style="color:red" href="javascript:filter_by_status('active');">Ongoing</a> / 
+                    <a id="status_resolved_text" style="color:green" href="javascript:filter_by_status('resolved');">Resolved</a> / 
+                    <a id="status_ignored_text" style="color:orange" href="javascript:filter_by_status('ignored');">Ignored</a> / 
+                    <a id="status_under_mitigation_text" style="color:blue" href="javascript:filter_by_status('under_mitigation');">Under Mitigation</a> </i></p>
             </div>
             <div class="col-lg-6">
                 </hr>
@@ -98,6 +102,7 @@
         <script>
             var table;
             var display_settings = { 'prefixes': null, 'time': null };
+            var selected_status = null;
             $('#custom_time').hide();
 
             $('#select_timewindow_all').on('click', function(event) {
@@ -113,9 +118,10 @@
                 $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 1);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 1);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#hijacks').DataTable().destroy();
                 render_table(display_settings);
             });
@@ -124,9 +130,10 @@
                 $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 24);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 24);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#hijacks').DataTable().destroy()
                 render_table(display_settings);
             });
@@ -135,9 +142,10 @@
                 $('#custom_time').hide();
                 $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
                 $(this).attr('class', 'btn btn-outline-primary');
-                var now = Math.floor(Date.now() / 1000);
-                var start_time = now - (3600 * 48);
-                display_settings['time'] = { 'start_time': start_time, 'end_time': now};
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 48);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
                 $('#hijacks').DataTable().destroy()
                 render_table(display_settings);
             });
@@ -159,6 +167,25 @@
                 render_table(display_settings);
             });
 
+            function filter_by_status(status){
+                // no status selected
+                if(selected_status == status){
+                    selected_status = status;
+                    $("#status_" + status + "_text").css("font-weight", "");
+                    delete display_settings['status'];
+                }else{
+                    selected_status = status;
+                    var status_list = ['active', 'resolved', 'ignored', 'under_mitigation'];
+                    var filtered_status_list = status_list.filter(function(e) { return e !== status })
+                    $("#status_" + status + "_text").css("font-weight", "bold")
+                    display_settings['status'] = status;
+                    for (status_ in filtered_status_list){
+                        $("#status_" + filtered_status_list[status_] + "_text").css("font-weight", "");
+                    }
+                }
+                $('#hijacks').DataTable().destroy()
+                render_table(display_settings);
+            }
 
             
             var columns = [
@@ -176,14 +203,36 @@
 
             function render_table(settings){
                 var parameters = {};
+                parameters['and'] = "(";
 
-                if(settings['time'] != null && settings['prefixes'] == null){
-                    parameters = { 'and': '(time_started.gte.' + settings['time']['start_time'] + ',time_started.lte.' + settings['time']['end_time'] + ')' }
-                }else if(settings['time'] == null && settings['prefixes'] != null){
-                    parameters = { 'and': '(configured_prefix.eq.' + settings['prefixes'] + ')' }
-                }else if(settings['time'] != null && settings['prefixes'] != null){
-                    parameters = { 'and': '(time_started.gte.' + settings['time']['start_time'] + ',time_started.lte.' + settings['time']['end_time'] + ',configured_prefix.eq.' + settings['prefixes'] + ')' }
+                if(settings['time'] != null){
+                    parameters['and'] += 'time_started.gte.' + settings['time']['start_time'];
+                    parameters['and'] += ',time_started.lte.' + settings['time']['end_time'];
                 }
+
+                if(settings['prefixes'] != null){
+                   if(parameters['and'] != "("){
+                        parameters['and'] += ","
+                    }
+                    parameters['and'] += "configured_prefix.eq." + settings['prefixes'];
+                }
+
+                if ('status' in settings){
+                    if(parameters['and'] != "("){
+                        parameters['and'] += ","
+                    }
+                    parameters['and'] += settings['status'] + ".eq.true";
+                    if (settings['status'] == 'active'){
+                        parameters['and'] += ',under_mitigation.eq.false'
+                    }
+                }
+
+                if(parameters['and'] == '('){
+                    delete parameters['and']
+                }else{
+                    parameters['and'] += ")"
+                }
+
                 table = $('#hijacks').DataTable( {
                     "processing": true,
                     "serverSide": true,
@@ -226,8 +275,7 @@
                         { data: 'num_asns_inf' },
                         { data: 'time_started',
                             render: function(data, type, row){
-                                var stillUtc = moment.unix(data).toDate();
-                                return moment(stillUtc).local().format("DD-MM-YYYY HH:mm:ss");
+                                return transform_date_to_local_(data);
                             }
                         },
                         {
@@ -238,7 +286,7 @@
                         }
                     ],
                     "columnDefs": [ {
-                        "targets": [7],
+                        "targets": [1,8],
                         "orderable": false
                         } 
                     ],
@@ -276,13 +324,22 @@
                         format: 'M/DD hh:mm A'
                     }
                 },  function(start, end, label) {
-                    display_settings['time'] = { 'start_time': moment(start).unix(), 'end_time': moment(end).unix()};
+                    display_settings['time'] = { 'start_time': start.toISOString(), 'end_time': end.toISOString()};
                     $('#hijacks').DataTable().destroy()
                     render_table(display_settings);
                     }
                 );
 
             });
+
+            function transform_date_to_local_(date){
+                var date_ = moment.utc(date)
+                if(date_._isValid){
+                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+                    return local;
+                }
+                return "Never";
+            }
 
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    

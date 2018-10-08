@@ -14,6 +14,8 @@ def normalize_ripe_ris(msg):
         if 'host' in msg:
             msg['service'] = 'ripe-ris|' + msg['host']
             del msg['host']
+        if 'peer_asn' in msg:
+            msg['peer_asn'] = int(msg['peer_asn'])
 
 
 def parse_ripe_ris(connection, prefix, host):

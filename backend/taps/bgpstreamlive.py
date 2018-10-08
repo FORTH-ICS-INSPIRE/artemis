@@ -87,6 +87,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                         as_path = []
                         communities = []
                     timestamp = float(rec.time)
+                    peer_asn = elem.peer_asn
 
                     for prefix in prefixes:
                         base_ip, mask_length = this_prefix.split('/')
@@ -99,7 +100,8 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                 'path': as_path,
                                 'service': service,
                                 'communities': communities,
-                                'prefix': this_prefix
+                                'prefix': this_prefix,
+                                'peer_asn': peer_asn
                             }
                             if mformat_validator(msg):
                                 msgs = normalize_msg_path(msg)

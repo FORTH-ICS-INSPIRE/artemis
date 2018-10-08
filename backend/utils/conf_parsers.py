@@ -3,6 +3,7 @@ import glob
 import os
 import re
 import ruamel.yaml
+import shutil
 from datetime import datetime, timezone
 from ipaddress import ip_network as str2ip
 from pprint import pprint as pp
@@ -95,7 +96,6 @@ def format_2_parser(filepath):
             except:
                 continue
 
-            pp(prefix)
             prefixes.add(prefix)
 
     return prefixes
@@ -179,7 +179,7 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
                                    for asn in prefix_pols[prefix]['origins']],
         pol_dict['neighbors'] = [yaml_conf['asns'][asns[asn]]
                                  for asn in prefix_pols[prefix]['neighbors']],
-        pol_dict['mitigation'] = 'manual'
+        pol_dict['mitigation'] = DEFAULT_MIT_ACTION
         yaml_conf['rules'].append(pol_dict)
 
 
@@ -266,19 +266,16 @@ if __name__=='__main__':
     conf_dir = args.conf_dir.rstrip('/')
     if not os.path.isdir(conf_dir):
         os.mkdir(conf_dir)
-    created_conf_timestamps = set()
-    for conf_filepath in glob.glob('{}/config_*.yaml'.format(conf_dir)):
-        conf_timestamp = int(conf_filepath.split('/')[-1].split('_')[-1].split('.yaml')[0])
-        created_conf_timestamps.add(conf_timestamp)
 
     for filepath in glob.glob('{}/*'.format(in_dir)):
         file_metadata = extract_file_metadata(filepath)
         if file_metadata is not None:
             hour_timestamp = file_metadata['time']['hour_timestamp']
 
-            # UNCOMMENT IN PRODUCTION TO AVOID REPARSING THE SAME INFO!
-            #if hour_timestamp in created_conf_timestamps:
-            #   continue
+            # create directory for putting raw files based on timestamp
+            hour_timestamp_dir = '{}/{}'.format(in_dir, hour_timestamp)
+            if not os.path.isdir(hour_timestamp_dir):
+                os.mkdir(hour_timestamp_dir)
 
             if hour_timestamp not in configurations:
                 configurations[hour_timestamp] = {
@@ -299,6 +296,12 @@ if __name__=='__main__':
                     }
                     configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(args.origin_asn)
                     configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(file_metadata['peer_asn'])
+
+            # move raw file into timestamp directory
+            try:
+                shutil.move(filepath, hour_timestamp_dir)
+            except:
+                print("Could not move '{}'".format(filepath))
 
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)

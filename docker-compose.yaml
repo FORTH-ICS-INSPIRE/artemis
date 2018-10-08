@@ -141,8 +141,6 @@ services:
     #          - exabgp
     #      volumes:
     #          - ./backend/configs/exabgp.conf:/home/config/exabgp.conf
-    #      ports:
-    #         - 179:179
 
 
 networks:

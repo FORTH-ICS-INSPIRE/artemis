@@ -56,8 +56,12 @@ loggers:
         handlers: [console, info_file_handler]
         propagate: no
     mail_logger:
-        level: INFO
+        level: CRITICAL
         handlers: [smtps_handler]
+        propagate: no
+    hijack_logger:
+        level: CRITICAL
+        handlers: []
         propagate: no
 
 root:

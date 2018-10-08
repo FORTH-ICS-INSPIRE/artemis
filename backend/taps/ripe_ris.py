@@ -16,6 +16,8 @@ def normalize_ripe_ris(msg):
             del msg['host']
         if 'peer_asn' in msg:
             msg['peer_asn'] = int(msg['peer_asn'])
+        if 'path' not in msg:
+            msg['path'] = []
 
 
 def parse_ripe_ris(connection, prefix, host):

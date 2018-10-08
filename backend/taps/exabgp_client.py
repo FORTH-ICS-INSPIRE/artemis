@@ -34,7 +34,7 @@ class ExaBGP():
                     'path': bgp_message['path'],
                     'service': 'exabgp|{}'.format(self.host),
                     'prefix': bgp_message['prefix'],
-                    'peer_asn': bgp_message['peer_asn']
+                    'peer_asn': int(bgp_message['peer_asn'])
                 }
                 if mformat_validator(msg):
                     with Producer(connection) as producer:

@@ -44,6 +44,9 @@ handlers:
         - password
         secure: True
 
+    null_handler:
+        class: logging.NullHandler
+
     # syslog_handler:
     #     class: logging.handlers.SysLogHandler
     #     level: DEBUG
@@ -57,11 +60,11 @@ loggers:
         propagate: no
     mail_logger:
         level: CRITICAL
-        handlers: [smtps_handler]
+        handlers: [null_handler]
         propagate: no
     hijack_logger:
         level: CRITICAL
-        handlers: []
+        handlers: [null_handler]
         propagate: no
 
 root:

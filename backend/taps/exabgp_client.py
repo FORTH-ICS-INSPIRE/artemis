@@ -3,6 +3,7 @@ import argparse
 from kombu import Connection, Producer, Exchange
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 import traceback
+import signal
 
 
 class ExaBGP():
@@ -10,6 +11,10 @@ class ExaBGP():
     def __init__(self, prefixes, host):
         self.host = host
         self.prefixes = prefixes
+        self.sio = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def start(self):
         with Connection(RABBITMQ_HOST) as connection:
@@ -22,7 +27,7 @@ class ExaBGP():
             self.exchange.declare()
 
             try:
-                sio = SocketIO('http://' + self.host, namespace=BaseNamespace, wait_for_connection=False)
+                self.sio = SocketIO('http://' + self.host, namespace=BaseNamespace)
 
                 def exabgp_msg(bgp_message):
                     msg = {
@@ -46,12 +51,17 @@ class ExaBGP():
                                     serializer='json'
                                 )
 
-                sio.on('exa_message', exabgp_msg)
-                sio.emit('exa_subscribe', {'prefixes': self.prefixes})
-                sio.wait()
+                self.sio.on('exa_message', exabgp_msg)
+                self.sio.emit('exa_subscribe', {'prefixes': self.prefixes})
+                self.sio.wait()
             except KeyboardInterrupt:
-                sio.disconnect()
-                sio.wait()
+                self.exit()
+
+    def exit(self):
+        print('Exiting ExaBGP')
+        if self.sio is not None:
+            self.sio.disconnect()
+            self.sio.wat()
 
 
 if __name__ == '__main__':
@@ -65,6 +75,7 @@ if __name__ == '__main__':
 
     prefixes = args.prefix.split(',')
     exa = ExaBGP(prefixes, args.host)
+    print('Starting ExaBGP on {} for {}'.format(args.host, prefixes))
     try:
         exa.start()
     except BaseException:

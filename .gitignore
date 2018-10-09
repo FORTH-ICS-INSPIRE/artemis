@@ -7,4 +7,5 @@ webapp.log
 .npm/
 *.pem
 frontend/db/*
-postgres-data/*
+postgres-data-current/*
+postgres-data-backup/*

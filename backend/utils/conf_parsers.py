@@ -9,9 +9,9 @@ from ipaddress import ip_network as str2ip
 from pprint import pprint as pp
 
 VALID_FORMAT_PARSERS = {
-    1: lambda x: format_1_parser(x),
-    2: lambda x: format_2_parser(x),
-    3: lambda x: format_3_parser(x)
+    1: lambda x: format_1_parser(x[0], x[1]),
+    2: lambda x: format_2_parser(x[0], x[1]),
+    3: lambda x: format_3_parser(x[0], x[1])
 }
 
 DEFAULT_MIT_ACTION = 'manual'
@@ -54,31 +54,62 @@ def extract_file_metadata(filepath):
     return file_metadata
 
 
-def parse_prefixes(filepath, format_number):
+def parse_prefixes(filepath, format_number, origin):
     """
     TODO: COMMENT
     """
     if format_number not in VALID_FORMAT_PARSERS.keys():
         return set()
-    prefixes = VALID_FORMAT_PARSERS[format_number](filepath)
+    prefixes = VALID_FORMAT_PARSERS[format_number]((filepath, origin))
 
     return prefixes
 
 
-def format_1_parser(filepath):
+def format_1_parser(filepath, origin):
     """
-    TODO: COMMENT
+    Parse format number 2:
+    <prefix> is advertised to <ip>
+        aspath: <list_of_ints>
+    Note that the origin is needed to determine origination from the ARTEMIS tester.
+    (TODO: make this a list if multiple ASNs --> not important at this stage)
     """
     prefixes = set()
+    with open(filepath, 'r') as f:
+        cur_prefix = None
+        for line in f:
+            line = line.lstrip(' ').strip('')
+            prefix_regex = re.match('(\d+\.\d+\.\d+\.\d+/\d+)\s*is\s*advertised.*', line)
+            if prefix_regex:
+                prefix = prefix_regex.group(1)
+                try:
+                    (netip, netmask) = prefix.split('/')
+                    str2ip(prefix)
+                except:
+                    continue
+                    cur_prefix = None
+                cur_prefix = prefix
+            else:
+                as_path_regex = re.match('aspath\:\s+(.*)', line)
+                if as_path_regex:
+                    as_path_list = as_path_regex.group(1).split(' ')
+                    assert len(as_path_list) > 0
+                    if str(as_path_list[-1]) != str(origin):
+                        cur_prefix = None
+                        continue
+                    prefixes.add(cur_prefix)
+
     return prefixes
 
 
-def format_2_parser(filepath):
+def format_2_parser(filepath, origin):
     """
-    TODO: COMMENT
+    Parse format number 2:
+      Prefix		  Nexthop	       MED     Lclpref    AS path
+    * <prefix>        <Self|ip>                0         <list of strings, can end with I|?>
+    Note that the origin is needed to determine origination from the ARTEMIS tester.
+    (TODO: make this a list if multiple ASNs --> not important at this stage)
     """
     prefixes = set()
-
     with open(filepath, 'r') as f:
         for line in f:
             line = line.lstrip(' ')
@@ -88,40 +119,49 @@ def format_2_parser(filepath):
 
             prefix = elems[0].lstrip(' *')
             as_path = elems[-1]
-            if as_path != 'I':
+            if not as_path.endswith('i') and not as_path.endswith('I') and not as_path.endswith(str(origin)):
                 continue
+            as_path_list = as_path.split(' ')
+            if len(as_path_list) > 1:
+                if str(as_path_list[-2]).strip('[]') != str(origin):
+                    continue
             try:
                 (netip, netmask) = prefix.split('/')
                 str2ip(prefix)
             except:
                 continue
-
             prefixes.add(prefix)
 
     return prefixes
 
-def format_3_parser(filepath):
+def format_3_parser(filepath, origin):
     """
-    TODO: COMMENT
+    Parse format number 3:
+    Network             Next Hop        Metric     LocPrf     Path
+    <prefix>            <ip>                                  <list of strings, can end with i|?>
+    Note that the origin is needed to determine origination from the ARTEMIS tester.
+    (TODO: make this a list if multiple ASNs --> not important at this stage)
     """
     prefixes = set()
-
     with open(filepath, 'r') as f:
         for line in f:
+            line = line.lstrip(' ')
             if line.startswith('Network'):
                 continue
             elems = list(filter(None, [elem.strip() for elem in line.strip().split('  ')]))
-
             prefix = elems[0]
             as_path = elems[-1]
-            if as_path != 'i':
+            if not as_path.endswith('i') and not as_path.endswith('I') and not as_path.endswith(str(origin)):
                 continue
+            as_path_list = as_path.split(' ')
+            if len(as_path_list) > 1:
+                if str(as_path_list[-2]).strip('[]') != str(origin):
+                    continue
             try:
                 (netip, netmask) = prefix.split('/')
                 str2ip(prefix)
             except:
                 continue
-
             prefixes.add(prefix)
 
     return prefixes
@@ -286,7 +326,7 @@ if __name__=='__main__':
 
             configurations[hour_timestamp]['asns'][args.origin_asn] = 'origin'
             configurations[hour_timestamp]['asns'][file_metadata['peer_asn']] = file_metadata['peer_name']
-            this_peer_prefixes = parse_prefixes(filepath, file_metadata['format_number'])
+            this_peer_prefixes = parse_prefixes(filepath, file_metadata['format_number'], args.origin_asn)
             for prefix in this_peer_prefixes:
                 configurations[hour_timestamp]['prefixes'][prefix] = str(prefix)
                 if prefix not in configurations[hour_timestamp]:
@@ -298,10 +338,10 @@ if __name__=='__main__':
                     configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(file_metadata['peer_asn'])
 
             # move raw file into timestamp directory
-            try:
-                shutil.move(filepath, hour_timestamp_dir)
-            except:
-                print("Could not move '{}'".format(filepath))
+            #try:
+            #    shutil.move(filepath, hour_timestamp_dir)
+            #except:
+            #    print("Could not move '{}'".format(filepath))
 
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)

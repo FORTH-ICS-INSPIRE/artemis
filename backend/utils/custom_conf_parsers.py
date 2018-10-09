@@ -1,13 +1,14 @@
 import argparse
 import difflib
 import glob
+import json
 import os
 import re
 import ruamel.yaml
 import shutil
 from datetime import datetime, timezone
+from itertools import chain, combinations
 from ipaddress import ip_network as str2ip
-from pprint import pprint as pp
 
 VALID_FORMAT_PARSERS = {
     1: lambda x: format_1_parser(x[0], x[1]),
@@ -18,10 +19,20 @@ VALID_FORMAT_PARSERS = {
 DEFAULT_MIT_ACTION = 'manual'
 
 
+def powerset(iterable):
+    """
+    Auxiliary function for the generation of powersets (not used for now)
+    powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
+    """
+    xs = list(iterable)
+    # note we return an iterator rather than a list
+    return chain.from_iterable(combinations(xs,n) for n in range(len(xs)+1))
+
+
 def extract_file_metadata(filepath):
     """
-    TODO: COMMENT
-    ASN_PEERNAME_FORMATNUMBER_YYYYMMDD_HHMM
+    Title format: ASN_PEERNAME_FORMATNUMBER_YYYYMMDD_HHMM
+    This functions extracts the needed metadata from this filename
     """
     filename = filepath.split('/')[-1]
     filename_elems = filename.split('_')
@@ -55,14 +66,13 @@ def extract_file_metadata(filepath):
     return file_metadata
 
 
-def parse_prefixes(filepath, format_number, origin):
+def parse_file(filepath, format_number, origin):
     """
-    TODO: COMMENT
+    Dispatcher function for selecting the proper format to parse
     """
     if format_number not in VALID_FORMAT_PARSERS.keys():
         return set()
     prefixes = VALID_FORMAT_PARSERS[format_number]((filepath, origin))
-
     return prefixes
 
 
@@ -98,7 +108,6 @@ def format_1_parser(filepath, origin):
                         cur_prefix = None
                         continue
                     prefixes.add(cur_prefix)
-
     return prefixes
 
 
@@ -132,8 +141,8 @@ def format_2_parser(filepath, origin):
             except:
                 continue
             prefixes.add(prefix)
-
     return prefixes
+
 
 def format_3_parser(filepath, origin):
     """
@@ -164,17 +173,18 @@ def format_3_parser(filepath, origin):
             except:
                 continue
             prefixes.add(prefix)
-
     return prefixes
 
 
 def create_prefix_defs(yaml_conf, prefixes):
     """
-    TODO: COMMENT
+    Create separate prefix definitions for the ARTEMIS conf file
     """
+    prefix_to_str = {}
     yaml_conf['prefixes'] = ruamel.yaml.comments.CommentedMap()
-    for prefix in sorted(list(prefixes.keys())):
+    for prefix in sorted(prefixes):
         prefix_str = prefixes[prefix]
+        prefix_to_str[prefix] = prefix_str
         yaml_conf['prefixes'][prefix_str] = ruamel.yaml.comments.CommentedSeq()
         yaml_conf['prefixes'][prefix_str].append(prefix)
         yaml_conf['prefixes'][prefix_str].yaml_set_anchor(prefix_str)
@@ -182,25 +192,19 @@ def create_prefix_defs(yaml_conf, prefixes):
 
 def create_monitor_defs(yaml_conf):
     """
-    TODO: COMMENT
+    Create separate monitor definitions for the ARTEMIS conf file
     """
     yaml_conf['monitors'] = ruamel.yaml.comments.CommentedMap()
-    riperis = []
-    for i in range(1, 24):
-        if i < 10:
-            riperis.append('rrc0{}'.format(i))
-        else:
-            riperis.append('rrc{}'.format(i))
-    yaml_conf['monitors']['riperis'] = riperis
+    yaml_conf['monitors']['riperis'] = ['']
     yaml_conf['monitors']['bgpstreamlive'] = ['routeviews', 'ris']
 
 
 def create_asn_defs(yaml_conf, asns):
     """
-    TODO: COMMENT
+    Create separate ASN definitions for the ARTEMIS conf file
     """
     yaml_conf['asns'] = ruamel.yaml.comments.CommentedMap()
-    for asn in sorted(list(asns.keys())):
+    for asn in sorted(asns):
         asn_str = asns[asn]
         yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
         yaml_conf['asns'][asn_str].append(asn)
@@ -209,24 +213,38 @@ def create_asn_defs(yaml_conf, asns):
 
 def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
     """
-    TODO: COMMENT
+    Create grouped rule definitions for the ARTEMIS conf file
     """
     yaml_conf['rules'] = ruamel.yaml.comments.CommentedSeq()
-    for prefix in sorted(list(prefix_pols.keys())):
+
+    # first derive the prefix rule groups
+    # (i.e., which prefixes have the same origin and neighbor)
+    prefixes_per_orig_neighb_group = {}
+    for prefix in sorted(prefix_pols):
+        origin_asns = sorted(list(prefix_pols[prefix]['origins']))
+        neighbors = sorted(list(prefix_pols[prefix]['neighbors']))
+        key = (json.dumps(origin_asns), json.dumps(neighbors))
+        if key not in prefixes_per_orig_neighb_group:
+            prefixes_per_orig_neighb_group[key] = set()
+        prefixes_per_orig_neighb_group[key].add(prefix)
+
+    # then form the actual rules
+    for key in sorted(prefixes_per_orig_neighb_group):
         pol_dict = ruamel.yaml.comments.CommentedMap()
-        prefix_str = prefixes[prefix]
-        pol_dict['prefixes'] = [yaml_conf['prefixes'][prefix_str]]
-        pol_dict['origin_asns'] = sorted([yaml_conf['asns'][asns[asn]]
-                                   for asn in prefix_pols[prefix]['origins']]),
-        pol_dict['neighbors'] = sorted([yaml_conf['asns'][asns[asn]]
-                                 for asn in prefix_pols[prefix]['neighbors']]),
+        origin_asns = json.loads(key[0])
+        neighbors = json.loads(key[1])
+        pol_dict['prefixes'] = ruamel.yaml.comments.CommentedSeq()
+        for prefix in sorted(prefixes_per_orig_neighb_group[key]):
+            pol_dict['prefixes'].append(yaml_conf['prefixes'][prefixes[prefix]])
+        pol_dict['origin_asns'] = [yaml_conf['asns'][asns[asn]] for asn in origin_asns]
+        pol_dict['neighbors'] = [yaml_conf['asns'][asns[asn]] for asn in neighbors]
         pol_dict['mitigation'] = DEFAULT_MIT_ACTION
         yaml_conf['rules'].append(pol_dict)
 
 
 def generate_config_yml(prefixes, asns, prefix_pols, yml_file=None):
     """
-    TODO: COMMENT
+    write the config.yaml file content
     """
     with open(yml_file, 'w') as f:
 
@@ -273,6 +291,7 @@ def generate_config_yml(prefixes, asns, prefix_pols, yml_file=None):
         # end comments
         f.write('# End of Rule Definitions\n')
 
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser(
         description="generate ARTEMIS configuration from custom_files")
@@ -308,6 +327,7 @@ if __name__=='__main__':
     if not os.path.isdir(conf_dir):
         os.mkdir(conf_dir)
 
+    # scan all provided raw files
     for filepath in glob.glob('{}/*'.format(in_dir)):
         file_metadata = extract_file_metadata(filepath)
         if file_metadata is not None:
@@ -318,6 +338,7 @@ if __name__=='__main__':
             if not os.path.isdir(hour_timestamp_dir):
                 os.mkdir(hour_timestamp_dir)
 
+            # initialize current configurations
             if hour_timestamp not in configurations:
                 configurations[hour_timestamp] = {
                     'asns': {},
@@ -325,33 +346,36 @@ if __name__=='__main__':
                     'prefix_pols': {}
                 }
 
+            # update current configurations
             configurations[hour_timestamp]['asns'][args.origin_asn] = 'origin'
             configurations[hour_timestamp]['asns'][file_metadata['peer_asn']] = file_metadata['peer_name']
-            this_peer_prefixes = parse_prefixes(filepath, file_metadata['format_number'], args.origin_asn)
+            this_peer_prefixes = parse_file(filepath, file_metadata['format_number'], args.origin_asn)
             for prefix in this_peer_prefixes:
-                configurations[hour_timestamp]['prefixes'][prefix] = str(prefix)
+                configurations[hour_timestamp]['prefixes'][prefix] = str(prefix).replace('.', '_').replace('/', '-')
                 if prefix not in configurations[hour_timestamp]:
                     configurations[hour_timestamp]['prefix_pols'][prefix] = {
                         'origins': set(),
                         'neighbors': set()
                     }
-                    configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(args.origin_asn)
-                    configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(file_metadata['peer_asn'])
+                configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(args.origin_asn)
+                configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(file_metadata['peer_asn'])
 
-            # move raw file into timestamp directory
-            #try:
-            #    shutil.move(filepath, hour_timestamp_dir)
-            #except:
-            #    print("Could not move '{}'".format(filepath))
+            # move raw file into proper timestamp directory
+            try:
+                shutil.move(filepath, hour_timestamp_dir)
+            except:
+                # print("Could not move '{}'".format(filepath))
+                pass
 
+    # scan all configurations
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
 
-        # ignore in production
-        prev_content = None
-        if os.path.isfile(yml_file):
-            with open(yml_file, 'r') as f:
-                prev_content = f.readlines()
+        # ignore in production (tested)
+        # prev_content = None
+        # if os.path.isfile(yml_file):
+        #     with open(yml_file, 'r') as f:
+        #         prev_content = f.readlines()
 
         generate_config_yml(
             configurations[hour_timestamp]['prefixes'],
@@ -359,10 +383,10 @@ if __name__=='__main__':
             configurations[hour_timestamp]['prefix_pols'],
             yml_file=yml_file)
 
-        # ignore in production
-        with open(yml_file, 'r') as f:
-            cur_content = f.readlines()
-        if prev_content is not None:
-            changes = ''.join(difflib.unified_diff(prev_content, cur_content))
-            if len(changes) > 0:
-                print('Content changed!!!')
+        # ignore in production (tested)
+        # with open(yml_file, 'r') as f:
+        #     cur_content = f.readlines()
+        # if prev_content is not None:
+        #     changes = ''.join(difflib.unified_diff(prev_content, cur_content))
+        #     if len(changes) > 0:
+        #         print('Content changed!!!')

@@ -1,4 +1,5 @@
 import argparse
+import difflib
 import glob
 import os
 import re
@@ -172,7 +173,7 @@ def create_prefix_defs(yaml_conf, prefixes):
     TODO: COMMENT
     """
     yaml_conf['prefixes'] = ruamel.yaml.comments.CommentedMap()
-    for prefix in prefixes:
+    for prefix in sorted(list(prefixes.keys())):
         prefix_str = prefixes[prefix]
         yaml_conf['prefixes'][prefix_str] = ruamel.yaml.comments.CommentedSeq()
         yaml_conf['prefixes'][prefix_str].append(prefix)
@@ -199,7 +200,7 @@ def create_asn_defs(yaml_conf, asns):
     TODO: COMMENT
     """
     yaml_conf['asns'] = ruamel.yaml.comments.CommentedMap()
-    for asn in asns:
+    for asn in sorted(list(asns.keys())):
         asn_str = asns[asn]
         yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
         yaml_conf['asns'][asn_str].append(asn)
@@ -211,14 +212,14 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
     TODO: COMMENT
     """
     yaml_conf['rules'] = ruamel.yaml.comments.CommentedSeq()
-    for prefix in prefix_pols:
+    for prefix in sorted(list(prefix_pols.keys())):
         pol_dict = ruamel.yaml.comments.CommentedMap()
         prefix_str = prefixes[prefix]
         pol_dict['prefixes'] = [yaml_conf['prefixes'][prefix_str]]
-        pol_dict['origin_asns'] = [yaml_conf['asns'][asns[asn]]
-                                   for asn in prefix_pols[prefix]['origins']],
-        pol_dict['neighbors'] = [yaml_conf['asns'][asns[asn]]
-                                 for asn in prefix_pols[prefix]['neighbors']],
+        pol_dict['origin_asns'] = sorted([yaml_conf['asns'][asns[asn]]
+                                   for asn in prefix_pols[prefix]['origins']]),
+        pol_dict['neighbors'] = sorted([yaml_conf['asns'][asns[asn]]
+                                 for asn in prefix_pols[prefix]['neighbors']]),
         pol_dict['mitigation'] = DEFAULT_MIT_ACTION
         yaml_conf['rules'].append(pol_dict)
 
@@ -345,9 +346,23 @@ if __name__=='__main__':
 
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
+
+        # ignore in production
+        prev_content = None
+        if os.path.isfile(yml_file):
+            with open(yml_file, 'r') as f:
+                prev_content = f.readlines()
+
         generate_config_yml(
             configurations[hour_timestamp]['prefixes'],
             configurations[hour_timestamp]['asns'],
             configurations[hour_timestamp]['prefix_pols'],
             yml_file=yml_file)
 
+        # ignore in production
+        with open(yml_file, 'r') as f:
+            cur_content = f.readlines()
+        if prev_content is not None:
+            changes = ''.join(difflib.unified_diff(prev_content, cur_content))
+            if len(changes) > 0:
+                print('Content changed!!!')

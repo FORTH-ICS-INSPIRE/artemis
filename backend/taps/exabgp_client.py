@@ -61,7 +61,7 @@ class ExaBGP():
         print('Exiting ExaBGP')
         if self.sio is not None:
             self.sio.disconnect()
-            self.sio.wat()
+            self.sio.wait()
 
 
 if __name__ == '__main__':

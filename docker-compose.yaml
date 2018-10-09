@@ -114,8 +114,9 @@ services:
             POSTGRES_USER: artemis_user
             POSTGRES_PASSWORD: Art3m1s
         volumes:
+            - ./postgres-data-current:/var/lib/postgresql/data
             - ./other/postgres-backup.sh:/etc/periodic/daily/backup
-            - ./postgres-data/:/tmp/
+            - ./postgres-data-backup/:/tmp/
         networks:
             - postgres
         expose:

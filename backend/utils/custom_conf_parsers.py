@@ -300,7 +300,7 @@ if __name__=='__main__':
         '--dir',
         dest='dir',
         type=str,
-        help='directory with configurations',
+        help='directory with raw files',
         required=True
     )
     parser.add_argument(
@@ -308,7 +308,7 @@ if __name__=='__main__':
         '--origin',
         dest='origin_asn',
         type=int,
-        help='origin asn',
+        help='origin asn (TODO: list in the future)',
         required=True
     )
     parser.add_argument(
@@ -316,7 +316,7 @@ if __name__=='__main__':
         '--conf',
         dest='conf_dir',
         type=str,
-        help='output config dir to store the retrieved information',
+        help='output config dir to store the extracted timestamped configurations',
         required=True)
     args = parser.parse_args()
 

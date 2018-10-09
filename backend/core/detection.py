@@ -13,6 +13,8 @@ from typing import Union, Dict, List, NoReturn, Callable, Tuple
 
 
 log = logging.getLogger('artemis_logger')
+hij_log = logging.getLogger('hijack_logger')
+mail_log = logging.getLogger('mail_logger')
 
 
 def pickle_serializer(key: str, value: Union[str, Dict]) -> str:
@@ -472,7 +474,8 @@ class Detection(Service):
                 serializer='pickle',
                 priority=0
             )
-            # log.debug('{}'.format(result))
+            hij_log.info('{}'.format(result))
+            mail_log.info('{}'.format(result))
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

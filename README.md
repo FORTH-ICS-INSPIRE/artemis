@@ -36,29 +36,32 @@ suspicious event (potential hijack), the network operator is immediately
 sent a notification (e.g., UI entry or email) detailing the following information:
 ```
 {
-'prefix': ...,
-'hijacker_AS': ...,
-'hijack_type':...,
-'time_detected':...,
-'time_started': ...,
-'time_last_updated': ...,
-'peers_seen': ...,
-'inf_asns': ...
+  'prefix': ...,
+  'hijack_AS': ...,
+  'hijack_type':...,
+  'time_detected':...,
+  'time_started': ...,
+  'time_last': ...,
+  'configured_prefix': ...,
+  'timestamp_of_config': ...,
+  'peers_seen': ...,
+  'asns_inf': ...
 }
 ```
 and ARTEMIS offers the option to run a custom script defined by the operator.
 * Web interface used by the network administrator to:
 (i) provide configuration
-information (ASNs, prefixes, routing policies, etc.) via a web form or text editor,
-(ii) control ARTEMIS modules (start/stop/status),
+information (ASNs, prefixes, routing policies, etc.) via an online text editor,
+(ii) control the monitoring|detection|mitigation ARTEMIS modules (start|stop|status),
 (iii) monitor in real-time the BGP state related to the IP prefixes of interest,
-(iv) view details of BGP hijacks of monitored prefixes,
+(iv) view details of BGP hijacks of monitored configured prefixes,
 (v) monitor in real-time the status of ongoing, unresolved BGP hijacks,
 (vi) press button to trigger a custom mitigation process, mark as manually mitigated ("resolve")
 or ignore the event as a false positive,
-(vii) register and manage users (ADMIN|VIEWER).
+(vii) register and manage users (ADMIN|VIEWER),
+(viii) see configuration history and compare ARTEMIS current and previous configurations.
 * Configuration file editable by the operator (directly or via the web interface),
-containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX advertises prefix P to ASY").
+containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * CLI to start/stop ARTEMIS modules and query their status (running state, uptime).
 * Support for both IPv4 and IPv6 prefixes.
 
@@ -74,7 +77,8 @@ interact with each other will be added to this README soon.
 ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine
-for testing purposes.
+for testing purposes. For instructions on how to set up ARTEMIS
+in e.g., a Kubernetes environment, please contact the ARTEMIS team.
 
 ## Min. technical requirements of testing server/VM
 
@@ -96,7 +100,13 @@ sudo ./other/ufw_setup.sh
 ```
 
 ## How to install
-First, if not already installed, follow the instructions
+
+Make sure that your Ubuntu package sources are up-to-date:
+```
+sudo apt-get update
+```
+
+If not already installed, follow the instructions
 [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce)
 to install the latest version of the docker tool for managing containers,
 and [here](https://docs.docker.com/compose/install/#install-compose)
@@ -114,6 +124,17 @@ sudo usermod -aG docker $USER
 For more instructions and potential debugging on this please consult this
 [webpage](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user).
 
+Install ntp for time synchronization:
+```
+sudo apt-get install ntp
+```
+
+Install git for downloading ARTEMIS:
+```
+sudo apt-get install git
+```
+and then download ARTEMIS from github (if not already downloaded).
+
 Then you can build ARTEMIS by running:
 ```
 docker-compose build
@@ -127,18 +148,18 @@ Before starting ARTEMIS, you should configure access to the web application
 (used to configure/control ARTEMIS and view its state),
 by editing the following file:
 ```
-docker-compose.yml
+docker-compose.yaml
 ```
 and adjusting the following parameters/environment variables related
 to the artemis_frontend container:
 ```
 USER_ROOT_USERNAME: "admin"
-USER_ROOT_PASSWORD: "admin"
+USER_ROOT_PASSWORD: "admin123"
 USER_ROOT_EMAIL: "admin@admin"
 ```
 The ARTEMIS web application supports https to ensure secure access to the application.
 We use a nginx reverse proxy to terminate SSL connections before forwarding the requests
-to Flask. To configure your own certificates, please place in the following folder:
+to Flask. To configure your own (e.g., self-signed) certificates, please place in the following folder:
 ```
 frontend/webapp/configs/certs
 ```
@@ -147,14 +168,19 @@ the following files:
 cert.pem
 key.pem
 ```
+If you want selective access to the UI from certain IP ranges, please adjust and comment out
+the nginx ACL-related lines in:
+```
+frontend/webapp/configs/nginx.conf
+```
 You do not need to modify any other configuration file for now.
 
 ### Configuring logging (syslog)
 You should edit the following file:
 ```
-docker-compose.yml
+docker-compose.yaml
 ```
-and adjust the following environment variables:
+comment-in all syslog-related lines and adjust the following environment variables:
 ```
 SYSLOG_HOST=<IP>:<PORT>
 ```
@@ -175,11 +201,10 @@ docker-compose up -d
 in detached mode (to run it as a daemon).
 
 ### Using the web application
-Visually, you can now configure, control and view ARTEMIS on https://<ARTEMIS_HOST>.
+Visually, you can now configure, control and view ARTEMIS by logging in to https://<ARTEMIS_HOST>/login.
+The default ADMIN user can login with the credentials set in the env variables.
 
-*Note*: Please use only the web application forms to configure ARTEMIS.
-
-### Registering users (ADMIN/VIEWER)
+### Registering users
 ```
 https://<ARTEMIS_HOST>/create_account
 ```
@@ -190,13 +215,16 @@ by an ADMIN user. The default role for new users is VIEWER.
 ```
 https://<ARTEMIS_HOST>/admin/user_management
 ```
-Here the ADMIN user can approve pending users, promote users to admins, as well as delete users.
+Here the ADMIN user can approve pending users,
+promote users to admins, delete users and view all users.
 An ADMIN can delete VIEWER users, but not ADMIN users.
 
 ### User account actions (ADMIN-VIEWER)
 Currently the current account-specific actions are supported:
-* Password change (TBD)
-* ... (TBD)
+* Password change at:
+```
+https://<ARTEMIS_HOST>/actions/password_change
+```
 
 ### Configuring and Controlling ARTEMIS through the web application (ADMIN-only)
 ```
@@ -265,15 +293,15 @@ rules:
 ### Viewing ARTEMIS state
 After being successfully logged-in to ARTEMIS, you will be redirected to the following webpage:
 ```
-https://<ARTEMIS_HOST>/admin/system
+https://<ARTEMIS_HOST>//overview
 ```
 Here you can view info about:
-* your last login information (time and IP address)
+* your last login information (email address, time and IP address)
 * the system status (status of modules and uptime information)
 * the current configuration of the system (and its last update time)
 * the ARTEMIS version you are running
 * statistics about the ARTEMIS db, in particular:
-** Total number of BGP updates, as well as of unhandled (by the detection) updates
+** Total number of BGP updates, as well as of unhandled (by the detection module) updates
 ** Total number of detected BGP hijacks (as well as a break-down in "resolved",
 "under mitigation", "ognoing" and "ignored").
 
@@ -293,7 +321,7 @@ The following fields are supported:
 * Timestamp (displayed in local time zone)
 * Hijack (if present, redirects to a corresponding Hijack entry)
 * Status (blue if the detector has seen the update, grey if examination is pending)
-* Additional information: Communities ([{'asn':..., 'value':...}, ...])
+* Additional information: Communities ([...:...,...])
 * Additional information: Original Path (if the original path e.g., contains AS-SETs, etc.)
 * Additional information: Hijack Key (unique hijack identifier)
 
@@ -318,7 +346,7 @@ The following fields are supported:
 * Time Started (when the event actually started)
 * Additional information: Time Ended (this is set only for resolved hijacks)
 * Additional information: Hijack Key (unique hijack identifier)
-* Additional information: Mitigation Started (this is set only for hijacks under mitigation)
+* Additional information: Mitigation Started (this is set for hijacks under mitigation)
 * Additional information: Matched Prefix (the prefix that best matched configuration, if applicable)
 * Additional information: Config Matched (the timestamp of the configuration against which the hijack was generated)
 * Additional information: Time Detected (the timestamp when the hijack was actually detected)
@@ -359,16 +387,44 @@ and action=start|stop|status.
 Also note that the web application (frontend) and the backend operate in their own separate containers; to e.g.,
 restart them, please run the following command:
 ```
-docker-compose restart artemis_frontend
-docker-compose restart artemis_backend
+docker-compose restart frontend
+docker-compose restart backend
 ```
 
-### Receiving BGP feed from local route reflector via exaBGP
-For instructions on how to set up an exaBGP-based local monitor,
-getting BGP updates' feed from your local router or route reflector,
-please check [here](https://github.com/slowr/ExaBGP-Monitor)
+### Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
+First, comment out all exabgp-related lines in the docker-compose.yaml file.
 
-In ARTEMIS, you should configure the monitor using the web application form in
+Then, edit the backend/configs/exabgp.conf file as follows:
+```
+group r1 {
+    router-id <PUBLIC_IP>;
+
+    process message-logger {
+        encoder json;
+        receive {
+            parsed;
+            update;
+            neighbor-changes;
+        }
+        run /usr/lib/python2.7.14/bin/python /home/server.py;
+    }
+
+    neighbor <NEIGHBOR_IP> {
+        local-address <LOCAL_LAN_IP>;
+        local-as <LOCAL_ASN>;
+        peer-as <PEER_ASN>;
+    }
+}
+```
+
+Stop, rebuild and restart ARTEMIS:
+```
+docker-compose down
+docker-compose build
+docker-compose up # or up -d
+```
+
+Login and configure the monitor using the web application form in
 ```
 https://<ARTEMIS_HOST>/admin/system
 ```
@@ -378,7 +434,7 @@ by setting its IP address and port. An example is the following:
 monitors:
   ...
   exabgp:
-    - ip: 192.168.1.1
+    - ip: exabgp # this will automatically be resolved to the exabgp container's IP
       port: 5000
 ...
 ```
@@ -392,24 +448,6 @@ Ctrl+C # on the terminal running ARTEMIS
 docker-compose down # afterwards, same terminal
 ```
 
-## Known Issues
-
-1. iptables: No chain/target/match by that name
-```
-docker: Error response from daemon: driver failed programming
-external connectivity on endpoint artemistest (4980f6b7fe169a16e8ebe5f5e01a31700409d17258da0ee19ea060060d3f3db9):
-(iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2
---dport 5000 -j ACCEPT: iptables: No chain/target/match by that name.
-(exit status 1)).
-```
-
-To fix, clear all chains and then restart Docker Service:
-```
-iptables -t filter -F
-iptables -t filter -X
-systemctl restart docker
-```
-
 ## Contributing
 
 ### Implementing additional Monitors (taps)
@@ -418,7 +456,7 @@ TBD
 ```
 For example take a look at the `backend/taps/exabgp_client.py`
 which implements the exaBGP monitor publisher or
-the `backend/taps/ripe_ris.js` which implements the
+the `backend/taps/ripe_ris.py` which implements the
 RIPE RIS monitor publisher. Please edit only the code
 in the taps folder.
 

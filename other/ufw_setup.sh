@@ -27,6 +27,9 @@ ufw allow from <HTTPS_ACCESS_PREFIX_1> to any port 443 proto tcp
 # ...
 ufw allow from <HTTPS_ACCESS_PREFIX_N> to any port 443 proto tcp
 
+# Allow http from anywhere (will be redirected to constrained https by nginx)
+ufw allow http
+
 # [OPTIONAL] We can form i/eBGP sessions with one or more
 # local routers
 # ufw allow from <ROUTER_1> to any port 179 proto tcp

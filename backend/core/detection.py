@@ -13,6 +13,8 @@ from typing import Union, Dict, List, NoReturn, Callable, Tuple
 
 
 log = logging.getLogger('artemis_logger')
+hij_log = logging.getLogger('hijack_logger')
+mail_log = logging.getLogger('mail_logger')
 
 
 def pickle_serializer(key: str, value: Union[str, Dict]) -> str:
@@ -265,9 +267,6 @@ class Detection(Service):
                 raw = monitor_event.copy()
                 # ignore withdrawals for now
                 if monitor_event['type'] == 'A':
-                    monitor_event['peer_asn'] = -1
-                    if len(monitor_event['path']) > 1:
-                        monitor_event['peer_asn'] = monitor_event['path'][0]
                     monitor_event['path'] = Detection.Worker.__clean_as_path(
                         monitor_event['path'])
                     prefix_node = self.prefix_tree.search_best(
@@ -475,7 +474,8 @@ class Detection(Service):
                 serializer='pickle',
                 priority=0
             )
-            # log.debug('{}'.format(result))
+            hij_log.info('{}'.format(result))
+            mail_log.info('{}'.format(result))
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

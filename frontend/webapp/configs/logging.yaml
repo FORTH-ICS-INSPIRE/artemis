@@ -37,9 +37,8 @@ handlers:
 
 loggers:
     artemis_logger:
-        level: INFO
-        handlers: [console, info_file_handler]
-        propagate: yes
+        level: DEBUG
+        handlers: [console, info_file_handler, error_file_handler]
 
 root:
     level: INFO

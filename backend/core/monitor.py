@@ -70,7 +70,10 @@ class Monitor(Service):
 
         def start_monitors(self):
             for proc_id in self.process_ids:
-                proc_id[1].terminate()
+                try:
+                    proc_id[1].terminate()
+                except ProcessLookupError:
+                    log.exception('process terminate')
             self.process_ids.clear()
             self.prefixes.clear()
 
@@ -97,7 +100,10 @@ class Monitor(Service):
         def stop(self):
             if self.flag:
                 for proc_id in self.process_ids:
-                    proc_id[1].terminate()
+                    try:
+                        proc_id[1].terminate()
+                    except ProcessLookupError:
+                        log.exception('process terminate')
                 self.flag = False
                 self.rules = None
                 self.monitors = None

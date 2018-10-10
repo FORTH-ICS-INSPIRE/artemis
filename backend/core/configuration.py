@@ -284,11 +284,12 @@ class Configuration(Service):
                     for entry in info:
                         if 'ip' not in entry and 'port' not in entry:
                             raise ArtemisError('invalid-exabgp-info', entry)
-                        try:
-                            str2ip(entry['ip'])
-                        except Exception:
-                            raise ArtemisError(
-                                'invalid-exabgp-ip', entry['ip'])
+                        if entry['ip'] != 'exabgp':
+                            try:
+                                str2ip(entry['ip'])
+                            except Exception:
+                                raise ArtemisError(
+                                    'invalid-exabgp-ip', entry['ip'])
                         if not isinstance(entry['port'], int):
                             raise ArtemisError(
                                 'invalid-exabgp-port', entry['port'])

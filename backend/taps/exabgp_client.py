@@ -3,6 +3,7 @@ import argparse
 from kombu import Connection, Producer, Exchange
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
 import traceback
+import signal
 
 
 class ExaBGP():
@@ -10,46 +11,57 @@ class ExaBGP():
     def __init__(self, prefixes, host):
         self.host = host
         self.prefixes = prefixes
+        self.sio = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-    def start_loop(self):
+    def start(self):
         with Connection(RABBITMQ_HOST) as connection:
-            self.start(connection)
+            self.connection = connection
+            self.exchange = Exchange(
+                'bgp-update',
+                channel=connection,
+                type='direct',
+                durable=False)
+            self.exchange.declare()
 
-    def start(self, connection):
-        self.connection = connection
-        self.exchange = Exchange(
-            'bgp-update',
-            channel=connection,
-            type='direct',
-            durable=False)
-        self.exchange.declare()
+            try:
+                self.sio = SocketIO('http://' + self.host, namespace=BaseNamespace)
 
-        with SocketIO('http://' + self.host, namespace=BaseNamespace, wait_for_connection=False) as sio:
+                def exabgp_msg(bgp_message):
+                    msg = {
+                        'type': bgp_message['type'],
+                        'communities': bgp_message.get('communities', []),
+                        'timestamp': bgp_message['timestamp'],
+                        'path': bgp_message.get('path', []),
+                        'service': 'exabgp|{}'.format(self.host),
+                        'prefix': bgp_message['prefix'],
+                        'peer_asn': int(bgp_message['peer_asn'])
+                    }
+                    if mformat_validator(msg):
+                        with Producer(connection) as producer:
+                            msgs = normalize_msg_path(msg)
+                            for msg in msgs:
+                                key_generator(msg)
+                                producer.publish(
+                                    msg,
+                                    exchange=self.exchange,
+                                    routing_key='update',
+                                    serializer='json'
+                                )
 
-            def exabgp_msg(bgp_message):
-                msg = {
-                    'type': bgp_message['type'],
-                    'communities': bgp_message.get('communities', []),
-                    'timestamp': bgp_message['timestamp'],
-                    'path': bgp_message['path'],
-                    'service': 'ExaBGP {}'.format(self.host),
-                    'prefix': bgp_message['prefix']
-                }
-                if mformat_validator(msg):
-                    with Producer(connection) as producer:
-                        msgs = normalize_msg_path(msg)
-                        for msg in msgs:
-                            key_generator(msg)
-                            producer.publish(
-                                msg,
-                                exchange=self.exchange,
-                                routing_key='update',
-                                serializer='json'
-                            )
+                self.sio.on('exa_message', exabgp_msg)
+                self.sio.emit('exa_subscribe', {'prefixes': self.prefixes})
+                self.sio.wait()
+            except KeyboardInterrupt:
+                self.exit()
 
-            sio.on('exa_message', exabgp_msg)
-            sio.emit('exa_subscribe', {'prefixes': self.prefixes})
-            sio.wait()
+    def exit(self):
+        print('Exiting ExaBGP')
+        if self.sio is not None:
+            self.sio.disconnect()
+            self.sio.wait()
 
 
 if __name__ == '__main__':
@@ -63,9 +75,8 @@ if __name__ == '__main__':
 
     prefixes = args.prefix.split(',')
     exa = ExaBGP(prefixes, args.host)
+    print('Starting ExaBGP on {} for {}'.format(args.host, prefixes))
     try:
         exa.start()
-    except KeyboardInterrupt:
-        pass
     except BaseException:
         traceback.print_exc()

@@ -228,16 +228,13 @@ class Postgresql_db(Service):
             origin_as = -1
             if len(msg_['path']) >= 1:
                 origin_as = msg_['path'][-1]
-            peer_asn = -1
-            if len(msg_['path']) >= 1:
-                peer_asn = msg_['path'][0]
 
             try:
                 extract_msg = (
                             msg_['prefix'], # prefix
                             msg_['key'], # key
-                            str(origin_as), # origin_as
-                            str(peer_asn),  # peer_asn
+                            int(origin_as), # origin_as
+                            int(msg_['peer_asn']),  # peer_asn
                             msg_['path'], # as_path
                             msg_['service'], # service
                             msg_['type'],   # type
@@ -260,7 +257,7 @@ class Postgresql_db(Service):
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
-                    self.tmp_hijacks_dict[key]['hijack_as'] = str(
+                    self.tmp_hijacks_dict[key]['hijack_as'] = int(
                         msg_['hijack_as'])
                     self.tmp_hijacks_dict[key]['type'] = str(
                         msg_['type'])
@@ -512,7 +509,7 @@ class Postgresql_db(Service):
                 "key VARCHAR ( 32 ) NOT NULL, " + \
                 "type  VARCHAR ( 1 ), " + \
                 "prefix    inet, " + \
-                "hijack_as VARCHAR ( 6 ), " + \
+                "hijack_as INTEGER, " + \
                 "peers_seen   json, " + \
                 "num_peers_seen INTEGER, " + \
                 "asns_inf json, " + \

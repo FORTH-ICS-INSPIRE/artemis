@@ -41,7 +41,6 @@ from webapp.views.actions.actions_view import actions
 app.register_blueprint(main, url_prefix='/main')
 app.register_blueprint(admin, url_prefix='/admin')
 app.register_blueprint(actions, url_prefix='/actions')
-app.config['module_control'] = Modules_status()
 
 
 def load_user(payload):
@@ -155,8 +154,9 @@ def pending():
 @roles_accepted('admin', 'user')
 def overview():
     log.debug("url: /")
-    app.config['module_control'].refresh_status_all()
-    modules_formmated = app.config['module_control'].get_response_formmated_all()
+    status_request = Modules_status()
+    status_request.call('all', 'status')
+    modules_formmated = status_request.get_response_formmated_all()
     app.config['configuration'].get_newest_config()
     newest_config = app.config['configuration'].get_raw_config()
     db_stats = app.config['db_stats'].get_all_formatted_list()

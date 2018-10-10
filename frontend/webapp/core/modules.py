@@ -1,7 +1,6 @@
 from kombu import Connection, uuid, Queue, Consumer, Producer
 from webapp.utils import RABBITMQ_HOST
 import logging
-import time
 
 log = logging.getLogger('webapp_logger')
 
@@ -34,9 +33,6 @@ class Modules_status():
     def __init__(self):
         self.connection = None
         self.response = None
-        self.timestamp_last_update = 0
-        self.refresh_rate_seconds = 30
-        self.force_update = True
         self.init_conn()
 
     def init_conn(self):
@@ -112,13 +108,3 @@ class Modules_status():
                     ret_response[module[1]]['uptime'] = display_time(
                         self.response['response'][module[0]].get('uptime', None))
         return ret_response
-
-    def force_status_update(self):
-        self.force_update = True
-
-    def refresh_status_all(self):
-        if(((self.timestamp_last_update + self.refresh_rate_seconds) < time.time()) or self.force_update):
-            log.debug("calling status for all modules")
-            self.call('all', 'status')
-            self.timestamp_last_update = time.time()
-            self.force_update = False

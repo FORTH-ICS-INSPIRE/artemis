@@ -429,7 +429,9 @@ class Detection(Service):
             It uses memcache server to store ongoing hijacks information to not stress the db.
             """
             memcache_hijack_key = hashlib.md5(pickle.dumps(
-                [monitor_event['prefix'], hijacker, hij_type])).hexdigest()
+                [str(monitor_event['prefix']),
+                 int(hijacker),
+                 str(hij_type)])).hexdigest()
             hijack_value = {
                 'prefix': monitor_event['prefix'],
                 'hijack_as': hijacker,

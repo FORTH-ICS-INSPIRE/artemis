@@ -41,6 +41,7 @@ from webapp.views.actions.actions_view import actions
 app.register_blueprint(main, url_prefix='/main')
 app.register_blueprint(admin, url_prefix='/admin')
 app.register_blueprint(actions, url_prefix='/actions')
+app.config['module_control'] = Modules_status()
 
 
 def load_user(payload):

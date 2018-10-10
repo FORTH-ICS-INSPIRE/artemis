@@ -24,8 +24,6 @@ class WebApplication():
         self.app = app
         self.app.config['configuration'] = Configuration()
         self.app.config['configuration'].get_newest_config()
-
-        self.app.config['module_control'] = Modules_status()
         self.app.config['db_stats'] = DB_statistics()
 
         try:

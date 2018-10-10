@@ -24,14 +24,14 @@ services:
             - postgres
             # - syslog
             # - exabgp
-    grafana:
-        image: grafana/grafana
-        restart: always
-        ports:
-            - 8001:3000
-        networks:
-            - rabbitmq
-            - postgres
+    # grafana:
+    #     image: grafana/grafana
+    #     restart: always
+    #     ports:
+    #         - 8001:3000
+    #     networks:
+    #         - rabbitmq
+    #         - postgres
     frontend:
         build: ./frontend/
         container_name: frontend
@@ -139,8 +139,6 @@ services:
         restart: always
         expose:
             - 3000
-        ports:
-            - 2111:3000
         networks:
             - postgres
             - postgrest

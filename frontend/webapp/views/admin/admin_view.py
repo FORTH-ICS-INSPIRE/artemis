@@ -8,6 +8,7 @@ from webapp.core.modules import Modules_status
 from webapp.core.actions import New_config
 from webapp.core.fetch_config import fetch_all_config_timestamps
 import logging
+import time
 
 log = logging.getLogger('webapp_logger')
 
@@ -27,33 +28,39 @@ def index():
     form = CheckboxForm()
     app.config['configuration'].get_newest_config()
 
-    status_request = Modules_status()
-    status_request.call('all', 'status')
-    app.config['status'] = status_request.get_response_all()
+    app.config['module_control'].refresh_status_all()
+    app.config['module_status'] = app.config['module_control'].get_response_all()
 
     if form.validate_on_submit():
         if form.monitor.data:
-            status_request.call('monitor', 'start')
+            app.config['module_control'].call('monitor', 'start')
+            app.config['module_control'].force_status_update()
         else:
-            status_request.call('monitor', 'stop')
+            app.config['module_control'].call('monitor', 'stop')
+            app.config['module_control'].force_status_update()
         if form.detector.data:
-            status_request.call('detection', 'start')
+            app.config['module_control'].call('detection', 'start')
+            app.config['module_control'].force_status_update()
         else:
-            status_request.call('detection', 'stop')
+            app.config['module_control'].call('detection', 'stop')
+            app.config['module_control'].force_status_update()
         if form.mitigator.data:
-            status_request.call('mitigation', 'start')
+            app.config['module_control'].call('mitigation', 'start')
+            app.config['module_control'].force_status_update()
         else:
-            status_request.call('mitigation', 'stop')
+            app.config['module_control'].call('mitigation', 'stop')
+            app.config['module_control'].force_status_update()
+        time.sleep(1)
     else:
-        if app.config['status']['monitor']['status'] == 'up':
+        if app.config['module_status']['monitor']['status'] == 'up':
             form.monitor.data = True
         else:
             form.monitor.data = False
-        if app.config['status']['detection']['status'] == 'up':
+        if app.config['module_status']['detection']['status'] == 'up':
             form.detector.data = True
         else:
             form.detector.data = False
-        if app.config['status']['mitigation']['status'] == 'up':
+        if app.config['module_status']['mitigation']['status'] == 'up':
             form.mitigator.data = True
         else:
             form.mitigator.data = False

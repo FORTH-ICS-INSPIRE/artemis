@@ -2,7 +2,10 @@ from yaml import load as yload
 import logging
 import requests
 import json
+from webapp.utils import flatten
+from ipaddress import ip_network as str2ip
 from webapp.utils import API_URL_FLASK
+
 
 log = logging.getLogger('webapp_logger')
 
@@ -47,10 +50,10 @@ class Configuration():
             return []
         else:
             prefixes_list = []
-            if 'prefixes' in self.config_yaml:
-                for prefix_group in self.config_yaml['prefixes']:
-                    prefixes_list.extend(
-                        (self.config_yaml['prefixes'][prefix_group]))
+            for rule in self.config_yaml['rules']:
+                rule['prefixes'] = flatten(rule['prefixes'])
+                for prefix in rule['prefixes']:
+                    prefixes_list.append(prefix)
             return prefixes_list
 
     def get_raw_response(self):

@@ -268,10 +268,10 @@ class Postgresql_db(Service):
                         msg_['time_started'])
                     self.tmp_hijacks_dict[key]['time_last'] = int(
                         msg_['time_last'])
-                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(list(msg_[
-                        'peers_seen']))
-                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(list(msg_[
-                        'asns_inf']))
+                    self.tmp_hijacks_dict[key]['peers_seen'] = list(msg_[
+                        'peers_seen'])
+                    self.tmp_hijacks_dict[key]['asns_inf'] = list(msg_[
+                        'asns_inf'])
                     self.tmp_hijacks_dict[key]['num_peers_seen'] = len(msg_[
                         'peers_seen'])
                     self.tmp_hijacks_dict[key]['num_asns_inf'] = len(msg_[
@@ -289,10 +289,10 @@ class Postgresql_db(Service):
                         min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
                     self.tmp_hijacks_dict[key]['time_last'] = int(
                         max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
-                    self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(list(msg_[
-                        'peers_seen']))
-                    self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(list(msg_[
-                        'asns_inf']))
+                    self.tmp_hijacks_dict[key]['peers_seen'] = list(msg_[
+                        'peers_seen'])
+                    self.tmp_hijacks_dict[key]['asns_inf'] = list(msg_[
+                        'asns_inf'])
                     self.tmp_hijacks_dict[key]['num_peers_seen'] = len(msg_[
                         'peers_seen'])
                     self.tmp_hijacks_dict[key]['num_asns_inf'] = len(msg_[

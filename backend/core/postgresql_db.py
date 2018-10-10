@@ -388,7 +388,7 @@ class Postgresql_db(Service):
                 results = {}
                 cmd_ = "SELECT time_started, time_last, peers_seen, "
                 cmd_ += "asns_inf, key, prefix, hijack_as, type, time_detected, "
-                cmd_ += "timestamp_of_config, configured_prefix "
+                cmd_ += "configured_prefix, timestamp_of_config "
                 cmd_ += "FROM hijacks WHERE active = true;"
                 self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()

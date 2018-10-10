@@ -120,4 +120,5 @@ class Modules_status():
         if((self.timestamp_last_update + self.refresh_rate_seconds) < time.time() or self.force_update):
             log.debug("calling status for all modules")
             self.call('all', 'status')
+            self.timestamp_last_update = time.time()
             self.force_update = False

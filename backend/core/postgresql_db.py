@@ -250,7 +250,7 @@ class Postgresql_db(Service):
                 log.debug("exception: {}".format(msg_))
 
         def handle_hijack_update(self, message):
-            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            #log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             try:
                 key = msg_['key']
@@ -387,7 +387,8 @@ class Postgresql_db(Service):
             try:
                 results = {}
                 cmd_ = "SELECT time_started, time_last, peers_seen, "
-                cmd_ += "asns_inf, key, prefix, hijack_as, type, time_detected "
+                cmd_ += "asns_inf, key, prefix, hijack_as, type, time_detected, "
+                cmd_ += "timestamp_of_config, configured_prefix "
                 cmd_ += "FROM hijacks WHERE active = true;"
                 self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()
@@ -402,6 +403,8 @@ class Postgresql_db(Service):
                             'hijack_as': int(entry[6]),
                             'type': entry[7],
                             'time_detected': int(entry[8].timestamp()),
+                            'configured_prefix': str(entry[9]),
+                            'timestamp_of_config': int(entry[10].timestamp())
                         }
 
                 self.producer.publish(

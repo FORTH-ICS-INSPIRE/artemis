@@ -26,14 +26,7 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-lg-3">
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <p><b>Hijack ID:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div id="info_hijack_id"></div>
-                                    </div>
-                                </div>                
+             
                                 <div class="row">
                                     <div class="col-lg-6">
                                         <p><b>Hijacker AS:</b></p>
@@ -56,6 +49,14 @@
                                     </div>
                                     <div class="col-lg-6">
                                         <p id="info_prefix"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b>Matched:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_matched_prefix"></p>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -87,21 +88,12 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6">
-                                        <p><b>Matched Prefix:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <p id="info_matched_prefix"></p>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-lg-6">
                                         <p><b>Config:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <p id="info_config_timestamp"></p>
                                     </div>
                                 </div>
-
                             </div>
 
                             <div class="col-lg-4">  
@@ -123,12 +115,20 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6">
+                                        <p><b>Last Update:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <p id="info_last_update"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
                                         <p><b>Time Ended:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <p id="info_time_ended"></p>
                                     </div>
-                                </div>           
+                                </div>
                                 <div class="row">
                                     <div class="col-lg-6">
                                         <p><b>Mitigation Started:</b></p>
@@ -405,7 +405,9 @@
                 $( "#info_mitigation_started" ).html( transform_date_to_local_( data['mitigation_started'] ) );
                 $( "#info_matched_prefix" ).html( data['configured_prefix'] );
                 $( "#info_config_timestamp" ).html( transform_date_to_local_( data['timestamp_of_config'] )  );
+                $( "#info_last_update" ).html( transform_date_to_local_( data['time_last'] )  );
                 $( "#code_comment_box").html( data['comment'] );
+
 
                 if(data['resolved'] == true || data['ignored'] == true){
                     $("#resolved_button").prop("disabled", true);

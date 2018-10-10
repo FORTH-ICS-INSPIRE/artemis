@@ -41,7 +41,7 @@ class Resolve_hijack():
                 },
                 exchange=self.hijack_exchange,
                 routing_key='resolved',
-                priority=3
+                priority=2
             )
 
 
@@ -75,7 +75,7 @@ class Mitigate_hijack():
                 },
                 exchange=self.mitigation_exchange,
                 routing_key='mitigate',
-                priority=3
+                priority=2
             )
 
 
@@ -112,7 +112,7 @@ class Ignore_hijack():
                 },
                 exchange=self.hijack_exchange,
                 routing_key='ignored',
-                priority=3
+                priority=2
             )
 
 

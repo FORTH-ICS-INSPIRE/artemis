@@ -31,24 +31,26 @@ def index():
     app.config['module_control'].refresh_status_all()
     app.config['module_status'] = app.config['module_control'].get_response_all()
 
+    module_handler = Modules_status()
+
     if form.validate_on_submit():
         if form.monitor.data:
-            app.config['module_control'].call('monitor', 'start')
+            module_handler.call('monitor', 'start')
             app.config['module_control'].force_status_update()
         else:
-            app.config['module_control'].call('monitor', 'stop')
+            module_handler.call('monitor', 'stop')
             app.config['module_control'].force_status_update()
         if form.detector.data:
-            app.config['module_control'].call('detection', 'start')
+            module_handler.call('detection', 'start')
             app.config['module_control'].force_status_update()
         else:
-            app.config['module_control'].call('detection', 'stop')
+            module_handler.call('detection', 'stop')
             app.config['module_control'].force_status_update()
         if form.mitigator.data:
-            app.config['module_control'].call('mitigation', 'start')
+            module_handler.call('mitigation', 'start')
             app.config['module_control'].force_status_update()
         else:
-            app.config['module_control'].call('mitigation', 'stop')
+            module_handler.call('mitigation', 'stop')
             app.config['module_control'].force_status_update()
         time.sleep(1)
     else:

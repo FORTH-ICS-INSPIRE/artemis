@@ -35,8 +35,8 @@ class Modules_status():
         self.connection = None
         self.response = None
         self.timestamp_last_update = 0
-        self.refresh_rate_seconds = 3
-        self.force_update = False
+        self.refresh_rate_seconds = 30
+        self.force_update = True
         self.init_conn()
 
     def init_conn(self):
@@ -118,5 +118,6 @@ class Modules_status():
 
     def refresh_status_all(self):
         if((self.timestamp_last_update + self.refresh_rate_seconds) < time.time() or self.force_update):
+            log.debug("calling status for all modules")
             self.call('all', 'status')
             self.force_update = False

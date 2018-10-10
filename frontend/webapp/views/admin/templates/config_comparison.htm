@@ -28,7 +28,7 @@
                                     <form name="config_a_form">
                                         <select class="form-control_custom w-75 p-1" id="config_a">
                                             {% for config_ in configs %}
-                                            <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
+                                            <option id="{{ config_['time_modified'] }}">{{ config_['time_modified'] }}</div> </option>
                                             {% endfor %}
                                         </select>
                                     </form>
@@ -40,7 +40,7 @@
                                     <form name="config_b_form">
                                         <select class="form-control_custom w-75 p-1" id="config_b" autocomplete="off">
                                             {% for config_ in configs %}
-                                            <option id="{{ config_['id'] }}">{{ config_['time_modified'] }}</div> </option>
+                                            <option id="{{ config_['time_modified'] }}">{{ config_['time_modified'] }}</div> </option>
                                             {% endfor %}
                                         </select>
                                     </form>
@@ -74,12 +74,15 @@
                 $.ajax({
                     type: 'POST',
                     url: '{{ url_for('proxy_api') }}',
-                    data: { "action": "configs", "parameters" : JSON.stringify({ "id": 'eq.' + "{{ configs[0]['id'] }}" }) },
+                    data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + "{{ configs[0]['time_modified'] }}" }) },
                     success: function(result){
                         if(result.total > 0){
+                            console.log(result.results[0])
+                            console.log(result.results[0]['time_modified'])
                             config_a_data = result.results[0]['raw_config'];
                             config_b_data = result.results[0]['raw_config'];
-                            cache_configs[result.results[0]['id']] = result.results[0]['raw_config'];
+                            cache_configs[result.results[0]['time_modified']] = result.results[0]['raw_config'];
+                            console.log(cache_configs)
                             render_diffs();
                         }
                     },
@@ -87,10 +90,10 @@
                 });
 
                 $("#config_a > option").each(function() {
-                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_date_to_local_(this.value))
+                    $(this).html('Timestamp: ' + transform_date_to_local_(this.value))
                 });
                 $("#config_b > option").each(function() {
-                    $(this).html('Config: ' + this.id + ' - Timestamp: ' + transform_date_to_local_(this.value))
+                    $(this).html('Timestamp: ' + transform_date_to_local_(this.value))
                 });
             });
 
@@ -118,10 +121,10 @@
                     $.ajax({
                         type: 'POST',
                         url: '{{ url_for('proxy_api') }}',
-                        data: { "action": "configs", "parameters" : JSON.stringify({ "id": 'eq.' + id }) },
+                        data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + id }) },
                         success: function(result){
                             if(result.total > 0){
-                                cache_configs[result.results[0]['id']] = result.results[0]['raw_config'];
+                                cache_configs[result.results[0]['time_modified']] = result.results[0]['raw_config'];
                                 config_a_data = result.results[0]['raw_config'];
                                 $('#view_diffs').html('');
                                 render_diffs();
@@ -143,10 +146,10 @@
                     $.ajax({
                         type: 'POST',
                         url: '{{ url_for('proxy_api') }}',
-                        data: { "action": "configs", "parameters" : JSON.stringify({ "id": 'eq.' + id }) },
+                        data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + id }) },
                         success: function(result){
                             if(result.total > 0){
-                                cache_configs[result.results[0]['id']] = result.results[0]['raw_config'];
+                                cache_configs[result.results[0]['time_modified']] = result.results[0]['raw_config'];
                                 config_b_data = result.results[0]['raw_config'];
                                 $('#view_diffs').html('');
                                 render_diffs();

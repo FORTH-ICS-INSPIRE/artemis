@@ -39,6 +39,7 @@ class Postgresql_db(Service):
                 log.exception('exception')
             finally:
                 log.debug('PostgreSQL DB created/connected..')
+
         return _db_conn
 
     def run_worker(self):
@@ -249,7 +250,7 @@ class Postgresql_db(Service):
                 log.debug("exception: {}".format(msg_))
 
         def handle_hijack_update(self, message):
-            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            #log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             try:
                 key = msg_['key']
@@ -386,7 +387,8 @@ class Postgresql_db(Service):
             try:
                 results = {}
                 cmd_ = "SELECT time_started, time_last, peers_seen, "
-                cmd_ += "asns_inf, key, prefix, hijack_as, type, time_detected "
+                cmd_ += "asns_inf, key, prefix, hijack_as, type, time_detected, "
+                cmd_ += "timestamp_of_config, configured_prefix "
                 cmd_ += "FROM hijacks WHERE active = true;"
                 self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()
@@ -401,6 +403,8 @@ class Postgresql_db(Service):
                             'hijack_as': int(entry[6]),
                             'type': entry[7],
                             'time_detected': int(entry[8].timestamp()),
+                            'configured_prefix': str(entry[9]),
+                            'timestamp_of_config': int(entry[10].timestamp())
                         }
 
                 self.producer.publish(
@@ -483,9 +487,10 @@ class Postgresql_db(Service):
                 log.exception('exception: {}'.format(raw))
 
         def create_tables(self):
+            timescale_extension = "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+
             bgp_updates_table = "CREATE TABLE IF NOT EXISTS bgp_updates ( " + \
-                "id INTEGER GENERATED ALWAYS AS IDENTITY, " + \
-                "key VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
+                "key VARCHAR ( 32 ) NOT NULL, " + \
                 "prefix inet, " + \
                 "origin_as INTEGER, " + \
                 "peer_asn   INTEGER, " + \
@@ -493,15 +498,18 @@ class Postgresql_db(Service):
                 "service   VARCHAR ( 50 ), " + \
                 "type  VARCHAR ( 1 ), " + \
                 "communities  json, " + \
-                "timestamp TIMESTAMP, " + \
+                "timestamp TIMESTAMP  NOT NULL, " + \
                 "hijack_key VARCHAR ( 32 ), " + \
                 "handled   BOOLEAN, " + \
                 "matched_prefix inet, " + \
-                "orig_path json )"
+                "orig_path json, " + \
+                "PRIMARY KEY(timestamp, key), " + \
+                "UNIQUE(timestamp, key));"
+
+            timescale_bgp_updates = "SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);"
 
             bgp_hijacks_table = "CREATE TABLE IF NOT EXISTS hijacks ( " + \
-                "id   INTEGER GENERATED ALWAYS AS IDENTITY, " + \
-                "key VARCHAR ( 32 ) NOT NULL PRIMARY KEY, " + \
+                "key VARCHAR ( 32 ) NOT NULL, " + \
                 "type  VARCHAR ( 1 ), " + \
                 "prefix    inet, " + \
                 "hijack_as INTEGER, " + \
@@ -513,46 +521,56 @@ class Postgresql_db(Service):
                 "time_last TIMESTAMP, " + \
                 "time_ended   TIMESTAMP, " + \
                 "mitigation_started   TIMESTAMP, " + \
-                "time_detected TIMESTAMP," + \
+                "time_detected TIMESTAMP  NOT NULL," + \
                 "under_mitigation BOOLEAN, " + \
                 "resolved  BOOLEAN, " + \
                 "active  BOOLEAN, " + \
                 "ignored BOOLEAN,  " + \
                 "configured_prefix  inet, " + \
                 "timestamp_of_config TIMESTAMP, " + \
-                "comment text " + \
+                "comment text, " + \
+                "PRIMARY KEY(time_detected, key), " + \
+                "UNIQUE(time_detected, key), " + \
                 "CONSTRAINT possible_states CHECK ( (active=true and under_mitigation=false and resolved=false and ignored=false) or " + \
                 "(active=true and under_mitigation=true and resolved=false and ignored=false) or " + \
                 "(active=false and under_mitigation=false and resolved=true and ignored=false) or " + \
                 "(active=false and under_mitigation=false and resolved=false and ignored=true)))"
 
+            timescale_hijacks = "SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);"
+
             configs_table = "CREATE TABLE IF NOT EXISTS configs ( " + \
-                "id   INTEGER GENERATED ALWAYS AS IDENTITY, " + \
                 "key VARCHAR ( 32 ) NOT NULL, " + \
                 "config_data  json, " + \
                 "raw_config  text, " + \
                 "comment text, " + \
-                "time_modified TIMESTAMP) "
+                "time_modified TIMESTAMP NOT NULL) "
 
-            config_view = "CREATE OR REPLACE VIEW view_configs AS SELECT id, time_modified "
+            config_view = "CREATE OR REPLACE VIEW view_configs AS SELECT time_modified "
             config_view += "FROM configs;"
 
-            hijacks_view = "CREATE OR REPLACE VIEW view_hijacks AS SELECT id, key,"
+            hijacks_view = "CREATE OR REPLACE VIEW view_hijacks AS SELECT key,"
             hijacks_view += "type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
             hijacks_view += "time_started, time_ended, time_last, mitigation_started, "
             hijacks_view += "time_detected, timestamp_of_config, under_mitigation, resolved, active, "
             hijacks_view += "ignored, configured_prefix, comment FROM hijacks;"
 
-            bgp_updates_view = "CREATE OR REPLACE VIEW view_bgpupdates AS SELECT id, prefix, origin_as, peer_asn, "
+            bgp_updates_view = "CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, "
             bgp_updates_view += "as_path, service, type, communities, timestamp, "
             bgp_updates_view += "hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;"
 
+            self.db_cur.execute(timescale_extension)
+
             self.db_cur.execute(bgp_updates_table)
+            self.db_cur.execute(timescale_bgp_updates)
+
             self.db_cur.execute(bgp_hijacks_table)
+            self.db_cur.execute(timescale_hijacks)
+
             self.db_cur.execute(configs_table)
             self.db_cur.execute(config_view)
             self.db_cur.execute(bgp_updates_view)
             self.db_cur.execute(hijacks_view)
+
 
             self.db_conn.commit()
 
@@ -560,7 +578,7 @@ class Postgresql_db(Service):
             try:
                 cmd_ = "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
                 cmd_ += "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES "
-                cmd_ += "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
+                cmd_ += "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(key, timestamp) DO NOTHING;"
                 self.db_cur.executemany(cmd_, self.insert_bgp_entries)
                 self.db_conn.commit()
             except Exception:
@@ -617,7 +635,7 @@ class Postgresql_db(Service):
                     cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
                     cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment, peers_seen, asns_inf) "
                     cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-                    cmd_ += "ON CONFLICT(key) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, "
+                    cmd_ += "ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, "
                     cmd_ += "time_last=%s, peers_seen=%s, asns_inf=%s;"
 
                     values_ = (
@@ -664,7 +682,7 @@ class Postgresql_db(Service):
             results = []
             cmd_ = "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
             cmd_ += "type, communities, timestamp FROM bgp_updates WHERE "
-            cmd_ += "handled = false ORDER BY id DESC LIMIT(%s);"
+            cmd_ += "handled = false ORDER BY timestamp DESC LIMIT(%s);"
             self.db_cur.execute(cmd_, (self.num_of_unhadled_to_feed_to_detection,))
             entries = self.db_cur.fetchall()
             for entry in entries:
@@ -726,7 +744,7 @@ class Postgresql_db(Service):
         def _retrieve_most_recent_config_hash(self):
             try:
                 self.db_cur.execute(
-                    "SELECT key from configs ORDER BY id DESC LIMIT 1")
+                    "SELECT key from configs ORDER BY time_modified DESC LIMIT 1")
                 hash_ = self.db_cur.fetchone()
                 if isinstance(hash_, tuple):
                     return hash_[0]

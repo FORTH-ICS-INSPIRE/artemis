@@ -105,8 +105,22 @@ services:
             - memcached
         expose:
             - 11211
+    # postgres:
+    #     image: postgres:alpine
+    #     container_name: postgres
+    #     restart: always
+    #     environment:
+    #         POSTGRES_DB: artemis_db
+    #         POSTGRES_USER: artemis_user
+    #         POSTGRES_PASSWORD: Art3m1s
+    #     volumes:
+    #         - ./postgres-data:/var/lib/postgresql/data
+    #     networks:
+    #         - postgres
+    #     expose:
+    #         - 5432
     postgres:
-        image: postgres:alpine
+        image: timescale/timescaledb:latest
         container_name: postgres
         restart: always
         environment:

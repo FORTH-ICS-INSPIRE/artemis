@@ -16,7 +16,7 @@ class Observer(Service):
     def run_worker(self):
         observer = WatchObserver()
 
-        dirname = './configs'
+        dirname = '/etc/artemis'
         filename = 'config.yaml'
 
         try:
@@ -87,8 +87,6 @@ class Observer(Service):
                             changes)
                         log.info(text)
                         self.content = content
-                        # with open('./snapshots/config-snapshot-{}.yaml'.format(int(time.time())), 'w') as f:
-                        #     f.write(''.join(self.content))
                     else:
                         log.error('invalid configuration:\n{}'.format(content))
                     self.response = None

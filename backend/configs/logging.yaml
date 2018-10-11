@@ -15,7 +15,7 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: INFO
         formatter: simple
-        filename: logs/info.log
+        filename: /var/log/artemis/info.log
         maxBytes: 10485760 # 10MB
         backupCount: 20
         encoding: utf8
@@ -24,28 +24,37 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: ERROR
         formatter: simple
-        filename: logs/errors.log
+        filename: /var/log/artemis/error.log
         maxBytes: 10485760 # 10MB
         backupCount: 20
         encoding: utf8
 
-    smtps_handler:
-        class: utils.SMTPSHandler
-        level: INFO
-        formatter: simple
-        mailhost:
-        - smtp.server.com
-        - port
-        fromaddr: from
-        toaddrs: to
-        subject: subject
-        credentials:
-        - username
-        - password
-        secure: True
+    # smtps_handler:
+    #     class: utils.SMTPSHandler
+    #     level: INFO
+    #     formatter: simple
+    #     mailhost:
+    #     - smtp.server.com
+    #     - port
+    #     fromaddr: from
+    #     toaddrs: to
+    #     subject: subject
+    #     credentials:
+    #     - username
+    #     - password
+    #     secure: True
 
     null_handler:
         class: logging.NullHandler
+
+    taps_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: simple
+        filename: /var/log/artemis/taps.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
 
     # syslog_handler:
     #     class: logging.handlers.SysLogHandler
@@ -65,6 +74,10 @@ loggers:
     hijack_logger:
         level: CRITICAL
         handlers: [null_handler]
+        propagate: no
+    taps_logger:
+        level: INFO
+        handlers: [taps_file_handler]
         propagate: no
 
 root:

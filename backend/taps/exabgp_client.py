@@ -1,9 +1,11 @@
 from socketIO_client import SocketIO, BaseNamespace
 import argparse
 from kombu import Connection, Producer, Exchange
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
-import traceback
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
 import signal
+
+
+log = get_logger()
 
 
 class ExaBGP():
@@ -44,6 +46,7 @@ class ExaBGP():
                             msgs = normalize_msg_path(msg)
                             for msg in msgs:
                                 key_generator(msg)
+                                log.debug(msg)
                                 producer.publish(
                                     msg,
                                     exchange=self.exchange,
@@ -56,6 +59,8 @@ class ExaBGP():
                 self.sio.wait()
             except KeyboardInterrupt:
                 self.exit()
+            except Exception:
+                log.exception('exception')
 
     def exit(self):
         print('Exiting ExaBGP')
@@ -79,4 +84,4 @@ if __name__ == '__main__':
     try:
         exa.start()
     except BaseException:
-        traceback.print_exc()
+        log.exception('exception')

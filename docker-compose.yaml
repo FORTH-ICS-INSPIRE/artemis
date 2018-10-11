@@ -17,6 +17,7 @@ services:
             - postgres
             # - syslog
         volumes:
+            - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/
         networks:
             - rabbitmq

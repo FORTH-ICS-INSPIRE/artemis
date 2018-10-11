@@ -11,15 +11,11 @@ from logging.handlers import SMTPHandler
 #     os.makedirs('snapshots')
 
 
-if not os.path.exists('logs'):
-    os.makedirs('logs')
-
-
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 
 
-def get_logger(path='configs/logging.yaml'):
+def get_logger(path='/etc/artemis/logging.yaml'):
     if os.path.exists(path):
         with open(path, 'r') as f:
             config = yaml.safe_load(f.read())
@@ -83,11 +79,12 @@ def exception_handler(log):
         def wrapper(*args, **kwargs):
             try:
                 return f(*args, **kwargs)
-            except Exception as e:
+            except Exception:
                 log.exception('exception')
                 return True
         return wrapper
     return function_wrapper
+
 
 class SMTPSHandler(SMTPHandler):
 
@@ -113,6 +110,5 @@ class SMTPSHandler(SMTPHandler):
             smtp.quit()
         except (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception:
             self.handleError(record)
-

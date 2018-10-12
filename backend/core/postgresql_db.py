@@ -243,7 +243,7 @@ class Postgresql_db(Service):
                             None, # hijack_key
                             False, # handled
                             self.find_best_prefix_match(msg_['prefix']), # matched_prefix
-                            msg_['orig_path'] # orig_path
+                            json.dumps(msg_['orig_path']) # orig_path
                         )
                 self.insert_bgp_entries.append(extract_msg)
             except Exception:

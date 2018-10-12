@@ -462,7 +462,7 @@ if __name__ == '__main__':
                 }
 
             # update current configurations
-            # for asnss, the first tuple element is the name and the second the group
+            # for asns, the first tuple element is the name and the second the group
             configurations[hour_timestamp]['asns'][args.origin_asn] = ('origin', None)
             configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
                                                     ] = (file_metadata['peer_name'], None)
@@ -471,7 +471,7 @@ if __name__ == '__main__':
             for prefix in this_peer_prefixes:
                 configurations[hour_timestamp]['prefixes'][prefix] = str(
                     prefix).replace('.', '_').replace('/', '-')
-                if prefix not in configurations[hour_timestamp]:
+                if prefix not in configurations[hour_timestamp]['prefix_pols']:
                     configurations[hour_timestamp]['prefix_pols'][prefix] = {
                         'origins': set(),
                         'neighbors': set()

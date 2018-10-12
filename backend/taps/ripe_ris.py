@@ -46,6 +46,8 @@ def parse_ripe_ris(connection, prefix, host):
                         routing_key='update',
                         serializer='json'
                     )
+            else:
+                log.warning('Invalid format message: {}'.format(msg))
         except Exception:
             log.exception('exception')
 

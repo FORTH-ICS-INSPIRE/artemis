@@ -116,6 +116,8 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                         routing_key='update',
                                         serializer='json'
                                     )
+                            else:
+                                log.warning('Invalid format message: {}'.format(msg))
                 try:
                     elem = rec.get_next_elem()
                 except BaseException:

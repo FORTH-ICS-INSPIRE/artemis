@@ -69,6 +69,8 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                                     routing_key='update',
                                                     serializer='json'
                                                 )
+                                        else:
+                                            log.warning('Invalid format message: {}'.format(msg))
                                 except Exception:
                                     log.exception('prefix')
                         except Exception:

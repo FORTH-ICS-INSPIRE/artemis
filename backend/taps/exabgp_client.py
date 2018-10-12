@@ -53,6 +53,8 @@ class ExaBGP():
                                     routing_key='update',
                                     serializer='json'
                                 )
+                    else:
+                        log.warning('Invalid format message: {}'.format(msg))
 
                 self.sio.on('exa_message', exabgp_msg)
                 self.sio.emit('exa_subscribe', {'prefixes': self.prefixes})

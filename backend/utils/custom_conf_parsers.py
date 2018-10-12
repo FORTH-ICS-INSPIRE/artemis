@@ -48,6 +48,9 @@ def fetch_BIX_bgp_summary() -> Set:
 
 
 def fetch_DECIX_bgp_summary() -> Set:
+    """
+    Fetches all ASes that are visible through DECIX routeservers.
+    """
     res = requests.get('https://lg.fra.de-cix.net/')
     rs_list = set(re.findall('<option value=\'(.*)\'>.*</option>', res.text))
 
@@ -74,6 +77,31 @@ def fetch_DECIX_bgp_summary() -> Set:
             except Exception:
                 pass
 
+    return as_list
+
+
+def fetch_AMSIX_bgp_summary() -> Set:
+    """
+    Fetches all ASes that are visible through AMSIX routeservers.
+    """
+    res = requests.get('https://my.ams-ix.net/api/v1/members.json')
+
+    as_list = set()
+    for member in res.json().get('member_list', []):
+        asnum = member['asnum']
+        public = False
+        for connection in member.get('connection_list', []):
+            for vlan in connection.get('vlan_list', []):
+                if vlan.get('ipv4', {}).get('routeserver', False):
+                    as_list.add(asnum)
+                    public = True
+                if vlan.get('ipv6', {}).get('routeserver', False):
+                    as_list.add(asnum)
+                    public = True
+                if public:
+                    break
+            if public:
+                break
     return as_list
 
 

@@ -65,7 +65,7 @@ handlers:
 loggers:
     artemis_logger:
         level: INFO
-        handlers: [console, info_file_handler]
+        handlers: [console, info_file_handler, error_file_handler]
         propagate: no
     mail_logger:
         level: CRITICAL

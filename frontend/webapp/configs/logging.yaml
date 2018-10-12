@@ -15,7 +15,7 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: INFO
         formatter: simple
-        filename: logs/info.log
+        filename: /var/log/artemis/info.log
         maxBytes: 10485760 # 10MB
         backupCount: 20
         encoding: utf8
@@ -24,7 +24,7 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: ERROR
         formatter: simple
-        filename: logs/errors.log
+        filename: /var/log/artemis/error.log
         maxBytes: 10485760 # 10MB
         backupCount: 20
         encoding: utf8
@@ -39,6 +39,7 @@ loggers:
     webapp_logger:
         level: INFO
         handlers: [console, info_file_handler, error_file_handler]
+        propagate: no
 root:
     level: INFO
     handlers: []

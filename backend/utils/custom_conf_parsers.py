@@ -257,11 +257,24 @@ def create_asn_defs(yaml_conf, asns):
     Create separate ASN definitions for the ARTEMIS conf file
     """
     yaml_conf['asns'] = ruamel.yaml.comments.CommentedMap()
+    asn_groups = set()
     for asn in sorted(asns):
-        asn_str = asns[asn]
-        yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
-        yaml_conf['asns'][asn_str].append(asn)
-        yaml_conf['asns'][asn_str].yaml_set_anchor(asn_str)
+        asn_group = asns[asn][1]
+        if asn_group is not None:
+            asn_groups.add(asn_group)
+    asn_groups = list(asn_groups)
+    for asn_group in sorted(asn_groups):
+        yaml_conf['asns'][asn_group] = ruamel.yaml.comments.CommentedSeq()
+        yaml_conf['asns'][asn_group].yaml_set_anchor(asn_group)
+    for asn in sorted(asns):
+        asn_str = asns[asn][0]
+        asn_group = asns[asn][1]
+        if asn_group is None:
+            yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
+            yaml_conf['asns'][asn_str].append(asn)
+            yaml_conf['asns'][asn_str].yaml_set_anchor(asn_str)
+        else:
+            yaml_conf['asns'][asn_group].append(asn)
 
 
 def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
@@ -290,10 +303,28 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
         for prefix in sorted(prefixes_per_orig_neighb_group[key]):
             pol_dict['prefixes'].append(
                 yaml_conf['prefixes'][prefixes[prefix]])
-        pol_dict['origin_asns'] = [yaml_conf['asns'][asns[asn]]
-                                   for asn in origin_asns]
-        pol_dict['neighbors'] = [yaml_conf['asns'][asns[asn]]
-                                 for asn in neighbors]
+        pol_dict['origin_asns'] = []
+        origin_groups = set()
+        for asn in origin_asns:
+            asn_str = asns[asn][0]
+            asn_group = asns[asn][1]
+            if asn_group is not None:
+                if asn_group not in origin_groups:
+                    pol_dict['origin_asns'].append(yaml_conf['asns'][asn_group])
+                    origin_groups.add(asn_group)
+            else:
+                pol_dict['origin_asns'].append(yaml_conf['asns'][asn_str])
+        pol_dict['neighbors'] = []
+        neighbor_groups = set()
+        for asn in neighbors:
+            asn_str = asns[asn][0]
+            asn_group = asns[asn][1]
+            if asn_group is not None:
+                if asn_group not in neighbor_groups:
+                    pol_dict['neighbors'].append(yaml_conf['asns'][asn_group])
+                    neighbor_groups.add(asn_group)
+            else:
+                pol_dict['neighbors'].append(yaml_conf['asns'][asn_str])
         pol_dict['mitigation'] = DEFAULT_MIT_ACTION
         yaml_conf['rules'].append(pol_dict)
 
@@ -403,9 +434,10 @@ if __name__ == '__main__':
                 }
 
             # update current configurations
-            configurations[hour_timestamp]['asns'][args.origin_asn] = 'origin'
+            # for asnss, the first tuple element is the name and the second the group
+            configurations[hour_timestamp]['asns'][args.origin_asn] = ('origin', None)
             configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
-                                                   ] = file_metadata['peer_name']
+                                                    ] = (file_metadata['peer_name'], None)
             this_peer_prefixes = parse_file(
                 filepath, file_metadata['format_number'], args.origin_asn)
             for prefix in this_peer_prefixes:
@@ -429,32 +461,27 @@ if __name__ == '__main__':
                 pass
 
     # add ixp asn info, assuming that all prefixes are advertised at the IXPs
-    # TODO: try to reuse code!
-    # TODO: create asn groups for IXPs!
     bix_peers = fetch_BIX_bgp_summary() - set([args.origin_asn])
     decix_peers = fetch_DECIX_bgp_summary() - set([args.origin_asn])
-    for asn in bix_peers:
-        asn = int(asn)
-        for hour_timestamp in configurations:
-            if asn not in configurations[hour_timestamp]['asns']:
-                configurations[hour_timestamp]['asns'][asn] = 'BIX{}'.format(asn)
-                for prefix in configurations[hour_timestamp]['prefix_pols']:
-                    if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
-                        configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
-    for asn in decix_peers:
-        asn = int(asn)
-        for hour_timestamp in configurations:
-            if asn not in configurations[hour_timestamp]['asns']:
-                configurations[hour_timestamp]['asns'][asn] = 'DECIX{}'.format(asn)
-                for prefix in configurations[hour_timestamp]['prefix_pols']:
-                    if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
-                        configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
+    peer_groups = {
+        'BIX_RS_PEER': bix_peers,
+        'DECIX_RS_PEER': decix_peers
+    }
+    for peer_group in peer_groups:
+        for asn in peer_groups[peer_group]:
+            asn = int(asn)
+            for hour_timestamp in configurations:
+                if asn not in configurations[hour_timestamp]['asns']:
+                    configurations[hour_timestamp]['asns'][asn] = ('{}_{}'.format(peer_group, asn), '{}S'.format(peer_group))
+                    for prefix in configurations[hour_timestamp]['prefix_pols']:
+                        if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
+                            configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
 
     # scan all configurations
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
 
-        # ignore in production (tested)
+        # comment out in production (tested)
         # prev_content = None
         # if os.path.isfile(yml_file):
         #     with open(yml_file, 'r') as f:
@@ -466,7 +493,7 @@ if __name__ == '__main__':
             configurations[hour_timestamp]['prefix_pols'],
             yml_file=yml_file)
 
-        # ignore in production (tested)
+        # comment out in production (tested)
         # import difflib
         # with open(yml_file, 'r') as f:
         #     cur_content = f.readlines()

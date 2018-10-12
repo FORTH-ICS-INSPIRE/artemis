@@ -9,3 +9,4 @@ webapp.log
 frontend/db/*
 postgres-data-current/*
 postgres-data-backup/*
+.idea

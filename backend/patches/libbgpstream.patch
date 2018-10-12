@@ -1,0 +1,11 @@
+diff -Naur libbgpstream-2.0.0/lib/formats/bgpstream_parsebgp_common.c libbgpstream-2.0.0_patched/lib/formats/bgpstream_parsebgp_common.c
+--- libbgpstream-2.0.0/lib/formats/bgpstream_parsebgp_common.c	2018-09-05 19:03:41.000000000 +0300
++++ libbgpstream-2.0.0_patched/lib/formats/bgpstream_parsebgp_common.c	2018-10-12 22:49:26.683189057 +0300
+@@ -677,6 +677,7 @@
+   opts->bgp.path_attr_raw[PARSEBGP_BGP_PATH_ATTR_TYPE_COMMUNITIES] = 1;
+ 
+   opts->ignore_not_implemented = 1;
++  opts->silence_not_implemented = 1;
+   opts->ignore_invalid = 1;
+   // TODO: allow user to silence parsebgp warnings at compile time
+ }

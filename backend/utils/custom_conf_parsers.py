@@ -47,6 +47,36 @@ def fetch_BIX_bgp_summary() -> Set:
     return as_list
 
 
+def fetch_DECIX_bgp_summary() -> Set:
+    res = requests.get('https://lg.fra.de-cix.net/')
+    rs_list = set(re.findall('<option value=\'(.*)\'>.*</option>', res.text))
+
+    payload = {
+        'query': 'show ip bgp summary',
+        'tab': 'bgp_summary',
+        'submit': 'Submit'
+    }
+
+    as_list = set()
+    for rs in rs_list:
+        url = 'https://lg.fra.de-cix.net/'
+        # print('Requesting BGP Summary from {}'.format(rs))
+        payload['routeserver'] = rs
+        res = requests.post(url, data=payload)
+
+        start = res.text.rfind('------------------------------------------------------------------------------------')
+        end = res.text.find('Total number of neighbors')
+
+        info = set(filter(None, res.text[start:end].split('\n')[1:]))
+        for line in info:
+            try:
+                as_list.add(line.split()[1])
+            except Exception:
+                pass
+
+    return as_list
+
+
 def extract_file_metadata(filepath):
     """
     Title format: ASN_PEERNAME_FORMATNUMBER_YYYYMMDD_HHMM

@@ -489,9 +489,9 @@ if __name__ == '__main__':
                 pass
 
     # add ixp asn info, assuming that all prefixes are advertised at the IXPs
-    bix_peers = fetch_BIX_bgp_summary() - set([args.origin_asn])
-    decix_peers = fetch_DECIX_bgp_summary() - set([args.origin_asn])
-    amsix_peers = fetch_AMSIX_bgp_summary() - set([args.origin_asn])
+    bix_peers = fetch_BIX_bgp_summary() - set([str(args.origin_asn)]) - set([int(args.origin_asn)])
+    decix_peers = fetch_DECIX_bgp_summary() - set([str(args.origin_asn)]) - set([int(args.origin_asn)])
+    amsix_peers = fetch_AMSIX_bgp_summary() - set([str(args.origin_asn)]) - set([int(args.origin_asn)])
     peer_groups = {
         'BIX_RS_PEER': bix_peers,
         'DECIX_RS_PEER': decix_peers,

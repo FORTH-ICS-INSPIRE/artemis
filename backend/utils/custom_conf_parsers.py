@@ -428,6 +428,28 @@ if __name__ == '__main__':
                 # print("Could not move '{}'".format(filepath))
                 pass
 
+    # add ixp asn info, assuming that all prefixes are advertised at the IXPs
+    # TODO: try to reuse code!
+    # TODO: create asn groups for IXPs!
+    bix_peers = fetch_BIX_bgp_summary() - set([args.origin_asn])
+    decix_peers = fetch_DECIX_bgp_summary() - set([args.origin_asn])
+    for asn in bix_peers:
+        asn = int(asn)
+        for hour_timestamp in configurations:
+            if asn not in configurations[hour_timestamp]['asns']:
+                configurations[hour_timestamp]['asns'][asn] = 'BIX{}'.format(asn)
+                for prefix in configurations[hour_timestamp]['prefix_pols']:
+                    if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
+                        configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
+    for asn in decix_peers:
+        asn = int(asn)
+        for hour_timestamp in configurations:
+            if asn not in configurations[hour_timestamp]['asns']:
+                configurations[hour_timestamp]['asns'][asn] = 'DECIX{}'.format(asn)
+                for prefix in configurations[hour_timestamp]['prefix_pols']:
+                    if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
+                        configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
+
     # scan all configurations
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
@@ -445,6 +467,7 @@ if __name__ == '__main__':
             yml_file=yml_file)
 
         # ignore in production (tested)
+        # import difflib
         # with open(yml_file, 'r') as f:
         #     cur_content = f.readlines()
         # if prev_content is not None:

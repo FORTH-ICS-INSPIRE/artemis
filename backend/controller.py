@@ -88,9 +88,10 @@ class Controller(Service):
                             response = {'result': 'fail',
                                         'reason': 'already running'}
                         else:
-                            importlib.reload(sys.modules[module.__module__])
+                            module_def = sys.modules[module.__module__]
+                            importlib.reload(module_def)
                             self.modules[message.payload['module']
-                                         ] = module.__class__()
+                                         ] = getattr(module_def, module.__class__.__name__)()
                             self.modules[message.payload['module']].start()
                             response = {'result': 'success'}
                     elif message.payload['action'] == 'status':

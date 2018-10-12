@@ -31,6 +31,7 @@ WORKDIR ..
 
 RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/libbgpstream-2.0.0-beta-5.tar.gz && \
     tar zxf libbgpstream-2.0.0-beta-5.tar.gz
+RUN patch -p0 < ../patches/libbgpstream.patch
 WORKDIR libbgpstream-2.0.0
 RUN ./configure && make && make install && ldconfig
 

@@ -17,7 +17,13 @@ class ControllerCLI(object):
     def call(self, module, action):
         self.response = None
         self.correlation_id = uuid()
-        callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
+        callback_queue = Queue(uuid(),
+                            durable=False,
+                            exclusive=True,
+                            auto_delete=True,
+                            max_priority=4,
+                            consumer_arguments={
+            'x-priority': 4})
         with Producer(self.connection) as producer:
             producer.publish(
                 {
@@ -29,6 +35,7 @@ class ControllerCLI(object):
                 declare=[callback_queue],
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
+                priority=4
             )
         with Consumer(self.connection,
                       on_message=self.on_response,

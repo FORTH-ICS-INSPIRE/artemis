@@ -110,8 +110,13 @@ class Monitor(Service):
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
-            callback_queue = Queue(uuid(), durable=False, max_priority=2,
-                                   consumer_arguments={'x-priority': 2})
+            callback_queue = Queue(uuid(),
+                                   durable=False,
+                                   exclusive=True,
+                                   auto_delete=True,
+                                   max_priority=4,
+                                   consumer_arguments={
+                'x-priority': 4})
 
             self.producer.publish(
                 '',
@@ -121,12 +126,15 @@ class Monitor(Service):
                 correlation_id=self.correlation_id,
                 retry=True,
                 declare=[
-                    callback_queue,
                     Queue(
                         'config-request-queue',
                         durable=False,
-                        max_priority=2)],
-                priority=2
+                        max_priority=4,
+                        consumer_arguments={
+                            'x-priority': 4}),
+                    callback_queue
+                ],
+                priority=4
             )
             with Consumer(self.connection,
                           on_message=self.handle_config_request_reply,

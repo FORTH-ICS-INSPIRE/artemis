@@ -166,9 +166,9 @@ def format_1_parser(filepath, origin):
         for line in f:
             line = line.lstrip(' ').strip('')
             prefix_regex = re.match(
-                '(\d+\.\d+\.\d+\.\d+/\d+)\s*is\s*advertised.*', line)
+                '(.*)\s*is\s*advertised.*', line)
             if prefix_regex:
-                prefix = prefix_regex.group(1)
+                prefix = prefix_regex.group(1).strip(' ')
                 try:
                     (netip, netmask) = prefix.split('/')
                     str2ip(prefix)

@@ -510,24 +510,14 @@ if __name__ == '__main__':
     # scan all configurations
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
-
-        # comment out in production (tested)
-        # prev_content = None
-        # if os.path.isfile(yml_file):
-        #     with open(yml_file, 'r') as f:
-        #         prev_content = f.readlines()
-
         generate_config_yml(
             configurations[hour_timestamp]['prefixes'],
             configurations[hour_timestamp]['asns'],
             configurations[hour_timestamp]['prefix_pols'],
             yml_file=yml_file)
 
-        # comment out in production (tested)
-        # import difflib
-        # with open(yml_file, 'r') as f:
-        #     cur_content = f.readlines()
-        # if prev_content is not None:
-        #     changes = ''.join(difflib.unified_diff(prev_content, cur_content))
-        #     if len(changes) > 0:
-        #         print('Content changed!!!')
+    # select most recent configuration
+    most_recent_timestamp = max(configurations)
+    most_recent_config = '{}/config_{}.yaml'.format(conf_dir, most_recent_timestamp)
+    assert os.path.isfile(most_recent_config)
+    shutil.copy(most_recent_config, '{}/config.yaml'.format(conf_dir))

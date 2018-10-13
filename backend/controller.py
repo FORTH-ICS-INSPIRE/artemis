@@ -55,7 +55,6 @@ class Controller(Service):
             self.controller_queue = Queue(
                 'controller-queue',
                 durable=False,
-                exclusive=True,
                 max_priority=4,
                 consumer_arguments={
                     'x-priority': 4})

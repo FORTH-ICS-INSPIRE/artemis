@@ -122,7 +122,7 @@ class Postgresql_db(Service):
                                         consumer_arguments={'x-priority': 3})
             self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, exclusive=True, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
-            self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, exclusive=True, max_priority=4,
+            self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, max_priority=4,
                                               consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()
@@ -197,7 +197,6 @@ class Postgresql_db(Service):
             self.correlation_id = uuid()
             callback_queue = Queue(uuid(),
                                    durable=False,
-                                   exclusive=True,
                                    auto_delete=True,
                                    max_priority=4,
                                    consumer_arguments={

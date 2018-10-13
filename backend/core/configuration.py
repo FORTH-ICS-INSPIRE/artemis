@@ -71,7 +71,6 @@ class Configuration(Service):
             self.config_modify_queue = Queue(
                 'config-modify-queue',
                 durable=False,
-                exclusive=True,
                 max_priority=4,
                 consumer_arguments={
                     'x-priority': 4})

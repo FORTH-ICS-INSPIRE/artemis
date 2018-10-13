@@ -45,7 +45,6 @@ class Modules_status():
         self.correlation_id = uuid()
         callback_queue = Queue(uuid(),
                                durable=False,
-                               exclusive=True,
                                auto_delete=True,
                                max_priority=4,
                                consumer_arguments={

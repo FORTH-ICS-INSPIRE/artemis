@@ -114,8 +114,6 @@ class Postgresql_db(Service):
                                                consumer_arguments={'x-priority': 2})
             self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, exclusive=True, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.hijack_comment_queue = Queue('db-hijack-comment', exchange=self.hijack_exchange, routing_key='comment', durable=False, exclusive=True, max_priority=2,
-                                              consumer_arguments={'x-priority': 2})
             self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
                                        consumer_arguments={'x-priority': 1})
             self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
@@ -124,6 +122,8 @@ class Postgresql_db(Service):
                                         consumer_arguments={'x-priority': 3})
             self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, exclusive=True, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
+            self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, exclusive=True, max_priority=4,
+                                              consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()
             log.info('started')
@@ -261,7 +261,7 @@ class Postgresql_db(Service):
                 log.debug("exception: {}".format(msg_))
 
         def handle_hijack_update(self, message):
-            #log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             try:
                 key = msg_['key']

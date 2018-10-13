@@ -4,9 +4,11 @@ from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 import _pybgpstream
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+
 
 START_TIME_OFFSET = 3600  # seconds
+log = get_logger()
 
 
 def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
@@ -107,12 +109,15 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                 msgs = normalize_msg_path(msg)
                                 for msg in msgs:
                                     key_generator(msg)
+                                    log.debug(msg)
                                     producer.publish(
                                         msg,
                                         exchange=exchange,
                                         routing_key='update',
                                         serializer='json'
                                     )
+                            else:
+                                log.warning('Invalid format message: {}'.format(msg))
                 try:
                     elem = rec.get_next_elem()
                 except BaseException:

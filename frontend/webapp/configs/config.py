@@ -11,7 +11,7 @@ log = logging.getLogger('webapp_logger')
 class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    LOGGING_LOCATION = 'logs/webapp.log'
+    LOGGING_LOCATION = '/var/log/artemis/webapp.log'
     SECURITY_PASSWORD_SALT = b'O\xdb\xd4\x16\xb8\xcaND6\xe8q\xe5'
     CACHE_TYPE = 'simple'
     COMPRESS_MIMETYPES = ['text/html', 'text/css', 'text/xml',
@@ -62,7 +62,7 @@ def configure_app(app):
     log.info('Loading default configuration..')
 
     log.info('Reading additional configuration from webapp.cfg..')
-    app.config.from_pyfile('configs/webapp.cfg', silent=False)
+    app.config.from_pyfile('/etc/artemis/webapp.cfg', silent=False)
 
     # Configure logging
     logging_dir = '/'.join(app.config['LOGGING_LOCATION'].split('/')[:-1])

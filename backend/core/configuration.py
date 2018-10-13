@@ -41,7 +41,7 @@ class Configuration(Service):
 
         def __init__(self, connection: Connection) -> NoReturn:
             self.connection = connection
-            self.file = 'configs/config.yaml'
+            self.file = '/etc/artemis/config.yaml'
             self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
             self.supported_fields = {
                 'prefixes',

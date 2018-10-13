@@ -17,6 +17,7 @@ services:
             - postgres
             # - syslog
         volumes:
+            - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/
         networks:
             - rabbitmq
@@ -49,6 +50,7 @@ services:
             - 8000
         volumes:
             - ./frontend/:/root/
+            - ./frontend/webapp/configs/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
         depends_on:
             - rabbitmq

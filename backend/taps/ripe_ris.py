@@ -1,7 +1,10 @@
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Producer, Exchange
 import argparse
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+
+
+log = get_logger()
 
 
 def normalize_ripe_ris(msg):
@@ -36,15 +39,17 @@ def parse_ripe_ris(connection, prefix, host):
                 msgs = normalize_msg_path(msg)
                 for msg in msgs:
                     key_generator(msg)
+                    log.debug(msg)
                     producer.publish(
                         msg,
                         exchange=exchange,
                         routing_key='update',
                         serializer='json'
                     )
+            else:
+                log.warning('Invalid format message: {}'.format(msg))
         except Exception:
-            pass
-            # traceback.print_exc()
+            log.exception('exception')
 
     with SocketIO('http://stream-dev.ris.ripe.net/stream', wait_for_connection=False) as socket_io:
         socket_io.on('ris_message', on_ris_msg)

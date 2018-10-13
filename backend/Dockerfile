@@ -44,5 +44,9 @@ RUN python setup.py build_ext && python setup.py install
 
 WORKDIR ../..
 
+RUN mkdir -p /etc/artemis/
+RUN mkdir -p /var/log/artemis/
+COPY ./configs/* /etc/artemis/
+
 ENTRYPOINT ["./entrypoint"]
 

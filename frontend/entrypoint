@@ -5,4 +5,4 @@
 #./wait-for syslog:514 -t 60
 # TODO: find better solution!
 sleep 30
-python3 webapp_init.py
+gunicorn --workers=4 --bind 0.0.0.0:8000 webapp_init:app

@@ -28,7 +28,7 @@ def display_time(seconds, granularity=2):
     return ', '.join(result[:granularity])
 
 
-class Modules_status():
+class Modules_state():
 
     def __init__(self):
         self.connection = None
@@ -97,7 +97,7 @@ class Modules_status():
                         self.response['response'][module].get('uptime', None))
         return ret_response
 
-    def get_response_formmated_all(self):
+    def get_response_formatted_all(self):
         log.debug("payload: {}".format(self.response))
         ret_response = {}
         if 'response' in self.response:

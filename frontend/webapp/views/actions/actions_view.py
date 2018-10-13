@@ -3,10 +3,14 @@ from flask import redirect, request, jsonify
 from flask_security.decorators import roles_required, login_required
 from flask_security.utils import hash_password, verify_password
 from webapp.data.models import db, User
-from webapp.templates.forms import ApproveUserForm, MakeAdminForm, DeleteUserForm, ChangePasswordForm
+from webapp.templates.forms import ApproveUserForm, MakeAdminForm, DeleteUserForm, ChangePasswordForm, \
+CheckboxMonitorForm, CheckboxDetectorForm, CheckboxMitigatorForm
 from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack, Comment_hijack
+from webapp.core.modules import Modules_state
 from webapp.core import app
+from flask_security import current_user
 import logging
+import time
 
 log = logging.getLogger('webapp_logger')
 
@@ -183,3 +187,42 @@ def password_change():
                            password_change=_password_change,
                            status=None
                            )
+
+
+@actions.route('/monitor_state', methods=['POST'])
+@roles_required('admin')
+def monitor_state():
+    form = CheckboxMonitorForm(request.form)
+    modules_state = Modules_state()
+    if form.validate_on_submit():
+        if form.monitor_switch.data == False:
+            modules_state.call('monitor', 'stop')
+        else:
+            modules_state.call('monitor', 'start')
+    return redirect("admin/system")
+
+
+@actions.route('/detector_state', methods=['POST'])
+@roles_required('admin')
+def detection_state():
+    form = CheckboxDetectorForm(request.form)
+    modules_state = Modules_state()
+    if form.validate_on_submit():
+        if form.detection_switch.data == False:
+            modules_state.call('detection', 'stop')
+        else:
+            modules_state.call('detection', 'start')
+    return redirect("admin/system")
+
+
+@actions.route('/mitigation_state', methods=['POST'])
+@roles_required('admin')
+def mitigation_state():
+    form = CheckboxMitigatorForm(request.form)
+    modules_state = Modules_state()
+    if form.validate_on_submit():
+        if form.mitigation_switch.data == False:
+            modules_state.call('mitigation', 'stop')
+        else:
+            modules_state.call('mitigation', 'start')
+    return redirect("admin/system")

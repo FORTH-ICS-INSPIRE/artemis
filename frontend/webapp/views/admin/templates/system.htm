@@ -16,52 +16,56 @@
             </div>
         </div>
         <div class="row">
-            <form method="post" class="col-lg-12" id="system_modules">
-                {{ form.hidden_tag() }}
-                <div class="row">
-                    <div class="col-lg-4">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <i class="fa fa-bell fa-fw"></i> Monitor Module
-                            </div>
-                            <div class="panel-body">
-                                <label class="switch">
-                                    {{ form.monitor(**{'data-toggle': 'toggle'}) }}
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
+            <div class="col-lg-4">
+                <form method="post" action="{{ url_for('actions.monitor_state') }}" class="col-lg-12" id="system_modules_monitor">
+                    {{ monitor_form.hidden_tag() }}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Monitor Module
+                        </div>
+                        <div class="panel-body">
+                            <label class="switch">
+                                {{ monitor_form.monitor_switch(**{'data-toggle': 'toggle'}) }}
+                                <span class="slider round"></span>
+                            </label>
                         </div>
                     </div>
+                </form>
+            </div>
 
-                    <div class="col-lg-4">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <i class="fa fa-bell fa-fw"></i> Detection Module
-                            </div>
-                            <div class="panel-body">
-                                <label class="switch">
-                                    {{ form.detector(**{'data-toggle': 'toggle'}) }}
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
+            <div class="col-lg-4">
+                <form method="post" action="{{ url_for('actions.detection_state') }}" class="col-lg-12" id="system_modules_detection">
+                    {{ detection_form.hidden_tag() }}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Detection Module
+                        </div>
+                        <div class="panel-body">
+                            <label class="switch">
+                                {{ detection_form.detection_switch(**{'data-toggle': 'toggle'}) }}
+                                <span class="slider round"></span>
+                            </label>
                         </div>
                     </div>
-                    
-                    <div class="col-lg-4">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <i class="fa fa-bell fa-fw"></i> Mitigation Module
-                            </div>
-                            <div class="panel-body">
-                                <label class="switch">
-                                    {{ form.mitigator(**{'data-toggle': 'toggle'}) }}
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
+                </form>
+            </div>
+
+            <div class="col-lg-4">
+                <form method="post" action="{{ url_for('actions.mitigation_state') }}" class="col-lg-12" id="system_modules_mitigation">
+                {{ mitigation_form.hidden_tag() }}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Mitigation Module
+                        </div>
+                        <div class="panel-body">
+                            <label class="switch">
+                                {{ mitigation_form.mitigation_switch(**{'data-toggle': 'toggle'}) }}
+                                <span class="slider round"></span>
+                            </label>
                         </div>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
         <div class="row">
             <div class="col-lg-12">
@@ -90,9 +94,6 @@
             </div>
         </div>
 
-        {% if form.erros %}
-            <div class="panel-footer">{{ form.errors }}</div>
-        {% endif %}
 
 {% endblock %}
 
@@ -124,7 +125,6 @@
                     $('#config_action').removeClass('btn-danger').addClass('btn-warning')
                     $('#config_action').html('Pending');
                     submit_new_config(new_config)
-                    
 
                 }
             });
@@ -177,6 +177,18 @@
                 editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
             });
 
+            $( "#monitor_switch" ).click(function() {
+                $( "#system_modules_monitor" ).submit();
+            });
+
+            $( "#detection_switch" ).click(function() {
+                $( "#system_modules_detection" ).submit();
+            });
+
+            $( "#mitigation_switch" ).click(function() {
+                $( "#system_modules_mitigation" ).submit();
+            });
+
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
@@ -185,4 +197,3 @@
 
     {% endblock %}
 {% endblock %}
-

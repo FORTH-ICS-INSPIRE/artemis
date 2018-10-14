@@ -4,5 +4,4 @@
 ./wait-for postgrest:3000 -t 60
 #./wait-for syslog:514 -t 60
 # TODO: find better solution!
-sleep 30
 gunicorn --workers=4 --bind 0.0.0.0:8000 webapp_init:app

@@ -30,6 +30,9 @@ class Configuration():
             response = requests.get(url=url_)
             self.raw_json = response.json()
             log.debug("received config json: {}".format(self.raw_json))
+            # Check if postgrest is up and if a valid config exists
+            if isinstance(self.raw_json, list) == False or len(self.raw_json) == 0:
+                return False
             if 'config_data' in self.raw_json[0]:
                 self.raw_json_config = self.raw_json[0]['config_data']
             if 'raw_config' in self.raw_json[0]:

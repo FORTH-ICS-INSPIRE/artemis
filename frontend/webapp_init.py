@@ -1,13 +1,20 @@
 from webapp.utils import get_logger
 log = get_logger()
 from webapp.core import app
-from webapp.core.modules import Modules_status
+from webapp.core.modules import Modules_state
 from webapp.core.db_stats import DB_statistics
 from webapp.core.fetch_config import Configuration
 import os
+import time
 
+
+app = app
 app.config['configuration'] = Configuration()
-app.config['configuration'].get_newest_config()
+
+while app.config['configuration'].get_newest_config() == False:
+    time.sleep(1)
+    log.info("waiting for postgrest")
+
 app.config['db_stats'] = DB_statistics()
 
 try:
@@ -18,7 +25,7 @@ except BaseException:
 
 try:
     log.debug("Starting Scheduler..")
-    modules = Modules_status()
+    modules = Modules_state()
     modules.call('scheduler', 'start')
     if not modules.is_up_or_running('scheduler'):
         log.error("Couldn't start scheduler.")
@@ -40,12 +47,13 @@ except BaseException:
 
 try:
     log.debug("Request status of all modules..")
-    status_request = Modules_status()
+    status_request = Modules_state()
     status_request.call('all', 'status')
     app.config['status'] = status_request.get_response_all()
 except BaseException:
     log.exception("exception while retrieving status of modules..")
     exit(-1)
+
 
 if __name__ == '__main__':
     app.run(

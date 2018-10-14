@@ -28,7 +28,7 @@ def display_time(seconds, granularity=2):
     return ', '.join(result[:granularity])
 
 
-class Modules_status():
+class Modules_state():
 
     def __init__(self):
         self.connection = None
@@ -43,7 +43,12 @@ class Modules_status():
 
     def call(self, module, action):
         self.correlation_id = uuid()
-        callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
+        callback_queue = Queue(uuid(),
+                               durable=False,
+                               auto_delete=True,
+                               max_priority=4,
+                               consumer_arguments={
+            'x-priority': 4})
         with Producer(self.connection) as producer:
             producer.publish(
                 {
@@ -55,6 +60,7 @@ class Modules_status():
                 declare=[callback_queue],
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
+                priority=4
             )
         with Consumer(self.connection,
                       on_message=self.on_response,
@@ -91,7 +97,7 @@ class Modules_status():
                         self.response['response'][module].get('uptime', None))
         return ret_response
 
-    def get_response_formmated_all(self):
+    def get_response_formatted_all(self):
         log.debug("payload: {}".format(self.response))
         ret_response = {}
         if 'response' in self.response:

@@ -71,16 +71,15 @@ class Configuration(Service):
             self.config_modify_queue = Queue(
                 'config-modify-queue',
                 durable=False,
-                exclusive=True,
-                max_priority=2,
+                max_priority=4,
                 consumer_arguments={
-                    'x-priority': 2})
+                    'x-priority': 4})
             self.config_request_queue = Queue(
                 'config-request-queue',
                 durable=False,
-                max_priority=2,
+                max_priority=4,
                 consumer_arguments={
-                    'x-priority': 2})
+                    'x-priority': 4})
 
             self.parse_rrcs()
             log.info('started')
@@ -154,7 +153,7 @@ class Configuration(Service):
                     correlation_id=message.properties['correlation_id'],
                     serializer='json',
                     retry=True,
-                    priority=2
+                    priority=4
                 )
             else:
                 log.debug('rejected new configuration')
@@ -170,7 +169,7 @@ class Configuration(Service):
                     correlation_id=message.properties['correlation_id'],
                     serializer='json',
                     retry=True,
-                    priority=2
+                    priority=4
                 )
 
         def handle_config_request(self, message: Dict) -> NoReturn:
@@ -187,7 +186,7 @@ class Configuration(Service):
                 correlation_id=message.properties['correlation_id'],
                 serializer='json',
                 retry=True,
-                priority=2
+                priority=4
             )
 
         def parse_rrcs(self) -> NoReturn:

@@ -52,7 +52,12 @@ class Controller(Service):
             self.modules['mitigation'] = Mitigation()
 
             # QUEUES
-            self.controller_queue = Queue('controller-queue', auto_delete=True)
+            self.controller_queue = Queue(
+                'controller-queue',
+                durable=False,
+                max_priority=4,
+                consumer_arguments={
+                    'x-priority': 4})
 
             log.info('started')
 
@@ -147,9 +152,9 @@ class Controller(Service):
                     routing_key=message.properties['reply_to'],
                     correlation_id=message.properties['correlation_id'],
                     retry=True,
-                    priority=2
+                    priority=4
                 )
-            log.debug('rpc finish')
+                log.debug('rpc finish')
 
 
 if __name__ == '__main__':

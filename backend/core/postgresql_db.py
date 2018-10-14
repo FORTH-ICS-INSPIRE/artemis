@@ -502,8 +502,8 @@ class Postgresql_db(Service):
             bgp_updates_table = "CREATE TABLE IF NOT EXISTS bgp_updates ( " + \
                 "key VARCHAR ( 32 ) NOT NULL, " + \
                 "prefix inet, " + \
-                "origin_as INTEGER, " + \
-                "peer_asn   INTEGER, " + \
+                "origin_as BIGINT, " + \
+                "peer_asn   BIGINT, " + \
                 "as_path   text[], " + \
                 "service   VARCHAR ( 50 ), " + \
                 "type  VARCHAR ( 1 ), " + \
@@ -522,7 +522,7 @@ class Postgresql_db(Service):
                 "key VARCHAR ( 32 ) NOT NULL, " + \
                 "type  VARCHAR ( 1 ), " + \
                 "prefix    inet, " + \
-                "hijack_as INTEGER, " + \
+                "hijack_as BIGINT, " + \
                 "peers_seen   json, " + \
                 "num_peers_seen INTEGER, " + \
                 "asns_inf json, " + \

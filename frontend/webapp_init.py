@@ -1,7 +1,7 @@
 from webapp.utils import get_logger
 log = get_logger()
 from webapp.core import app
-from webapp.core.modules import Modules_status
+from webapp.core.modules import Modules_state
 from webapp.core.db_stats import DB_statistics
 from webapp.core.fetch_config import Configuration
 import os
@@ -23,7 +23,11 @@ class WebApplication():
     def __init__(self):
         self.app = app
         self.app.config['configuration'] = Configuration()
-        self.app.config['configuration'].get_newest_config()
+        
+        while(self.app.config['configuration'].get_newest_config() == False):
+            time.sleep(1)
+            log.info("waiting for postgrest")
+
         self.app.config['db_stats'] = DB_statistics()
 
         try:
@@ -34,7 +38,7 @@ class WebApplication():
 
         try:
             log.debug("Starting Scheduler..")
-            self.modules = Modules_status()
+            self.modules = Modules_state()
             self.modules.call('scheduler', 'start')
             if not self.modules.is_up_or_running('scheduler'):
                 log.error("Couldn't start scheduler.")
@@ -56,7 +60,7 @@ class WebApplication():
 
         try:
             log.debug("Request status of all modules..")
-            self.status_request = Modules_status()
+            self.status_request = Modules_state()
             self.status_request.call('all', 'status')
             self.app.config['status'] = self.status_request.get_response_all()
         except BaseException:

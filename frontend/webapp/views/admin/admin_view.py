@@ -2,11 +2,13 @@ from flask import Blueprint, render_template
 from flask import redirect, request, jsonify
 from flask_security.decorators import roles_required, roles_accepted
 from webapp.data.models import User, Role
-from webapp.templates.forms import CheckboxForm, ApproveUserForm, MakeAdminForm, DeleteUserForm
+from webapp.templates.forms import CheckboxMonitorForm, CheckboxDetectorForm, CheckboxMitigatorForm, \
+ApproveUserForm, MakeAdminForm, DeleteUserForm
 from webapp.core import app
-from webapp.core.modules import Modules_status
+from webapp.core.modules import Modules_state
 from webapp.core.actions import New_config
 from webapp.core.fetch_config import fetch_all_config_timestamps
+from flask_security import current_user
 import logging
 
 log = logging.getLogger('webapp_logger')
@@ -23,43 +25,36 @@ def default():
 @admin.route('/system', methods=['GET', 'POST'])
 @roles_required('admin')
 def index():
-    # log info
-    form = CheckboxForm()
+    monitor_form = CheckboxMonitorForm()
+    detection_form = CheckboxDetectorForm()
+    mitigation_form = CheckboxMitigatorForm()
+
     app.config['configuration'].get_newest_config()
+    modules_state = Modules_state()
+    modules_state.call('all', 'status')
+    state_of_modules = modules_state.get_response_all()
 
-    status_request = Modules_status()
-    status_request.call('all', 'status')
-    app.config['status'] = status_request.get_response_all()
+    log.info("state {}".format(state_of_modules))
 
-    if form.validate_on_submit():
-        if form.monitor.data:
-            status_request.call('monitor', 'start')
-        else:
-            status_request.call('monitor', 'stop')
-        if form.detector.data:
-            status_request.call('detection', 'start')
-        else:
-            status_request.call('detection', 'stop')
-        if form.mitigator.data:
-            status_request.call('mitigation', 'start')
-        else:
-            status_request.call('mitigation', 'stop')
+    if state_of_modules['monitor']['status'] == 'up':
+        monitor_form.monitor_switch.data = True
     else:
-        if app.config['status']['monitor']['status'] == 'up':
-            form.monitor.data = True
-        else:
-            form.monitor.data = False
-        if app.config['status']['detection']['status'] == 'up':
-            form.detector.data = True
-        else:
-            form.detector.data = False
-        if app.config['status']['mitigation']['status'] == 'up':
-            form.mitigator.data = True
-        else:
-            form.mitigator.data = False
+        monitor_form.monitor_switch.data = False
+
+    if state_of_modules['detection']['status'] == 'up':
+        detection_form.detection_switch.data = True
+    else:
+        detection_form.detection_switch.data = False
+
+    if state_of_modules['mitigation']['status'] == 'up':
+        mitigation_form.mitigation_switch.data = True
+    else:
+        mitigation_form.mitigation_switch.data = False
 
     return render_template('system.htm',
-                           form=form,
+                           monitor_form=monitor_form,
+                           detection_form=detection_form,
+                           mitigation_form=mitigation_form,
                            config=app.config['configuration'].get_raw_config(),
                            config_timestamp=app.config['configuration'].get_config_last_modified())
 

@@ -4,5 +4,4 @@
 ./wait-for postgrest:3000 -t 60
 #./wait-for syslog:514 -t 60
 # TODO: find better solution!
-sleep 30
 python3 webapp_init.py

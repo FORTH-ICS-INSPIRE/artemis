@@ -8,10 +8,16 @@ import logging
 log = logging.getLogger('webapp_logger')
 
 
-class CheckboxForm(FlaskForm):
-    monitor = BooleanField('Monitor', default=False)
-    detector = BooleanField('Detector', default=False)
-    mitigator = BooleanField('Mitigator', default=False)
+class CheckboxMonitorForm(FlaskForm):
+    monitor_switch = BooleanField('Monitor', default=False)
+
+
+class CheckboxDetectorForm(FlaskForm):
+    detection_switch = BooleanField('Detection', default=False)
+
+
+class CheckboxMitigatorForm(FlaskForm):
+    mitigation_switch = BooleanField('Mitigation', default=False)
 
 
 class ExtendedRegisterForm(RegisterForm):

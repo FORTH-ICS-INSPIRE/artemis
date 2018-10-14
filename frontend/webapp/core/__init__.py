@@ -9,7 +9,7 @@ from flask_babel import Babel
 from webapp.data.models import db
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
-from webapp.core.modules import Modules_status
+from webapp.core.modules import Modules_state
 from flask_security import user_registered
 from webapp.core.proxy_api import get_proxy_api
 
@@ -154,9 +154,9 @@ def pending():
 @roles_accepted('admin', 'user')
 def overview():
     log.debug("url: /")
-    status_request = Modules_status()
+    status_request = Modules_state()
     status_request.call('all', 'status')
-    modules_formmated = status_request.get_response_formmated_all()
+    modules_formmated = status_request.get_response_formatted_all()
     app.config['configuration'].get_newest_config()
     newest_config = app.config['configuration'].get_raw_config()
     db_stats = app.config['db_stats'].get_all_formatted_list()

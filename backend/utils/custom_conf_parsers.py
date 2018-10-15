@@ -1,5 +1,4 @@
 import argparse
-import difflib
 import glob
 import json
 import os
@@ -9,6 +8,8 @@ import shutil
 from datetime import datetime, timezone
 from itertools import chain, combinations
 from ipaddress import ip_network as str2ip
+import requests
+from typing import Set
 
 VALID_FORMAT_PARSERS = {
     1: lambda x: format_1_parser(x[0], x[1]),
@@ -26,7 +27,82 @@ def powerset(iterable):
     """
     xs = list(iterable)
     # note we return an iterator rather than a list
-    return chain.from_iterable(combinations(xs,n) for n in range(len(xs)+1))
+    return chain.from_iterable(combinations(xs, n) for n in range(len(xs) + 1))
+
+
+def fetch_BIX_bgp_summary() -> Set:
+    """
+    Fetches all ASes that are visible through BIX routeservers.
+    """
+
+    res = requests.get('http://lg.bix.bg/')
+    rs_list = set(re.findall('<OPTION VALUE=".*"> (.*)', res.text))
+
+    as_list = set()
+    for rs in rs_list:
+        url = 'http://lg.bix.bg/?query=summary&addr=&router={}'.format(rs)
+        # print('Requesting BGP Summary from {}'.format(rs))
+        res = requests.get(url)
+        as_list.update(set(re.findall('(?:AS)([0-9]+)', res.text)))
+    return as_list
+
+
+def fetch_DECIX_bgp_summary() -> Set:
+    """
+    Fetches all ASes that are visible through DECIX routeservers.
+    """
+    res = requests.get('https://lg.fra.de-cix.net/')
+    rs_list = set(re.findall('<option value=\'(.*)\'>.*</option>', res.text))
+
+    payload = {
+        'query': 'show ip bgp summary',
+        'tab': 'bgp_summary',
+        'submit': 'Submit'
+    }
+
+    as_list = set()
+    for rs in rs_list:
+        url = 'https://lg.fra.de-cix.net/'
+        # print('Requesting BGP Summary from {}'.format(rs))
+        payload['routeserver'] = rs
+        res = requests.post(url, data=payload)
+
+        start = res.text.rfind('------------------------------------------------------------------------------------')
+        end = res.text.find('Total number of neighbors')
+
+        info = set(filter(None, res.text[start:end].split('\n')[1:]))
+        for line in info:
+            try:
+                as_list.add(line.split()[1])
+            except Exception:
+                pass
+
+    return as_list
+
+
+def fetch_AMSIX_bgp_summary() -> Set:
+    """
+    Fetches all ASes that are visible through AMSIX routeservers.
+    """
+    res = requests.get('https://my.ams-ix.net/api/v1/members.json')
+
+    as_list = set()
+    for member in res.json().get('member_list', []):
+        asnum = member['asnum']
+        public = False
+        for connection in member.get('connection_list', []):
+            for vlan in connection.get('vlan_list', []):
+                if vlan.get('ipv4', {}).get('routeserver', False):
+                    as_list.add(asnum)
+                    public = True
+                if vlan.get('ipv6', {}).get('routeserver', False):
+                    as_list.add(asnum)
+                    public = True
+                if public:
+                    break
+            if public:
+                break
+    return as_list
 
 
 def extract_file_metadata(filepath):
@@ -61,7 +137,7 @@ def extract_file_metadata(filepath):
                 ).replace(tzinfo=timezone.utc).timestamp())
             }
         }
-    except:
+    except BaseException:
         return None
     return file_metadata
 
@@ -89,13 +165,14 @@ def format_1_parser(filepath, origin):
         cur_prefix = None
         for line in f:
             line = line.lstrip(' ').strip('')
-            prefix_regex = re.match('(\d+\.\d+\.\d+\.\d+/\d+)\s*is\s*advertised.*', line)
+            prefix_regex = re.match(
+                '(.*)\s*is\s*advertised.*', line)
             if prefix_regex:
-                prefix = prefix_regex.group(1)
+                prefix = prefix_regex.group(1).strip(' ')
                 try:
                     (netip, netmask) = prefix.split('/')
                     str2ip(prefix)
-                except:
+                except BaseException:
                     continue
                     cur_prefix = None
                 cur_prefix = prefix
@@ -125,11 +202,13 @@ def format_2_parser(filepath, origin):
             line = line.lstrip(' ')
             if line.startswith('Prefix'):
                 continue
-            elems = list(filter(None, [elem.strip() for elem in line.strip().split('  ')]))
+            elems = list(filter(None, [elem.strip()
+                                       for elem in line.strip().split('  ')]))
 
             prefix = elems[0].lstrip(' *')
             as_path = elems[-1]
-            if not as_path.endswith('i') and not as_path.endswith('I') and not as_path.endswith(str(origin)):
+            if not as_path.endswith('i') and not as_path.endswith(
+                    'I') and not as_path.endswith(str(origin)):
                 continue
             as_path_list = as_path.split(' ')
             if len(as_path_list) > 1:
@@ -138,7 +217,7 @@ def format_2_parser(filepath, origin):
             try:
                 (netip, netmask) = prefix.split('/')
                 str2ip(prefix)
-            except:
+            except BaseException:
                 continue
             prefixes.add(prefix)
     return prefixes
@@ -158,10 +237,12 @@ def format_3_parser(filepath, origin):
             line = line.lstrip(' ')
             if line.startswith('Network'):
                 continue
-            elems = list(filter(None, [elem.strip() for elem in line.strip().split('  ')]))
+            elems = list(filter(None, [elem.strip()
+                                       for elem in line.strip().split('  ')]))
             prefix = elems[0]
             as_path = elems[-1]
-            if not as_path.endswith('i') and not as_path.endswith('I') and not as_path.endswith(str(origin)):
+            if not as_path.endswith('i') and not as_path.endswith(
+                    'I') and not as_path.endswith(str(origin)):
                 continue
             as_path_list = as_path.split(' ')
             if len(as_path_list) > 1:
@@ -170,7 +251,7 @@ def format_3_parser(filepath, origin):
             try:
                 (netip, netmask) = prefix.split('/')
                 str2ip(prefix)
-            except:
+            except BaseException:
                 continue
             prefixes.add(prefix)
     return prefixes
@@ -204,11 +285,24 @@ def create_asn_defs(yaml_conf, asns):
     Create separate ASN definitions for the ARTEMIS conf file
     """
     yaml_conf['asns'] = ruamel.yaml.comments.CommentedMap()
+    asn_groups = set()
     for asn in sorted(asns):
-        asn_str = asns[asn]
-        yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
-        yaml_conf['asns'][asn_str].append(asn)
-        yaml_conf['asns'][asn_str].yaml_set_anchor(asn_str)
+        asn_group = asns[asn][1]
+        if asn_group is not None:
+            asn_groups.add(asn_group)
+    asn_groups = list(asn_groups)
+    for asn_group in sorted(asn_groups):
+        yaml_conf['asns'][asn_group] = ruamel.yaml.comments.CommentedSeq()
+        yaml_conf['asns'][asn_group].yaml_set_anchor(asn_group)
+    for asn in sorted(asns):
+        asn_str = asns[asn][0]
+        asn_group = asns[asn][1]
+        if asn_group is None:
+            yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
+            yaml_conf['asns'][asn_str].append(asn)
+            yaml_conf['asns'][asn_str].yaml_set_anchor(asn_str)
+        else:
+            yaml_conf['asns'][asn_group].append(asn)
 
 
 def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
@@ -235,9 +329,30 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
         neighbors = json.loads(key[1])
         pol_dict['prefixes'] = ruamel.yaml.comments.CommentedSeq()
         for prefix in sorted(prefixes_per_orig_neighb_group[key]):
-            pol_dict['prefixes'].append(yaml_conf['prefixes'][prefixes[prefix]])
-        pol_dict['origin_asns'] = [yaml_conf['asns'][asns[asn]] for asn in origin_asns]
-        pol_dict['neighbors'] = [yaml_conf['asns'][asns[asn]] for asn in neighbors]
+            pol_dict['prefixes'].append(
+                yaml_conf['prefixes'][prefixes[prefix]])
+        pol_dict['origin_asns'] = []
+        origin_groups = set()
+        for asn in origin_asns:
+            asn_str = asns[asn][0]
+            asn_group = asns[asn][1]
+            if asn_group is not None:
+                if asn_group not in origin_groups:
+                    pol_dict['origin_asns'].append(yaml_conf['asns'][asn_group])
+                    origin_groups.add(asn_group)
+            else:
+                pol_dict['origin_asns'].append(yaml_conf['asns'][asn_str])
+        pol_dict['neighbors'] = []
+        neighbor_groups = set()
+        for asn in neighbors:
+            asn_str = asns[asn][0]
+            asn_group = asns[asn][1]
+            if asn_group is not None:
+                if asn_group not in neighbor_groups:
+                    pol_dict['neighbors'].append(yaml_conf['asns'][asn_group])
+                    neighbor_groups.add(asn_group)
+            else:
+                pol_dict['neighbors'].append(yaml_conf['asns'][asn_str])
         pol_dict['mitigation'] = DEFAULT_MIT_ACTION
         yaml_conf['rules'].append(pol_dict)
 
@@ -292,7 +407,7 @@ def generate_config_yml(prefixes, asns, prefix_pols, yml_file=None):
         f.write('# End of Rule Definitions\n')
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="generate ARTEMIS configuration from custom_files")
     parser.add_argument(
@@ -347,46 +462,62 @@ if __name__=='__main__':
                 }
 
             # update current configurations
-            configurations[hour_timestamp]['asns'][args.origin_asn] = 'origin'
-            configurations[hour_timestamp]['asns'][file_metadata['peer_asn']] = file_metadata['peer_name']
-            this_peer_prefixes = parse_file(filepath, file_metadata['format_number'], args.origin_asn)
+            # for asns, the first tuple element is the name and the second the group
+            configurations[hour_timestamp]['asns'][args.origin_asn] = ('origin', None)
+            configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
+                                                    ] = (file_metadata['peer_name'], None)
+            this_peer_prefixes = parse_file(
+                filepath, file_metadata['format_number'], args.origin_asn)
             for prefix in this_peer_prefixes:
-                configurations[hour_timestamp]['prefixes'][prefix] = str(prefix).replace('.', '_').replace('/', '-')
-                if prefix not in configurations[hour_timestamp]:
+                configurations[hour_timestamp]['prefixes'][prefix] = str(
+                    prefix).replace('.', '_').replace('/', '-')
+                if prefix not in configurations[hour_timestamp]['prefix_pols']:
                     configurations[hour_timestamp]['prefix_pols'][prefix] = {
                         'origins': set(),
                         'neighbors': set()
                     }
-                configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(args.origin_asn)
-                configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(file_metadata['peer_asn'])
+                configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(
+                    args.origin_asn)
+                configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(
+                    file_metadata['peer_asn'])
 
             # move raw file into proper timestamp directory
             try:
                 shutil.move(filepath, hour_timestamp_dir)
-            except:
+            except BaseException:
                 # print("Could not move '{}'".format(filepath))
                 pass
+
+    # add ixp asn info, assuming that all prefixes are advertised at the IXPs
+    bix_peers = fetch_BIX_bgp_summary() - {str(args.origin_asn)}
+    decix_peers = fetch_DECIX_bgp_summary() - {str(args.origin_asn)}
+    amsix_peers = fetch_AMSIX_bgp_summary() - {str(args.origin_asn)}
+    peer_groups = {
+        'BIX_RS_PEER': bix_peers,
+        'DECIX_RS_PEER': decix_peers,
+        'AMSIX_RS_PEER': amsix_peers
+    }
+    for peer_group in peer_groups:
+        for asn in peer_groups[peer_group]:
+            asn = int(asn)
+            for hour_timestamp in configurations:
+                if asn not in configurations[hour_timestamp]['asns']:
+                    configurations[hour_timestamp]['asns'][asn] = ('{}_{}'.format(peer_group, asn), '{}S'.format(peer_group))
+                    for prefix in configurations[hour_timestamp]['prefix_pols']:
+                        if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
+                            configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
 
     # scan all configurations
     for hour_timestamp in configurations:
         yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
-
-        # ignore in production (tested)
-        # prev_content = None
-        # if os.path.isfile(yml_file):
-        #     with open(yml_file, 'r') as f:
-        #         prev_content = f.readlines()
-
         generate_config_yml(
             configurations[hour_timestamp]['prefixes'],
             configurations[hour_timestamp]['asns'],
             configurations[hour_timestamp]['prefix_pols'],
             yml_file=yml_file)
 
-        # ignore in production (tested)
-        # with open(yml_file, 'r') as f:
-        #     cur_content = f.readlines()
-        # if prev_content is not None:
-        #     changes = ''.join(difflib.unified_diff(prev_content, cur_content))
-        #     if len(changes) > 0:
-        #         print('Content changed!!!')
+    # select most recent configuration
+    most_recent_timestamp = max(configurations)
+    most_recent_config = '{}/config_{}.yaml'.format(conf_dir, most_recent_timestamp)
+    assert os.path.isfile(most_recent_config)
+    shutil.copy(most_recent_config, '{}/config.yaml'.format(conf_dir))

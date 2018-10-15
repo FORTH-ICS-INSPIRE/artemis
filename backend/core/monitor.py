@@ -96,6 +96,7 @@ class Monitor(Service):
             self.init_exabgp_instances()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
+            self.init_betabmp_instance()
 
         def stop(self):
             if self.flag:
@@ -212,3 +213,16 @@ class Monitor(Service):
                 self.process_ids.append(
                     ('BGPStreamLive {} {}'.format(
                         bgpstream_projects, self.prefixes), p))
+
+        @exception_handler(log)
+        def init_betabmp_instance(self):
+            if 'betabmp' in self.monitors:
+                log.debug(
+                    'starting {} for {}'.format(
+                        self.monitors['betabmp'],
+                        self.prefixes))
+                p = Popen(['python3', 'taps/betabmp.py',
+                           '--prefix', ','.join(self.prefixes)])
+                self.process_ids.append(
+                    ('Beta BMP {}'.format(
+                        self.prefixes), p))

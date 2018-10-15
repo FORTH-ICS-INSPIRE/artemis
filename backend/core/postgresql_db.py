@@ -13,6 +13,8 @@ import os
 import datetime
 
 log = logging.getLogger('artemis_logger')
+TABLES = ['bgp_updates', 'hijacks', 'configs']
+VIEWS = ['view_configs', 'view_bgpupdates', 'view_hijacks']
 
 
 class Postgresql_db(Service):
@@ -45,6 +47,26 @@ class Postgresql_db(Service):
     def run_worker(self):
         db_conn = self.create_connect_db()
         db_cursor = db_conn.cursor()
+
+        # snippet to optionally drop all db tables
+        try:
+            _drop_db = int(os.getenv('DROP_DB', 0))
+        except:
+            log.exception('exception')
+            _drop_db = 0
+        if _drop_db == 1:
+            try:
+                for view in VIEWS:
+                    drop_view_cmd = "DROP VIEW IF EXISTS {};".format(view)
+                    db_cursor.execute(drop_view_cmd)
+                    log.info('DROPPED VIEW {}'.format(view))
+                for table in TABLES:
+                    drop_table_cmd = "DROP TABLE IF EXISTS {};".format(table)
+                    db_cursor.execute(drop_table_cmd)
+                    log.info('DROPPED TABLE {}'.format(table))
+                db_conn.commit()
+            except:
+                log.exception('exception')
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection, db_conn, db_cursor)

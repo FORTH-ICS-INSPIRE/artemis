@@ -5,89 +5,59 @@ from webapp.core.modules import Modules_state
 from webapp.core.db_stats import DB_statistics
 from webapp.core.fetch_config import Configuration
 import os
-import signal
 import time
 
 
-class GracefulKiller:
-    def __init__(self):
-        self.kill_now = False
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
+app = app
+app.config['configuration'] = Configuration()
 
-    def exit_gracefully(self, signum, frame):
-        self.kill_now = True
+while app.config['configuration'].get_newest_config() == False:
+    time.sleep(1)
+    log.info("waiting for postgrest")
 
+app.config['db_stats'] = DB_statistics()
 
-class WebApplication():
-    def __init__(self):
-        self.app = app
-        self.app.config['configuration'] = Configuration()
-        
-        while(self.app.config['configuration'].get_newest_config() == False):
-            time.sleep(1)
-            log.info("waiting for postgrest")
+try:
+    app.config['VERSION'] = os.getenv("SYSTEM_VERSION")
+except BaseException:
+    app.config['VERSION'] = "Fail"
+    log.debug("failed to get version")
 
-        self.app.config['db_stats'] = DB_statistics()
+try:
+    log.debug("Starting Scheduler..")
+    modules = Modules_state()
+    modules.call('scheduler', 'start')
+    if not modules.is_up_or_running('scheduler'):
+        log.error("Couldn't start scheduler.")
+        exit(-1)
+except BaseException:
+    log.exception("exception while starting scheduler")
+    exit(-1)
 
-        try:
-            self.app.config['VERSION'] = os.getenv("SYSTEM_VERSION")
-        except BaseException:
-            self.app.config['VERSION'] = "Fail"
-            log.debug("failed to get version")
+try:
+    log.debug("Starting Postgresql_db..")
+    modules.call('postgresql_db', 'start')
 
-        try:
-            log.debug("Starting Scheduler..")
-            self.modules = Modules_state()
-            self.modules.call('scheduler', 'start')
-            if not self.modules.is_up_or_running('scheduler'):
-                log.error("Couldn't start scheduler.")
-                exit(-1)
-        except BaseException:
-            log.exception("exception while starting scheduler")
-            exit(-1)
+    if not modules.is_up_or_running('postgresql_db'):
+        log.error("Couldn't start postgresql_db.")
+        exit(-1)
+except BaseException:
+    log.exception("exception while starting postgresql_db")
+    exit(-1)
 
-        try:
-            log.debug("Starting Postgresql_db..")
-            self.modules.call('postgresql_db', 'start')
-
-            if not self.modules.is_up_or_running('postgresql_db'):
-                log.error("Couldn't start postgresql_db.")
-                exit(-1)
-        except BaseException:
-            log.exception("exception while starting postgresql_db")
-            exit(-1)
-
-        try:
-            log.debug("Request status of all modules..")
-            self.status_request = Modules_state()
-            self.status_request.call('all', 'status')
-            self.app.config['status'] = self.status_request.get_response_all()
-        except BaseException:
-            log.exception("exception while retrieving status of modules..")
-            exit(-1)
-
-        self.webapp_ = None
-
-    def start(self):
-        log.info("WebApplication Starting..")
-        self.app.run(
-            threaded=True,
-            host=self.app.config['WEBAPP_HOST'],
-            port=self.app.config['WEBAPP_PORT'],
-            use_reloader=False
-        )
-        log.info('WebApplication Started..')
+try:
+    log.debug("Request status of all modules..")
+    status_request = Modules_state()
+    status_request.call('all', 'status')
+    app.config['status'] = status_request.get_response_all()
+except BaseException:
+    log.exception("exception while retrieving status of modules..")
+    exit(-1)
 
 
 if __name__ == '__main__':
-    webapp_ = WebApplication()
-    webapp_.start()
-
-    killer = GracefulKiller()
-    log.debug('Send SIGTERM signal to end..\n')
-
-    while True:
-        time.sleep(1)
-        if killer.kill_now:
-            break
+    app.run(
+        host=app.config['WEBAPP_HOST'],
+        port=app.config['WEBAPP_PORT'],
+        use_reloader=False
+    )

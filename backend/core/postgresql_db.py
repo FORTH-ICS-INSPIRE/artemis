@@ -1,4 +1,5 @@
 import psycopg2
+import psycopg2.extras
 import radix
 from utils import RABBITMQ_HOST
 from utils.service import Service
@@ -610,7 +611,7 @@ class Postgresql_db(Service):
                 cmd_ = "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
                 cmd_ += "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES "
                 cmd_ += "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(key, timestamp) DO NOTHING;"
-                self.db_cur.executemany(cmd_, self.insert_bgp_entries)
+                psycopg2.extras.execute_batch(self.db_cur, cmd_, self.insert_bgp_entries)
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
@@ -632,9 +633,11 @@ class Postgresql_db(Service):
 
             if len(self.update_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany(
+                    psycopg2.extras.execute_batch(
+                        self.db_cur,
                         "UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ",
-                        self.update_bgp_entries)
+                        self.update_bgp_entries
+                        )
                     self.db_conn.commit()
                 except Exception:
                     log.exception('exception')
@@ -644,9 +647,11 @@ class Postgresql_db(Service):
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    self.db_cur.executemany(
+                    psycopg2.extras.execute_batch(
+                        self.db_cur,
                         "UPDATE bgp_updates SET handled=true WHERE key=%s",
-                        self.handled_bgp_entries)
+                        self.handled_bgp_entries
+                        )
                     self.db_conn.commit()
                 except Exception:
                     log.exception(
@@ -660,15 +665,17 @@ class Postgresql_db(Service):
             return num_of_updates
 
         def _insert_update_hijacks(self):
-            for key in self.tmp_hijacks_dict:
-                try:
-                    cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
-                    cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                    cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment, peers_seen, asns_inf) "
-                    cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-                    cmd_ += "ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, "
-                    cmd_ += "time_last=%s, peers_seen=%s, asns_inf=%s;"
 
+            try:
+                cmd_ = "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
+                cmd_ += "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
+                cmd_ += "active, resolved, ignored, configured_prefix, timestamp_of_config, comment, peers_seen, asns_inf) "
+                cmd_ += "VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                cmd_ += "ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, "
+                cmd_ += "time_last=%s, peers_seen=%s, asns_inf=%s;"
+
+                values=[]
+                for key in self.tmp_hijacks_dict:
                     values_ = (
                         key,  # key
                         self.tmp_hijacks_dict[key]['type'],  # type
@@ -708,13 +715,14 @@ class Postgresql_db(Service):
                         self.tmp_hijacks_dict[key]['peers_seen'],  # peers_seen
                         self.tmp_hijacks_dict[key]['asns_inf']  # asns_inf
                     )
+                    values.append(values_)
 
-                    self.db_cur.execute(cmd_, values_)
-                    self.db_conn.commit()
-                except Exception:
-                    log.exception('exception')
-                    self.db_conn.rollback()
-                    return -1
+                psycopg2.extras.execute_batch(self.db_cur, cmd_, values)
+                self.db_conn.commit()
+            except Exception:
+                log.exception('exception')
+                self.db_conn.rollback()
+                return -1
 
             num_of_entries = len(self.tmp_hijacks_dict)
             self.tmp_hijacks_dict.clear()

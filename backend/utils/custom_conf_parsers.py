@@ -125,7 +125,7 @@ def extract_file_metadata(filepath):
         }
         file_metadata = {
             'peer_asn': peer_asn,
-            'peer_name': peer_name,
+            'peer_name': peer_name.replace('.', '_'),
             'format_number': format_number,
             'time': {
                 'orig_time_struct': time_struct,

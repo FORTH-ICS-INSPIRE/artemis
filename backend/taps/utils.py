@@ -116,10 +116,19 @@ def mformat_validator(msg):
     type_values = ['A', 'W']
     community_keys = set(['asn', 'value'])
 
-    def valid_msg(msg):
+    optional_fields_init = {
+        'communities': list()
+    }
+
+    def valid_dict(msg):
         if not isinstance(msg, dict):
             return False
         return True
+
+    def add_optional_fields(msg):
+        for field in optional_fields_init:
+            if field not in msg:
+                msg[field] = optional_fields_init[field]
 
     def valid_fields(msg):
         if any(field not in msg for field in mformat_fields):
@@ -170,7 +179,6 @@ def mformat_validator(msg):
         return True
 
     def valid_generator(msg):
-        yield valid_msg
         yield valid_fields
         yield valid_prefix
         yield valid_service
@@ -179,6 +187,11 @@ def mformat_validator(msg):
         yield valid_communities
         yield valid_timestamp
         yield valid_peer_asn
+
+    if not valid_dict(msg):
+        return False
+
+    add_optional_fields(msg)
 
     for func in valid_generator(msg):
         if not func(msg):

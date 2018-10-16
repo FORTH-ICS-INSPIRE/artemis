@@ -4,7 +4,8 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
     apt-get -y install build-essential zlib1g-dev libbz2-dev libcurl4-openssl-dev python-dev && \
-    apt-get -y install python3-pip
+    apt-get -y install python3-pip && \
+    apt-get -y install cron
 
 WORKDIR /root
 
@@ -44,6 +45,7 @@ RUN python setup.py build_ext && python setup.py install
 
 WORKDIR ../..
 
+RUN service cron start
 RUN mkdir -p /etc/artemis/
 RUN mkdir -p /var/log/artemis/
 COPY ./configs/* /etc/artemis/

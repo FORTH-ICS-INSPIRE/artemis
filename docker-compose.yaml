@@ -19,6 +19,7 @@ services:
         volumes:
             - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/
+            # - ./backend/other/conf_parser.sh:/etc/cron.hourly/parser
         networks:
             - rabbitmq
             - memcached

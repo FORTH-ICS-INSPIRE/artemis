@@ -454,6 +454,12 @@ if __name__ == '__main__':
             if not os.path.isdir(hour_timestamp_dir):
                 os.mkdir(hour_timestamp_dir)
 
+            # ignore files that already exist in their respective folders
+            inner_file = '{}/{}'.format(hour_timestamp_dir, filepath.split('/')[-1])
+            if os.path.isfile(inner_file):
+                os.remove(filepath)
+                continue
+
             # initialize current configurations
             if hour_timestamp not in configurations:
                 configurations[hour_timestamp] = {
@@ -489,36 +495,46 @@ if __name__ == '__main__':
                 # print("Could not move '{}'".format(filepath))
                 pass
 
-    # add ixp asn info, assuming that all prefixes are advertised at the IXPs
-    bix_peers = fetch_BIX_bgp_summary() - {str(args.origin_asn)}
-    decix_peers = fetch_DECIX_bgp_summary() - {str(args.origin_asn)}
-    amsix_peers = fetch_AMSIX_bgp_summary() - {str(args.origin_asn)}
-    peer_groups = {
-        'BIX_RS_PEER': bix_peers,
-        'DECIX_RS_PEER': decix_peers,
-        'AMSIX_RS_PEER': amsix_peers
-    }
-    for peer_group in peer_groups:
-        for asn in peer_groups[peer_group]:
-            asn = int(asn)
-            for hour_timestamp in configurations:
-                if asn not in configurations[hour_timestamp]['asns']:
-                    configurations[hour_timestamp]['asns'][asn] = ('{}_{}'.format(peer_group, asn), '{}S'.format(peer_group))
-                    for prefix in configurations[hour_timestamp]['prefix_pols']:
-                        if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
-                            configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
 
-    # scan all configurations
-    for hour_timestamp in configurations:
-        yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
-        generate_config_yml(
-            configurations[hour_timestamp]['prefixes'],
-            configurations[hour_timestamp]['asns'],
-            configurations[hour_timestamp]['prefix_pols'],
-            yml_file=yml_file)
+    # add ixp asn info, assuming that all prefixes are advertised at the IXPs
+    if len(configurations) > 0:
+        bix_peers = fetch_BIX_bgp_summary() - {str(args.origin_asn)}
+        decix_peers = fetch_DECIX_bgp_summary() - {str(args.origin_asn)}
+        amsix_peers = fetch_AMSIX_bgp_summary() - {str(args.origin_asn)}
+        peer_groups = {
+            'BIX_RS_PEER': bix_peers,
+            'DECIX_RS_PEER': decix_peers,
+            'AMSIX_RS_PEER': amsix_peers
+        }
+        for peer_group in peer_groups:
+            for asn in peer_groups[peer_group]:
+                asn = int(asn)
+                for hour_timestamp in configurations:
+                    if asn not in configurations[hour_timestamp]['asns']:
+                        configurations[hour_timestamp]['asns'][asn] = ('{}_{}'.format(peer_group, asn), '{}S'.format(peer_group))
+                        for prefix in configurations[hour_timestamp]['prefix_pols']:
+                            if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
+                                configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
+
+        # form all configurations
+        for hour_timestamp in configurations:
+            yml_file = '{}/config_{}.yaml'.format(conf_dir, hour_timestamp)
+            generate_config_yml(
+                configurations[hour_timestamp]['prefixes'],
+                configurations[hour_timestamp]['asns'],
+                configurations[hour_timestamp]['prefix_pols'],
+                yml_file=yml_file)
+
+    # select all configurations from the folder
+    all_timestamps = set()
+    for conf_file in glob.glob('{}/config_*.yaml'.format(conf_dir)):
+        conf_filename = conf_file.split('/')[-1]
+        timestamp_re = re.match('^config_(\d+)\.yaml$', conf_filename)
+        if timestamp_re:
+            all_timestamps.add(int(timestamp_re.group(1)))
 
     # select most recent configuration
-    most_recent_timestamp = max(configurations)
+    most_recent_timestamp = max(all_timestamps)
     most_recent_config = '{}/config_{}.yaml'.format(conf_dir, most_recent_timestamp)
     assert os.path.isfile(most_recent_config)
     shutil.copy(most_recent_config, '{}/config.yaml'.format(conf_dir))

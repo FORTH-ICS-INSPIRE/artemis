@@ -49,7 +49,7 @@ class Configuration(Service):
                 'neighbors',
                 'mitigation'}
             self.supported_monitors = {
-                'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive'}
+                'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive', 'betabmp'}
             self.available_ris = set()
             self.available_bgpstreamlive = {'routeviews', 'ris'}
 

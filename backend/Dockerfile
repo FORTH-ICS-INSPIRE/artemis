@@ -37,8 +37,8 @@ RUN ./configure && make && make install && ldconfig
 
 WORKDIR ..
 
-RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/pybgpstream-2.0.0-beta-1.tar.gz && \
-    tar zxf pybgpstream-2.0.0-beta-1.tar.gz
+RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/pybgpstream-2.0.0-beta-2.tar.gz && \
+    tar zxf pybgpstream-2.0.0-beta-2.tar.gz
 WORKDIR pybgpstream-2.0.0
 RUN python setup.py build_ext && python setup.py install
 

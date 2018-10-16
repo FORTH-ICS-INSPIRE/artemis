@@ -278,6 +278,7 @@ def create_monitor_defs(yaml_conf):
     yaml_conf['monitors'] = ruamel.yaml.comments.CommentedMap()
     yaml_conf['monitors']['riperis'] = ['']
     yaml_conf['monitors']['bgpstreamlive'] = ['routeviews', 'ris']
+    yaml_conf['monitors']['betabmp'] = ['betabmp']
 
 
 def create_asn_defs(yaml_conf, asns):

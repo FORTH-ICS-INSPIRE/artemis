@@ -362,7 +362,7 @@ class Detection(Service):
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
-                if len(item['origin_asns']) > 0 or len(item['neighbors']) > 0:
+                if len(item['origin_asns']) > 0:
                     return False
             self.commit_hijack(monitor_event, origin_asn, 'Q')
             return True
@@ -389,7 +389,8 @@ class Detection(Service):
             origin_asn = monitor_event['path'][-1]
             first_neighbor_asn = monitor_event['path'][-2]
             for item in prefix_node.data['confs']:
-                if origin_asn in item['origin_asns'] and first_neighbor_asn in item['neighbors']:
+                # [] neighbors means "allow everything"
+                if origin_asn in item['origin_asns'] and (len(item['neighbors']) == 0 or first_neighbor_asn in item['neighbors']):
                     return False
             self.commit_hijack(monitor_event, first_neighbor_asn, 1)
             return True
@@ -415,7 +416,7 @@ class Detection(Service):
                     for item in prefix_node.data['confs']:
                         if origin_asn in item['origin_asns']:
                             false_origin = False
-                            if first_neighbor_asn in item['neighbors']:
+                            if first_neighbor_asn in item['neighbors'] or len(item['neighbors']) == 0:
                                 false_first_neighbor = False
                             break
                     if origin_asn is not None and false_origin:

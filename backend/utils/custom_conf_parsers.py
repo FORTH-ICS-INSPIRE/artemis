@@ -569,9 +569,10 @@ if __name__ == '__main__':
             all_timestamps.add(int(timestamp_re.group(1)))
 
     # select most recent configuration
-    most_recent_timestamp = max(all_timestamps)
-    most_recent_config = '{}/config_{}.yaml'.format(conf_dir, most_recent_timestamp)
-    assert os.path.isfile(most_recent_config)
-    with open('{}/most_recent'.format(conf_dir), 'w') as f:
-        f.write(most_recent_config.split('/')[-1])
-    shutil.copy(most_recent_config, '{}/config.yaml'.format(conf_dir))
+    if len(all_timestamps) > 0:
+        most_recent_timestamp = max(all_timestamps)
+        most_recent_config = '{}/config_{}.yaml'.format(conf_dir, most_recent_timestamp)
+        assert os.path.isfile(most_recent_config)
+        with open('{}/most_recent'.format(conf_dir), 'w') as f:
+            f.write(most_recent_config.split('/')[-1])
+        shutil.copy(most_recent_config, '{}/config.yaml'.format(conf_dir))

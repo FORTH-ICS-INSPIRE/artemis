@@ -25,9 +25,12 @@ def get_logger(path='/etc/artemis/logging.yaml'):
 
 
 def flatten(items, seqtypes=(list, tuple)):
+    res = []
     if not isinstance(items, seqtypes):
         return [items]
-    for i in range(len(items)):
-        while i < len(items) and isinstance(items[i], seqtypes):
-            items[i:i + 1] = items[i]
-    return items
+    for item in items:
+        if isinstance(item, seqtypes):
+            res += flatten(item)
+        else:
+            res.append(item)
+    return res

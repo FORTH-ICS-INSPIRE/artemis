@@ -45,7 +45,6 @@ RUN python setup.py build_ext && python setup.py install
 
 WORKDIR ../..
 
-RUN service cron start
 RUN mkdir -p /etc/artemis/
 RUN mkdir -p /var/log/artemis/
 COPY ./configs/* /etc/artemis/

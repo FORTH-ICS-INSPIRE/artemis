@@ -310,11 +310,11 @@ def create_asn_defs(yaml_conf, asns):
     for asn in sorted(asns):
         asn_str = asns[asn][0]
         asn_group = asns[asn][1]
-        if asn_group is None:
+        if asn_group is None or asn_str.startswith('EXC_ORIG_AS'):
             yaml_conf['asns'][asn_str] = ruamel.yaml.comments.CommentedSeq()
             yaml_conf['asns'][asn_str].append(asn)
             yaml_conf['asns'][asn_str].yaml_set_anchor(asn_str)
-        else:
+        if asn_group is not None:
             yaml_conf['asns'][asn_group].append(asn)
 
 
@@ -345,16 +345,9 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
             pol_dict['prefixes'].append(
                 yaml_conf['prefixes'][prefixes[prefix]])
         pol_dict['origin_asns'] = []
-        origin_groups = set()
         for asn in origin_asns:
             asn_str = asns[asn][0]
-            asn_group = asns[asn][1]
-            if asn_group is not None:
-                if asn_group not in origin_groups:
-                    pol_dict['origin_asns'].append(yaml_conf['asns'][asn_group])
-                    origin_groups.add(asn_group)
-            else:
-                pol_dict['origin_asns'].append(yaml_conf['asns'][asn_str])
+            pol_dict['origin_asns'].append(yaml_conf['asns'][asn_str])
         pol_dict['neighbors'] = []
         neighbor_groups = set()
         for asn in neighbors:
@@ -553,6 +546,9 @@ if __name__ == '__main__':
                         for origin_asn in exc['origin_asns']:
                             if origin_asn not in configurations[hour_timestamp]['asns']:
                                 configurations[hour_timestamp]['asns'][origin_asn] = ('EXC_ORIG_AS{}'.format(origin_asn), None)
+                            else:
+                                configurations[hour_timestamp]['asns'][origin_asn] = ('EXC_ORIG_AS{}'.format(origin_asn),
+                                                                                      configurations[hour_timestamp]['asns'][origin_asn][1])
                             configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(origin_asn)
 
         # form all configurations

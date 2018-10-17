@@ -210,7 +210,7 @@ def format_2_parser(filepath, origin):
             prefix = elems[0].lstrip(' *')
             as_path = elems[-1]
             if not as_path.endswith('i') and not as_path.endswith(
-                    'I') and not as_path.endswith(str(origin)):
+                    'I') and not as_path.endswith('?') and not as_path.endswith(str(origin)):
                 continue
             as_path_list = as_path.split(' ')
             if len(as_path_list) > 1:
@@ -244,7 +244,7 @@ def format_3_parser(filepath, origin):
             prefix = elems[0]
             as_path = elems[-1]
             if not as_path.endswith('i') and not as_path.endswith(
-                    'I') and not as_path.endswith(str(origin)):
+                    'I') and not as_path.endswith('?') and not as_path.endswith(str(origin)):
                 continue
             as_path_list = as_path.split(' ')
             if len(as_path_list) > 1:

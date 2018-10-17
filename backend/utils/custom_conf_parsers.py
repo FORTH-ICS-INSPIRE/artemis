@@ -513,6 +513,10 @@ if __name__ == '__main__':
                 # print("Could not move '{}'".format(filepath))
                 pass
 
+            # remove file when done
+            if os.path.isfile(filepath):
+                os.remove(filepath)
+
 
     if len(configurations) > 0:
 

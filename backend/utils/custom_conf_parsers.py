@@ -589,4 +589,4 @@ if __name__ == '__main__':
                 if os.path.isdir(other_timestamp_dir):
                     shutil.rmtree(other_timestamp_dir)
                 config_file = '{}/config_{}.yaml'.format(conf_dir, other_timestamp)
-                os.remove(conf_file)
+                os.remove(config_file)

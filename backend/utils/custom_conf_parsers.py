@@ -468,10 +468,10 @@ if __name__ == '__main__':
                 os.mkdir(hour_timestamp_dir)
 
             # ignore files that already exist in their respective folders
-            inner_file = '{}/{}'.format(hour_timestamp_dir, filepath.split('/')[-1])
-            if os.path.isfile(inner_file):
-                os.remove(filepath)
-                continue
+            # inner_file = '{}/{}'.format(hour_timestamp_dir, filepath.split('/')[-1])
+            # if os.path.isfile(inner_file):
+            #     os.remove(filepath)
+            #     continue
 
             # initialize current configurations
             if hour_timestamp not in configurations:
@@ -581,3 +581,12 @@ if __name__ == '__main__':
         with open('{}/most_recent'.format(conf_dir), 'w') as f:
             f.write(most_recent_config.split('/')[-1])
         shutil.copy(most_recent_config, '{}/config.yaml'.format(conf_dir))
+
+        # delete all other folders with outdated information
+        for other_timestamp in all_timestamps:
+            if other_timestamp != most_recent_timestamp:
+                other_timestamp_dir = '{}/{}'.format(in_dir, other_timestamp)
+                if os.path.isdir(other_timestamp_dir):
+                    shutil.rmtree(other_timestamp_dir)
+                config_file = '{}/config_{}.yaml'.format(conf_dir, other_timestamp)
+                os.remove(conf_file)

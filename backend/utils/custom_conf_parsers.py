@@ -457,7 +457,7 @@ if __name__ == '__main__':
         os.mkdir(conf_dir)
 
     # scan all provided raw files
-    for filepath in glob.glob('{}/*'.format(in_dir)):
+    for filepath in sorted(glob.glob('{}/*'.format(in_dir))):
         file_metadata = extract_file_metadata(filepath)
         if file_metadata is not None:
             hour_timestamp = file_metadata['time']['hour_timestamp']
@@ -484,8 +484,13 @@ if __name__ == '__main__':
             # update current configurations
             # for asns, the first tuple element is the name and the second the group
             configurations[hour_timestamp]['asns'][args.origin_asn] = ('NORMAL_ORIG', None)
-            configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
-                                                    ] = (file_metadata['peer_name'], None)
+            if file_metadata['peer_asn'] not in configurations[hour_timestamp]['asns']:
+                configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
+                    ] = (file_metadata['peer_name'], None)
+            else:
+                configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
+                    ] = (configurations[hour_timestamp]['asns'][file_metadata['peer_asn']][0] + '_' +
+                                                                file_metadata['peer_name'], None)
             this_peer_prefixes = parse_file(
                 filepath, file_metadata['format_number'], args.origin_asn)
             for prefix in this_peer_prefixes:

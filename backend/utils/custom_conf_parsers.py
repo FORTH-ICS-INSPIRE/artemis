@@ -1,7 +1,8 @@
+import os
+import sys
 import argparse
 import glob
 import json
-import os
 import re
 import ruamel.yaml
 import shutil
@@ -9,6 +10,7 @@ from datetime import datetime, timezone
 from itertools import chain, combinations
 from ipaddress import ip_network as str2ip
 import requests
+import json
 from typing import Set
 
 VALID_FORMAT_PARSERS = {
@@ -257,6 +259,16 @@ def format_3_parser(filepath, origin):
     return prefixes
 
 
+def exceptions_parser(filepath):
+    exceptions = []
+    try:
+        with open(filepath, 'r') as f:
+            exceptions = json.load(f)
+    except:
+        return []
+    return exceptions
+
+
 def create_prefix_defs(yaml_conf, prefixes):
     """
     Create separate prefix definitions for the ARTEMIS conf file
@@ -428,6 +440,14 @@ if __name__ == '__main__':
         required=True
     )
     parser.add_argument(
+        '-e',
+        '--exceptions',
+        dest='exceptions_file',
+        type=str,
+        help='exceptions for originating prefixes (json file)',
+        default=None
+    )
+    parser.add_argument(
         '-c',
         '--conf',
         dest='conf_dir',
@@ -470,7 +490,7 @@ if __name__ == '__main__':
 
             # update current configurations
             # for asns, the first tuple element is the name and the second the group
-            configurations[hour_timestamp]['asns'][args.origin_asn] = ('origin', None)
+            configurations[hour_timestamp]['asns'][args.origin_asn] = ('NORMAL_ORIG', None)
             configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
                                                     ] = (file_metadata['peer_name'], None)
             this_peer_prefixes = parse_file(
@@ -496,8 +516,9 @@ if __name__ == '__main__':
                 pass
 
 
-    # add ixp asn info, assuming that all prefixes are advertised at the IXPs
     if len(configurations) > 0:
+
+        # add ixp asn info, assuming that all prefixes are advertised at the IXPs
         bix_peers = fetch_BIX_bgp_summary() - {str(args.origin_asn)}
         decix_peers = fetch_DECIX_bgp_summary() - {str(args.origin_asn)}
         amsix_peers = fetch_AMSIX_bgp_summary() - {str(args.origin_asn)}
@@ -515,6 +536,24 @@ if __name__ == '__main__':
                         for prefix in configurations[hour_timestamp]['prefix_pols']:
                             if asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
                                 configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(asn)
+
+        if args.exceptions_file is not None:
+            exceptions = exceptions_parser(args.exceptions_file)
+            for hour_timestamp in configurations:
+                for exc in exceptions:
+                    for prefix in exc['prefixes']:
+                        if prefix not in configurations[hour_timestamp]['prefixes']:
+                            configurations[hour_timestamp]['prefixes'][prefix] = str(
+                                prefix).replace('.', '_').replace('/', '-')
+                        if prefix not in configurations[hour_timestamp]['prefix_pols']:
+                            configurations[hour_timestamp]['prefix_pols'][prefix] = {
+                                'origins': set(),
+                                'neighbors': set()
+                            }
+                        for origin_asn in exc['origin_asns']:
+                            if origin_asn not in configurations[hour_timestamp]['asns']:
+                                configurations[hour_timestamp]['asns'][origin_asn] = ('EXC_ORIG_AS{}'.format(origin_asn), None)
+                            configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(origin_asn)
 
         # form all configurations
         for hour_timestamp in configurations:

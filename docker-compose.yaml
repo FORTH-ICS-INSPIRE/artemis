@@ -4,13 +4,13 @@ services:
         build: ./backend/
         container_name: backend
         environment:
-            RABBITMQ_HOST: rabbitmq
-            MEMCACHED_HOST: memcached
-            POSTGRES_HOST: postgres
-            DATABASE_NAME: artemis_db
-            DATABASE_USER: artemis_user
-            DATABASE_HOST: postgres
-            DATABASE_PASSWORD: Art3m1s
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            MEMCACHED_HOST: ${MEMCACHED_HOST}
+            POSTGRES_HOST: ${POSTGRES_HOST}
+            DATABASE_NAME: ${DB_NAME}
+            DATABASE_USER: ${DB_USER}
+            DATABASE_HOST: ${POSTGRES_HOST}
+            DATABASE_PASSWORD: ${DB_PASS}
         depends_on:
             - rabbitmq
             - memcached
@@ -26,27 +26,19 @@ services:
             - postgres
             # - syslog
             # - exabgp
-    # grafana:
-    #     image: grafana/grafana
-    #     restart: always
-    #     ports:
-    #         - 8001:3000
-    #     networks:
-    #         - rabbitmq
-    #         - postgres
     frontend:
         build: ./frontend/
         container_name: frontend
         environment:
-            RABBITMQ_HOST: rabbitmq
-            POSTGRES_HOST: postgres
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            POSTGRES_HOST: ${POSTGRES_HOST}
+            SYSTEM_VERSION: ${SYSTEM_VERSION}
+            MACHINE_IP: ${MACHINE_IP}
+            USER_ROOT_USERNAME: ${ADMIN_USER}
+            USER_ROOT_PASSWORD: ${ADMIN_PASS}
+            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
+            POSTGREST_FLASK_HOST: ${POSTGREST_HOST}:${POSTGREST_PORT}
             # SYSLOG_HOST: 'syslog:514'
-            SYSTEM_VERSION: v0.1
-            MACHINE_IP: 0.0.0.0
-            USER_ROOT_USERNAME: admin
-            USER_ROOT_PASSWORD: admin123
-            USER_ROOT_EMAIL: admin@admin
-            POSTGREST_FLASK_HOST: 'postgrest:3000'
         expose:
             - 8000
         volumes:
@@ -63,14 +55,14 @@ services:
             - rabbitmq
             - postgres
             - postgrest
-            # - syslog
             - nginx
+            # - syslog
     nginx:
         image: nginx:latest
         container_name: production_nginx
         environment:
-            ARTEMIS_FRONTEND_HOST: frontend
-            POSTGREST_HOST: postgrest
+            ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
+            POSTGREST_HOST: ${POSTGREST_HOST}
         depends_on:
             - frontend
             - postgrest
@@ -87,19 +79,17 @@ services:
             - frontend
             - postgrest
         restart: always
-    # syslog:
-    #     image: "mumblepins/syslog-ng-alpine"
-    #     restart: always
-    #     networks:
-    #         - syslog
     rabbitmq:
-        image: rabbitmq:3-alpine
+        image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
         restart: always
         networks:
             - rabbitmq
         expose:
+            - 5671
             - 5672
+        ports:
+            - "15672:15672"
     memcached:
         image: memcached:alpine
         container_name: memcached
@@ -108,32 +98,21 @@ services:
             - memcached
         expose:
             - 11211
-    # postgres:
-    #     image: postgres:alpine
-    #     container_name: postgres
-    #     restart: always
-    #     environment:
-    #         POSTGRES_DB: artemis_db
-    #         POSTGRES_USER: artemis_user
-    #         POSTGRES_PASSWORD: Art3m1s
-    #     volumes:
-    #         - ./postgres-data:/var/lib/postgresql/data
-    #     networks:
-    #         - postgres
-    #     expose:
-    #         - 5432
     postgres:
         image: timescale/timescaledb:latest
         container_name: postgres
         restart: always
         environment:
-            POSTGRES_DB: artemis_db
-            POSTGRES_USER: artemis_user
-            POSTGRES_PASSWORD: Art3m1s
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
             - ./postgres-data-current:/var/lib/postgresql/data
             - ./other/postgres-backup.sh:/etc/periodic/daily/backup
             - ./postgres-data-backup/:/tmp/
+            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         networks:
             - postgres
         expose:
@@ -151,9 +130,33 @@ services:
             - postgres
             - backend
         environment:
-            PGRST_DB_URI: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
-            PGRST_DB_SCHEMA: public
-            PGRST_DB_ANON_ROLE: artemis_user
+            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            PGRST_DB_SCHEMA: ${DB_SCHEMA}
+            PGRST_DB_ANON_ROLE: ${DB_USER}
+    # syslog:
+    #     image: "mumblepins/syslog-ng-alpine"
+    #     restart: always
+    #     networks:
+    #         - syslog
+    # grafana:
+    #     image: grafana/grafana
+    #     restart: always
+    #     ports:
+    #         - 8001:3000
+    #     networks:
+    #         - rabbitmq
+    #         - postgres
+    # pg_amqp_bridge:
+    #     image: subzerocloud/pg-amqp-bridge
+    #     container_name: pg_amqp_bridge
+    #     networks:
+    #         - postgres
+    #         - rabbitmq
+    #     environment:
+    #     - RUST_LOG=info # output forwarded messages
+    #     - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+    #     - AMQP_URI=amqp://${RABBITMQ_HOST}//
+    #     - BRIDGE_CHANNELS=events:amq.topic
     # exabgp:
     #     container_name: exabgp
     #      image: mavromat/exabgp-monitor:latest
@@ -165,11 +168,11 @@ services:
 
 
 networks:
-    # syslog:
     rabbitmq:
     memcached:
     postgres:
     postgrest:
     nginx:
-    # exabgp:
     frontend:
+    # syslog:
+    # exabgp:

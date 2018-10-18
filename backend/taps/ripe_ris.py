@@ -51,7 +51,7 @@ def parse_ripe_ris(connection, prefix, host):
         except Exception:
             log.exception('exception')
 
-    with SocketIO('http://stream-dev.ris.ripe.net/stream', wait_for_connection=False) as socket_io:
+    with SocketIO('http://stream-dev.ris.ripe.net/stream2', wait_for_connection=False) as socket_io:
         socket_io.on('ris_message', on_ris_msg)
         socket_io.emit('ris_subscribe',
                        {
@@ -59,7 +59,10 @@ def parse_ripe_ris(connection, prefix, host):
                            'prefix': prefix,
                            'moreSpecific': True,
                            'lessSpecific': False,
-                           'includeBody': False,
+                           'socketOptions': {
+                               'includeBody': False,
+                               'explodePrefixes': True,
+                           }
                        }
                        )
         socket_io.wait()

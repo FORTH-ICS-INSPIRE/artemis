@@ -19,6 +19,7 @@ services:
         volumes:
             - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/
+            - ./backend/supervisor.d/:/etc/supervisor/conf.d/
             # - ./backend/other/conf_parser.sh:/etc/cron.hourly/parser
         networks:
             - rabbitmq
@@ -177,7 +178,7 @@ networks:
     memcached:
     postgres:
     postgrest:
-    nginx:
-    frontend:
+    # nginx:
+    # frontend:
     # syslog:
     # exabgp:

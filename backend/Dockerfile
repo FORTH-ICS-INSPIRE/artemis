@@ -4,8 +4,7 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
     apt-get -y install build-essential zlib1g-dev libbz2-dev libcurl4-openssl-dev python-dev && \
-    apt-get -y install python3-pip && \
-    apt-get -y install cron
+    apt-get -y install python3-pip, cron, supervisor
 
 WORKDIR /root
 

@@ -26,59 +26,62 @@ services:
             - postgres
             # - syslog
             # - exabgp
-    frontend:
-        build: ./frontend/
-        container_name: frontend
-        environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            POSTGRES_HOST: ${POSTGRES_HOST}
-            SYSTEM_VERSION: ${SYSTEM_VERSION}
-            MACHINE_IP: ${MACHINE_IP}
-            USER_ROOT_USERNAME: ${ADMIN_USER}
-            USER_ROOT_PASSWORD: ${ADMIN_PASS}
-            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            POSTGREST_FLASK_HOST: ${POSTGREST_HOST}:${POSTGREST_PORT}
-            # SYSLOG_HOST: 'syslog:514'
-        expose:
-            - 8000
-        volumes:
-            - ./frontend/:/root/
-            - ./frontend/webapp/configs/:/etc/artemis/
-            - ./frontend/db/:/etc/webapp/db/
-        depends_on:
-            - rabbitmq
-            - postgres
-            - postgrest
-            # - syslog
-            - backend
-        networks:
-            - rabbitmq
-            - postgres
-            - postgrest
-            - nginx
-            # - syslog
-    nginx:
-        image: nginx:latest
-        container_name: production_nginx
-        environment:
-            ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
-            POSTGREST_HOST: ${POSTGREST_HOST}
-        depends_on:
-            - frontend
-            - postgrest
-        volumes:
-            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
-            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
-        ports:
-            - 80:80
-            - 443:443
-        expose:
-            - 80
-            - 443
-        networks:
-            - frontend
-            - postgrest
-        restart: always
+        entrypoint: ['bash']
+        tty: true
+        stdin_open: true
+    # frontend:
+    #     build: ./frontend/
+    #     container_name: frontend
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         POSTGRES_HOST: ${POSTGRES_HOST}
+    #         SYSTEM_VERSION: ${SYSTEM_VERSION}
+    #         MACHINE_IP: ${MACHINE_IP}
+    #         USER_ROOT_USERNAME: ${ADMIN_USER}
+    #         USER_ROOT_PASSWORD: ${ADMIN_PASS}
+    #         USER_ROOT_EMAIL: ${ADMIN_EMAIL}
+    #         POSTGREST_FLASK_HOST: ${POSTGREST_HOST}:${POSTGREST_PORT}
+    #         # SYSLOG_HOST: 'syslog:514'
+    #     expose:
+    #         - 8000
+    #     volumes:
+    #         - ./frontend/:/root/
+    #         - ./frontend/webapp/configs/:/etc/artemis/
+    #         - ./frontend/db/:/etc/webapp/db/
+    #     depends_on:
+    #         - rabbitmq
+    #         - postgres
+    #         - postgrest
+    #         # - syslog
+    #         - backend
+    #     networks:
+    #         - rabbitmq
+    #         - postgres
+    #         - postgrest
+    #         - nginx
+    #         # - syslog
+    # nginx:
+    #     image: nginx:latest
+    #     container_name: production_nginx
+    #     environment:
+    #         ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
+    #         POSTGREST_HOST: ${POSTGREST_HOST}
+    #     depends_on:
+    #         - frontend
+    #         - postgrest
+    #     volumes:
+    #         - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
+    #         - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+    #     ports:
+    #         - 80:80
+    #         - 443:443
+    #     expose:
+    #         - 80
+    #         - 443
+    #     networks:
+    #         - frontend
+    #         - postgrest
+    #     restart: always
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -123,6 +126,8 @@ services:
         restart: always
         expose:
             - 3000
+        ports:
+            - "3000:3000"
         networks:
             - postgres
             - postgrest

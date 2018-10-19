@@ -1,9 +1,9 @@
 import radix
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet
-from utils.service import Service
+from utils import exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
+import signal
 import time
 from pymemcache.client.base import Client
 import pickle
@@ -12,7 +12,7 @@ import logging
 from typing import Union, Dict, List, NoReturn, Callable, Tuple
 
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 hij_log = logging.getLogger('hijack_logger')
 mail_log = logging.getLogger('mail_logger')
 
@@ -37,12 +37,17 @@ def pickle_deserializer(key: str, value: str, flags: int) -> Union[str, Dict]:
     raise Exception('Unknown serialization format')
 
 
-class Detection(Service):
+class Detection():
     """
     Detection Service.
     """
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-    def run_worker(self) -> NoReturn:
+    def run(self) -> NoReturn:
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
@@ -54,6 +59,10 @@ class Detection(Service):
             log.exception('exception')
         finally:
             log.info('stopped')
+
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
         """
@@ -539,3 +548,8 @@ class Detection(Service):
                 log.exception(
                     "couldn't erase data: {}".format(
                         message.payload))
+
+
+if __name__ == '__main__':
+    service = Detection()
+    service.run()

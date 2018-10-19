@@ -1,24 +1,29 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST
-from utils.service import Service
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
 import pickle
 import json
-import logging
+import signal
 import hashlib
 import os
 import datetime
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 TABLES = ['bgp_updates', 'hijacks', 'configs']
 VIEWS = ['view_configs', 'view_bgpupdates', 'view_hijacks']
 
 
-class Postgresql_db(Service):
+class Postgresql_db():
+
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def create_connect_db(self):
         _db_conn = None
@@ -45,7 +50,7 @@ class Postgresql_db(Service):
 
         return _db_conn
 
-    def run_worker(self):
+    def run(self):
         db_conn = self.create_connect_db()
         db_cursor = db_conn.cursor()
 
@@ -78,6 +83,10 @@ class Postgresql_db(Service):
             log.info('stopped')
             db_cursor.close()
             db_conn.close()
+
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
 
@@ -126,23 +135,23 @@ class Postgresql_db(Service):
                 'mitigation', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_update_retrieve = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, exclusive=True, max_priority=1,
+            self.hijack_update_retrieve = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, max_priority=1,
                                                 consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+            self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, exclusive=True, max_priority=2,
+            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, max_priority=1,
                                        consumer_arguments={'x-priority': 1})
-            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=2,
                                       consumer_arguments={'x-priority': 2})
-            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, exclusive=True, max_priority=2,
+            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, max_priority=2,
                                         consumer_arguments={'x-priority': 3})
-            self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, exclusive=True, max_priority=2,
+            self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
             self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, max_priority=4,
                                               consumer_arguments={'x-priority': 4})
@@ -721,3 +730,8 @@ class Postgresql_db(Service):
                 log.exception(
                     'failed to retrieved most recent config hash in db')
             return None
+
+
+if __name__ == '__main__':
+    service = Postgresql_db()
+    service.run()

@@ -1,25 +1,37 @@
-from utils import RABBITMQ_HOST
-from utils.service import Service
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
 from kombu.mixins import ConsumerProducerMixin
 import time
-import logging
+import signal
 
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 
 
-class Scheduler(Service):
+class Scheduler():
 
-    def run_worker(self):
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def run(self):
+        """
+        Entry function for this service that runs a RabbitMQ worker through Kombu.
+        """
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
-        except BaseException:
+        except Exception:
             log.exception('exception')
         finally:
             log.info('stopped')
+
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
 
@@ -98,3 +110,8 @@ class Scheduler(Service):
                         )
                         unhandled_cnt = 0
                 unhandled_cnt += 1
+
+
+if __name__ == '__main__':
+    service = Scheduler()
+    service.run()

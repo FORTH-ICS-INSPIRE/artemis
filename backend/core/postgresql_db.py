@@ -155,62 +155,62 @@ class Postgresql_db(Service):
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_queue],
                     on_message=self.handle_hijack_update,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True,
                     accept=['pickle']
                 ),
                 Consumer(
                     queues=[self.db_clock_queue],
                     on_message=self._scheduler_instruction,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.handled_queue],
                     on_message=self.handle_handled_bgp_update,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_update_retrieve],
                     on_message=self.handle_hijack_retrieve,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_resolved_queue],
                     on_message=self.handle_resolved_hijack,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_ignored_queue],
                     on_message=self.handle_hijack_ignore_request,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_comment_queue],
                     on_message=self.handle_hijack_comment,
-                    # prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 )
             ]

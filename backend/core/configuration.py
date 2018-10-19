@@ -90,14 +90,14 @@ class Configuration(Service):
                 Consumer(
                     queues=[self.config_modify_queue],
                     on_message=self.handle_config_modify,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     no_ack=True,
                     accept=['yaml']
                 ),
                 Consumer(
                     queues=[self.config_request_queue],
                     on_message=self.handle_config_request,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     no_ack=True
                 )
             ]

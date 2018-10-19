@@ -1,5 +1,4 @@
 import argparse
-import time
 from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
@@ -11,20 +10,20 @@ log = get_logger()
 
 
 def run_bgpstream_beta_bmp(prefixes=[]):
-    """
+    '''
     Retrieve all elements related to a list of prefixes
     https://bgpstream.caida.org/docs/api/pybgpstream/_pybgpstream.html
 
     :param prefix: <str> input prefix
 
     :return: -
-    """
+    '''
 
     # create a new bgpstream instance
     stream = _pybgpstream.BGPStream()
 
     # set BMP data interface
-    stream.set_data_interface("beta-bmp-stream")
+    stream.set_data_interface('beta-bmp-stream')
 
     # filter prefixes
     for prefix in prefixes:
@@ -53,7 +52,7 @@ def run_bgpstream_beta_bmp(prefixes=[]):
                 rec = stream.get_next_record()
             except BaseException:
                 continue
-            if (rec.status != "valid") or (rec.type != "update"):
+            if (rec.status != 'valid') or (rec.type != 'update'):
                 continue
 
             # get next element
@@ -63,12 +62,12 @@ def run_bgpstream_beta_bmp(prefixes=[]):
                 continue
 
             while elem:
-                if elem.type in ["A", "W"]:
+                if elem.type in ['A', 'W']:
                     this_prefix = str(elem.fields['prefix'])
-                    service = "betabmp|{}|{}".format(
+                    service = 'betabmp|{}|{}'.format(
                         str(rec.project), str(rec.collector))
                     type_ = elem.type
-                    if type_ == "A":
+                    if type_ == 'A':
                         as_path = elem.fields['as-path'].split(' ')
                         communities = [{'asn': int(comm.split(':')[0]), 'value': int(comm.split(':')[1])}
                                        for comm in elem.fields['communities']]

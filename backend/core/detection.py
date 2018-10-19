@@ -131,38 +131,38 @@ class Detection(Service):
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.update_unhandled_queue],
                     on_message=self.handle_unhandled_bgp_updates,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_fetch_queue],
                     on_message=self.fetch_ongoing_hijacks,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     accept=['pickle'],
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_resolved_queue],
                     on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_ignored_queue],
                     on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=1,
+                    # prefetch_count=1,
                     no_ack=True
                 )
             ]

@@ -4,7 +4,7 @@
 # Start of Prefix Definitions
 prefixes:
     forth_prefix_main: &forth_prefix_main
-        - 139.0.0.0/8
+        - 0.0.0.0/0
         # - 139.0.0.0/8
         # [0.0.0.0/0]
         # [0.0.0.0/0, '::/0']
@@ -16,9 +16,11 @@ prefixes:
 # Start of Monitor Definitions
 monitors:
     riperis: ['']
-    # bgpstreamlive:
-    #  - routeviews
-    #  - ris
+    bgpstreamlive:
+    - routeviews
+    - ris
+    betabmp:
+    - betabmp
     # exabgp:
     # - ip: 192.168.1.1
     #   port: 5000

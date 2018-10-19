@@ -81,20 +81,20 @@ class Worker(ConsumerProducerMixin):
             Consumer(
                 queues=[self.config_request_queue],
                 on_message=self.handle_config_request,
-                prefetch_count=1,
+                # prefetch_count=1,
                 no_ack=True
             ),
             Consumer(
                 queues=[self.hijack_queue],
                 on_message=self.handle_hijack,
-                prefetch_count=1,
+                # prefetch_count=1,
                 no_ack=True,
                 accept=['pickle']
             ),
             Consumer(
                 queues=[self.handled_queue],
                 on_message=self.handle_handled_bgp_update,
-                prefetch_count=1,
+                # prefetch_count=1,
                 no_ack=True
             )
         ]

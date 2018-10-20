@@ -4,5 +4,6 @@
 ./wait-for postgres:5432 -t 60
 #./wait-for syslog:514 -t 60
 service cron start
-service supervisor start
-supervisorctl
+# service supervisor start
+# supervisorctl
+supervisord -n

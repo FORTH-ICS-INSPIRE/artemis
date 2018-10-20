@@ -1,49 +1,21 @@
 #!/usr/bin/env python
-import os
-from kombu import Connection, Producer, Consumer, Queue, uuid
 import traceback
 import argparse
+from xmlrpc.client import ServerProxy
 
 
 class ControllerCLI(object):
 
-    def __init__(self, connection):
-        self.connection = connection
-
-    def on_response(self, message):
-        if message.properties['correlation_id'] == self.correlation_id:
-            self.response = message.payload
-
     def call(self, module, action):
-        self.response = None
-        self.correlation_id = uuid()
-        callback_queue = Queue(uuid(),
-                            durable=False,
-                            exclusive=True,
-                            auto_delete=True,
-                            max_priority=4,
-                            consumer_arguments={
-            'x-priority': 4})
-        with Producer(self.connection) as producer:
-            producer.publish(
-                {
-                    'module': module,
-                    'action': action
-                },
-                exchange='',
-                routing_key='controller-queue',
-                declare=[callback_queue],
-                reply_to=callback_queue.name,
-                correlation_id=self.correlation_id,
-                priority=4
-            )
-        with Consumer(self.connection,
-                      on_message=self.on_response,
-                      queues=[callback_queue],
-                      no_ack=True):
-            while self.response is None:
-                self.connection.drain_events()
-        return self.response
+        try:
+            server = ServerProxy('http://localhost:9001/RPC2')
+            if action == 'start':
+                res = server.supervisor.startProcess[module]
+            elif action == 'stop':
+                res = server.supervisor.stopProcess[module]
+        except Exception as e:
+            res = str(e)
+        return res
 
 
 if __name__ == '__main__':
@@ -55,9 +27,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     try:
-        connection = Connection(os.getenv('RABBITMQ_HOST', 'localhost'))
-        cli = ControllerCLI(connection)
-
+        cli = ControllerCLI()
         print(' [x] Requesting')
         response = cli.call(args.module, args.action)
         print(' [.] Got {}'.format(response))

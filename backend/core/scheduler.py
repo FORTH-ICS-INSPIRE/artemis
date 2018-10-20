@@ -1,8 +1,9 @@
 from utils import RABBITMQ_HOST, get_logger
-from kombu import Connection, Queue, Exchange, uuid, Consumer, Producer
+from kombu import Connection, Exchange
 from kombu.mixins import ConsumerProducerMixin
 import time
 import signal
+from xmlrpc.client import ServerProxy
 
 
 log = get_logger()
@@ -33,6 +34,7 @@ class Scheduler():
         if self.worker is not None:
             self.worker.should_stop = True
 
+    # TODO this worker is not consumer we need to change class
     class Worker(ConsumerProducerMixin):
 
         def __init__(self, connection):
@@ -47,46 +49,13 @@ class Scheduler():
                 durable=False,
                 delivery_mode=1)
             self.db_clock_exchange.declare()
-
             log.info('started')
             self._db_clock_send()
 
         def _get_module_status(self, module):
-            self.response = None
-            self.correlation_id = uuid()
-            callback_queue = Queue(uuid(),
-                                   durable=False,
-                                   auto_delete=True,
-                                   max_priority=4,
-                                   consumer_arguments={
-                'x-priority': 4})
-            with Producer(self.connection) as producer:
-                producer.publish(
-                    {
-                        'module': module,
-                        'action': 'status'
-                    },
-                    exchange='',
-                    routing_key='controller-queue',
-                    declare=[callback_queue],
-                    reply_to=callback_queue.name,
-                    correlation_id=self.correlation_id,
-                    priority=4
-                )
-            with Consumer(self.connection,
-                          on_message=self.handle_module_status,
-                          queues=[callback_queue],
-                          no_ack=True):
-                while self.response is None:
-                    self.connection.drain_events()
-            if 'response' in self.response:
-                if 'status' in self.response['response']:
-                    if self.response['response']['status'] == 'up':
-                        return True
-            return False
-
-        def handle_module_status(self, message):
-            self.response = message.payload
+            server = ServerProxy('http://localhost:9001/RPC2')
+            response = server.supervisor.getProcessInfo(module)
+            return response['state'] == 20
 
         def _db_clock_send(self):
             unhandled_cnt = 0

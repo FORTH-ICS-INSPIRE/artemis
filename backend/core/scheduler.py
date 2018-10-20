@@ -1,4 +1,4 @@
-from utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_HOST, get_logger, SUPERVISOR_HOST, SUPERVISOR_PORT
 from kombu import Connection, Exchange
 from kombu.mixins import ConsumerProducerMixin
 import time
@@ -53,7 +53,7 @@ class Scheduler():
             self._db_clock_send()
 
         def _get_module_status(self, module):
-            server = ServerProxy('http://localhost:9001/RPC2')
+            server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
             response = server.supervisor.getProcessInfo(module)
             return response['state'] == 20
 

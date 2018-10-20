@@ -1,6 +1,6 @@
-from kombu import Connection, uuid, Queue, Consumer, Producer
-from webapp.utils import RABBITMQ_HOST
+from webapp.utils import SUPERVISOR_HOST, SUPERVISOR_PORT
 import logging
+from xmlrpc.client import ServerProxy
 
 log = logging.getLogger('webapp_logger')
 
@@ -15,7 +15,7 @@ intervals = (
 
 def display_time(seconds, granularity=2):
     if seconds is None:
-        return "N/A"
+        return 'N/A'
     result = []
 
     for name, count in intervals:
@@ -24,93 +24,48 @@ def display_time(seconds, granularity=2):
             seconds -= value * count
             if value == 1:
                 name = name.rstrip('s')
-            result.append("{} {}".format(int(value), name))
+            result.append('{} {}'.format(int(value), name))
     return ', '.join(result[:granularity])
 
 
 class Modules_state():
 
     def __init__(self):
-        self.connection = None
-        self.response = None
-        self.init_conn()
+        self.server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
 
-    def init_conn(self):
+    def __call__(self, module, action):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
-        except BaseException:
-            log.error('Modules_status failed to connect to rabbitmq..')
-
-    def call(self, module, action):
-        self.correlation_id = uuid()
-        callback_queue = Queue(uuid(),
-                               durable=False,
-                               auto_delete=True,
-                               max_priority=4,
-                               consumer_arguments={
-            'x-priority': 4})
-        with Producer(self.connection) as producer:
-            producer.publish(
-                {
-                    'module': module,
-                    'action': action
-                },
-                exchange='',
-                routing_key='controller-queue',
-                declare=[callback_queue],
-                reply_to=callback_queue.name,
-                correlation_id=self.correlation_id,
-                priority=4
-            )
-        with Consumer(self.connection,
-                      on_message=self.on_response,
-                      queues=[callback_queue],
-                      no_ack=True):
-            while self.response is None:
-                self.connection.drain_events()
+            if module == 'all':
+                if action == 'start':
+                    res = self.server.supervisor.startAllProcesses
+                elif action == 'stop':
+                    res = self.server.supervisor.stopAllProcesses
+            else:
+                if action == 'start':
+                    res = self.server.supervisor.startProcess[module]
+                elif action == 'stop':
+                    res = self.server.supervisor.stopProcess[module]
+        except Exception as e:
+            res = str(e)
+        return res
 
     def is_up_or_running(self, module):
-        log.debug(self.response)
-        if 'response' in self.response:
-            if 'status' in self.response['response']:
-                if self.response['response']['status'] == 'up':
-                    return True
-            elif 'reason' in self.response['response']:
-                if self.response['response']['reason'] == 'already running':
-                    return True
-        return False
-
-    def on_response(self, message):
-        if message.properties['correlation_id'] == self.correlation_id:
-            self.response = message.payload
+        try:
+            response = self.server.supervisor.getProcessInfo(module)
+            return response['state'] == 20
+        except Exception:
+            log.exception('exception')
+            return False
 
     def get_response_all(self):
-        log.debug("payload: {}".format(self.response))
         ret_response = {}
-        if 'response' in self.response:
-            if self.response['response']['result'] == 'success':
-                for module in ['configuration', 'scheduler',
-                               'postgresql_db', 'monitor', 'detection', 'mitigation']:
-                    ret_response[module] = {}
-                    ret_response[module]['status'] = self.response['response'][module]['status']
-                    ret_response[module]['uptime'] = display_time(
-                        self.response['response'][module].get('uptime', None))
+        response = self.server.supervisor.getAllProcessInfo()
+        for module in response:
+            ret_response[module['name']] = {
+                'status': module['state'] == 20,
+                'uptime': display_time(module['now'] - module['start'])
+            }
         return ret_response
 
     def get_response_formatted_all(self):
-        log.debug("payload: {}".format(self.response))
-        ret_response = {}
-        if 'response' in self.response:
-            if self.response['response']['result'] == 'success':
-                for module in [('configuration', 'Configuration'),
-                               ('scheduler', 'Scheduler'),
-                               ('postgresql_db', 'Postgresql'),
-                               ('monitor', 'Monitor'),
-                               ('detection', 'Detection'),
-                               ('mitigation', 'Mitigation')]:
-                    ret_response[module[1]] = {}
-                    ret_response[module[1]
-                                 ]['status'] = self.response['response'][module[0]]['status']
-                    ret_response[module[1]]['uptime'] = display_time(
-                        self.response['response'][module[0]].get('uptime', None))
-        return ret_response
+        return self.get_response_all()

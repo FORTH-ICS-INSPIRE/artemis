@@ -155,13 +155,12 @@ def pending():
 def overview():
     log.debug("url: /")
     status_request = Modules_state()
-    status_request.call('all', 'status')
-    modules_formmated = status_request.get_response_formatted_all()
+    modules_formatted = status_request.get_response_formatted_all()
     app.config['configuration'].get_newest_config()
     newest_config = app.config['configuration'].get_raw_config()
     db_stats = app.config['db_stats'].get_all_formatted_list()
     return render_template('index.htm',
-                           modules=modules_formmated,
+                           modules=modules_formatted,
                            config=newest_config,
                            db_stats=db_stats,
                            config_timestamp=app.config['configuration'].get_config_last_modified())

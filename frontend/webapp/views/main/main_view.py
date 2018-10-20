@@ -38,7 +38,6 @@ def display_hijack():
     app.config['configuration'].get_newest_config()
     _key = request.args.get('key')
     mitigation_status_request = Modules_state()
-    mitigation_status_request.call('mitigation', 'status')
     _mitigation_flag = False
 
     hijack_data = get_hijack_by_key(_key)

@@ -3,13 +3,12 @@ import logging
 import requests
 import json
 from webapp.utils import flatten
-from ipaddress import ip_network as str2ip
 from webapp.utils import API_URL_FLASK
 
 
 log = logging.getLogger('webapp_logger')
 
-API_PATH = "http://" + API_URL_FLASK
+API_PATH = 'http://' + API_URL_FLASK
 
 
 class Configuration():
@@ -24,14 +23,14 @@ class Configuration():
     def get_newest_config(self):
         try:
             log.debug(
-                "send request for newest config: {}".format(
+                'send request for newest config: {}'.format(
                     self.raw_json))
-            url_ = API_PATH + "/configs?order=time_modified.desc&limit=1"
+            url_ = API_PATH + '/configs?order=time_modified.desc&limit=1'
             response = requests.get(url=url_)
             self.raw_json = response.json()
-            log.debug("received config json: {}".format(self.raw_json))
+            log.debug('received config json: {}'.format(self.raw_json))
             # Check if postgrest is up and if a valid config exists
-            if isinstance(self.raw_json, list) == False or len(self.raw_json) == 0:
+            if not isinstance(self.raw_json, list) or len(self.raw_json) == 0:
                 return False
             if 'config_data' in self.raw_json[0]:
                 self.raw_json_config = self.raw_json[0]['config_data']
@@ -40,13 +39,11 @@ class Configuration():
             if 'time_modified' in self.raw_json[0]:
                 self.time_modified = self.raw_json[0]['time_modified']
 
-        except BaseException:
-            log.exception("failed to fetch newest config")
-
-        try:
             self.config_yaml = yload(json.dumps(self.raw_json_config))
         except BaseException:
-            log.exception("yaml failed to parse new config")
+            log.exception('exception')
+            return False
+        return True
 
     def get_prefixes_list(self):
         if self.config_yaml is None:
@@ -74,8 +71,8 @@ class Configuration():
 
 def fetch_all_config_timestamps():
     try:
-        log.debug("send request to fetch all config timestamps")
-        url_ = API_PATH + "/view_configs"
+        log.debug('send request to fetch all config timestamps')
+        url_ = API_PATH + '/view_configs'
         response = requests.get(url=url_)
         raw_json = response.json()
         if len(raw_json) > 0:
@@ -83,5 +80,5 @@ def fetch_all_config_timestamps():
         else:
             return None
     except BaseException:
-        log.exception("failed to fetch all config timestamps")
+        log.exception('failed to fetch all config timestamps')
     return None

@@ -122,5 +122,7 @@ if __name__ == '__main__':
     try:
         run_bgpstream_beta_bmp(
             prefixes)
+    except Exception:
+        log.exception('exception')
     except KeyboardInterrupt:
         pass

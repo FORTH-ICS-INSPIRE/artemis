@@ -164,32 +164,32 @@ class Postgresql_db():
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_queue],
                     on_message=self.handle_hijack_update,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True,
                     accept=['pickle']
                 ),
                 Consumer(
                     queues=[self.db_clock_queue],
                     on_message=self._scheduler_instruction,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.handled_queue],
                     on_message=self.handle_handled_bgp_update,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True
                 ),
                 Consumer(
@@ -201,25 +201,25 @@ class Postgresql_db():
                 Consumer(
                     queues=[self.hijack_resolved_queue],
                     on_message=self.handle_resolved_hijack,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_ignored_queue],
                     on_message=self.handle_hijack_ignore_request,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_comment_queue],
                     on_message=self.handle_hijack_comment,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 )
             ]
@@ -423,7 +423,6 @@ class Postgresql_db():
             Return all active hijacks
             Used in detection memcache
             '''
-            time.sleep(5)
             log.debug('received hijack_retrieve')
             try:
                 results = {}
@@ -533,7 +532,7 @@ class Postgresql_db():
                 cmd_ += 'timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES '
                 cmd_ += '(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(key, timestamp) DO NOTHING;'
                 psycopg2.extras.execute_batch(
-                    self.db_cur, cmd_, self.insert_bgp_entries)
+                    self.db_cur, cmd_, self.insert_bgp_entries, page_size=1000)
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
@@ -558,7 +557,8 @@ class Postgresql_db():
                     psycopg2.extras.execute_batch(
                         self.db_cur,
                         'UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ',
-                        self.update_bgp_entries
+                        self.update_bgp_entries,
+                        page_size=1000
                     )
                     self.db_conn.commit()
                 except Exception:
@@ -572,7 +572,8 @@ class Postgresql_db():
                     psycopg2.extras.execute_batch(
                         self.db_cur,
                         'UPDATE bgp_updates SET handled=true WHERE key=%s',
-                        self.handled_bgp_entries
+                        self.handled_bgp_entries,
+                        page_size=1000
                     )
                     self.db_conn.commit()
                 except Exception:
@@ -639,7 +640,7 @@ class Postgresql_db():
                     )
                     values.append(values_)
 
-                psycopg2.extras.execute_batch(self.db_cur, cmd_, values)
+                psycopg2.extras.execute_batch(self.db_cur, cmd_, values, page_size=1000)
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
@@ -694,12 +695,10 @@ class Postgresql_db():
 
         def _scheduler_instruction(self, message):
             msg_ = message.payload
-            if (msg_ == 'bulk_operation'):
+            if msg_ == 'bulk_operation':
                 self._update_bulk()
-                return
-            elif(msg_ == 'send_unhandled'):
+            elif msg_ == 'send_unhandled':
                 self._retrieve_unhandled()
-                return
             else:
                 log.warning(
                     'Received uknown instruction from scheduler: {}'.format(msg_))

@@ -144,5 +144,7 @@ if __name__ == '__main__':
                 time.time()) -
             START_TIME_OFFSET,
             end=0)
+    except Exception:
+        log.exception('exception')
     except KeyboardInterrupt:
         pass

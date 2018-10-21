@@ -14,8 +14,6 @@ intervals = (
 
 
 def display_time(seconds, granularity=2):
-    if seconds is None:
-        return 'N/A'
     result = []
 
     for name, count in intervals:
@@ -71,7 +69,7 @@ class Modules_state():
             else:
                 ret_response[module['name']] = {
                     'status': 'down',
-                    'uptime': None
+                    'uptime': 'N/A'
                 }
         return ret_response
 

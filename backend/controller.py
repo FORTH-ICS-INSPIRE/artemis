@@ -66,7 +66,7 @@ class Controller(Service):
                 Consumer(
                     queues=[self.controller_queue],
                     on_message=self.controller_handler,
-                    prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 )
             ]

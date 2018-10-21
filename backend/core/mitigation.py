@@ -57,13 +57,13 @@ class Mitigation(Service):
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
-                    prefetch_count=1,
+                    prefetch_count=100,
                     no_ack=True
                 )
             ]

@@ -64,13 +64,15 @@ class Modules_state():
         response = self.server.supervisor.getAllProcessInfo()
         for module in response:
             if module['state'] == 20:
-                state = 'up'
+                ret_response[module['name']] = {
+                    'status': 'up',
+                    'uptime': display_time(module['now'] - module['start'])
+                }
             else:
-                state = 'down'
-            ret_response[module['name']] = {
-                'status': state,
-                'uptime': display_time(module['now'] - module['start'])
-            }
+                ret_response[module['name']] = {
+                    'status': 'down',
+                    'uptime': None
+                }
         return ret_response
 
     def get_response_formatted_all(self):

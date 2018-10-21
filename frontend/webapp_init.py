@@ -11,7 +11,7 @@ import time
 app = app
 app.config['configuration'] = Configuration()
 
-while app.config['configuration'].get_newest_config() == False:
+while not app.config['configuration'].get_newest_config():
     time.sleep(1)
     log.info('waiting for postgrest')
 
@@ -26,7 +26,7 @@ except BaseException:
 modules = Modules_state()
 try:
     log.debug('Starting Scheduler..')
-    modules('scheduler', 'start')
+    modules.call('scheduler', 'start')
     if not modules.is_up_or_running('scheduler'):
         log.error('Couldn\'t start scheduler.')
         exit(-1)
@@ -36,7 +36,7 @@ except BaseException:
 
 try:
     log.debug('Starting Postgresql_db..')
-    modules('postgresql_db', 'start')
+    modules.call('postgresql_db', 'start')
 
     if not modules.is_up_or_running('postgresql_db'):
         log.error('Couldn\'t start postgresql_db.')

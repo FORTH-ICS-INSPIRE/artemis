@@ -181,7 +181,7 @@ networks:
     memcached:
     postgres:
     postgrest:
-    # nginx:
-    # frontend:
+    nginx:
+    frontend:
     # syslog:
     # exabgp:

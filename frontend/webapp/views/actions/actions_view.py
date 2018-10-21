@@ -194,9 +194,9 @@ def monitor_state():
     modules_state = Modules_state()
     if form.validate_on_submit():
         if not form.monitor_switch.data:
-            modules_state('monitor', 'stop')
+            modules_state.call('monitor', 'stop')
         else:
-            modules_state('monitor', 'start')
+            modules_state.call('monitor', 'start')
     return redirect('admin/system')
 
 
@@ -207,9 +207,9 @@ def detection_state():
     modules_state = Modules_state()
     if form.validate_on_submit():
         if not form.detection_switch.data:
-            modules_state('detection', 'stop')
+            modules_state.call('detection', 'stop')
         else:
-            modules_state('detection', 'start')
+            modules_state.call('detection', 'start')
     return redirect('admin/system')
 
 
@@ -220,7 +220,7 @@ def mitigation_state():
     modules_state = Modules_state()
     if form.validate_on_submit():
         if not form.mitigation_switch.data:
-            modules_state('mitigation', 'stop')
+            modules_state.call('mitigation', 'stop')
         else:
-            modules_state('mitigation', 'start')
+            modules_state.call('mitigation', 'start')
     return redirect('admin/system')

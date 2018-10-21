@@ -33,7 +33,7 @@ class Modules_state():
     def __init__(self):
         self.server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
 
-    def __call__(self, module, action):
+    def call(self, module, action):
         try:
             if module == 'all':
                 if action == 'start':
@@ -42,9 +42,11 @@ class Modules_state():
                     res = self.server.supervisor.stopAllProcesses
             else:
                 if action == 'start':
-                    res = self.server.supervisor.startProcess[module]
+                    if self.server.supervisor.getProcessInfo[module]['state'] != 20:
+                        res = self.server.supervisor.startProcess[module]
                 elif action == 'stop':
-                    res = self.server.supervisor.stopProcess[module]
+                    if self.server.supervisor.getProcessInfo[module]['state'] == 20:
+                        res = self.server.supervisor.stopProcess[module]
         except Exception as e:
             res = str(e)
         return res
@@ -61,8 +63,12 @@ class Modules_state():
         ret_response = {}
         response = self.server.supervisor.getAllProcessInfo()
         for module in response:
+            if module['state'] == 20:
+                state = 'up'
+            else:
+                state = 'down'
             ret_response[module['name']] = {
-                'status': module['state'] == 20,
+                'status': state,
                 'uptime': display_time(module['now'] - module['start'])
             }
         return ret_response

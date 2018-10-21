@@ -1,6 +1,7 @@
 from webapp.utils import SUPERVISOR_HOST, SUPERVISOR_PORT
 import logging
 from xmlrpc.client import ServerProxy
+import time
 
 log = logging.getLogger('webapp_logger')
 
@@ -35,24 +36,33 @@ class Modules_state():
         try:
             if module == 'all':
                 if action == 'start':
-                    res = self.server.supervisor.startAllProcesses
+                    res = self.server.supervisor.startAllProcesses()
                 elif action == 'stop':
-                    res = self.server.supervisor.stopAllProcesses
+                    res = self.server.supervisor.stopAllProcesses()
             else:
+                state = self.server.supervisor.getProcessInfo(module)['state']
                 if action == 'start':
-                    if self.server.supervisor.getProcessInfo[module]['state'] != 20:
-                        res = self.server.supervisor.startProcess[module]
+                    if state != 20:
+                        res = self.server.supervisor.startProcess(module)
+                    else:
+                        res = 'Already started'
                 elif action == 'stop':
-                    if self.server.supervisor.getProcessInfo[module]['state'] == 20:
-                        res = self.server.supervisor.stopProcess[module]
+                    if state == 20:
+                        res = self.server.supervisor.stopProcess(module)
+                    else:
+                        res = 'Already stopped'
         except Exception as e:
+            log.exception('exception')
             res = str(e)
         return res
 
     def is_up_or_running(self, module):
+        state = 10
         try:
-            response = self.server.supervisor.getProcessInfo(module)
-            return response['state'] == 20
+            while state == 10:
+                state = self.server.supervisor.getProcessInfo(module)['state']
+                time.sleep(5)
+            return state == 20
         except Exception:
             log.exception('exception')
             return False

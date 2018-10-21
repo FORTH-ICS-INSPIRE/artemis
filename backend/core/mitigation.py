@@ -56,9 +56,9 @@ class Mitigation():
                 'config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.config_queue = Queue('mitigation-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
+            self.config_queue = Queue('mitigation-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=3,
                                       consumer_arguments={'x-priority': 3})
-            self.mitigate_queue = Queue('mitigation-mitigate', exchange=self.mitigation_exchange, routing_key='mitigate', durable=False, exclusive=True, max_priority=2,
+            self.mitigate_queue = Queue('mitigation-mitigate', exchange=self.mitigation_exchange, routing_key='mitigate', durable=False, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()

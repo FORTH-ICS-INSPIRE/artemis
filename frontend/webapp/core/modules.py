@@ -42,18 +42,19 @@ class Modules_state():
             else:
                 state = self.server.supervisor.getProcessInfo(module)['state']
                 if action == 'start':
-                    if state != 20:
+                    if state != 20 and state != 10:
                         res = self.server.supervisor.startProcess(module)
                     else:
                         res = 'Already started'
                 elif action == 'stop':
-                    if state == 20:
+                    if state == 20 or state == 10:
                         res = self.server.supervisor.stopProcess(module)
                     else:
                         res = 'Already stopped'
         except Exception as e:
             log.exception('exception')
             res = str(e)
+
         return res
 
     def is_up_or_running(self, module):

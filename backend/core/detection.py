@@ -281,6 +281,7 @@ class Detection():
 
             if monitor_event['key'] not in self.monitors_seen:
                 raw = monitor_event.copy()
+                is_hijack = False
                 # ignore withdrawals for now
                 if monitor_event['type'] == 'A':
                     monitor_event['path'] = Detection.Worker.__clean_as_path(
@@ -295,10 +296,12 @@ class Detection():
                         for func in self.__detection_generator(
                                 len(monitor_event['path']), prefix_node):
                             if func(monitor_event, prefix_node):
+                                is_hijack = True
                                 break
                     except Exception:
                         log.exception('exception')
-                self.mark_handled(raw)
+                if not is_hijack:
+                    self.mark_handled(raw)
                 self.mon_num += 1
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))

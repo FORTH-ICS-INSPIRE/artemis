@@ -97,9 +97,9 @@ class Postgresql_db():
             self.timestamp = -1
             self.num_of_unhadled_to_feed_to_detection = 50
             self.insert_bgp_entries = []
-            self.update_bgp_entries = []
-            self.handled_bgp_entries = []
-            self.tmp_hijacks_dict = dict()
+            self.update_bgp_entries = set()
+            self.handled_bgp_entries = set()
+            self.tmp_hijacks_dict = {}
 
             # DB variables
             self.db_conn = db_conn
@@ -344,7 +344,7 @@ class Postgresql_db():
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             try:
                 key_ = (message.payload,)
-                self.handled_bgp_entries.append(key_)
+                self.handled_bgp_entries.add(key_)
             except Exception:
                 log.exception('{}'.format(message))
 
@@ -549,15 +549,17 @@ class Postgresql_db():
             for hijack_key in self.tmp_hijacks_dict:
                 for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                     num_of_updates += 1
-                    self.update_bgp_entries.append(
+                    self.update_bgp_entries.add(
                         (str(hijack_key), bgp_entry_to_update))
+                    # exclude handle bgp updates that point to same bgp as this hijack
+                    self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if len(self.update_bgp_entries) > 0:
                 try:
                     psycopg2.extras.execute_batch(
                         self.db_cur,
                         'UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ',
-                        self.update_bgp_entries,
+                        list(self.update_bgp_entries),
                         page_size=1000
                     )
                     self.db_conn.commit()
@@ -565,6 +567,9 @@ class Postgresql_db():
                     log.exception('exception')
                     self.db_conn.rollback()
                     return -1
+
+            num_of_updates += len(self.update_bgp_entries)
+            self.update_bgp_entries.clear()
 
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:

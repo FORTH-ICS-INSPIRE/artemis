@@ -1,5 +1,10 @@
 # ARTEMIS
 
+## DICLAIMER
+This is a live project under testing/development.
+We will release the first stable version of ARTEMIS
+by the end of 2018.
+
 ## General
 
 ARTEMIS is a defense approach versus BGP prefix hijacking attacks
@@ -13,7 +18,7 @@ privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
 can be neutralized within a minute!
 
 You can read more about ARTEMIS (and check e.g., news and related publications)
-on the INSPIRE Group ARTEMIS [webpage](http://www.inspire.edu.gr/artemis.)
+on the INSPIRE Group ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a testing server/VM as a modular
@@ -477,10 +482,8 @@ TBD (version tags to-be-released)
 * Vasileios Kotronis, FORTH-ICS
 
 ## License
-We are finalizing the process of open-sourcing the ARTEMIS software under the BSD-3 license.
-A provisional [license](LICENSE) has been added to the code.
-During the testing phase and until ARTEMIS is fully open-sourced, the tester is allowed to have access
-to the code and use it, but is not allowed to disclose the code to third parties.
+The ARTEMIS software is open-sourced under the BSD-3 license.
+Please check [license](LICENSE).
 
 ## Acknowledgements
 This work is supported by the following sources:

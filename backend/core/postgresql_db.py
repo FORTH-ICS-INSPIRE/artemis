@@ -1,24 +1,29 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST
-from utils.service import Service
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
 import pickle
 import json
-import logging
+import signal
 import hashlib
 import os
 import datetime
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 TABLES = ['bgp_updates', 'hijacks', 'configs']
 VIEWS = ['view_configs', 'view_bgpupdates', 'view_hijacks']
 
 
-class Postgresql_db(Service):
+class Postgresql_db():
+
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def create_connect_db(self):
         _db_conn = None
@@ -45,7 +50,7 @@ class Postgresql_db(Service):
 
         return _db_conn
 
-    def run_worker(self):
+    def run(self):
         db_conn = self.create_connect_db()
         db_cursor = db_conn.cursor()
         try:
@@ -59,6 +64,10 @@ class Postgresql_db(Service):
             db_cursor.close()
             db_conn.close()
 
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
+
     class Worker(ConsumerProducerMixin):
 
         def __init__(self, connection, db_conn, db_cursor):
@@ -68,9 +77,9 @@ class Postgresql_db(Service):
             self.timestamp = -1
             self.num_of_unhadled_to_feed_to_detection = 50
             self.insert_bgp_entries = []
-            self.update_bgp_entries = []
-            self.handled_bgp_entries = []
-            self.tmp_hijacks_dict = dict()
+            self.update_bgp_entries = set()
+            self.handled_bgp_entries = set()
+            self.tmp_hijacks_dict = {}
 
             # DB variables
             self.db_conn = db_conn
@@ -106,23 +115,23 @@ class Postgresql_db(Service):
                 'mitigation', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_update_retrieve = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, exclusive=True, max_priority=1,
+            self.hijack_update_retrieve = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, max_priority=1,
                                                 consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+            self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, exclusive=True, max_priority=2,
+            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, max_priority=1,
                                        consumer_arguments={'x-priority': 1})
-            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=2,
                                       consumer_arguments={'x-priority': 2})
-            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, exclusive=True, max_priority=2,
+            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, max_priority=2,
                                         consumer_arguments={'x-priority': 3})
-            self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, exclusive=True, max_priority=2,
+            self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
             self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, max_priority=4,
                                               consumer_arguments={'x-priority': 4})
@@ -135,32 +144,32 @@ class Postgresql_db(Service):
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_queue],
                     on_message=self.handle_hijack_update,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True,
                     accept=['pickle']
                 ),
                 Consumer(
                     queues=[self.db_clock_queue],
                     on_message=self._scheduler_instruction,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.handled_queue],
                     on_message=self.handle_handled_bgp_update,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True
                 ),
                 Consumer(
@@ -172,25 +181,25 @@ class Postgresql_db(Service):
                 Consumer(
                     queues=[self.hijack_resolved_queue],
                     on_message=self.handle_resolved_hijack,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_ignored_queue],
                     on_message=self.handle_hijack_ignore_request,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_comment_queue],
                     on_message=self.handle_hijack_comment,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 )
             ]
@@ -315,7 +324,7 @@ class Postgresql_db(Service):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             try:
                 key_ = (message.payload,)
-                self.handled_bgp_entries.append(key_)
+                self.handled_bgp_entries.add(key_)
             except Exception:
                 log.exception('{}'.format(message))
 
@@ -394,7 +403,6 @@ class Postgresql_db(Service):
             Return all active hijacks
             Used in detection memcache
             '''
-            time.sleep(5)
             log.debug('received hijack_retrieve')
             try:
                 results = {}
@@ -504,7 +512,7 @@ class Postgresql_db(Service):
                 cmd_ += 'timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES '
                 cmd_ += '(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(key, timestamp) DO NOTHING;'
                 psycopg2.extras.execute_batch(
-                    self.db_cur, cmd_, self.insert_bgp_entries)
+                    self.db_cur, cmd_, self.insert_bgp_entries, page_size=1000)
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
@@ -521,15 +529,18 @@ class Postgresql_db(Service):
             for hijack_key in self.tmp_hijacks_dict:
                 for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                     num_of_updates += 1
-                    self.update_bgp_entries.append(
+                    self.update_bgp_entries.add(
                         (str(hijack_key), bgp_entry_to_update))
+                    # exclude handle bgp updates that point to same bgp as this hijack
+                    self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if len(self.update_bgp_entries) > 0:
                 try:
                     psycopg2.extras.execute_batch(
                         self.db_cur,
                         'UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ',
-                        self.update_bgp_entries
+                        list(self.update_bgp_entries),
+                        page_size=1000
                     )
                     self.db_conn.commit()
                 except Exception:
@@ -537,13 +548,17 @@ class Postgresql_db(Service):
                     self.db_conn.rollback()
                     return -1
 
+            num_of_updates += len(self.update_bgp_entries)
+            self.update_bgp_entries.clear()
+
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
                     psycopg2.extras.execute_batch(
                         self.db_cur,
                         'UPDATE bgp_updates SET handled=true WHERE key=%s',
-                        self.handled_bgp_entries
+                        self.handled_bgp_entries,
+                        page_size=1000
                     )
                     self.db_conn.commit()
                 except Exception:
@@ -610,7 +625,7 @@ class Postgresql_db(Service):
                     )
                     values.append(values_)
 
-                psycopg2.extras.execute_batch(self.db_cur, cmd_, values)
+                psycopg2.extras.execute_batch(self.db_cur, cmd_, values, page_size=1000)
                 self.db_conn.commit()
             except Exception:
                 log.exception('exception')
@@ -665,12 +680,10 @@ class Postgresql_db(Service):
 
         def _scheduler_instruction(self, message):
             msg_ = message.payload
-            if (msg_ == 'bulk_operation'):
+            if msg_ == 'bulk_operation':
                 self._update_bulk()
-                return
-            elif(msg_ == 'send_unhandled'):
+            elif msg_ == 'send_unhandled':
                 self._retrieve_unhandled()
-                return
             else:
                 log.warning(
                     'Received uknown instruction from scheduler: {}'.format(msg_))
@@ -701,3 +714,8 @@ class Postgresql_db(Service):
                 log.exception(
                     'failed to retrieved most recent config hash in db')
             return None
+
+
+if __name__ == '__main__':
+    service = Postgresql_db()
+    service.run()

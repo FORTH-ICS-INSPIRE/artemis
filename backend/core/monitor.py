@@ -1,18 +1,26 @@
 import radix
 from subprocess import Popen
-from utils import exception_handler, RABBITMQ_HOST
-from utils.service import Service
+from utils import exception_handler, RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
-import logging
+import signal
 
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 
 
-class Monitor(Service):
+class Monitor():
 
-    def run_worker(self):
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def run(self):
+        """
+        Entry function for this service that runs a RabbitMQ worker through Kombu.
+        """
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
@@ -23,6 +31,10 @@ class Monitor(Service):
             if self.worker is not None:
                 self.worker.stop()
             log.info('stopped')
+
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
 
@@ -41,7 +53,7 @@ class Monitor(Service):
                 'config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.config_queue = Queue('monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=2,
+            self.config_queue = Queue('monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=2,
                                       consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
@@ -52,7 +64,7 @@ class Monitor(Service):
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 )
             ]
@@ -226,3 +238,8 @@ class Monitor(Service):
                 self.process_ids.append(
                     ('Beta BMP {}'.format(
                         self.prefixes), p))
+
+
+if __name__ == '__main__':
+    service = Monitor()
+    service.run()

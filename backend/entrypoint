@@ -4,4 +4,6 @@
 ./wait-for postgres:5432 -t 60
 #./wait-for syslog:514 -t 60
 service cron start
-python3 controller.py
+# service supervisor start
+# supervisorctl
+supervisord -n

@@ -1,20 +1,28 @@
 import radix
 import subprocess
-from utils import RABBITMQ_HOST
-from utils.service import Service
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
 import json
-import logging
+import signal
 
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 
 
-class Mitigation(Service):
+class Mitigation():
 
-    def run_worker(self):
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def run(self):
+        """
+        Entry function for this service that runs a RabbitMQ worker through Kombu.
+        """
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
@@ -23,6 +31,10 @@ class Mitigation(Service):
             log.exception('exception')
         finally:
             log.info('stopped')
+
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
 
@@ -44,9 +56,9 @@ class Mitigation(Service):
                 'config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.config_queue = Queue('mitigation-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
+            self.config_queue = Queue('mitigation-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=3,
                                       consumer_arguments={'x-priority': 3})
-            self.mitigate_queue = Queue('mitigation-mitigate', exchange=self.mitigation_exchange, routing_key='mitigate', durable=False, exclusive=True, max_priority=2,
+            self.mitigate_queue = Queue('mitigation-mitigate', exchange=self.mitigation_exchange, routing_key='mitigate', durable=False, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
@@ -57,13 +69,13 @@ class Mitigation(Service):
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 )
             ]
@@ -155,3 +167,8 @@ class Mitigation(Service):
                 )
             else:
                 log.warn('no rule for hijack {}'.format(hijack_event))
+
+
+if __name__ == '__main__':
+    service = Mitigation()
+    service.run()

@@ -533,7 +533,6 @@ class Detection(Service):
                     [str(data['prefix']),
                      int(data['hijack_as']),
                      str(data['type'])])).hexdigest()
-                assert self.memcache.get(memcache_hijack_key) is not None
                 self.memcache.delete(memcache_hijack_key)
             except Exception:
                 log.exception(

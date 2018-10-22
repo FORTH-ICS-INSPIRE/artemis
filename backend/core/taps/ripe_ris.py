@@ -82,5 +82,7 @@ if __name__ == '__main__':
     try:
         with Connection(RABBITMQ_HOST) as connection:
             parse_ripe_ris(connection, prefix, host)
+    except Exception:
+        log.exception('exception')
     except KeyboardInterrupt:
         pass

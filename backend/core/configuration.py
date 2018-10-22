@@ -1,27 +1,31 @@
 from ipaddress import ip_network as str2ip
 from yaml import load as yload
-from utils import flatten, ArtemisError, RABBITMQ_HOST
-from utils.service import Service
+from utils import flatten, ArtemisError, RABBITMQ_HOST, get_logger
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, Consumer
 from kombu.mixins import ConsumerProducerMixin
+import signal
 import time
 import json
 import copy
-import logging
 from typing import Union, Optional, Dict, TextIO, Text, List, NoReturn
 from io import StringIO
 
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 
 
-class Configuration(Service):
+class Configuration():
     """
     Configuration Service.
     """
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-    def run_worker(self) -> NoReturn:
+    def run(self) -> NoReturn:
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
@@ -33,6 +37,10 @@ class Configuration(Service):
             log.exception('exception')
         finally:
             log.info('stopped')
+
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
         """
@@ -90,14 +98,14 @@ class Configuration(Service):
                 Consumer(
                     queues=[self.config_modify_queue],
                     on_message=self.handle_config_modify,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True,
                     accept=['yaml']
                 ),
                 Consumer(
                     queues=[self.config_request_queue],
                     on_message=self.handle_config_request,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 )
             ]
@@ -306,3 +314,8 @@ class Configuration(Service):
             """
             with open(self.file, 'w') as f:
                 f.write(self.data['raw_config'])
+
+
+if __name__ == '__main__':
+    service = Configuration()
+    service.run()

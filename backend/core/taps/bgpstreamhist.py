@@ -94,5 +94,7 @@ if __name__ == '__main__':
 
     try:
         parse_bgpstreamhist_csvs(prefixes, dir)
+    except Exception:
+        log.exception('exception')
     except KeyboardInterrupt:
         pass

@@ -1,19 +1,24 @@
 import time
 from watchdog.observers import Observer as WatchObserver
 from watchdog.events import FileSystemEventHandler
-from utils.service import Service
-from utils import RABBITMQ_HOST
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, uuid, Consumer, Producer
 import difflib
-import logging
+import signal
 
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 
 
-class Observer(Service):
+class Observer():
 
-    def run_worker(self):
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def run(self):
         observer = WatchObserver()
 
         dirname = '/etc/artemis'
@@ -63,10 +68,10 @@ class Observer(Service):
                     self.response = None
                     self.correlation_id = uuid()
                     callback_queue = Queue(uuid(),
-                                        durable=False,
-                                        auto_delete=True,
-                                        max_priority=4,
-                                        consumer_arguments={
+                                           durable=False,
+                                           auto_delete=True,
+                                           max_priority=4,
+                                           consumer_arguments={
                         'x-priority': 4})
                     with Producer(self.connection) as producer:
                         producer.publish(
@@ -95,3 +100,8 @@ class Observer(Service):
                     else:
                         log.error('invalid configuration:\n{}'.format(content))
                     self.response = None
+
+
+if __name__ == '__main__':
+    service = Observer()
+    service.run()

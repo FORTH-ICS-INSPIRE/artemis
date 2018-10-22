@@ -2,13 +2,12 @@ from flask import Blueprint, render_template
 from flask import redirect, request, jsonify
 from flask_security.decorators import roles_required, roles_accepted
 from webapp.data.models import User, Role
-from webapp.templates.forms import CheckboxMonitorForm, CheckboxDetectorForm, CheckboxMitigatorForm, \
-ApproveUserForm, MakeAdminForm, DeleteUserForm
+from webapp.templates.forms import (CheckboxMonitorForm, CheckboxDetectorForm, CheckboxMitigatorForm,
+                                    ApproveUserForm, MakeAdminForm, DeleteUserForm)
 from webapp.core import app
 from webapp.core.modules import Modules_state
 from webapp.core.actions import New_config
 from webapp.core.fetch_config import fetch_all_config_timestamps
-from flask_security import current_user
 import logging
 
 log = logging.getLogger('webapp_logger')
@@ -31,7 +30,6 @@ def index():
 
     app.config['configuration'].get_newest_config()
     modules_state = Modules_state()
-    modules_state.call('all', 'status')
     state_of_modules = modules_state.get_response_all()
 
     log.info("state {}".format(state_of_modules))

@@ -1,9 +1,9 @@
 import radix
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet
-from utils.service import Service
+from utils import exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
+import signal
 import time
 from pymemcache.client.base import Client
 import pickle
@@ -12,7 +12,7 @@ import logging
 from typing import Union, Dict, List, NoReturn, Callable, Tuple
 
 
-log = logging.getLogger('artemis_logger')
+log = get_logger()
 hij_log = logging.getLogger('hijack_logger')
 mail_log = logging.getLogger('mail_logger')
 
@@ -37,12 +37,17 @@ def pickle_deserializer(key: str, value: str, flags: int) -> Union[str, Dict]:
     raise Exception('Unknown serialization format')
 
 
-class Detection(Service):
+class Detection():
     """
     Detection Service.
     """
+    def __init__(self):
+        self.worker = None
+        signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-    def run_worker(self) -> NoReturn:
+    def run(self) -> NoReturn:
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
@@ -54,6 +59,10 @@ class Detection(Service):
             log.exception('exception')
         finally:
             log.info('stopped')
+
+    def exit(self, signum, frame):
+        if self.worker is not None:
+            self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
         """
@@ -102,17 +111,17 @@ class Detection(Service):
                 delivery_mode=1)
 
             # QUEUES
-            self.update_queue = Queue('detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, exclusive=True, max_priority=1,
+            self.update_queue = Queue('detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.update_unhandled_queue = Queue('detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, exclusive=True, max_priority=2,
+            self.update_unhandled_queue = Queue('detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, max_priority=2,
                                                 consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue('detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, exclusive=True, max_priority=2,
+            self.hijack_resolved_queue = Queue('detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue('detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, exclusive=True, max_priority=2,
+            self.hijack_ignored_queue = Queue('detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.hijack_fetch_queue = Queue('detection-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch', durable=False, exclusive=True, max_priority=2,
+            self.hijack_fetch_queue = Queue('detection-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch', durable=False, max_priority=2,
                                             consumer_arguments={'x-priority': 2})
-            self.config_queue = Queue('detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, exclusive=True, max_priority=3,
+            self.config_queue = Queue('detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=3,
                                       consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
@@ -131,19 +140,19 @@ class Detection(Service):
                 Consumer(
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.update_unhandled_queue],
                     on_message=self.handle_unhandled_bgp_updates,
-                    prefetch_count=100,
+                    prefetch_count=1000,
                     no_ack=True
                 ),
                 Consumer(
@@ -156,13 +165,13 @@ class Detection(Service):
                 Consumer(
                     queues=[self.hijack_resolved_queue],
                     on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_ignored_queue],
                     on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=100,
+                    prefetch_count=1,
                     no_ack=True
                 )
             ]
@@ -272,6 +281,7 @@ class Detection(Service):
 
             if monitor_event['key'] not in self.monitors_seen:
                 raw = monitor_event.copy()
+                is_hijack = False
                 # ignore withdrawals for now
                 if monitor_event['type'] == 'A':
                     monitor_event['path'] = Detection.Worker.__clean_as_path(
@@ -286,10 +296,12 @@ class Detection(Service):
                         for func in self.__detection_generator(
                                 len(monitor_event['path']), prefix_node):
                             if func(monitor_event, prefix_node):
+                                is_hijack = True
                                 break
                     except Exception:
                         log.exception('exception')
-                self.mark_handled(raw)
+                if not is_hijack:
+                    self.mark_handled(raw)
                 self.mon_num += 1
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
@@ -539,3 +551,8 @@ class Detection(Service):
                 log.exception(
                     "couldn't erase data: {}".format(
                         message.payload))
+
+
+if __name__ == '__main__':
+    service = Detection()
+    service.run()

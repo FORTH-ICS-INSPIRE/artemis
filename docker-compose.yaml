@@ -11,14 +11,19 @@ services:
             DATABASE_USER: ${DB_USER}
             DATABASE_HOST: ${POSTGRES_HOST}
             DATABASE_PASSWORD: ${DB_PASS}
+            SUPERVISOR_HOST: ${SUPERVISOR_HOST}
+            SUPERVISOR_PORT: ${SUPERVISOR_PORT}
         depends_on:
             - rabbitmq
             - memcached
             - postgres
             # - syslog
+        expose:
+            - ${SUPERVISOR_PORT}
         volumes:
             - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/
+            - ./backend/supervisor.d/:/etc/supervisor/conf.d/
             # - ./backend/other/conf_parser.sh:/etc/cron.hourly/parser
         networks:
             - rabbitmq
@@ -38,6 +43,8 @@ services:
             USER_ROOT_PASSWORD: ${ADMIN_PASS}
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}
             POSTGREST_FLASK_HOST: ${POSTGREST_HOST}:${POSTGREST_PORT}
+            SUPERVISOR_HOST: ${SUPERVISOR_HOST}
+            SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             # SYSLOG_HOST: 'syslog:514'
         expose:
             - 8000
@@ -123,6 +130,8 @@ services:
         restart: always
         expose:
             - 3000
+        ports:
+            - "3000:3000"
         networks:
             - postgres
             - postgrest

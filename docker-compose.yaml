@@ -106,7 +106,7 @@ services:
         expose:
             - 11211
     postgres:
-        image: timescale/timescaledb:latest
+        image: timescale/timescaledb:latest-pg10
         container_name: postgres
         restart: always
         environment:

@@ -15,3 +15,4 @@ socketIO-client-nexus==0.7.6
 socketIO-client==0.7.2
 vine==1.1.4
 psycopg2-binary==2.7.5
+redis==2.10.6

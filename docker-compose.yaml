@@ -5,7 +5,6 @@ services:
         container_name: backend
         depends_on:
             - rabbitmq
-            - memcached
             - postgres
         networks:
             - artemis
@@ -13,7 +12,6 @@ services:
             - ${SUPERVISOR_PORT}
         environment:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
-            MEMCACHED_HOST: ${MEMCACHED_HOST}
             POSTGRES_HOST: ${POSTGRES_HOST}
             DATABASE_NAME: ${DB_NAME}
             DATABASE_USER: ${DB_USER}
@@ -86,14 +84,6 @@ services:
             - 5672
         ports:
             - "15672:15672"
-    memcached:
-        image: memcached:alpine
-        container_name: memcached
-        restart: always
-        networks:
-            - artemis
-        expose:
-            - 11211
     postgres:
         image: timescale/timescaledb:latest-pg10
         container_name: postgres

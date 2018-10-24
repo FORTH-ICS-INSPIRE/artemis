@@ -1,0 +1,9 @@
+version: '3'
+services:
+    grafana:
+        image: grafana/grafana
+        restart: always
+        ports:
+            - 8001:3000
+        networks:
+            - artemis

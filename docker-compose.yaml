@@ -3,6 +3,14 @@ services:
     backend:
         build: ./backend/
         container_name: backend
+        depends_on:
+            - rabbitmq
+            - memcached
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - ${SUPERVISOR_PORT}
         environment:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             MEMCACHED_HOST: ${MEMCACHED_HOST}
@@ -13,27 +21,23 @@ services:
             DATABASE_PASSWORD: ${DB_PASS}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
-        depends_on:
-            - rabbitmq
-            - memcached
-            - postgres
-            # - syslog
-        expose:
-            - ${SUPERVISOR_PORT}
         volumes:
             - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/
             - ./backend/supervisor.d/:/etc/supervisor/conf.d/
             # - ./backend/other/conf_parser.sh:/etc/cron.hourly/parser
-        networks:
-            - rabbitmq
-            - memcached
-            - postgres
-            # - syslog
-            # - exabgp
     frontend:
         build: ./frontend/
         container_name: frontend
+        depends_on:
+            - rabbitmq
+            - postgres
+            - postgrest
+            - backend
+        networks:
+            - artemis
+        expose:
+            - 8000
         environment:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             POSTGRES_HOST: ${POSTGRES_HOST}
@@ -46,52 +50,37 @@ services:
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             # SYSLOG_HOST: 'syslog:514'
-        expose:
-            - 8000
         volumes:
             - ./frontend/:/root/
             - ./frontend/webapp/configs/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
-        depends_on:
-            - rabbitmq
-            - postgres
-            - postgrest
-            # - syslog
-            - backend
-        networks:
-            - rabbitmq
-            - postgres
-            - postgrest
-            - nginx
-            # - syslog
     nginx:
         image: nginx:latest
         container_name: production_nginx
-        environment:
-            ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
-            POSTGREST_HOST: ${POSTGREST_HOST}
+        restart: always
         depends_on:
             - frontend
             - postgrest
-        volumes:
-            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
-            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
-        ports:
-            - 80:80
-            - 443:443
+        networks:
+            - artemis
         expose:
             - 80
             - 443
-        networks:
-            - frontend
-            - postgrest
-        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        environment:
+            ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
+            POSTGREST_HOST: ${POSTGREST_HOST}
+        volumes:
+            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
+            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
         restart: always
         networks:
-            - rabbitmq
+            - artemis
         expose:
             - 5671
             - 5672
@@ -102,13 +91,17 @@ services:
         container_name: memcached
         restart: always
         networks:
-            - memcached
+            - artemis
         expose:
             - 11211
     postgres:
         image: timescale/timescaledb:latest-pg10
         container_name: postgres
         restart: always
+        networks:
+            - artemis
+        expose:
+            - 5432
         environment:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
@@ -120,54 +113,23 @@ services:
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
-        networks:
-            - postgres
-        expose:
-            - 5432
     postgrest:
         image: postgrest/postgrest
         container_name: postgrest
         restart: always
+        depends_on:
+            - postgres
+            - backend
+        networks:
+            - artemis
         expose:
             - 3000
         ports:
             - "3000:3000"
-        networks:
-            - postgres
-            - postgrest
-        depends_on:
-            - postgres
-            - backend
         environment:
             PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
-    pgadmin:
-        image: dpage/pgadmin4:latest
-        container_name: pgadmin
-        restart: always
-        ports:
-            - "5050:80"
-        networks:
-            - postgres
-        depends_on:
-            - postgres
-        environment:
-            PGADMIN_DEFAULT_EMAIL: ${PGA_USER}
-            PGADMIN_DEFAULT_PASSWORD: ${PGA_PASS}
-    # syslog:
-    #     image: "mumblepins/syslog-ng-alpine"
-    #     restart: always
-    #     networks:
-    #         - syslog
-    # grafana:
-    #     image: grafana/grafana
-    #     restart: always
-    #     ports:
-    #         - 8001:3000
-    #     networks:
-    #         - rabbitmq
-    #         - postgres
     # pg_amqp_bridge:
     #     image: subzerocloud/pg-amqp-bridge
     #     container_name: pg_amqp_bridge
@@ -179,22 +141,7 @@ services:
     #     - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
     #     - AMQP_URI=amqp://${RABBITMQ_HOST}//
     #     - BRIDGE_CHANNELS=events:amq.topic
-    # exabgp:
-    #     container_name: exabgp
-    #      image: mavromat/exabgp-monitor:latest
-    #      restart: always
-    #      networks:
-    #          - exabgp
-    #      volumes:
-    #          - ./backend/configs/exabgp.conf:/home/config/exabgp.conf
 
 
 networks:
-    rabbitmq:
-    memcached:
-    postgres:
-    postgrest:
-    nginx:
-    frontend:
-    # syslog:
-    # exabgp:
+    artemis:

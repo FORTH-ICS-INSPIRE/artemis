@@ -174,7 +174,12 @@
 
             $(document).ready(function(){
                 update_config_timestamp();
-                editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
+                editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    readOnly: true
+                });
+                editor.setSize("100%", 640);
             });
 
             $( "#monitor_switch" ).click(function() {

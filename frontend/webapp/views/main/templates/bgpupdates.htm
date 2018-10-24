@@ -210,14 +210,22 @@
                     "columns": [
                         {   data: 'timestamp',
                             render: function(data, type, row){
-                                return transform_date_to_local_(data);
+                                return transform_date_to_local(data);
                             }
                         },
                         { data: 'prefix' },
                         { data: 'origin_as' },
-                        { data: 'as_path' },
+                        { data: 'as_path',
+                            render: function(data, type, row){
+                                return format_as_path(data);
+                            }
+                        },
                         { data: 'peer_asn' },
-                        { data: 'service' },
+                        { data: 'service',
+                            render: function(data, type, row){
+                                return format_service(data);
+                            }
+                        },
                         { data: 'type' },
                         { data: 'hijack_key',
                             render: function(data, type, row){
@@ -251,9 +259,6 @@
                 });
             }
 
-            
-            
-            
             $(document).ready(function(){
                 render_table({});
                 $('input[name="datetimes"]').daterangepicker({
@@ -292,11 +297,6 @@
             });
 
             function format ( d ) {    
-                var orig_path = "";
-                if (d.orig_path != null){
-                    orig_path = d.orig_path;
-                }
-
                 return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
                     '<tr>'+
                         '<td><b>Prefix:</b></td>'+
@@ -308,7 +308,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>AS Path:</b></td>'+
-                        '<td>'+d.as_path+'</td>'+
+                        '<td>'+format_as_path(d.as_path)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Peer AS:</b></td>'+
@@ -316,7 +316,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Service:</b></td>'+
-                        '<td>'+d.service+'</td>'+
+                        '<td>'+format_service(d.service)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Type:</b></td>'+
@@ -328,11 +328,11 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+
-                        '<td>'+transform_date_to_local_(d.timestamp)+'</td>'+
+                        '<td>'+transform_date_to_local(d.timestamp)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Original Path:</b></td>'+
-                        '<td>'+orig_path+'</td>'+
+                        '<td>'+format_orig_path(d.orig_path)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Hijack Key:</b></td>'+
@@ -345,16 +345,8 @@
                 '</table>';
             }
 
-        function transform_date_to_local_(date){
-            var date_ = moment.utc(date)
-            if(date_._isValid){
-                var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
-                return local;
-            }
-            return "Never";
-        }
         </script>
-        <script defer src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>

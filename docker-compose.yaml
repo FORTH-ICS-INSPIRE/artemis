@@ -143,15 +143,18 @@ services:
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
     pgadmin:
-        image: fenglc/pgadmin4:alpine
+        image: dpage/pgadmin4:latest
         container_name: pgadmin
         restart: always
         ports:
-            - "5050:5050"
+            - "5050:80"
         networks:
             - postgres
         depends_on:
             - postgres
+        environment:
+            PGADMIN_DEFAULT_EMAIL: ${PGA_USER}
+            PGADMIN_DEFAULT_PASSWORD: ${PGA_PASS}
     # syslog:
     #     image: "mumblepins/syslog-ng-alpine"
     #     restart: always

@@ -1,0 +1,7 @@
+version: '3'
+services:
+    syslog:
+        image: "mumblepins/syslog-ng-alpine"
+        restart: always
+        networks:
+            - artemis

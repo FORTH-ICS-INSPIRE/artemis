@@ -142,6 +142,16 @@ services:
             PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
+    pgadmin:
+        image: fenglc/pgadmin4:alpine
+        container_name: pgadmin
+        restart: always
+        ports:
+            - "5050:5050"
+        networks:
+            - postgres
+        depends_on:
+            - postgres
     # syslog:
     #     image: "mumblepins/syslog-ng-alpine"
     #     restart: always

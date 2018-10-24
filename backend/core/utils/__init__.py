@@ -14,7 +14,6 @@ from logging.handlers import SMTPHandler
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'localhost')
 SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
-MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 
 
 def get_logger(path='/etc/artemis/logging.yaml'):

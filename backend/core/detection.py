@@ -1,40 +1,20 @@
 import radix
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet, get_logger
+from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
 import time
-from pymemcache.client.base import Client
 import pickle
 import hashlib
 import logging
 from typing import Union, Dict, List, NoReturn, Callable, Tuple
+import redis
 
 
 log = get_logger()
 hij_log = logging.getLogger('hijack_logger')
 mail_log = logging.getLogger('mail_logger')
-
-
-def pickle_serializer(key: str, value: Union[str, Dict]) -> str:
-    """
-    Pickle Serializer for Memcached.
-    """
-    if isinstance(value, str):
-        return value, 1
-    return pickle.dumps(value), 2
-
-
-def pickle_deserializer(key: str, value: str, flags: int) -> Union[str, Dict]:
-    """
-    Pickle Serializer for Memcached.
-    """
-    if flags == 1:
-        return value
-    if flags == 2:
-        return pickle.loads(value)
-    raise Exception('Unknown serialization format')
 
 
 class Detection():
@@ -77,10 +57,10 @@ class Detection():
             self.monitors_seen = TimedSet()
             self.mon_num = 1
 
-            self.memcache = Client((MEMCACHED_HOST, 11211),
-                                   serializer=pickle_serializer,
-                                   deserializer=pickle_deserializer)
-            self.memcache.flush_all()
+            self.redis = redis.Redis(
+                    host='localhost',
+                    port=6379
+            )
 
             # EXCHANGES
             self.update_exchange = Exchange(
@@ -446,9 +426,9 @@ class Detection():
                           hijacker: int, hij_type: str) -> NoReturn:
             """
             Commit new or update an existing hijack to the database.
-            It uses memcache server to store ongoing hijacks information to not stress the db.
+            It uses redis server to store ongoing hijacks information to not stress the db.
             """
-            memcache_hijack_key = hashlib.md5(pickle.dumps(
+            redis_hijack_key = hashlib.md5(pickle.dumps(
                 [str(monitor_event['prefix']),
                  int(hijacker),
                  str(hij_type)])).hexdigest()
@@ -470,10 +450,13 @@ class Detection():
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(hij_type + 1)])
 
-            result = self.memcache.get(memcache_hijack_key)
+            # t0 = time.time()
+            result = self.redis.get(redis_hijack_key)
+            # log.info('get {}'.format(time.time()-t0))
             if result is not None:
+                result = pickle.loads(result)
                 result['time_started'] = min(
-                    result['time_started'], hijack_value['time_started'])
+                result['time_started'], hijack_value['time_started'])
                 result['time_last'] = max(
                     result['time_last'], hijack_value['time_last'])
                 result['peers_seen'].update(hijack_value['peers_seen'])
@@ -487,7 +470,9 @@ class Detection():
                 hijack_value['time_detected'] = time.time()
                 result = hijack_value
 
-            self.memcache.set(memcache_hijack_key, result)
+            # t0 = time.time()
+            self.redis.set(redis_hijack_key, pickle.dumps(result))
+            # log.info('set {}'.format(time.time()-t0))
 
             self.producer.publish(
                 result,
@@ -522,11 +507,11 @@ class Detection():
             try:
                 hijacks = message.payload
                 for hijack_key, hijack_value in hijacks.items():
-                    memcache_hijack_key = hashlib.md5(pickle.dumps([
+                    redis_hijack_key = hashlib.md5(pickle.dumps([
                         str(hijack_value['prefix']),
                         int(hijack_value['hijack_as']),
                         str(hijack_value['type'])])).hexdigest()
-                    self.memcache.set(memcache_hijack_key, hijack_value)
+                    self.redis.set(redis_hijack_key, pickle.dumps(hijack_value))
             except Exception:
                 log.exception(
                     "couldn't fetch data: {}".format(
@@ -534,18 +519,18 @@ class Detection():
 
         def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
             """
-            Remove for memcache the ongoing hijack entry.
+            Remove for redis the ongoing hijack entry.
             """
             log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             try:
                 data = message.payload
-                memcache_hijack_key = hashlib.md5(pickle.dumps(
+                redis_hijack_key = hashlib.md5(pickle.dumps(
                     [str(data['prefix']),
                      int(data['hijack_as']),
                      str(data['type'])])).hexdigest()
-                self.memcache.delete(memcache_hijack_key)
+                self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception(
                     "couldn't erase data: {}".format(

@@ -4,7 +4,7 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
     apt-get -y install build-essential zlib1g-dev libbz2-dev libcurl4-openssl-dev python-dev && \
-    apt-get -y install python3-pip cron supervisor
+    apt-get -y install python3-pip cron supervisor tcl
 
 WORKDIR /root
 
@@ -42,10 +42,18 @@ RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/p
 WORKDIR pybgpstream-2.0.0
 RUN python setup.py build_ext && python setup.py install
 
+WORKDIR ..
+
+RUN curl -O http://download.redis.io/redis-stable.tar.gz && \
+    tar xzvf redis-stable.tar.gz
+WORKDIR redis-stable
+RUN make && make install && ldconfig && \
+    mkdir -p /etc/redis/ && cp redis.conf /etc/redis/
+
 WORKDIR ../..
 
-RUN mkdir -p /etc/artemis/
-RUN mkdir -p /var/log/artemis/
+RUN mkdir -p /etc/artemis/ && \
+    mkdir -p /var/log/artemis/
 COPY ./configs/* /etc/artemis/
 
 ENTRYPOINT ["./entrypoint"]

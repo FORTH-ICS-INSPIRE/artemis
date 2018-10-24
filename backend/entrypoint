@@ -6,4 +6,5 @@
 service cron start
 # service supervisor start
 # supervisorctl
+redis-server /etc/redis/redis.conf --daemonize yes
 supervisord -n

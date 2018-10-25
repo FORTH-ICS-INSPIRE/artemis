@@ -92,6 +92,7 @@ class Postgresql_db():
                     port=6379
             )
             self.redis.flushall()
+            self.retrieve_hijacks()
 
             # EXCHANGES
             self.config_exchange = Exchange(
@@ -398,15 +399,8 @@ class Postgresql_db():
             except Exception:
                 log.exception('{}'.format(config))
 
-        def handle_hijack_retrieve(self, message):
-            '''
-            handle_hijack_retrieve:
-            Return all active hijacks
-            Used in detection memcache
-            '''
-            log.debug('received hijack_retrieve')
+        def retrieve_hijacks(self):
             try:
-                results = {}
                 cmd_ = 'SELECT time_started, time_last, peers_seen, '
                 cmd_ += 'asns_inf, key, prefix, hijack_as, type, time_detected, '
                 cmd_ += 'configured_prefix, timestamp_of_config '
@@ -432,6 +426,7 @@ class Postgresql_db():
                         str(entry[5]),
                         int(entry[6]),
                         str(entry[7])])).hexdigest()
+                    # log.info('Set redis hijack key {}'.format(redis_hijack_key))
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
                 redis_pipeline.execute()
             except Exception:

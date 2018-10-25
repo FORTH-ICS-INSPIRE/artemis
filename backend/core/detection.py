@@ -437,8 +437,10 @@ class Detection():
 
             # t0 = time.time()
             result = self.redis.get(redis_hijack_key)
+            # log.info('redis hijack key: {}'.format(redis_hijack_key))
             # log.info('get {}'.format(time.time()-t0))
             if result is not None:
+                # log.info('existing')
                 result = pickle.loads(result)
                 result['time_started'] = min(
                 result['time_started'], hijack_value['time_started'])
@@ -449,6 +451,7 @@ class Detection():
                 # no update since db already knows!
                 result['monitor_keys'] = hijack_value['monitor_keys']
             else:
+                # log.info('not existing')
                 first_trigger = int(monitor_event['timestamp'])
                 hijack_value['key'] = hashlib.md5(pickle.dumps(
                     [monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()

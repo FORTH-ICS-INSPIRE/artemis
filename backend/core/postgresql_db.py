@@ -1,7 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from .utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
@@ -76,7 +76,6 @@ class Postgresql_db():
             self.prefix_tree = None
             self.rules = None
             self.timestamp = -1
-            self.num_of_unhadled_to_feed_to_detection = 50
             self.insert_bgp_entries = []
             self.update_bgp_entries = set()
             self.handled_bgp_entries = set()
@@ -640,13 +639,13 @@ class Postgresql_db():
             self.tmp_hijacks_dict.clear()
             return num_of_entries
 
-        def _retrieve_unhandled(self):
+        def _retrieve_unhandled(self, amount):
             results = []
             cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, '
             cmd_ += 'type, communities, timestamp FROM bgp_updates WHERE '
             cmd_ += 'handled = false ORDER BY timestamp DESC LIMIT(%s);'
             self.db_cur.execute(
-                cmd_, (self.num_of_unhadled_to_feed_to_detection,))
+                cmd_, (amount,))
             entries = self.db_cur.fetchall()
             for entry in entries:
                 results.append({
@@ -684,10 +683,10 @@ class Postgresql_db():
 
         def _scheduler_instruction(self, message):
             msg_ = message.payload
-            if msg_ == 'bulk_operation':
+            if msg_['op'] == 'bulk_operation':
                 self._update_bulk()
-            elif msg_ == 'send_unhandled':
-                self._retrieve_unhandled()
+            elif msg_['op'] == 'send_unhandled':
+                self._retrieve_unhandled(msg_['amount'])
             else:
                 log.warning(
                     'Received uknown instruction from scheduler: {}'.format(msg_))

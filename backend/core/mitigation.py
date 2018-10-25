@@ -1,6 +1,6 @@
 import radix
 import subprocess
-from .utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time

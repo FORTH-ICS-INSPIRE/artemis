@@ -1,6 +1,6 @@
 import radix
 import ipaddress
-from .utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger
+from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal

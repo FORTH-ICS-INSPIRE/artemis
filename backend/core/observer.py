@@ -1,7 +1,7 @@
 import time
 from watchdog.observers import Observer as WatchObserver
 from watchdog.events import FileSystemEventHandler
-from .utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, uuid, Consumer, Producer
 import difflib
 import signal

@@ -53,7 +53,7 @@ class Monitor():
                 'config', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.config_queue = Queue('monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=2,
+            self.config_queue = Queue('monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
                                       consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()

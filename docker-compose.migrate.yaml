@@ -1,0 +1,37 @@
+version: '3'
+services:
+    postgres:
+        image: timescale/timescaledb:latest-pg10
+        container_name: postgres
+        restart: always
+        environment:
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASS}
+        volumes:
+            - ./postgres-data-current:/var/lib/postgresql/data
+            - ./other/postgres-backup.sh:/etc/periodic/daily/backup
+            - ./postgres-data-backup/:/tmp/
+            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
+        networks:
+            - postgres
+        expose:
+            - 5432
+    migrate:
+        build: ./migrate/
+        container_name: migrate
+        environment:
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASS}
+            DB_VERSION: ${DB_VERSION}
+        volumes:
+            - ./migrate/:/root/
+        depends_on:
+            - postgres
+        networks:
+            - postgres
+networks:
+    postgres:

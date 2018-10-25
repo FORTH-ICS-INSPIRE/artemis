@@ -124,23 +124,23 @@ class Postgresql_db():
                 'mitigation', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, max_priority=1,
+            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, max_priority=1,
+            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, max_priority=2,
+            self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, max_priority=2,
+            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, max_priority=1,
+            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                                        consumer_arguments={'x-priority': 1})
-            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=2,
+            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
                                       consumer_arguments={'x-priority': 2})
-            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, max_priority=2,
+            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, auto_delete=True, max_priority=2,
                                         consumer_arguments={'x-priority': 3})
-            self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, max_priority=2,
+            self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, auto_delete=True, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
-            self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, max_priority=4,
+            self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, auto_delete=True, max_priority=4,
                                               consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()

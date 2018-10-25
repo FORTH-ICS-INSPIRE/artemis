@@ -21,6 +21,8 @@ def normalize_ripe_ris(msg):
             msg['peer_asn'] = int(msg['peer_asn'])
         if 'path' not in msg:
             msg['path'] = []
+        if 'timestamp' in msg:
+            msg['timestamp'] = float(msg['timestamp'])
 
 
 def parse_ripe_ris(connection, prefix, host):

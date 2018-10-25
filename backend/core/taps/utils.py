@@ -168,8 +168,7 @@ def mformat_validator(msg):
         return True
 
     def valid_timestamp(msg):
-        if not (isinstance(msg['timestamp'], float)
-                or isinstance(msg['timestamp'], int)):
+        if not isinstance(msg['timestamp'], float):
             return False
         return True
 

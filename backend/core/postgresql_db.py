@@ -1,7 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_HOST, get_logger, redis_key
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
@@ -421,10 +421,10 @@ class Postgresql_db():
                         'configured_prefix': entry[9],
                         'timestamp_of_config': entry[10].timestamp()
                     }
-                    redis_hijack_key = hashlib.md5(pickle.dumps([
+                    redis_hijack_key = redis_key(
                         entry[5],
                         entry[6],
-                        entry[7]])).hexdigest()
+                        entry[7])
                     # log.info('Set redis hijack key {}'.format(redis_hijack_key))
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
                 redis_pipeline.execute()
@@ -439,10 +439,10 @@ class Postgresql_db():
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
                 self.db_conn.commit()
-                redis_hijack_key = hashlib.md5(pickle.dumps(
-                    [raw['prefix'],
+                redis_hijack_key = redis_key(
+                     raw['prefix'],
                      raw['hijack_as'],
-                     raw['type']])).hexdigest()
+                     raw['type'])
                 self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception('{}'.format(raw))
@@ -469,10 +469,10 @@ class Postgresql_db():
                     (raw['key'],
                      ))
                 self.db_conn.commit()
-                redis_hijack_key = hashlib.md5(pickle.dumps(
-                    [raw['prefix'],
+                redis_hijack_key = redis_key(
+                     raw['prefix'],
                      raw['hijack_as'],
-                     raw['type']])).hexdigest()
+                     raw['type'])
                 self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception('{}'.format(raw))
@@ -653,7 +653,7 @@ class Postgresql_db():
                     'prefix': entry[1],  # prefix
                     'origin_as': entry[2],  # origin_as
                     'peer_asn': entry[3],  # peer_asn
-                    'path': entry[4],  # as_path
+                    'path': list(map(int, entry[4])),  # as_path
                     'service': entry[5],  # service
                     'type': entry[6],  # type
                     'communities': entry[7],  # communities

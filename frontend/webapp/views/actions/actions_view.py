@@ -22,7 +22,7 @@ def resolve_hijack():
     hijack_key = request.values.get('hijack_key')
     prefix = request.values.get('prefix')
     type_ = request.values.get('type_')
-    hijack_as = request.values.get('hijack_as')
+    hijack_as = int(request.values.get('hijack_as'))
     log.debug('url: /hijacks/resolve/{}'.format(hijack_key))
     resolve_hijack_ = Resolve_hijack(hijack_key, prefix, type_, hijack_as)
     resolve_hijack_.resolve()
@@ -52,7 +52,7 @@ def ignore_hijack():
     hijack_key = request.values.get('hijack_key')
     prefix = request.values.get('prefix')
     type_ = request.values.get('type_')
-    hijack_as = request.values.get('hijack_as')
+    hijack_as = int(request.values.get('hijack_as'))
 
     try:
         _ignore_hijack = Ignore_hijack(hijack_key, prefix, type_, hijack_as)

@@ -1,6 +1,6 @@
 import radix
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger
+from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger, redis_key
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
@@ -421,10 +421,10 @@ class Detection():
             Commit new or update an existing hijack to the database.
             It uses redis server to store ongoing hijacks information to not stress the db.
             """
-            redis_hijack_key = hashlib.md5(pickle.dumps(
-                [monitor_event['prefix'],
+            redis_hijack_key = redis_key(
+                 monitor_event['prefix'],
                  hijacker,
-                 hij_type])).hexdigest()
+                 hij_type)
             hijack_value = {
                 'prefix': monitor_event['prefix'],
                 'hijack_as': hijacker,
@@ -502,10 +502,10 @@ class Detection():
                     message, message.payload))
             try:
                 data = message.payload
-                redis_hijack_key = hashlib.md5(pickle.dumps(
-                    [data['prefix'],
-                     data['hijack_as'],
-                     data['type']])).hexdigest()
+                redis_hijack_key = redis_key(
+                    data['prefix'],
+                    data['hijack_as'],
+                    data['type'])
                 self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception(

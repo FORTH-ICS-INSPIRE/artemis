@@ -5,6 +5,8 @@ import logging.handlers
 import logging.config
 import yaml
 from logging.handlers import SMTPHandler
+import pickle
+import hashlib
 
 
 # if not os.path.exists('snapshots'):
@@ -123,3 +125,9 @@ class SMTPSHandler(SMTPHandler):
             raise
         except Exception:
             self.handleError(record)
+
+def redis_key(prefix, hijack_as, _type):
+    assert(isinstance(prefix, str))
+    assert(isinstance(hijack_as, int))
+    assert(isinstance(_type, str))
+    return hashlib.md5(pickle.dumps([prefix, hijack_as, _type])).hexdigest()

@@ -35,7 +35,7 @@ class ExaBGP():
                     msg = {
                         'type': bgp_message['type'],
                         'communities': bgp_message.get('communities', []),
-                        'timestamp': bgp_message['timestamp'],
+                        'timestamp': float(bgp_message['timestamp']),
                         'path': bgp_message.get('path', []),
                         'service': 'exabgp|{}'.format(self.host),
                         'prefix': bgp_message['prefix'],

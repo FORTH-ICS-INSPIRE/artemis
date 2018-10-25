@@ -11,6 +11,7 @@ import signal
 import hashlib
 import os
 import datetime
+import redis
 
 log = get_logger()
 TABLES = ['bgp_updates', 'hijacks', 'configs']
@@ -85,6 +86,13 @@ class Postgresql_db():
             self.db_conn = db_conn
             self.db_cur = db_cursor
 
+            # redis db
+            self.redis = redis.Redis(
+                    host='localhost',
+                    port=6379
+            )
+            self.redis.flushall()
+
             # EXCHANGES
             self.config_exchange = Exchange(
                 'config',
@@ -119,8 +127,6 @@ class Postgresql_db():
                                       consumer_arguments={'x-priority': 1})
             self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_update_retrieve = Queue('db-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch-hijacks', durable=False, max_priority=1,
-                                                consumer_arguments={'x-priority': 2})
             self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
             self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, max_priority=2,
@@ -137,6 +143,7 @@ class Postgresql_db():
                                               consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()
+
             log.info('started')
 
         def get_consumers(self, Consumer, channel):
@@ -170,12 +177,6 @@ class Postgresql_db():
                     queues=[self.handled_queue],
                     on_message=self.handle_handled_bgp_update,
                     prefetch_count=1000,
-                    no_ack=True
-                ),
-                Consumer(
-                    queues=[self.hijack_update_retrieve],
-                    on_message=self.handle_hijack_retrieve,
-                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
@@ -412,8 +413,9 @@ class Postgresql_db():
                 cmd_ += 'FROM hijacks WHERE active = true;'
                 self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()
+                redis_pipeline = self.redis.pipeline()
                 for entry in entries:
-                    results[entry[4]] = {
+                    result = {
                         'time_started': int(entry[0].timestamp()),
                         'time_last': int(entry[1].timestamp()),
                         'peers_seen': set(entry[2]),
@@ -426,15 +428,12 @@ class Postgresql_db():
                         'configured_prefix': str(entry[9]),
                         'timestamp_of_config': int(entry[10].timestamp())
                     }
-
-                self.producer.publish(
-                    results,
-                    exchange=self.hijack_exchange,
-                    routing_key='fetch',
-                    serializer='pickle',
-                    retry=False,
-                    priority=2
-                )
+                    redis_hijack_key = hashlib.md5(pickle.dumps([
+                        str(entry[5]),
+                        int(entry[6]),
+                        str(entry[7])])).hexdigest()
+                    redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+                redis_pipeline.execute()
             except Exception:
                 log.exception('exception')
 
@@ -446,6 +445,11 @@ class Postgresql_db():
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
                 self.db_conn.commit()
+                redis_hijack_key = hashlib.md5(pickle.dumps(
+                    [str(raw['prefix']),
+                     int(raw['hijack_as']),
+                     str(raw['type'])])).hexdigest()
+                self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -471,6 +475,11 @@ class Postgresql_db():
                     (raw['key'],
                      ))
                 self.db_conn.commit()
+                redis_hijack_key = hashlib.md5(pickle.dumps(
+                    [str(raw['prefix']),
+                     int(raw['hijack_as']),
+                     str(raw['type'])])).hexdigest()
+                self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception('{}'.format(raw))
 

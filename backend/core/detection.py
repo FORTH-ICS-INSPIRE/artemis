@@ -99,19 +99,11 @@ class Detection():
                                                consumer_arguments={'x-priority': 2})
             self.hijack_ignored_queue = Queue('detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.hijack_fetch_queue = Queue('detection-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch', durable=False, max_priority=2,
-                                            consumer_arguments={'x-priority': 2})
             self.config_queue = Queue('detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=3,
                                       consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
 
-            self.producer.publish(
-                '',
-                exchange=self.hijack_exchange,
-                routing_key='fetch-hijacks',
-                priority=4
-            )
             log.info('started')
 
         def get_consumers(self, Consumer: Consumer,
@@ -133,13 +125,6 @@ class Detection():
                     queues=[self.update_unhandled_queue],
                     on_message=self.handle_unhandled_bgp_updates,
                     prefetch_count=1000,
-                    no_ack=True
-                ),
-                Consumer(
-                    queues=[self.hijack_fetch_queue],
-                    on_message=self.fetch_ongoing_hijacks,
-                    prefetch_count=100,
-                    accept=['pickle'],
                     no_ack=True
                 ),
                 Consumer(
@@ -496,26 +481,6 @@ class Detection():
             )
             self.monitors_seen.add(monitor_event['key'])
             # log.debug('{}'.format(monitor_event['key']))
-
-        def fetch_ongoing_hijacks(self, message: Dict) -> NoReturn:
-            """
-            Fetches ongoing hijacks from the database when the service starts.
-            """
-            # log.debug(
-            #     'message: {}\npayload: {}'.format(
-            #         message, message.payload))
-            try:
-                hijacks = message.payload
-                for hijack_key, hijack_value in hijacks.items():
-                    redis_hijack_key = hashlib.md5(pickle.dumps([
-                        str(hijack_value['prefix']),
-                        int(hijack_value['hijack_as']),
-                        str(hijack_value['type'])])).hexdigest()
-                    self.redis.set(redis_hijack_key, pickle.dumps(hijack_value))
-            except Exception:
-                log.exception(
-                    "couldn't fetch data: {}".format(
-                        message.payload))
 
         def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
             """

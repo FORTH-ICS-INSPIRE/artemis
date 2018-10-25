@@ -1,7 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST, get_logger
+from .utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
@@ -88,7 +88,7 @@ class Postgresql_db():
 
             # redis db
             self.redis = redis.Redis(
-                    host='localhost',
+                host='localhost',
                     port=6379
             )
             self.redis.flushall()
@@ -124,21 +124,29 @@ class Postgresql_db():
                 'mitigation', type='direct', durable=False, delivery_mode=1)
 
             # QUEUES
-            self.update_queue = Queue('db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
+            self.update_queue = Queue(
+                'db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_queue = Queue('db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
+            self.hijack_queue = Queue(
+                'db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.hijack_resolved_queue = Queue('db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
+            self.hijack_resolved_queue = Queue(
+                'db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue('db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
+            self.hijack_ignored_queue = Queue(
+                'db-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.handled_queue = Queue('db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
+            self.handled_queue = Queue(
+                'db-handled-update', exchange=self.handled_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                                        consumer_arguments={'x-priority': 1})
-            self.config_queue = Queue('db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
+            self.config_queue = Queue(
+                'db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
                                       consumer_arguments={'x-priority': 2})
-            self.db_clock_queue = Queue('db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, auto_delete=True, max_priority=2,
+            self.db_clock_queue = Queue(
+                'db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, auto_delete=True, max_priority=2,
                                         consumer_arguments={'x-priority': 3})
-            self.mitigate_queue = Queue('db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, auto_delete=True, max_priority=2,
+            self.mitigate_queue = Queue(
+                'db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, auto_delete=True, max_priority=2,
                                         consumer_arguments={'x-priority': 2})
             self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, auto_delete=True, max_priority=4,
                                               consumer_arguments={'x-priority': 4})
@@ -253,15 +261,15 @@ class Postgresql_db():
                 extract_msg = (
                     msg_['prefix'],  # prefix
                     msg_['key'],  # key
-                    int(origin_as),  # origin_as
-                    int(msg_['peer_asn']),  # peer_asn
+                    origin_as,  # origin_as
+                    msg_['peer_asn'],  # peer_asn
                     msg_['path'],  # as_path
                     msg_['service'],  # service
                     msg_['type'],   # type
                     json.dumps([(k['asn'], k['value'])
                                 for k in msg_['communities']]),  # communities
                     datetime.datetime.fromtimestamp(
-                        (int(msg_['timestamp']))),  # timestamp
+                        (msg_['timestamp'])),  # timestamp
                     None,  # hijack_key
                     False,  # handled
                     self.find_best_prefix_match(
@@ -280,14 +288,10 @@ class Postgresql_db():
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
-                    self.tmp_hijacks_dict[key]['hijack_as'] = int(
-                        msg_['hijack_as'])
-                    self.tmp_hijacks_dict[key]['type'] = str(
-                        msg_['type'])
-                    self.tmp_hijacks_dict[key]['time_started'] = int(
-                        msg_['time_started'])
-                    self.tmp_hijacks_dict[key]['time_last'] = int(
-                        msg_['time_last'])
+                    self.tmp_hijacks_dict[key]['hijack_as'] = msg_['hijack_as']
+                    self.tmp_hijacks_dict[key]['type'] = msg_['type']
+                    self.tmp_hijacks_dict[key]['time_started'] = msg_['time_started']
+                    self.tmp_hijacks_dict[key]['time_last'] = msg_['time_last']
                     self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(list(msg_[
                         'peers_seen']))
                     self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(list(msg_[
@@ -298,17 +302,13 @@ class Postgresql_db():
                         'asns_inf'])
                     self.tmp_hijacks_dict[key]['monitor_keys'] = msg_[
                         'monitor_keys']
-                    self.tmp_hijacks_dict[key]['time_detected'] = int(
-                        msg_['time_detected'])
+                    self.tmp_hijacks_dict[key]['time_detected'] = msg_['time_detected']
                     self.tmp_hijacks_dict[key]['configured_prefix'] = msg_[
                         'configured_prefix']
-                    self.tmp_hijacks_dict[key]['timestamp_of_config'] = int(
-                        msg_['timestamp_of_config'])
+                    self.tmp_hijacks_dict[key]['timestamp_of_config'] = msg_['timestamp_of_config']
                 else:
-                    self.tmp_hijacks_dict[key]['time_started'] = int(
-                        min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started']))
-                    self.tmp_hijacks_dict[key]['time_last'] = int(
-                        max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last']))
+                    self.tmp_hijacks_dict[key]['time_started'] = min(self.tmp_hijacks_dict[key]['time_started'], msg_['time_started'])
+                    self.tmp_hijacks_dict[key]['time_last'] = max(self.tmp_hijacks_dict[key]['time_last'], msg_['time_last'])
                     self.tmp_hijacks_dict[key]['peers_seen'] = json.dumps(list(msg_[
                         'peers_seen']))
                     self.tmp_hijacks_dict[key]['asns_inf'] = json.dumps(list(msg_[
@@ -410,22 +410,22 @@ class Postgresql_db():
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
                     result = {
-                        'time_started': int(entry[0].timestamp()),
-                        'time_last': int(entry[1].timestamp()),
+                        'time_started': entry[0].timestamp(),
+                        'time_last': entry[1].timestamp(),
                         'peers_seen': set(entry[2]),
                         'asns_inf': set(entry[3]),
                         'key': entry[4],
-                        'prefix': str(entry[5]),
-                        'hijack_as': int(entry[6]),
+                        'prefix': entry[5],
+                        'hijack_as': entry[6],
                         'type': entry[7],
-                        'time_detected': int(entry[8].timestamp()),
-                        'configured_prefix': str(entry[9]),
-                        'timestamp_of_config': int(entry[10].timestamp())
+                        'time_detected': entry[8].timestamp(),
+                        'configured_prefix': entry[9],
+                        'timestamp_of_config': entry[10].timestamp()
                     }
                     redis_hijack_key = hashlib.md5(pickle.dumps([
-                        str(entry[5]),
-                        int(entry[6]),
-                        str(entry[7])])).hexdigest()
+                        entry[5],
+                        entry[6],
+                        entry[7]])).hexdigest()
                     # log.info('Set redis hijack key {}'.format(redis_hijack_key))
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
                 redis_pipeline.execute()
@@ -441,9 +441,9 @@ class Postgresql_db():
                     (datetime.datetime.now(), raw['key'],))
                 self.db_conn.commit()
                 redis_hijack_key = hashlib.md5(pickle.dumps(
-                    [str(raw['prefix']),
-                     int(raw['hijack_as']),
-                     str(raw['type'])])).hexdigest()
+                    [raw['prefix'],
+                     raw['hijack_as'],
+                     raw['type']])).hexdigest()
                 self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception('{}'.format(raw))
@@ -455,7 +455,7 @@ class Postgresql_db():
                 self.db_cur.execute(
                     'UPDATE hijacks SET mitigation_started=%s, under_mitigation=true WHERE key=%s;',
                     (datetime.datetime.fromtimestamp(
-                        int(raw['time'])),
+                        raw['time']),
                         raw['key']))
                 self.db_conn.commit()
             except Exception:
@@ -471,9 +471,9 @@ class Postgresql_db():
                      ))
                 self.db_conn.commit()
                 redis_hijack_key = hashlib.md5(pickle.dumps(
-                    [str(raw['prefix']),
-                     int(raw['hijack_as']),
-                     str(raw['type'])])).hexdigest()
+                    [raw['prefix'],
+                     raw['hijack_as'],
+                     raw['type']])).hexdigest()
                 self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception('{}'.format(raw))
@@ -534,7 +534,7 @@ class Postgresql_db():
                 for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                     num_of_updates += 1
                     self.update_bgp_entries.add(
-                        (str(hijack_key), bgp_entry_to_update))
+                        (hijack_key, bgp_entry_to_update))
                     # exclude handle bgp updates that point to same bgp as this hijack
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
@@ -598,13 +598,13 @@ class Postgresql_db():
                         # num_asns_inf
                         self.tmp_hijacks_dict[key]['num_asns_inf'],
                         datetime.datetime.fromtimestamp(
-                            int(self.tmp_hijacks_dict[key]['time_started'])),  # time_started
+                            self.tmp_hijacks_dict[key]['time_started']),  # time_started
                         datetime.datetime.fromtimestamp(
-                            int(self.tmp_hijacks_dict[key]['time_last'])),  # time_last
+                            self.tmp_hijacks_dict[key]['time_last']),  # time_last
                         None,  # time_ended
                         None,  # mitigation_started
                         datetime.datetime.fromtimestamp(
-                            int(self.tmp_hijacks_dict[key]['time_detected'])),  # time_detected
+                            self.tmp_hijacks_dict[key]['time_detected']),  # time_detected
                         False,  # under_mitigation
                         True,  # active
                         False,  # resolved
@@ -612,7 +612,7 @@ class Postgresql_db():
                         # configured_prefix
                         self.tmp_hijacks_dict[key]['configured_prefix'],
                         datetime.datetime.fromtimestamp(
-                            int(self.tmp_hijacks_dict[key]['timestamp_of_config'])),  # timestamp_of_config
+                            self.tmp_hijacks_dict[key]['timestamp_of_config']),  # timestamp_of_config
                         '',  # comment
                         self.tmp_hijacks_dict[key]['peers_seen'],  # peers_seen
                         self.tmp_hijacks_dict[key]['asns_inf'],  # asns_inf
@@ -621,9 +621,9 @@ class Postgresql_db():
                         # num_asns_inf
                         self.tmp_hijacks_dict[key]['num_asns_inf'],
                         datetime.datetime.fromtimestamp(
-                            int(self.tmp_hijacks_dict[key]['time_started'])),  # time_started
+                            self.tmp_hijacks_dict[key]['time_started']),  # time_started
                         datetime.datetime.fromtimestamp(
-                            int(self.tmp_hijacks_dict[key]['time_last'])),  # time_last
+                            self.tmp_hijacks_dict[key]['time_last']),  # time_last
                         self.tmp_hijacks_dict[key]['peers_seen'],  # peers_seen
                         self.tmp_hijacks_dict[key]['asns_inf']  # asns_inf
                     )
@@ -658,7 +658,7 @@ class Postgresql_db():
                     'service': entry[5],  # service
                     'type': entry[6],  # type
                     'communities': entry[7],  # communities
-                    'timestamp': int(entry[8].timestamp())
+                    'timestamp': entry[8].timestamp()
                 })
             if len(results):
                 self.producer.publish(

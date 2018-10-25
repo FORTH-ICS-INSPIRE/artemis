@@ -1,4 +1,4 @@
-from utils import RABBITMQ_HOST, get_logger, SUPERVISOR_HOST, SUPERVISOR_PORT
+from .utils import RABBITMQ_HOST, get_logger, SUPERVISOR_HOST, SUPERVISOR_PORT
 from kombu import Connection, Exchange
 from kombu.mixins import ConsumerProducerMixin
 import time

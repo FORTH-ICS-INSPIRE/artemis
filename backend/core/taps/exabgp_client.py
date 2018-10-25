@@ -1,7 +1,7 @@
 from socketIO_client import SocketIO, BaseNamespace
 import argparse
 from kombu import Connection, Producer, Exchange
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+from .utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
 import signal
 
 

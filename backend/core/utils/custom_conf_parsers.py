@@ -486,11 +486,11 @@ if __name__ == '__main__':
             configurations[hour_timestamp]['asns'][args.origin_asn] = ('NORMAL_ORIG', None)
             if file_metadata['peer_asn'] not in configurations[hour_timestamp]['asns']:
                 configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
-                    ] = (file_metadata['peer_name'], None)
+                                                       ] = (file_metadata['peer_name'], None)
             else:
                 configurations[hour_timestamp]['asns'][file_metadata['peer_asn']
-                    ] = (configurations[hour_timestamp]['asns'][file_metadata['peer_asn']][0] + '_' +
-                                                                file_metadata['peer_name'], None)
+                                                       ] = (configurations[hour_timestamp]['asns'][file_metadata['peer_asn']][0] + '_' +
+                                                            file_metadata['peer_name'], None)
             this_peer_prefixes = parse_file(
                 filepath, file_metadata['format_number'], args.origin_asn)
             for prefix in this_peer_prefixes:
@@ -516,7 +516,6 @@ if __name__ == '__main__':
             # remove file when done
             if os.path.isfile(filepath):
                 os.remove(filepath)
-
 
     if len(configurations) > 0:
 

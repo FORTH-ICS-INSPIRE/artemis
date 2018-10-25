@@ -35,6 +35,7 @@ def get_logger(path='/etc/artemis/logging.yaml'):
 
 
 class TimedSet(set):
+
     def __init__(self, timeout=10):
         self.__table = {}
         self.timeout = timeout
@@ -68,6 +69,7 @@ def flatten(items, seqtypes=(list, tuple)):
 
 
 class ArtemisError(Exception):
+
     def __init__(self, _type, _where):
         self.type = _type
         self.where = _where
@@ -106,7 +108,12 @@ class SMTPSHandler(SMTPHandler):
                 port = smtplib.SMTP_PORT
             smtp = smtplib.SMTP_SSL(self.mailhost, port)
             msg = self.format(record)
-            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (self.fromaddr, ", ".join(self.toaddrs), self.getSubject(record), formatdate(), msg)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ", ".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg)
             if self.username:
                 smtp.ehlo()
                 smtp.login(self.username, self.password)

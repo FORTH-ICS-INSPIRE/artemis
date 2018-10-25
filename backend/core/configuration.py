@@ -1,6 +1,6 @@
 from ipaddress import ip_network as str2ip
 from yaml import load as yload
-from utils import flatten, ArtemisError, RABBITMQ_HOST, get_logger
+from .utils import flatten, ArtemisError, RABBITMQ_HOST, get_logger
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, Consumer
 from kombu.mixins import ConsumerProducerMixin
@@ -16,9 +16,11 @@ log = get_logger()
 
 
 class Configuration():
+
     """
     Configuration Service.
     """
+
     def __init__(self):
         self.worker = None
         signal.signal(signal.SIGTERM, self.exit)
@@ -43,6 +45,7 @@ class Configuration():
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
+
         """
         RabbitMQ Consumer/Producer for this Service.
         """

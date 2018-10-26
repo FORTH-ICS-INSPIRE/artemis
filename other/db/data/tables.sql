@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
     prefix inet, origin_as BIGINT,
     peer_asn   BIGINT,
-    as_path   text[],
+    as_path   BIGINT[],
     service   VARCHAR ( 50 ),
     type  VARCHAR ( 1 ),
     communities  json,
@@ -28,9 +28,10 @@ CREATE TABLE IF NOT EXISTS hijacks (
     type  VARCHAR ( 1 ),
     prefix    inet,
     hijack_as BIGINT,
-    peers_seen   json,
+    peers_seen   BIGINT[],
+    peers_withdrawn BIGINT[],
     num_peers_seen INTEGER,
-    asns_inf json,
+    asns_inf BIGINT[],
     num_asns_inf INTEGER,
     time_started TIMESTAMP,
     time_last TIMESTAMP,
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
     resolved  BOOLEAN,
     active  BOOLEAN,
     ignored BOOLEAN,
+    withdrawn BOOLEAN,
     configured_prefix  inet,
     timestamp_of_config TIMESTAMP,
     comment text,
@@ -48,13 +50,15 @@ CREATE TABLE IF NOT EXISTS hijacks (
     UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (
         (
-            active=true and under_mitigation=false and resolved=false and ignored=false
+            active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false
         ) or (
-            active=true and under_mitigation=true and resolved=false and ignored=false
+            active=true and under_mitigation=true and resolved=false and ignored=false and withdrawn=false
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false
+            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true
+            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false
+        ) or (
+            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true
         )
     )
 );

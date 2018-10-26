@@ -1,6 +1,6 @@
 # You can replay this file by adding the prefixes you like in the configuration file
 # (be careful to also add rules!), and then adding the following to the monitor configuration:
-# bgpstreamlive: /root/tests/bgp_updates.csv
+# bgpstreamlive: /root/tests
 # FORMAT FOR ANNOUNCEMENTS: PREFIX|ORIGIN_ASN|PEER_ASN|AS_PATH|PROJECT|COLLECTOR|A|"[{""asn"":...,""value"":...},...]"|TIMESTAMP
 # FORMAT FOR WITHDRAWALS: PREFIX||PEER_ASN||PROJECT|COLLECTOR|W|[]|TIMESTAMP
 10.0.0.0/16|8522|1556|1556 13193 21320 5408 8522|ris|rrc21|A|"[]"|22222

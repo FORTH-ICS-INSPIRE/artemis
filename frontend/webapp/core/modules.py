@@ -62,7 +62,7 @@ class Modules_state():
         try:
             while state == 10:
                 state = self.server.supervisor.getProcessInfo(module)['state']
-                time.sleep(5)
+                time.sleep(0.5)
             return state == 20
         except Exception:
             log.exception('exception')

@@ -2,21 +2,13 @@
 from kombu import Connection, Producer, Exchange
 import os
 import threading
+import time
+import json
 
 
 def start(tid):
-    obj = {
-        "orig_path": [],
-        "communities": [],
-        "key": "1",
-        "service": "a",
-        "type": "A",
-        "path": [
-            5408,
-            8522],
-        "prefix": "139.91.0.0/16",
-        "peer_asn": 8522,
-        "timestamp": 0}
+    with open('bgp_update.json', 'r') as f:
+        objs = json.load(f)
 
     with Connection(os.getenv('RABBITMQ_HOST', 'localhost')) as connection:
         exchange = Exchange(
@@ -27,23 +19,27 @@ def start(tid):
             delivery_mode=1)
         exchange.declare()
         with Producer(connection) as producer:
-            for i in range(1000):
-                obj['key'] = '{}-{}'.format(i, tid)
-                obj['timestamp'] = i
+            for obj in objs:
+                time.sleep(1)
+                if 'key' not in obj:
+                    obj['key'] = '{}'.format(time.time())
+                if 'timestamp' not in obj:
+                    obj['timestamp'] = time.time()
                 producer.publish(
                     obj,
                     exchange=exchange,
                     routing_key='update',
                     serializer='json')
 
+start(0)
 
-threads = []
-
-for i in range(10):
-    threads.append(threading.Thread(target=start, args=(i,)))
-
-for i in range(10):
-    threads[i].start()
-
-for i in range(10):
-    threads[i].join()
+# threads = []
+#
+# for i in range(10):
+#     threads.append(threading.Thread(target=start, args=(i,)))
+#
+# for i in range(10):
+#     threads[i].start()
+#
+# for i in range(10):
+#     threads[i].join()

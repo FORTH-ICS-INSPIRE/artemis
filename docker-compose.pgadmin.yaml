@@ -1,6 +1,8 @@
 version: '3'
 services:
     pgadmin:
+        logging:
+            driver: none
         image: dpage/pgadmin4:latest
         container_name: pgadmin
         restart: always

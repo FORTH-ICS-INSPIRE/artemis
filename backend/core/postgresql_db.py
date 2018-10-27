@@ -78,7 +78,6 @@ class Postgresql_db():
             self.timestamp = -1
             self.insert_bgp_entries = []
             self.insert_bgp_withdrawals = set()
-            self.update_bgp_entries = set()
             self.handled_bgp_entries = set()
             self.tmp_hijacks_dict = {}
 
@@ -405,10 +404,10 @@ class Postgresql_db():
 
         def retrieve_hijacks(self):
             try:
-                cmd_ = 'SELECT time_started, time_last, peers_seen, '
-                cmd_ += 'asns_inf, key, prefix, hijack_as, type, time_detected, '
-                cmd_ += 'configured_prefix, timestamp_of_config '
-                cmd_ += 'FROM hijacks WHERE active = true;'
+                cmd_ = 'SELECT time_started, time_last, peers_seen, ' \
+                        'asns_inf, key, prefix, hijack_as, type, time_detected, ' \
+                        'configured_prefix, timestamp_of_config ' \
+                        'FROM hijacks WHERE active = true'
                 self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()
                 redis_pipeline = self.redis.pipeline()
@@ -516,9 +515,9 @@ class Postgresql_db():
 
         def _insert_bgp_updates(self):
             try:
-                cmd_ = 'INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, '
-                cmd_ += 'timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES '
-                cmd_ += '(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(key, timestamp) DO NOTHING;'
+                cmd_ = 'INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, ' \
+                        'timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES ' \
+                        '(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(key, timestamp) DO NOTHING;'
                 psycopg2.extras.execute_batch(
                     self.db_cur, cmd_, self.insert_bgp_entries, page_size=1000)
                 self.db_conn.commit()
@@ -532,43 +531,51 @@ class Postgresql_db():
                 return num_of_entries
 
         def _handle_bgp_withdrawals(self):
-            cmd_ = "SELECT hijacks.peers_seen, hijacks.peers_withdrawn, hijacks.key, hijacks.hijack_as, hijacks.type "
-            cmd_ += "FROM bgp_updates, hijacks "
-            cmd_ += "WHERE hijacks.active = true AND bgp_updates.hijack_key = hijacks.key "
-            cmd_ += "AND bgp_updates.prefix = %s AND bgp_updates.peer_asn = %s AND bgp_updates.timestamp < %s"
+            cmd_ = 'SELECT DISTINCT ON (hijacks.key) hijacks.peers_seen, hijacks.peers_withdrawn, ' \
+                    'hijacks.key, hijacks.hijack_as, hijacks.type, bgp_updates.timestamp ' \
+                    'FROM hijacks LEFT JOIN bgp_updates ON (bgp_updates.hijack_key = hijacks.key) ' \
+                    'WHERE bgp_updates.prefix = %s ' \
+                    'AND bgp_updates.type = \'A\' ' \
+                    'AND hijacks.active = true ' \
+                    'AND bgp_updates.peer_asn = %s ' \
+                    'ORDER BY hijacks.key, bgp_updates.timestamp DESC'
             update_bgp_withdrawals = set()
             for withdrawal in self.insert_bgp_withdrawals:
-                # 0: prefix, 1: peer_asn, 2: timestamp, 3: key
                 try:
-                    self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1], withdrawal[2]))
-                    # 0: peers_seen, 1: peers_withdrawn, 2: hij.key, 3: hij.as, 4: hij.type
-                    entry = self.db_cur.fetchone()
-                    if entry is None:
-                        update_bgp_withdrawals.add((None, withdrawal[3]))
-                        continue
-                    # matching withdraw with a hijack
-                    update_bgp_withdrawals.add((entry[2], withdrawal[3]))
-                    if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
-                        entry[1].append(withdrawal[1])
-                        if len(entry[0]) == len(entry[1]):
-                            # set hijack as withdrawn and delete from redis
-                            self.db_cur.execute(
-                                'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, peers_withdrawn=%s WHERE key=%s;',
-                                (datetime.datetime.now(), entry[1], entry[2],))
-                            self.db_conn.commit()
-                            log.debug('withdrawn hijack {}'.format(entry))
-                            redis_hijack_key = redis_key(
-                                withdrawal[0],
-                                entry[3],
-                                entry[4])
-                            self.redis.delete(redis_hijack_key)
-                        else:
-                            # add withdrawal to hijack
-                            self.db_cur.execute(
-                                'UPDATE hijacks SET peers_withdrawn=%s WHERE key=%s;',
-                                (entry[1], entry[2],))
-                            self.db_conn.commit()
-                            log.debug('updating hijack {}'.format(entry))
+                    # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3: key
+                    self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1]))
+                    entries = self.db_cur.fetchall()
+                    for entry in entries:
+                        # entry -> 0: peers_seen, 1: peers_withdrawn, 2: hij.key, 3: hij.as, 4: hij.type, 5: timestamp
+                        if entry is None:
+                            update_bgp_withdrawals.add((None, withdrawal[3]))
+                            continue
+                        elif entry[5] > withdrawal[2]:
+                            update_bgp_withdrawals.add((entry[2], withdrawal[3]))
+                            continue
+                        # matching withdraw with a hijack
+                        update_bgp_withdrawals.add((entry[2], withdrawal[3]))
+                        if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
+                            entry[1].append(withdrawal[1])
+                            if len(entry[0]) == len(entry[1]):
+                                # set hijack as withdrawn and delete from redis
+                                self.db_cur.execute(
+                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, peers_withdrawn=%s WHERE key=%s;',
+                                    (datetime.datetime.now(), entry[1], entry[2],))
+                                self.db_conn.commit()
+                                log.debug('withdrawn hijack {}'.format(entry))
+                                redis_hijack_key = redis_key(
+                                    withdrawal[0],
+                                    entry[3],
+                                    entry[4])
+                                self.redis.delete(redis_hijack_key)
+                            else:
+                                # add withdrawal to hijack
+                                self.db_cur.execute(
+                                    'UPDATE hijacks SET peers_withdrawn=%s WHERE key=%s;',
+                                    (entry[1], entry[2],))
+                                self.db_conn.commit()
+                                log.debug('updating hijack {}'.format(entry))
                 except Exception:
                     log.exception('exception')
 
@@ -590,21 +597,35 @@ class Postgresql_db():
 
         def _update_bgp_updates(self):
             num_of_updates = 0
+            update_bgp_entries = set()
+            remove_withdrawn = set()
             # Update the BGP entries using the hijack messages
             for hijack_key in self.tmp_hijacks_dict:
                 for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                     num_of_updates += 1
-                    self.update_bgp_entries.add(
+                    update_bgp_entries.add(
                         (hijack_key, bgp_entry_to_update))
                     # exclude handle bgp updates that point to same bgp as this hijack
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
-            if len(self.update_bgp_entries) > 0:
+            if len(update_bgp_entries) > 0:
+                cmd_ = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
+                        'FROM (SELECT bgp_updates.peer_asn, bgp_updates.hijack_key FROM bgp_updates, ( ' \
+                        'SELECT B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B ' \
+                        'WHERE H.key = %s AND B.key = %s) AS curr_update WHERE bgp_updates.peer_asn = curr_update.peer_asn ' \
+                        'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
+                        'AND bgp_updates.timestamp <= curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.hijack_key'
                 try:
                     psycopg2.extras.execute_batch(
                         self.db_cur,
                         'UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ',
-                        list(self.update_bgp_entries),
+                        list(update_bgp_entries),
+                        page_size=1000
+                    )
+                    psycopg2.extras.execute_batch(
+                        self.db_cur,
+                        cmd_,
+                        list(update_bgp_entries),
                         page_size=1000
                     )
                     self.db_conn.commit()
@@ -613,8 +634,8 @@ class Postgresql_db():
                     self.db_conn.rollback()
                     return -1
 
-            num_of_updates += len(self.update_bgp_entries)
-            self.update_bgp_entries.clear()
+            num_of_updates += len(update_bgp_entries)
+            update_bgp_entries.clear()
 
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
@@ -640,12 +661,12 @@ class Postgresql_db():
         def _insert_update_hijacks(self):
 
             try:
-                cmd_ = 'INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, '
-                cmd_ += 'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, '
-                cmd_ += 'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) '
-                cmd_ += 'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) '
-                cmd_ += 'ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, '
-                cmd_ += 'time_last=%s, peers_seen=%s, asns_inf=%s;'
+                cmd_ = 'INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, ' \
+                        'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, ' \
+                        'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) ' \
+                        'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ' \
+                        'ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, ' \
+                        'time_last=%s, peers_seen=%s, asns_inf=%s'
 
                 values = []
                 for key in self.tmp_hijacks_dict:
@@ -705,9 +726,9 @@ class Postgresql_db():
 
         def _retrieve_unhandled(self, amount):
             results = []
-            cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, '
-            cmd_ += 'type, communities, timestamp FROM bgp_updates WHERE '
-            cmd_ += 'handled = false ORDER BY timestamp DESC LIMIT(%s);'
+            cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
+                    'type, communities, timestamp FROM bgp_updates WHERE ' \
+                    'handled = false ORDER BY timestamp DESC LIMIT(%s)'
             self.db_cur.execute(
                 cmd_, (amount,))
             entries = self.db_cur.fetchall()
@@ -761,8 +782,8 @@ class Postgresql_db():
         def _save_config(self, config_hash, yaml_config, raw_config):
             try:
                 log.debug('Config Store..')
-                cmd_ = 'INSERT INTO configs (key, config_data, raw_config, time_modified)'
-                cmd_ += 'VALUES (%s, %s, %s, %s);'
+                cmd_ = 'INSERT INTO configs (key, config_data, raw_config, time_modified) ' \
+                        'VALUES (%s, %s, %s, %s)'
                 self.db_cur.execute(
                     cmd_,
                     (config_hash,

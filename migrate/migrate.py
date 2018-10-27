@@ -14,7 +14,7 @@ def get_target_version():
 
 def load_migrations_json():
     print("Loading migrations file...")
-    with open('migrations/history.json') as json_data:
+    with open('migrations/target_steps.json') as json_data:
         data = json.load(json_data)
     return data
 
@@ -49,7 +49,7 @@ def create_connect_db():
                 password=_password
             )
         except Exception:
-            print("Exception couldn't connect to db.")
+            print("Exception couldn't connect to db.\nRetrying in 5 seconds...")
     print('PostgreSQL DB created/connected..')
     return _db_conn
 
@@ -72,7 +72,7 @@ def migrate(next_db_version, db_cur, db_conn):
 
 def update_version(current_db_version, db_cur, db_conn):
     print("Updating db version to {}...".format(current_db_version))
-    cmd = "UPDATE db_details SET version={0} WHERE ID={1};".format(current_db_version, 0)
+    cmd = "UPDATE db_details SET version={0} WHERE id={1};".format(current_db_version, 1)
     try:
         db_cur.execute(cmd)
         db_conn.commit()
@@ -96,6 +96,7 @@ def start_migrations(current_db_version, target_db_version, db_conn):
         if next_db_version_key_str in migration_data['migrations']:
             status = migrate(migration_data['migrations'][next_db_version_key_str], db_cur, db_conn)
             if status:
+                current_db_version = int(current_db_version) + 1
                 update_version(current_db_version, db_cur, db_conn)
             count_migration += 1
         else:
@@ -110,11 +111,12 @@ def extract_db_version(db_conn):
     print("Getting db version...")
     try:
         cur = db_conn.cursor()
-        cur.execute('SELECT version from db_details')     
-        version = cur.fetchone()
+        cur.execute('SELECT version from db_details WHERE id=1')     
+        version = cur.fetchone()[0]
     except psycopg2.DatabaseError as e:
         db_conn.rollback()
         print("db version not found")
+        version = None
 
     if version == None:
         version = 0
@@ -122,7 +124,7 @@ def extract_db_version(db_conn):
     return version
 
 def proceed():
-    loop_ = False
+    #loop_ = False
     print("# # # # # # # # # # # # # # # # # # # # # # # #")
     print("### PLEASE BACKUP YOUR DB BEFORE PROCEEDING ###")
     print("# # # # # # # # # # # # # # # # # # # # # # # #")
@@ -146,10 +148,10 @@ if __name__ == "__main__":
 
     print("Initializing migration...")
     db_conn = create_connect_db()
-    target_db_version = get_target_version()
-    current_db_version = extract_db_version(db_conn)
+    target_db_version = int(get_target_version())
+    current_db_version = int(extract_db_version(db_conn))
 
-    if target_db_version == None:
+    if target_db_version is None:
         print("Couldn't identify the version of the code.")
         exit(-1)
 

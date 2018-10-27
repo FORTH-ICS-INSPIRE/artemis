@@ -10,11 +10,6 @@ services:
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
             - ./postgres-data-current:/var/lib/postgresql/data
-            - ./other/postgres-backup.sh:/etc/periodic/daily/backup
-            - ./postgres-data-backup/:/tmp/
-            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         networks:
             - postgres
         expose:

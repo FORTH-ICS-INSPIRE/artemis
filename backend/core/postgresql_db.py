@@ -77,6 +77,7 @@ class Postgresql_db():
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
+            self.insert_bgp_withdrawals = set()
             self.update_bgp_entries = set()
             self.handled_bgp_entries = set()
             self.tmp_hijacks_dict = {}
@@ -252,11 +253,11 @@ class Postgresql_db():
             msg_ = message.payload
             # prefix, key, origin_as, peer_asn, as_path, service, type, communities,
             # timestamp, hijack_key, handled, matched_prefix, orig_path
-            origin_as = -1
-            if len(msg_['path']) >= 1:
-                origin_as = msg_['path'][-1]
-
             try:
+                origin_as = -1
+                if len(msg_['path']) >= 1:
+                    origin_as = msg_['path'][-1]
+
                 extract_msg = (
                     msg_['prefix'],  # prefix
                     msg_['key'],  # key
@@ -275,7 +276,19 @@ class Postgresql_db():
                         msg_['prefix']),  # matched_prefix
                     json.dumps(msg_['orig_path'])  # orig_path
                 )
+                # insert all types of BGP updates
                 self.insert_bgp_entries.append(extract_msg)
+
+                # update hijacks based on withdrawal messages
+                if msg_['type'] is 'W':
+                    extract_msg = (
+                        msg_['prefix'],  # prefix
+                        msg_['peer_asn'],  # peer_asn
+                        datetime.datetime.fromtimestamp(
+                            (msg_['timestamp'])),  # timestamp
+                        msg_['key'] # key
+                    )
+                    self.insert_bgp_withdrawals.add(extract_msg)
             except Exception:
                 log.exception('{}'.format(msg_))
 
@@ -518,6 +531,63 @@ class Postgresql_db():
                 self.insert_bgp_entries.clear()
                 return num_of_entries
 
+        def _handle_bgp_withdrawals(self):
+            cmd_ = "SELECT hijacks.peers_seen, hijacks.peers_withdrawn, hijacks.key, hijacks.hijack_as, hijacks.type "
+            cmd_ += "FROM bgp_updates, hijacks "
+            cmd_ += "WHERE hijacks.active = true AND bgp_updates.hijack_key = hijacks.key "
+            cmd_ += "AND bgp_updates.prefix = %s AND bgp_updates.peer_asn = %s AND bgp_updates.timestamp < %s"
+            update_bgp_withdrawals = set()
+            for withdrawal in self.insert_bgp_withdrawals:
+                # 0: prefix, 1: peer_asn, 2: timestamp, 3: key
+                try:
+                    self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1], withdrawal[2]))
+                    # 0: peers_seen, 1: peers_withdrawn, 2: hij.key, 3: hij.as, 4: hij.type
+                    entry = self.db_cur.fetchone()
+                    if entry is None:
+                        update_bgp_withdrawals.add((None, withdrawal[3]))
+                        continue
+                    # matching withdraw with a hijack
+                    update_bgp_withdrawals.add((entry[2], withdrawal[3]))
+                    if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
+                        entry[1].append(withdrawal[1])
+                        if len(entry[0]) == len(entry[1]):
+                            # set hijack as withdrawn and delete from redis
+                            self.db_cur.execute(
+                                'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, peers_withdrawn=%s WHERE key=%s;',
+                                (datetime.datetime.now(), entry[1], entry[2],))
+                            self.db_conn.commit()
+                            log.debug('withdrawn hijack {}'.format(entry))
+                            redis_hijack_key = redis_key(
+                                withdrawal[0],
+                                entry[3],
+                                entry[4])
+                            self.redis.delete(redis_hijack_key)
+                        else:
+                            # add withdrawal to hijack
+                            self.db_cur.execute(
+                                'UPDATE hijacks SET peers_withdrawn=%s WHERE key=%s;',
+                                (entry[1], entry[2],))
+                            self.db_conn.commit()
+                            log.debug('updating hijack {}'.format(entry))
+                except Exception:
+                    log.exception('exception')
+
+            try:
+                psycopg2.extras.execute_batch(
+                    self.db_cur,
+                    'UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ',
+                    list(update_bgp_withdrawals),
+                    page_size=1000
+                )
+                self.db_conn.commit()
+            except Exception:
+                log.exception('exception')
+                self.db_conn.rollback()
+
+            num_of_entries = len(self.insert_bgp_withdrawals)
+            self.insert_bgp_withdrawals.clear()
+            return num_of_entries
+
         def _update_bgp_updates(self):
             num_of_updates = 0
             # Update the BGP entries using the hijack messages
@@ -663,8 +733,9 @@ class Postgresql_db():
                 )
 
         def _update_bulk(self):
-            inserts, updates, hijacks = self._insert_bgp_updates(
-            ), self._update_bgp_updates(), self._insert_update_hijacks()
+            inserts, updates, hijacks, withdrawals = self._insert_bgp_updates(
+            ), self._update_bgp_updates(), self._insert_update_hijacks(
+            ), self._handle_bgp_withdrawals()
             str_ = ''
             if inserts > 0:
                 str_ += 'BGP Updates Inserted: {}\n'.format(inserts)
@@ -672,6 +743,8 @@ class Postgresql_db():
                 str_ += 'BGP Updates Updated: {}\n'.format(updates)
             if hijacks > 0:
                 str_ += 'Hijacks Inserted: {}'.format(hijacks)
+            if withdrawals > 0:
+                str_ += 'Withdrawals Handled: {}'.format(withdrawals)
             if str_ != '':
                 log.debug('{}'.format(str_))
 

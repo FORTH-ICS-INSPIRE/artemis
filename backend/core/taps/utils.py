@@ -113,11 +113,11 @@ def mformat_validator(msg):
         'timestamp',
         'peer_asn'
     ]
-    type_values = ['A', 'W']
-    community_keys = set(['asn', 'value'])
+    type_values = {'A', 'W'}
+    community_keys = {'asn', 'value'}
 
     optional_fields_init = {
-        'communities': list()
+        'communities': []
     }
 
     def valid_dict(msg):

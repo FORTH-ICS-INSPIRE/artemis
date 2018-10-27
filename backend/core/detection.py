@@ -273,8 +273,8 @@ class Detection():
                                 break
                     except Exception:
                         log.exception('exception')
-                if not is_hijack:
-                    self.mark_handled(raw)
+                    if not is_hijack:
+                        self.mark_handled(raw)
                 self.mon_num += 1
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))

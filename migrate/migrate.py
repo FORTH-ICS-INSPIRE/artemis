@@ -65,6 +65,7 @@ def migrate(next_db_version, db_cur, db_conn):
         db_cur.execute(migration_command)
         db_conn.commit()
     except psycopg2.DatabaseError as e:
+        db_conn.rollback()
         print("Failed to execute command. \n {}".format(e))
         exit(-1)
     return True
@@ -72,11 +73,12 @@ def migrate(next_db_version, db_cur, db_conn):
 
 def update_version(current_db_version, db_cur, db_conn):
     print("Updating db version to {}...".format(current_db_version))
-    cmd = "UPDATE db_details SET version={0} WHERE id={1};".format(current_db_version, 1)
+    cmd = "UPDATE db_details SET version={0}, upgraded_on=now();".format(current_db_version)
     try:
         db_cur.execute(cmd)
         db_conn.commit()
     except Exception:
+        db_conn.rollback()
         print("Failed to execute command.")
         exit(-1)
 
@@ -90,7 +92,7 @@ def start_migrations(current_db_version, target_db_version, db_conn):
     count_migration = 0
     total_migrations = int(target_db_version) - int(current_db_version)
 
-    while(current_db_version != target_db_version):
+    while(current_db_version < target_db_version):
         next_db_version = int(current_db_version) + 1
         next_db_version_key_str = str(next_db_version)
         if next_db_version_key_str in migration_data['migrations']:
@@ -102,7 +104,7 @@ def start_migrations(current_db_version, target_db_version, db_conn):
         else:
             print("Missing version to migrate...")
             exit(-1)
-        current_db_version = str(next_db_version)
+        current_db_version = next_db_version
         print("Migration {0}/{1}".format(count_migration, total_migrations))
     db_cur.close()
 
@@ -111,7 +113,7 @@ def extract_db_version(db_conn):
     print("Getting db version...")
     try:
         cur = db_conn.cursor()
-        cur.execute('SELECT version from db_details WHERE id=1')     
+        cur.execute('SELECT version from db_details') 
         version = cur.fetchone()[0]
     except psycopg2.DatabaseError as e:
         db_conn.rollback()
@@ -123,28 +125,8 @@ def extract_db_version(db_conn):
     print("-> Current db version is: {}".format(version))
     return version
 
-def proceed():
-    #loop_ = False
-    print("# # # # # # # # # # # # # # # # # # # # # # # #")
-    print("### PLEASE BACKUP YOUR DB BEFORE PROCEEDING ###")
-    print("# # # # # # # # # # # # # # # # # # # # # # # #")
-    """
-    while(loop_ == False):
-        print("Proceed with migration? [yes/no]")
-        choice = input().lower()
-        if(choice == 'yes'):
-            loop_ = True
-        elif(choice == 'no'):
-            print("Exiting migration script...")
-            exit(-1)
-        else:
-            print("Unknown command. Input must be yes or no.")
-    """
-
 
 if __name__ == "__main__":
-
-    proceed()
 
     print("Initializing migration...")
     db_conn = create_connect_db()
@@ -155,7 +137,7 @@ if __name__ == "__main__":
         print("Couldn't identify the version of the code.")
         exit(-1)
 
-    if target_db_version != current_db_version:
+    if current_db_version < target_db_version:
         msg = "The db schema is old.\n"
         msg += "Migrating from version {0} to {1}".format(current_db_version, target_db_version)
         print(msg)

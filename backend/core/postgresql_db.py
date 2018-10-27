@@ -77,7 +77,7 @@ class Postgresql_db():
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
-            self.insert_bgp_withdrawals = set()
+            self.handle_bgp_withdrawals = set()
             self.handled_bgp_entries = set()
             self.tmp_hijacks_dict = {}
 
@@ -287,7 +287,7 @@ class Postgresql_db():
                             (msg_['timestamp'])),  # timestamp
                         msg_['key'] # key
                     )
-                    self.insert_bgp_withdrawals.add(extract_msg)
+                    self.handle_bgp_withdrawals.add(extract_msg)
             except Exception:
                 log.exception('{}'.format(msg_))
 
@@ -540,17 +540,17 @@ class Postgresql_db():
                     'AND bgp_updates.peer_asn = %s ' \
                     'ORDER BY hijacks.key, bgp_updates.timestamp DESC'
             update_bgp_withdrawals = set()
-            for withdrawal in self.insert_bgp_withdrawals:
+            for withdrawal in self.handle_bgp_withdrawals:
                 try:
                     # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3: key
                     self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1]))
                     entries = self.db_cur.fetchall()
+                    if entries is None or len(entries) == 0:
+                        update_bgp_withdrawals.add((None, withdrawal[3]))
+                        continue
                     for entry in entries:
                         # entry -> 0: peers_seen, 1: peers_withdrawn, 2: hij.key, 3: hij.as, 4: hij.type, 5: timestamp
-                        if entry is None:
-                            update_bgp_withdrawals.add((None, withdrawal[3]))
-                            continue
-                        elif entry[5] > withdrawal[2]:
+                        if entry[5] > withdrawal[2]:
                             update_bgp_withdrawals.add((entry[2], withdrawal[3]))
                             continue
                         # matching withdraw with a hijack
@@ -591,8 +591,8 @@ class Postgresql_db():
                 log.exception('exception')
                 self.db_conn.rollback()
 
-            num_of_entries = len(self.insert_bgp_withdrawals)
-            self.insert_bgp_withdrawals.clear()
+            num_of_entries = len(self.handle_bgp_withdrawals)
+            self.handle_bgp_withdrawals.clear()
             return num_of_entries
 
         def _update_bgp_updates(self):
@@ -728,7 +728,7 @@ class Postgresql_db():
             results = []
             cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
                     'type, communities, timestamp FROM bgp_updates WHERE ' \
-                    'handled = false ORDER BY timestamp DESC LIMIT(%s)'
+                    'handled = false AND type = \'A\' ORDER BY timestamp DESC LIMIT(%s)'
             self.db_cur.execute(
                 cmd_, (amount,))
             entries = self.db_cur.fetchall()

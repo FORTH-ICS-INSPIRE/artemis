@@ -5,6 +5,8 @@ import logging.handlers
 import logging.config
 import yaml
 from logging.handlers import SMTPHandler
+import pickle
+import hashlib
 
 
 # if not os.path.exists('snapshots'):
@@ -14,7 +16,6 @@ from logging.handlers import SMTPHandler
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'localhost')
 SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
-MEMCACHED_HOST = os.getenv('MEMCACHED_HOST', 'localhost')
 
 
 def get_logger(path='/etc/artemis/logging.yaml'):
@@ -36,6 +37,7 @@ def get_logger(path='/etc/artemis/logging.yaml'):
 
 
 class TimedSet(set):
+
     def __init__(self, timeout=10):
         self.__table = {}
         self.timeout = timeout
@@ -69,6 +71,7 @@ def flatten(items, seqtypes=(list, tuple)):
 
 
 class ArtemisError(Exception):
+
     def __init__(self, _type, _where):
         self.type = _type
         self.where = _where
@@ -107,7 +110,12 @@ class SMTPSHandler(SMTPHandler):
                 port = smtplib.SMTP_PORT
             smtp = smtplib.SMTP_SSL(self.mailhost, port)
             msg = self.format(record)
-            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (self.fromaddr, ", ".join(self.toaddrs), self.getSubject(record), formatdate(), msg)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ", ".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg)
             if self.username:
                 smtp.ehlo()
                 smtp.login(self.username, self.password)
@@ -117,3 +125,9 @@ class SMTPSHandler(SMTPHandler):
             raise
         except Exception:
             self.handleError(record)
+
+def redis_key(prefix, hijack_as, _type):
+    assert(isinstance(prefix, str))
+    assert(isinstance(hijack_as, int))
+    assert(isinstance(_type, str))
+    return hashlib.md5(pickle.dumps([prefix, hijack_as, _type])).hexdigest()

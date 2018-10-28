@@ -71,7 +71,9 @@
             <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <i class="fa fa-bell fa-fw"></i> Current Configuration <button type="button" id="config_action" class="btn btn-primary btn-sm float-right">Edit</button>
+                        <i class="fa fa-bell fa-fw"></i> Current Configuration
+                        <button type="button" id="config_action" class="btn btn-primary btn-sm float-right">Edit</button>
+                        <button type="button" id="config_cancel" class="btn btn-warning btn-sm float-right config-cancel-button">Cancel</button>
                     </div>
                     <div class="panel-body">
                         <div id="config_alert_box"></div>
@@ -85,10 +87,21 @@
                             </div>
                             <div class="col-lg-6">
                                 </hr>
-                                <p class="float-right"><i>Times are shown in your local time zone.</i></p>
+                                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i>
                             </div>
                         </div>
-
+                    </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Comment for config
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <form><textarea id="code_config_comment_box" name="code_config_comment_box">{{ comment }}</textarea></form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -103,7 +116,9 @@
         {{super()}}
         <script>
             var editor = null;
-            var initial_conf = null;
+            var comment_editor = null;
+            var valid_conf = $('#code_yaml').val();
+            var valid_comment = $('#code_config_comment_box').val();
 
             $('#monitor').on('click', function (event, state) {
                 $("#system_modules").submit();
@@ -117,23 +132,36 @@
 
             $('#config_action').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
-                    $('#config_action').removeClass('btn-primary').addClass('btn-danger')
+                    $('#config_action').removeClass('btn-primary').addClass('btn-danger');
+                    $('#config_cancel').show();
                     $('#config_action').html('Save');
                     editor.options.readOnly = false;
+                    comment_editor.options.readOnly = false;
                 }else if($(this).hasClass("btn-danger")){
-                    var new_config = {"new_config": editor.getValue()};
-                    $('#config_action').removeClass('btn-danger').addClass('btn-warning')
+                    var publish_config = {"new_config": editor.getValue(), "comment": comment_editor.getValue()};
+                    $('#config_action').removeClass('btn-danger').addClass('btn-warning');
                     $('#config_action').html('Pending');
-                    submit_new_config(new_config)
-
+                    submit_new_config(publish_config)
                 }
             });
 
-            function submit_new_config(new_config){
+            $('#config_cancel').on('click', function (event, state) {
+                if($(this).hasClass("btn-warning")){
+                    $(this).hide();
+                    editor.setValue(valid_conf);
+                    editor.options.readOnly = true;
+                    comment_editor.setValue(valid_comment);
+                    comment_editor.options.readOnly = true;
+                    $('#config_action').removeClass('btn-danger').addClass('btn-primary');
+                    $('#config_action').html('Edit');
+                }
+            });
+
+            function submit_new_config(publish_config){
                 $.ajax({
                     type: "POST",
                     url: "../admin/config/",
-                    data: new_config,
+                    data: publish_config,
                     success: function(result){
                         if(result["status"] == "fail"){
                             var message = '<div class="alert alert-danger alert-dismissible">'
@@ -141,15 +169,22 @@
                             message += result["response"] + '</div>'
                             $('#config_action').removeClass('btn-warning').addClass('btn-danger')
                             $('#config_action').html('Save');
-
                         }else{
                             var message = '<div class="alert alert-success alert-dismissible">'
                             message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
                             message += result["response"] + '</div>'
+                            $('#config_cancel').hide();
                             $('#config_action').removeClass('btn-warning').addClass('btn-primary')
                             $('#config_action').html('Edit');
-                            editor.setValue(result["data"])
+                            valid_conf = result["config"];
+                            editor.setValue(valid_conf);
+                            if(result["comment"] == null){
+                                comment_editor.setValue('');
+                            }else{
+                                comment_editor.setValue(result["comment"]);
+                            }
                             editor.options.readOnly = true;
+                            comment_editor.options.readOnly = true;
                             update_config_timestamp();
                         }
                         $("#config_alert_box").html(message)
@@ -160,26 +195,25 @@
             }
 
             function update_config_timestamp(){
-                $("#conf_timestamp").html("Last Update: " + transform_date_to_local_( '{{ config_timestamp }}' ))
-            }
-
-            function transform_date_to_local_(date){
-                var date_ = moment.utc(date)
-                if(date_._isValid){
-                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
-                    return local;
-                }
-                return "Never";
+                $("#conf_timestamp").html("Last Update: " + transform_date_to_local( '{{ config_timestamp }}' ))
             }
 
             $(document).ready(function(){
                 update_config_timestamp();
-                editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {
+                editor = CodeMirror.fromTextArea($('#code_yaml')[0], {
                     lineNumbers: true,
                     indentUnit: 4,
                     readOnly: true
                 });
                 editor.setSize("100%", 640);
+
+                comment_editor = CodeMirror.fromTextArea($('#code_config_comment_box')[0], {
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    readOnly: true
+                });
+                comment_editor.setSize("100%", 140);
+                $('#timezone').html(display_timezone());
             });
 
             $( "#monitor_switch" ).click(function() {

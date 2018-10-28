@@ -81,11 +81,10 @@
         <div class="row">
             <div class="col-lg-12">
                 </hr>
-                <p><i>Times are shown in your local time zone.</i></p>
+                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
             </div>
         </div>
 
-        
 
     
 {% endblock %}
@@ -187,6 +186,7 @@
                 table = $('#bgp_updates').DataTable( {
                     "processing": true,
                     "serverSide": true,
+                    "searching": false,
                     ajax: function(data, callback, settings) {
                         parameters['offset'] = data.start;
                         parameters['limit'] = data.length;
@@ -214,7 +214,11 @@
                             }
                         },
                         { data: 'prefix' },
-                        { data: 'origin_as' },
+                        { data: 'origin_as',
+                            render: function(data, type, row){
+                                return format_origin_as(data);
+                            }
+                        },
                         { data: 'as_path',
                             render: function(data, type, row){
                                 return format_as_path(data);
@@ -234,7 +238,7 @@
                         },
                         {   data: 'handled', 
                             render: function(data, type, row){
-                                if(true == data){
+                                if(data == true){
                                     return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
                                 }else{
                                     return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'
@@ -294,6 +298,8 @@
                         table.ajax.reload(null, false);
                     }
                 }, 5000 );
+
+                $('#timezone').html(display_timezone());
             });
 
             function format ( d ) {    
@@ -304,7 +310,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Origin AS:</b></td>'+
-                        '<td>'+d.origin_as+'</td>'+
+                        '<td>'+format_origin_as(d.origin_as)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>AS Path:</b></td>'+
@@ -324,7 +330,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Communities:</b></td>'+
-                        '<td>'+communities_formatted(d.communities)+'</td>'+
+                        '<td>'+format_communities(d.communities)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+

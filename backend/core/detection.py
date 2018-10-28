@@ -1,15 +1,15 @@
 import radix
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, MEMCACHED_HOST, TimedSet, get_logger
+from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger, redis_key
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
 import time
-from pymemcache.client.base import Client
 import pickle
 import hashlib
 import logging
 from typing import Union, Dict, List, NoReturn, Callable, Tuple
+import redis
 
 
 log = get_logger()
@@ -17,30 +17,12 @@ hij_log = logging.getLogger('hijack_logger')
 mail_log = logging.getLogger('mail_logger')
 
 
-def pickle_serializer(key: str, value: Union[str, Dict]) -> str:
-    """
-    Pickle Serializer for Memcached.
-    """
-    if isinstance(value, str):
-        return value, 1
-    return pickle.dumps(value), 2
-
-
-def pickle_deserializer(key: str, value: str, flags: int) -> Union[str, Dict]:
-    """
-    Pickle Serializer for Memcached.
-    """
-    if flags == 1:
-        return value
-    if flags == 2:
-        return pickle.loads(value)
-    raise Exception('Unknown serialization format')
-
-
 class Detection():
+
     """
     Detection Service.
     """
+
     def __init__(self):
         self.worker = None
         signal.signal(signal.SIGTERM, self.exit)
@@ -65,6 +47,7 @@ class Detection():
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
+
         """
         RabbitMQ Consumer/Producer for this Service.
         """
@@ -77,10 +60,10 @@ class Detection():
             self.monitors_seen = TimedSet()
             self.mon_num = 1
 
-            self.memcache = Client((MEMCACHED_HOST, 11211),
-                                   serializer=pickle_serializer,
-                                   deserializer=pickle_deserializer)
-            self.memcache.flush_all()
+            self.redis = redis.Redis(
+                host='localhost',
+                    port=6379
+            )
 
             # EXCHANGES
             self.update_exchange = Exchange(
@@ -111,27 +94,24 @@ class Detection():
                 delivery_mode=1)
 
             # QUEUES
-            self.update_queue = Queue('detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, max_priority=1,
+            self.update_queue = Queue(
+                'detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                                       consumer_arguments={'x-priority': 1})
-            self.update_unhandled_queue = Queue('detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, max_priority=2,
+            self.update_unhandled_queue = Queue(
+                'detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, auto_delete=True, max_priority=2,
                                                 consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue('detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, max_priority=2,
+            self.hijack_resolved_queue = Queue(
+                'detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
                                                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue('detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, max_priority=2,
+            self.hijack_ignored_queue = Queue(
+                'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
                                               consumer_arguments={'x-priority': 2})
-            self.hijack_fetch_queue = Queue('detection-hijack-fetch', exchange=self.hijack_exchange, routing_key='fetch', durable=False, max_priority=2,
-                                            consumer_arguments={'x-priority': 2})
-            self.config_queue = Queue('detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, max_priority=3,
+            self.config_queue = Queue(
+                'detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
                                       consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
 
-            self.producer.publish(
-                '',
-                exchange=self.hijack_exchange,
-                routing_key='fetch-hijacks',
-                priority=4
-            )
             log.info('started')
 
         def get_consumers(self, Consumer: Consumer,
@@ -153,13 +133,6 @@ class Detection():
                     queues=[self.update_unhandled_queue],
                     on_message=self.handle_unhandled_bgp_updates,
                     prefetch_count=1000,
-                    no_ack=True
-                ),
-                Consumer(
-                    queues=[self.hijack_fetch_queue],
-                    on_message=self.fetch_ongoing_hijacks,
-                    prefetch_count=100,
-                    accept=['pickle'],
                     no_ack=True
                 ),
                 Consumer(
@@ -330,7 +303,7 @@ class Detection():
             for x in seq:
                 if last_add != x:
                     last_add = x
-                    new_seq.append(int(x))
+                    new_seq.append(x)
 
             is_loopy = False
             if len(set(seq)) != len(new_seq):
@@ -389,7 +362,7 @@ class Detection():
             for item in prefix_node.data['confs']:
                 if origin_asn in item['origin_asns']:
                     return False
-            self.commit_hijack(monitor_event, origin_asn, 0)
+            self.commit_hijack(monitor_event, origin_asn, '0')
             return True
 
         @exception_handler(log)
@@ -404,7 +377,7 @@ class Detection():
                 # [] neighbors means "allow everything"
                 if origin_asn in item['origin_asns'] and (len(item['neighbors']) == 0 or first_neighbor_asn in item['neighbors']):
                     return False
-            self.commit_hijack(monitor_event, first_neighbor_asn, 1)
+            self.commit_hijack(monitor_event, first_neighbor_asn, '1')
             return True
 
         @exception_handler(log)
@@ -446,12 +419,12 @@ class Detection():
                           hijacker: int, hij_type: str) -> NoReturn:
             """
             Commit new or update an existing hijack to the database.
-            It uses memcache server to store ongoing hijacks information to not stress the db.
+            It uses redis server to store ongoing hijacks information to not stress the db.
             """
-            memcache_hijack_key = hashlib.md5(pickle.dumps(
-                [str(monitor_event['prefix']),
-                 int(hijacker),
-                 str(hij_type)])).hexdigest()
+            redis_hijack_key = redis_key(
+                 monitor_event['prefix'],
+                 hijacker,
+                 hij_type)
             hijack_value = {
                 'prefix': monitor_event['prefix'],
                 'hijack_as': hijacker,
@@ -468,10 +441,15 @@ class Detection():
                 hijack_value['asns_inf'] = set(monitor_event['path'])
             else:
                 hijack_value['asns_inf'] = set(
-                    monitor_event['path'][:-(hij_type + 1)])
+                    monitor_event['path'][:-(int(hij_type) + 1)])
 
-            result = self.memcache.get(memcache_hijack_key)
+            # t0 = time.time()
+            result = self.redis.get(redis_hijack_key)
+            # log.info('redis hijack key: {}'.format(redis_hijack_key))
+            # log.info('get {}'.format(time.time()-t0))
             if result is not None:
+                # log.info('existing')
+                result = pickle.loads(result)
                 result['time_started'] = min(
                     result['time_started'], hijack_value['time_started'])
                 result['time_last'] = max(
@@ -481,13 +459,16 @@ class Detection():
                 # no update since db already knows!
                 result['monitor_keys'] = hijack_value['monitor_keys']
             else:
-                first_trigger = int(monitor_event['timestamp'])
+                # log.info('not existing')
+                first_trigger = monitor_event['timestamp']
                 hijack_value['key'] = hashlib.md5(pickle.dumps(
                     [monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()
                 hijack_value['time_detected'] = time.time()
                 result = hijack_value
 
-            self.memcache.set(memcache_hijack_key, result)
+            # t0 = time.time()
+            self.redis.set(redis_hijack_key, pickle.dumps(result))
+            # log.info('set {}'.format(time.time()-t0))
 
             self.producer.publish(
                 result,
@@ -512,40 +493,20 @@ class Detection():
             self.monitors_seen.add(monitor_event['key'])
             # log.debug('{}'.format(monitor_event['key']))
 
-        def fetch_ongoing_hijacks(self, message: Dict) -> NoReturn:
-            """
-            Fetches ongoing hijacks from the database when the service starts.
-            """
-            # log.debug(
-            #     'message: {}\npayload: {}'.format(
-            #         message, message.payload))
-            try:
-                hijacks = message.payload
-                for hijack_key, hijack_value in hijacks.items():
-                    memcache_hijack_key = hashlib.md5(pickle.dumps([
-                        str(hijack_value['prefix']),
-                        int(hijack_value['hijack_as']),
-                        str(hijack_value['type'])])).hexdigest()
-                    self.memcache.set(memcache_hijack_key, hijack_value)
-            except Exception:
-                log.exception(
-                    "couldn't fetch data: {}".format(
-                        message.payload))
-
         def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
             """
-            Remove for memcache the ongoing hijack entry.
+            Remove for redis the ongoing hijack entry.
             """
             log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             try:
                 data = message.payload
-                memcache_hijack_key = hashlib.md5(pickle.dumps(
-                    [str(data['prefix']),
-                     int(data['hijack_as']),
-                     str(data['type'])])).hexdigest()
-                self.memcache.delete(memcache_hijack_key)
+                redis_hijack_key = redis_key(
+                    data['prefix'],
+                    data['hijack_as'],
+                    data['type'])
+                self.redis.delete(redis_hijack_key)
             except Exception:
                 log.exception(
                     "couldn't erase data: {}".format(

@@ -1,0 +1,10 @@
+version: '3'
+services:
+    exabgp:
+        image: mavromat/exabgp-monitor:latest
+        container_name: exabgp
+        restart: always
+        networks:
+            - artemis
+        volumes:
+            - ./backend/configs/exabgp.conf:/home/config/exabgp.conf

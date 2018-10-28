@@ -58,9 +58,10 @@ class Modules_state():
         return res
 
     def is_up_or_running(self, module):
-        state = 10
         try:
+            state = self.server.supervisor.getProcessInfo(module)['state']
             while state == 10:
+                time.sleep(0.5)
                 state = self.server.supervisor.getProcessInfo(module)['state']
                 time.sleep(0.5)
             return state == 20

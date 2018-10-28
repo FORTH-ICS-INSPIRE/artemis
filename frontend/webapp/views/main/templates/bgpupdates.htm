@@ -238,7 +238,7 @@
                         },
                         {   data: 'handled', 
                             render: function(data, type, row){
-                                if(data == true){
+                                if(data){
                                     return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
                                 }else{
                                     return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'

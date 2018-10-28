@@ -515,7 +515,7 @@ class Postgresql_db():
             except Exception:
                 self.producer.publish(
                     {
-                        'status': 'fail'
+                        'status': 'rejected'
                     },
                     exchange='',
                     routing_key=message.properties['reply_to'],
@@ -547,7 +547,7 @@ class Postgresql_db():
             except Exception:
                 self.producer.publish(
                     {
-                        'status': 'fail'
+                        'status': 'rejected'
                     },
                     exchange='',
                     routing_key=message.properties['reply_to'],

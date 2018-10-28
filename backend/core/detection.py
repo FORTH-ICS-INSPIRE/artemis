@@ -362,7 +362,7 @@ class Detection():
             for item in prefix_node.data['confs']:
                 if origin_asn in item['origin_asns']:
                     return False
-            self.commit_hijack(monitor_event, origin_asn, 0)
+            self.commit_hijack(monitor_event, origin_asn, '0')
             return True
 
         @exception_handler(log)
@@ -377,7 +377,7 @@ class Detection():
                 # [] neighbors means "allow everything"
                 if origin_asn in item['origin_asns'] and (len(item['neighbors']) == 0 or first_neighbor_asn in item['neighbors']):
                     return False
-            self.commit_hijack(monitor_event, first_neighbor_asn, 1)
+            self.commit_hijack(monitor_event, first_neighbor_asn, '1')
             return True
 
         @exception_handler(log)
@@ -441,7 +441,7 @@ class Detection():
                 hijack_value['asns_inf'] = set(monitor_event['path'])
             else:
                 hijack_value['asns_inf'] = set(
-                    monitor_event['path'][:-(hij_type + 1)])
+                    monitor_event['path'][:-(int(hij_type) + 1)])
 
             # t0 = time.time()
             result = self.redis.get(redis_hijack_key)

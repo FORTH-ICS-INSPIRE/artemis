@@ -29,6 +29,8 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                         try:
                             if len(row) != 9:
                                 continue
+                            if row[0].startswith('#'):
+                                continue
                             # example row: 139.91.0.0/16|8522|1403|1403 6461 2603 21320
                             # 5408
                             # 8522|routeviews|route-views2|A|"[{""asn"":1403,""value"":6461}]"|1517446677

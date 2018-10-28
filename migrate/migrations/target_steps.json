@@ -1,0 +1,10 @@
+{
+    "migrations": {
+        "1": {
+            "id": "1",
+            "db_version": "1",
+            "description": "Add version and alter hijack table with seen (BOOLEAN) field.",
+            "file": "migration_1.sql"
+            }
+    }
+}

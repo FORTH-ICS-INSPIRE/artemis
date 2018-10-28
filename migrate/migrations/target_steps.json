@@ -5,6 +5,12 @@
             "db_version": "1",
             "description": "Add version and alter hijack table with seen (BOOLEAN) field.",
             "file": "migration_1.sql"
+            },
+        "2": {
+            "id": "2",
+            "db_version": "2",
+            "description": "Add withdrawn fields, alter json fields to array[].",
+            "file": "migration_2.sql"
             }
     }
 }

@@ -18,6 +18,7 @@ class Configuration():
         self.raw_json_config = None
         self.raw_config = None
         self.config_yaml = None
+        self.config_comment = None
         self.time_modified = 0
 
     def get_newest_config(self):
@@ -38,6 +39,8 @@ class Configuration():
                 self.raw_config = self.raw_json[0]['raw_config']
             if 'time_modified' in self.raw_json[0]:
                 self.time_modified = self.raw_json[0]['time_modified']
+            if 'comment' in self.raw_json[0]:
+                self.config_comment = self.raw_json[0]['comment']
 
             self.config_yaml = yload(json.dumps(self.raw_json_config))
         except BaseException:
@@ -68,6 +71,8 @@ class Configuration():
     def get_config_last_modified(self):
         return self.time_modified
 
+    def get_config_comment(self):
+        return self.config_comment
 
 def fetch_all_config_timestamps():
     try:

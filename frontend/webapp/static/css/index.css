@@ -94,3 +94,12 @@ tr.shown td.details-control {
 
   }
 }
+
+.config-cancel-button {
+    margin-right: 10px;
+    display: none;
+}
+
+.hijack-seen-button {
+    display: none;
+}

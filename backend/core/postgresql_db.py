@@ -149,6 +149,8 @@ class Postgresql_db():
                                         consumer_arguments={'x-priority': 2})
             self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, auto_delete=True, max_priority=4,
                                               consumer_arguments={'x-priority': 4})
+            self.hijack_seen_queue = Queue('db-hijack-seen', durable=False, auto_delete=True, max_priority=4,
+                                              consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()
 
@@ -208,6 +210,12 @@ class Postgresql_db():
                 Consumer(
                     queues=[self.hijack_comment_queue],
                     on_message=self.handle_hijack_comment,
+                    prefetch_count=1,
+                    no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_seen_queue],
+                    on_message=self.handle_hijack_seen,
                     prefetch_count=1,
                     no_ack=True
                 )
@@ -370,8 +378,13 @@ class Postgresql_db():
                     if 'raw_config' in config:
                         raw_config = config['raw_config']
                         del config['raw_config']
+                    comment = ''
+                    if 'comment' in config:
+                        comment = config['comment']
+                        del config['comment']
+
                     config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
-                    self._save_config(config_hash, config, raw_config)
+                    self._save_config(config_hash, config, raw_config, comment)
             except Exception:
                 log.exception('{}'.format(config))
 
@@ -392,11 +405,15 @@ class Postgresql_db():
                         if 'raw_config' in config:
                             raw_config = config['raw_config']
                             del config['raw_config']
+                        comment = ''
+                        if 'comment' in config:
+                            comment = config['comment']
+                            del config['comment']
                         config_hash = hashlib.md5(
                             pickle.dumps(config)).hexdigest()
                         latest_config_in_db_hash = self._retrieve_most_recent_config_hash()
                         if config_hash != latest_config_in_db_hash:
-                            self._save_config(config_hash, config, raw_config)
+                            self._save_config(config_hash, config, raw_config, comment)
                         else:
                             log.debug('database config is up-to-date')
             except Exception:
@@ -502,7 +519,39 @@ class Postgresql_db():
             except Exception:
                 self.producer.publish(
                     {
-                        'status': 'fail'
+                        'status': 'rejected'
+                    },
+                    exchange='',
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    serializer='json',
+                    retry=True,
+                    priority=4
+                )
+                log.exception('{}'.format(raw))
+
+        def handle_hijack_seen(self, message):
+            raw = message.payload
+            log.debug('payload: {}'.format(raw))
+            try:
+                self.db_cur.execute(
+                    'UPDATE hijacks SET seen=%s WHERE key=%s;', (raw['state'], raw['key']))
+                self.db_conn.commit()
+                self.producer.publish(
+                    {
+                        'status': 'accepted'
+                    },
+                    exchange='',
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    serializer='json',
+                    retry=True,
+                    priority=4
+                )
+            except Exception:
+                self.producer.publish(
+                    {
+                        'status': 'rejected'
                     },
                     exchange='',
                     routing_key=message.properties['reply_to'],
@@ -779,17 +828,18 @@ class Postgresql_db():
                 log.warning(
                     'Received uknown instruction from scheduler: {}'.format(msg_))
 
-        def _save_config(self, config_hash, yaml_config, raw_config):
+        def _save_config(self, config_hash, yaml_config, raw_config, comment):
             try:
                 log.debug('Config Store..')
-                cmd_ = 'INSERT INTO configs (key, config_data, raw_config, time_modified) ' \
-                        'VALUES (%s, %s, %s, %s)'
+                cmd_ = 'INSERT INTO configs (key, config_data, raw_config, time_modified, comment)'
+                cmd_ += 'VALUES (%s, %s, %s, %s, %s);'
                 self.db_cur.execute(
                     cmd_,
                     (config_hash,
                      json.dumps(yaml_config),
                         raw_config,
-                        datetime.datetime.now()))
+                        datetime.datetime.now(),
+                        comment))
                 self.db_conn.commit()
             except Exception:
                 log.exception('failed to save config in db')

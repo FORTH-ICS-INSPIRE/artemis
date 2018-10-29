@@ -150,7 +150,7 @@ class Postgresql_db():
             self.hijack_comment_queue = Queue('db-hijack-comment', durable=False, auto_delete=True, max_priority=4,
                                               consumer_arguments={'x-priority': 4})
             self.hijack_seen_queue = Queue('db-hijack-seen', durable=False, auto_delete=True, max_priority=4,
-                                              consumer_arguments={'x-priority': 4})
+                                           consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()
 
@@ -277,7 +277,7 @@ class Postgresql_db():
                                 for k in msg_['communities']]),  # communities
                     datetime.datetime.fromtimestamp(
                         (msg_['timestamp'])),  # timestamp
-                    None,  # hijack_key
+                    [],  # hijack_key
                     False,  # handled
                     self.find_best_prefix_match(
                         msg_['prefix']),  # matched_prefix
@@ -595,7 +595,7 @@ class Postgresql_db():
         def _handle_bgp_withdrawals(self):
             cmd_ = 'SELECT DISTINCT ON (hijacks.key) hijacks.peers_seen, hijacks.peers_withdrawn, ' \
                 'hijacks.key, hijacks.hijack_as, hijacks.type, bgp_updates.timestamp ' \
-                'FROM hijacks LEFT JOIN bgp_updates ON (bgp_updates.hijack_key = hijacks.key) ' \
+                'FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) ' \
                 'WHERE bgp_updates.prefix = %s ' \
                 'AND bgp_updates.type = \'A\' ' \
                 'AND hijacks.active = true ' \
@@ -614,12 +614,10 @@ class Postgresql_db():
                     for entry in entries:
                         # entry -> 0: peers_seen, 1: peers_withdrawn, 2:
                         # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
+                        update_bgp_withdrawals.add((entry[2], withdrawal[3]))
                         if entry[5] >= withdrawal[2]:
-                            update_bgp_withdrawals.add(
-                                (entry[2], withdrawal[3]))
                             continue
                         # matching withdraw with a hijack
-                        update_bgp_withdrawals.add((entry[2], withdrawal[3]))
                         if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
                             entry[1].append(withdrawal[1])
                             if len(entry[0]) == len(entry[1]):
@@ -647,7 +645,7 @@ class Postgresql_db():
             try:
                 psycopg2.extras.execute_batch(
                     self.db_cur,
-                    'UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ',
+                    'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
                     list(update_bgp_withdrawals),
                     page_size=1000
                 )
@@ -679,11 +677,11 @@ class Postgresql_db():
                     'SELECT B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B ' \
                     'WHERE H.key = %s AND B.key = %s) AS curr_update WHERE bgp_updates.peer_asn = curr_update.peer_asn ' \
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
-                    'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.hijack_key'
+                    'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = ANY(hij.hijack_key)'
                 try:
                     psycopg2.extras.execute_batch(
                         self.db_cur,
-                        'UPDATE bgp_updates SET handled=true, hijack_key=%s WHERE key=%s ',
+                        'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
                         list(update_bgp_entries),
                         page_size=1000
                     )

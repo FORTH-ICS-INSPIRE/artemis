@@ -601,7 +601,8 @@ class Postgresql_db():
                 'AND hijacks.active = true ' \
                 'AND bgp_updates.peer_asn = %s ' \
                 'ORDER BY hijacks.key, bgp_updates.timestamp DESC'
-            update_bgp_withdrawals = set()
+            update_normal_withdrawals = set()
+            update_hijack_withdrawals = set()
             for withdrawal in self.handle_bgp_withdrawals:
                 try:
                     # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3:
@@ -609,12 +610,12 @@ class Postgresql_db():
                     self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1]))
                     entries = self.db_cur.fetchall()
                     if entries is None or len(entries) == 0:
-                        update_bgp_withdrawals.add((None, withdrawal[3]))
+                        update_normal_withdrawals.add((withdrawal[3],))
                         continue
                     for entry in entries:
                         # entry -> 0: peers_seen, 1: peers_withdrawn, 2:
                         # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
-                        update_bgp_withdrawals.add((entry[2], withdrawal[3]))
+                        update_hijack_withdrawals.add((entry[2], withdrawal[3]))
                         if entry[5] >= withdrawal[2]:
                             continue
                         # matching withdraw with a hijack
@@ -643,10 +644,18 @@ class Postgresql_db():
                     log.exception('exception')
 
             try:
+                for _add in update_hijack_withdrawals:
+                    log.info('adding {} to {}'.format(_add[0], _add[1]))
                 psycopg2.extras.execute_batch(
                     self.db_cur,
-                    'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
-                    list(update_bgp_withdrawals),
+                    'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || \'{%s}\') WHERE key=%s ',
+                    list(update_hijack_withdrawals),
+                    page_size=1000
+                )
+                psycopg2.extras.execute_batch(
+                    self.db_cur,
+                    'UPDATE bgp_updates SET handled=true WHERE key=%s ',
+                    list(update_normal_withdrawals),
                     page_size=1000
                 )
                 self.db_conn.commit()

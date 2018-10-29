@@ -121,7 +121,17 @@ class Configuration():
             log.info(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
-            raw = message.payload
+            raw_ = message.payload
+
+            # Case received config from Frontend with comment
+            comment = None
+            if isinstance(raw_, dict) and 'comment' in raw_:
+                comment = raw_['comment']
+                del raw_['comment']
+                raw = raw_['config']
+            else:
+                raw = raw_
+
             if 'yaml' in message.content_type:
                 stream = StringIO(''.join(raw))
                 data, _flag, _error = self.parse(stream, yaml=True)
@@ -143,6 +153,9 @@ class Configuration():
                 if prev_data_str != new_data_str:
                     self.data = data
                     self._update_local_config_file()
+                    if comment is not None:
+                        self.data['comment'] = comment
+
                     self.producer.publish(
                         self.data,
                         exchange=self.config_exchange,
@@ -151,6 +164,8 @@ class Configuration():
                         retry=True,
                         priority=2
                     )
+                    # Remove the comment to avoid marking config as different
+                    del self.data['comment']
 
                 # reply back to the sender with a configuration accepted
                 # message.

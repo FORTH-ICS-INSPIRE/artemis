@@ -59,23 +59,20 @@
                 </div>
             </div>
         </div>
-        <div class="row">
-            <div class="col-lg-12">
-                
-                <table class="table table-striped table-bordered" id="hijacks">
-                    <thead>
-                        <th>Time Detected</th>
-                        <th>Status</th>
-                        <th>Prefix</th>
-                        <th>Type</th>
-                        <th>Hijack AS</th>
-                        <th># Peers Seen</th>
-                        <th># ASes Infected</th>
-                        <th>More</th>
-                    </thead>
-                </table>
-                
-            </div>
+        <div class="col-lg-12">
+            <table class="table table-striped table-bordered" id="hijacks">
+                <thead>
+                    <th>Time Detected</th>
+                    <th>Status</th>
+                    <th>Prefix</th>
+                    <th>Type</th>
+                    <th>Hijack AS</th>
+                    <th># Peers Seen</th>
+                    <th># ASes Infected</th>
+                    <th>Seen</th>
+                    <th>More</th>
+                </thead>
+            </table>
         </div>
         <div class="row">
             <div class="col-lg-6">
@@ -88,7 +85,7 @@
             </div>
             <div class="col-lg-6">
                 </hr>
-                <p class="float-right"><i>Times are shown in your local time zone.</i></p>
+                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
             </div>
         </div>
     
@@ -193,12 +190,7 @@
                 { data: 'type' },
                 { data: 'hijack_as' },
                 { data: 'num_peers_seen' },
-                { data: 'num_asns_inf' },
-                { data: 'time_started' },
-                { data: 'time_last' },
-                { data: 'time_ended' },
-                { data: 'mitigation_started'},
-                { data: 'to_mitigate' }];
+                { data: 'num_asns_inf' }];
 
             function render_table(settings){
                 var parameters = {};
@@ -235,6 +227,7 @@
                 table = $('#hijacks').DataTable( {
                     "processing": true,
                     "serverSide": true,
+                    "searching": false,
                     ajax: function(data, callback, settings) {
                         parameters['offset'] = data.start;
                         parameters['limit'] = data.length;
@@ -259,23 +252,33 @@
                     "columns": [
                         { data: 'time_detected',
                             render: function(data, type, row){
-                                return transform_date_to_local_(data);
+                                return transform_date_to_local(data);
                             }
                         },
                         {   
                             data: function( row, type, val, meta ) {
-                                return hijack_status(row)
+                                return format_hijack_status(row)
                             }
                         },
                         { data: 'prefix' },
                         { data: 'type' },
                         { data: 'hijack_as',
                             render: function(data, type, row){
-                                return hijack_as_formmated(data)
+                                return format_hijack_as(data)
                             } 
                         },
                         { data: 'num_peers_seen' },
                         { data: 'num_asns_inf' },
+                        {
+                            data: 'seen',
+                            render: function(data, type, row){
+                                if(data == true){
+                                    return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
+                                }else{
+                                    return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'
+                                }
+                            }
+                        },
                         {
                             data: 'key',
                             render: function(data, type, row){
@@ -284,7 +287,7 @@
                         }
                     ],
                     "columnDefs": [ {
-                        "targets": [1,7],
+                        "targets": [1,7,8],
                         "orderable": false
                         } 
                     ],
@@ -297,23 +300,10 @@
             setInterval( function () {
                 table.ajax.reload(null, false);
             }, 5000 );
-            
-            function hijack_status(data){
-                if(data['under_mitigation'] == true){
-                    return '<b style="color:blue">Under Mitigation</b>'
-                }else if(data['resolved'] == true){
-                    return '<b style="color:green">Resolved</b>'
-                }else if(data['active'] == true){
-                    return '<b style="color:red">Ongoing</b>'
-                }else if(data['ignored'] == true){
-                    return '<b style="color:orange">Ignored</b>'
-                }else{
-                    return "Uknown"
-                }
-            }        
-            
+                    
+
             $(document).ready(function(){
-                render_table({})
+                render_table({});
                 $('input[name="datetimes"]').daterangepicker({
                     timePicker: true,
                     startDate: moment().startOf('hour'),
@@ -327,21 +317,12 @@
                     render_table(display_settings);
                     }
                 );
-
+                $('#timezone').html(display_timezone());
             });
 
-            function transform_date_to_local_(date){
-                var date_ = moment.utc(date)
-                if(date_._isValid){
-                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
-                    return local;
-                }
-                return "Never";
-            }
 
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>    
-        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>

@@ -3,7 +3,7 @@
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
 {% endblock %}
 
 {% block page_content %}
@@ -15,8 +15,6 @@
 
 
             <div class="col-lg-8">
-                
-
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
@@ -36,28 +34,33 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Current Configuration
+                            <i class="fa fa-bell fa-fw"></i> Ongoing Hijacks
                         </div>
                         <div class="panel-body">
-                            <div id="config_alert_box"></div>
-
-                            <form><textarea id="code_yaml" name="code_yaml">{{ config }}</textarea></form>
-
-                            </br>
                             <div class="row">
-                                <div class="col-lg-6">
-                                    </hr>
-                                    <div id="conf_timestamp"></div>
-                                </div>
-                                <div class="col-lg-6">
-                                    </hr>
-                                    <p class="float-right"><i>Times are shown in your local time zone.</i></p>
+                                <div class="col-lg-12"> 
+                                    <table class="table table-striped table-bordered" id="hijacks">
+                                        <thead>
+                                            <th>Time Detected</th>
+                                            <th>Status</th>
+                                            <th>Prefix</th>
+                                            <th>Type</th>
+                                            <th>Hijack AS</th>
+                                            <th># Peers Seen</th>
+                                            <th># ASes Infected</th>
+                                            <th>Seen</th>
+                                            <th>More</th>
+                                        </thead>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="col-lg-12">
+                        </hr>
+                        <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
+                    </div>
                 </div>
-
             </div>
 
             <div class="col-lg-4">
@@ -88,7 +91,7 @@
                                             <div class="col-lg-8">{% if modules[module]['status'] == 'up': %}
                                                     <div class="row">
                                                         <div class="col-lg-4">
-                                                             <b style="color:#008000">Running</b>
+                                                             <b style="color:#008000">On</b>
                                                         </div> 
                                                         <div class="col-lg-8">
                                                             {{ modules[module]['uptime'] }}
@@ -121,7 +124,6 @@
                         </div>
                         <div class="panel-body">
                             <div class="list-group">
-
                                 <ul>
                                     {% for stat in db_stats %}
                                     <li class="list-group-item"> 
@@ -137,7 +139,6 @@
                                     {% endfor %}
                                 </ul>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -145,32 +146,109 @@
     {% block scripts %}
         {{super()}}
         <script>
-            function update_config_timestamp(){
-                $("#conf_timestamp").html("Last Update: " + transform_date_to_local_( '{{ config_timestamp }}' ))
+            var table;
+
+            var columns = [
+                { data: 'time_detected' },
+                { data: 'prefix' },
+                { data: 'type' },
+                { data: 'hijack_as' },
+                { data: 'num_peers_seen' },
+                { data: 'num_asns_inf' }];
+
+            function render_table(){
+                var parameters = {};
+                parameters['and'] = "(active.eq.true)";
+
+                table = $('#hijacks').DataTable( {
+                    "processing": true,
+                    "serverSide": true,
+                    "searching": false,
+                    ajax: function(data, callback, settings) {
+                        parameters['offset'] = data.start;
+                        parameters['limit'] = data.length;
+                        parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
+                        $.ajax({
+                            type: "POST",
+                            url: '{{ url_for('proxy_api') }}',
+                            dataType: "json",
+                            dataType: "json",
+                            data: { "action": "view_hijacks", "parameters" : JSON.stringify(parameters) },
+
+                            success: function(data, status, xhr){
+                                callback({
+                                    recordsTotal: data.total,
+                                    recordsFiltered: data.total,
+                                    data: data.results
+                                });
+                            }
+                        });
+                    },
+                    "order": [[ 0, "desc" ]],
+                    "columns": [
+                        { data: 'time_detected',
+                            render: function(data, type, row){
+                                return transform_date_to_local(data);
+                            }
+                        },
+                        {
+                            data: function( row, type, val, meta ) {
+                                return format_hijack_status(row)
+                            }
+                        },
+                        { data: 'prefix' },
+                        { data: 'type' },
+                        { data: 'hijack_as',
+                            render: function(data, type, row){
+                                return format_hijack_as(data)
+                            }
+                        },
+                        { data: 'num_peers_seen' },
+                        { data: 'num_asns_inf' },
+                        {
+                            data: 'seen',
+                            render: function(data, type, row){
+                                if(data == true){
+                                    return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
+                                }else{
+                                    return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'
+                                }
+                            }
+                        },
+                        {
+                            data: 'key',
+                            render: function(data, type, row){
+                                return '<a href="{{ url_for('main.display_hijack') }}?key=' + data + '">View</a>'
+                            }
+                        }
+                    ],
+                    "columnDefs": [ {
+                        "targets": [1,7,8],
+                        "orderable": false
+                        }
+                    ],
+                    "language": {
+                        "emptyTable": "<img src=\"{{ url_for('static', filename='images/checkmark.png') }}\" ></img></br><h3>No hijack alerts.</h3></br>"
+                    }
+                });
             }
-            
-            function transform_date_to_local_(date){
-                var date_ = moment.utc(date)
-                if(date_._isValid){
-                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
-                    return local;
-                }
-                return "Never";
-            }
+
+            setInterval( function () {
+                table.ajax.reload(null, false);
+            }, 5000 );
 
             $(document).ready(function(){ 
-                update_config_timestamp();
+                render_table({});
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
-
-                editor = CodeMirror.fromTextArea(document.getElementById("code_yaml"), {lineNumbers: true, indentUnit: 4, readOnly: true});
-                editor.setSize(null, 633);
+                $('#timezone').html(display_timezone());
             });
 
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
 
     {% endblock %}
 {% endblock %}

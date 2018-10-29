@@ -51,6 +51,27 @@
                             <div class="col-lg-12">
                                 <div id="view_diffs"></div>
                             </div>
+                            <div class="col-lg-12">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <i class="fa fa-bell fa-fw"></i> Configuration comments
+                                    </div>
+                                    <div class="panel-body">
+                                        <div class="row">
+                                            <div class="col-lg-6">
+                                                <form><textarea id="config_comment_box_a" name="config_comment_box_a"></textarea></form>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <form><textarea id="config_comment_box_b" name="config_comment_box_b"></textarea></form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                </hr>
+                                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i>
+                            </div>
                        </div>
                     </div>
             	</div>
@@ -68,7 +89,8 @@
             var connect = "align", collapse = false, highlight = true;
             var target = document.getElementById("view_diffs");
             var cache_configs = {};
-            var dv;
+            var diff_editor;
+            var comment_editor_a, comment_editor_b;
 
             $(document).ready(function(){
                 $.ajax({
@@ -77,12 +99,15 @@
                     data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + "{{ configs[0]['time_modified'] }}" }) },
                     success: function(result){
                         if(result.total > 0){
-                            console.log(result.results[0])
-                            console.log(result.results[0]['time_modified'])
-                            config_a_data = result.results[0]['raw_config'];
-                            config_b_data = result.results[0]['raw_config'];
-                            cache_configs[result.results[0]['time_modified']] = result.results[0]['raw_config'];
-                            console.log(cache_configs)
+                            config_a_data = {
+                                'raw_config': result.results[0]['raw_config'],
+                                'comment': result.results[0]['comment']
+                            };
+                            config_b_data = config_a_data;
+                            cache_configs[result.results[0]['time_modified']] = {
+                                    'raw_config': result.results[0]['raw_config'],
+                                    'comment': result.results[0]['comment']
+                                };
                             render_diffs();
                         }
                     },
@@ -95,19 +120,38 @@
                 $("#config_b > option").each(function() {
                     $(this).html('Timestamp: ' + transform_date_to_local_(this.value))
                 });
+
+                comment_editor_a = CodeMirror.fromTextArea($('#config_comment_box_a')[0], {
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    readOnly: true
+                });
+                comment_editor_a.setSize("100%", 140);
+
+                comment_editor_b = CodeMirror.fromTextArea($('#config_comment_box_b')[0], {
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    readOnly: true
+                });
+                comment_editor_b.setSize("100%", 140);
+
+                $('#timezone').html(display_timezone());
             });
 
 
             function render_diffs(){
-                dv = CodeMirror.MergeView(target, {
-                    value: config_a_data,
-                    orig: config_b_data,
+                diff_editor = CodeMirror.MergeView(target, {
+                    value: config_a_data['raw_config'],
+                    orig: config_b_data['raw_config'],
                     lineNumbers: true,
                     mode: "yaml",
                     highlightDifferences: highlight,
                     connect: connect,
                     collapseIdentical: collapse
                 });
+
+                comment_editor_a.setValue(config_a_data['comment']);
+                comment_editor_b.setValue(config_b_data['comment']);
             }
 
             $( "#config_a" ).on('change', function() {
@@ -124,8 +168,11 @@
                         data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + id }) },
                         success: function(result){
                             if(result.total > 0){
-                                cache_configs[result.results[0]['time_modified']] = result.results[0]['raw_config'];
-                                config_a_data = result.results[0]['raw_config'];
+                                cache_configs[result.results[0]['time_modified']] = {
+                                    'raw_config': result.results[0]['raw_config'],
+                                    'comment': result.results[0]['comment']
+                                };
+                                config_a_data = cache_configs[result.results[0]['time_modified']];
                                 $('#view_diffs').html('');
                                 render_diffs();
                             }
@@ -149,8 +196,11 @@
                         data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + id }) },
                         success: function(result){
                             if(result.total > 0){
-                                cache_configs[result.results[0]['time_modified']] = result.results[0]['raw_config'];
-                                config_b_data = result.results[0]['raw_config'];
+                                cache_configs[result.results[0]['time_modified']] = {
+                                    'raw_config': result.results[0]['raw_config'],
+                                    'comment': result.results[0]['comment']
+                                };
+                                config_b_data = cache_configs[result.results[0]['time_modified']];
                                 $('#view_diffs').html('');
                                 render_diffs();
                             }
@@ -161,7 +211,7 @@
             });
 
             function toggleDifferences() {
-                dv.setShowDifferences(highlight = !highlight);
+                diff_editor.setShowDifferences(highlight = !highlight);
             }
 
             function transform_date_to_local_(date){

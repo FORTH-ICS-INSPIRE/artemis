@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS configs (
 
 CREATE OR REPLACE VIEW view_configs AS SELECT time_modified FROM configs;
 
-CREATE OR REPLACE VIEW view_hijacks AS SELECT key,type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, ignored, configured_prefix, comment FROM hijacks;
+CREATE OR REPLACE VIEW view_hijacks AS SELECT key,type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, ignored, configured_prefix, comment, seen FROM hijacks;
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 

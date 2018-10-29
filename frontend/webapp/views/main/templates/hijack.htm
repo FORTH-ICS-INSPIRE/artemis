@@ -22,6 +22,9 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Hijack Information
+                        {% if current_user.has_roles('admin') %}
+                        <button type="button" id="hijack_seen_button" class="btn btn-primary btn-sm float-right hijack-seen-button">Mark Hijack as <b>seen</b></button>
+                        {% endif %}
                     </div>
                     <div class="panel-body">
                         <div class="row">
@@ -162,7 +165,6 @@
                             <div class="col-lg-4">
                                 <button id="ignored_button" type="button" class="btn btn-warning">Ignore</button>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -179,41 +181,39 @@
                     </div>
                     <div class="panel-body">
                         <div class="row">
-                            <form><textarea id="code_comment_box" name="code_comment_box"></textarea></form>
-                            <div id="comment_alert_box"></div>
+                            <div class="col-lg-12">
+                                <form><textarea id="code_comment_box" name="code_comment_box"></textarea></form>
+                                <div id="comment_alert_box"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
         </div>
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <i class="fa fa-bell fa-fw"></i> Related BGP Updates
-                    </div>
-                    <div class="panel-body">
-                        <table class="table table-striped table-bordered" id="hijack_table">
-                            <thead>
-                                <th>Timestamp</th>
-                                <th>Prefix</th>
-                                <th>Origin AS</th>
-                                <th>AS Path</th>
-                                <th>Peer AS</th>
-                                <th>Service</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>More</th>
-                            </thead>
-                        </table>
-                    </div>
+        <div class="col-lg-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="fa fa-bell fa-fw"></i> Related BGP Updates
+                </div>
+                <div class="panel-body">
+                    <table class="table table-striped table-bordered" id="hijack_table">
+                        <thead>
+                            <th>Timestamp</th>
+                            <th>Prefix</th>
+                            <th>Origin AS</th>
+                            <th>AS Path</th>
+                            <th>Peer AS</th>
+                            <th>Service</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>More</th>
+                        </thead>
+                    </table>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-lg-12">
-                    </hr>
-                    <p><i>Times are shown in your local time zone.</i></p>
-                </div>
+            <div class="col-lg-12">
+                </hr>
+                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
             </div>
         </div>
 
@@ -245,6 +245,7 @@
                 table = $('#hijack_table').DataTable( {
                     "processing": true,
                     "serverSide": true,
+                    "searching": false,
                     ajax: function(data, callback, settings) {
                         col_order = columns[data.order[0].column].data + "." + data.order[0].dir
                         parameters["offset"] = data.start;
@@ -268,14 +269,26 @@
                     "columns": [
                         { data: 'timestamp',
                             render: function(data, type, row){
-                                return transform_date_to_local_(data);
+                                return transform_date_to_local(data);
                             } 
                         },
                         { data: 'prefix' },
-                        { data: 'origin_as' },
-                        { data: 'as_path' },
+                        { data: 'origin_as',
+                            render: function(data, type, row){
+                                return format_origin_as(data);
+                            }
+                        },
+                        { data: 'as_path',
+                            render: function(data, type, row){
+                                return format_as_path(data);
+                            }
+                        },
                         { data: 'peer_asn' },
-                        { data: 'service' },
+                        { data: 'service',
+                            render: function(data, type, row){
+                                return format_service(data);
+                            }
+                        },
                         { data: 'type' },
                         { data: 'handled', 
                             render: function(data, type, row){
@@ -313,12 +326,18 @@
                     }
                 });
 
-                editor = CodeMirror.fromTextArea(document.getElementById("code_comment_box"), {lineNumbers: true, indentUnit: 4, readOnly: true})
+                editor = CodeMirror.fromTextArea(document.getElementById("code_comment_box"), {
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    readOnly: true
+                });
                 {% if current_user.has_roles('admin') %}
                     editor.setSize("100%", 96);
                 {% else %}
                     editor.setSize("100%", 218);
                 {% endif %}
+
+                $('#timezone').html(display_timezone());
             });
 
         
@@ -335,11 +354,11 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Origin AS:</b></td>'+
-                        '<td>'+d.origin_as+'</td>'+
+                        '<td>'+format_origin_as(d.origin_as)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>AS Path:</b></td>'+
-                        '<td>'+d.as_path+'</td>'+
+                        '<td>'+format_as_path(d.as_path)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Peer AS:</b></td>'+
@@ -347,7 +366,7 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Service:</b></td>'+
-                        '<td>'+d.service+'</td>'+
+                        '<td>'+format_service(d.service)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Type:</b></td>'+
@@ -355,15 +374,15 @@
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Communities:</b></td>'+
-                        '<td>'+communities_formatted(d.communities)+'</td>'+
+                        '<td>'+format_communities(d.communities)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Timestamp:</b></td>'+
-                        '<td>'+transform_date_to_local_(d.timestamp)+'</td>'+
+                        '<td>'+transform_date_to_local(d.timestamp)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Original Path:</b></td>'+
-                        '<td>'+orig_path+'</td>'+
+                        '<td>'+format_orig_path(d.orig_path)+'</td>'+
                     '</tr>'+
                     '<tr>'+
                         '<td><b>Hijack Key:</b></td>'+
@@ -398,14 +417,14 @@
                 $( "#info_hijack_as" ).html( data['hijack_as'] );
                 $( "#info_num_peers_seen" ).html( data['num_peers_seen'] );
                 $( "#info_num_asns_inf" ).html( data['num_asns_inf'] );
-                $( "#info_time_started" ).html( transform_date_to_local_( data['time_started'] ) );
-                $( "#info_time_last" ).html( transform_date_to_local_( data['time_last'] ) );
-                $( "#info_time_ended" ).html( transform_date_to_local_( data['time_ended'] ) );
-                $( "#info_time_detected" ).html( transform_date_to_local_( data['time_detected'] ) );
-                $( "#info_mitigation_started" ).html( transform_date_to_local_( data['mitigation_started'] ) );
+                $( "#info_time_started" ).html( transform_date_to_local( data['time_started'] ) );
+                $( "#info_time_last" ).html( transform_date_to_local( data['time_last'] ) );
+                $( "#info_time_ended" ).html( transform_date_to_local( data['time_ended'] ) );
+                $( "#info_time_detected" ).html( transform_date_to_local( data['time_detected'] ) );
+                $( "#info_mitigation_started" ).html( transform_date_to_local( data['mitigation_started'] ) );
                 $( "#info_matched_prefix" ).html( data['configured_prefix'] );
-                $( "#info_config_timestamp" ).html( transform_date_to_local_( data['timestamp_of_config'] )  );
-                $( "#info_last_update" ).html( transform_date_to_local_( data['time_last'] )  );
+                $( "#info_config_timestamp" ).html( transform_date_to_local( data['timestamp_of_config'] )  );
+                $( "#info_last_update" ).html( transform_date_to_local( data['time_last'] )  );
                 $( "#code_comment_box").html( data['comment'] );
 
 
@@ -417,6 +436,12 @@
                 }else if(data['under_mitigation'] == true){
                     $("#mitigation_button").prop("disabled", true);
                 }
+                if(data['seen'] == true){
+                    $('#hijack_seen_button').removeClass('btn-primary').addClass('btn-danger');
+                    $('#hijack_seen_button').html('Mark Hijack as <b>not seen</b>');
+                }
+                $('#hijack_seen_button').show();
+
             }     
 
             function hijack_status(data){
@@ -491,9 +516,9 @@
                     $('#comment_action').removeClass('btn-danger').addClass('btn-warning')
                     $('#comment_action').html('Pending');
                     submit_new_comment(new_comment)
-
                 }
             });
+
 
             function submit_new_comment(new_comment){
                 $.ajax({
@@ -523,17 +548,38 @@
                 });
             }
 
-            {% endif %}
+            
 
-            function transform_date_to_local_(date){
-                var date_ = moment.utc(date)
-                if(date_._isValid){
-                    var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
-                    return local;
+            $('#hijack_seen_button').on('click', function (event, state) {
+                if($(this).hasClass("btn-primary")){
+                    submit_seen(true);
+                }else if($(this).hasClass("btn-danger")){
+                    console.log('a')
+                    submit_seen(false);
                 }
-                return "Never";
-            }
+            });
 
+
+            function submit_seen(state){
+                $.ajax({
+                    type: "POST",
+                    url: "{{ url_for('actions.submit_hijack_seen') }}",
+                    data: { "hijack_key" : initial_data['key'], "state" : state },
+                    success: function(result){
+                        if(result["status"] == "success"){
+                            if(state == true){
+                                $('#hijack_seen_button').removeClass('btn-primary').addClass('btn-danger');
+                                $('#hijack_seen_button').html('Unmark Hijack as <b>not seen</b>');
+                            }else{
+                                $('#hijack_seen_button').removeClass('btn-danger').addClass('btn-primary');
+                                $('#hijack_seen_button').html('Mark Hijack as <b>seen</b>');
+                            }   
+                        }
+                    },
+                    dataType: "json"
+                });
+            }
+            {% endif %}
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>

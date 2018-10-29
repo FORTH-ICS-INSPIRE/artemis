@@ -26,8 +26,8 @@ except BaseException:
 modules = Modules_state()
 try:
     log.debug('Starting Scheduler..')
-    modules.call('scheduler', 'start')
-    if not modules.is_up_or_running('scheduler'):
+    modules.call('clock', 'start')
+    if not modules.is_up_or_running('clock'):
         log.error('Couldn\'t start scheduler.')
         exit(-1)
 except BaseException:

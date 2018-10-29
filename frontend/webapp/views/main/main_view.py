@@ -26,6 +26,7 @@ def display_monitors():
 @roles_accepted('admin', 'user')
 def display_hijacks():
     # log debug
+    app.config['configuration'].get_newest_config()
     prefixes_list = app.config['configuration'].get_prefixes_list()
     return render_template('hijacks.htm', prefixes=prefixes_list)
 

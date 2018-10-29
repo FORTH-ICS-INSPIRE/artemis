@@ -6,7 +6,7 @@ from webapp.templates.forms import (CheckboxMonitorForm, CheckboxDetectorForm, C
                                     ApproveUserForm, MakeAdminForm, DeleteUserForm)
 from webapp.core import app
 from webapp.core.modules import Modules_state
-from webapp.core.actions import New_config
+from webapp.core.actions import Submit_new_config
 from webapp.core.fetch_config import fetch_all_config_timestamps
 import logging
 
@@ -54,6 +54,7 @@ def index():
                            detection_form=detection_form,
                            mitigation_form=mitigation_form,
                            config=app.config['configuration'].get_raw_config(),
+                           comment=app.config['configuration'].get_config_comment(),
                            config_timestamp=app.config['configuration'].get_config_last_modified())
 
 
@@ -63,16 +64,17 @@ def handle_new_config():
     # log info
     app.config['configuration'].get_newest_config()
     old_config = app.config['configuration'].get_raw_config()
-    config_modify = New_config()
+    comment = request.values.get('comment')
     new_config = request.values.get('new_config')
-    response, success = config_modify.send(new_config, old_config)
+    config_modify = Submit_new_config()
+    response, success = config_modify.send(new_config, old_config, comment)
 
     if success:
         return jsonify(
-            {'status': 'success', 'data': new_config, 'response': response})
+            {'status': 'success', 'config': new_config, 'comment': comment, 'response': response})
     else:
         return jsonify(
-            {'status': 'fail', 'data': new_config, 'response': response})
+            {'status': 'fail', 'config': new_config, 'comment': comment, 'response': response})
 
 
 @admin.route('/user_management', methods=['GET'])

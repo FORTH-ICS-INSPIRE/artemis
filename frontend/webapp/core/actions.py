@@ -174,7 +174,7 @@ class Comment_hijack():
             return "Error while saving.", False
 
 
-class New_config():
+class Submit_new_config():
 
     def __init__(self):
         self.connection = None
@@ -190,7 +190,7 @@ class New_config():
         if message.properties['correlation_id'] == self.correlation_id:
             self.response = message.payload
 
-    def send(self, new_config, old_config):
+    def send(self, new_config, old_config, comment):
 
         changes = ''.join(difflib.unified_diff(new_config, old_config))
         if len(changes) > 0:
@@ -204,7 +204,10 @@ class New_config():
                 'x-priority': 4})
             with Producer(self.connection) as producer:
                 producer.publish(
-                    new_config,
+                    {
+                        'config': new_config,
+                        'comment': comment
+                    },
                     exchange='',
                     routing_key='config-modify-queue',
                     serializer='yaml',
@@ -222,12 +225,68 @@ class New_config():
                     self.connection.drain_events()
 
             if self.response['status'] == 'accepted':
-                text = 'new configuration accepted:\n{}'.format(changes)
-                log.info(text)
+                log.info('new configuration accepted:\n{}'.format(changes))
                 return 'Configuration file updated.', True
             else:
-                log.error('invalid configuration:\n{}'.format(new_config))
+                log.info('invalid configuration:\n{}'.format(new_config))
                 return "Invalid configuration file.\n{}".format(
                     self.response['reason']), False
         else:
             return "No changes found on the new configuration.", False
+
+class Seen_hijack():
+
+    def __init__(self):
+        self.connection = None
+        self.init_conn()
+        self.hijack_exchange = Exchange(
+            'hijack-update',
+            type='direct',
+            durable=False,
+            delivery_mode=1)
+
+    def init_conn(self):
+        try:
+            self.connection = Connection(RABBITMQ_HOST)
+        except BaseException:
+            log.error('Comment_hijack failed to connect to rabbitmq..')
+
+    def on_response(self, message):
+        if message.properties['correlation_id'] == self.correlation_id:
+            self.response = message.payload
+
+    def send(self, hijack_key, state):
+        log.debug("sending")
+        self.response = None
+        self.correlation_id = uuid()
+        callback_queue = Queue(uuid(),
+                               durable=False,
+                               exclusive=True,
+                               auto_delete=True,
+                               max_priority=4,
+                               consumer_arguments={
+            'x-priority': 4})
+        with Producer(self.connection) as producer:
+            producer.publish(
+                {
+                    'key': hijack_key,
+                    'state': state
+                },
+                exchange='',
+                routing_key='db-hijack-seen',
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=self.correlation_id,
+                priority=4
+            )
+        with Consumer(self.connection,
+                      on_message=self.on_response,
+                      queues=[callback_queue],
+                      no_ack=True):
+            while self.response is None:
+                self.connection.drain_events()
+        if self.response['status'] == 'accepted':
+            return True
+        else:
+            return False

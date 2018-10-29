@@ -609,7 +609,7 @@ class Postgresql_db():
                     self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1]))
                     entries = self.db_cur.fetchall()
                     if entries is None or len(entries) == 0:
-                        update_bgp_withdrawals.add((None, withdrawal[3]))
+                        update_bgp_withdrawals.add(([], withdrawal[3]))
                         continue
                     for entry in entries:
                         # entry -> 0: peers_seen, 1: peers_withdrawn, 2:

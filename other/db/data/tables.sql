@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
     configured_prefix  inet,
     timestamp_of_config TIMESTAMP,
     comment text,
+    seen BOOLEAN DEFAULT FALSE,
     PRIMARY KEY(time_detected, key),
     UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (

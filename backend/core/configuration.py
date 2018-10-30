@@ -165,7 +165,8 @@ class Configuration():
                         priority=2
                     )
                     # Remove the comment to avoid marking config as different
-                    del self.data['comment']
+                    if 'comment' in self.data:
+                        del self.data['comment']
 
                 # reply back to the sender with a configuration accepted
                 # message.

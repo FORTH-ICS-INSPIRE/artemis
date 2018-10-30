@@ -22,9 +22,6 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Hijack Information
-                        {% if current_user.has_roles('admin') %}
-                        <button type="button" id="hijack_seen_button" class="btn btn-primary btn-sm float-right hijack-seen-button">Mark Hijack as <b>seen</b></button>
-                        {% endif %}
                     </div>
                     <div class="panel-body">
                         <div class="row">
@@ -146,7 +143,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6 offset-lg-6">
-                                          <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#seenHijackWithdraw" aria-expanded="false" aria-controls="seenHijackWithdraw">Seen Hijack BGP Withdraw</button>
+                                          <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#seenHijackWithdraw" aria-expanded="false" aria-controls="seenHijackWithdraw">Seen Hijack BGP Withdrawal</button>
                                     </div>
                                 </div> 
                             </div>
@@ -159,6 +156,9 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Actions
+                        {% if current_user.has_roles('admin') %}
+                        <button type="button" id="hijack_seen_button" class="btn btn-primary btn-sm float-right hijack-seen-button">Mark Hijack as <b>seen</b></button>
+                        {% endif %}
                     </div>
                     <div class="panel-body">
                         <div class="row">
@@ -205,7 +205,7 @@
             </div>
             <div class="col-lg-6 my-1">
                 <div class="collapse multi-collapse" id="seenHijackWithdraw">
-                    Peers Seen Hijack BGP Withdrawn:
+                    Peers Seen Hijack BGP Withdrawal:
                     <div class="card card-body" id="seenHijackWithdraw_text">
                     </div>
                 </div>
@@ -449,10 +449,10 @@
                 $( "#info_last_update" ).val( transform_date_to_local( data['time_last'] )  );
                 $( "#code_comment_box").html( data['comment'] );
 
-                $( "#seenHijackUpdate_text").html( data['peers_seen'] );
-                $( "#seenHijackWithdraw_text").html( data['peers_withdrawn'] );
+                $( "#seenHijackUpdate_text").html( data['peers_seen'].join() );
+                $( "#seenHijackWithdraw_text").html( data['peers_withdrawn'].join() );
 
-                if(data['resolved'] == true || data['ignored'] == true){
+                if(data['resolved'] == true || data['ignored'] == true || data['withdrawn'] == true){
                     $("#resolved_button").prop("disabled", true);
                     $("#mitigation_button").prop("disabled", true);
                     $("#ignored_button").prop("disabled", true);

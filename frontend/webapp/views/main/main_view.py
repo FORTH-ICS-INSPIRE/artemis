@@ -28,11 +28,13 @@ def display_hijacks():
     if hijack_keys is not None:
         if ',' in hijack_keys:
             hijack_keys = hijack_keys.split(',')
-        return render_template('hijacks_by_update.htm', hijack_keys=hijack_keys)
+        else:
+            hijack_keys = [hijack_keys]
+        return render_template('hijacks.htm', hijack_keys=hijack_keys, prefixes=None)
     else:
         app.config['configuration'].get_newest_config()
         prefixes_list = app.config['configuration'].get_prefixes_list()
-        return render_template('hijacks.htm', prefixes=prefixes_list)
+        return render_template('hijacks.htm', hijack_keys=None, prefixes=prefixes_list)
 
 
 @main.route('/hijack', methods=['GET'])
@@ -47,6 +49,11 @@ def display_hijack():
 
     hijack_data = get_hijack_by_key(_key)
     _configured = False
+
+    # Case hijack id not found
+    if hijack_data is None:
+        log.debug('Hijack with id found: {}'.format(_key))
+        return render_template('404.htm')
 
     if 'configured_prefix' in hijack_data:
         if hijack_data['configured_prefix'] in app.config['configuration'].get_prefixes_list():

@@ -19,22 +19,24 @@
 
         <div class="row">
 
-            <div class="col-lg-1 offset-lg-1">
-                <p id="display_entries_time"> Select prefix: </p>
-            </div>
-
-            <div class="col-lg-2">
-                <div class="form-group">
-                    <select class="form-control" id="prefixes_selection">
-                        <option>All</option>
-                        {% for prefix in prefixes %}
-                            <option>{{ prefix }}</option>
-                        {% endfor %}
-                    </select>
+            {% if prefixes %}
+                <div class="col-lg-1 offset-lg-1">
+                    <p id="display_entries_time"> Select prefix: </p>
                 </div>
-            </div>
-
+                <div class="col-lg-2">
+                    <div class="form-group">
+                        <select class="form-control" id="prefixes_selection">
+                            <option>All</option>
+                            {% for prefix in prefixes %}
+                                <option>{{ prefix }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
             <div class="col-lg-1 offset-lg-4">
+            {% else %}
+            <div class="col-lg-1 offset-lg-7">
+            {% endif %}
                 <p id="display_entries_time"> Timewindow: </p>
             </div>
             <div class="col-lg-3">
@@ -153,16 +155,18 @@
                 $('#custom_time').show();                
             });
 
-            $("#prefixes_selection").change(function () {
-                var option = this.value;
-                if(option == "All"){
-                    display_settings['prefixes'] = null;
-                }else{
-                    display_settings['prefixes'] = option;
-                }
-                $('#hijacks').DataTable().destroy()
-                render_table(display_settings);
-            });
+            {% if prefixes %}
+                $("#prefixes_selection").change(function () {
+                    var option = this.value;
+                    if(option == "All"){
+                        display_settings['prefixes'] = null;
+                    }else{
+                        display_settings['prefixes'] = option;
+                    }
+                    $('#hijacks').DataTable().destroy()
+                    render_table(display_settings);
+                });
+            {% endif %}
 
             function filter_by_status(status){
                 // no status selected
@@ -202,6 +206,9 @@
                     parameters['and'] += 'time_started.gte.' + settings['time']['start_time'];
                     parameters['and'] += ',time_started.lte.' + settings['time']['end_time'];
                 }
+                {% if hijack_keys %}
+                    parameters['key'] = "in.(" + {{ hijack_keys | safe }} + ")";
+                {% endif %}
 
                 if(settings['prefixes'] != null){
                    if(parameters['and'] != "("){

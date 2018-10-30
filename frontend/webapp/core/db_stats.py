@@ -18,6 +18,7 @@ class DB_statistics():
         self.total_hijacks_under_mitigation = 0
         self.total_hijacks_active = 0
         self.total_hijacks_ignored = 0
+        self.total_hijacks_withdrawn = 0
         self.url_ = API_PATH
         self.timestamp_last_update = 0
         self.refresh_rate_seconds = 3
@@ -113,6 +114,19 @@ class DB_statistics():
         except BaseException:
             log.exception("failed to fetch total_hijacks_ignored")
 
+    def get_total_hijacks_withdrawn(self):
+        try:
+            log.debug("send request for total total_hijacks_withdrawn")
+            url_ = self.url_ + "/hijacks?withdrawn=eq.true&limit=1"
+            response = requests.get(
+                url=url_, headers={
+                    "Prefer": "count=exact"})
+            if 'Content-Range' in response.headers:
+                self.total_hijacks_withdrawn = int(
+                    response.headers['Content-Range'].split('/')[1])
+        except BaseException:
+            log.exception("failed to fetch get_total_hijacks_withdrawn")
+
     def get_new_stats(self):
         if((self.timestamp_last_update + self.refresh_rate_seconds) < time.time()):
             self.get_total_bgp_updates()
@@ -122,6 +136,7 @@ class DB_statistics():
             self.get_total_hijacks_under_mitigation()
             self.get_total_hijacks_active()
             self.get_total_hijacks_ignored()
+            self.get_total_hijacks_withdrawn()
 
     def get_all_dict(self):
         self.get_new_stats()
@@ -132,7 +147,8 @@ class DB_statistics():
             'total_hijacks_resolved': self.total_hijacks_resolved,
             'total_hijacks_under_mitigation': self.total_hijacks_under_mitigation,
             'total_hijacks_active': self.total_hijacks_active,
-            'total_hijacks_ignored': self.total_hijacks_ignored
+            'total_hijacks_ignored': self.total_hijacks_ignored,
+            'get_total_hijacks_withdrawn': self.total_hijacks_withdrawn
         }
 
     def get_all_formatted_list(self):
@@ -144,5 +160,6 @@ class DB_statistics():
             ('Resolved', self.total_hijacks_resolved),
             ('Under mitigation', self.total_hijacks_under_mitigation),
             ('Ongoing', self.total_hijacks_active),
-            ('Ignored', self.total_hijacks_ignored)
+            ('Ignored', self.total_hijacks_ignored),
+            ('Withdrawn', self.total_hijacks_withdrawn)
         ]

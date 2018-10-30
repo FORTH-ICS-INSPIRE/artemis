@@ -44,7 +44,6 @@ function format_hijack_status(data){
 }
 
 function format_handled_seen(data, url){
-    console.log(url)
     if(data == true){
         return '<img src=\"' + url + 'images/handled.png\" />';
     }else{

@@ -28,38 +28,62 @@
                     </div>
                     <div class="panel-body">
                         <div class="row">
-                            <div class="col-lg-3">
+                            <div class="col-lg-6">
              
                                 <div class="row">
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-4">
                                         <p><b>Hijacker AS:</b></p>
                                     </div>
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-8">
                                         <p id="info_hijack_as"></p>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-4">
                                         <p><b>Type:</b></p>
                                     </div>
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-8">
                                         <p id="info_type"></p>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-4">
+                                        <p><b># Peers Seen:</b></p>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <div id="info_num_peers_seen"></div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <p><b># ASes Infected:</b></p>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <p id="info_num_asns_inf"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-4">
                                         <p><b>Prefix:</b></p>
                                     </div>
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-8">
                                         <p id="info_prefix"></p>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-4">
                                         <p><b>Matched:</b></p>
                                     </div>
-                                    <div class="col-lg-6">
+                                    <div class="col-lg-8">
                                         <p id="info_matched_prefix"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <p><b>Config:</b></p>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <p id="info_config_timestamp"></p>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -70,36 +94,9 @@
                                         <p id="info_key"></p>
                                     </div>
                                 </div>
-                            
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <p><b># Peers Seen:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div id="info_num_peers_seen"></div>
-                                    </div>
-                                </div>                
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <p><b># ASes Infected:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <p id="info_num_asns_inf"></p>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <p><b>Config:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <p id="info_config_timestamp"></p>
-                                    </div>
-                                </div>
                             </div>
 
-                            <div class="col-lg-4">  
+                            <div class="col-lg-6">
                                 <div class="row">
                                     <div class="col-lg-6">
                                         <p><b>Time Started:</b></p>
@@ -227,7 +224,8 @@
         <script>
             var parameters = {};
             var initial_data = {{ data | safe }};
-            parameters['hijack_key'] = "eq." + initial_data['key']
+            parameters['hijack_key'] = "cs.{" + initial_data['key'] + "}";
+            var fetch_hijack_parameter = "eq." + initial_data['key'];
             var prefix;
             var table;
 
@@ -445,7 +443,9 @@
             }     
 
             function hijack_status(data){
-                if(data['under_mitigation'] == true){
+                if(data['withdrawn'] == true){
+                    return '<b style="color:purple">(Withdrawn)</b>'
+                }else if(data['under_mitigation'] == true){
                     return '<b style="color:blue">(Under Mitigation)</b>'
                 }else if(data['resolved'] == true){
                     return '<b style="color:green">(Resolved)</b>'
@@ -471,7 +471,7 @@
                         "prefix": initial_data['prefix']
                      },
                     success: function(result){
-                        retrieve_hijack(parameters['hijack_key']);
+                        retrieve_hijack(fetch_hijack_parameter);
                     },
                     dataType: 'json'
                 });
@@ -483,7 +483,7 @@
                     url: "{{ url_for('actions.mitigate_hijack') }}",
                     data: { "hijack_key" : initial_data['key'], "prefix" : prefix },
                     success: function(result){
-                        retrieve_hijack(parameters['hijack_key']);
+                        retrieve_hijack(fetch_hijack_parameter);
                     },
                     dataType: 'json'
                 });
@@ -500,7 +500,7 @@
                         "prefix": initial_data['prefix']
                     },
                     success: function(result){
-                        retrieve_hijack(parameters['hijack_key']);
+                        retrieve_hijack(fetch_hijack_parameter);
                     },
                     dataType: 'json'
                 });
@@ -554,7 +554,6 @@
                 if($(this).hasClass("btn-primary")){
                     submit_seen(true);
                 }else if($(this).hasClass("btn-danger")){
-                    console.log('a')
                     submit_seen(false);
                 }
             });
@@ -569,7 +568,7 @@
                         if(result["status"] == "success"){
                             if(state == true){
                                 $('#hijack_seen_button').removeClass('btn-primary').addClass('btn-danger');
-                                $('#hijack_seen_button').html('Unmark Hijack as <b>not seen</b>');
+                                $('#hijack_seen_button').html('Mark Hijack as <b>not seen</b>');
                             }else{
                                 $('#hijack_seen_button').removeClass('btn-danger').addClass('btn-primary');
                                 $('#hijack_seen_button').html('Mark Hijack as <b>seen</b>');

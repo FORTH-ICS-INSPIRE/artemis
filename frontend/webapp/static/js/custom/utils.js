@@ -28,7 +28,9 @@ function transform_date_to_local(date){
 }
 
 function format_hijack_status(data){
-    if(data['under_mitigation'] == true){
+    if(data['withdrawn'] == true){
+        return '<b style="color:purple">Withdrawn</b>'
+    }else if(data['under_mitigation'] == true){
         return '<b style="color:blue">Under Mitigation</b>'
     }else if(data['resolved'] == true){
         return '<b style="color:green">Resolved</b>'
@@ -79,10 +81,17 @@ function isValidDate(n) {
     return n instanceof Date && !isNaN(n)
 }
 
-function hijack_key_create_link(n, t) {
-    var e = "";
-    return null != t && "0" != t && (e = '<a href="' + n + "?key=" + t + '">View</a>'), e
-}
+function hijack_key_create_link(url, hijack_key){
+    var view_hijack_link = ""
+    if(hijack_key != null){
+        if(hijack_key.length == 1 && hijack_key[0] != null){
+            view_hijack_link = '<a href="' + url + '?key=' + hijack_key[0] + '">View</a>'
+        }else if(hijack_key.length > 1){
+            view_hijack_link = 'More'
+        }
+    }
+    return view_hijack_link;
+ }
 
 function display_hijack_key(n) {
     return null != n && "0" != n ? n : ""

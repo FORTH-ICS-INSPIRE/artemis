@@ -1,5 +1,30 @@
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 
+CREATE TABLE IF NOT EXISTS db_details (
+version BIGINT NOT NULL,
+upgraded_on TIMESTAMPTZ NOT NULL);
+
+CREATE UNIQUE INDEX db_details_one_row
+ON db_details((version IS NOT NULL));
+
+CREATE FUNCTION db_version_no_delete ()
+RETURNS trigger
+LANGUAGE plpgsql AS $f$
+BEGIN
+   RAISE EXCEPTION 'You may not delete the db_details!';
+END; $f$;
+
+CREATE FUNCTION array_distinct(anyarray) RETURNS anyarray AS $f$
+  SELECT array_agg(DISTINCT x) FROM unnest($1) t(x);
+$f$ LANGUAGE SQL IMMUTABLE;
+
+CREATE TRIGGER db_details_no_delete
+BEFORE DELETE ON db_details
+FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
+
+INSERT INTO db_details (version, upgraded_on) VALUES (1, now());
+
+
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
     prefix inet, origin_as BIGINT,

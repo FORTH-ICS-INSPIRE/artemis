@@ -1,7 +1,6 @@
-from flask import Blueprint
 from webapp.core import app
 from flask_security.decorators import login_required, roles_accepted
-from flask import render_template, request
+from flask import Blueprint, render_template, request
 from webapp.core.modules import Modules_state
 from webapp.core.fetch_hijack import get_hijack_by_key
 import logging
@@ -21,14 +20,19 @@ def display_monitors():
     return render_template('bgpupdates.htm', prefixes=prefixes_list)
 
 
-@main.route('/hijacks/', methods=['GET'])
+@main.route('/hijacks/')
 @login_required
 @roles_accepted('admin', 'user')
 def display_hijacks():
-    # log debug
-    app.config['configuration'].get_newest_config()
-    prefixes_list = app.config['configuration'].get_prefixes_list()
-    return render_template('hijacks.htm', prefixes=prefixes_list)
+    hijack_keys = request.args.get('hijack_keys')
+    if hijack_keys is not None:
+        if ',' in hijack_keys:
+            hijack_keys = hijack_keys.split(',')
+        return render_template('hijacks_by_update.htm', hijack_keys=hijack_keys)
+    else:
+        app.config['configuration'].get_newest_config()
+        prefixes_list = app.config['configuration'].get_prefixes_list()
+        return render_template('hijacks.htm', prefixes=prefixes_list)
 
 
 @main.route('/hijack', methods=['GET'])

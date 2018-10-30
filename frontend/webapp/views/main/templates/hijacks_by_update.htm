@@ -1,0 +1,251 @@
+{% extends "layout.htm" %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
+
+    
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Hijacks</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-1 offset-lg-7">
+                <p id="display_entries_time"> Timewindow: </p>
+            </div>
+            <div class="col-lg-3">
+                
+                <div id="timewindow_buttons">
+                    <button type="button" id="select_timewindow_all" class="btn btn-outline-primary">All</button>
+                    <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary">1h</button>
+                    <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary">24h</button>
+                    <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary">48h</button>
+                    <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary">Custom</button>
+                </div>
+                <div id="custom_time">
+                    <div class="row">
+                        <div class="col-lg-10">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    <input class="form-control" type="text" name="datetimes"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-12">
+            <table class="table table-striped table-bordered" id="hijacks">
+                <thead>
+                    <th>Time Detected</th>
+                    <th>Status</th>
+                    <th>Prefix</th>
+                    <th>Type</th>
+                    <th>Hijack AS</th>
+                    <th># Peers Seen</th>
+                    <th># ASes Infected</th>
+                    <th>Seen</th>
+                    <th>More</th>
+                </thead>
+            </table>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+            </div>
+            <div class="col-lg-6">
+                </hr>
+                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
+            </div>
+        </div>
+    
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            var table;
+            var display_settings = { 'prefixes': null, 'time': null };
+            var selected_status = null;
+            var hijack_keys = {{ hijack_keys | safe }};
+            $('#custom_time').hide();
+
+            $('#select_timewindow_all').on('click', function(event) {
+                $('#custom_time').hide();
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+                display_settings['time'] = null;
+                $('#hijacks').DataTable().destroy();
+                render_table(display_settings);
+            });
+            
+            $('#select_timewindow_1h').on('click', function(event) {
+                $('#custom_time').hide();
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 1);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
+                $('#hijacks').DataTable().destroy();
+                render_table(display_settings);
+            });
+
+            $('#select_timewindow_24h').on('click', function(event) {
+                $('#custom_time').hide();
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 24);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
+                $('#hijacks').DataTable().destroy()
+                render_table(display_settings);
+            });
+
+            $('#select_timewindow_48h').on('click', function(event) {
+                $('#custom_time').hide();
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+                var start_date = new Date();
+                start_date.setHours(start_date.getHours() - 48);
+                var end_date = new Date()
+                display_settings['time'] = { 'start_time': start_date.toISOString(), 'end_time': end_date.toISOString() };
+                $('#hijacks').DataTable().destroy()
+                render_table(display_settings);
+            });
+
+            $('#select_timewindow_other').on('click', function(event) {
+                $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
+                $(this).attr('class', 'btn btn-outline-primary');
+                $('#custom_time').show();                
+            });
+      
+            var columns = [
+                { data: 'time_detected' },
+                { data: 'prefix' },
+                { data: 'type' },
+                { data: 'hijack_as' },
+                { data: 'num_peers_seen' },
+                { data: 'num_asns_inf' }];
+
+            function render_table(settings){
+                var parameters = {};
+                parameters['and'] = "(";
+
+                if(settings['time'] != null){
+                    parameters['and'] += 'time_started.gte.' + settings['time']['start_time'];
+                    parameters['and'] += ',time_started.lte.' + settings['time']['end_time'];
+                }
+
+                if(settings['prefixes'] != null){
+                   if(parameters['and'] != "("){
+                        parameters['and'] += ","
+                    }
+                    parameters['and'] += "configured_prefix.eq." + settings['prefixes'];
+                }
+
+                if(parameters['and'] != "("){
+                    parameters['and'] += ","
+                }
+                parameters['key'] = "in.(" + hijack_keys + ")";
+
+                if(parameters['and'] == '('){
+                    delete parameters['and']
+                }else{
+                    parameters['and'] += ")"
+                }
+                table = $('#hijacks').DataTable( {
+                    "processing": true,
+                    "serverSide": true,
+                    "searching": false,
+                    ajax: function(data, callback, settings) {
+                        parameters['offset'] = data.start;
+                        parameters['limit'] = data.length;
+                        parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
+                        $.ajax({
+                            type: "POST",
+                            url: '{{ url_for('proxy_api') }}',
+                            dataType: "json",
+                            dataType: "json",
+                            data: { "action": "view_hijacks", "parameters" : JSON.stringify(parameters) },
+
+                            success: function(data, status, xhr){
+                                callback({
+                                    recordsTotal: data.total,
+                                    recordsFiltered: data.total,
+                                    data: data.results
+                                });
+                            }
+                        });
+                    },
+                    "order": [[ 0, "desc" ]],
+                    "columns": [
+                        { data: 'time_detected',
+                            render: function(data, type, row){
+                                return transform_date_to_local(data);
+                            }
+                        },
+                        {   
+                            data: function( row, type, val, meta ) {
+                                return format_hijack_status(row)
+                            }
+                        },
+                        { data: 'prefix' },
+                        { data: 'type' },
+                        { data: 'hijack_as',
+                            render: function(data, type, row){
+                                return format_hijack_as(data)
+                            } 
+                        },
+                        { data: 'num_peers_seen' },
+                        { data: 'num_asns_inf' },
+                        { data: 'seen',
+                            render: function(data, type, row){
+                                if(data == true){
+                                    return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
+                                }else{
+                                    return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'
+                                }
+                            }
+                        },
+                        {
+                            data: 'key',
+                            render: function(data, type, row){
+                                return '<a href="{{ url_for('main.display_hijack') }}?key=' + data + '">View</a>'
+                            }
+                        }
+                    ],
+                    "columnDefs": [ {
+                        "targets": [1,7,8],
+                        "orderable": false
+                        } 
+                    ]
+                });
+            }
+
+            $(document).ready(function(){
+                render_table({});
+                $('#timezone').html(display_timezone());
+            });
+
+
+        </script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}"></script>
+    {% endblock %}
+{% endblock %}

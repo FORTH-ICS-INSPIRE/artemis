@@ -82,16 +82,15 @@ function isValidDate(n) {
 }
 
 function hijack_key_create_link(url, hijack_key){
-    var view_hijack_link = ""
     if(hijack_key != null){
         if(hijack_key.length == 1 && hijack_key[0] != null){
-            view_hijack_link = '<a href="' + url + '?key=' + hijack_key[0] + '">View</a>'
+            return '<a href="' + url + '?key=' + hijack_key[0] + '">View</a>'
         }else if(hijack_key.length > 1){
-            view_hijack_link = 'More'
+            return '<a href="' + url + 's?hijack_keys=' + hijack_key + '">View</a>'
         }
     }
-    return view_hijack_link;
- }
+    return '';
+}
 
 function display_hijack_key(n) {
     return null != n && "0" != n ? n : ""
@@ -104,3 +103,4 @@ function display_timezone(){
     else
         return "GMT-" + (offset/60) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
 }
+

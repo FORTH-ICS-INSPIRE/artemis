@@ -8,7 +8,7 @@ ALTER TABLE bgp_updates
 
 ALTER TABLE hijacks 
     ADD COLUMN withdrawn BOOLEAN DEFAULT FALSE,
-    ADD COLUMN peers_withdrawn BIGINT[],
+    ADD COLUMN peers_withdrawn BIGINT[] DEFAULT array[]::BIGINT[],
     ALTER COLUMN peers_seen TYPE BIGINT[] USING translate(peers_seen::text, '[]','{}')::BIGINT[],
     ALTER COLUMN asns_inf TYPE BIGINT[] USING translate(asns_inf::text, '[]','{}')::BIGINT[];
 

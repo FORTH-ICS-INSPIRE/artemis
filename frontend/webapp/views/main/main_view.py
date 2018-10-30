@@ -15,7 +15,7 @@ main = Blueprint('main', __name__, template_folder='templates')
 @login_required
 @roles_accepted('admin', 'user')
 def display_monitors():
-    # log debug
+    app.config['configuration'].get_newest_config()
     prefixes_list = app.config['configuration'].get_prefixes_list()
     return render_template('bgpupdates.htm', prefixes=prefixes_list)
 

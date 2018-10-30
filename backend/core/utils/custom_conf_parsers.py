@@ -175,8 +175,8 @@ def format_1_parser(filepath, origin):
                     (netip, netmask) = prefix.split('/')
                     str2ip(prefix)
                 except BaseException:
-                    continue
                     cur_prefix = None
+                    continue
                 cur_prefix = prefix
             else:
                 as_path_regex = re.match('aspath\:\s+(.*)', line)

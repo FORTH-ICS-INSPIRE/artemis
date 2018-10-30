@@ -87,6 +87,7 @@ In a nutshell, there are 6 basic modules:
 * Mitigation
 * DB access/management
 * User interface
+
 The operator (i.e., the “user”) interfaces with the system by filling a configuration file
 and by interacting with the web application (UI) to control the various modules and
 see useful information related to monitoring entries and detected hijacks (including their
@@ -230,6 +231,7 @@ You can now start ARTEMIS as a multi-container application
 by running:
 ```
 docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml up
+```
 in interactive mode, or:
 ```
 docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml up -d

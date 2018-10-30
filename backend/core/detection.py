@@ -8,7 +8,7 @@ import time
 import pickle
 import hashlib
 import logging
-from typing import Union, Dict, List, NoReturn, Callable, Tuple
+from typing import Dict, List, NoReturn, Callable, Tuple
 import redis
 
 
@@ -62,7 +62,7 @@ class Detection():
 
             self.redis = redis.Redis(
                 host='localhost',
-                    port=6379
+                port=6379
             )
 
             # EXCHANGES
@@ -96,19 +96,19 @@ class Detection():
             # QUEUES
             self.update_queue = Queue(
                 'detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
-                                      consumer_arguments={'x-priority': 1})
+                consumer_arguments={'x-priority': 1})
             self.update_unhandled_queue = Queue(
                 'detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, auto_delete=True, max_priority=2,
-                                                consumer_arguments={'x-priority': 2})
+                consumer_arguments={'x-priority': 2})
             self.hijack_resolved_queue = Queue(
                 'detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
-                                               consumer_arguments={'x-priority': 2})
+                consumer_arguments={'x-priority': 2})
             self.hijack_ignored_queue = Queue(
                 'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
-                                              consumer_arguments={'x-priority': 2})
+                consumer_arguments={'x-priority': 2})
             self.config_queue = Queue(
                 'detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
-                                      consumer_arguments={'x-priority': 3})
+                consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
 
@@ -275,6 +275,19 @@ class Detection():
                         log.exception('exception')
                     if not is_hijack:
                         self.mark_handled(raw)
+                elif monitor_event['type'] == 'W':
+                    self.producer.publish(
+                        {
+                            'prefix': monitor_event['prefix'],
+                            'peer_asn': monitor_event['peer_asn'],
+                            'timestamp': monitor_event['timestamp'],
+                            'key': monitor_event['key']
+                        },
+                        exchange=self.update_exchange,
+                        routing_key='withdraw',
+                        priority=0
+                    )
+
                 self.mon_num += 1
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
@@ -375,7 +388,8 @@ class Detection():
             first_neighbor_asn = monitor_event['path'][-2]
             for item in prefix_node.data['confs']:
                 # [] neighbors means "allow everything"
-                if origin_asn in item['origin_asns'] and (len(item['neighbors']) == 0 or first_neighbor_asn in item['neighbors']):
+                if origin_asn in item['origin_asns'] and (
+                        len(item['neighbors']) == 0 or first_neighbor_asn in item['neighbors']):
                     return False
             self.commit_hijack(monitor_event, first_neighbor_asn, '1')
             return True
@@ -401,7 +415,8 @@ class Detection():
                     for item in prefix_node.data['confs']:
                         if origin_asn in item['origin_asns']:
                             false_origin = False
-                            if first_neighbor_asn in item['neighbors'] or len(item['neighbors']) == 0:
+                            if first_neighbor_asn in item['neighbors'] or len(
+                                    item['neighbors']) == 0:
                                 false_first_neighbor = False
                             break
                     if origin_asn is not None and false_origin:
@@ -422,9 +437,9 @@ class Detection():
             It uses redis server to store ongoing hijacks information to not stress the db.
             """
             redis_hijack_key = redis_key(
-                 monitor_event['prefix'],
-                 hijacker,
-                 hij_type)
+                monitor_event['prefix'],
+                hijacker,
+                hij_type)
             hijack_value = {
                 'prefix': monitor_event['prefix'],
                 'hijack_as': hijacker,

@@ -126,6 +126,9 @@ class Postgresql_db():
             self.update_queue = Queue(
                 'db-bgp-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
+            self.withdraw_queue = Queue(
+                'db-withdraw-update', exchange=self.update_exchange, routing_key='withdraw', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
             self.hijack_queue = Queue(
                 'db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
@@ -176,6 +179,12 @@ class Postgresql_db():
                     prefetch_count=1000,
                     no_ack=True,
                     accept=['pickle']
+                ),
+                Consumer(
+                    queues=[self.withdraw_queue],
+                    on_message=self.handle_withdraw_update,
+                    prefetch_count=1000,
+                    no_ack=True
                 ),
                 Consumer(
                     queues=[self.db_clock_queue],
@@ -285,17 +294,22 @@ class Postgresql_db():
                 )
                 # insert all types of BGP updates
                 self.insert_bgp_entries.append(extract_msg)
+            except Exception:
+                log.exception('{}'.format(msg_))
 
+        def handle_withdraw_update(self, message):
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            msg_ = message.payload
+            try:
                 # update hijacks based on withdrawal messages
-                if msg_['type'] is 'W':
-                    extract_msg = (
-                        msg_['prefix'],  # prefix
-                        msg_['peer_asn'],  # peer_asn
-                        datetime.datetime.fromtimestamp(
-                            (msg_['timestamp'])),  # timestamp
-                        msg_['key']  # key
-                    )
-                    self.handle_bgp_withdrawals.add(extract_msg)
+                extract_msg = (
+                    msg_['prefix'],  # prefix
+                    msg_['peer_asn'],  # peer_asn
+                    datetime.datetime.fromtimestamp(
+                        (msg_['timestamp'])),  # timestamp
+                    msg_['key']  # key
+                )
+                self.handle_bgp_withdrawals.add(extract_msg)
             except Exception:
                 log.exception('{}'.format(msg_))
 
@@ -644,11 +658,11 @@ class Postgresql_db():
                     log.exception('exception')
 
             try:
-                for _add in update_hijack_withdrawals:
-                    log.info('adding {} to {}'.format(_add[0], _add[1]))
+                # for _add in update_hijack_withdrawals:
+                #     log.info('adding {} to {}'.format(_add[0], _add[1]))
                 psycopg2.extras.execute_batch(
                     self.db_cur,
-                    'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || \'{%s}\') WHERE key=%s ',
+                    'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
                     list(update_hijack_withdrawals),
                     page_size=1000
                 )
@@ -688,6 +702,8 @@ class Postgresql_db():
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = ANY(hij.hijack_key)'
                 try:
+                    # for _add in update_bgp_entries:
+                    #     log.info('b adding {} to {}'.format(_add[0], _add[1]))
                     psycopg2.extras.execute_batch(
                         self.db_cur,
                         'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
@@ -801,7 +817,7 @@ class Postgresql_db():
             results = []
             cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
                 'type, communities, timestamp FROM bgp_updates WHERE ' \
-                'handled = false AND type = \'A\' ORDER BY timestamp DESC LIMIT(%s)'
+                'handled = false ORDER BY timestamp DESC LIMIT(%s)'
             self.db_cur.execute(
                 cmd_, (amount,))
             entries = self.db_cur.fetchall()

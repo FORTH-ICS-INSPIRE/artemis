@@ -696,11 +696,12 @@ class Postgresql_db():
 
             if len(update_bgp_entries) > 0:
                 cmd_ = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
-                    'FROM (SELECT bgp_updates.peer_asn, bgp_updates.hijack_key FROM bgp_updates, ( ' \
-                    'SELECT B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B ' \
-                    'WHERE H.key = %s AND B.key = %s) AS curr_update WHERE bgp_updates.peer_asn = curr_update.peer_asn ' \
+                    'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( ' \
+                    'SELECT H.key, B.type, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B ' \
+                    'WHERE H.key = %s AND B.key = %s) AS curr_update WHERE curr_update.key = ANY(bgp_updates.hijack_key) ' \
+                    'AND curr_update.type = \'A\' AND bgp_updates.peer_asn = curr_update.peer_asn ' \
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
-                    'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = ANY(hij.hijack_key)'
+                    'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'
                 try:
                     # for _add in update_bgp_entries:
                     #     log.info('b adding {} to {}'.format(_add[0], _add[1]))

@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.6.7
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
@@ -9,6 +9,8 @@ RUN apt-get update && \
 WORKDIR /root
 
 COPY . ./
+
+RUN make clean && make
 
 RUN pip3 --no-cache-dir install -r requirements.txt
 

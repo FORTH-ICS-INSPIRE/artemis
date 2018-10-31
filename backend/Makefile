@@ -1,11 +1,10 @@
-CFLAGS := $(shell python3.7m-config --cflags)
-LDFLAGS := $(shell python3.7m-config --ldflags)
+CFLAGS := $(shell python3.6m-config --cflags)
+LDFLAGS := $(shell python3.6m-config --ldflags)
 FLAGS := -Os -shared -fPIC
 CC := gcc
 CPY := cython
 PROJDIRS := core/
 SRCFILES := $(shell find $(PROJDIRS) -maxdepth 2 -type f -name "*.py")
-CFILES := $(patsubst %.py,%.c,$(SRCFILES))
 OBJFILES := $(patsubst %.py,%.so,$(SRCFILES))
 
 all: $(OBJFILES)
@@ -13,7 +12,7 @@ all: $(OBJFILES)
 %.c: %.py
 	$(CPY) -3 --embed $< -o $@
 
-%.so: $(CFILES)
+%.so: %.c
 	$(CC) $(FLAGS) $(CFLAGS) $(LDFLAGS) $< -o $@
 
 clean:

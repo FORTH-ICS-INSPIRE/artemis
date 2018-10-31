@@ -171,6 +171,9 @@ class Mitigation():
                 log.warn('no rule for hijack {}'.format(hijack_event))
 
 
-if __name__ == '__main__':
+def run():
     service = Mitigation()
     service.run()
+
+if __name__ == '__main__':
+    run()

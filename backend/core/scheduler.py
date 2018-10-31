@@ -84,6 +84,9 @@ class Scheduler():
                     unhandled_cnt += 1
 
 
-if __name__ == '__main__':
+def run():
     service = Scheduler()
     service.run()
+
+if __name__ == '__main__':
+    run()

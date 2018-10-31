@@ -513,6 +513,9 @@ class Detection():
                         message.payload))
 
 
-if __name__ == '__main__':
+def run():
     service = Detection()
     service.run()
+
+if __name__ == '__main__':
+    run()

@@ -102,6 +102,9 @@ class Observer():
                     self.response = None
 
 
-if __name__ == '__main__':
+def run():
     service = Observer()
     service.run()
+
+if __name__ == '__main__':
+    run()

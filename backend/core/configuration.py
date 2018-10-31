@@ -334,6 +334,9 @@ class Configuration():
                 f.write(self.data['raw_config'])
 
 
-if __name__ == '__main__':
+def run():
     service = Configuration()
     service.run()
+
+if __name__ == '__main__':
+    run()

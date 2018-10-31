@@ -10,9 +10,9 @@ WORKDIR /root
 
 COPY . ./
 
-RUN make clean && make
 
 RUN pip3 --no-cache-dir install -r requirements.txt
+RUN make clean && make
 
 RUN mkdir src
 WORKDIR src

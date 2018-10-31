@@ -1,4 +1,5 @@
 #!/bin/bash
+make
 ./wait-for rabbitmq:5672 -t 60
 ./wait-for postgres:5432 -t 60
 #./wait-for syslog:514 -t 60

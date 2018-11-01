@@ -608,7 +608,7 @@ class Postgresql_db():
 
         def _handle_bgp_withdrawals(self):
             cmd_ = 'SELECT DISTINCT ON (hijacks.key) hijacks.peers_seen, hijacks.peers_withdrawn, ' \
-                'hijacks.key, hijacks.hijack_as, hijacks.type, bgp_updates.timestamp ' \
+                'hijacks.key, hijacks.hijack_as, hijacks.type, bgp_updates.timestamp, hijacks.time_last ' \
                 'FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) ' \
                 'WHERE bgp_updates.prefix = %s ' \
                 'AND bgp_updates.type = \'A\' ' \
@@ -629,17 +629,20 @@ class Postgresql_db():
                     for entry in entries:
                         # entry -> 0: peers_seen, 1: peers_withdrawn, 2:
                         # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
+                        # 6: time_last
                         update_hijack_withdrawals.add((entry[2], withdrawal[3]))
                         if entry[5] >= withdrawal[2]:
                             continue
                         # matching withdraw with a hijack
                         if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
                             entry[1].append(withdrawal[1])
+                            timestamp = max(entry[5], entry[6])
                             if len(entry[0]) == len(entry[1]):
                                 # set hijack as withdrawn and delete from redis
                                 self.db_cur.execute(
-                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, peers_withdrawn=%s WHERE key=%s;',
-                                    (datetime.datetime.now(), entry[1], entry[2],))
+                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, ' \
+                                            'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
+                                    (timestamp, entry[1], timestamp, entry[2],))
                                 self.db_conn.commit()
                                 log.debug('withdrawn hijack {}'.format(entry))
                                 redis_hijack_key = redis_key(
@@ -650,8 +653,8 @@ class Postgresql_db():
                             else:
                                 # add withdrawal to hijack
                                 self.db_cur.execute(
-                                    'UPDATE hijacks SET peers_withdrawn=%s WHERE key=%s;',
-                                    (entry[1], entry[2],))
+                                    'UPDATE hijacks SET peers_withdrawn=%s, time_last=%s WHERE key=%s;',
+                                    (entry[1], timestamp, entry[2],))
                                 self.db_conn.commit()
                                 log.debug('updating hijack {}'.format(entry))
                 except Exception:

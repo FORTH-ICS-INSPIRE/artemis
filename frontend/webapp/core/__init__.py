@@ -25,7 +25,6 @@ app = Flask(__name__,
 with app.app_context():
     configure_app(app)
     db.init_app(app)
-    Bootstrap(app)
     babel = Babel(app)
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
     log = logging.getLogger('werkzeug')

@@ -1,3 +1,62 @@
+
+
+function format_hijacks_updates_datatable(data){
+    if('code' in data){ // its an error
+        return {};
+    }
+
+    for(entry in data){
+        data[entry] = format_hijack_update(data[entry]);
+    }
+    return data;
+}
+
+function format_hijack_update(data){
+    if('as_path' in data){
+        data['as_path'] = format_as_path(data['as_path']);
+    }
+
+    if('orig_path' in data){
+        data['orig_path'] = format_orig_path(data['orig_path']);
+    }
+
+    if('timestamp' in data){
+        data['timestamp'] = transform_date_to_local(data['timestamp']);
+    }
+
+    if('service' in data){
+        data['service'] = format_service(data['service']);
+    }
+
+    if('origin_as' in data){
+        data['origin_as'] = format_origin_as(data['origin_as']);
+    }
+
+    if('communities' in data){
+        data['communities'] = format_communities(data['communities']);
+    }
+
+    if('handled' in data){
+        data['handled'] = format_handled_seen(data['handled']);
+    }
+
+    if('hijack_key' in data){
+        data['hijack_link'] = hijack_key_create_link(data['hijack_key']);
+    }
+
+    return data;
+}
+
+
+
+function format_handled_seen(data){
+    if(data){
+        return '<img src=\"' + static_urls['handled.png'] + '\" />'
+    }else{
+        return '<img src=\"' + static_urls['unhadled.png'] + '\" />'
+    }
+}
+
 function format_as_path(path) {
 	var str_ = "";
 	for (as_item in path){
@@ -43,14 +102,6 @@ function format_hijack_status(data){
     }
 }
 
-function format_handled_seen(data, url){
-    if(data == true){
-        return '<img src=\"' + url + 'images/handled.png\" />';
-    }else{
-        return '<img src=\"{{ url_for(\'static\', filename=\'images/unhadled.png\') }}\"/>';
-    }
-}
-
 function format_service(service) {
 	return service.replace(/\|/g, ' -> ');
 }
@@ -80,12 +131,12 @@ function isValidDate(n) {
     return n instanceof Date && !isNaN(n)
 }
 
-function hijack_key_create_link(url, hijack_key){
+function hijack_key_create_link(hijack_key){
     if(hijack_key != null){
         if(hijack_key.length == 1 && hijack_key[0] != null){
-            return '<a href="' + url + '?key=' + hijack_key[0] + '">View</a>'
+            return '<a href="' + hijack_redirect + '?key=' + hijack_key[0] + '">View</a>'
         }else if(hijack_key.length > 1){
-            return '<a href="' + url + 's?hijack_keys=' + hijack_key + '">View</a>'
+            return '<a href="' + hijack_redirect + 's?hijack_keys=' + hijack_key + '">View</a>'
         }
     }
     return '';

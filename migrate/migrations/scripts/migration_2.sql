@@ -3,8 +3,8 @@ DROP VIEW IF EXISTS view_hijacks;
 DROP VIEW IF EXISTS view_bgpupdates;
 
 ALTER TABLE bgp_updates 
-    ALTER COLUMN as_path TYPE BIGINT[] USING array[as_path]::BIGINT[],
-    ALTER hijack_key TYPE text[] using array[hijack_key];
+    ALTER COLUMN as_path TYPE BIGINT[] USING as_path::BIGINT[],
+    ALTER hijack_key TYPE text[] USING array[hijack_key];
 
 ALTER TABLE hijacks 
     ADD COLUMN withdrawn BOOLEAN DEFAULT FALSE,

@@ -181,8 +181,6 @@
                 }else if(settings['time'] != null && settings['prefixes'] != null){
                     parameters = { 'and': '(timestamp.gte.' + settings['time']['start_time'] + ',timestamp.lte.' + settings['time']['end_time'] + ',matched_prefix.eq.' + settings['prefixes'] + ')' }
                 }
-
-
                 table = $('#bgp_updates').DataTable( {
                     "processing": true,
                     "serverSide": true,
@@ -350,7 +348,6 @@
                     '</tr>'+
                 '</table>';
             }
-
         </script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>

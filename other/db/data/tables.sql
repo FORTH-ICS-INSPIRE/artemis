@@ -22,19 +22,19 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (1, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (2, now());
 
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
     prefix inet, origin_as BIGINT,
     peer_asn   BIGINT,
-    as_path   text[],
+    as_path   BIGINT[],
     service   VARCHAR ( 50 ),
     type  VARCHAR ( 1 ),
     communities  json,
     timestamp TIMESTAMP  NOT NULL,
-    hijack_key VARCHAR ( 32 ),
+    hijack_key text[],
     handled   BOOLEAN,
     matched_prefix inet,
     orig_path json,
@@ -53,9 +53,10 @@ CREATE TABLE IF NOT EXISTS hijacks (
     type  VARCHAR ( 1 ),
     prefix    inet,
     hijack_as BIGINT,
-    peers_seen   json,
+    peers_seen   BIGINT[],
+    peers_withdrawn BIGINT[],
     num_peers_seen INTEGER,
-    asns_inf json,
+    asns_inf BIGINT[],
     num_asns_inf INTEGER,
     time_started TIMESTAMP,
     time_last TIMESTAMP,
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
     resolved  BOOLEAN,
     active  BOOLEAN,
     ignored BOOLEAN,
+    withdrawn BOOLEAN,
     configured_prefix  inet,
     timestamp_of_config TIMESTAMP,
     comment text,
@@ -74,13 +76,15 @@ CREATE TABLE IF NOT EXISTS hijacks (
     UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (
         (
-            active=true and under_mitigation=false and resolved=false and ignored=false
+            active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false
         ) or (
-            active=true and under_mitigation=true and resolved=false and ignored=false
+            active=true and under_mitigation=true and resolved=false and ignored=false and withdrawn=false
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false
+            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true
+            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false
+        ) or (
+            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true
         )
     )
 );
@@ -101,7 +105,7 @@ CREATE TABLE IF NOT EXISTS configs (
 
 CREATE OR REPLACE VIEW view_configs AS SELECT time_modified FROM configs;
 
-CREATE OR REPLACE VIEW view_hijacks AS SELECT key,type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, ignored, configured_prefix, comment, seen FROM hijacks;
+CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, ignored, configured_prefix, comment, seen, withdrawn, peers_withdrawn, peers_seen FROM hijacks;
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 

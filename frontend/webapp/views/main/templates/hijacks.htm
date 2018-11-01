@@ -19,22 +19,24 @@
 
         <div class="row">
 
-            <div class="col-lg-1 offset-lg-1">
-                <p id="display_entries_time"> Select prefix: </p>
-            </div>
-
-            <div class="col-lg-2">
-                <div class="form-group">
-                    <select class="form-control" id="prefixes_selection">
-                        <option>All</option>
-                        {% for prefix in prefixes %}
-                            <option>{{ prefix }}</option>
-                        {% endfor %}
-                    </select>
+            {% if prefixes %}
+                <div class="col-lg-1 offset-lg-1">
+                    <p id="display_entries_time"> Select prefix: </p>
                 </div>
-            </div>
-
+                <div class="col-lg-2">
+                    <div class="form-group">
+                        <select class="form-control" id="prefixes_selection">
+                            <option>All</option>
+                            {% for prefix in prefixes %}
+                                <option>{{ prefix }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
             <div class="col-lg-1 offset-lg-4">
+            {% else %}
+            <div class="col-lg-1 offset-lg-7">
+            {% endif %}
                 <p id="display_entries_time"> Timewindow: </p>
             </div>
             <div class="col-lg-3">
@@ -81,7 +83,8 @@
                     <a id="status_active_text" style="color:red" href="javascript:filter_by_status('active');">Ongoing</a> / 
                     <a id="status_resolved_text" style="color:green" href="javascript:filter_by_status('resolved');">Resolved</a> / 
                     <a id="status_ignored_text" style="color:orange" href="javascript:filter_by_status('ignored');">Ignored</a> / 
-                    <a id="status_under_mitigation_text" style="color:blue" href="javascript:filter_by_status('under_mitigation');">Under Mitigation</a> </i></p>
+                    <a id="status_under_mitigation_text" style="color:blue" href="javascript:filter_by_status('under_mitigation');">Under Mitigation</a> /
+                    <a id="status_withdrawn_text" style="color:purple" href="javascript:filter_by_status('withdrawn');">Withdrawn</a> </i></p>
             </div>
             <div class="col-lg-6">
                 </hr>
@@ -152,16 +155,18 @@
                 $('#custom_time').show();                
             });
 
-            $("#prefixes_selection").change(function () {
-                var option = this.value;
-                if(option == "All"){
-                    display_settings['prefixes'] = null;
-                }else{
-                    display_settings['prefixes'] = option;
-                }
-                $('#hijacks').DataTable().destroy()
-                render_table(display_settings);
-            });
+            {% if prefixes %}
+                $("#prefixes_selection").change(function () {
+                    var option = this.value;
+                    if(option == "All"){
+                        display_settings['prefixes'] = null;
+                    }else{
+                        display_settings['prefixes'] = option;
+                    }
+                    $('#hijacks').DataTable().destroy()
+                    render_table(display_settings);
+                });
+            {% endif %}
 
             function filter_by_status(status){
                 // no status selected
@@ -169,9 +174,10 @@
                     selected_status = status;
                     $("#status_" + status + "_text").css("font-weight", "");
                     delete display_settings['status'];
+                    selected_status = null;
                 }else{
                     selected_status = status;
-                    var status_list = ['active', 'resolved', 'ignored', 'under_mitigation'];
+                    var status_list = ['active', 'resolved', 'ignored', 'under_mitigation', 'withdrawn'];
                     var filtered_status_list = status_list.filter(function(e) { return e !== status })
                     $("#status_" + status + "_text").css("font-weight", "bold")
                     display_settings['status'] = status;
@@ -200,6 +206,9 @@
                     parameters['and'] += 'time_started.gte.' + settings['time']['start_time'];
                     parameters['and'] += ',time_started.lte.' + settings['time']['end_time'];
                 }
+                {% if hijack_keys %}
+                    parameters['key'] = "in.(" + {{ hijack_keys | safe }} + ")";
+                {% endif %}
 
                 if(settings['prefixes'] != null){
                    if(parameters['and'] != "("){
@@ -269,8 +278,7 @@
                         },
                         { data: 'num_peers_seen' },
                         { data: 'num_asns_inf' },
-                        {
-                            data: 'seen',
+                        { data: 'seen',
                             render: function(data, type, row){
                                 if(data == true){
                                     return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'

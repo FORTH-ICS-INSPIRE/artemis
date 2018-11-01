@@ -67,6 +67,7 @@ services:
         ports:
             - "80:80"
             - "443:443"
+            - "15672:15672"
         environment:
             ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
             POSTGREST_HOST: ${POSTGREST_HOST}
@@ -82,8 +83,9 @@ services:
         expose:
             - 5671
             - 5672
-        ports:
-            - "15672:15672"
+        environment:
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     postgres:
         image: timescale/timescaledb:latest-pg10
         container_name: postgres
@@ -114,8 +116,6 @@ services:
             - artemis
         expose:
             - 3000
-        ports:
-            - "3000:3000"
         environment:
             PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             PGRST_DB_SCHEMA: ${DB_SCHEMA}

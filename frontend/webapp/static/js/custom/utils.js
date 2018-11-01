@@ -28,7 +28,9 @@ function transform_date_to_local(date){
 }
 
 function format_hijack_status(data){
-    if(data['under_mitigation'] == true){
+    if(data['withdrawn'] == true){
+        return '<b style="color:purple">Withdrawn</b>'
+    }else if(data['under_mitigation'] == true){
         return '<b style="color:blue">Under Mitigation</b>'
     }else if(data['resolved'] == true){
         return '<b style="color:green">Resolved</b>'
@@ -42,7 +44,6 @@ function format_hijack_status(data){
 }
 
 function format_handled_seen(data, url){
-    console.log(url)
     if(data == true){
         return '<img src=\"' + url + 'images/handled.png\" />';
     }else{
@@ -79,9 +80,15 @@ function isValidDate(n) {
     return n instanceof Date && !isNaN(n)
 }
 
-function hijack_key_create_link(n, t) {
-    var e = "";
-    return null != t && "0" != t && (e = '<a href="' + n + "?key=" + t + '">View</a>'), e
+function hijack_key_create_link(url, hijack_key){
+    if(hijack_key != null){
+        if(hijack_key.length == 1 && hijack_key[0] != null){
+            return '<a href="' + url + '?key=' + hijack_key[0] + '">View</a>'
+        }else if(hijack_key.length > 1){
+            return '<a href="' + url + 's?hijack_keys=' + hijack_key + '">View</a>'
+        }
+    }
+    return '';
 }
 
 function display_hijack_key(n) {
@@ -95,3 +102,4 @@ function display_timezone(){
     else
         return "GMT-" + (offset/60) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
 }
+

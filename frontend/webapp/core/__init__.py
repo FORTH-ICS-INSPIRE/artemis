@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, g, render_template, request, current_app, jsonify, redirect
+from flask import Flask, g, render_template, request, current_app, jsonify, redirect, session
 from flask_bootstrap import Bootstrap
 from flask_security import current_user
 from flask_security.utils import hash_password
@@ -12,6 +12,7 @@ from webapp.configs.config import configure_app
 from webapp.core.modules import Modules_state
 from flask_security import user_registered
 from webapp.core.proxy_api import get_proxy_api
+from datetime import timedelta
 
 log = logging.getLogger('webapp_logger')
 
@@ -47,6 +48,10 @@ def load_user(payload):
     user = data_store.find_user(id=payload['identity'])
     return user
 
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=15)
 
 @app.before_first_request
 def setupDatabase():

@@ -1,17 +1,45 @@
-
-
-function format_hijacks_updates_datatable(data){
+function format_hijacks_datatable(data){
     if('code' in data){ // its an error
         return {};
     }
-
     for(entry in data){
-        data[entry] = format_hijack_update(data[entry]);
+        data[entry] = format_hijack_entry(data[entry]);
     }
     return data;
 }
 
-function format_hijack_update(data){
+function format_hijack_entry(data){
+
+    if('hijack_as' in data){
+        data['hijack_as'] = format_hijack_as(data['hijack_as']);
+    }
+
+    if('time_detected' in data){
+        data['time_detected'] = transform_date_to_local(data['time_detected']);
+    }
+
+    if('seen' in data){
+        data['seen'] = format_handled_seen(data['seen']);
+    }
+
+    if('key' in data){
+        data['hijack_link'] = hijack_key_create_link([data['key']]);
+    }
+
+    return data;
+}
+
+function format_bgp_updates_datatable(data){
+    if('code' in data){ // its an error
+        return {};
+    }
+    for(entry in data){
+        data[entry] = format_bgp_update(data[entry]);
+    }
+    return data;
+}
+
+function format_bgp_update(data){
     if('as_path' in data){
         data['as_path'] = format_as_path(data['as_path']);
     }
@@ -46,7 +74,6 @@ function format_hijack_update(data){
 
     return data;
 }
-
 
 
 function format_handled_seen(data){

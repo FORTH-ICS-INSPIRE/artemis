@@ -125,12 +125,22 @@
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
             var refresh_status = true;
-            var datatable_parameters = {};
+            var datatable_parameters = {
+                    'order': [
+                        {
+                            'column': 0,
+                            'dir': "desc"
+                        }
+                    ],
+                    'offset': 0,
+                    'limit': 0
+                };
             var selected_status = null;
 
             // Columns that can be sorted
             var columns = [
                 { data: 'time_detected' },
+                null,
                 { data: 'prefix' },
                 { data: 'type' },
                 { data: 'hijack_as' },
@@ -257,8 +267,21 @@
                 }
             });
 
+            function inspect_input_of_search_boxes(){
+                $("#hijacks tfoot tr th").each(function (index, item) {
+                    if(index in search_table_map){
+                        if($(this).children("input").val() == null || $(this).children("input").val() == ''){
+                            filter_parameters[search_table_map[index]] = null;
+                        }else{
+                            filter_parameters[search_table_map[index]] = $(this).children("input").val();
+                        }
+                    }
+                });
+            }
+
             function construct_filter_hijacks_query(){
                 var filters = [];
+                inspect_input_of_search_boxes();
 
                 {% if hijack_keys %}
                     var key = {{ hijack_keys | safe }};
@@ -290,9 +313,9 @@
                 }
 
                 if(filters.length > 0){
-                    datatable_parameters = { 'and': '(' + filters.join() + ')' }
+                    datatable_parameters['and'] = '(' + filters.join() + ')';
                 }else{
-                    datatable_parameters = {};
+                    delete datatable_parameters['and'];
                 }
             }
 
@@ -306,7 +329,8 @@
                     ajax: function(data, callback, settings) {
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
-                        datatable_parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
+
+                        datatable_parameters['order'] = columns[data.order[0].column].data + "." + data.order[0].dir;
                         $.ajax({
                             type: "POST",
                             url: '{{ url_for('proxy_api') }}',
@@ -329,11 +353,6 @@
                             var column_index = that[0][0]
                             $('input', this.footer()).on('keydown', function(ev) {
                                 if (ev.keyCode == 13) { //only on enter keypress (code 13)
-                                    if(this.value == ''){
-                                        filter_parameters[search_table_map[column_index]] = null;
-                                    }else{
-                                        filter_parameters[search_table_map[column_index]] = this.value;
-                                    }
                                     construct_filter_hijacks_query();
                                     that.draw()
                                 }
@@ -356,9 +375,10 @@
                         { data: 'seen', "width": "14px" },
                         { data: 'hijack_link', "width": "14px" }
                     ],
-                    "columnDefs": [ {
-                        "targets": [1,7,8],
-                        "orderable": false
+                    "columnDefs": [
+                        {
+                            "targets": [1,7,8],
+                            "orderable": false
                         },
                         {
                             "targets": [3,5,6,7,8],
@@ -391,7 +411,7 @@
 
                 setInterval( function () {
                 if(refresh_status){
-                        table.draw();
+                        table.draw(false);
                         $('#last_refresh_time').html(transform_date_to_local($.now()));
                     }
                 }, 5000 );

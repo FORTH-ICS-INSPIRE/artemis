@@ -303,7 +303,8 @@
                 }
 
                 if(filter_parameters['service'] != null){
-                    filters.push('service.like.*' + filter_parameters['service'] + '*');
+                    var _service = filter_parameters['service'].replace(/ -> |-> | -> |->/gi, '|');
+                    filters.push('service.like.*' + _service + '*');
                 }
 
                 if(filter_parameters['type'] != null){

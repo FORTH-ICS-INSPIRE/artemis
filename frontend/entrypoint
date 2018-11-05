@@ -4,4 +4,4 @@
 ./wait-for postgrest:3000 -t 60
 ./wait-for graphql:8080 -t 60
 ./wait-for backend:9001 -t 60
-gunicorn --workers=4 --bind 0.0.0.0:8000 webapp_init:app
+gunicorn --workers=4 --bind 0.0.0.0:8000 init:app

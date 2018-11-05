@@ -2,7 +2,7 @@ import psycopg2
 import psycopg2.extras
 import radix
 from utils import RABBITMQ_HOST, get_logger, redis_key
-from kombu import Connection, Queue, Exchange, uuid, Consumer
+from kombu import Connection, Queue, Exchange, uuid, Consumer, uuid
 from kombu.mixins import ConsumerProducerMixin
 import time
 import pickle
@@ -145,7 +145,7 @@ class Postgresql_db():
                 'db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.db_clock_queue = Queue(
-                'db-db-clock', exchange=self.db_clock_exchange, routing_key='db-clock-message', durable=False, auto_delete=True, max_priority=2,
+                uuid(), exchange=self.db_clock_exchange, routing_key='pulse', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 3})
             self.mitigate_queue = Queue(
                 'db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, auto_delete=True, max_priority=2,

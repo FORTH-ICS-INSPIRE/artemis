@@ -45,8 +45,11 @@ class Scheduler():
 
         def _get_module_status(self, module):
             server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
-            response = server.supervisor.getProcessInfo(module)
-            return response['state'] == 20
+            try:
+                return any([x['name'] for x in server.supervisor.getAllProcessInfo()
+                    if x['group'] == module and x['state'] == 20])
+            except BaseException:
+                return False
 
         def _db_clock_send(self):
             unhandled_cnt = 0
@@ -56,7 +59,7 @@ class Scheduler():
                     producer.publish(
                         {'op':'bulk_operation'},
                         exchange=self.db_clock_exchange,
-                        routing_key='db-clock-message',
+                        routing_key='pulse',
                         retry=True,
                         priority=3
                     )
@@ -67,7 +70,7 @@ class Scheduler():
                                     {'op':'send_unhandled',
                                     'amount':50},
                                     exchange=self.db_clock_exchange,
-                                    routing_key='db-clock-message',
+                                    routing_key='pulse',
                                     retry=True,
                                     priority=2
                                 )
@@ -76,7 +79,7 @@ class Scheduler():
                                     {'op':'send_unhandled',
                                     'amount':500},
                                     exchange=self.db_clock_exchange,
-                                    routing_key='db-clock-message',
+                                    routing_key='pulse',
                                     retry=True,
                                     priority=2
                                 )

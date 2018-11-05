@@ -53,31 +53,17 @@ def fetch_DECIX_bgp_summary() -> Set:
     """
     Fetches all ASes that are visible through DECIX routeservers.
     """
-    res = requests.get('https://lg.fra.de-cix.net/')
-    rs_list = set(re.findall('<option value=\'(.*)\'>.*</option>', res.text))
+    res = requests.get('https://lg.fra.de-cix.net/api/v1/routeservers')
+    res_json = res.json()
 
-    payload = {
-        'query': 'show ip bgp summary',
-        'tab': 'bgp_summary',
-        'submit': 'Submit'
-    }
+    rs_list = [rs['id'] for rs in res_json['routeservers'] if 'DE-CIX Frankfurt' in rs['group']]
 
     as_list = set()
     for rs in rs_list:
-        url = 'https://lg.fra.de-cix.net/'
-        # print('Requesting BGP Summary from {}'.format(rs))
-        payload['routeserver'] = rs
-        res = requests.post(url, data=payload)
-
-        start = res.text.rfind('------------------------------------------------------------------------------------')
-        end = res.text.find('Total number of neighbors')
-
-        info = set(filter(None, res.text[start:end].split('\n')[1:]))
-        for line in info:
-            try:
-                as_list.add(line.split()[1])
-            except Exception:
-                pass
+        url = 'https://lg.fra.de-cix.net/api/v1/routeservers/{}/neighbors'.format(rs)
+        res = requests.get(url)
+        res_json = res.json()
+        as_list.update({neighbor['asn'] for neighbor in res_json['neighbours'] if neighbor['state'] == 'up'})
 
     return as_list
 

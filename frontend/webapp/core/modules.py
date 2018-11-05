@@ -68,6 +68,14 @@ class Modules_state():
             log.exception('exception')
             return False
 
+    def is_any_up_or_running(self, module):
+        try:
+            return [x['name'] for x in self.server.supervisor.getAllProcessInfo()
+                if x['group'] == module and x['state'] == 20]
+        except Exception:
+            log.exception('exception')
+            return False
+
     def get_response_all(self):
         ret_response = {}
         response = self.server.supervisor.getAllProcessInfo()

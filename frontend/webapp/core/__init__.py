@@ -73,15 +73,6 @@ def setup():
         log.debug('failed to get version')
 
     modules = Modules_state()
-    try:
-        log.debug('Starting Scheduler..')
-        modules.call('clock', 'start')
-        if not modules.is_up_or_running('clock'):
-            log.error('Couldn\'t start scheduler.')
-            exit(-1)
-    except BaseException:
-        log.exception('exception while starting scheduler')
-        exit(-1)
 
     try:
         log.debug('Starting Postgresql_db..')

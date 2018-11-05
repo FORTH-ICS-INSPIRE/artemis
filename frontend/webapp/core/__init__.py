@@ -1,7 +1,6 @@
 import os
 import logging
 from flask import Flask, g, render_template, request, current_app, jsonify, redirect, session
-from flask_bootstrap import Bootstrap
 from flask_security import current_user
 from flask_security.utils import hash_password
 from flask_security.decorators import login_required, roles_accepted

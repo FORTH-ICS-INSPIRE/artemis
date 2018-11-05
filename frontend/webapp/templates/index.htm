@@ -167,7 +167,7 @@
                     ajax: function(data, callback, settings) {
                         $.ajax({
                             type: "POST",
-                            url: "https://128.110.154.184:8080/v1alpha1/graphql",
+                            url: "/api/graphql",
                             dataType: "json",
                             beforeSend: function(request) {
                                 request.setRequestHeader("X-Hasura-Access-Key", "@rt3m1s.");

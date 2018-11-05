@@ -25,27 +25,6 @@ except BaseException:
 
 modules = Modules_state()
 try:
-    log.debug('Starting Scheduler..')
-    modules.call('clock', 'start')
-    if not modules.is_up_or_running('clock'):
-        log.error('Couldn\'t start scheduler.')
-        exit(-1)
-except BaseException:
-    log.exception('exception while starting scheduler')
-    exit(-1)
-
-try:
-    log.debug('Starting Postgresql_db..')
-    modules.call('postgresql_db', 'start')
-
-    if not modules.is_up_or_running('postgresql_db'):
-        log.error('Couldn\'t start postgresql_db.')
-        exit(-1)
-except BaseException:
-    log.exception('exception while starting postgresql_db')
-    exit(-1)
-
-try:
     log.debug('Request status of all modules..')
     app.config['status'] = modules.get_response_all()
 except BaseException:

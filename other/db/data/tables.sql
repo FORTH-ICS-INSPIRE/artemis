@@ -27,7 +27,8 @@ INSERT INTO db_details (version, upgraded_on) VALUES (2, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
-    prefix inet, origin_as BIGINT,
+    prefix inet, 
+    origin_as BIGINT,
     peer_asn   BIGINT,
     as_path   BIGINT[],
     service   VARCHAR ( 50 ),
@@ -51,7 +52,7 @@ SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 CREATE TABLE IF NOT EXISTS hijacks (
     key VARCHAR ( 32 ) NOT NULL,
     type  VARCHAR ( 1 ),
-    prefix    inet,
+    prefix inet,
     hijack_as BIGINT,
     peers_seen   BIGINT[],
     peers_withdrawn BIGINT[],

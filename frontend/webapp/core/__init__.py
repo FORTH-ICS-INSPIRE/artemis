@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, g, render_template, request, current_app, jsonify, redirect
+from flask import Flask, g, render_template, request, current_app, jsonify, redirect, session
 from flask_bootstrap import Bootstrap
 from flask_security import current_user
 from flask_security.utils import hash_password
@@ -12,6 +12,11 @@ from webapp.configs.config import configure_app
 from webapp.core.modules import Modules_state
 from flask_security import user_registered
 from webapp.core.proxy_api import get_proxy_api
+from datetime import timedelta
+from webapp.core.modules import Modules_state
+from webapp.core.db_stats import DB_statistics
+from webapp.core.fetch_config import Configuration
+import time
 
 log = logging.getLogger('webapp_logger')
 
@@ -25,7 +30,6 @@ app = Flask(__name__,
 with app.app_context():
     configure_app(app)
     db.init_app(app)
-    Bootstrap(app)
     babel = Babel(app)
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
     log = logging.getLogger('werkzeug')
@@ -48,9 +52,47 @@ def load_user(payload):
     user = data_store.find_user(id=payload['identity'])
     return user
 
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=15)
 
 @app.before_first_request
-def setupDatabase():
+def setup():
+    app.config['configuration'] = Configuration()
+    while not app.config['configuration'].get_newest_config():
+        time.sleep(1)
+        log.info('waiting for postgrest')
+
+    app.config['db_stats'] = DB_statistics()
+
+    try:
+        app.config['VERSION'] = os.getenv('SYSTEM_VERSION')
+    except BaseException:
+        app.config['VERSION'] = 'Fail'
+        log.debug('failed to get version')
+
+    modules = Modules_state()
+
+    try:
+        log.debug('Starting Postgresql_db..')
+        modules.call('postgresql_db', 'start')
+
+        if not modules.is_up_or_running('postgresql_db'):
+            log.error('Couldn\'t start postgresql_db.')
+            exit(-1)
+    except BaseException:
+        log.exception('exception while starting postgresql_db')
+        exit(-1)
+
+    try:
+        log.debug('Request status of all modules..')
+        app.config['status'] = modules.get_response_all()
+    except BaseException:
+        log.exception('exception while retrieving status of modules..')
+        exit(-1)
+
+
     log.debug("setting database for the first time")
     if not os.path.isfile(app.config['DB_FULL_PATH']):
         db.create_all()
@@ -85,6 +127,8 @@ def setupDatabase():
                 log.exception("exception")
 
         create_user(data_store)
+
+
 
 
 @app.errorhandler(404)

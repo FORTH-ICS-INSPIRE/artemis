@@ -1,4 +1,4 @@
-version: '3'
+version: '2'
 services:
     backend:
         build: ./backend/
@@ -68,6 +68,7 @@ services:
             - "80:80"
             - "443:443"
             - "15672:15672"
+            - "8080:8080"
         environment:
             ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
             POSTGREST_HOST: ${POSTGREST_HOST}

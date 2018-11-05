@@ -1,0 +1,20 @@
+version: '2'
+services:
+    graphql:
+        image: hasura/graphql-engine:latest
+        container_name: graphql
+        restart: always
+        depends_on:
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - 8080
+        command:
+            - graphql-engine
+            - --database-url
+            - postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            - serve
+            - --enable-console
+            - --access-key
+            - "@rt3m1s."

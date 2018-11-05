@@ -165,21 +165,22 @@
                     "serverSide": true,
                     "searching": false,
                     ajax: function(data, callback, settings) {
-                        parameters['offset'] = data.start;
-                        parameters['limit'] = data.length;
-                        parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
                         $.ajax({
                             type: "POST",
-                            url: '{{ url_for('proxy_api') }}',
+                            url: "https://128.110.154.184:8080/v1alpha1/graphql",
                             dataType: "json",
-                            dataType: "json",
-                            data: { "action": "view_hijacks", "parameters" : JSON.stringify(parameters) },
-
+                            beforeSend: function(request) {
+                                request.setRequestHeader("X-Hasura-Access-Key", "@rt3m1s.");
+                                request.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+                            },
+                            data: JSON.stringify({
+                                query: '{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: '+data.length+', offset: '+data.start+', order_by: {'+columns[data.order[0].column].data+': '+data.order[0].dir+'}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }'
+                            }),
                             success: function(data, status, xhr){
                                 callback({
-                                    recordsTotal: data.total,
-                                    recordsFiltered: data.total,
-                                    data: data.results
+                                    recordsTotal: data.data.view_hijacks_aggregate.aggregate.totalCount,
+                                    recordsFiltered: data.data.view_hijacks_aggregate.aggregate.totalCount,
+                                    data: data.data.view_hijacks
                                 });
                             }
                         });

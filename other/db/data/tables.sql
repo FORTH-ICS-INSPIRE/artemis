@@ -109,3 +109,7 @@ CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 
+CREATE OR REPLACE FUNCTION inet_search (inet)
+RETURNS SETOF bgp_updates AS $$
+SELECT * FROM bgp_updates WHERE prefix << $1;
+$$ LANGUAGE SQL;

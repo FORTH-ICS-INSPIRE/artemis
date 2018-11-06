@@ -32,9 +32,9 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-lg-1 offset-lg-4">
+                    <div class="col-lg-1 offset-lg-5">
                     {% else %}
-                    <div class="col-lg-1 offset-lg-7">
+                    <div class="col-lg-1 offset-lg-8">
                     {% endif %}
                         <p id="display_entries_time"> Timewindow: </p>
                     </div>
@@ -55,6 +55,37 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-12">
+                <div class="row">
+                    <div class="col-lg-1 offset-lg-8">
+                        <div class="btn-group-toggle" data-toggle="buttons">
+                          <label class="btn btn-secondary active">
+                            <input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>
+                          </label>
+                        </div>
+                    </div>
+                    <div class="col-lg-2">
+                        <div class="form-group">
+                            <select class="form-control" id="action_selection">
+                                <option value="mark_resolved">Mark as Resolved</option>
+                                <option value="mark_ignored">Mark as Ignored</option>
+                                <option value="mark_seen">Mark as Seen</option>
+                                <option value="mark_not_seen">Mark as Not Seen</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-1">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <button id="apply_selected" type="button" disabled class="btn btn-primary">Apply</button>
+                            </div>
+                            <div class="col-lg-6">
+                                <button id="clear_all_selected" type="button" disabled class="btn btn-danger">Clear</button>
                             </div>
                         </div>
                     </div>
@@ -119,6 +150,7 @@
         {{super()}}
         <script>
             var table;
+            var selected_hijacks = [];
             var static_urls = {
                 "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
                 "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
@@ -156,7 +188,7 @@
                 'type': null
             };
 
-            var exlude_columns_from_search = ['Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Seen', 'More'];
+            var exlude_columns_from_search = ['Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Seen', 'Mark', 'More'];
 
             var custom_message_for_search = {};
 
@@ -319,6 +351,7 @@
                 }
             }
 
+
             function render_table(settings){
                construct_filter_hijacks_query();
 
@@ -375,13 +408,19 @@
                         { data: 'seen', "width": "14px" },
                         { data: 'hijack_link', "width": "14px" }
                     ],
+                    "fnRowCallback": function (nRow, aData, iDisplayIndex) {
+                        $(nRow).attr('id', aData['key']);
+                        if(selected_hijacks.indexOf(aData['key']) > -1){
+                            $(nRow).addClass('selected');                            
+                        }                       
+                    },
                     "columnDefs": [
                         {
                             "targets": [1,7,8],
                             "orderable": false
                         },
                         {
-                            "targets": [3,5,6,7,8],
+                            "targets": [3,5,6,7],
                             "className": "text-center",
                         }
                     ],
@@ -409,6 +448,32 @@
                     }
                 );
 
+                $('#hijacks tbody').on( 'click', 'tr', function () {
+                    if($(this).hasClass ("selected")) {
+                        selected_hijacks.splice($(this).attr("id"), 1);
+                    }else{
+                        selected_hijacks.push($(this).attr("id"));
+                    }
+                    $('#selected_hijacks_num').html(selected_hijacks.length)
+                    
+                    if(selected_hijacks.length > 0){
+                        $('#apply_selected').prop('disabled', false);
+                        $('#clear_all_selected').prop('disabled', false);
+                    }else{
+                        $('#clear_all_selected').prop('disabled', true);
+                        $('#apply_selected').prop('disabled', true);
+                    }
+                    $(this).toggleClass('selected');
+                } );
+
+                $('#clear_all_selected').click(function() {
+                    selected_hijacks = [];
+                    $('#selected_hijacks_num').html(selected_hijacks.length);
+                    table.draw(false);
+                    $('#clear_all_selected').prop('disabled', true);
+                    $('#apply_selected').prop('disabled', true);
+                } );
+
                 setInterval( function () {
                 if(refresh_status){
                         table.draw(false);
@@ -418,6 +483,22 @@
 
                 $('#timezone').html(display_timezone());
             });
+
+            $('#apply_selected').click(function() {
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ url_for('actions.submit_hijacks_actions') }}",
+                    data: {
+                        "hijack_keys" : JSON.stringify(selected_hijacks),
+                        "action": $("#action_selection option:selected").val()
+                    },
+                    success: function(result){
+                        table.draw(false);
+                    },
+                    dataType: 'json'
+                });
+            } );
+
 
             function refresh_handle(state){
                 if(state == 'disable'){

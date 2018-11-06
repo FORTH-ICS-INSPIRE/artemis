@@ -155,6 +155,9 @@ class Postgresql_db():
             self.hijack_seen_queue = Queue('db-hijack-seen', durable=False, auto_delete=True, max_priority=4,
                                            consumer_arguments={'x-priority': 4})
 
+            self.hijack_multiple_action_queue = Queue('db-hijack-multiple-action', durable=False, auto_delete=True, max_priority=4,
+                                           consumer_arguments={'x-priority': 4})
+
             self.config_request_rpc()
 
             log.info('started')
@@ -227,7 +230,14 @@ class Postgresql_db():
                     on_message=self.handle_hijack_seen,
                     prefetch_count=1,
                     no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_multiple_action_queue],
+                    on_message=self.handle_hijack_multiple_action,
+                    prefetch_count=1,
+                    no_ack=True
                 )
+
             ]
 
         def config_request_rpc(self):
@@ -484,7 +494,7 @@ class Postgresql_db():
             log.debug('payload: {}'.format(raw))
             try:
                 self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, time_ended=%s WHERE key=%s;',
+                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
                 self.db_conn.commit()
                 redis_hijack_key = redis_key(
@@ -513,7 +523,7 @@ class Postgresql_db():
             log.debug('payload: {}'.format(raw))
             try:
                 self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, ignored=true WHERE key=%s;',
+                    'UPDATE hijacks SET active=false, under_mitigation=false, ignored=true, seen=true WHERE key=%s;',
                     (raw['key'],
                      ))
                 self.db_conn.commit()
@@ -588,6 +598,72 @@ class Postgresql_db():
                     priority=4
                 )
                 log.exception('{}'.format(raw))
+
+        def handle_hijack_multiple_action(self, message):
+            raw = message.payload
+            log.debug('payload: {}'.format(raw))
+            action_ = ""
+            action_is_related_to_seen = False
+            try:
+                if(raw['action'] == 'mark_resolved'):
+                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND'
+                elif(raw['action'] == 'mark_ignored'):
+                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE ignored=false AND resolved=false AND'
+                elif(raw['action'] == 'mark_seen'):
+                    action_ = 'seen=true'
+                    action_is_related_to_seen = True
+                elif(raw['action'] == 'mark_not_seen'):
+                    action_ = 'seen=false'
+                    action_is_related_to_seen = True
+                else:
+                    action_ = None
+
+                if 'keys' not in raw or len(raw['keys']) == 0:
+                    action_ = None
+
+            except:
+                log.error('None action: {}'.format(raw))
+                action_ = None
+
+            if action_ == None:
+                self.producer.publish(
+                    {
+                        'status': 'rejected'
+                    },
+                    exchange='',
+                    routing_key=message.properties['reply_to'],
+                    correlation_id=message.properties['correlation_id'],
+                    serializer='json',
+                    retry=True,
+                    priority=4
+                )
+            else:
+                try:
+                    for hijack_key in raw['keys']:
+                        if action_is_related_to_seen == True:
+                            self.db_cur.execute(
+                                'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
+                            self.db_conn.commit()
+                        else:
+                            self.db_cur.execute(
+                                'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
+                            self.db_conn.commit()
+
+                except Exception:
+                    pass
+                    log.exception('{}'.format(raw))
+                finally:
+                    self.producer.publish(
+                        {
+                            'status': 'accepted'
+                        },
+                        exchange='',
+                        routing_key=message.properties['reply_to'],
+                        correlation_id=message.properties['correlation_id'],
+                        serializer='json',
+                        retry=True,
+                        priority=4
+                    )
 
         def _insert_bgp_updates(self):
             try:

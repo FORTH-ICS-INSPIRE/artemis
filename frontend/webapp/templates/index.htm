@@ -124,20 +124,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="list-group">
-                                <ul>
-                                    {% for stat in db_stats %}
-                                    <li class="list-group-item"> 
-                                        <div class="row">
-                                            <div class="col-lg-7">{{ stat[0] }}:</div>
-
-
-                                            <div class="col-lg-5">
-                                                <b>{{ stat[1] }}</b>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
+                                <ul id="db_stats_list"></ul>
                             </div>
                         </div>
                     </div>
@@ -155,6 +142,44 @@
                 { data: 'hijack_as' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }];
+
+            fetch("/api/graphql", {
+                method: "POST",
+                headers: {
+                    "X-Hasura-Access-Key": "@rt3m1s.",
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify({
+                    query: "{ Total_BGP_Updates: view_bgpupdates_aggregate { aggregate { count } } Total_BGP_Unhandled: view_bgpupdates_aggregate(where: {handled: {_eq: false}}) { aggregate { count } } Total_Hijacks: view_hijacks_aggregate { aggregate { count } } Resolved_Hijacks: view_hijacks_aggregate(where: {resolved: {_eq: true}}) { aggregate { count } } Hijacks_under_Mitigation: view_hijacks_aggregate(where: {under_mitigation: {_eq: true}}) { aggregate { count } } Ongoing_Hijacks: view_hijacks_aggregate(where: {active: {_eq: true}}) { aggregate { count } } Ignored_Hijacks: view_hijacks_aggregate(where: {ignored: {_eq: true}}) { aggregate { count } } Withdrawn_Hijacks: view_hijacks_aggregate(where: {withdrawn: {_eq: true}}) { aggregate { count } } }"
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                var ul = document.getElementById("db_stats_list");
+                for (var key in data.data) {
+                    if (data.data.hasOwnProperty(key)) {
+                        var newLi = document.createElement('li');
+                        newLi.className = "list-group-item";
+
+                        var newRow = document.createElement('div');
+                        newRow.className = "row";
+
+                        var newCol1 = document.createElement('div');
+                        newCol1.className = "col-lg-7";
+                        newCol1.innerHTML = key.replace(/_/g, " ");
+
+                        var newCol2 = document.createElement('div');
+                        newCol2.className = "col-lg-5";
+                        newCol2.innerHTML = "<b>"+data.data[key]["aggregate"]["count"]+"</b>";
+
+                        newRow.appendChild(newCol1);
+                        newRow.appendChild(newCol2);
+                        newLi.appendChild(newRow);
+                        ul.appendChild(newLi);
+                    }
+                }
+            })
+            .catch(error => console.error(error));
 
             function render_table(){
                 var parameters = {};

@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.6.7
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
@@ -10,7 +10,9 @@ WORKDIR /root
 
 COPY . ./
 
+
 RUN pip3 --no-cache-dir install -r requirements.txt
+RUN make clean && make
 
 RUN mkdir src
 WORKDIR src

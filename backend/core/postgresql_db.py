@@ -901,6 +901,9 @@ class Postgresql_db():
             return None
 
 
-if __name__ == '__main__':
+def run():
     service = Postgresql_db()
     service.run()
+
+if __name__ == '__main__':
+    run()

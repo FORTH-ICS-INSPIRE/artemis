@@ -190,25 +190,25 @@
                     "serverSide": true,
                     "searching": false,
                     ajax: function(data, callback, settings) {
-                        $.ajax({
-                            type: "POST",
-                            url: "/api/graphql",
-                            dataType: "json",
-                            beforeSend: function(request) {
-                                request.setRequestHeader("X-Hasura-Access-Key", "@rt3m1s.");
-                                request.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+                        fetch("/api/graphql", {
+                            method: "POST",
+                            headers: {
+                                "X-Hasura-Access-Key": "@rt3m1s.",
+                                "Content-Type": "application/json; charset=utf-8"
                             },
-                            data: JSON.stringify({
-                                query: '{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: '+data.length+', offset: '+data.start+', order_by: {'+columns[data.order[0].column].data+': '+data.order[0].dir+'}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }'
-                            }),
-                            success: function(data, status, xhr){
+                            body: JSON.stringify({
+                                query: "{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: "+data.length+", offset: "+data.start+", order_by: {"+columns[data.order[0].column].data+": "+data.order[0].dir+"}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
                                 callback({
                                     recordsTotal: data.data.view_hijacks_aggregate.aggregate.totalCount,
                                     recordsFiltered: data.data.view_hijacks_aggregate.aggregate.totalCount,
                                     data: data.data.view_hijacks
-                                });
-                            }
-                        });
+                                })
+                        })
+                        .catch(error => console.error(error));
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [

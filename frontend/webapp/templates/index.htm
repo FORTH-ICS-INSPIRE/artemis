@@ -132,6 +132,7 @@
             </div>
     {% block scripts %}
         {{super()}}
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script>
             var table;
 
@@ -143,43 +144,34 @@
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }];
 
-            fetch("/api/graphql", {
-                method: "POST",
-                headers: {
-                    "X-Hasura-Access-Key": "@rt3m1s.",
-                    "Content-Type": "application/json; charset=utf-8"
-                },
-                body: JSON.stringify({
-                    query: "{ Total_BGP_Updates: view_bgpupdates_aggregate { aggregate { count } } Total_BGP_Unhandled: view_bgpupdates_aggregate(where: {handled: {_eq: false}}) { aggregate { count } } Total_Hijacks: view_hijacks_aggregate { aggregate { count } } Resolved_Hijacks: view_hijacks_aggregate(where: {resolved: {_eq: true}}) { aggregate { count } } Hijacks_under_Mitigation: view_hijacks_aggregate(where: {under_mitigation: {_eq: true}}) { aggregate { count } } Ongoing_Hijacks: view_hijacks_aggregate(where: {active: {_eq: true}}) { aggregate { count } } Ignored_Hijacks: view_hijacks_aggregate(where: {ignored: {_eq: true}}) { aggregate { count } } Withdrawn_Hijacks: view_hijacks_aggregate(where: {withdrawn: {_eq: true}}) { aggregate { count } } }"
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
+
+
+            function render_db_stats(data) {
                 var ul = document.getElementById("db_stats_list");
-                for (var key in data.data) {
-                    if (data.data.hasOwnProperty(key)) {
-                        var newLi = document.createElement('li');
-                        newLi.className = "list-group-item";
+                ul.innerHTML = '';
+                for (var key in data) {
+                    var newLi = document.createElement('li');
+                    newLi.className = "list-group-item";
 
-                        var newRow = document.createElement('div');
-                        newRow.className = "row";
+                    var newRow = document.createElement('div');
+                    newRow.className = "row";
 
-                        var newCol1 = document.createElement('div');
-                        newCol1.className = "col-lg-7";
-                        newCol1.innerHTML = key.replace(/_/g, " ");
+                    var newCol1 = document.createElement('div');
+                    newCol1.className = "col-lg-7";
+                    newCol1.innerHTML = key.replace(/_/g, " ");
 
-                        var newCol2 = document.createElement('div');
-                        newCol2.className = "col-lg-5";
-                        newCol2.innerHTML = "<b>"+data.data[key]["aggregate"]["count"]+"</b>";
+                    var newCol2 = document.createElement('div');
+                    newCol2.className = "col-lg-5";
+                    newCol2.innerHTML = "<b>"+data[key]["aggregate"]["count"]+"</b>";
 
-                        newRow.appendChild(newCol1);
-                        newRow.appendChild(newCol2);
-                        newLi.appendChild(newRow);
-                        ul.appendChild(newLi);
-                    }
+                    newRow.appendChild(newCol1);
+                    newRow.appendChild(newCol2);
+                    newLi.appendChild(newRow);
+                    ul.appendChild(newLi);
                 }
-            })
-            .catch(error => console.error(error));
+            }
+
+            fetchDbStatsLive(render_db_stats);
 
             function render_table(){
                 var parameters = {};

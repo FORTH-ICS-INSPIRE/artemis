@@ -510,7 +510,7 @@ class Postgresql_db():
             log.debug('payload: {}'.format(raw))
             try:
                 self.db_cur.execute(
-                    'UPDATE hijacks SET mitigation_started=%s, under_mitigation=true WHERE key=%s;',
+                    'UPDATE hijacks SET mitigation_started=%s, seen=true, under_mitigation=true WHERE key=%s;',
                     (datetime.datetime.fromtimestamp(
                         raw['time']),
                         raw['key']))
@@ -523,7 +523,7 @@ class Postgresql_db():
             log.debug('payload: {}'.format(raw))
             try:
                 self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, ignored=true, seen=true WHERE key=%s;',
+                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true, seen=true WHERE key=%s;',
                     (raw['key'],
                      ))
                 self.db_conn.commit()
@@ -618,11 +618,11 @@ class Postgresql_db():
                 else:
                     action_ = None
 
-                if 'keys' not in raw or len(raw['keys']) == 0:
+                if len(raw['keys']) == 0:
                     action_ = None
 
             except:
-                log.error('None action: {}'.format(raw))
+                log.exception('None action: {}'.format(raw))
                 action_ = None
 
             if action_ == None:
@@ -650,7 +650,6 @@ class Postgresql_db():
                             self.db_conn.commit()
 
                 except Exception:
-                    pass
                     log.exception('{}'.format(raw))
                 finally:
                     self.producer.publish(

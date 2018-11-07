@@ -25,7 +25,7 @@ class Resolve_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Resolve_hijack failed to connect to rabbitmq..')
+            log.exception('Resolve_hijack failed to connect to rabbitmq..')
 
     def resolve(self):
         log.debug(
@@ -59,7 +59,7 @@ class Mitigate_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Resolve_hijack failed to connect to rabbitmq..')
+            log.exception('Resolve_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -98,7 +98,7 @@ class Ignore_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Ignore_hijack failed to connect to rabbitmq..')
+            log.exception('Ignore_hijack failed to connect to rabbitmq..')
 
     def ignore(self):
         log.debug("sending ignore message")
@@ -131,7 +131,7 @@ class Comment_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Comment_hijack failed to connect to rabbitmq..')
+            log.exception('Comment_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -184,7 +184,7 @@ class Submit_new_config():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('New_config failed to connect to rabbitmq..')
+            log.exception('New_config failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -249,7 +249,7 @@ class Seen_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Seen_hijack failed to connect to rabbitmq..')
+            log.exception('Seen_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -306,7 +306,7 @@ class Hijacks_multiple_action():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Hijacks_multiple_action failed to connect to rabbitmq..')
+            log.exception('Hijacks_multiple_action failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:

@@ -62,7 +62,7 @@
             </div>
             <div class="col-lg-12">
                 <div class="row">
-                    <div class="col-lg-1 offset-lg-8">
+                    <div class="col-lg-2 offset-lg-7">
                         <div class="btn-group-toggle" data-toggle="buttons">
                           <label class="btn btn-secondary active">
                             <input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>
@@ -411,8 +411,8 @@
                     "fnRowCallback": function (nRow, aData, iDisplayIndex) {
                         $(nRow).attr('id', aData['key']);
                         if(selected_hijacks.indexOf(aData['key']) > -1){
-                            $(nRow).addClass('selected');                            
-                        }                       
+                            $(nRow).addClass('selected');
+                        }
                     },
                     "columnDefs": [
                         {
@@ -455,7 +455,7 @@
                         selected_hijacks.push($(this).attr("id"));
                     }
                     $('#selected_hijacks_num').html(selected_hijacks.length)
-                    
+
                     if(selected_hijacks.length > 0){
                         $('#apply_selected').prop('disabled', false);
                         $('#clear_all_selected').prop('disabled', false);

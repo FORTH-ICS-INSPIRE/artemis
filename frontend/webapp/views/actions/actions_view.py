@@ -5,10 +5,11 @@ from flask_security.utils import hash_password, verify_password
 from webapp.data.models import db, User
 from webapp.templates.forms import (ApproveUserForm, MakeAdminForm, DeleteUserForm, ChangePasswordForm,
                                     CheckboxMonitorForm, CheckboxDetectorForm, CheckboxMitigatorForm)
-from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack, Comment_hijack, Seen_hijack
+from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack, Comment_hijack, Seen_hijack, Hijacks_multiple_action
 from webapp.core.modules import Modules_state
 from webapp.core import app
 import logging
+import json
 
 log = logging.getLogger('webapp_logger')
 
@@ -240,3 +241,17 @@ def submit_hijack_seen():
     else:
         return jsonify({'status': 'fail'})
 
+
+@actions.route('/hijacks_actions', methods=['POST'])
+@roles_required('admin')
+def submit_hijacks_actions():
+    hijack_keys = json.loads(request.values.get('hijack_keys'))
+    action = request.values.get('action')
+
+    multiple_action_ = Hijacks_multiple_action()
+    success = multiple_action_.send(hijack_keys, action)
+
+    if success:
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'fail'})

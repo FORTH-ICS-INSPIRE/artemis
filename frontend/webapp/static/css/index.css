@@ -103,3 +103,7 @@ tr.shown td.details-control {
 .hijack-seen-button {
     display: none;
 }
+
+.selected {
+    background-color: #ffc10766!important;
+}

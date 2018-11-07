@@ -25,7 +25,7 @@ class Resolve_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Resolve_hijack failed to connect to rabbitmq..')
+            log.exception('Resolve_hijack failed to connect to rabbitmq..')
 
     def resolve(self):
         log.debug(
@@ -59,7 +59,7 @@ class Mitigate_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Resolve_hijack failed to connect to rabbitmq..')
+            log.exception('Resolve_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -98,7 +98,7 @@ class Ignore_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Ignore_hijack failed to connect to rabbitmq..')
+            log.exception('Ignore_hijack failed to connect to rabbitmq..')
 
     def ignore(self):
         log.debug("sending ignore message")
@@ -131,7 +131,7 @@ class Comment_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Comment_hijack failed to connect to rabbitmq..')
+            log.exception('Comment_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -184,7 +184,7 @@ class Submit_new_config():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('New_config failed to connect to rabbitmq..')
+            log.exception('New_config failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -249,7 +249,7 @@ class Seen_hijack():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.error('Comment_hijack failed to connect to rabbitmq..')
+            log.exception('Seen_hijack failed to connect to rabbitmq..')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -274,6 +274,63 @@ class Seen_hijack():
                 },
                 exchange='',
                 routing_key='db-hijack-seen',
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=self.correlation_id,
+                priority=4
+            )
+        with Consumer(self.connection,
+                      on_message=self.on_response,
+                      queues=[callback_queue],
+                      no_ack=True):
+            while self.response is None:
+                self.connection.drain_events()
+        if self.response['status'] == 'accepted':
+            return True
+        else:
+            return False
+
+class Hijacks_multiple_action():
+
+    def __init__(self):
+        self.connection = None
+        self.init_conn()
+        self.hijack_exchange = Exchange(
+            'hijack-update',
+            type='direct',
+            durable=False,
+            delivery_mode=1)
+
+    def init_conn(self):
+        try:
+            self.connection = Connection(RABBITMQ_HOST)
+        except BaseException:
+            log.exception('Hijacks_multiple_action failed to connect to rabbitmq..')
+
+    def on_response(self, message):
+        if message.properties['correlation_id'] == self.correlation_id:
+            self.response = message.payload
+
+    def send(self, hijack_keys, action):
+        log.debug("sending")
+        self.response = None
+        self.correlation_id = uuid()
+        callback_queue = Queue(uuid(),
+                               durable=False,
+                               exclusive=True,
+                               auto_delete=True,
+                               max_priority=4,
+                               consumer_arguments={
+            'x-priority': 4})
+        with Producer(self.connection) as producer:
+            producer.publish(
+                {
+                    'keys': hijack_keys,
+                    'action': action
+                },
+                exchange='',
+                routing_key='db-hijack-multiple-action',
                 retry=True,
                 declare=[callback_queue],
                 reply_to=callback_queue.name,

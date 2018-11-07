@@ -241,6 +241,9 @@ class Monitor():
                         self.prefixes), p))
 
 
-if __name__ == '__main__':
+def run():
     service = Monitor()
     service.run()
+
+if __name__ == '__main__':
+    run()

@@ -135,6 +135,11 @@
         <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script>
             var table;
+            var static_urls = {
+                "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
+                "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
+            };
+            var hijack_redirect = "{{ url_for('main.display_hijack') }}";
 
             var columns = [
                 { data: 'time_detected' },
@@ -179,55 +184,37 @@
 
             function render_table(ws){
                 table = $('#hijacks').DataTable( {
-                    "processing": true,
+                    "processing": false,
                     "serverSide": true,
                     "searching": false,
                     "ajax": (data, callback, settings) => {
 						var query = "{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: "+data.length+", offset: "+data.start+", order_by: {"+columns[data.order[0].column].data+": "+data.order[0].dir+"}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
 						fetchDatatableLive(ws, callback, query);
                     },
-					"drawCallback": () => console.log('lol'),
                     "order": [[ 0, "desc" ]],
                     "columns": [
-                        { data: 'time_detected',
-                            render: function(data, type, row){
-                                return transform_date_to_local(data);
-                            }
-                        },
+                        { data: 'time_detected', "width": "150px" },
                         {
                             data: function( row, type, val, meta ) {
                                 return format_hijack_status(row)
                             }
                         },
                         { data: 'prefix' },
-                        { data: 'type' },
-                        { data: 'hijack_as',
-                            render: function(data, type, row){
-                                return format_hijack_as(data)
-                            }
-                        },
-                        { data: 'num_peers_seen' },
-                        { data: 'num_asns_inf' },
-                        {
-                            data: 'seen',
-                            render: function(data, type, row){
-                                if(data == true){
-                                    return '<img src=\"{{ url_for('static', filename='images/handled.png') }}\" />'
-                                }else{
-                                    return '<img src=\"{{ url_for('static', filename='images/unhadled.png') }}\"/>'
-                                }
-                            }
-                        },
-                        {
-                            data: 'key',
-                            render: function(data, type, row){
-                                return '<a href="{{ url_for('main.display_hijack') }}?key=' + data + '">View</a>'
-                            }
-                        }
+                        { data: 'type', "width": "14px" },
+                        { data: 'hijack_as' },
+                        { data: 'num_peers_seen', "width": "30px" },
+                        { data: 'num_asns_inf', "width": "30px" },
+                        { data: 'seen', "width": "14px" },
+                        { data: 'hijack_link', "width": "14px" }
                     ],
-                    "columnDefs": [ {
-                        "targets": [1,7,8],
-                        "orderable": false
+                    "columnDefs": [
+                        {
+                            "targets": [1,7,8],
+                            "orderable": false
+                        },
+                        {
+                            "targets": [3,5,6,7,8],
+                            "className": "text-center",
                         }
                     ],
                     "language": {

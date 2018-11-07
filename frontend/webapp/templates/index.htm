@@ -132,7 +132,6 @@
             </div>
     {% block scripts %}
         {{super()}}
-        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script>
             var table;
             var static_urls = {
@@ -156,31 +155,13 @@
             );
 
             function render_db_stats(data) {
-                var ul = document.getElementById("db_stats_list");
-                ul.innerHTML = '';
+                $('#db_stats_list').empty();
                 for (var key in data) {
-                    var newLi = document.createElement('li');
-                    newLi.className = "list-group-item";
-
-                    var newRow = document.createElement('div');
-                    newRow.className = "row";
-
-                    var newCol1 = document.createElement('div');
-                    newCol1.className = "col-lg-7";
-                    newCol1.innerHTML = key.replace(/_/g, " ");
-
-                    var newCol2 = document.createElement('div');
-                    newCol2.className = "col-lg-5";
-                    newCol2.innerHTML = "<b>"+data[key]["aggregate"]["count"]+"</b>";
-
-                    newRow.appendChild(newCol1);
-                    newRow.appendChild(newCol2);
-                    newLi.appendChild(newRow);
-                    ul.appendChild(newLi);
+                    var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-7">';
+                    html_ += key.replace(/_/g, " ") + '</div><div class="col-lg-5"><b>' + data[key]["aggregate"]["count"] + '</b></div></div></li>';
+                    $('#db_stats_list').append(html_);
                 }
             }
-
-            fetchDbStatsLive(ws, render_db_stats);
 
             function render_table(ws){
                 table = $('#hijacks').DataTable( {
@@ -188,7 +169,9 @@
                     "serverSide": true,
                     "searching": false,
                     "ajax": (data, callback, settings) => {
-						var query = "{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: "+data.length+", offset: "+data.start+", order_by: {"+columns[data.order[0].column].data+": "+data.order[0].dir+"}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
+						var query = "{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: " + data.length
+                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + data.order[0].dir 
+                        query += "}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
 						fetchDatatableLive(ws, callback, query);
                     },
                     "order": [[ 0, "desc" ]],
@@ -225,11 +208,13 @@
 
             $(document).ready(function(){
                 render_table(ws);
+                fetchDbStatsLive(ws, render_db_stats);
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
                 $('#timezone').html(display_timezone());
             });
 
         </script>
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>

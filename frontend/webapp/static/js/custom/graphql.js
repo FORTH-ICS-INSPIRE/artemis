@@ -62,7 +62,7 @@ function fetchDatatableLive(ws, cb_func, query) {
                 cb_func({
                     recordsTotal: data.payload.data.view_hijacks_aggregate.aggregate.totalCount,
                     recordsFiltered: data.payload.data.view_hijacks_aggregate.aggregate.totalCount,
-                    data: data.payload.data.view_hijacks
+                    data: format_hijacks_datatable(data.payload.data.view_hijacks)
                 });
             }
         });

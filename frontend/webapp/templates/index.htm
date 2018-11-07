@@ -38,7 +38,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="row">
-                                <div class="col-lg-12"> 
+                                <div class="col-lg-12">
                                     <table class="table table-striped table-bordered" id="hijacks">
                                         <thead>
                                             <th>Time Detected</th>
@@ -145,6 +145,10 @@
                 { data: 'num_asns_inf' }];
 
 
+            const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+            ws.addEventListener('open', (event) =>
+                ws.send(JSON.stringify({type:"connection_init",payload:{headers:{"Content-Type":"application/json","X-Hasura-Access-Key":"@rt3m1s."}}}))
+            );
 
             function render_db_stats(data) {
                 var ul = document.getElementById("db_stats_list");
@@ -171,37 +175,18 @@
                 }
             }
 
-            fetchDbStatsLive(render_db_stats);
+            fetchDbStatsLive(ws, render_db_stats);
 
-            function render_table(){
-                var parameters = {};
-                parameters['and'] = "(active.eq.true)";
-
+            function render_table(ws){
                 table = $('#hijacks').DataTable( {
                     "processing": true,
                     "serverSide": true,
                     "searching": false,
-                    ajax: function(data, callback, settings) {
-                        fetch("/api/graphql", {
-                            method: "POST",
-                            headers: {
-                                "X-Hasura-Access-Key": "@rt3m1s.",
-                                "Content-Type": "application/json; charset=utf-8"
-                            },
-                            body: JSON.stringify({
-                                query: "{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: "+data.length+", offset: "+data.start+", order_by: {"+columns[data.order[0].column].data+": "+data.order[0].dir+"}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                                callback({
-                                    recordsTotal: data.data.view_hijacks_aggregate.aggregate.totalCount,
-                                    recordsFiltered: data.data.view_hijacks_aggregate.aggregate.totalCount,
-                                    data: data.data.view_hijacks
-                                })
-                        })
-                        .catch(error => console.error(error));
+                    "ajax": (data, callback, settings) => {
+						var query = "{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: "+data.length+", offset: "+data.start+", order_by: {"+columns[data.order[0].column].data+": "+data.order[0].dir+"}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
+						fetchDatatableLive(ws, callback, query);
                     },
+					"drawCallback": () => console.log('lol'),
                     "order": [[ 0, "desc" ]],
                     "columns": [
                         { data: 'time_detected',
@@ -251,12 +236,8 @@
                 });
             }
 
-            setInterval( function () {
-                table.ajax.reload(null, false);
-            }, 5000 );
-
-            $(document).ready(function(){ 
-                render_table({});
+            $(document).ready(function(){
+                render_table(ws);
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
                 $('#timezone').html(display_timezone());
             });
@@ -270,4 +251,4 @@
 
     {% endblock %}
 {% endblock %}
-        
+

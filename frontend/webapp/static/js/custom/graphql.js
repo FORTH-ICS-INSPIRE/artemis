@@ -46,28 +46,60 @@ var db_stats_query = `{
   }
 }`;
 
-function fetchDbStatsLive(cb_func) {
-    var ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
-
-    ws.addEventListener('open', (event) => {
-        ws.send(JSON.stringify({type:"connection_init",payload:{headers:{"Content-Type":"application/json","X-Hasura-Access-Key":"@rt3m1s."}}}));
-        ws.send(JSON.stringify({
-            id: "1",
-            type: "start",
-            payload: {
-                variables: {},
-                extensions: {},
-                operationName: "getLive",
-                query: "subscription getLive " + db_stats_query
-            }
-        }));
-    });
+function fetchDbStatsLive(ws, cb_func) {
+	waitForConnection(ws, JSON.stringify({id: "1", type: "stop"}));
+	waitForConnection(ws, JSON.stringify({
+		id: "1",
+		type: "start",
+		payload: {
+			variables: {},
+			extensions: {},
+			operationName: "getLiveStats",
+			query: "subscription getLiveStats " + db_stats_query
+		}
+	}));
 
     // Listen for messages
     ws.addEventListener('message', (event) => {
         data = JSON.parse(event.data);
-        if(data.type === 'data') {
+        if(data.type === 'data' && data.id === "1") {
             cb_func(data.payload.data);
+        }
+    });
+
+}
+
+function waitForConnection(ws, message) {
+    if (ws.readyState === 1) {
+        ws.send(message);
+    } else {
+        setTimeout(() => waitForConnection(ws, message), 1000);
+    }
+};
+
+function fetchDatatableLive(ws, cb_func, query) {
+	waitForConnection(ws, JSON.stringify({id: "2", type: "stop"}));
+    waitForConnection(ws, JSON.stringify({
+        id: "2",
+        type: "start",
+        payload: {
+            variables: {},
+            extensions: {},
+            operationName: "getLiveHij",
+            query: "subscription getLiveHij " + query
+        }
+    }));
+
+    // Need to remove previous event listener...
+    ws.addEventListener('message', (event) => {
+        data = JSON.parse(event.data);
+		console.log(data);
+        if(data.type === 'data' && data.id === "2") {
+            cb_func({
+                recordsTotal: data.payload.data.view_hijacks_aggregate.aggregate.totalCount,
+                recordsFiltered: data.payload.data.view_hijacks_aggregate.aggregate.totalCount,
+                data: data.payload.data.view_hijacks
+            });
         }
     });
 

@@ -55,7 +55,7 @@ services:
             - ./frontend/db/:/etc/webapp/db/
     nginx:
         image: nginx:latest
-        container_name: production_nginx
+        container_name: nginx
         restart: always
         depends_on:
             - frontend

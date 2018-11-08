@@ -5,7 +5,7 @@ from flask_security import current_user
 from flask_security.utils import hash_password
 from flask_security.decorators import login_required, roles_accepted
 from flask_babel import Babel
-from flask_jwt_extended import JWTManager, create_access_token, set_access_cookies
+from flask_jwt_extended import JWTManager, create_access_token
 from webapp.data.models import db
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
@@ -190,7 +190,6 @@ def jwt_auth():
     access_token = create_access_token(identity=user)
     # Set the JWT cookies in the response
     resp = jsonify({'access_token': access_token})
-    set_access_cookies(resp, access_token)
     return resp, 200
 
 

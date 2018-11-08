@@ -47,6 +47,7 @@ services:
             POSTGREST_FLASK_HOST: ${POSTGREST_HOST}:${POSTGREST_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
             # SYSLOG_HOST: 'syslog:514'
         volumes:
             - ./frontend/:/root/
@@ -132,7 +133,7 @@ services:
             HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_CONSOLE}
-            HASURA_GRAPHQL_AUTH_HOOK: http://frontend:8000/api/webhook
+            HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'
         command:
             - graphql-engine
             - serve

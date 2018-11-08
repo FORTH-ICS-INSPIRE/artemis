@@ -150,24 +150,6 @@
                 { data: 'num_asns_inf' }];
 
 
-            const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
-            ws.addEventListener('open', (event) => {
-                fetch("/jwt/auth", {
-                    method: "GET",
-                })
-                .then(response => response.json())
-                .then(data => ws.send(JSON.stringify({
-                    type:"connection_init",
-                    payload:{
-                        headers:{
-                            "Content-Type":"application/json",
-                            "Authorization":"Bearer " + data['access_token']
-                        }
-                    }
-                })))
-                .catch(error => console.error(error));
-            });
-
             function render_db_stats(data) {
                 $('#db_stats_list').empty();
                 for (var key in data) {
@@ -220,9 +202,32 @@
                 });
             }
 
-            $(document).ready(function(){
-                render_table(ws);
-                fetchDbStatsLive(ws, render_db_stats);
+            $(document).ready(() => {
+                const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                        render_table(ws);
+                        fetchDbStatsLive(ws, render_db_stats);
+                    }
+                });
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
                 $('#timezone').html(display_timezone());
             });

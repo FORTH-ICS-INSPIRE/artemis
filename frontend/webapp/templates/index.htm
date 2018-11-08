@@ -151,9 +151,22 @@
 
 
             const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
-            ws.addEventListener('open', (event) =>
-                ws.send(JSON.stringify({type:"connection_init",payload:{headers:{"Content-Type":"application/json","X-Hasura-Access-Key":"@rt3m1s."}}}))
-            );
+            ws.addEventListener('open', (event) => {
+                fetch("/jwt/auth", {
+                    method: "GET",
+                })
+                .then(response => response.json())
+                .then(data => ws.send(JSON.stringify({
+                    type:"connection_init",
+                    payload:{
+                        headers:{
+                            "Content-Type":"application/json",
+                            "Authorization":"Bearer " + data['access_token']
+                        }
+                    }
+                })))
+                .catch(error => console.error(error));
+            });
 
             function render_db_stats(data) {
                 $('#db_stats_list').empty();

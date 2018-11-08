@@ -1,11 +1,11 @@
 import os
 import logging
-from flask import Flask, g, render_template, request, current_app, jsonify, redirect, session, make_response
+from flask import Flask, g, render_template, request, current_app, jsonify, redirect, session
 from flask_security import current_user
 from flask_security.utils import hash_password
 from flask_security.decorators import login_required, roles_accepted
 from flask_babel import Babel
-from flask_jwt_extended import JWTManager, create_access_token, set_access_cookies, get_jwt_claims, jwt_optional, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, set_access_cookies, get_jwt_claims, jwt_optional, get_jwt_identity, jwt_required
 from webapp.data.models import db
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
@@ -172,13 +172,13 @@ def on_user_registered(app, user, confirm_token):
     db.session.commit()
 
 
-@app.route('/api/webhook', methods=['GET'])
+@app.route('/jwt/auth', methods=['GET'])
 @jwt_optional
-def jwt_webhook():
-    jwt_user = get_jwt_identity()
+def jwt_auth():
+    user = get_jwt_identity()
 
     # if JWT cookie or header is not preset generate a new one
-    if jwt_user is None:
+    if user is None:
         user = {}
         # if user is not logged in check parameters
         if not current_user.is_authenticated:
@@ -201,26 +201,27 @@ def jwt_webhook():
                 'password': current_user.password,
                 'role': current_user.roles[0].name
             })
-        # Create the tokens we will be sending back to the user
-        access_token = create_access_token(identity=user)
-        # Set the JWT cookies in the response
-        resp = make_response(redirect('/api/webhook'))
-        set_access_cookies(resp, access_token)
-        return resp
-    else:
+    # Create the tokens we will be sending back to the user
+    access_token = create_access_token(identity=user)
+    # Set the JWT cookies in the response
+    resp = jsonify({'access_token': access_token})
+    set_access_cookies(resp, access_token)
+    return resp, 200
+
+
+@app.route('/api/webhook', methods=['GET'])
+@jwt_required
+def jwt_webhook():
         claims = get_jwt_claims()
         return jsonify({
-            'x-hasura-default-role': claims['default'],
-            'x-hasura-allowed-role': claims['allowed']
+            'x-hasura-role': claims['role'],
+            'x-hasura-user-id': str(claims['id'])
         }), 200
 
 
 @jwt.user_claims_loader
 def add_claims_to_access_token(identity):
-    return {
-        'default': identity['role'],
-        'allowed': [identity['role']]
-    }
+    return identity
 
 
 @app.route('/', methods=['GET', 'POST'])

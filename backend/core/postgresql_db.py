@@ -523,7 +523,7 @@ class Postgresql_db():
             log.debug('payload: {}'.format(raw))
             try:
                 self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true, seen=true WHERE key=%s;',
+                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                     (raw['key'],
                      ))
                 self.db_conn.commit()

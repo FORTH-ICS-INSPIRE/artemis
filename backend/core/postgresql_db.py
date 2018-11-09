@@ -88,8 +88,8 @@ class Postgresql_db():
 
             try:
                 server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
-                cmd_ = 'INSERT INTO process_states (name, running, timestamp) ' \
-                        'VALUES (%s, %s, current_timestamp) ON CONFLICT (name) DO UPDATE ' \
+                cmd_ = 'INSERT INTO process_states (name, running) ' \
+                        'VALUES (%s, %s) ON CONFLICT (name) DO UPDATE ' \
                         'SET running = EXCLUDED.running'
                 processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
                         if x['name'] != 'listener']

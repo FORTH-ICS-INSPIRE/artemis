@@ -118,7 +118,19 @@ $$ LANGUAGE SQL;
 CREATE TABLE IF NOT EXISTS process_states (
     name VARCHAR (32) UNIQUE,
     running BOOLEAN DEFAULT FALSE,
-    timestamp TIMESTAMP  NOT NULL
+    timestamp TIMESTAMP default current_timestamp
 );
+
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.timestamp = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_process_timestamp
+BEFORE UPDATE ON process_states
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 
 CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;

@@ -19,6 +19,7 @@ services:
             DATABASE_PASSWORD: ${DB_PASS}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
         volumes:
             - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/

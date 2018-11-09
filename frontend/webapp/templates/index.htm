@@ -227,6 +227,7 @@
                         ws.removeEventListener('message', conn_ack);
                         render_table(ws);
                         fetchDbStatsLive(ws, render_db_stats);
+                        fetchProcStatesLive(ws, console.log);
                     }
                 });
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")

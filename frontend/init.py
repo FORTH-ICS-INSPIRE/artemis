@@ -1,3 +1,5 @@
+from webapp.utils import get_logger
+log = get_logger()
 from webapp.core import app
 
 if __name__ == '__main__':

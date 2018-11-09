@@ -1,4 +1,5 @@
 var db_stats_query = "{ Total_BGP_Updates: view_bgpupdates_aggregate { aggregate { count } } Total_Unhandled_Updates: view_bgpupdates_aggregate(where: {handled: {_eq: false}}) { aggregate { count } } Total_Hijacks: view_hijacks_aggregate { aggregate { count } } Resolved_Hijacks: view_hijacks_aggregate(where: {resolved: {_eq: true}}) { aggregate { count } } Mitigation_Hijacks: view_hijacks_aggregate(where: {under_mitigation: {_eq: true}}) { aggregate { count } } Ongoing_Hijacks: view_hijacks_aggregate(where: {active: {_eq: true}}) { aggregate { count } } Ignored_Hijacks: view_hijacks_aggregate(where: {ignored: {_eq: true}}) { aggregate { count } } Withdrawn_Hijacks: view_hijacks_aggregate(where: {withdrawn: {_eq: true}}) { aggregate { count } } Seen_Hijacks: view_hijacks_aggregate(where: {seen: {_eq: true}}) { aggregate { count } } }";
+var proc_stats_query = "{ view_processes { name running timestamp } }";
 
 function waitForConnection(ws, message) {
     if (ws.readyState === 1) {
@@ -37,7 +38,6 @@ function fetchDbStatsLive(ws, cb_func) {
 
 }
 
-
 var datatableCalled = false;
 function fetchDatatableLive(ws, cb_func, query) {
     if(datatableCalled) {
@@ -67,6 +67,34 @@ function fetchDatatableLive(ws, cb_func, query) {
             }
         });
         datatableCalled = true;
+    }
+}
+
+var processStateCalled = false;
+function fetchProcStatesLive(ws, cb_func) {
+    if(processStateCalled) {
+        waitForConnection(ws, JSON.stringify({id: "3", type: "stop"}));
+    }
+    waitForConnection(ws, JSON.stringify({
+        id: "3",
+        type: "start",
+        payload: {
+            variables: {},
+            extensions: {},
+            operationName: "getStates",
+            query: "subscription getStates " + proc_stats_query
+        }
+    }));
+
+    // Need to remove previous event listener...
+    if(!processStateCalled) {
+        ws.addEventListener('message', (event) => {
+            data = JSON.parse(event.data);
+            if(data.type === 'data' && data.id === "3") {
+                cb_func(data.payload.data);
+            }
+        });
+        processStateCalled = true;
     }
 }
 

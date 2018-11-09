@@ -18,3 +18,4 @@ WTForms==2.1
 SQLAlchemy==1.2.5
 PyYAML==3.13
 requests==2.19.1
+Flask-JWT-Extended==3.13.1

@@ -27,7 +27,7 @@ INSERT INTO db_details (version, upgraded_on) VALUES (2, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
-    prefix inet, 
+    prefix inet,
     origin_as BIGINT,
     peer_asn   BIGINT,
     as_path   BIGINT[],
@@ -114,3 +114,11 @@ CREATE OR REPLACE FUNCTION inet_search (inet)
 RETURNS SETOF bgp_updates AS $$
 SELECT * FROM bgp_updates WHERE prefix << $1;
 $$ LANGUAGE SQL;
+
+CREATE TABLE IF NOT EXISTS process_states (
+    name VARCHAR (32) UNIQUE,
+    running BOOLEAN DEFAULT FALSE,
+    timestamp TIMESTAMP  NOT NULL
+);
+
+CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;

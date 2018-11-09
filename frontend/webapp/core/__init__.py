@@ -5,6 +5,7 @@ from flask_security import current_user
 from flask_security.utils import hash_password
 from flask_security.decorators import login_required, roles_accepted
 from flask_babel import Babel
+from flask_jwt_extended import JWTManager, create_access_token
 from webapp.data.models import db
 from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
@@ -12,12 +13,9 @@ from webapp.core.modules import Modules_state
 from flask_security import user_registered
 from webapp.core.proxy_api import get_proxy_api
 from datetime import timedelta
-from webapp.core.modules import Modules_state
 from webapp.core.db_stats import DB_statistics
 from webapp.core.fetch_config import Configuration
 import time
-
-log = logging.getLogger('webapp_logger')
 
 app = Flask(__name__,
             instance_path=get_app_base_path(),
@@ -34,6 +32,7 @@ with app.app_context():
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
     data_store = app.security.datastore
+    jwt = JWTManager(app)
 
 app.login_manager.session_protection = "strong"
 
@@ -47,17 +46,19 @@ app.register_blueprint(actions, url_prefix='/actions')
 
 
 def load_user(payload):
-    log.debug("payload: {0}".format(payload))
     user = data_store.find_user(id=payload['identity'])
     return user
+
 
 @app.before_request
 def make_session_permanent():
     session.permanent = True
     app.permanent_session_lifetime = timedelta(minutes=15)
 
+
 @app.before_first_request
 def setup():
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', default='')
     app.config['configuration'] = Configuration()
     while not app.config['configuration'].get_newest_config():
         time.sleep(1)
@@ -90,7 +91,6 @@ def setup():
     except BaseException:
         log.exception('exception while retrieving status of modules..')
         exit(-1)
-
 
     log.debug("setting database for the first time")
     if not os.path.isfile(app.config['DB_FULL_PATH']):
@@ -126,8 +126,6 @@ def setup():
                 log.exception("exception")
 
         create_user(data_store)
-
-
 
 
 @app.errorhandler(404)
@@ -173,6 +171,41 @@ def on_user_registered(app, user, confirm_token):
     default_role = data_store.find_role("pending")
     data_store.add_role_to_user(user, default_role)
     db.session.commit()
+
+
+@app.route('/jwt/auth', methods=['GET'])
+def jwt_auth():
+    user = None
+    # if user is not logged in check parameters
+    if not current_user.is_authenticated:
+        username = request.values.get('username')
+        password = request.values.get('password')
+        # if user and pass does not correspond to user return unauthorized
+        user = data_store.find_user(username=username, password=password)
+        if user is None:
+            return current_app.login_manager.unauthorized()
+    else:
+        user = current_user
+    # Create the tokens we will be sending back to the user
+    access_token = create_access_token(identity=user)
+    # Set the JWT cookies in the response
+    resp = jsonify({'access_token': access_token})
+    return resp, 200
+
+
+@jwt.user_identity_loader
+def user_identity_lookup(identity):
+    return identity.username
+
+
+@jwt.user_claims_loader
+def add_claims_to_access_token(identity):
+    role = identity.roles[0].name
+    return {
+        'x-hasura-allowed-roles': [role],
+        'x-hasura-default-role': role,
+        'x-hasura-user-id': str(identity.id)
+    }
 
 
 @app.route('/', methods=['GET', 'POST'])

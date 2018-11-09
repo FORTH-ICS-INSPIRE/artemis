@@ -1,9 +1,10 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST, get_logger, redis_key
-from kombu import Connection, Queue, Exchange, uuid, Consumer, uuid
+from utils import RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT
+from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
+from xmlrpc.client import ServerProxy
 import time
 import pickle
 import json
@@ -84,6 +85,20 @@ class Postgresql_db():
             # DB variables
             self.db_conn = db_conn
             self.db_cur = db_cursor
+
+            try:
+                server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
+                cmd_ = 'INSERT INTO process_states (name, running, timestamp) ' \
+                        'VALUES (%s, %s, current_timestamp) ON CONFLICT (name) DO UPDATE ' \
+                        'SET running = EXCLUDED.running'
+                processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
+                        if x['name'] != 'listener']
+                psycopg2.extras.execute_batch(
+                    self.db_cur, cmd_, processes)
+                self.db_conn.commit()
+            except Exception:
+                log.exception('exception')
+                self.db_conn.rollback()
 
             # redis db
             self.redis = redis.Redis(
@@ -621,11 +636,11 @@ class Postgresql_db():
                 if len(raw['keys']) == 0:
                     action_ = None
 
-            except:
+            except Exception:
                 log.exception('None action: {}'.format(raw))
                 action_ = None
 
-            if action_ == None:
+            if action_ is None:
                 self.producer.publish(
                     {
                         'status': 'rejected'
@@ -640,7 +655,7 @@ class Postgresql_db():
             else:
                 try:
                     for hijack_key in raw['keys']:
-                        if action_is_related_to_seen == True:
+                        if action_is_related_to_seen:
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
                             self.db_conn.commit()
@@ -979,6 +994,7 @@ class Postgresql_db():
 def run():
     service = Postgresql_db()
     service.run()
+
 
 if __name__ == '__main__':
     run()

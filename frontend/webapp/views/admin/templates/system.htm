@@ -163,23 +163,13 @@
                         message += data["response"] + '</div>'
                         $('#config_action').removeClass('btn-warning').addClass('btn-danger')
                         $('#config_action').html('Save');
-                    }else{
+                    } else {
                         var message = '<div class="alert alert-success alert-dismissible">'
                         message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
                         message += data["response"] + '</div>'
                         $('#config_cancel').hide();
                         $('#config_action').removeClass('btn-warning').addClass('btn-primary')
                         $('#config_action').html('Edit');
-                        // valid_conf = data["config"];
-                        // editor.setValue(valid_conf);
-                        // if(data["comment"] == null){
-                        //     comment_editor.setValue('');
-                        // }else{
-                        //     comment_editor.setValue(data["comment"]);
-                        // }
-                        // editor.options.readOnly = true;
-                        // comment_editor.options.readOnly = true;
-                        // update_config_timestamp();
                     }
                     $("#config_alert_box").html(message);
                 })
@@ -190,9 +180,9 @@
                 data = data["view_processes"]
                 for (var key in data) {
                     if(data[key]["running"]) {
-                        $("#"+data[key]["name"]+"_switch").attr("checked", true)
+                        $("#"+data[key]["name"]+"_switch").prop("checked", true)
                     } else {
-                        $("#"+data[key]["name"]+"_switch").attr("checked", false)
+                        $("#"+data[key]["name"]+"_switch").prop("checked", false)
                     }
                 }
             }
@@ -201,6 +191,29 @@
                 $("#code_yaml").val(data["view_configs"][0]["raw_config"]);
                 $("#code_config_comment_box").val(data["view_configs"][0]["comment"]);
                 $("#conf_timestamp").html("Last Update: " + transform_date_to_local(data["view_configs"][0]["timestamp"]))
+
+                editor.setValue($("#code_yaml").val());
+                editor.options.readOnly = true;
+                comment_editor.setValue($("#code_config_comment_box").val());
+                comment_editor.options.readOnly = true;
+            }
+
+            function toggleModule(name) {
+                data = JSON.stringify({
+                    name: name,
+                    state: $("#"+name+"_switch").prop("checked")
+                })
+                fetch("/actions/modify_state",{
+                    method: "POST",
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .catch(error => console.error(error))
+            }
+
+            $(document).ready(() => {
                 editor = CodeMirror.fromTextArea($("#code_yaml")[0], {
                     lineNumbers: true,
                     indentUnit: 4,
@@ -214,25 +227,7 @@
                     readOnly: true
                 });
                 comment_editor.setSize("100%", 140);
-            }
 
-            function toggleModule(name) {
-                data = JSON.stringify({
-                    name: name,
-                    state: $("#"+name+"_switch").attr("checked")
-                })
-                fetch("/actions/modify_state",{
-                    method: "POST",
-                    body: data,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                })
-                .catch(error => console.error(error))
-
-            }
-
-            $(document).ready(() => {
                 const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
                 ws.addEventListener('open', (event) => {
                     fetch("/jwt/auth", {
@@ -261,9 +256,15 @@
                 $('#timezone').html(display_timezone());
             });
 
-            $("#monitor_switch").on("click", () => toggleModule("monitor"));
-            $("#detection_switch").on("click", () => toggleModule("detection"));
-            $("#mitigation_switch").on("click", () => toggleModule("mitigation"));
+            $("#monitor_switch").on("click", (event) => {
+                toggleModule("monitor");
+            });
+            $("#detection_switch").on("click", (event) => {
+                toggleModule("detection");
+            });
+            $("#mitigation_switch").on("click", (event) => {
+                toggleModule("mitigation");
+            });
 
         </script>
         <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>

@@ -193,7 +193,7 @@ def monitor_state():
     try:
         modules_state = Modules_state()
         data = json.loads(request.data)
-        if len(data) == 1:
+        if data['state']:
             modules_state.call(data['name'], 'start')
         else:
             modules_state.call(data['name'], 'stop')

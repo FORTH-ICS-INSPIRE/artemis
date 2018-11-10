@@ -187,37 +187,19 @@ def password_change():
                            )
 
 
-@actions.route('/monitor_state', methods=['POST'])
+@actions.route('/modify_state', methods=['POST'])
 @roles_required('admin')
 def monitor_state():
-    modules_state = Modules_state()
-    if not request.form['monitor_switch'] == 'n':
-        modules_state.call('monitor', 'stop')
-    else:
-        modules_state.call('monitor', 'start')
-    return redirect('admin/system')
-
-
-@actions.route('/detector_state', methods=['POST'])
-@roles_required('admin')
-def detection_state():
-    modules_state = Modules_state()
-    if not request.form['detection_switch'] == 'n':
-        modules_state.call('detection', 'stop')
-    else:
-        modules_state.call('detection', 'start')
-    return redirect('admin/system')
-
-
-@actions.route('/mitigation_state', methods=['POST'])
-@roles_required('admin')
-def mitigation_state():
-    modules_state = Modules_state()
-    if not request.form['mitigation_switch'] == 'n':
-        modules_state.call('mitigation', 'stop')
-    else:
-        modules_state.call('mitigation', 'start')
-    return redirect('admin/system')
+    try:
+        modules_state = Modules_state()
+        data = json.loads(request.data)
+        if len(data) == 1:
+            modules_state.call(data['name'], 'start')
+        else:
+            modules_state.call(data['name'], 'stop')
+        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+    except Exception as e:
+        return json.dumps({'success': False, 'error': str(e)}), 500, {'ContentType': 'application/json'}
 
 
 @actions.route('/submit_hijack_seen', methods=['POST'])

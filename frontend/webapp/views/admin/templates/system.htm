@@ -16,51 +16,51 @@
         </div>
         <div class="row">
             <div class="col-lg-4">
-                <form method="post" action="{{ url_for('actions.monitor_state') }}" class="col-lg-12" id="system_modules_monitor">
+                <div class="col-lg-12" id="system_modules_monitor">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <i class="fa fa-bell fa-fw"></i> Monitor Module
                         </div>
                         <div class="panel-body">
                             <label class="switch">
-                                <input data-toggle="toggle" id="monitor_switch" name="monitor_switch" type="checkbox" value="n">
+                                <input data-toggle="toggle" id="monitor_switch" name="monitor_switch" type="checkbox">
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
 
             <div class="col-lg-4">
-                <form method="post" action="{{ url_for('actions.detection_state') }}" class="col-lg-12" id="system_modules_detection">
+                <div class="col-lg-12" id="system_modules_detection">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <i class="fa fa-bell fa-fw"></i> Detection Module
                         </div>
                         <div class="panel-body">
                             <label class="switch">
-                                <input data-toggle="toggle" id="detection_switch" name="detection_switch" type="checkbox" value="n">
+                                <input data-toggle="toggle" id="detection_switch" name="detection_switch" type="checkbox">
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
 
             <div class="col-lg-4">
-                <form method="post" action="{{ url_for('actions.mitigation_state') }}" class="col-lg-12" id="system_modules_mitigation">
+                <div class="col-lg-12" id="system_modules_mitigation">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <i class="fa fa-bell fa-fw"></i> Mitigation Module
                         </div>
                         <div class="panel-body">
                             <label class="switch">
-                                <input data-toggle="toggle" id="mitigation_switch" name="mitigation_switch" type="checkbox" value="n">
+                                <input data-toggle="toggle" id="mitigation_switch" name="mitigation_switch" type="checkbox">
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
         <div class="row">
@@ -115,16 +115,6 @@
             var comment_editor = null;
             var valid_conf = $('#code_yaml').val();
             var valid_comment = $('#code_config_comment_box').val();
-
-            // $('#monitor').on('click', function (event, state) {
-            //     $("#system_modules").submit();
-            // });
-            // $('#detector').on('click', function (event, state) {
-            //     $("#system_modules").submit();
-            // });
-            // $('#mitigator').on('click', function (event, state) {
-            //     $("#system_modules").submit();
-            // });
 
             $('#config_action').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
@@ -200,10 +190,8 @@
                 data = data["view_processes"]
                 for (var key in data) {
                     if(data[key]["running"]) {
-                        console.log("#"+data[key]["name"]+"_switch");
                         $("#"+data[key]["name"]+"_switch").attr("checked", true)
                     } else {
-                        console.log("#"+data[key]["name"]+"_switch");
                         $("#"+data[key]["name"]+"_switch").attr("checked", false)
                     }
                 }
@@ -226,6 +214,22 @@
                     readOnly: true
                 });
                 comment_editor.setSize("100%", 140);
+            }
+
+            function toggleModule(name) {
+                data = JSON.stringify({
+                    name: name,
+                    state: $("#"+name+"_switch").attr("checked")
+                })
+                fetch("/actions/modify_state",{
+                    method: "POST",
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .catch(error => console.error(error))
+
             }
 
             $(document).ready(() => {
@@ -257,15 +261,9 @@
                 $('#timezone').html(display_timezone());
             });
 
-            $("#monitor_switch").click(function() {
-                $("#system_modules_monitor").submit()
-            });
-            $("#detection_switch").click(function() {
-                $("#system_modules_detection").submit()
-            });
-            $("#mitigation_switch").click(function() {
-                $("#system_modules_mitigation").submit()
-            });
+            $("#monitor_switch").on("click", () => toggleModule("monitor"));
+            $("#detection_switch").on("click", () => toggleModule("detection"));
+            $("#mitigation_switch").on("click", () => toggleModule("mitigation"));
 
         </script>
         <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>

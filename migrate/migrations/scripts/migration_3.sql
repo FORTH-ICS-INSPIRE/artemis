@@ -1,3 +1,4 @@
+DROP VIEW view_configs;
 
 CREATE OR REPLACE VIEW view_configs AS SELECT raw_config, comment, time_modified FROM configs;
 

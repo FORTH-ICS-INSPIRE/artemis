@@ -1,3 +1,6 @@
+DROP VIEW view_hijacks;
+DROP VIEW view_bgpupdates;
+
 ALTER TABLE bgp_updates
     ALTER COLUMN as_path TYPE BIGINT[] USING as_path::BIGINT[],
     ALTER hijack_key TYPE text[] USING array[hijack_key];

@@ -1,12 +1,8 @@
-
-DROP VIEW IF EXISTS view_hijacks;
-DROP VIEW IF EXISTS view_bgpupdates;
-
-ALTER TABLE bgp_updates 
+ALTER TABLE bgp_updates
     ALTER COLUMN as_path TYPE BIGINT[] USING as_path::BIGINT[],
     ALTER hijack_key TYPE text[] USING array[hijack_key];
 
-ALTER TABLE hijacks 
+ALTER TABLE hijacks
     ADD COLUMN withdrawn BOOLEAN DEFAULT FALSE,
     ADD COLUMN peers_withdrawn BIGINT[] DEFAULT array[]::BIGINT[],
     ALTER COLUMN peers_seen TYPE BIGINT[] USING translate(peers_seen::text, '[]','{}')::BIGINT[],

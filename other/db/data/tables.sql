@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS configs (
     time_modified TIMESTAMP NOT NULL
 );
 
-CREATE OR REPLACE VIEW view_configs AS SELECT time_modified FROM configs;
+CREATE OR REPLACE VIEW view_configs AS SELECT raw_config, comment, time_modified FROM configs;
 
 CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, ignored, configured_prefix, comment, seen, withdrawn, peers_withdrawn, peers_seen FROM hijacks;
 

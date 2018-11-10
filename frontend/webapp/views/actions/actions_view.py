@@ -3,8 +3,7 @@ from flask import redirect, request, jsonify
 from flask_security.decorators import roles_required, login_required
 from flask_security.utils import hash_password, verify_password
 from webapp.data.models import db, User
-from webapp.templates.forms import (ApproveUserForm, MakeAdminForm, DeleteUserForm, ChangePasswordForm,
-                                    CheckboxMonitorForm, CheckboxDetectorForm, CheckboxMitigatorForm)
+from webapp.templates.forms import ApproveUserForm, MakeAdminForm, DeleteUserForm, ChangePasswordForm
 from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack, Comment_hijack, Seen_hijack, Hijacks_multiple_action
 from webapp.core.modules import Modules_state
 from webapp.core import app
@@ -191,39 +190,33 @@ def password_change():
 @actions.route('/monitor_state', methods=['POST'])
 @roles_required('admin')
 def monitor_state():
-    form = CheckboxMonitorForm(request.form)
     modules_state = Modules_state()
-    if form.validate_on_submit():
-        if not form.monitor_switch.data:
-            modules_state.call('monitor', 'stop')
-        else:
-            modules_state.call('monitor', 'start')
+    if not request.form['monitor_switch'] == 'n':
+        modules_state.call('monitor', 'stop')
+    else:
+        modules_state.call('monitor', 'start')
     return redirect('admin/system')
 
 
 @actions.route('/detector_state', methods=['POST'])
 @roles_required('admin')
 def detection_state():
-    form = CheckboxDetectorForm(request.form)
     modules_state = Modules_state()
-    if form.validate_on_submit():
-        if not form.detection_switch.data:
-            modules_state.call('detection', 'stop')
-        else:
-            modules_state.call('detection', 'start')
+    if not request.form['detection_switch'] == 'n':
+        modules_state.call('detection', 'stop')
+    else:
+        modules_state.call('detection', 'start')
     return redirect('admin/system')
 
 
 @actions.route('/mitigation_state', methods=['POST'])
 @roles_required('admin')
 def mitigation_state():
-    form = CheckboxMitigatorForm(request.form)
     modules_state = Modules_state()
-    if form.validate_on_submit():
-        if not form.mitigation_switch.data:
-            modules_state.call('mitigation', 'stop')
-        else:
-            modules_state.call('mitigation', 'start')
+    if not request.form['mitigation_switch'] == 'n':
+        modules_state.call('mitigation', 'stop')
+    else:
+        modules_state.call('mitigation', 'start')
     return redirect('admin/system')
 
 

@@ -15,8 +15,8 @@ def write_stderr(s):
     sys.stderr.flush()
 
 
-query = 'INSERT INTO process_states (name, running, timestamp) ' \
-        'VALUES (%s, %s, current_timestamp) ON CONFLICT (name) DO UPDATE ' \
+query = 'INSERT INTO process_states (name, running) ' \
+        'VALUES (%s, %s) ON CONFLICT (name) DO UPDATE ' \
         'SET running = EXCLUDED.running'
 
 

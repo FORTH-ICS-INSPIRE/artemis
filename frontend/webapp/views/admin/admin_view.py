@@ -1,14 +1,12 @@
-from flask import Blueprint, render_template
-from flask import redirect, request, jsonify
+from flask import Blueprint, render_template, redirect, request, jsonify
 from flask_security.decorators import roles_required, roles_accepted
 from webapp.data.models import User, Role
-from webapp.templates.forms import (CheckboxMonitorForm, CheckboxDetectorForm, CheckboxMitigatorForm,
-                                    ApproveUserForm, MakeAdminForm, DeleteUserForm)
+from webapp.templates.forms import ApproveUserForm, MakeAdminForm, DeleteUserForm
 from webapp.core import app
-from webapp.core.modules import Modules_state
 from webapp.core.actions import Submit_new_config
 from webapp.core.fetch_config import fetch_all_config_timestamps
 import logging
+import json
 
 log = logging.getLogger('webapp_logger')
 
@@ -24,57 +22,31 @@ def default():
 @admin.route('/system', methods=['GET', 'POST'])
 @roles_required('admin')
 def index():
-    monitor_form = CheckboxMonitorForm()
-    detection_form = CheckboxDetectorForm()
-    mitigation_form = CheckboxMitigatorForm()
-
-    app.config['configuration'].get_newest_config()
-    modules_state = Modules_state()
-    state_of_modules = modules_state.get_response_all()
-
-    log.info("state {}".format(state_of_modules))
-
-    if state_of_modules['monitor']['status'] == 'up':
-        monitor_form.monitor_switch.data = True
-    else:
-        monitor_form.monitor_switch.data = False
-
-    if state_of_modules['detection']['status'] == 'up':
-        detection_form.detection_switch.data = True
-    else:
-        detection_form.detection_switch.data = False
-
-    if state_of_modules['mitigation']['status'] == 'up':
-        mitigation_form.mitigation_switch.data = True
-    else:
-        mitigation_form.mitigation_switch.data = False
-
-    return render_template('system.htm',
-                           monitor_form=monitor_form,
-                           detection_form=detection_form,
-                           mitigation_form=mitigation_form,
-                           config=app.config['configuration'].get_raw_config(),
-                           comment=app.config['configuration'].get_config_comment(),
-                           config_timestamp=app.config['configuration'].get_config_last_modified())
+    return render_template('system.htm')
 
 
-@admin.route('/config/', methods=['POST'])
+@admin.route('/config', methods=['POST'])
 @roles_required('admin')
 def handle_new_config():
-    # log info
-    app.config['configuration'].get_newest_config()
-    old_config = app.config['configuration'].get_raw_config()
-    comment = request.values.get('comment')
-    new_config = request.values.get('new_config')
-    config_modify = Submit_new_config()
-    response, success = config_modify.send(new_config, old_config, comment)
+    try:
+        app.config['configuration'].get_newest_config()
+        old_config = app.config['configuration'].get_raw_config()
+        data = json.loads(request.data)
+        comment = data['comment']
+        new_config = data['new_config']
+        config_modify = Submit_new_config()
+        response, success = config_modify.send(new_config, old_config, comment)
 
-    if success:
+        if success:
+            return jsonify(
+                {'status': 'success', 'response': response})
+        else:
+            return jsonify(
+                {'status': 'fail', 'response': response})
+    except Exception as e:
+        log.exception("")
         return jsonify(
-            {'status': 'success', 'config': new_config, 'comment': comment, 'response': response})
-    else:
-        return jsonify(
-            {'status': 'fail', 'config': new_config, 'comment': comment, 'response': response})
+            {'status': 'fail', 'response': str(e)})
 
 
 @admin.route('/user_management', methods=['GET'])

@@ -16,54 +16,51 @@
         </div>
         <div class="row">
             <div class="col-lg-4">
-                <form method="post" action="{{ url_for('actions.monitor_state') }}" class="col-lg-12" id="system_modules_monitor">
-                    {{ monitor_form.hidden_tag() }}
+                <div class="col-lg-12" id="system_modules_monitor">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <i class="fa fa-bell fa-fw"></i> Monitor Module
                         </div>
                         <div class="panel-body">
                             <label class="switch">
-                                {{ monitor_form.monitor_switch(**{'data-toggle': 'toggle'}) }}
+                                <input data-toggle="toggle" id="monitor_switch" name="monitor_switch" type="checkbox">
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
 
             <div class="col-lg-4">
-                <form method="post" action="{{ url_for('actions.detection_state') }}" class="col-lg-12" id="system_modules_detection">
-                    {{ detection_form.hidden_tag() }}
+                <div class="col-lg-12" id="system_modules_detection">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <i class="fa fa-bell fa-fw"></i> Detection Module
                         </div>
                         <div class="panel-body">
                             <label class="switch">
-                                {{ detection_form.detection_switch(**{'data-toggle': 'toggle'}) }}
+                                <input data-toggle="toggle" id="detection_switch" name="detection_switch" type="checkbox">
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
 
             <div class="col-lg-4">
-                <form method="post" action="{{ url_for('actions.mitigation_state') }}" class="col-lg-12" id="system_modules_mitigation">
-                {{ mitigation_form.hidden_tag() }}
+                <div class="col-lg-12" id="system_modules_mitigation">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <i class="fa fa-bell fa-fw"></i> Mitigation Module
                         </div>
                         <div class="panel-body">
                             <label class="switch">
-                                {{ mitigation_form.mitigation_switch(**{'data-toggle': 'toggle'}) }}
+                                <input data-toggle="toggle" id="mitigation_switch" name="mitigation_switch" type="checkbox">
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
         <div class="row">
@@ -77,7 +74,7 @@
                     <div class="panel-body">
                         <div id="config_alert_box"></div>
 
-                        <form><textarea id="code_yaml" name="code_yaml">{{ config }}</textarea></form>
+                        <form><textarea id="code_yaml" name="code_yaml"></textarea></form>
                         </br>
                         <div class="row">
                             <div class="col-lg-6">
@@ -97,7 +94,7 @@
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-lg-12">
-                                    <form><textarea id="code_config_comment_box" name="code_config_comment_box">{{ comment }}</textarea></form>
+                                    <form><textarea id="code_config_comment_box" name="code_config_comment_box"></textarea></form>
                                 </div>
                             </div>
                         </div>
@@ -119,16 +116,6 @@
             var valid_conf = $('#code_yaml').val();
             var valid_comment = $('#code_config_comment_box').val();
 
-            $('#monitor').on('click', function (event, state) {
-                $("#system_modules").submit();
-            });
-            $('#detector').on('click', function (event, state) {
-                $("#system_modules").submit();
-            });
-            $('#mitigator').on('click', function (event, state) {
-                $("#system_modules").submit();
-            });
-
             $('#config_action').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
                     $('#config_action').removeClass('btn-primary').addClass('btn-danger');
@@ -137,10 +124,13 @@
                     editor.options.readOnly = false;
                     comment_editor.options.readOnly = false;
                 }else if($(this).hasClass("btn-danger")){
-                    var publish_config = {"new_config": editor.getValue(), "comment": comment_editor.getValue()};
+                    var publish_config = JSON.stringify({
+                        new_config: editor.getValue(),
+                        comment: comment_editor.getValue()
+                    });
                     $('#config_action').removeClass('btn-danger').addClass('btn-warning');
                     $('#config_action').html('Pending');
-                    submit_new_config(publish_config)
+                    submit_new_config(publish_config);
                 }
             });
 
@@ -157,77 +147,127 @@
             });
 
             function submit_new_config(publish_config){
-                $.ajax({
-                    type: "POST",
-                    url: "../admin/config/",
-                    data: publish_config,
-                    success: function(result){
-                        if(result["status"] == "fail"){
-                            var message = '<div class="alert alert-danger alert-dismissible">'
-                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-                            message += result["response"] + '</div>'
-                            $('#config_action').removeClass('btn-warning').addClass('btn-danger')
-                            $('#config_action').html('Save');
-                        }else{
-                            var message = '<div class="alert alert-success alert-dismissible">'
-                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-                            message += result["response"] + '</div>'
-                            $('#config_cancel').hide();
-                            $('#config_action').removeClass('btn-warning').addClass('btn-primary')
-                            $('#config_action').html('Edit');
-                            valid_conf = result["config"];
-                            editor.setValue(valid_conf);
-                            if(result["comment"] == null){
-                                comment_editor.setValue('');
-                            }else{
-                                comment_editor.setValue(result["comment"]);
-                            }
-                            editor.options.readOnly = true;
-                            comment_editor.options.readOnly = true;
-                            update_config_timestamp();
-                        }
-                        $("#config_alert_box").html(message)
-                        
+                fetch("/admin/config",{
+                    method: "POST",
+                    body: publish_config,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    dataType: "json"
-                });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data["status"] == "fail"){
+                        var message = '<div class="alert alert-danger alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += data["response"] + '</div>'
+                        $('#config_action').removeClass('btn-warning').addClass('btn-danger')
+                        $('#config_action').html('Save');
+                    } else {
+                        var message = '<div class="alert alert-success alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += data["response"] + '</div>'
+                        $('#config_cancel').hide();
+                        $('#config_action').removeClass('btn-warning').addClass('btn-primary')
+                        $('#config_action').html('Edit');
+                    }
+                    $("#config_alert_box").html(message);
+                })
+                .catch(error => console.error(error));
             }
 
-            function update_config_timestamp(){
-                $("#conf_timestamp").html("Last Update: " + transform_date_to_local( '{{ config_timestamp }}' ))
+            function render_module_state(data) {
+                data = data["view_processes"]
+                for (var key in data) {
+                    if(data[key]["running"]) {
+                        $("#"+data[key]["name"]+"_switch").prop("checked", true)
+                    } else {
+                        $("#"+data[key]["name"]+"_switch").prop("checked", false)
+                    }
+                }
             }
 
-            $(document).ready(function(){
-                update_config_timestamp();
-                editor = CodeMirror.fromTextArea($('#code_yaml')[0], {
+            function render_configuration(data) {
+                $("#code_yaml").val(data["view_configs"][0]["raw_config"]);
+                $("#code_config_comment_box").val(data["view_configs"][0]["comment"]);
+                $("#conf_timestamp").html("Last Update: " + transform_date_to_local(data["view_configs"][0]["timestamp"]))
+
+                editor.setValue($("#code_yaml").val());
+                editor.options.readOnly = true;
+                comment_editor.setValue($("#code_config_comment_box").val());
+                comment_editor.options.readOnly = true;
+            }
+
+            function toggleModule(name) {
+                data = JSON.stringify({
+                    name: name,
+                    state: $("#"+name+"_switch").prop("checked")
+                })
+                fetch("/actions/modify_state",{
+                    method: "POST",
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .catch(error => console.error(error))
+            }
+
+            $(document).ready(() => {
+                editor = CodeMirror.fromTextArea($("#code_yaml")[0], {
                     lineNumbers: true,
                     indentUnit: 4,
                     readOnly: true
                 });
                 editor.setSize("100%", 640);
 
-                comment_editor = CodeMirror.fromTextArea($('#code_config_comment_box')[0], {
+                comment_editor = CodeMirror.fromTextArea($("#code_config_comment_box")[0], {
                     lineNumbers: true,
                     indentUnit: 4,
                     readOnly: true
                 });
                 comment_editor.setSize("100%", 140);
+
+                const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                        fetchBasicProcStatesLive(ws, render_module_state);
+                        fetchConfigStatsLive(ws, render_configuration);
+                    }
+                });
                 $('#timezone').html(display_timezone());
             });
 
-            $( "#monitor_switch" ).click(function() {
-                $( "#system_modules_monitor" ).submit();
+            $("#monitor_switch").on("click", (event) => {
+                toggleModule("monitor");
             });
-
-            $( "#detection_switch" ).click(function() {
-                $( "#system_modules_detection" ).submit();
+            $("#detection_switch").on("click", (event) => {
+                toggleModule("detection");
             });
-
-            $( "#mitigation_switch" ).click(function() {
-                $( "#system_modules_mitigation" ).submit();
+            $("#mitigation_switch").on("click", (event) => {
+                toggleModule("mitigation");
             });
 
         </script>
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
         <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>

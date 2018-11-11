@@ -41,10 +41,20 @@ function fetchDbStatsLive(ws, cb_func) {
 }
 
 var datatableCalled = false;
+function update_datatable_called(ws, action){
+    if (action == 'start'){
+        datatableCalled = false;
+    }else{
+        datatableCalled = true;
+    }
+    waitForConnection(ws, JSON.stringify({id: "2", type: action}));
+}
+
 function fetchDatatableLive(ws, cb_func, query) {
     if(datatableCalled) {
         waitForConnection(ws, JSON.stringify({id: "2", type: "stop"}));
     }
+
     waitForConnection(ws, JSON.stringify({
         id: "2",
         type: "start",
@@ -56,19 +66,21 @@ function fetchDatatableLive(ws, cb_func, query) {
         }
     }));
 
+    // Need to remove previous event listener...
     if(!datatableCalled) {
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
             if(data.type === 'data' && data.id === "2") {
                 cb_func({
-                    recordsTotal: data.payload.data.view_hijacks_aggregate.aggregate.totalCount,
-                    recordsFiltered: data.payload.data.view_hijacks_aggregate.aggregate.totalCount,
-                    data: format_hijacks_datatable(data.payload.data.view_hijacks)
+                    recordsTotal: data.payload.data.datatable.aggregate.totalCount,
+                    recordsFiltered: data.payload.data.datatable.aggregate.totalCount,
+                    data: format_datatable(data.payload.data.view_data)
                 });
             }
         });
         datatableCalled = true;
     }
+    
 }
 
 var processStateCalled = false;

@@ -166,8 +166,8 @@
                     "serverSide": true,
                     "searching": false,
                     "ajax": (data, callback, settings) => {
-						var query = "{ view_hijacks_aggregate { aggregate { totalCount: count } } view_hijacks(limit: " + data.length
-                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + data.order[0].dir 
+						var query = "{ datatable: view_hijacks_aggregate { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
+                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + data.order[0].dir
                         query += "}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
 						fetchDatatableLive(ws, callback, query);
                     },

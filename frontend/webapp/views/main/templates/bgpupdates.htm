@@ -94,8 +94,7 @@
         </div>
         <div class="row mt-3">
             <div class="col-lg-6">
-                    <p>Last refresh:
-                        <b id="last_refresh_time"></b> 
+                    <p>
                         <b id="refresh_button">
                             <a href="javascript:refresh_handle('disable');">(Disable Autorefresh)</a>
                         </b>
@@ -170,7 +169,7 @@
                 'type': null
             };
 
-            var exlude_columns_from_search = ['Timestamp', 'Hijack', 'Status', 'More'];
+            var exlude_columns_from_search = ['Timestamp', 'AS Path', 'Hijack', 'Status', 'More'];
             var custom_message_for_search = {
                 "Type": "A|W"
             };
@@ -279,69 +278,77 @@
                 inspect_input_of_search_boxes();
 
                 if(filter_parameters['time'] != null){
-                    filters.push('timestamp.gte.' + filter_parameters['time']['start_time'] + ',timestamp.lte.' + filter_parameters['time']['end_time']);
+                    filters.push('{ timestamp: {_gte: "' + filter_parameters['time']['start_time'] + '"} }');
+                    filters.push('{ timestamp: {_lte: "' + filter_parameters['time']['end_time'] + '"} }');
                 }
 
                 if(filter_parameters['prefixes_selection'] != null){
-                    filters.push('matched_prefix.eq.' + filter_parameters['prefixes_selection']);
+                    filters.push('{ matched_prefix: {_eq: "' + filter_parameters['prefixes_selection'] + '"} }');
                 }
 
                 if(filter_parameters['prefix'] != null){
-                    filters.push('prefix.eq.' + filter_parameters['prefix']);
+                    filters.push('{ prefix: {_eq: "' + filter_parameters['prefix'] + '"} }');
                 }
 
                 if(filter_parameters['origin_as'] != null){
-                    filters.push('origin_as.eq.' + filter_parameters['origin_as']);
+                    filters.push('{ origin_as: {_eq: "' + filter_parameters['origin_as'] + '"} }');
                 }
 
                 if(filter_parameters['as_path'] != null){
-                    filters.push('as_path.cs.{' + filter_parameters['as_path'] + "}");
+                    filters.push('{ as_path: {_in: [' + filter_parameters['as_path'] + ']} }');
                 }
 
                 if(filter_parameters['peer_asn'] != null){
-                    filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
+                    filters.push('{ peer_asn: {_eq: "' + filter_parameters['peer_asn'] + '"} }');
                 }
 
                 if(filter_parameters['service'] != null){
                     var _service = filter_parameters['service'].replace(/ -> |-> | -> |->/gi, '|');
-                    filters.push('service.like.*' + _service + '*');
+                    filters.push('{ service: {_like: "%' + _service + '%"} }');
                 }
 
                 if(filter_parameters['type'] != null){
-                    filters.push('type.eq.' + filter_parameters['type']);
+                    filters.push('{ type: {_eq: "' + filter_parameters['type'] + '"} }');
                 }
 
                 if(filters.length > 0){
-                    datatable_parameters['and'] = '(' + filters.join() + ')';
+                    datatable_parameters['and'] = 'where: { _and: [' + filters.join() + '] }';
                 }else{
-                    delete datatable_parameters['and'];
+                    datatable_parameters['and'] = null;
                 }
             }
 
-            function render_table(){
+            function render_table(ws){
                 construct_filter_bgp_update_query();
 
                 table = $('#bgp_updates').DataTable( {
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
-                    ajax: function(data, callback, settings) {
+                    "ajax": (data, callback, settings) => {
+                        var sort;
+                        if(data.order[0].dir == 'desc'){
+                            sort = 'desc_nulls_first';
+                        }else{
+                            sort = 'asc_nulls_last';
+                        }
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
-                        datatable_parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
-                        $.ajax({
-                            type: "POST",
-                            url: '{{ url_for('proxy_api') }}',
-                            dataType: "json",
-                            data: { "action": "view_bgpupdates", "parameters" : JSON.stringify(datatable_parameters) },
-                            success: function(data, status, xhr){
-                                callback({
-                                    recordsTotal: data.total,
-                                    recordsFiltered: data.total,
-                                    data: format_bgp_updates_datatable(data.results)
-                                });
-                            }
-                        });
+                        var query = "{ datatable: view_bgpupdates_aggregate"
+                        if(datatable_parameters['and'] != null){
+                            query += "(" + datatable_parameters['and'] + ") { aggregate { totalCount: count } }";
+                        }else{
+                            query += " { aggregate { totalCount: count } }";
+                        }
+                        query += " view_data: view_bgpupdates(limit: " + datatable_parameters['limit'] + ", offset: " + datatable_parameters['offset']
+                        query += ", order_by: {" + columns[data.order[0].column].data + ": " + sort + " } "
+                        if(datatable_parameters['and'] != null){
+                            query += datatable_parameters['and'] +  ")";
+                        }else{
+                            query += ")";
+                        }
+                        query += " { prefix origin_as peer_asn as_path service type communities timestamp hijack_key handled matched_prefix orig_path } }"
+                        fetchDatatableLive(ws, callback, query);
                     },
                     initComplete: function() {
                         var api = this.api();
@@ -392,9 +399,28 @@
             }
 
             $(document).ready(function(){
+
+                const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+
+
                 display_time_selection(custom_time);
-                $('#last_refresh_time').html(transform_date_to_local($.now()));
-                render_table({});
+                render_table(ws);
                 $('input[name="datetimes"]').daterangepicker({
                     timePicker: true,
                     startDate: moment().startOf('hour'),
@@ -423,12 +449,6 @@
                     }
                 });
 
-                setInterval( function () {
-                if(refresh_status){
-                        table.draw(false);
-                        $('#last_refresh_time').html(transform_date_to_local($.now()));
-                    }
-                }, 5000 );
 
                 $('#timezone').html(display_timezone());
             });
@@ -445,16 +465,17 @@
 
             function refresh_handle(state){
                 if(state == 'disable'){
-                    refresh_status = false;
+                    refresh_handle = update_datatable_called('stop');
                     $("#refresh_button").html('<a href="javascript:refresh_handle(\'enable\');">(Enable Autorefresh)</a>');
                 }else{
-                    refresh_status = true;
+                    refresh_handle = update_datatable_called('start');
                     $("#refresh_button").html('<a href="javascript:refresh_handle(\'disable\');">(Disable Autorefresh)</a>');
                 }
             }
 
         </script>
 
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>

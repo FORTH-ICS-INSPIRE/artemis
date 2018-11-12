@@ -227,12 +227,9 @@ def pending():
 @roles_accepted('admin', 'user')
 def overview():
     log.debug("url: /")
-    status_request = Modules_state()
-    modules_formatted = status_request.get_response_formatted_all()
     app.config['configuration'].get_newest_config()
     newest_config = app.config['configuration'].get_raw_config()
     return render_template('index.htm',
-                           modules=modules_formatted,
                            config=newest_config,
                            config_timestamp=app.config['configuration'].get_config_last_modified())
 

@@ -41,13 +41,21 @@ function fetchDbStatsLive(ws, cb_func) {
 }
 
 var datatableCalled = false;
-function update_datatable_called(ws, action){
-    if (action == 'start'){
-        datatableCalled = false;
-    }else{
-        datatableCalled = true;
-    }
-    waitForConnection(ws, JSON.stringify({id: "2", type: action}));
+function stopDatatableLive(ws){
+    waitForConnection(ws, JSON.stringify({id: "2", type: "stop"}));
+}
+
+function startDatatableLive(ws, query){
+    waitForConnection(ws, JSON.stringify({
+        id: "2",
+        type: "start",
+        payload: {
+            variables: {},
+            extensions: {},
+            operationName: "getLiveTable",
+            query: "subscription getLiveTable " + query
+        }
+    }));
 }
 
 function fetchDatatableLive(ws, cb_func, query) {
@@ -61,8 +69,8 @@ function fetchDatatableLive(ws, cb_func, query) {
         payload: {
             variables: {},
             extensions: {},
-            operationName: "getLiveHij",
-            query: "subscription getLiveHij " + query
+            operationName: "getLiveTable",
+            query: "subscription getLiveTable " + query
         }
     }));
 
@@ -80,7 +88,36 @@ function fetchDatatableLive(ws, cb_func, query) {
         });
         datatableCalled = true;
     }
-    
+}
+
+function fetchDatatable(cb_func, query) {
+    fetch("/jwt/auth", {
+        method: "GET",
+    })
+    .then(response => response.json())
+    .then(data => {
+        fetch("/api/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization":"Bearer " + data['access_token']
+            },
+            body: JSON.stringify({
+                query: "query getTable " + query
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+                cb_func({
+                    recordsTotal: data.data.datatable.aggregate.totalCount,
+                    recordsFiltered: data.data.datatable.aggregate.totalCount,
+                    data: format_datatable(data.data.view_data)
+                });
+            }
+        )
+        .catch(error => console.error(error));
+    })
+    .catch(error => console.error(error));
 }
 
 var processStateCalled = false;

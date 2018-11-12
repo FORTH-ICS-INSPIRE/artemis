@@ -450,7 +450,7 @@
 
                 $('#hijacks tbody').on( 'click', 'tr', function () {
                     if($(this).hasClass ("selected")) {
-                        selected_hijacks.splice($(this).attr("id"), 1);
+                        selected_hijacks.splice(selected_hijacks.indexOf($(this).attr("id")), 1);
                     }else{
                         selected_hijacks.push($(this).attr("id"));
                     }

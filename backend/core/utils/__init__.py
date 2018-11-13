@@ -38,7 +38,7 @@ def get_logger(path='/etc/artemis/logging.yaml'):
 
 class TimedSet(set):
 
-    def __init__(self, timeout=10):
+    def __init__(self, timeout=60*60*24):
         self.__table = {}
         self.timeout = timeout
 
@@ -125,6 +125,7 @@ class SMTPSHandler(SMTPHandler):
             raise
         except Exception:
             self.handleError(record)
+
 
 def redis_key(prefix, hijack_as, _type):
     assert(isinstance(prefix, str))

@@ -73,8 +73,8 @@ CREATE TABLE IF NOT EXISTS hijacks (
     timestamp_of_config TIMESTAMP,
     comment text,
     seen BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY(time_detected, key),
-    UNIQUE(time_detected, key),
+    PRIMARY KEY(time_started, key),
+    UNIQUE(time_started, key),
     CONSTRAINT possible_states CHECK (
         (
             active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
     )
 );
 
-SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
+SELECT create_hypertable('hijacks', 'time_started', if_not_exists => TRUE);
 
 -- create trigger send_hijack_event
 -- after insert or update or delete on hijacks

@@ -711,7 +711,7 @@ class Postgresql_db():
                         # matching withdraw with a hijack
                         if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
                             entry[1].append(withdrawal[1])
-                            timestamp = max(entry[5], entry[6])
+                            timestamp = max(withdrawal[2], entry[6])
                             if len(entry[0]) == len(entry[1]):
                                 # set hijack as withdrawn and delete from redis
                                 self.db_cur.execute(
@@ -832,8 +832,8 @@ class Postgresql_db():
                     'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, ' \
                     'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) ' \
                     'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ' \
-                    'ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, ' \
-                    'time_last=%s, peers_seen=%s, asns_inf=%s'
+                    'ON CONFLICT(key, time_started) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, ' \
+                    'time_last=%s, peers_seen=%s, asns_inf=%s WHERE hijacks.active=true'
 
                 values = []
                 for key in self.tmp_hijacks_dict:

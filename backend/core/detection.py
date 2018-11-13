@@ -289,6 +289,7 @@ class Detection():
                     )
 
                 self.mon_num += 1
+                self.monitors_seen.add(monitor_event['key'])
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 
@@ -505,7 +506,6 @@ class Detection():
                 routing_key='update',
                 priority=1
             )
-            self.monitors_seen.add(monitor_event['key'])
             # log.debug('{}'.format(monitor_event['key']))
 
         def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
@@ -531,6 +531,7 @@ class Detection():
 def run():
     service = Detection()
     service.run()
+
 
 if __name__ == '__main__':
     run()

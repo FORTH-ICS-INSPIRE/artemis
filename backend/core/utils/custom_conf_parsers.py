@@ -528,22 +528,40 @@ if __name__ == '__main__':
             exceptions = exceptions_parser(args.exceptions_file)
             for hour_timestamp in configurations:
                 for exc in exceptions:
-                    for prefix in exc['prefixes']:
-                        if prefix not in configurations[hour_timestamp]['prefixes']:
-                            configurations[hour_timestamp]['prefixes'][prefix] = str(
-                                prefix).replace('.', '_').replace('/', '-')
-                        if prefix not in configurations[hour_timestamp]['prefix_pols']:
-                            configurations[hour_timestamp]['prefix_pols'][prefix] = {
-                                'origins': set(),
-                                'neighbors': set()
-                            }
+                    # specific prefixes and origins
+                    if 'prefixes' in exc:
+                        for prefix in exc['prefixes']:
+                            if prefix not in configurations[hour_timestamp]['prefixes']:
+                                configurations[hour_timestamp]['prefixes'][prefix] = str(
+                                    prefix).replace('.', '_').replace('/', '-')
+                            if prefix not in configurations[hour_timestamp]['prefix_pols']:
+                                configurations[hour_timestamp]['prefix_pols'][prefix] = {
+                                    'origins': set(),
+                                    'neighbors': set()
+                                }
+                            for origin_asn in exc['origin_asns']:
+                                if origin_asn not in configurations[hour_timestamp]['asns']:
+                                    configurations[hour_timestamp]['asns'][origin_asn] = ('EXC_ORIG_AS{}'.format(origin_asn), None)
+                                else:
+                                    configurations[hour_timestamp]['asns'][origin_asn] = ('EXC_ORIG_AS{}'.format(origin_asn),
+                                                                                          configurations[hour_timestamp]['asns'][origin_asn][1])
+                                configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(origin_asn)
+                    else:
+                        # all prefixes for specific origin-neighbor combinations
                         for origin_asn in exc['origin_asns']:
                             if origin_asn not in configurations[hour_timestamp]['asns']:
                                 configurations[hour_timestamp]['asns'][origin_asn] = ('EXC_ORIG_AS{}'.format(origin_asn), None)
-                            else:
-                                configurations[hour_timestamp]['asns'][origin_asn] = ('EXC_ORIG_AS{}'.format(origin_asn),
-                                                                                      configurations[hour_timestamp]['asns'][origin_asn][1])
-                            configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(origin_asn)
+                            for neighbor in exc['neighbors']:
+                                if neighbor not in configurations[hour_timestamp]['asns']:
+                                    configurations[hour_timestamp]['asns'][neighbor] = ('EXC_NEIG_AS{}'.format(neighbor), None)
+                                else:
+                                    # neighbor already has a peer group, do not risk configuration issues
+                                    continue
+                                for prefix in configurations[hour_timestamp]['prefix_pols']:
+                                    if origin_asn not in configurations[hour_timestamp]['prefix_pols'][prefix]['origins']:
+                                        configurations[hour_timestamp]['prefix_pols'][prefix]['origins'].add(origin_asn)
+                                    if neighbor not in configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors']:
+                                        configurations[hour_timestamp]['prefix_pols'][prefix]['neighbors'].add(neighbor)
 
         # form all configurations
         for hour_timestamp in configurations:

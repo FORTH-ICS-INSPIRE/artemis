@@ -330,8 +330,12 @@
                 inspect_input_of_search_boxes();
 
                 {% if hijack_keys %}
-                    var key = {{ hijack_keys | safe }};
-                    filters.push('{ key: {_in: [' + key + ']} }');
+                    var keys = {{ hijack_keys | safe }};
+                    var keys_str = "";
+                    for(key in keys){
+                        keys_str += '"' + keys[key] + '",' ;
+                    }
+                    filters.push('{ key: {_in: [' + keys_str + ']} }');
                 {% endif %}
 
                 if(filter_parameters['time'] != null){

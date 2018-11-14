@@ -832,7 +832,7 @@ class Postgresql_db():
                     'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, ' \
                     'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) ' \
                     'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ' \
-                    'ON CONFLICT(key, time_started) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, ' \
+                    'ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, ' \
                     'time_last=%s, peers_seen=%s, asns_inf=%s WHERE hijacks.active=true'
 
                 values = []

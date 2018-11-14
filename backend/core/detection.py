@@ -476,10 +476,9 @@ class Detection():
                 result['monitor_keys'] = hijack_value['monitor_keys']
             else:
                 # log.info('not existing')
-                first_trigger = monitor_event['timestamp']
-                hijack_value['key'] = hashlib.md5(pickle.dumps(
-                    [monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()
                 hijack_value['time_detected'] = time.time()
+                hijack_value['key'] = hashlib.md5(pickle.dumps(
+                    [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
                 result = hijack_value
 
             # t0 = time.time()

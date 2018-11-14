@@ -621,9 +621,9 @@ class Postgresql_db():
             action_is_related_to_seen = False
             try:
                 if(raw['action'] == 'mark_resolved'):
-                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND'
+                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND withdrawn=false AND'
                 elif(raw['action'] == 'mark_ignored'):
-                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE ignored=false AND resolved=false AND'
+                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE ignored=false AND resolved=false AND withdrawn=false AND'
                 elif(raw['action'] == 'mark_seen'):
                     action_ = 'seen=true'
                     action_is_related_to_seen = True
@@ -653,8 +653,8 @@ class Postgresql_db():
                     priority=4
                 )
             else:
-                try:
-                    for hijack_key in raw['keys']:
+                for hijack_key in raw['keys']:
+                    try:
                         if action_is_related_to_seen:
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
@@ -663,21 +663,20 @@ class Postgresql_db():
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
+                    except Exception:
+                        log.exception('{}'.format(raw))
 
-                except Exception:
-                    log.exception('{}'.format(raw))
-                finally:
-                    self.producer.publish(
-                        {
-                            'status': 'accepted'
-                        },
-                        exchange='',
-                        routing_key=message.properties['reply_to'],
-                        correlation_id=message.properties['correlation_id'],
-                        serializer='json',
-                        retry=True,
-                        priority=4
-                    )
+            self.producer.publish(
+                {
+                    'status': 'accepted'
+                },
+                exchange='',
+                routing_key=message.properties['reply_to'],
+                correlation_id=message.properties['correlation_id'],
+                serializer='json',
+                retry=True,
+                priority=4
+            )
 
         def _insert_bgp_updates(self):
             try:

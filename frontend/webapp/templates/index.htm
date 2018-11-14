@@ -159,9 +159,15 @@
                     "serverSide": true,
                     "searching": false,
                     "ajax": (data, callback, settings) => {
-                        var query = "{ datatable: view_hijacks_aggregate { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
-                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + data.order[0].dir
-                        query += "}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
+                        var sort;
+                        if(data.order[0].dir == 'desc'){
+                            sort = 'desc_nulls_first';
+                        }else{
+                            sort = 'asc';
+                        }
+                        var query = "{ datatable: view_hijacks_aggregate( where: { active: {_eq: true} }) { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
+                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + sort;
+                        query += "}, where: { active: {_eq: true} }) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
                     fetchDatatableLive(ws, callback, query);
                     },
                     "order": [[ 0, "desc" ]],

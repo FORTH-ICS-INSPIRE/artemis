@@ -77,7 +77,7 @@
             {% if current_user.has_roles('admin') %}
             <div class="col-lg-12">
                 <div class="row">
-                    <div class="col-lg-2 offset-lg-7">
+                    <div class="col-lg-2 offset-lg-6">
                         <div class="btn-group-toggle" data-toggle="buttons">
                           <label class="btn btn-secondary active">
                             <input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>
@@ -331,16 +331,16 @@
 
                 {% if hijack_keys %}
                     var key = {{ hijack_keys | safe }};
-                    filters.push('key.in.(' + key + ')');
+                    filters.push('{ key: {_in: [' + key + ']} }');
                 {% endif %}
 
                 if(filter_parameters['time'] != null){
-                    filters.push('{ timestamp: {_gte: "' + filter_parameters['time']['start_time'] + '"} }');
-                    filters.push('{ timestamp: {_lte: "' + filter_parameters['time']['end_time'] + '"} }');
+                    filters.push('{ time_detected: {_gte: "' + filter_parameters['time']['start_time'] + '"} }');
+                    filters.push('{ time_detected: {_lte: "' + filter_parameters['time']['end_time'] + '"} }');
                 }
 
                 if(filter_parameters['prefixes_selection'] != null){
-                    filters.push('{ matched_prefix: {_eq: "' + filter_parameters['prefixes_selection'] + '"} }');
+                    filters.push('{ configured_prefix: {_eq: "' + filter_parameters['prefixes_selection'] + '"} }');
                 }
 
                 if(filter_parameters['prefix'] != null){
@@ -380,7 +380,7 @@
                         if(data.order[0].dir == 'desc'){
                             sort = 'desc_nulls_first';
                         }else{
-                            sort = 'asc_nulls_last';
+                            sort = 'asc';
                         }
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
@@ -397,7 +397,7 @@
                         }else{
                             query += ")";
                         }
-                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active, under_mitigation } }"
+                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation } }"
                         if(refresh_state_live){
                             fetchDatatableLive(ws, callback, query);
                         }else{
@@ -533,6 +533,12 @@
                     },
                     dataType: 'json'
                 });
+                selected_hijacks = [];
+                $('#selected_hijacks_num').html(selected_hijacks.length);
+                table.draw(false);
+                $('#clear_all_selected').prop('disabled', true);
+                $('#apply_selected').prop('disabled', true);
+
             } );
             {% endif %}
 

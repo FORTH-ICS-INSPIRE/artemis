@@ -397,7 +397,7 @@
                         }else{
                             query += ")";
                         }
-                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation } }"
+                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active, under_mitigation } }"
                         if(refresh_state_live){
                             fetchDatatableLive(ws, callback, query);
                         }else{
@@ -420,7 +420,7 @@
                     "order": [[ 0, "desc" ]],
                     "columns": [
                         { data: 'time_detected', "width": "150px" },
-                        { data: 'type' },
+                        { data: 'status' },
                         { data: 'prefix' },
                         { data: 'type', "width": "48px" },
                         { data: 'hijack_as' },

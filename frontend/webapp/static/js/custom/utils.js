@@ -43,7 +43,7 @@ function format_hijack_entry(data){
     if('key' in data){
         data['hijack_link'] = hijack_key_create_link([data['key']]);
     }
-    data['type'] = format_hijack_status(data);
+    data['status'] = format_hijack_status(data);
     data['mark_key'] = '<input class="form-check-input" type="checkbox" value="" id="mark_' + data['key'] + '">';
 
     return data;

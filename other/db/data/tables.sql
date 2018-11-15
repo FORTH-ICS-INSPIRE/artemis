@@ -27,7 +27,7 @@ INSERT INTO db_details (version, upgraded_on) VALUES (2, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
-    prefix inet, 
+    prefix inet,
     origin_as BIGINT,
     peer_asn   BIGINT,
     as_path   BIGINT[],
@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS bgp_updates (
     PRIMARY KEY(timestamp, key),
     UNIQUE(timestamp, key)
 );
+
+CREATE INDEX withdrawal_idx
+ON bgp_updates(prefix, peer_asn, type, hijack_key);
+
+CREATE INDEX handled_idx
+ON bgp_updates(handled);
 
 SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
@@ -89,6 +95,9 @@ CREATE TABLE IF NOT EXISTS hijacks (
         )
     )
 );
+
+CREATE INDEX active_idx
+ON hijacks(active);
 
 SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 

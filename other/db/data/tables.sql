@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS bgp_updates (
     UNIQUE(timestamp, key)
 );
 
+CREATE INDEX withdrawal_idx
+ON bgp_updates(prefix, peer_asn, type, hijack_key);
+
+CREATE INDEX handled_idx
+ON bgp_updates(handled);
+
 SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
 -- create trigger send_update_event
@@ -88,6 +94,9 @@ CREATE TABLE IF NOT EXISTS hijacks (
         )
     )
 );
+
+CREATE INDEX active_idx
+ON hijacks(active);
 
 SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 

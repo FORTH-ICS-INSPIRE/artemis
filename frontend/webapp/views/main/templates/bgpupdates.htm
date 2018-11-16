@@ -434,10 +434,15 @@
                     })))
                     .catch(error => console.error(error));
                 });
-
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                        render_table(ws);
+                    }
+                });
 
                 display_time_selection(custom_time);
-                render_table(ws);
                 $('input[name="datetimes"]').daterangepicker({
                     timePicker: true,
                     startDate: moment().startOf('hour'),

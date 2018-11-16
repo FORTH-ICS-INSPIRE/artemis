@@ -478,8 +478,14 @@
                     })))
                     .catch(error => console.error(error));
                 });
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                        render_table(ws);
+                    }
+                });
 
-                render_table(ws);
                 $('input[name="datetimes"]').daterangepicker({
                     timePicker: true,
                     startDate: moment().startOf('hour'),
@@ -488,9 +494,9 @@
                         format: 'M/DD hh:mm A'
                     }
                 },  function(start, end, label) {
-                    display_settings['time'] = { 'start_time': start.toISOString(), 'end_time': end.toISOString()};
-                    $('#hijacks').DataTable().destroy()
-                    render_table(display_settings);
+                    filter_parameters['time'] = { 'start_time': start.toISOString(), 'end_time': end.toISOString()};
+                    construct_filter_hijacks_query();
+                    table.draw();
                     }
                 );
                 {% if current_user.has_roles('admin') %}

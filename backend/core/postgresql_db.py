@@ -752,15 +752,18 @@ class Postgresql_db():
             try:
                 # for _add in update_hijack_withdrawals:
                 #     log.info('adding {} to {}'.format(_add[0], _add[1]))
-                psycopg2.extras.execute_batch(
+                cmd_ = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) ' \
+                    'FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
+                psycopg2.extras.execute_values(
                     self.db_cur,
-                    'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
+                    cmd_,
                     list(update_hijack_withdrawals),
                     page_size=1000
                 )
-                psycopg2.extras.execute_batch(
+                cmd_ = 'UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key'
+                psycopg2.extras.execute_values(
                     self.db_cur,
-                    'UPDATE bgp_updates SET handled=true WHERE key=%s ',
+                    cmd_,
                     list(update_normal_withdrawals),
                     page_size=1000
                 )
@@ -787,26 +790,27 @@ class Postgresql_db():
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if len(update_bgp_entries) > 0:
-                cmd_ = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
+                cmd_1 = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
                     'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( ' \
-                    'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B ' \
-                    'WHERE H.key = %s AND B.key = %s AND B.type = \'A\') AS curr_update WHERE curr_update.key = ANY(bgp_updates.hijack_key) ' \
+                    'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B, (VALUES %s) AS data (v1, v2) ' \
+                    'WHERE H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\') AS curr_update WHERE curr_update.key = ANY(bgp_updates.hijack_key) ' \
                     'AND bgp_updates.peer_asn = curr_update.peer_asn ' \
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'
                 try:
                     # for _add in update_bgp_entries:
                     #     log.info('b adding {} to {}'.format(_add[0], _add[1]))
-                    psycopg2.extras.execute_batch(
+                    cmd_2 = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
+                    psycopg2.extras.execute_values(
                         self.db_cur,
-                        'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
+                        cmd_2,
                         list(update_bgp_entries),
                         page_size=1000
                     )
                     self.db_conn.commit()
-                    psycopg2.extras.execute_batch(
+                    psycopg2.extras.execute_values(
                         self.db_cur,
-                        cmd_,
+                        cmd_1,
                         list(update_bgp_entries),
                         page_size=1000
                     )
@@ -822,9 +826,10 @@ class Postgresql_db():
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    psycopg2.extras.execute_batch(
+                    cmd_ = 'UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key'
+                    psycopg2.extras.execute_values(
                         self.db_cur,
-                        'UPDATE bgp_updates SET handled=true WHERE key=%s',
+                        cmd_,
                         self.handled_bgp_entries,
                         page_size=1000
                     )

@@ -5,13 +5,27 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
 {% endblock %}
 
 {% block page_content %}
     {{super()}}
         <div class="row">
-            <div class="col-lg-12">
-                <h1 class="page-header">Hijacks</h1>
+            <div class="col-lg-12 page-header">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1>Hijacks</h1>
+                    </div>
+                    <div class="col-lg-2 offset-lg-2">
+                        <h2>Live Update:</h2>
+                    </div>
+                    <div class="col-lg-2">
+                        <label class="switch">
+                            <input data-toggle="toggle" id="live_update_button" name="live_update_switch" type="checkbox" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -60,9 +74,10 @@
                     </div>
                 </div>
             </div>
+            {% if current_user.has_roles('admin') %}
             <div class="col-lg-12">
                 <div class="row">
-                    <div class="col-lg-2 offset-lg-7">
+                    <div class="col-lg-2 offset-lg-6">
                         <div class="btn-group-toggle" data-toggle="buttons">
                           <label class="btn btn-secondary active">
                             <input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>
@@ -91,6 +106,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
         <div class="col-lg-12">
             <table class="table table-striped table-bordered" id="hijacks">
@@ -129,12 +145,6 @@
                     <a id="status_ignored_text" style="color:orange" href="javascript:filter_by_status('ignored');">Ignored</a> / 
                     <a id="status_under_mitigation_text" style="color:blue" href="javascript:filter_by_status('under_mitigation');">Under Mitigation</a> /
                     <a id="status_withdrawn_text" style="color:purple" href="javascript:filter_by_status('withdrawn');">Withdrawn</a> </i></p>
-                    <p>Last refresh:
-                        <b id="last_refresh_time"></b>
-                        <b id="refresh_button">
-                            <a href="javascript:refresh_handle('disable');">(Disable Autorefresh)</a>
-                        </b>
-                    </p>
             </div>
             <div class="col-lg-6">
                 </hr>
@@ -150,13 +160,17 @@
         {{super()}}
         <script>
             var table;
+            var ws = null;
+            var query = "";
+            {% if current_user.has_roles('admin') %}
             var selected_hijacks = [];
+            {% endif %}
             var static_urls = {
                 "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
                 "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
-            var refresh_status = true;
+            var refresh_state_live = true;
             var datatable_parameters = {
                     'order': [
                         {
@@ -316,68 +330,84 @@
                 inspect_input_of_search_boxes();
 
                 {% if hijack_keys %}
-                    var key = {{ hijack_keys | safe }};
-                    filters.push('key.in.(' + key + ')');
+                    var keys = {{ hijack_keys | safe }};
+                    var keys_str = "";
+                    for(key in keys){
+                        keys_str += '"' + keys[key] + '",' ;
+                    }
+                    filters.push('{ key: {_in: [' + keys_str + ']} }');
                 {% endif %}
 
                 if(filter_parameters['time'] != null){
-                    filters.push('time_detected.gte.' + filter_parameters['time']['start_time'] + ',time_detected.lte.' + filter_parameters['time']['end_time']);
+                    filters.push('{ time_detected: {_gte: "' + filter_parameters['time']['start_time'] + '"} }');
+                    filters.push('{ time_detected: {_lte: "' + filter_parameters['time']['end_time'] + '"} }');
                 }
 
                 if(filter_parameters['prefixes_selection'] != null){
-                    filters.push('matched_prefix.eq.' + filter_parameters['prefixes_selection']);
+                    filters.push('{ configured_prefix: {_eq: "' + filter_parameters['prefixes_selection'] + '"} }');
                 }
 
                 if(filter_parameters['prefix'] != null){
-                    filters.push('prefix.eq.' + filter_parameters['prefix']);
+                    filters.push('{ prefix: {_eq: "' + filter_parameters['prefix'] + '"} }');
                 }
 
                 if(filter_parameters['hijack_as'] != null){
-                    filters.push('hijack_as.eq.' + filter_parameters['hijack_as']);
+                    filters.push('{ hijack_as: {_eq: "' + filter_parameters['hijack_as'] + '"} }');
                 }
 
                 if(filter_parameters['type'] != null){
-                    filters.push('type.eq.' + filter_parameters['type']);
+                    filters.push('{ type: {_eq: "' + filter_parameters['type'] + '"} }');
                 }
 
                 if(filter_parameters['status'] != null){
-                    filters.push(filter_parameters['status'] + ".eq.true");
+                    filters.push('{' + filter_parameters['status'] + ': {_eq: true } }');
                 }
 
+
                 if(filters.length > 0){
-                    datatable_parameters['and'] = '(' + filters.join() + ')';
+                    datatable_parameters['and'] = 'where: { _and: [' + filters.join() + '] }';
                 }else{
-                    delete datatable_parameters['and'];
+                    datatable_parameters['and'] = null;
                 }
             }
 
 
-            function render_table(settings){
+            function render_table(ws){
                construct_filter_hijacks_query();
 
                 table = $('#hijacks').DataTable( {
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
-                    ajax: function(data, callback, settings) {
+                    "pagingType": "full_numbers",
+                    "ajax": (data, callback, settings) => {
+                        var sort;
+                        if(data.order[0].dir == 'desc'){
+                            sort = 'desc_nulls_first';
+                        }else{
+                            sort = 'asc';
+                        }
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
-
-                        datatable_parameters['order'] = columns[data.order[0].column].data + "." + data.order[0].dir;
-                        $.ajax({
-                            type: "POST",
-                            url: '{{ url_for('proxy_api') }}',
-                            dataType: "json",
-                            dataType: "json",
-                            data: { "action": "view_hijacks", "parameters" : JSON.stringify(datatable_parameters) },
-                            success: function(data, status, xhr){
-                                callback({
-                                    recordsTotal: data.total,
-                                    recordsFiltered: data.total,
-                                    data: format_hijacks_datatable(data.results)
-                                });
-                            }
-                        });
+                        query = "{ datatable: view_hijacks_aggregate"
+                        if(datatable_parameters['and'] != null){
+                            query += "(" + datatable_parameters['and'] + ") { aggregate { totalCount: count } }";
+                        }else{
+                            query += " { aggregate { totalCount: count } }";
+                        }
+                        query += " view_data: view_hijacks(limit: " + datatable_parameters['limit'] + ", offset: " + datatable_parameters['offset'] 
+                        query += ", order_by: {" + columns[data.order[0].column].data + ": " + sort + "} "
+                        if(datatable_parameters['and'] != null){
+                            query += datatable_parameters['and'] +  ")";
+                        }else{
+                            query += ")";
+                        }
+                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation } }"
+                        if(refresh_state_live){
+                            fetchDatatableLive(ws, callback, query);
+                        }else{
+                            fetchDatatable(callback, query);
+                        }
                     },
                     initComplete: function() {
                         var api = this.api();
@@ -395,11 +425,7 @@
                     "order": [[ 0, "desc" ]],
                     "columns": [
                         { data: 'time_detected', "width": "150px" },
-                        {   
-                            data: function( row, type, val, meta ) {
-                                return format_hijack_status(row)
-                            }
-                        },
+                        { data: 'status' },
                         { data: 'prefix' },
                         { data: 'type', "width": "48px" },
                         { data: 'hijack_as' },
@@ -408,15 +434,17 @@
                         { data: 'seen', "width": "14px" },
                         { data: 'hijack_link', "width": "14px" }
                     ],
+                    {% if current_user.has_roles('admin') %}
                     "fnRowCallback": function (nRow, aData, iDisplayIndex) {
                         $(nRow).attr('id', aData['key']);
                         if(selected_hijacks.indexOf(aData['key']) > -1){
                             $(nRow).addClass('selected');
                         }
                     },
+                    {% endif %}
                     "columnDefs": [
                         {
-                            "targets": [1,7,8],
+                            "targets": [1,2,3,4,5,6,7,8],
                             "orderable": false
                         },
                         {
@@ -432,8 +460,26 @@
 
             $(document).ready(function(){
                 display_time_selection(custom_time);
-                $('#last_refresh_time').html(transform_date_to_local($.now()));
-                render_table({});
+
+                ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+
+                render_table(ws);
                 $('input[name="datetimes"]').daterangepicker({
                     timePicker: true,
                     startDate: moment().startOf('hour'),
@@ -447,6 +493,7 @@
                     render_table(display_settings);
                     }
                 );
+                {% if current_user.has_roles('admin') %}
 
                 $('#hijacks tbody').on( 'click', 'tr', function () {
                     if($(this).hasClass ("selected")) {
@@ -454,7 +501,7 @@
                     }else{
                         selected_hijacks.push($(this).attr("id"));
                     }
-                    $('#selected_hijacks_num').html(selected_hijacks.length)
+                    $('#selected_hijacks_num').html(selected_hijacks.length);
 
                     if(selected_hijacks.length > 0){
                         $('#apply_selected').prop('disabled', false);
@@ -473,17 +520,11 @@
                     $('#clear_all_selected').prop('disabled', true);
                     $('#apply_selected').prop('disabled', true);
                 } );
-
-                setInterval( function () {
-                if(refresh_status){
-                        table.draw(false);
-                        $('#last_refresh_time').html(transform_date_to_local($.now()));
-                    }
-                }, 5000 );
+                {% endif %}
 
                 $('#timezone').html(display_timezone());
             });
-
+            {% if current_user.has_roles('admin') %}
             $('#apply_selected').click(function() {
                 $.ajax({
                     type: 'POST',
@@ -497,21 +538,28 @@
                     },
                     dataType: 'json'
                 });
+                selected_hijacks = [];
+                $('#selected_hijacks_num').html(selected_hijacks.length);
+                table.draw(false);
+                $('#clear_all_selected').prop('disabled', true);
+                $('#apply_selected').prop('disabled', true);
+
             } );
+            {% endif %}
 
-
-            function refresh_handle(state){
-                if(state == 'disable'){
-                    refresh_status = false;
-                    $("#refresh_button").html('<a href="javascript:refresh_handle(\'enable\');">(Enable Autorefresh)</a>');
-                }else{
-                    refresh_status = true;
-                    $("#refresh_button").html('<a href="javascript:refresh_handle(\'disable\');">(Disable Autorefresh)</a>');
+            $("#live_update_button").on('change', function() {
+                if ($(this).is(':checked')) {
+                    refresh_state_live = true;
+                    startDatatableLive(ws, query);
+                }else {
+                    stopDatatableLive(ws);
+                    refresh_state_live = false;
                 }
-            }
+            });
 
 
         </script>
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>

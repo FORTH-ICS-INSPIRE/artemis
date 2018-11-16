@@ -38,7 +38,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="row">
-                                <div class="col-lg-12"> 
+                                <div class="col-lg-12">
                                     <table class="table table-striped table-bordered" id="hijacks">
                                         <thead>
                                             <th>Time Detected</th>
@@ -71,7 +71,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="list-group">
-                                <ul>
+                                <ul id="modules_states">
                                     <li class="list-group-item">
                                         <div class="row">
                                             <div class="col-lg-4"><strong>Module</strong></div>
@@ -83,34 +83,6 @@
                                             </div>
                                         </div>
                                     </li>
-                                    {% for module in modules %}
-                                    <li class="list-group-item">
-                                        <div class="row">
-                                            <div class="col-lg-4">{{ module }}</div>
-
-                                            <div class="col-lg-8">{% if modules[module]['status'] == 'up': %}
-                                                    <div class="row">
-                                                        <div class="col-lg-4">
-                                                             <b style="color:#008000">On</b>
-                                                        </div> 
-                                                        <div class="col-lg-8">
-                                                            {{ modules[module]['uptime'] }}
-                                                        </div>  
-                                                    </div>
-                                                {% else %}
-                                                    <div class="row">
-                                                        <div class="col-lg-4">
-                                                            <b style="color:#ff0000">Off</b>
-                                                        </div> 
-                                                        <div class="col-lg-8">
-                                                            {{ modules[module]['uptime'] }}
-                                                        </div>
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </li>
-                                    {% endfor %}
                                 </ul>
                             </div>
                         </div>
@@ -124,25 +96,13 @@
                         </div>
                         <div class="panel-body">
                             <div class="list-group">
-                                <ul>
-                                    {% for stat in db_stats %}
-                                    <li class="list-group-item"> 
-                                        <div class="row">
-                                            <div class="col-lg-7">{{ stat[0] }}:</div>
-
-
-                                            <div class="col-lg-5">
-                                                <b>{{ stat[1] }}</b>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
+                                <ul id="db_stats_list"></ul>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
     {% block scripts %}
         {{super()}}
         <script>
@@ -155,39 +115,61 @@
 
             var columns = [
                 { data: 'time_detected' },
+                null,
                 { data: 'prefix' },
                 { data: 'type' },
                 { data: 'hijack_as' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }];
 
-            function render_table(){
-                var parameters = {};
-                parameters['and'] = "(active.eq.true)";
 
+            function render_db_stats(data) {
+                $('#db_stats_list').empty();
+                for (var key in data) {
+                    var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-7">';
+                    html_ += key.replace(/_/g, " ") + '</div><div class="col-lg-5"><b>' + data[key]["aggregate"]["count"] + '</b></div></div></li>';
+                    $('#db_stats_list').append(html_);
+                }
+            }
+
+            function render_modules_state(data) {
+                $('#modules_states li').not('li:first').remove();
+                for (var key in data['view_processes']) {
+                    var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-4">'
+                    html_ += data['view_processes'][key].name + '</div><div class="col-lg-8">'
+                    html_ += '<div class="row"><div class="col-lg-4">'
+                    if(data['view_processes'][key].running){
+                        html_ += '<b style="color:#008000">On</b></div>'
+                        var seconds_elapsed = elapsed_seconds(data['view_processes'][key].timestamp);
+                        html_ += '<div class="col-lg-8"><time_passed elapsed="' + seconds_elapsed + '">'
+                        html_ +=  calculate_time_passed(seconds_elapsed)
+                        html_ += '</time_passed></div></div>'
+                    }else{
+                        html_ += '<b style="color:#ff0000">Off</b></div>'
+                        html_ += '<div class="col-lg-8"> </div></div>'
+                    }
+                    html_ += '</div></div></li>'
+                    $('#modules_states').append(html_);
+                }
+            }
+
+            function render_table(ws){
                 table = $('#hijacks').DataTable( {
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
-                    ajax: function(data, callback, settings) {
-                        parameters['offset'] = data.start;
-                        parameters['limit'] = data.length;
-                        parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
-                        $.ajax({
-                            type: "POST",
-                            url: '{{ url_for('proxy_api') }}',
-                            dataType: "json",
-                            dataType: "json",
-                            data: { "action": "view_hijacks", "parameters" : JSON.stringify(parameters) },
-
-                            success: function(data, status, xhr){
-                                callback({
-                                    recordsTotal: data.total,
-                                    recordsFiltered: data.total,
-                                    data: format_hijacks_datatable(data.results)
-                                });
-                            }
-                        });
+                    "pagingType": "full_numbers",
+                    "ajax": (data, callback, settings) => {
+                        var sort;
+                        if(data.order[0].dir == 'desc'){
+                            sort = 'desc_nulls_first';
+                        }else{
+                            sort = 'asc';
+                        }
+                        var query = "{ datatable: view_hijacks_aggregate( where: { active: {_eq: true} }) { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
+                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + sort;
+                        query += "}, where: { active: {_eq: true} }) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active } }"
+                    fetchDatatableLive(ws, callback, query);
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
@@ -207,7 +189,7 @@
                     ],
                     "columnDefs": [
                         {
-                            "targets": [1,7,8],
+                            "targets": [1,2,3,4,5,6,7,8],
                             "orderable": false
                         },
                         {
@@ -221,17 +203,65 @@
                 });
             }
 
-            setInterval( function () {
-                table.draw(false);
-            }, 5000 );
+            function elapsed_seconds(date){
+                var current_date = new Date();
+                var ellapsed_time_ms = current_date - moment.utc(date).local();
+                var seconds = parseInt((ellapsed_time_ms / 1000), 10);
+                return seconds;
+            }
 
-            $(document).ready(function(){ 
-                render_table({});
+            function calculate_time_passed(seconds){
+                var days = Math.floor(seconds / (3600 * 24));
+                seconds  -= days * 3600 * 24;
+                var hours   = Math.floor(seconds / 3600);
+                seconds  -= hours * 3600;
+                var minutes = Math.floor(seconds / 60);
+                seconds  -= minutes * 60;
+                return  days + "D " + hours + "H "+ minutes + "M " + seconds +"S";
+            }
+
+            setInterval( function () {
+                    $("time_passed").each(function() {
+                        var elapsed = parseInt($(this).attr('elapsed')) + 1;
+                        $(this).attr('elapsed', elapsed);
+                        $(this).text(calculate_time_passed(elapsed));
+                    });
+                }, 1000
+            );
+
+            $(document).ready(() => {
+                const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                        render_table(ws);
+                        fetchDbStatsLive(ws, render_db_stats);
+                        fetchProcStatesLive(ws, render_modules_state);
+                    }
+                });
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
                 $('#timezone').html(display_timezone());
             });
 
         </script>
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
@@ -240,4 +270,4 @@
 
     {% endblock %}
 {% endblock %}
-        
+

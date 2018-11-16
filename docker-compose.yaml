@@ -19,6 +19,7 @@ services:
             DATABASE_PASSWORD: ${DB_PASS}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
         volumes:
             - ./backend/configs/:/etc/artemis/
             - ./backend/:/root/
@@ -47,6 +48,7 @@ services:
             POSTGREST_FLASK_HOST: ${POSTGREST_HOST}:${POSTGREST_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
             # SYSLOG_HOST: 'syslog:514'
         volumes:
             - ./frontend/:/root/
@@ -54,7 +56,7 @@ services:
             - ./frontend/db/:/etc/webapp/db/
     nginx:
         image: nginx:latest
-        container_name: production_nginx
+        container_name: nginx
         restart: always
         depends_on:
             - frontend
@@ -68,9 +70,7 @@ services:
             - "80:80"
             - "443:443"
             - "15672:15672"
-        environment:
-            ARTEMIS_FRONTEND_HOST: ${WEBAPP_HOST}
-            POSTGREST_HOST: ${POSTGREST_HOST}
+            - "8080:8080"
         volumes:
             - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
             - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
@@ -120,18 +120,24 @@ services:
             PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
-    # pg_amqp_bridge:
-    #     image: subzerocloud/pg-amqp-bridge
-    #     container_name: pg_amqp_bridge
-    #     networks:
-    #         - postgres
-    #         - rabbitmq
-    #     environment:
-    #     - RUST_LOG=info # output forwarded messages
-    #     - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-    #     - AMQP_URI=amqp://${RABBITMQ_HOST}//
-    #     - BRIDGE_CHANNELS=events:amq.topic
-
+    graphql:
+        image: hasura/graphql-engine:latest
+        container_name: graphql
+        restart: always
+        depends_on:
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - 8080
+        environment:
+            HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_CONSOLE}
+            HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'
+        command:
+            - graphql-engine
+            - serve
 
 networks:
     artemis:

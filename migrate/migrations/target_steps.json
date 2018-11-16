@@ -11,6 +11,12 @@
             "db_version": "2",
             "description": "Add withdrawn fields, alter json fields to array[].",
             "file": "migration_2.sql"
+            },
+        "3": {
+            "id": "3",
+            "db_version": "3",
+            "description": "Hasura introduction.",
+            "file": "migration_3.sql"
             }
     }
 }

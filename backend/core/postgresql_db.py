@@ -682,8 +682,8 @@ class Postgresql_db():
             try:
                 cmd_ = 'INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, ' \
                     'timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES ' \
-                    '(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(key, timestamp) DO NOTHING;'
-                psycopg2.extras.execute_batch(
+                    '%s ON CONFLICT(key, timestamp) DO NOTHING;'
+                psycopg2.extras.execute_values(
                     self.db_cur, cmd_, self.insert_bgp_entries, page_size=1000)
                 self.db_conn.commit()
             except Exception:
@@ -752,15 +752,18 @@ class Postgresql_db():
             try:
                 # for _add in update_hijack_withdrawals:
                 #     log.info('adding {} to {}'.format(_add[0], _add[1]))
-                psycopg2.extras.execute_batch(
+                cmd_ = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) ' \
+                    'FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
+                psycopg2.extras.execute_values(
                     self.db_cur,
-                    'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
+                    cmd_,
                     list(update_hijack_withdrawals),
                     page_size=1000
                 )
-                psycopg2.extras.execute_batch(
+                cmd_ = 'UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key'
+                psycopg2.extras.execute_values(
                     self.db_cur,
-                    'UPDATE bgp_updates SET handled=true WHERE key=%s ',
+                    cmd_,
                     list(update_normal_withdrawals),
                     page_size=1000
                 )
@@ -787,25 +790,27 @@ class Postgresql_db():
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if len(update_bgp_entries) > 0:
-                cmd_ = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
+                cmd_1 = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
                     'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( ' \
-                    'SELECT H.key, B.type, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B ' \
-                    'WHERE H.key = %s AND B.key = %s) AS curr_update WHERE curr_update.key = ANY(bgp_updates.hijack_key) ' \
-                    'AND curr_update.type = \'A\' AND bgp_updates.peer_asn = curr_update.peer_asn ' \
+                    'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B, (VALUES %s) AS data (v1, v2) ' \
+                    'WHERE H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\') AS curr_update WHERE curr_update.key = ANY(bgp_updates.hijack_key) ' \
+                    'AND bgp_updates.peer_asn = curr_update.peer_asn ' \
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'
                 try:
                     # for _add in update_bgp_entries:
                     #     log.info('b adding {} to {}'.format(_add[0], _add[1]))
-                    psycopg2.extras.execute_batch(
+                    cmd_2 = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
+                    psycopg2.extras.execute_values(
                         self.db_cur,
-                        'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE key=%s ',
+                        cmd_2,
                         list(update_bgp_entries),
                         page_size=1000
                     )
-                    psycopg2.extras.execute_batch(
+                    self.db_conn.commit()
+                    psycopg2.extras.execute_values(
                         self.db_cur,
-                        cmd_,
+                        cmd_1,
                         list(update_bgp_entries),
                         page_size=1000
                     )
@@ -821,9 +826,10 @@ class Postgresql_db():
             # Update the BGP entries using the handled messages
             if len(self.handled_bgp_entries) > 0:
                 try:
-                    psycopg2.extras.execute_batch(
+                    cmd_ = 'UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key'
+                    psycopg2.extras.execute_values(
                         self.db_cur,
-                        'UPDATE bgp_updates SET handled=true WHERE key=%s',
+                        cmd_,
                         self.handled_bgp_entries,
                         page_size=1000
                     )
@@ -845,9 +851,9 @@ class Postgresql_db():
                 cmd_ = 'INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, ' \
                     'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, ' \
                     'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) ' \
-                    'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ' \
-                    'ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=%s, num_asns_inf=%s, time_started=%s, ' \
-                    'time_last=%s, peers_seen=%s, asns_inf=%s'
+                    'VALUES %s ' \
+                    'ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf ' \
+                    ', time_started=excluded.time_started, time_last=excluded.time_last, peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf'
 
                 values = []
                 for key in self.tmp_hijacks_dict:
@@ -880,21 +886,11 @@ class Postgresql_db():
                         '',  # comment
                         self.tmp_hijacks_dict[key]['peers_seen'],  # peers_seen
                         [],  # peers_withdrawn
-                        self.tmp_hijacks_dict[key]['asns_inf'],  # asns_inf
-                        # num_peers_seen
-                        self.tmp_hijacks_dict[key]['num_peers_seen'],
-                        # num_asns_inf
-                        self.tmp_hijacks_dict[key]['num_asns_inf'],
-                        datetime.datetime.fromtimestamp(
-                            self.tmp_hijacks_dict[key]['time_started']),  # time_started
-                        datetime.datetime.fromtimestamp(
-                            self.tmp_hijacks_dict[key]['time_last']),  # time_last
-                        self.tmp_hijacks_dict[key]['peers_seen'],  # peers_seen
                         self.tmp_hijacks_dict[key]['asns_inf']  # asns_inf
                     )
                     values.append(values_)
 
-                psycopg2.extras.execute_batch(
+                psycopg2.extras.execute_values(
                     self.db_cur, cmd_, values, page_size=1000)
                 self.db_conn.commit()
             except Exception:

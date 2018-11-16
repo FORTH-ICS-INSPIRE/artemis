@@ -439,6 +439,26 @@
                     if(data.type === 'connection_ack') {
                         ws.removeEventListener('message', conn_ack);
                         render_table(ws);
+
+                        $('#bgp_updates tbody').on('click', 'td.details-control', function () {
+                            var tr = $(this).closest('tr');
+                            var row = table.row(tr);
+                            if (row.child.isShown()) { // Close More
+                                count_open_details -= 1;
+                                row.child.hide();
+                                if(count_open_details == 0 && refresh_state_live == true){
+                                    startDatatableLive(ws, query);
+                                }
+                                tr.removeClass('shown');
+                            }else { // Enable More
+                                if(count_open_details == 0 && refresh_state_live == true){
+                                    stopDatatableLive(ws);
+                                }
+                                count_open_details += 1;
+                                row.child( format(row.data())).show();
+                                tr.addClass('shown');
+                            }
+                        });
                     }
                 });
 
@@ -456,27 +476,6 @@
                     table.draw();
                     }
                 );
-
-                $('#bgp_updates tbody').on('click', 'td.details-control', function () {
-                    var tr = $(this).closest('tr');
-                    var row = table.row(tr);
-                    if (row.child.isShown()) { // Close More
-                        count_open_details -= 1;
-                        row.child.hide();
-                        if(count_open_details == 0 && refresh_state_live == true){
-                            startDatatableLive(ws, query);
-                        }
-                        tr.removeClass('shown');
-                    }else { // Enable More
-                        if(count_open_details == 0 && refresh_state_live == true){
-                            stopDatatableLive(ws);
-                        }
-                        count_open_details += 1;
-                        row.child( format(row.data())).show();
-                        tr.addClass('shown');
-                    }
-                });
-
 
                 $('#timezone').html(display_timezone());
 

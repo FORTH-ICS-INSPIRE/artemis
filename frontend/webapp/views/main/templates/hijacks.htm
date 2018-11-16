@@ -483,6 +483,23 @@
                     if(data.type === 'connection_ack') {
                         ws.removeEventListener('message', conn_ack);
                         render_table(ws);
+                        $('#hijacks tbody').on( 'click', 'tr', function () {
+                            if($(this).hasClass ("selected")) {
+                                selected_hijacks.splice(selected_hijacks.indexOf($(this).attr("id")), 1);
+                            }else{
+                                selected_hijacks.push($(this).attr("id"));
+                            }
+                            $('#selected_hijacks_num').html(selected_hijacks.length);
+
+                            if(selected_hijacks.length > 0){
+                                $('#apply_selected').prop('disabled', false);
+                                $('#clear_all_selected').prop('disabled', false);
+                            }else{
+                                $('#clear_all_selected').prop('disabled', true);
+                                $('#apply_selected').prop('disabled', true);
+                            }
+                            $(this).toggleClass('selected');
+                        } );
                     }
                 });
 
@@ -500,24 +517,6 @@
                     }
                 );
                 {% if current_user.has_roles('admin') %}
-
-                $('#hijacks tbody').on( 'click', 'tr', function () {
-                    if($(this).hasClass ("selected")) {
-                        selected_hijacks.splice(selected_hijacks.indexOf($(this).attr("id")), 1);
-                    }else{
-                        selected_hijacks.push($(this).attr("id"));
-                    }
-                    $('#selected_hijacks_num').html(selected_hijacks.length);
-
-                    if(selected_hijacks.length > 0){
-                        $('#apply_selected').prop('disabled', false);
-                        $('#clear_all_selected').prop('disabled', false);
-                    }else{
-                        $('#clear_all_selected').prop('disabled', true);
-                        $('#apply_selected').prop('disabled', true);
-                    }
-                    $(this).toggleClass('selected');
-                } );
 
                 $('#clear_all_selected').click(function() {
                     selected_hijacks = [];

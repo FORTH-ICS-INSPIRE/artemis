@@ -17,6 +17,12 @@
             "db_version": "3",
             "description": "Hasura introduction.",
             "file": "migration_3.sql"
+            },
+        "4": {
+            "id": "4",
+            "db_version": "4",
+            "description": "Database indexes",
+            "file": "migration_4.sql"
             }
     }
 }

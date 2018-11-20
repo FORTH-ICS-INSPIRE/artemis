@@ -7,6 +7,7 @@ import yaml
 from logging.handlers import SMTPHandler
 import pickle
 import hashlib
+import threading
 
 
 # if not os.path.exists('snapshots'):
@@ -41,21 +42,23 @@ class TimedSet(set):
     def __init__(self, timeout=60*60*24):
         self.__table = {}
         self.timeout = timeout
+        self.timers = {}
 
     def add(self, item):
-        self.__table[item] = time.time() + self.timeout
         set.add(self, item)
+        self.timers[item] = threading.Timer(self.timeout, self._remove, args=(item,))
+        self.timers[item].start()
+
+    def _remove(self, item):
+        set.discard(self, item)
 
     def __contains__(self, item):
-        if time.time() < self.__table.get(item, -1):
-            self.__table[item] = time.time() + self.timeout
+        if item in set(self):
+            self.timers[item].cancel()
+            self.timers[item] = threading.Timer(self.timeout, self._remove, args=(item,))
+            self.timers[item].start()
             return True
         return False
-
-    def __iter__(self):
-        for item in set.__iter__(self):
-            if time.time() < self.__table.get(item):
-                yield item
 
 
 def flatten(items, seqtypes=(list, tuple)):

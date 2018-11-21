@@ -10,6 +10,8 @@ import hashlib
 import logging
 from typing import Dict, List, NoReturn, Callable, Tuple
 import redis
+import json
+from datetime import datetime
 
 
 log = get_logger()
@@ -92,10 +94,15 @@ class Detection():
                 type='direct',
                 durable=False,
                 delivery_mode=1)
+            self.pg_amq_bridge = Exchange(
+                'amq.direct',
+                type='direct',
+                durable=True,
+                delivery_mode=1)
 
             # QUEUES
             self.update_queue = Queue(
-                'detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
+                'detection-update-update', exchange=self.pg_amq_bridge, routing_key='update-insert', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
             self.update_unhandled_queue = Queue(
                 'detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, auto_delete=True, max_priority=2,
@@ -250,7 +257,9 @@ class Detection():
             if isinstance(message, dict):
                 monitor_event = message
             else:
-                monitor_event = message.payload
+                monitor_event = json.loads(message.payload)
+                monitor_event['path'] = monitor_event['as_path']
+                monitor_event['timestamp'] = datetime.strptime(monitor_event['timestamp'], '%Y-%m-%dT%H:%M:%S').timestamp()
 
             if monitor_event['key'] not in self.monitors_seen:
                 raw = monitor_event.copy()

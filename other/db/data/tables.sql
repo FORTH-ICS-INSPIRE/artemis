@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS bgp_updates (
 
 SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
--- create trigger send_update_event
--- after insert or update or delete on bgp_updates
--- for each row execute procedure rabbitmq.on_row_change("update");
+create trigger send_update_event
+after insert on bgp_updates
+for each row execute procedure rabbitmq.on_row_change();
 
 CREATE TABLE IF NOT EXISTS hijacks (
     key VARCHAR ( 32 ) NOT NULL,

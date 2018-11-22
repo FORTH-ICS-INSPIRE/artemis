@@ -1,4 +1,5 @@
 import radix
+import re
 import ipaddress
 from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger, redis_key
 from kombu import Connection, Queue, Exchange, uuid, Consumer
@@ -259,7 +260,7 @@ class Detection():
             else:
                 monitor_event = json.loads(message.payload)
                 monitor_event['path'] = monitor_event['as_path']
-                monitor_event['timestamp'] = datetime.strptime(monitor_event['timestamp'], '%Y-%m-%dT%H:%M:%S').timestamp()
+                monitor_event['timestamp'] = datetime(*map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
 
             if monitor_event['key'] not in self.monitors_seen:
                 raw = monitor_event.copy()

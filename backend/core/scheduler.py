@@ -64,26 +64,27 @@ class Scheduler():
                         priority=3
                     )
                     if (unhandled_cnt % 5) == 0:
-                        if self._get_module_status('detection'):
-                            if self._get_module_status('monitor'):
-                                producer.publish(
-                                    {'op':'send_unhandled',
-                                    'amount':50},
-                                    exchange=self.db_clock_exchange,
-                                    routing_key='pulse',
-                                    retry=True,
-                                    priority=2
-                                )
-                            else:
-                                producer.publish(
-                                    {'op':'send_unhandled',
-                                    'amount':500},
-                                    exchange=self.db_clock_exchange,
-                                    routing_key='pulse',
-                                    retry=True,
-                                    priority=2
-                                )
-                            unhandled_cnt = 0
+                        pass
+                        # if self._get_module_status('detection'):
+                        #     if self._get_module_status('monitor'):
+                        #         producer.publish(
+                        #             {'op':'send_unhandled',
+                        #             'amount':50},
+                        #             exchange=self.db_clock_exchange,
+                        #             routing_key='pulse',
+                        #             retry=True,
+                        #             priority=2
+                        #         )
+                        #     else:
+                        #         producer.publish(
+                        #             {'op':'send_unhandled',
+                        #             'amount':500},
+                        #             exchange=self.db_clock_exchange,
+                        #             routing_key='pulse',
+                        #             retry=True,
+                        #             priority=2
+                        #         )
+                        #     unhandled_cnt = 0
                     unhandled_cnt += 1
 
 

@@ -131,7 +131,7 @@ services:
         networks:
             - artemis
         environment:
-        - RUST_LOG=info # output forwarded messages
+        # - RUST_LOG=info # output forwarded messages
         - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
         - AMQP_URI=amqp://${RABBITMQ_HOST}//
         - BRIDGE_CHANNELS=events:amq.direct

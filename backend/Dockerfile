@@ -10,8 +10,8 @@ WORKDIR /root
 
 COPY . ./
 
-
 RUN pip3 --no-cache-dir install -r requirements.txt
+RUN pip3 install git+https://github.com/supervisor/supervisor@master
 RUN make clean && make
 
 RUN mkdir src
@@ -59,4 +59,3 @@ RUN mkdir -p /etc/artemis/ && \
 COPY ./configs/* /etc/artemis/
 
 ENTRYPOINT ["./entrypoint"]
-

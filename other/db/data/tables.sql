@@ -22,12 +22,11 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (2, now());
-
+INSERT INTO db_details (version, upgraded_on) VALUES (3, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
-    prefix inet, 
+    prefix inet,
     origin_as BIGINT,
     peer_asn   BIGINT,
     as_path   BIGINT[],
@@ -42,6 +41,12 @@ CREATE TABLE IF NOT EXISTS bgp_updates (
     PRIMARY KEY(timestamp, key),
     UNIQUE(timestamp, key)
 );
+
+CREATE INDEX withdrawal_idx
+ON bgp_updates(prefix, peer_asn, type, hijack_key);
+
+CREATE INDEX handled_idx
+ON bgp_updates(handled);
 
 SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
@@ -90,6 +95,9 @@ CREATE TABLE IF NOT EXISTS hijacks (
     )
 );
 
+CREATE INDEX active_idx
+ON hijacks(active);
+
 SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 
 -- create trigger send_hijack_event
@@ -104,9 +112,33 @@ CREATE TABLE IF NOT EXISTS configs (
     time_modified TIMESTAMP NOT NULL
 );
 
-CREATE OR REPLACE VIEW view_configs AS SELECT time_modified FROM configs;
+CREATE OR REPLACE VIEW view_configs AS SELECT raw_config, comment, time_modified FROM configs;
 
 CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, ignored, configured_prefix, comment, seen, withdrawn, peers_withdrawn, peers_seen FROM hijacks;
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 
+CREATE OR REPLACE FUNCTION inet_search (inet)
+RETURNS SETOF bgp_updates AS $$
+SELECT * FROM bgp_updates WHERE prefix << $1;
+$$ LANGUAGE SQL;
+
+CREATE TABLE IF NOT EXISTS process_states (
+    name VARCHAR (32) UNIQUE,
+    running BOOLEAN DEFAULT FALSE,
+    timestamp TIMESTAMP default current_timestamp
+);
+
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.timestamp = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_process_timestamp
+BEFORE UPDATE ON process_states
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;

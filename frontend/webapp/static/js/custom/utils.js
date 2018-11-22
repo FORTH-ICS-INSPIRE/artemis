@@ -8,6 +8,24 @@ function format_hijacks_datatable(data){
     return data;
 }
 
+function format_datatable(data){
+    if('code' in data){ // its an error
+        return {};
+    }
+    if(data.length > 0){
+        if('hijack_as' in data[0]){
+            for(entry in data){
+                data[entry] = format_hijack_entry(data[entry]);
+            }
+        }else if('service' in data[0]){
+            for(entry in data){
+                data[entry] = format_bgp_update(data[entry]);
+            }
+        }
+    }
+    return data;
+}
+
 function format_hijack_entry(data){
 
     if('hijack_as' in data){
@@ -25,6 +43,8 @@ function format_hijack_entry(data){
     if('key' in data){
         data['hijack_link'] = hijack_key_create_link([data['key']]);
     }
+    data['status'] = format_hijack_status(data);
+    data['mark_key'] = '<input class="form-check-input" type="checkbox" value="" id="mark_' + data['key'] + '">';
 
     return data;
 }

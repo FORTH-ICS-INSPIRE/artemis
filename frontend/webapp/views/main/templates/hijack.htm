@@ -28,7 +28,7 @@
                             <div class="col-lg-6">
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b>Hijacker AS:</b></p>
+                                        <p><b helpText="field_hijack_as">Hijacker AS:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_hijack_as" class="form-control" type="text" readonly>
@@ -36,7 +36,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b>Type:</b></p>
+                                        <p><b helpText="field_hijack_type">Type:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_type" class="form-control" type="text" readonly>
@@ -44,7 +44,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b># Peers Seen:</b></p>
+                                        <p><b helpText="field_peers_seen"># Peers Seen:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_num_peers_seen" class="form-control" type="text" readonly>
@@ -52,7 +52,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b># ASes Infected:</b></p>
+                                        <p><b helpText="field_ases_infected"># ASes Infected:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_num_asns_inf" class="form-control" type="text" readonly>
@@ -60,7 +60,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b>Prefix:</b></p>
+                                        <p><b helpText="field_prefix">Prefix:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_prefix" class="form-control" type="text" readonly>
@@ -68,7 +68,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b>Matched:</b></p>
+                                        <p><b helpText="field_matched_prefix_hijack">Matched:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_matched_prefix" class="form-control" type="text" readonly>
@@ -76,7 +76,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b>Config:</b></p>
+                                        <p><b helpText="field_config">Config:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_config_timestamp" class="form-control" type="text" readonly>
@@ -84,7 +84,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b>Key:</b></p>
+                                        <p><b helpText="field_hijack_key">Key:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <input id="info_key" class="form-control" type="text" readonly>
@@ -94,7 +94,7 @@
                             <div class="col-lg-6">
                                 <div class="row">
                                     <div class="col-lg-6">
-                                        <p><b>Time Started:</b></p>
+                                        <p><b helpText="field_time_started">Time Started:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <input id="info_time_started" class="form-control" type="text" readonly>
@@ -102,7 +102,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6">
-                                        <p><b>Time Detected:</b></p>
+                                        <p><b helpText="field_time_detected">Time Detected:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <input id="info_time_detected" class="form-control" type="text" readonly>
@@ -110,7 +110,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6">
-                                        <p><b>Last Update:</b></p>
+                                        <p><b helpText="field_time_last_update">Last Update:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <input id="info_last_update" class="form-control" type="text" readonly>
@@ -118,7 +118,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6">
-                                        <p><b>Time Ended:</b></p>
+                                        <p><b helpText="field_time_ended">Time Ended:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <input id="info_time_ended" class="form-control" type="text" readonly>
@@ -126,7 +126,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6">
-                                        <p><b>Mitigation Started:</b></p>
+                                        <p><b helpText="field_mitigation_started">Mitigation Started:</b></p>
                                     </div>
                                     <div class="col-lg-6">
                                         <input id="info_mitigation_started" class="form-control" type="text" readonly>
@@ -217,15 +217,15 @@
                     <div class="panel-body">
                         <table class="table table-striped table-bordered" id="bgp_updates">
                             <thead>
-                                <th>Timestamp</th>
-                                <th>Prefix</th>
-                                <th>Origin AS</th>
-                                <th>AS Path</th>
-                                <th>Peer AS</th>
-                                <th>Service</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>More</th>
+                                <th helpText="field_bgp_timestamp">Timestamp</th>
+                                <th helpText="field_prefix">Prefix</th>
+                                <th helpText="field_origin_as">Origin AS</th>
+                                <th helpText="field_as_path">AS Path</th>
+                                <th helpText="field_peer_as">Peer AS</th>
+                                <th helpText="field_service">Service</th>
+                                <th helpText="field_bgp_update_type">Type</th>
+                                <th helpText="field_bgp_handle">Status</th>
+                                <th helpText="field_bgp_update_more">More</th>
                             </thead>
                             <tfoot>
                                 <tr>
@@ -286,19 +286,19 @@
                     'limit': 0
                 };
             var fields_to_display = [
-                ['prefix', 'Prefix'],
-                ['origin_as', 'Origin AS'],
-                ['as_path', 'AS Path'],
-                ['orig_path', 'Original Path'],
-                ['peer_asn', 'Peer AS'],
-                ['service', 'Service'],
-                ['type', 'Type'],
-                ['communities', 'Communities'],
-                ['timestamp', 'Timestamp'],
-                ['hijack_key', 'Hijack_key'],
-                ['matched_prefix', 'Matched Prefix'],
-                ['hijack_link', 'View Hijack'],
-                ['handled', 'Handled']
+                ['prefix', 'Prefix', 'field_prefix'],
+                ['origin_as', 'Origin AS', 'field_origin_as'],
+                ['as_path', 'AS Path', 'field_as_path'],
+                ['orig_path', 'Original Path', 'field_original_path'],
+                ['peer_asn', 'Peer AS', 'field_peer_as'],
+                ['service', 'Service', 'field_service'],
+                ['type', 'Type', 'field_bgp_update_type'],
+                ['communities', 'Communities', 'field_bgp_communities'],
+                ['timestamp', 'Timestamp', 'field_bgp_timestamp'],
+                ['hijack_key', 'Hijack_key', 'field_hijack_key'],
+                ['matched_prefix', 'Matched Prefix', 'field_matched_prefix_hijack'],
+                ['hijack_link', 'View Hijack', 'field_view_hijack'],
+                ['handled', 'Handled', 'field_bgp_handle']
             ];
 
             // Columns that can be sorted
@@ -415,6 +415,7 @@
                                     recordsFiltered: data.total,
                                     data: format_bgp_updates_datatable(data.results)
                                 });
+                                asn_map_to_name();
                             }
                         });
                     },
@@ -491,6 +492,8 @@
                         row.child( format(row.data()) ).show();
                         refresh_status = false;
                         tr.addClass('shown');
+                        asn_map_to_name();
+                        displayHelpMoreBGPupdate();
                     }
                 });
 
@@ -513,16 +516,19 @@
                 }, 5000 );
 
                 $('#timezone').html(display_timezone());
+                displayHelpTextB();
+                displayHelpTextTable();
+
             });
 
         
             function format ( d ) {
                 var html_ = '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">';
                 for(item in fields_to_display){
-                    html_ += '<tr><td><b>' + fields_to_display[item][1] + ':</b></td>'
-                    html_ += '<td>' + d[fields_to_display[item][0]] + '</td></tr>'
+                    html_ += '<tr><td helpText="' + fields_to_display[item][2] +'"><b>' + fields_to_display[item][1] + ':</b></td>';
+                    html_ += '<td>' + d[fields_to_display[item][0]] + '</td></tr>';
                 }
-                html_ += '</table>'
+                html_ += '</table>';
                 return html_;
             }
 
@@ -724,13 +730,17 @@
             }
             {% endif %}
         </script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
-        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
-        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/textile.js') }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/codemirror.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/textile.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
+
     {% endblock %}
 {% endblock %}
 

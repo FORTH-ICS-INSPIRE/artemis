@@ -107,3 +107,24 @@ tr.shown td.details-control {
 .selected {
     background-color: #ffc10766!important;
 }
+
+
+.tooltip-inner {
+    max-width: 500px;
+    padding: 3px 8px;
+    color: #fff;
+    font-weight: bold;
+    text-align: left;
+    background-color: #014379;
+    border-radius: .25rem;
+}
+
+.tooltip.show {
+  opacity: 1;
+}
+
+.tooltip-custom-margin {
+    margin-top:20px;
+    margin-left:20px;
+    margin-right:20px;
+}

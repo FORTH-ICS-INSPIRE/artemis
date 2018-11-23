@@ -22,7 +22,7 @@ def default():
 @admin.route('/system', methods=['GET', 'POST'])
 @roles_required('admin')
 def index():
-    return render_template('system.htm')
+    return render_template('system.htm', js_version=app.config['JS_VERSION'])
 
 
 @admin.route('/config', methods=['POST'])
@@ -123,7 +123,8 @@ def user_management():
                            users_to_approve_form=_pending_users_form,
                            users_to_make_admin_form=_users_to_promote_to_admin,
                            users_to_delete_form=_users_to_delete,
-                           users_list=user_list
+                           users_list=user_list,
+                           js_version=app.config['JS_VERSION']
                            )
 
 
@@ -133,4 +134,5 @@ def config_comparison():
     # log info
     _configs = fetch_all_config_timestamps()
     return render_template('config_comparison.htm',
-                           configs=list(reversed(_configs)))
+                           configs=list(reversed(_configs)),
+                           js_version=app.config['JS_VERSION'])

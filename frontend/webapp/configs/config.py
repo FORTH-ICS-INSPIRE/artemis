@@ -30,7 +30,7 @@ class BaseConfig(object):
 
     SECURITY_REGISTERABLE = True
     SECURITY_REGISTER_URL = "/create_account"
-
+    JS_VERSION = "?=" + os.getenv('JS_VERSION', '0.0.0.1')
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
 
 
@@ -50,7 +50,7 @@ class ProductionConfig(BaseConfig):
     WEBAPP_PORT = int(os.getenv('FLASK_PORT', '8000'))
 
     SECRET_KEY = b"\xfd'\xabW\xe7X$\xa8\xfd\xb3M\x84:$\xd3a\xa6\xbb`\x8b\xaa\xb9\x15r"
-
+    JS_VERSION = "?=" + os.getenv('JS_VERSION', '0.0.0.1')
 
 config = {
     'default': 'webapp.config.ProductionConfig'

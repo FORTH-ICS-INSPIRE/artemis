@@ -1,0 +1,15 @@
+*.pyc
+*.c
+*.so
+*/logs/*
+*/snapshots/*
+node_modules/
+artemis.db
+webapp.log
+.npm/
+*.pem
+frontend/db/*
+postgres-data-current/*
+postgres-data-backup/*
+.idea
+*.rdb

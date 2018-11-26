@@ -294,6 +294,13 @@ class Postgresql_db():
             msg_ = message.payload
             # prefix, key, origin_as, peer_asn, as_path, service, type, communities,
             # timestamp, hijack_key, handled, matched_prefix, orig_path
+
+            best_match = self.find_best_prefix_match(
+                msg_['prefix']),  # matched_prefix
+
+            if best_match is None:
+                return
+
             try:
                 origin_as = -1
                 if len(msg_['path']) >= 1:
@@ -313,8 +320,7 @@ class Postgresql_db():
                         (msg_['timestamp'])),  # timestamp
                     [],  # hijack_key
                     False,  # handled
-                    self.find_best_prefix_match(
-                        msg_['prefix']),  # matched_prefix
+                    best_match,
                     json.dumps(msg_['orig_path'])  # orig_path
                 )
                 # insert all types of BGP updates

@@ -274,14 +274,15 @@ class Detection():
                     if prefix_node is not None:
                         monitor_event['matched_prefix'] = prefix_node.prefix
 
-                    try:
-                        for func in self.__detection_generator(
-                                len(monitor_event['path']), prefix_node):
-                            if func(monitor_event, prefix_node):
-                                is_hijack = True
-                                break
-                    except Exception:
-                        log.exception('exception')
+                        try:
+                            for func in self.__detection_generator(
+                                    len(monitor_event['path'])):
+                                if func(monitor_event, prefix_node):
+                                    is_hijack = True
+                                    break
+                        except Exception:
+                            log.exception('exception')
+
                     if not is_hijack:
                         self.mark_handled(raw)
                 elif monitor_event['type'] == 'W':
@@ -303,19 +304,17 @@ class Detection():
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 
-        def __detection_generator(self, path_len: int,
-                                  prefix_node: radix.Radix) -> Callable:
+        def __detection_generator(self, path_len: int) -> Callable:
             """
             Generator that returns detection functions based on rules and path length.
             Priority: Squatting > Subprefix > Origin > Type-1
             """
-            if prefix_node is not None:
-                yield self.detect_squatting
-                yield self.detect_subprefix_hijack
-                if path_len > 0:
-                    yield self.detect_origin_hijack
-                    if path_len > 1:
-                        yield self.detect_type_1_hijack
+            yield self.detect_squatting
+            yield self.detect_subprefix_hijack
+            if path_len > 0:
+                yield self.detect_origin_hijack
+                if path_len > 1:
+                    yield self.detect_type_1_hijack
 
         @staticmethod
         def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:

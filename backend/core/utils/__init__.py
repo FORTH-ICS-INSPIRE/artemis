@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 import logging.handlers
 import logging.config
@@ -7,7 +6,6 @@ import yaml
 from logging.handlers import SMTPHandler
 import pickle
 import hashlib
-import threading
 
 
 # if not os.path.exists('snapshots'):
@@ -32,33 +30,6 @@ def get_logger(path='/etc/artemis/logging.yaml'):
         log = logging
         log.info('Loaded default configuration')
     return log
-
-
-# https://stackoverflow.com/questions/16136979/set-class-with-timed-auto-remove-of-elements
-
-
-class TimedSet(set):
-
-    def __init__(self, timeout=60*60*24):
-        self.__table = {}
-        self.timeout = timeout
-        self.timers = {}
-
-    def add(self, item):
-        set.add(self, item)
-        self.timers[item] = threading.Timer(self.timeout, self._remove, args=(item,))
-        self.timers[item].start()
-
-    def _remove(self, item):
-        set.discard(self, item)
-
-    def __contains__(self, item):
-        if item in set(self):
-            self.timers[item].cancel()
-            self.timers[item] = threading.Timer(self.timeout, self._remove, args=(item,))
-            self.timers[item].start()
-            return True
-        return False
 
 
 def flatten(items, seqtypes=(list, tuple)):

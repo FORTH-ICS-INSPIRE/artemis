@@ -1,7 +1,7 @@
 import radix
 import re
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger, redis_key
+from utils import exception_handler, RABBITMQ_HOST, get_logger, redis_key
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
@@ -60,7 +60,6 @@ class Detection():
             self.timestamp = -1
             self.rules = None
             self.prefix_tree = None
-            self.monitors_seen = TimedSet()
             self.mon_num = 1
 
             self.redis = redis.Redis(
@@ -262,7 +261,7 @@ class Detection():
                 monitor_event['path'] = monitor_event['as_path']
                 monitor_event['timestamp'] = datetime(*map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
 
-            if monitor_event['key'] not in self.monitors_seen:
+            if not self.redis.exists(monitor_event['key']):
                 raw = monitor_event.copy()
                 is_hijack = False
                 # ignore withdrawals for now
@@ -299,7 +298,8 @@ class Detection():
                     )
 
                 self.mon_num += 1
-                self.monitors_seen.add(monitor_event['key'])
+                # set key with empty value to expire after 1 hour
+                self.redis.set(monitor_event['key'], '', ex=60*60)
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 

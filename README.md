@@ -522,10 +522,8 @@ We follow a custom Agile approach for our development.
 ## Versioning
 See [CHANGELOG](https://github.com/FORTH-ICS-INSPIRE/artemis-tool/blob/master/CHANGELOG.md)
 
-## Authors
-* Dimitrios Mavrommatis, FORTH-ICS
-* Petros Gigis, FORTH-ICS
-* Vasileios Kotronis, FORTH-ICS
+## Authors and Contributors
+Please check [authors](AUTHORS.md).
 
 ## License
 The ARTEMIS software is open-sourced under the BSD-3 license.
@@ -536,14 +534,6 @@ This work is supported by the following funding sources:
 * European Research Council (ERC) grant agreement no. 338402 ([NetVolution Project](http://netvolution.eu/))
 * [RIPE NCC Community Projects Fund](https://www.ripe.net/publications/news/announcements/ripe-community-projects-fund-2017-recipients-announced)
 
-We acknowledge the contribution of the following collaborators w.r.t. the concepts and mechanisms
-used in this software:
-* Xenofontas Dimitropoulos, FORTH-ICS and UoC
-* Pavlos Sermpezis, FORTH-ICS
-* Alberto Dainotti, CAIDA UCSD
-* Alistair King, CAIDA UCSD
-
 The following funding sources supported the collaboration with CAIDA UCSD:
-* ...
-* ...
-* ...
+* National Science Foundation (NSF) grant CNS-1423659
+* Comcast

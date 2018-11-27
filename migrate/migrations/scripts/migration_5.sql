@@ -1,8 +1,5 @@
-drop schema if exists rabbitmq cascade;
-create schema rabbitmq;
-grant usage on schema rabbitmq to public;
-
-create or replace function rabbitmq.send_message(
+drop function if exists rabbitmq.send_message;
+create function rabbitmq.send_message(
   channel text,
   routing_key text,
   message text) returns void as $$
@@ -13,7 +10,8 @@ create or replace function rabbitmq.send_message(
   );
 $$ stable language sql;
 
-create or replace function rabbitmq.on_row_change() returns trigger as $$
+drop function if exists rabbitmq.on_row_change;
+create function rabbitmq.on_row_change() returns trigger as $$
   declare
     row jsonb;
   begin
@@ -23,6 +21,7 @@ create or replace function rabbitmq.on_row_change() returns trigger as $$
   end;
 $$ stable language plpgsql;
 
+drop trigger if exists send_update_event on bgp_updates;
 create trigger send_update_event
 after insert on bgp_updates
 for each row execute procedure rabbitmq.on_row_change();

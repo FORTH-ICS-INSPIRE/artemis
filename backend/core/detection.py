@@ -1,6 +1,7 @@
 import radix
+import re
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, TimedSet, get_logger, redis_key
+from utils import exception_handler, RABBITMQ_HOST, get_logger, redis_key
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
@@ -10,6 +11,8 @@ import hashlib
 import logging
 from typing import Dict, List, NoReturn, Callable, Tuple
 import redis
+import json
+from datetime import datetime
 
 
 log = get_logger()
@@ -57,7 +60,6 @@ class Detection():
             self.timestamp = -1
             self.rules = None
             self.prefix_tree = None
-            self.monitors_seen = TimedSet()
             self.mon_num = 1
 
             self.redis = redis.Redis(
@@ -92,10 +94,15 @@ class Detection():
                 type='direct',
                 durable=False,
                 delivery_mode=1)
+            self.pg_amq_bridge = Exchange(
+                'amq.direct',
+                type='direct',
+                durable=True,
+                delivery_mode=1)
 
             # QUEUES
             self.update_queue = Queue(
-                'detection-update-update', exchange=self.update_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
+                'detection-update-update', exchange=self.pg_amq_bridge, routing_key='update-insert', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
             self.update_unhandled_queue = Queue(
                 'detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, auto_delete=True, max_priority=2,
@@ -250,9 +257,11 @@ class Detection():
             if isinstance(message, dict):
                 monitor_event = message
             else:
-                monitor_event = message.payload
+                monitor_event = json.loads(message.payload)
+                monitor_event['path'] = monitor_event['as_path']
+                monitor_event['timestamp'] = datetime(*map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
 
-            if monitor_event['key'] not in self.monitors_seen:
+            if not self.redis.exists(monitor_event['key']):
                 raw = monitor_event.copy()
                 is_hijack = False
                 # ignore withdrawals for now
@@ -265,14 +274,15 @@ class Detection():
                     if prefix_node is not None:
                         monitor_event['matched_prefix'] = prefix_node.prefix
 
-                    try:
-                        for func in self.__detection_generator(
-                                len(monitor_event['path']), prefix_node):
-                            if func(monitor_event, prefix_node):
-                                is_hijack = True
-                                break
-                    except Exception:
-                        log.exception('exception')
+                        try:
+                            for func in self.__detection_generator(
+                                    len(monitor_event['path'])):
+                                if func(monitor_event, prefix_node):
+                                    is_hijack = True
+                                    break
+                        except Exception:
+                            log.exception('exception')
+
                     if not is_hijack:
                         self.mark_handled(raw)
                 elif monitor_event['type'] == 'W':
@@ -289,22 +299,22 @@ class Detection():
                     )
 
                 self.mon_num += 1
+                # set key with empty value to expire after 1 hour
+                self.redis.set(monitor_event['key'], '', ex=60*60)
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 
-        def __detection_generator(self, path_len: int,
-                                  prefix_node: radix.Radix) -> Callable:
+        def __detection_generator(self, path_len: int) -> Callable:
             """
             Generator that returns detection functions based on rules and path length.
             Priority: Squatting > Subprefix > Origin > Type-1
             """
-            if prefix_node is not None:
-                yield self.detect_squatting
-                yield self.detect_subprefix_hijack
-                if path_len > 0:
-                    yield self.detect_origin_hijack
-                    if path_len > 1:
-                        yield self.detect_type_1_hijack
+            yield self.detect_squatting
+            yield self.detect_subprefix_hijack
+            if path_len > 0:
+                yield self.detect_origin_hijack
+                if path_len > 1:
+                    yield self.detect_type_1_hijack
 
         @staticmethod
         def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
@@ -475,10 +485,9 @@ class Detection():
                 result['monitor_keys'] = hijack_value['monitor_keys']
             else:
                 # log.info('not existing')
-                first_trigger = monitor_event['timestamp']
-                hijack_value['key'] = hashlib.md5(pickle.dumps(
-                    [monitor_event['prefix'], hijacker, hij_type, first_trigger])).hexdigest()
                 hijack_value['time_detected'] = time.time()
+                hijack_value['key'] = hashlib.md5(pickle.dumps(
+                    [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
                 result = hijack_value
 
             # t0 = time.time()
@@ -505,7 +514,6 @@ class Detection():
                 routing_key='update',
                 priority=1
             )
-            self.monitors_seen.add(monitor_event['key'])
             # log.debug('{}'.format(monitor_event['key']))
 
         def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
@@ -531,6 +539,7 @@ class Detection():
 def run():
     service = Detection()
     service.run()
+
 
 if __name__ == '__main__':
     run()

@@ -294,6 +294,13 @@ class Postgresql_db():
             msg_ = message.payload
             # prefix, key, origin_as, peer_asn, as_path, service, type, communities,
             # timestamp, hijack_key, handled, matched_prefix, orig_path
+
+            best_match = self.find_best_prefix_match(
+                msg_['prefix']),  # matched_prefix
+
+            if best_match is None:
+                return
+
             try:
                 origin_as = -1
                 if len(msg_['path']) >= 1:
@@ -313,8 +320,7 @@ class Postgresql_db():
                         (msg_['timestamp'])),  # timestamp
                     [],  # hijack_key
                     False,  # handled
-                    self.find_best_prefix_match(
-                        msg_['prefix']),  # matched_prefix
+                    best_match,
                     json.dumps(msg_['orig_path'])  # orig_path
                 )
                 # insert all types of BGP updates
@@ -703,6 +709,7 @@ class Postgresql_db():
                 'AND bgp_updates.type = \'A\' ' \
                 'AND hijacks.active = true ' \
                 'AND bgp_updates.peer_asn = %s ' \
+                'AND bgp_updates.handled = true ' \
                 'ORDER BY hijacks.key, bgp_updates.timestamp DESC'
             update_normal_withdrawals = set()
             update_hijack_withdrawals = set()
@@ -725,7 +732,7 @@ class Postgresql_db():
                         # matching withdraw with a hijack
                         if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
                             entry[1].append(withdrawal[1])
-                            timestamp = max(entry[5], entry[6])
+                            timestamp = max(withdrawal[2], entry[6])
                             if len(entry[0]) == len(entry[1]):
                                 # set hijack as withdrawn and delete from redis
                                 self.db_cur.execute(
@@ -793,8 +800,8 @@ class Postgresql_db():
                 cmd_1 = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
                     'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( ' \
                     'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B, (VALUES %s) AS data (v1, v2) ' \
-                    'WHERE H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\') AS curr_update WHERE curr_update.key = ANY(bgp_updates.hijack_key) ' \
-                    'AND bgp_updates.peer_asn = curr_update.peer_asn ' \
+                    'WHERE H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\' AND B.handled = true) AS curr_update ' \
+                    'WHERE curr_update.key = ANY(bgp_updates.hijack_key) AND bgp_updates.peer_asn = curr_update.peer_asn ' \
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'
                 try:

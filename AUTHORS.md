@@ -1,9 +1,12 @@
 ARTEMIS Contributors
 -------------------------
 
-The [ARTEMIS project](https://www.inspire.edu.gr/artemis/) is developed and maintained by the
+The ARTEMIS software project is mainly developed and maintained by the
 [INSPIRE group](https://www.inspire.edu.gr/) at the Institute of Computer Science (ICS)
 of the [Foundation for Research and Technology - Hellas (FORTH)](https://www.ics.forth.gr/) at Heraklion, Crete.
+The concepts involved in the project as a whole are the results of the collaboration between the INSPIRE group and
+the [Center for Applied Internet Data Analysis (CAIDA)](https://www.caida.org) at UC
+San Diego.
 
 The authors of ARTEMIS are:
 * Dimitrios Mavrommatis, FORTH-ICS

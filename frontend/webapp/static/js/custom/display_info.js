@@ -19,10 +19,10 @@ mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event was a false
 mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li></ul>';
 
 mapHelpText_system['field_hijack_type'] = 'The type of the hijack:<ul>';
-mapHelpText_system['field_hijack_type'] += '<li>S -> Sub-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>0 -> Type-0 exact-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>1 -> Type-1 exact-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>Q -> Squatting attack </li></ul>';
+mapHelpText_system['field_hijack_type'] += '<li>S → Sub-prefix hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>0 → Type-0 exact-prefix hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>1 → Type-1 exact-prefix hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>Q → Squatting attack </li></ul>';
 
 mapHelpText_system['field_hijack_as'] = 'The possible AS that is responsible the hijack.</br>Note that this is an experimental field.';
 mapHelpText_system['field_peers_seen'] = 'Number of peers/monitors (i.e., ASNs)</br>that have seen hijack updates.';
@@ -31,7 +31,7 @@ mapHelpText_system['field_hijack_seen'] = 'Whether the user has acknowledged see
 mapHelpText_system['field_hijack_more'] = 'Further information related to the hijack.';
 
 mapHelpText_system['field_service'] = 'The route collector service that is connected to the monitor AS that observed the BGP update.';
-mapHelpText_system['field_bgp_update_type'] = "<ul><li>A -> route announcement</li><li>W → route withdrawal</li></ul>";
+mapHelpText_system['field_bgp_update_type'] = "<ul><li>A → route announcement</li><li>W → route withdrawal</li></ul>";
 mapHelpText_system['field_bgp_update_more'] = "Further information related to the BGP update.";
 mapHelpText_system['field_peer_as'] = "The monitor AS that peers with the route collector service reporting the BGP update.";
 mapHelpText_system['field_bgp_timestamp'] = "The time when the BGP update was generated, as set by the BGP monitor or route collector.";

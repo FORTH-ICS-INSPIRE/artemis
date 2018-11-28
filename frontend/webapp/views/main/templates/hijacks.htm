@@ -182,7 +182,6 @@
                     'limit': 0
                 };
             var selected_status = null;
-            var available_hijack_types = ['0', '1', 'S', 'Q'];
             // Columns that can be sorted
             var columns = [
                 { data: 'time_detected' },
@@ -324,7 +323,7 @@
                         if(value == null || value == ''){
                             filter_parameters[search_table_map[index]] = null;
                             if($(this).children("input").hasClass("is-invalid")){
-                                $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                $(this).children("input").removeClass("is-invalid");
                                 $(this).children("div").hide();
                             }
 
@@ -332,7 +331,6 @@
                             if(search_table_map[index] == 'prefix'){
                                 var v4_regex_match = '^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))(/[1][0-1])?$';
                                 var v6_regex_match = '^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$';
-
                                 if(RegExp(v4_regex_match).test(value) || RegExp(v6_regex_match).test(value)){
                                     filter_parameters[search_table_map[index]] = value;
                                     if($(this).children("input").hasClass("is-invalid")){
@@ -342,32 +340,44 @@
                                 }else{
                                     $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
                                     $(this).children("div").text('Not a valid v4/v6 prefix');
-                                    $(this).children("div").show();
+                                    $(this).children("div").show();   
                                 }
                             }else if(search_table_map[index] == 'hijack_as'){
-                                var origin_as = parseInt(value);
-                                if(0 < origin_as && origin_as < 4199999999){
-                                    filter_parameters[search_table_map[index]] = value;
+                                var number_reg = /^\s*(\d+)\s*$/;
+                                var match = number_reg.exec(value);
+                                var hijack_as = null;
+                                if(match != null){
+                                    hijack_as = parseInt(match[1]);
+                                }else{
+                                    hijack_as = -1;
+                                }
+                                if(0 < hijack_as && hijack_as < 4199999999){
+                                    filter_parameters[search_table_map[index]] = hijack_as;
                                     if($(this).children("input").hasClass("is-invalid")){
-                                        $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                        $(this).children("input").removeClass("is-invalid");
                                         $(this).children("div").hide();
                                     }
                                 }else{
-                                    $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
+                                    $(this).children("input").addClass("is-invalid");
                                     $(this).children("div").text('Not an ASN');
                                     $(this).children("div").show();
                                 }
                             }else if(search_table_map[index] == 'type'){
-                                if(available_hijack_types.includes(value)){
-                                    filter_parameters[search_table_map[index]] = value;
+                                var type_regex = /^\s*(1|0|S|Q)\s*/;
+                                var match = type_regex.exec(value);
+                                var type = null;
+
+                                if(match != null){
+                                    type = match[1];
+                                    filter_parameters[search_table_map[index]] = type;
                                     if($(this).children("input").hasClass("is-invalid")){
-                                        $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                        $(this).children("input").removeClass("is-invalid");
                                         $(this).children("div").hide();
                                     }
                                 }else{
-                                    $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
-                                    $(this).children("div").text('Invalid type');
-                                    $(this).children("div").show();
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not A or W');
+                                    $(this).children("div").show();   
                                 }
                             }else{
                                 filter_parameters[search_table_map[index]] = value;

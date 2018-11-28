@@ -283,14 +283,13 @@
                         if(value == null || value == ''){
                             filter_parameters[search_table_map[index]] = null;
                             if($(this).children("input").hasClass("is-invalid")){
-                                $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                $(this).children("input").removeClass("is-invalid");
                                 $(this).children("div").hide();
                             }
                         }else{
                             if(search_table_map[index] == 'prefix'){
                                 var v4_regex_match = '^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))(/[1][0-1])?$';
                                 var v6_regex_match = '^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$';
-
                                 if(RegExp(v4_regex_match).test(value) || RegExp(v6_regex_match).test(value)){
                                     filter_parameters[search_table_map[index]] = value;
                                     if($(this).children("input").hasClass("is-invalid")){
@@ -303,30 +302,47 @@
                                     $(this).children("div").show();
                                 }
                             }else if(search_table_map[index] == 'origin_as' || search_table_map[index] == 'peer_asn'){
-                                var origin_as = parseInt(value);
+                                var number_reg = /^\s*(\d+)\s*$/;
+                                var match = number_reg.exec(value);
+                                var origin_as = null;
+                                if(match != null){
+                                    origin_as = parseInt(match[1]);
+                                }else{
+                                    origin_as = -1;
+                                }
                                 if(0 < origin_as && origin_as < 4199999999){
-                                    filter_parameters[search_table_map[index]] = value;
+                                    filter_parameters[search_table_map[index]] = origin_as;
                                     if($(this).children("input").hasClass("is-invalid")){
-                                        $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                        $(this).children("input").removeClass("is-invalid");
                                         $(this).children("div").hide();
                                     }
                                 }else{
-                                    $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
+                                    $(this).children("input").addClass("is-invalid");
                                     $(this).children("div").text('Not an ASN');
                                     $(this).children("div").show();
                                 }
                             }else if(search_table_map[index] == 'type'){
-                                value = value.toUpperCase();
-                                if(value == 'A' ||  value == 'W' ){
-                                    filter_parameters[search_table_map[index]] = value;
+                                var type_regex = /^\s*(A|W|a|w)\s*/;
+                                var match = type_regex.exec(value);
+                                var type = null;
+
+                                if(match != null){
+                                    type = match[1].toUpperCase();
+                                    filter_parameters[search_table_map[index]] = type;
                                     if($(this).children("input").hasClass("is-invalid")){
-                                        $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                        $(this).children("input").removeClass("is-invalid");
                                         $(this).children("div").hide();
                                     }
                                 }else{
-                                    $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
+                                    $(this).children("input").addClass("is-invalid");
                                     $(this).children("div").text('Not A or W');
                                     $(this).children("div").show();
+                                }
+                            }else if(search_table_map[index] == 'service'){
+                                var service_regex = /^\s*(\S.*\S)\s*/;
+                                var match = service_regex.exec(value);
+                                if(match != null){
+                                    filter_parameters[search_table_map[index]] = match[1];
                                 }
                             }else{
                                 filter_parameters[search_table_map[index]] = value;

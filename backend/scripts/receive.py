@@ -6,14 +6,14 @@ import os
 #: By default messages sent to exchanges are persistent (delivery_mode=2),
 #: and queues and exchanges are durable.
 exchange = Exchange(
-    'hijack-update',
+    'amq.direct',
     type='direct',
-    durable=False,
+    durable=True,
     delivery_mode=1)
 queue = Queue(
-    'hijack-update-queue',
+    'bgp-update-pg-queue',
     exchange,
-    routing_key='update',
+    routing_key='update-insert',
     exclusive=True,
     durable=False,
     max_priority=1)
@@ -39,7 +39,7 @@ with Connection(os.getenv('RABBITMQ_HOST', 'localhost')) as connection:
     #: Create consumer using our callback and queue.
     #: Second argument can also be a list to consume from
     #: any number of queues.
-    with Consumer(connection, queue, callbacks=[handle_message], accept=['pickle']):
+    with Consumer(connection, queue, callbacks=[handle_message]):
 
         #: Each iteration waits for a single event.  Note that this
         #: event may not be a message, or a message that is to be

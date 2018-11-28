@@ -31,27 +31,25 @@ The current version of ARTEMIS as a tool includes the following features:
 * Real-time monitoring of the changes in the BGP routes of the network's prefixes.
 ARTEMIS connects and receives real-time feeds of BGP updates from the streaming
 BGP route collectors of [RIPE RIS](http://stream-dev.ris.ripe.net/demo) and
-[BGPStream](https://bgpstream.caida.org/) (RouteViews + RIPE RIS).
+[BGPStream](https://bgpstream.caida.org/) (RouteViews + RIPE RIS + beta BMP feeds).
 Optionally, it connects to and receives BGP information from local routers through
 [exaBGP](https://github.com/Exa-Networks/exabgp).
 * Real-time detection of BGP prefix hijacking attacks/events of the following types:
 exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
 * Manual mitigation of BGP prefix hijacking attacks. Upon the detection of a
 suspicious event (potential hijack), the network operator is immediately
-sent a notification (e.g., UI entry or email) detailing the following information:
+sent a notification (e.g., UI entry or email) detailing information such as:
 ```
-{
-  'prefix': ...,
-  'hijack_AS': ...,
-  'hijack_type':...,
-  'time_detected':...,
-  'time_started': ...,
-  'time_last': ...,
-  'configured_prefix': ...,
-  'timestamp_of_config': ...,
-  'peers_seen': ...,
-  'asns_inf': ...
-}
+'prefix': ...,
+'hijack_AS': ...,
+'hijack_type':...,
+'time_detected':...,
+'time_started': ...,
+'configured_prefix': ...,
+'timestamp_of_config': ...,
+'peers_seen': ...,
+'asns_inf': ...
+...:...
 ```
 and ARTEMIS offers the option to run a custom script defined by the operator.
 * Web interface used by the network administrator to:
@@ -65,17 +63,18 @@ the hijack has entered a "withdrawn" state,
 (vi) press button to trigger a custom mitigation process, mark as manually mitigated ("resolve"),
 acknowledge the event as seen, or ignore the event as a false positive,
 (vii) register and manage users (ADMIN|VIEWER),
-(viii) see configuration history and compare ARTEMIS current and previous configurations.
+(viii) see configuration history and compare ARTEMIS current and previous configurations,
 * Configuration file editable by the operator (directly or via the web interface),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * CLI to start/stop ARTEMIS modules and query their status (running state, uptime).
 * Support for both IPv4 and IPv6 prefixes.
+* Modularity/extensibility by design.
 
 ## Architecture (current, tentative)
 
 ![Architecture](docs/images/artemis_system_overview.png)
 
-The philosophy behind the architecture is the use of a message bus (MBUS) in the core,
+The philosophy behind the ARTEMIS architecture is the use of a message bus (MBUS) in the core,
 used for routing messages (RPC, pub/sub, etc.) between different processes/services
 and containers, using the kombu framework (https://github.com/celery/kombu) to interface
 between rabbitmq and the message senders/receivers (e.g., consumers). The controller/supervisor
@@ -86,9 +85,11 @@ In a nutshell, there are 6 basic modules:
 * Detection
 * Mitigation
 * DB access/management
+* Clock
+* Observer
 * User interface
 
-The operator (i.e., the “user”) interfaces with the system by filling a configuration file
+The operator (i.e., the “user”) interfaces with the system by filling in a configuration file
 and by interacting with the web application (UI) to control the various modules and
 see useful information related to monitoring entries and detected hijacks (including their
 current status). Configuration is imported in all modules since it is used for monitor
@@ -100,6 +101,8 @@ generates a hijack entry which is in turn stored in the DB, together with the co
 monitoring entries. Finally, using a web application, the operator can instruct the mitigation
 module to mitigate a hijack or mark it as resolved/ignored. All information is persistently
 stored in the DB, which is accessed by the web application (user interface).
+Clock and observer modules are auxiliary, and take care of periodic clock signaling and module status
+change notifications, respectively.
 
 ## Getting Started
 
@@ -171,10 +174,10 @@ docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml bui
 after you have entered the root folder of the cloned ARTEMIS repo. Note that extra services are
 currently the following (it is optional to use them):
 * exabgp: local exaBGP monitor
-* grafana: revamped UI (under development)
+* grafana: alternative UI (currently not in use)
 * migrate: for migration of already existing DBs in production deployments
 * pgadmin: UI for database management
-* syslog: syslog container for collecting ARTEMIS logs
+* syslog: additional syslog container for collecting ARTEMIS logs
 * test: test container (under development)
 
 ## How to run
@@ -187,11 +190,15 @@ by editing the following file:
 docker-compose.yaml
 ```
 and adjusting the following parameters/environment variables related
-to the artemis_frontend container:
+to the artemis_frontend in .env:
 ```
-USER_ROOT_USERNAME: "admin"
-USER_ROOT_PASSWORD: "admin123"
-USER_ROOT_EMAIL: "admin@admin"
+ADMIN_USER=admin
+ADMIN_PASS=admin123
+ADMIN_EMAIL=admin@admin
+```
+and modify the secret key for your own deployment:
+```
+JWT_SECRET_KEY
 ```
 The ARTEMIS web application supports https to ensure secure access to the application.
 We use a nginx reverse proxy to terminate SSL connections before forwarding the requests
@@ -211,36 +218,30 @@ the nginx ACL-related lines in:
 ```
 frontend/webapp/configs/nginx.conf
 ```
-You do not need to modify any other configuration file for now.
-
-### Configuring logging (syslog)
-You should edit the following file:
-```
-docker-compose.yaml
-```
-comment-in all syslog-related lines and adjust the following environment variables:
-```
-SYSLOG_HOST=<IP>:<PORT>
-```
-in the environment variable section of
-the artemis_frontend and artemis_backend services.
-Note that setting this to anything other than the default is under testing.
+You do not need to modify any other configuration files and variables for now.
 
 ### Starting ARTEMIS
 You can now start ARTEMIS as a multi-container application
 by running:
 ```
-docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml up
-```
-in interactive mode, or:
-```
 docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml up -d
 ```
 in detached mode (to run it as a daemon).
 
+### Accessing ARTEMIS logs
+Logs can be accessed as follows:
+```
+docker-compose logs
+```
+If you need the logs from a particular running container, e.g., the backend, do the following:
+```
+docker-compose exec backend bash
+cd /var/logs/artemis
+```
+
 ### Using the web application
 Visually, you can now configure, control and view ARTEMIS by logging in to https://<ARTEMIS_HOST>/login.
-The default ADMIN user can login with the credentials set in the env variables.
+The default ADMIN user can login with the credentials set in the .env variables.
 
 ### Registering users
 ```
@@ -337,12 +338,12 @@ https://<ARTEMIS_HOST>//overview
 Here you can view info about:
 * your last login information (email address, time and IP address)
 * the system status (status of modules and uptime information)
-* the top-N ongoing BGP hijacks related to your network's prefixes
+* most recent ongoing BGP hijacks related to your network's prefixes
 * the ARTEMIS version you are running
 * statistics about the ARTEMIS db, in particular:
 ** Total number of BGP updates, as well as of unhandled (by the detection module) updates
 ** Total number of detected BGP hijacks (as well as a break-down in "resolved",
-"under mitigation", "ognoing" and "ignored").
+"under mitigation", "ongoing", "withdrawn", "ignored" and "seen").
 
 ### Viewing BGP updates
 All BGP updates captured by the monitoring system in real-time can be seen here:
@@ -350,7 +351,6 @@ All BGP updates captured by the monitoring system in real-time can be seen here:
 https://<ARTEMIS_HOST>/main/bgpupdates/
 ```
 The following fields are supported:
-* Key
 * Prefix (IPv4/IPv6)
 * Origin AS
 * AS Path (only for BGP announcements)
@@ -359,16 +359,12 @@ The following fields are supported:
 * Type (A|W - Announcement|Withdrawal)
 * Timestamp (displayed in local time zone)
 * Hijack (if present, redirects to a corresponding Hijack entry)
-* Status (blue if the detector has seen the update, grey if examination is pending)
+* Status (blue if the detector has seen the update and the update is handled, grey if examination is pending)
 * Additional information: Communities ([...:...,...])
 * Additional information: Original Path (if the original path e.g., contains AS-SETs, etc.)
 * Additional information: Hijack Key (unique hijack identifier)
 * Additional information: Matched prefix (according to the configuration file)
-
-You can sort the BGP updates table by the Prefix, Origin AS, AS Path, Peer AS, Service, Type and
-Timestamp fields. The information is paginated and the number of shown entries is tunable.
-You can further select updates related to a certain configured prefix (or all prefixes related to your network),
-as well as based on a tunable time window.
+* Additional information: View Hijack (hyperlink to the related hijack, if applicable)
 
 ### Viewing BGP hijacks
 All BGP hijacks detected by the detection system in real-time can be seen here:
@@ -376,26 +372,20 @@ All BGP hijacks detected by the detection system in real-time can be seen here:
 https://<ARTEMIS_HOST>/main/hijacks/
 ```
 The following fields are supported:
-* Key
 * Status (ongoing|under mitigation|ignored|resolved|withdrawn)
 * Prefix (IPv4/IPv6)
 * Type (S - Subprefix|Q - Squatting|0 - Origin|1 - fake first hop)
-* Hijack AS (-1 for Type-S hijacks)
+* Hijack AS
 * Number of Peers Seen (the ones that have seen the event)
 * Number of ASes Infected (the ones that seemingly route to the hijacker)
 * Time detected (timestamp of the system time queried when the hijack was detected by the detection module).
-* Additional information: Time Ended (this is set only for resolved hijacks)
+* Additional information: Time Ended (this is set only for resolved or withdrawn hijacks)
 * Additional information: Time Last Updated
 * Additional information: Mitigation Started (this is set for hijacks under mitigation)
 * Additional information: Matched Prefix (the prefix that best matched configuration, if applicable)
 * Additional information: Config Matched (the timestamp of the configuration against which the hijack was generated)
-* Additional information: Time Detected (the timestamp when the hijack was actually detected)
+* Additional information: Key (unique hijack key)
 * Additional information: Comment text
-
-You can sort the BGP hijacks table by the Status, Prefix, Type, Hijack AS, Number of Peers Seen,
-Number of ASes Infected and Time Detected fields. The information is paginated and the number of shown entries is tunable.
-You can further select hijacks related to a certain configured prefix (or all prefixes related to your network),
-as well as based on a tunable time window.
 
 Note that after the details of a hijack, you can also see details on the BGP updates that triggered it.
 
@@ -426,7 +416,7 @@ You can also control ARTEMIS (if required) via a CLI, by executing the following
 docker-compose exec backend bash
 supervisorctl
 ```
-Note that module = configuration|clock|postgresql_db|monitor|detection|mitigation,
+Note that module = configuration|clock|postgresql_db|monitor|detection|observer|mitigation,
 and action=start|stop|status.
 
 Also note that the web application (frontend) and the backend operate in their own separate containers; to e.g.,
@@ -465,8 +455,7 @@ group r1 {
 Stop, rebuild and restart ARTEMIS:
 ```
 docker-compose -f ... down
-docker-compose -f ... build
-docker-compose -f ... up # or up -d
+docker-compose -f ... -f docker-compose.exabgp.yaml up -d
 ```
 
 Login and configure the monitor using the web application form in
@@ -484,25 +473,42 @@ monitors:
 ...
 ```
 
+### Backups
+After booting ARTEMIS, please execute the following commands on the postgres container:
+```
+docker-compose exec postgres bash
+crond
+exit
+```
+The DB will be regularly be backed up in folder postgres-data-backup.
+
+### Migrating existing DB to new version
+While developing ARTEMIS, we may change also the DB schema. To migrate to a new state, please
+execute the following commands:
+```
+docker-compose -f ... down
+git pull origin master
+docker-compose -f docker-compose.migrate.yaml up
+Ctrl+C
+docker-compose -f ... up -d
+```
+If everything went correctly, you will see that the migration process was successful.
+
 ### Exiting ARTEMIS
 
-Note that to gracefully terminate ARTEMIS and all its services you can use the following commands:
+Note that to gracefully terminate ARTEMIS and all its services you can use the following command:
 
 ```
-Ctrl+C # on the terminal running ARTEMIS
-docker-compose -f ... down # afterwards, same terminal
+docker-compose -f ... down
 ```
 
 ## Contributing
 
 ### Implementing additional Monitors (taps)
-```
-TBD
-```
-For example take a look at the `backend/taps/exabgp_client.py`
-which implements the exaBGP monitor publisher or
+Take a look at the `backend/taps/exabgp_client.py`
+which implements the exaBGP BGP update publisher or
 the `backend/taps/ripe_ris.py` which implements the
-RIPE RIS monitor publisher. Please edit only the code
+RIPE RIS BGP update publisher. Please edit only the code
 in the taps folder.
 
 ### Adding custom (containerized) modules
@@ -514,28 +520,20 @@ TBD
 We follow a custom Agile approach for our development.
 
 ## Versioning
-TBD (version tags to-be-released)
+See [CHANGELOG](https://github.com/FORTH-ICS-INSPIRE/artemis-tool/blob/master/CHANGELOG.md)
 
-## Authors
-* Dimitrios Mavrommatis, FORTH-ICS
-* Petros Gigis, FORTH-ICS
-* Vasileios Kotronis, FORTH-ICS
+## Authors and Contributors
+Please check [authors](AUTHORS.md).
 
 ## License
 The ARTEMIS software is open-sourced under the BSD-3 license.
 Please check [license](LICENSE).
 
-## Acknowledgements
-This work is supported by the following sources:
-* European Research Council (ERC) grant agreement no. 338402 (NetVolution Project)
-* RIPE NCC Community Projects Fund
+## Acknowledgements and Funding Sources
+This work is supported by the following funding sources:
+* European Research Council (ERC) grant agreement no. 338402 ([NetVolution Project](http://netvolution.eu/))
+* [RIPE NCC Community Projects Fund](https://www.ripe.net/publications/news/announcements/ripe-community-projects-fund-2017-recipients-announced)
 
-We acknowledge the contribution of the following people w.r.t. the concepts and mechanisms
-used in this software:
-* Xenofontas Dimitropoulos, FORTH-ICS and UoC
-* Pavlos Sermpezis, FORTH-ICS
-* Alberto Dainotti, CAIDA UCSD
-* Alistair King, CAIDA UCSD
-
-The following funding sources supported the CAIDA UCSD people:
-* ... (TBD)
+The following funding sources supported the collaboration with CAIDA UCSD:
+* National Science Foundation (NSF) grant CNS-1423659
+* Comcast

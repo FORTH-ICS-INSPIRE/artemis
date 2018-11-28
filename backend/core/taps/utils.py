@@ -31,7 +31,6 @@ def key_generator(msg):
         msg['prefix'],
         msg['path'],
         msg['type'],
-        msg['service'],
         msg['timestamp'],
         msg['peer_asn']
     ])).hexdigest()

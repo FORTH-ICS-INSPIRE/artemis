@@ -69,8 +69,6 @@ services:
         ports:
             - "80:80"
             - "443:443"
-            - "15672:15672"
-            - "8080:8080"
         volumes:
             - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
             - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
@@ -83,6 +81,9 @@ services:
         expose:
             - 5671
             - 5672
+            - 15672
+        ports:
+            - "15672:15672"
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
@@ -120,6 +121,19 @@ services:
             PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
+    pg_amqp_bridge:
+        image: subzerocloud/pg-amqp-bridge
+        container_name: pg_amqp_bridge
+        depends_on:
+            - postgres
+            - backend
+        networks:
+            - artemis
+        environment:
+        # - RUST_LOG=info # output forwarded messages
+        - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+        - AMQP_URI=amqp://${RABBITMQ_HOST}//
+        - BRIDGE_CHANNELS=events:amq.direct
     graphql:
         image: hasura/graphql-engine:latest
         container_name: graphql

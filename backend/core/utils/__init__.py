@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 import logging.handlers
 import logging.config
@@ -31,31 +30,6 @@ def get_logger(path='/etc/artemis/logging.yaml'):
         log = logging
         log.info('Loaded default configuration')
     return log
-
-
-# https://stackoverflow.com/questions/16136979/set-class-with-timed-auto-remove-of-elements
-
-
-class TimedSet(set):
-
-    def __init__(self, timeout=10):
-        self.__table = {}
-        self.timeout = timeout
-
-    def add(self, item):
-        self.__table[item] = time.time() + self.timeout
-        set.add(self, item)
-
-    def __contains__(self, item):
-        if time.time() < self.__table.get(item, -1):
-            self.__table[item] = time.time() + self.timeout
-            return True
-        return False
-
-    def __iter__(self):
-        for item in set.__iter__(self):
-            if time.time() < self.__table.get(item):
-                yield item
 
 
 def flatten(items, seqtypes=(list, tuple)):
@@ -125,6 +99,7 @@ class SMTPSHandler(SMTPHandler):
             raise
         except Exception:
             self.handleError(record)
+
 
 def redis_key(prefix, hijack_as, _type):
     assert(isinstance(prefix, str))

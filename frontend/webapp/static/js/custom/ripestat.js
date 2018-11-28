@@ -23,7 +23,7 @@ function asn_map_to_name(){
             var result = null;
 
             if(ASN_str in cachedData){
-                var html = '<p class="tooltip-custom-margin">ASN: ' + ASN_str + ' (ASN-DOT: ' + parseInt(ASN_int/65536) + '.' + ASN_int%65536 + ')</br>';
+                var html = '<p class="tooltip-custom-margin">ASN: ' + ASN_str + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';
                 html += 'Name: ' + cachedData[ASN_str][0] + '</br>';
                 html += 'Countries operating: ' + cachedData[ASN_str][1] +'</p>';
                 $(this).prop('title', html);
@@ -48,11 +48,12 @@ function asn_map_to_name(){
                             }
                         }
                         data_[1] = Array.from(countries_set).join(', ');
+                        data_[2] = parseInt(ASN_int/65536) + '.' + ASN_int%65536;
                         cachedData[ASN_str] = data_;
 
-                        var html = '<p class="tooltip-custom-margin">ASN: ' + $(this).text() + ' (ASN-DOT: ' + parseInt(ASN_int/65536) + '.' + ASN_int%65536 + ')</br>';
-                        html += 'Name: ' + data_[0] + '</br>';
-                        html += 'Countries operating: ' + data_[1] +'</p>';
+                        var html = '<p class="tooltip-custom-margin">ASN: ' + $(this).text() + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';
+                        html += 'Name: ' + cachedData[ASN_str][0] + '</br>';
+                        html += 'Countries operating: ' + cachedData[ASN_str][1] +'</p>';
                         $(this).prop('title', html);
                         $(this).attr('data-toggle', "tooltip");
                         $(this).attr('data-html', "true");
@@ -67,9 +68,10 @@ function asn_map_to_name(){
                 }else{
                     data_[0] = 'Not a valid ASN';
                     data_[1] = 'None';
+                    data_[2] = "None";
                     cachedData[ASN_str] = data_;
 
-                    var html = '<p class="tooltip-custom-margin">ASN: ' + $(this).text() + ' (ASN-DOT: ' + parseInt(ASN_int/65536) + '.' + ASN_int%65536 + ')</br>';
+                    var html = '<p class="tooltip-custom-margin">ASN: ' + $(this).text() + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ' )</br>';
                     html += 'Name: ' + cachedData[ASN_str][0] + '</br>';
                     html += 'Countries operating: ' + cachedData[ASN_str][1] +'</p>';
                     $(this).prop('title', html);

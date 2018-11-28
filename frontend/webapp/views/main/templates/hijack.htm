@@ -498,7 +498,6 @@
                                     recordsFiltered: data.total,
                                     data: format_bgp_updates_datatable(data.results)
                                 });
-                                asn_map_to_name();
                             }
                         });
                     },
@@ -580,7 +579,9 @@
 
                 setInterval( function () {
                 if(refresh_status){
+                        $('[data-toggle="tooltip"]').tooltip('hide');
                         table.draw(false);
+                        $('.tooltip.show').tooltip('hide');
                         $('#last_refresh_time').html(transform_date_to_local($.now()));
                     }
                 }, 5000 );
@@ -588,6 +589,9 @@
                 $('#timezone').html(display_timezone());
                 displayHelpTextB();
                 displayHelpTextTable();
+                $('#bgp_updates').on( 'draw.dt', function () {
+                    asn_map_to_name();
+                });
             });
 
         

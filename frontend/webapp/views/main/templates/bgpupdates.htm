@@ -263,9 +263,13 @@
                 var title = $(this).text();
                 if(!(exlude_columns_from_search.includes(title))){
                     if(title in custom_message_for_search){
-                        $(this).html('<input class="form-control" type="text" placeholder="' + custom_message_for_search[title] + '" />');
+                        var html_ = '<input class="form-control" id="input_' + title + '" type="text" placeholder="' + custom_message_for_search[title] + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
                     }else{
-                        $(this).html('<input class="form-control" type="text" placeholder="' + title + '" />');
+                        var html_ = '<input class="form-control" id="input_' + title + '"s type="text" placeholder="' + title + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
                     }
                 }else{
                     $(this).html('');
@@ -275,10 +279,59 @@
             function inspect_input_of_search_boxes(){
                 $("#bgp_updates tfoot tr th").each(function (index, item) {
                     if(index in search_table_map){
-                        if($(this).children("input").val() == null || $(this).children("input").val() == ''){
+                        var value = $(this).children("input").val();
+                        if(value == null || value == ''){
                             filter_parameters[search_table_map[index]] = null;
+                            if($(this).children("input").hasClass( "form-control is-invalid" )){
+                                $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                $(this).children("div").hide();
+                            }
+
                         }else{
-                            filter_parameters[search_table_map[index]] = $(this).children("input").val();
+                            if(search_table_map[index] == 'prefix'){
+                                var v4_regex_match = '^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))(/[1][0-1])?$';
+                                var v6_regex_match = '^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$';
+
+                                if(RegExp(v4_regex_match).test(value) || RegExp(v6_regex_match).test(value)){
+                                    filter_parameters[search_table_map[index]] = value;
+                                    if($(this).children("input").hasClass( "form-control is-invalid" )){
+                                        $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
+                                    $(this).children("div").text('Not a valid v4/v6 prefix');
+                                    $(this).children("div").show();
+                                }
+                            }else if(search_table_map[index] == 'origin_as' || search_table_map[index] == 'peer_asn'){
+                                var origin_as = parseInt(value);
+                                if(0 < origin_as && origin_as < 4199999999){
+                                    filter_parameters[search_table_map[index]] = value;
+                                    if($(this).children("input").hasClass( "form-control is-invalid" )){
+                                        $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
+                                    $(this).children("div").text('Not an ASN');
+                                    $(this).children("div").show();
+                                }
+                            }else if(search_table_map[index] == 'type'){
+                                value = value.toUpperCase();
+                                if(value == 'A' ||  value == 'W' ){
+                                    filter_parameters[search_table_map[index]] = value;
+                                    if($(this).children("input").hasClass( "form-control is-invalid" )){
+                                        $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").removeClass("form-control").addClass("form-control is-invalid");
+                                    $(this).children("div").text('Not A or W');
+                                    $(this).children("div").show();
+                                }
+                            }else{
+                                filter_parameters[search_table_map[index]] = value;
+                            }
                         }
                     }
                 });
@@ -384,11 +437,11 @@
                     "columns": [
                         { data: 'timestamp', "width": "150px"},
                         { data: 'prefix' },
-                        { data: 'origin_as', "width": "80px" },
+                        { data: 'origin_as', "width": "96px" },
                         { data: 'as_path' },
-                        { data: 'peer_asn', "width": "80px" },
+                        { data: 'peer_asn', "width": "96px" },
                         { data: 'service' },
-                        { data: 'type', "width": "14px" },
+                        { data: 'type', "width": "56px" },
                         { data: 'hijack_link', "width": "14px" },
                         { data: 'handled', "width": "14px" },
                         {
@@ -458,7 +511,6 @@
                                 tr.addClass('shown');
                                 displayHelpMoreBGPupdate();
                                 asn_map_to_name();
-
                             }
                         });
                         $('#bgp_updates').on( 'draw.dt', function () {
@@ -488,7 +540,6 @@
             });
 
             function format ( d ) {
-
                 var html_ = '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">';
                 for(item in fields_to_display){
                     html_ += '<tr><td helpText="' + fields_to_display[item][2] +'"><b>' + fields_to_display[item][1] + ':</b></td>';

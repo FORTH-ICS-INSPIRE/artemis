@@ -282,11 +282,10 @@
                         var value = $(this).children("input").val();
                         if(value == null || value == ''){
                             filter_parameters[search_table_map[index]] = null;
-                            if($(this).children("input").hasClass( "form-control is-invalid" )){
+                            if($(this).children("input").hasClass("is-invalid")){
                                 $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
                                 $(this).children("div").hide();
                             }
-
                         }else{
                             if(search_table_map[index] == 'prefix'){
                                 var v4_regex_match = '^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))(/[1][0-1])?$';
@@ -294,7 +293,7 @@
 
                                 if(RegExp(v4_regex_match).test(value) || RegExp(v6_regex_match).test(value)){
                                     filter_parameters[search_table_map[index]] = value;
-                                    if($(this).children("input").hasClass( "form-control is-invalid" )){
+                                    if($(this).children("input").hasClass("is-invalid")){
                                         $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
                                         $(this).children("div").hide();
                                     }
@@ -307,7 +306,7 @@
                                 var origin_as = parseInt(value);
                                 if(0 < origin_as && origin_as < 4199999999){
                                     filter_parameters[search_table_map[index]] = value;
-                                    if($(this).children("input").hasClass( "form-control is-invalid" )){
+                                    if($(this).children("input").hasClass("is-invalid")){
                                         $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
                                         $(this).children("div").hide();
                                     }
@@ -320,7 +319,7 @@
                                 value = value.toUpperCase();
                                 if(value == 'A' ||  value == 'W' ){
                                     filter_parameters[search_table_map[index]] = value;
-                                    if($(this).children("input").hasClass( "form-control is-invalid" )){
+                                    if($(this).children("input").hasClass("is-invalid")){
                                         $(this).children("input").removeClass("form-control is-invalid").addClass("form-control");
                                         $(this).children("div").hide();
                                     }

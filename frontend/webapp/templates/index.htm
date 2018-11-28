@@ -41,15 +41,15 @@
                                 <div class="col-lg-12">
                                     <table class="table table-striped table-bordered" id="hijacks">
                                         <thead>
-                                            <th>Time Detected</th>
-                                            <th>Status</th>
-                                            <th>Prefix</th>
-                                            <th>Type</th>
-                                            <th>Hijack AS</th>
-                                            <th># Peers Seen</th>
-                                            <th># ASes Infected</th>
-                                            <th>Seen</th>
-                                            <th>More</th>
+                                            <th helpText="field_time_detected">Time Detected</th>
+                                            <th helpText="field_hijack_status">Status</th>
+                                            <th helpText="field_prefix">Prefix</th>
+                                            <th helpText="field_hijack_type">Type</th>
+                                            <th helpText="field_hijack_as">Hijack AS</th>
+                                            <th helpText="field_peers_seen"># Peers Seen</th>
+                                            <th helpText="field_ases_infected"># ASes Infected</th>
+                                            <th helpText="field_hijack_seen">Seen</th>
+                                            <th helpText="field_hijack_more">More</th>
                                         </thead>
                                     </table>
                                 </div>
@@ -135,7 +135,8 @@
             function render_modules_state(data) {
                 $('#modules_states li').not('li:first').remove();
                 for (var key in data['view_processes']) {
-                    var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-4">'
+                    var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-4" helpText="field_'
+                    html_ += data['view_processes'][key].name +'">'
                     html_ += data['view_processes'][key].name + '</div><div class="col-lg-8">'
                     html_ += '<div class="row"><div class="col-lg-4">'
                     if(data['view_processes'][key].running){
@@ -151,6 +152,7 @@
                     html_ += '</div></div></li>'
                     $('#modules_states').append(html_);
                 }
+                displayHelpTextStats();
             }
 
             function render_table(ws){
@@ -221,10 +223,10 @@
             }
 
             setInterval( function () {
-                    $("time_passed").each(function() {
-                        var elapsed = parseInt($(this).attr('elapsed')) + 1;
-                        $(this).attr('elapsed', elapsed);
-                        $(this).text(calculate_time_passed(elapsed));
+                $("time_passed").each(function() {
+                    var elapsed = parseInt($(this).attr('elapsed')) + 1;
+                    $(this).attr('elapsed', elapsed);
+                    $(this).text(calculate_time_passed(elapsed));
                     });
                 }, 1000
             );
@@ -254,20 +256,27 @@
                         render_table(ws);
                         fetchDbStatsLive(ws, render_db_stats);
                         fetchProcStatesLive(ws, render_modules_state);
+                        $('#hijacks').on( 'draw.dt', function () {
+                            asn_map_to_name();
+                        });
+                        displayHelpTextTable();
                     }
                 });
+                
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
                 $('#timezone').html(display_timezone());
             });
 
         </script>
-        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
-        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}"></script>
-        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
-
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
     {% endblock %}
 {% endblock %}
 

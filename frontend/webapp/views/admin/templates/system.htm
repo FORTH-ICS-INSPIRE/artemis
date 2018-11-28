@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dialog.css') }}">
 {% endblock %}
 
 {% block page_content %}
@@ -267,11 +268,13 @@
             });
 
         </script>
-        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/codemirror.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/yaml.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
-
+        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/codemirror.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/yaml.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/dialog.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/search.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/searchcursor.js') }}{{ js_version }}"></script>
     {% endblock %}
 {% endblock %}

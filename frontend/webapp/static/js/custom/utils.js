@@ -80,6 +80,10 @@ function format_bgp_update(data){
         data['origin_as'] = format_origin_as(data['origin_as']);
     }
 
+    if('peer_asn' in data){
+        data['peer_asn'] = "<cc_as>" + data['peer_asn'] + "</cc_as>";
+    }
+
     if('communities' in data){
         data['communities'] = format_communities(data['communities']);
     }
@@ -91,7 +95,6 @@ function format_bgp_update(data){
     if('hijack_key' in data){
         data['hijack_link'] = hijack_key_create_link(data['hijack_key']);
     }
-
     return data;
 }
 
@@ -107,7 +110,7 @@ function format_handled_seen(data){
 function format_as_path(path) {
 	var str_ = "";
 	for (as_item in path){
-		str_ += path[as_item] + " ";
+		str_ += "<cc_as>" + path[as_item] + "</cc_as> ";
 	}
 	return str_;
 }
@@ -118,7 +121,7 @@ function format_orig_path(orig_path) {
 	}else{
 		var str_ = "";
 		for (as_item in orig_path){
-			str_ += orig_path[as_item] + " ";
+			str_ += "<cc_as>" + orig_path[as_item] + "</cc_as> ";
 		}
 		return str_;
 	}
@@ -154,11 +157,11 @@ function format_service(service) {
 }
 
 function format_origin_as(n) {
-    return "-1" == n || -1 == n ? "-" : n
+    return "-1" == n || -1 == n ? "-" : "<cc_as>" + n + "</cc_as>";
 }
 
 function format_hijack_as(n) {
-    return "-1" == n || -1 == n ? "Unknown" : n
+    return "-1" == n || -1 == n ? "Unknown" : "<cc_as>" + n + "</cc_as>";
 }
 
 function format_communities(n) {

@@ -17,7 +17,9 @@ main = Blueprint('main', __name__, template_folder='templates')
 def display_monitors():
     app.config['configuration'].get_newest_config()
     prefixes_list = app.config['configuration'].get_prefixes_list()
-    return render_template('bgpupdates.htm', prefixes=prefixes_list)
+    return render_template('bgpupdates.htm',
+        prefixes=prefixes_list,
+        js_version=app.config['JS_VERSION'])
 
 
 @main.route('/hijacks/')
@@ -34,7 +36,10 @@ def display_hijacks():
     else:
         app.config['configuration'].get_newest_config()
         prefixes_list = app.config['configuration'].get_prefixes_list()
-        return render_template('hijacks.htm', hijack_keys=None, prefixes=prefixes_list)
+        return render_template('hijacks.htm',
+            hijack_keys=None,
+            prefixes=prefixes_list,
+            js_version=app.config['JS_VERSION'])
 
 
 @main.route('/hijack', methods=['GET'])
@@ -65,5 +70,6 @@ def display_hijack():
     return render_template('hijack.htm',
                            data=json.dumps(hijack_data),
                            mitigate=_mitigation_flag,
-                           configured=_configured
+                           configured=_configured,
+                           js_version=app.config['JS_VERSION']
                            )

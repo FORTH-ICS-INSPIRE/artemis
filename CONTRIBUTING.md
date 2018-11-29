@@ -1,9 +1,8 @@
 # Contributing to ARTEMIS
 
-*First*: if you're unsure or afraid of anything, just ask, or submit the issue or
-pull request anyway. You won't be yelled at for giving your best effort. The
-worst that can happen is that you'll be politely asked to change something. We
-appreciate any contributions, and we don't want a wall of rules to get in
+*First*: Feel free to ask, or submit the issue or
+pull request anyway. We appreciate any contributions, 
+and we don't want a wall of rules to get in
 the way of that.
 
 However, for those individuals who want a bit more guidance on the best way to
@@ -16,16 +15,16 @@ can quickly merge or address your contributions will increase.
 [artemis](https://github.com/FORTH-ICS-INSPIRE/artemis-tool) is a mono-repo
 consisting of 3 components.
 
-1. Root container composition
-2. Frontend
-3. Backend
+1. Root container composition (docker-compose)
+2. Frontend code
+3. Backend code
 
 All of the three components have a single version, denoted by the git
 tag.
 
 ### Docs
 
-Contributing guide for docs can be found at TBD.
+Contributing guide for docs can be found at <TBD>.
 
 ## Issues
 
@@ -36,7 +35,7 @@ Contributing guide for docs can be found at TBD.
 
 - Provide steps and data to reproduce the issue.
 
-- Please include logs of the server, if relevant.
+- Please include ARTEMIS logs, if relevant.
 
 ## Common guidelines
 
@@ -54,15 +53,15 @@ Contributing guide for docs can be found at TBD.
 ## Extensions (TBD)
 
 ### Implementing additional Monitors (taps)
+
 Take a look at [this script](backend/core/taps/exabgp_client.py)
 which implements the exaBGP BGP update publisher, or
-[this script](backend/taps/ripe_ris.py) which implements the
-RIPE RIS BGP update publisher. Please edit only the code
-in the taps folder.
+[this script](backend/core/taps/ripe_ris.py) which implements the
+RIPE RIS BGP update publisher.
 
 ### Adding custom (containerized) modules
 ```
 TBD
 ```
 
-(Credits: Most of the content of this file is adapted from https://raw.githubusercontent.com/hasura/graphql-engine/master/CONTRIBUTING.md)
+(Credits: Some of the content of this file is adapted from https://raw.githubusercontent.com/hasura/graphql-engine/master/CONTRIBUTING.md)

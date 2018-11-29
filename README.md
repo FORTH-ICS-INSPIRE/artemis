@@ -1,5 +1,37 @@
 # ARTEMIS
 
+Table of Contents
+  * [General](#general)
+  * [Features](#features)
+  * [Architecture](#architecture)
+  * [Getting Started](#getting-started)
+  * [Min. technical requirements of testing server/VM](#min-technical-requirements-of-testing-servervm)
+  * [How to install](#how-to-install)
+  * [How to run](#how-to-run)
+     * [Configuring the web application](#configuring-the-web-application)
+     * [Starting ARTEMIS](#starting-artemis)
+     * [Accessing ARTEMIS logs](#accessing-artemis-logs)
+     * [Using the web application](#using-the-web-application)
+     * [Registering users](#registering-users)
+     * [Managing users (ADMIN-only)](#managing-users-admin-only)
+     * [User account actions (ADMIN-VIEWER)](#user-account-actions-admin-viewer)
+     * [Configuring and Controlling ARTEMIS through the web application (ADMIN-only)](#configuring-and-controlling-artemis-through-the-web-application-admin-only)
+     * [Viewing ARTEMIS state](#viewing-artemis-state)
+     * [Viewing BGP updates](#viewing-bgp-updates)
+     * [Viewing BGP hijacks](#viewing-bgp-hijacks)
+     * [Actions on BGP hijacks (ADMIN-only)](#actions-on-bgp-hijacks-admin-only)
+     * [CLI controls [optional]](#cli-controls-optional)
+     * [Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP](#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp)
+     * [Backups](#backups)
+     * [Migrating an existing DB to a new version](#migrating-an-existing-db-to-a-new-version)
+     * [Exiting ARTEMIS](#exiting-artemis)
+  * [Contributing](#contributing)
+  * [Development](#development)
+  * [Versioning](#versioning)
+  * [Authors and Contributors](#authors-and-contributors)
+  * [License](#license)
+  * [Acknowledgements and Funding Sources](#acknowledgements-and-funding-sources)
+
 ## General
 
 ARTEMIS is a defense approach versus BGP prefix hijacking attacks
@@ -483,7 +515,7 @@ Please check [this file](CONTRIBUTING.md).
 We follow a custom Agile approach for our development.
 
 ## Versioning
-Pleas check [this file](CHANGELOG.md)
+Please check [this file](CHANGELOG.md).
 
 ## Authors and Contributors
 Please check [this file](AUTHORS.md).
@@ -493,7 +525,7 @@ The ARTEMIS software is open-sourced under the BSD-3 license.
 Please check the [license file](LICENSE).
 All external dependencies are used in a way compatible with BSD-3;
 the software packages and their respective licenses are documented
-in [this file](DEPENDENCIES-LICENSES.md).
+in detail in [this file](DEPENDENCIES-LICENSES.md).
 
 ## Acknowledgements and Funding Sources
 Please check [this file](ACKS.md).

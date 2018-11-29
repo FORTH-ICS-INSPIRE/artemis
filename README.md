@@ -468,17 +468,7 @@ docker-compose -f ... down
 
 ## Contributing
 
-### Implementing additional Monitors (taps)
-Take a look at the `backend/taps/exabgp_client.py`
-which implements the exaBGP BGP update publisher or
-the `backend/taps/ripe_ris.py` which implements the
-RIPE RIS BGP update publisher. Please edit only the code
-in the taps folder.
-
-### Adding custom (containerized) modules
-```
-TBD
-```
+Please check [this file](CONTRIBUTING.md).
 
 ## Development
 We follow a custom Agile approach for our development.

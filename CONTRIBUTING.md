@@ -51,4 +51,18 @@ Contributing guide for docs can be found at TBD.
 
 - Rebase master with your branch before submitting a pull request.
 
+## Extensions (TBD)
+
+### Implementing additional Monitors (taps)
+Take a look at [this script](backend/core/taps/exabgp_client.py)
+which implements the exaBGP BGP update publisher, or
+[this script](backend/taps/ripe_ris.py) which implements the
+RIPE RIS BGP update publisher. Please edit only the code
+in the taps folder.
+
+### Adding custom (containerized) modules
+```
+TBD
+```
+
 (Credits: Most of the content of this file is adapted from https://raw.githubusercontent.com/hasura/graphql-engine/master/CONTRIBUTING.md)

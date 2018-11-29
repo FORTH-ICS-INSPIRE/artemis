@@ -1,5 +1,5 @@
 ARTEMIS Contributors
--------------------------
+--------------------
 
 The ARTEMIS software project is mainly developed and maintained by the
 [INSPIRE group](https://www.inspire.edu.gr/) at the Institute of Computer Science (ICS)

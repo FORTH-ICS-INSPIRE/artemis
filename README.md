@@ -80,7 +80,7 @@ in e.g., a Kubernetes environment, please contact the ARTEMIS team.
 
 * CPU: 4 cores
 * RAM: 4 GB
-* HDD: 100 GB
+* HDD: 100 GB (less may suffice, depending on the use case)
 * NETWORK: 1 public-facing network interface
 * OS: Ubuntu Linux 16.04+
 * SW PACKAGES: docker-ce and docker-compose should be pre-installed
@@ -131,7 +131,10 @@ sudo apt-get install git
 ```
 and then download ARTEMIS from github (if not already downloaded).
 
-Then you can build ARTEMIS by running:
+Note that while the backend and frontend code is available in the repository,
+docker-compose is configured to pull the latest images that are built remotely
+on [docker cloud](https://cloud.docker.com/)(TBD). 
+In any case, you can build ARTEMIS locally by running:
 ```
 docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml build
 ```
@@ -160,7 +163,7 @@ ADMIN_USER=admin
 ADMIN_PASS=admin123
 ADMIN_EMAIL=admin@admin
 ```
-and modify the secret key for your own deployment:
+and modifying the secret key for your own deployment:
 ```
 JWT_SECRET_KEY
 ```
@@ -177,7 +180,7 @@ key.pem
 ```
 If you want to use e.g., "let's encrypt" certificates you can configure the nginx configuration files
 detailed below.
-If you want selective access to the UI from certain IP ranges, please adjust and comment out
+If you require selective access to the UI from certain IP ranges, please adjust and comment out
 the nginx ACL-related lines in:
 ```
 frontend/webapp/configs/nginx.conf
@@ -190,7 +193,7 @@ by running:
 ```
 docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml up -d
 ```
-in detached mode (to run it as a daemon).
+in detached mode (to run it as a daemon; recommended mode).
 
 ### Accessing ARTEMIS logs
 Logs can be accessed as follows:
@@ -220,7 +223,7 @@ https://<ARTEMIS_HOST>/admin/user_management
 ```
 Here the ADMIN user can approve pending users,
 promote users to admins, delete users and view all users.
-An ADMIN can delete VIEWER users, but not ADMIN users.
+An ADMIN can delete VIEWER users, but not ADMIN users (TBD).
 
 ### User account actions (ADMIN-VIEWER)
 Currently the current account-specific actions are supported:
@@ -309,6 +312,8 @@ Here you can view info about:
 ** Total number of detected BGP hijacks (as well as a break-down in "resolved",
 "under mitigation", "ongoing", "withdrawn", "ignored" and "seen").
 
+Please use the embedded mouse-hover info for more information on the fields.
+
 ### Viewing BGP updates
 All BGP updates captured by the monitoring system in real-time can be seen here:
 ```
@@ -330,6 +335,8 @@ The following fields are supported:
 * Additional information: Matched prefix (according to the configuration file)
 * Additional information: View Hijack (hyperlink to the related hijack, if applicable)
 
+Please use the embedded mouse-hover info for more information on the fields.
+
 ### Viewing BGP hijacks
 All BGP hijacks detected by the detection system in real-time can be seen here:
 ```
@@ -342,16 +349,18 @@ The following fields are supported:
 * Hijack AS
 * Number of Peers Seen (the ones that have seen the event)
 * Number of ASes Infected (the ones that seemingly route to the hijacker)
-* Time detected (timestamp of the system time queried when the hijack was detected by the detection module).
-* Additional information: Time Ended (this is set only for resolved or withdrawn hijacks)
-* Additional information: Time Last Updated
-* Additional information: Mitigation Started (this is set for hijacks under mitigation)
-* Additional information: Matched Prefix (the prefix that best matched configuration, if applicable)
-* Additional information: Config Matched (the timestamp of the configuration against which the hijack was generated)
-* Additional information: Key (unique hijack key)
-* Additional information: Comment text
+* Time Detected (timestamp of the system time queried when the hijack was detected by the detection module).
+* Time Ended (this is set only for resolved or withdrawn hijacks)
+* Time Last Updated
+* Mitigation Started (this is set for hijacks under mitigation)
+* Matched Prefix (the prefix that best matched configuration, if applicable)
+* Config Matched (the timestamp of the configuration against which the hijack was generated)
+* Key (unique hijack key)
+* Comment text
 
 Note that after the details of a hijack, you can also see details on the BGP updates that triggered it.
+
+Please use the embedded mouse-hover info for more information on the fields.
 
 ### Actions on BGP hijacks (ADMIN-only)
 The ADMIN user can use the following buttons:
@@ -363,7 +372,7 @@ hijack to under mitigation state. Note that the mitigation module should be acti
 * Acknowledge: mark the hijack as seen.
 
 Note that only the following state transitions are enabled:
-* ongoing --> under mitigation
+* ongoing --> under mitigation (under mitigation hijacks are also ongoing)
 * ongoing --> resolved
 * ongoing --> ignored
 * ongoing --> withdrawn
@@ -374,7 +383,6 @@ Note that only the following state transitions are enabled:
 The VIEWER use can see the status of a hijack but cannot activate any buttons.
 
 ### CLI controls [optional]
-
 You can also control ARTEMIS (if required) via a CLI, by executing the following command(s):
 ```
 docker-compose exec backend bash
@@ -383,8 +391,8 @@ supervisorctl
 Note that module = configuration|clock|postgresql_db|monitor|detection|observer|mitigation,
 and action=start|stop|status.
 
-Also note that the web application (frontend) and the backend operate in their own separate containers; to e.g.,
-restart them, please run the following command:
+Also note that the web application (frontend) and the backend operate in their own separate containers; 
+to e.g., restart them separately, please run the following command:
 ```
 docker-compose restart frontend
 docker-compose restart backend
@@ -436,6 +444,8 @@ monitors:
       port: 5000
 ...
 ```
+*NOTE*: We strongly recommend the use of eBGP instead of iBGP sessions between the
+exaBGP monitor and the local router(s).
 
 ### Backups
 After booting ARTEMIS, please execute the following commands on the postgres container:
@@ -444,10 +454,11 @@ docker-compose exec postgres bash
 crond
 exit
 ```
-The DB will be regularly be backed up in folder postgres-data-backup.
+The DB will then be regularly backed up (daily) in folder postgres-data-backup.
 
-### Migrating existing DB to new version
-While developing ARTEMIS, we may change also the DB schema. To migrate to a new state, please
+### Migrating an existing DB to a new version
+While developing ARTEMIS, we may change also the DB schema. 
+To migrate to a new DB state, please
 execute the following commands:
 ```
 docker-compose -f ... down
@@ -461,33 +472,28 @@ If everything went correctly, you will see that the migration process was succes
 ### Exiting ARTEMIS
 
 Note that to gracefully terminate ARTEMIS and all its services you can use the following command:
-
 ```
 docker-compose -f ... down
 ```
 
 ## Contributing
-
 Please check [this file](CONTRIBUTING.md).
 
 ## Development
 We follow a custom Agile approach for our development.
 
 ## Versioning
-See [CHANGELOG](CHANGELOG.md)
+Pleas check [this file](CHANGELOG.md)
 
 ## Authors and Contributors
-Please check [authors](AUTHORS.md).
+Please check [this file](AUTHORS.md).
 
 ## License
 The ARTEMIS software is open-sourced under the BSD-3 license.
-Please check [license](LICENSE).
+Please check the [license file](LICENSE).
+All external dependencies are used in a way compatible with BSD-3;
+the software packages and their respective licenses are documented
+in [this file](DEPENDENCIES-LICENSES.md).
 
 ## Acknowledgements and Funding Sources
-This work is supported by the following funding sources:
-* European Research Council (ERC) grant agreement no. 338402 ([NetVolution Project](http://netvolution.eu/))
-* [RIPE NCC Community Projects Fund](https://www.ripe.net/publications/news/announcements/ripe-community-projects-fund-2017-recipients-announced)
-
-The following funding sources supported the collaboration with CAIDA UCSD:
-* National Science Foundation (NSF) grant CNS-1423659
-* Comcast
+Please check [this file](ACKS.md).

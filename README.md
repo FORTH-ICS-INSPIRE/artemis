@@ -1,10 +1,5 @@
 # ARTEMIS
 
-## DISCLAIMER
-This is a live project under testing/development.
-We will release the first stable version of ARTEMIS
-by the end of 2018 (December).
-
 ## General
 
 ARTEMIS is a defense approach versus BGP prefix hijacking attacks
@@ -26,51 +21,20 @@ multi-container application.
 
 ## Features
 
-The current version of ARTEMIS as a tool includes the following features:
+For a detailed list of supported features please check the [CHANGELOG](CHANGELOG.md) file
+(section: "Added"). On a high level, the following main features are supported:
 
 * Real-time monitoring of the changes in the BGP routes of the network's prefixes.
-ARTEMIS connects and receives real-time feeds of BGP updates from the streaming
-BGP route collectors of [RIPE RIS](http://stream-dev.ris.ripe.net/demo) and
-[BGPStream](https://bgpstream.caida.org/) (RouteViews + RIPE RIS + beta BMP feeds).
-Optionally, it connects to and receives BGP information from local routers through
-[exaBGP](https://github.com/Exa-Networks/exabgp).
-* Real-time detection of BGP prefix hijacking attacks/events of the following types:
+* Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types:
 exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
-* Manual mitigation of BGP prefix hijacking attacks. Upon the detection of a
-suspicious event (potential hijack), the network operator is immediately
-sent a notification (e.g., UI entry or email) detailing information such as:
-```
-'prefix': ...,
-'hijack_AS': ...,
-'hijack_type':...,
-'time_detected':...,
-'time_started': ...,
-'configured_prefix': ...,
-'timestamp_of_config': ...,
-'peers_seen': ...,
-'asns_inf': ...
-...:...
-```
-and ARTEMIS offers the option to run a custom script defined by the operator.
-* Web interface used by the network administrator to:
-(i) provide configuration
-information (ASNs, prefixes, routing policies, etc.) via an online text editor,
-(ii) control the monitoring|detection|mitigation ARTEMIS modules (start|stop|status),
-(iii) monitor in real-time the BGP state related to the IP prefixes of interest,
-(iv) view details of BGP hijacks of monitored configured prefixes,
-(v) monitor in real-time the status of ongoing, unresolved BGP hijacks, including whether
-the hijack has entered a "withdrawn" state,
-(vi) press button to trigger a custom mitigation process, mark as manually mitigated ("resolve"),
-acknowledge the event as seen, or ignore the event as a false positive,
-(vii) register and manage users (ADMIN|VIEWER),
-(viii) see configuration history and compare ARTEMIS current and previous configurations,
+* Manual or manually controlled mitigation of BGP prefix hijacking attacks.
+* Comprehensive web interface.
 * Configuration file editable by the operator (directly or via the web interface),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
-* CLI to start/stop ARTEMIS modules and query their status (running state, uptime).
 * Support for both IPv4 and IPv6 prefixes.
 * Modularity/extensibility by design.
 
-## Architecture (current, tentative)
+## Architecture
 
 ![Architecture](docs/images/artemis_system_overview.png)
 
@@ -520,7 +484,7 @@ TBD
 We follow a custom Agile approach for our development.
 
 ## Versioning
-See [CHANGELOG](https://github.com/FORTH-ICS-INSPIRE/artemis-tool/blob/master/CHANGELOG.md)
+See [CHANGELOG](CHANGELOG.md)
 
 ## Authors and Contributors
 Please check [authors](AUTHORS.md).

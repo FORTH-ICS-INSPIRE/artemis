@@ -108,23 +108,23 @@ function format_handled_seen(data){
 }
 
 function format_as_path(path) {
-	var str_ = "";
-	for (as_item in path){
-		str_ += "<cc_as>" + path[as_item] + "</cc_as> ";
-	}
-	return str_;
+    var str_ = "";
+    for (as_item in path){
+        str_ += "<cc_as>" + path[as_item] + "</cc_as> ";
+    }
+    return str_;
 }
 
 function format_orig_path(orig_path) {
-	if(orig_path == "" || orig_path == null){
-		return "Same as the AS path."
-	}else{
-		var str_ = "";
-		for (as_item in orig_path){
-			str_ += "<cc_as>" + orig_path[as_item] + "</cc_as> ";
-		}
-		return str_;
-	}
+    if(orig_path == "" || orig_path == null){
+        return "Same as the AS path."
+    }else{
+        var str_ = "";
+        for (as_item in orig_path){
+            str_ += "<cc_as>" + orig_path[as_item] + "</cc_as> ";
+        }
+        return str_;
+    }
 }
 
 function transform_date_to_local(date){
@@ -137,23 +137,30 @@ function transform_date_to_local(date){
 }
 
 function format_hijack_status(data){
-    if(data['withdrawn'] == true){
-        return '<b style="color:purple">Withdrawn</b>'
-    }else if(data['under_mitigation'] == true){
-        return '<b style="color:blue">Under Mitigation</b>'
-    }else if(data['resolved'] == true){
-        return '<b style="color:green">Resolved</b>'
-    }else if(data['active'] == true){
-        return '<b style="color:red">Ongoing</b>'
-    }else if(data['ignored'] == true){
-        return '<b style="color:orange">Ignored</b>'
-    }else{
-        return "Uknown"
+    var html_ = "";
+    if(data['active'] == true){
+        html_ += '<span class="badge badge-pill badge-danger">Ongoing</span>'
     }
+    if(data['under_mitigation'] == true){
+        html_ += '<span class="badge badge-pill badge-primary">Under Mitigation</span>'
+    }
+    if(data['resolved'] == true){
+        html_ += '<span class="badge badge-pill badge-success">Resolved</span>';
+    }
+    if(data['ignored'] == true){
+        html_ += '<span class="badge badge-pill badge-warning">Ignored</span>'
+    }
+    if(data['outdated'] == true){
+        html_ += '<span class="badge badge-pill badge-dark">Outdated</span>'
+    }
+    if(data['withdrawn'] == true){
+        html_ += '<span class="badge badge-pill badge-info">Withdrawn</span>';
+    }
+    return html_;
 }
 
 function format_service(service) {
-	return service.replace(/\|/g, ' -> ');
+    return service.replace(/\|/g, ' -> ');
 }
 
 function format_origin_as(n) {

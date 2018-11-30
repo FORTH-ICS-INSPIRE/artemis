@@ -405,9 +405,9 @@ hijack to under mitigation state. Note that the mitigation module should be acti
 * Acknowledge: mark the hijack as seen.
 
 Note that only the following state transitions are enabled:
-* ongoing (--> under mitigation) (--> outdated ) --> resolved
-* ongoing (--> under mitigation) (--> outdated ) --> ignored
-* ongoing (--> under mitigation) (--> outdated ) --> withdrawn
+* ongoing (--> under mitigation) (--> outdated) --> resolved
+* ongoing (--> under mitigation) (--> outdated) --> ignored
+* ongoing (--> under mitigation) (--> outdated) --> withdrawn
 
 The VIEWER use can see the status of a hijack but cannot activate any buttons.
 

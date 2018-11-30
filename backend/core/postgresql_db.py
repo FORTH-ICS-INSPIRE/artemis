@@ -1004,7 +1004,7 @@ class Postgresql_db():
             if len(self.outdate_hijacks) == 0:
                 return
             try:
-                cmd_ = 'UPDATE hijacks SET active=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
+                cmd_ = 'UPDATE hijacks SET active=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
                 psycopg2.extras.execute_values(
                     self.db_cur, cmd_, list(self.outdate_hijacks), page_size=1000)
                 self.db_conn.commit()

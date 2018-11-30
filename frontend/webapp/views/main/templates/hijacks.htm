@@ -468,7 +468,7 @@
                         }else{
                             query += ")";
                         }
-                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation } }"
+                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated } }"
                         if(refresh_state_live){
                             fetchDatatableLive(ws, callback, query);
                         }else{

@@ -139,19 +139,19 @@ function transform_date_to_local(date){
 function format_hijack_status(data){
     var html_ = "";
     if(data['active'] == true){
-        html_ += '<span class="badge badge-pill badge-danger">Ongoing</span>'
+        html_ += '<span class="badge badge-pill badge-danger">Ongoing</span>';
     }
     if(data['under_mitigation'] == true){
-        html_ += '<span class="badge badge-pill badge-primary">Under Mitigation</span>'
+        html_ += '<span class="badge badge-pill badge-primary">Under Mitigation</span>';
     }
     if(data['resolved'] == true){
         html_ += '<span class="badge badge-pill badge-success">Resolved</span>';
     }
     if(data['ignored'] == true){
-        html_ += '<span class="badge badge-pill badge-warning">Ignored</span>'
+        html_ += '<span class="badge badge-pill badge-warning">Ignored</span>';
     }
     if(data['outdated'] == true){
-        html_ += '<span class="badge badge-pill badge-dark">Outdated</span>'
+        html_ += '<span class="badge badge-pill badge-dark">Outdated</span>';
     }
     if(data['withdrawn'] == true){
         html_ += '<span class="badge badge-pill badge-info">Withdrawn</span>';

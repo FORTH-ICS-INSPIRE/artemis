@@ -80,6 +80,7 @@ class Postgresql_db():
             self.insert_bgp_entries = []
             self.handle_bgp_withdrawals = set()
             self.handled_bgp_entries = set()
+            self.outdate_hijacks = set()
             self.tmp_hijacks_dict = {}
 
             # DB variables
@@ -89,10 +90,10 @@ class Postgresql_db():
             try:
                 server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
                 cmd_ = 'INSERT INTO process_states (name, running) ' \
-                        'VALUES (%s, %s) ON CONFLICT (name) DO UPDATE ' \
-                        'SET running = EXCLUDED.running'
+                       'VALUES (%s, %s) ON CONFLICT (name) DO UPDATE ' \
+                       'SET running = EXCLUDED.running'
                 processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
-                        if x['name'] != 'listener']
+                             if x['name'] != 'listener']
                 psycopg2.extras.execute_batch(
                     self.db_cur, cmd_, processes)
                 self.db_conn.commit()
@@ -147,6 +148,12 @@ class Postgresql_db():
             self.hijack_queue = Queue(
                 'db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
+            self.hijack_ongoing_request_queue = Queue(
+                'db-hijack-request-ongoing', exchange=self.hijack_exchange, routing_key='ongoing-request', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
+            self.hijack_outdate_queue = Queue(
+                'db-hijack-outdate', exchange=self.hijack_exchange, routing_key='outdate', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
             self.hijack_resolved_queue = Queue(
                 'db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
@@ -171,7 +178,7 @@ class Postgresql_db():
                                            consumer_arguments={'x-priority': 4})
 
             self.hijack_multiple_action_queue = Queue('db-hijack-multiple-action', durable=False, auto_delete=True, max_priority=4,
-                                           consumer_arguments={'x-priority': 4})
+                                                      consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()
 
@@ -251,8 +258,19 @@ class Postgresql_db():
                     on_message=self.handle_hijack_multiple_action,
                     prefetch_count=1,
                     no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_ongoing_request_queue],
+                    on_message=self.handle_hijack_ongoing_request,
+                    prefetch_count=1,
+                    no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_outdate_queue],
+                    on_message=self.handle_hijack_outdate,
+                    prefetch_count=1,
+                    no_ack=True
                 )
-
             ]
 
         def config_request_rpc(self):
@@ -343,6 +361,14 @@ class Postgresql_db():
                 self.handle_bgp_withdrawals.add(extract_msg)
             except Exception:
                 log.exception('{}'.format(msg_))
+
+        def handle_hijack_outdate(self, message):
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            try:
+                key_ = (message.payload,)
+                self.outdate_hijacks.add(key_)
+            except Exception:
+                log.exception('{}'.format(message))
 
         def handle_hijack_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -476,6 +502,40 @@ class Postgresql_db():
                             log.debug('database config is up-to-date')
             except Exception:
                 log.exception('{}'.format(config))
+
+        def handle_hijack_ongoing_request(self, message):
+            print('received ongoing_request')
+            try:
+                results = []
+                cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key ' \
+                    ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) ' \
+                    'WHERE h.active = true AND b.type=\'A\''
+                self.db_cur.execute(cmd_)
+                entries = self.db_cur.fetchall()
+                for entry in entries:
+                    results.append({
+                        'key': entry[0],  # key
+                        'prefix': entry[1],  # prefix
+                        # 'origin_as': entry[2],  # origin_as
+                        # 'peer_asn': entry[3],  # peer_asn
+                        'path': entry[2],  # as_path
+                        # 'service': entry[5],  # service
+                        'type': entry[3],  # type
+                        # 'communities': entry[7],  # communities
+                        # 'timestamp': entry[8].timestamp()
+                        'hij_key': entry[4]
+                    })
+                # log.info('sending {}'.format(len(results)))
+                if len(results):
+                    self.producer.publish(
+                        results,
+                        exchange=self.hijack_exchange,
+                        routing_key='ongoing',
+                        retry=False,
+                        priority=1
+                    )
+            except Exception:
+                log.exception('exception')
 
         def retrieve_hijacks(self):
             try:
@@ -736,8 +796,8 @@ class Postgresql_db():
                             if len(entry[0]) == len(entry[1]):
                                 # set hijack as withdrawn and delete from redis
                                 self.db_cur.execute(
-                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, ' \
-                                            'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
+                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
+                                    'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
                                     (timestamp, entry[1], timestamp, entry[2],))
                                 self.db_conn.commit()
                                 log.debug('withdrawn hijack {}'.format(entry))
@@ -938,10 +998,23 @@ class Postgresql_db():
                     priority=2
                 )
 
+        def _handle_hijack_outdate(self):
+            if len(self.outdate_hijacks) == 0:
+                return
+            try:
+                cmd_ = 'UPDATE hijacks SET active=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
+                psycopg2.extras.execute_values(
+                    self.db_cur, cmd_, list(self.outdate_hijacks), page_size=1000)
+                self.db_conn.commit()
+                self.outdate_hijacks.clear()
+            except Exception:
+                log.exception('')
+
         def _update_bulk(self):
             inserts, updates, hijacks, withdrawals = self._insert_bgp_updates(
             ), self._update_bgp_updates(), self._insert_update_hijacks(
             ), self._handle_bgp_withdrawals()
+            self._handle_hijack_outdate()
             str_ = ''
             if inserts > 0:
                 str_ += 'BGP Updates Inserted: {}\n'.format(inserts)

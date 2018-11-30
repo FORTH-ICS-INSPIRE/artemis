@@ -29,6 +29,12 @@
             "db_version": "5",
             "description": "PG to AMQ function",
             "file": "migration_5.sql"
+            },
+        "6": {
+            "id": "6",
+            "db_version": "6",
+            "description": "Outdated field added",
+            "file": "migration_6.sql"
             }
     }
 }

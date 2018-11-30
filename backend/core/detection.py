@@ -113,6 +113,9 @@ class Detection():
             self.hijack_ignored_queue = Queue(
                 'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
+            self.hijack_ongoing_queue = Queue(
+                'detection-hijack-ongoing', exchange=self.hijack_exchange, routing_key='ongoing', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(
                 'detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
                 consumer_arguments={'x-priority': 3})
@@ -153,6 +156,12 @@ class Detection():
                     on_message=self.handle_resolved_or_ignored_hijack,
                     prefetch_count=1,
                     no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_ongoing_queue],
+                    on_message=self.handle_ongoing_hijacks,
+                    prefetch_count=10,
+                    no_ack=True
                 )
             ]
 
@@ -169,6 +178,14 @@ class Detection():
                 self.timestamp = raw['timestamp']
                 self.rules = raw.get('rules', [])
                 self.init_detection()
+                # Request ongoing hijacks from DB
+                # log.info('sending ongoing-request')
+                self.producer.publish(
+                    '',
+                    exchange=self.hijack_exchange,
+                    routing_key='ongoing-request',
+                    priority=1
+                )
 
         def config_request_rpc(self) -> NoReturn:
             """
@@ -241,6 +258,14 @@ class Detection():
                         'neighbors': rule['neighbors']}
                     node.data['confs'].append(conf_obj)
 
+        def handle_ongoing_hijacks(self, message: Dict) -> NoReturn:
+            """
+            Handles ongoing hijacks from the database.
+            """
+            # log.debug('{} ongoing hijack events'.format(len(message.payload)))
+            for update in message.payload:
+                self.handle_bgp_update(update)
+
         def handle_unhandled_bgp_updates(self, message: Dict) -> NoReturn:
             """
             Handles unhanlded bgp updates from the database in batches of 50.
@@ -284,7 +309,11 @@ class Detection():
                             log.exception('exception')
 
                     if not is_hijack:
-                        self.mark_handled(raw)
+                        if 'hij_key' in monitor_event:
+                            self.mark_outdated(monitor_event['hij_key'])
+                            self.redis.delete(monitor_event['hij_key'])
+                        else:
+                            self.mark_handled(raw)
                 elif monitor_event['type'] == 'W':
                     self.producer.publish(
                         {
@@ -298,7 +327,6 @@ class Detection():
                         priority=0
                     )
 
-                self.mon_num += 1
                 # set key with empty value to expire after 1 hour
                 self.redis.set(monitor_event['key'], '', ex=60*60)
             else:
@@ -446,6 +474,8 @@ class Detection():
             Commit new or update an existing hijack to the database.
             It uses redis server to store ongoing hijacks information to not stress the db.
             """
+            if 'hij_key' in monitor_event:
+                return
             redis_hijack_key = redis_key(
                 monitor_event['prefix'],
                 hijacker,
@@ -515,6 +545,18 @@ class Detection():
                 priority=1
             )
             # log.debug('{}'.format(monitor_event['key']))
+
+        def mark_outdated(self, hij_key: str) -> NoReturn:
+            """
+            Marks a hijack as outdated on the database.
+            """
+            # log.debug('{}'.format(hij_key))
+            self.producer.publish(
+                hij_key,
+                exchange=self.hijack_exchange,
+                routing_key='outdate',
+                priority=1
+            )
 
         def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
             """

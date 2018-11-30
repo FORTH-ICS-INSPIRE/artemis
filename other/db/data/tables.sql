@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
     active  BOOLEAN,
     ignored BOOLEAN,
     withdrawn BOOLEAN,
+    outdated BOOLEAN DEFAULT FALSE,
     configured_prefix  inet,
     timestamp_of_config TIMESTAMP,
     comment text,
@@ -82,15 +83,17 @@ CREATE TABLE IF NOT EXISTS hijacks (
     UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (
         (
-            active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false
+            active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=false
         ) or (
-            active=true and under_mitigation=true and resolved=false and ignored=false and withdrawn=false
+            active=true and under_mitigation=true and resolved=false and ignored=false and withdrawn=false and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false
+            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false
+            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true
+            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true and outdated=false
+        ) or (
+            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=true
         )
     )
 );

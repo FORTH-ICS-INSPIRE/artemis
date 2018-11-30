@@ -286,7 +286,7 @@ class Detection():
                 monitor_event['path'] = monitor_event['as_path']
                 monitor_event['timestamp'] = datetime(*map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
 
-            if not self.redis.exists(monitor_event['key']):
+            if not self.redis.exists(monitor_event['key']) or 'hij_key' in monitor_event:
                 raw = monitor_event.copy()
                 is_hijack = False
                 # ignore withdrawals for now
@@ -310,8 +310,8 @@ class Detection():
 
                     if not is_hijack:
                         if 'hij_key' in monitor_event:
-                            self.mark_outdated(monitor_event['hij_key'])
                             self.redis.delete(monitor_event['hij_key'])
+                            self.mark_outdated(monitor_event['hij_key'])
                         else:
                             self.mark_handled(raw)
                 elif monitor_event['type'] == 'W':
@@ -328,6 +328,7 @@ class Detection():
                     )
 
                 # set key with empty value to expire after 1 hour
+
                 self.redis.set(monitor_event['key'], '', ex=60*60)
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))

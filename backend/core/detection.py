@@ -310,7 +310,11 @@ class Detection():
 
                     if not is_hijack:
                         if 'hij_key' in monitor_event:
-                            self.redis.delete(monitor_event['hij_key'])
+                            redis_hijack_key = redis_key(
+                                monitor_event['prefix'],
+                                monitor_event['hijack_as'],
+                                monitor_event['hij_type'])
+                            self.redis.delete(redis_hijack_key)
                             self.mark_outdated(monitor_event['hij_key'])
                         else:
                             self.mark_handled(raw)

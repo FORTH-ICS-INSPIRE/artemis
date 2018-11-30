@@ -507,7 +507,7 @@ class Postgresql_db():
             print('received ongoing_request')
             try:
                 results = []
-                cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key ' \
+                cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type ' \
                     ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) ' \
                     'WHERE h.active = true AND b.type=\'A\''
                 self.db_cur.execute(cmd_)
@@ -523,7 +523,9 @@ class Postgresql_db():
                         'type': entry[3],  # type
                         # 'communities': entry[7],  # communities
                         # 'timestamp': entry[8].timestamp()
-                        'hij_key': entry[4]
+                        'hij_key': entry[4],
+                        'hijack_as': entry[5],
+                        'hij_type': entry[6]
                     })
                 # log.info('sending {}'.format(len(results)))
                 if len(results):

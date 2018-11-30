@@ -576,15 +576,15 @@ class Postgresql_db():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             try:
-                self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
-                    (datetime.datetime.now(), raw['key'],))
-                self.db_conn.commit()
                 redis_hijack_key = redis_key(
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
+                self.db_cur.execute(
+                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
+                    (datetime.datetime.now(), raw['key'],))
+                self.db_conn.commit()
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -605,16 +605,16 @@ class Postgresql_db():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             try:
-                self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
-                    (raw['key'],
-                     ))
-                self.db_conn.commit()
                 redis_hijack_key = redis_key(
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
+                self.db_cur.execute(
+                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
+                    (raw['key'],
+                     ))
+                self.db_conn.commit()
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -687,11 +687,13 @@ class Postgresql_db():
             log.debug('payload: {}'.format(raw))
             action_ = ""
             action_is_related_to_seen = False
+            action_is_ignore = False
             try:
                 if(raw['action'] == 'mark_resolved'):
                     action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND withdrawn=false AND'
                 elif(raw['action'] == 'mark_ignored'):
-                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE ignored=false AND resolved=false AND withdrawn=false AND'
+                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND withdrawn=false AND'
+                    action_is_ignore = True
                 elif(raw['action'] == 'mark_seen'):
                     action_ = 'seen=true'
                     action_is_related_to_seen = True
@@ -723,11 +725,26 @@ class Postgresql_db():
             else:
                 for hijack_key in raw['keys']:
                     try:
+                        self.db_cur.execute(
+                            'SELECT prefix, hijack_as, type FROM hijacks WHERE key = %s;', (hijack_key, ))
+                        entries = self.db_cur.fetchall()
+                        entry = entries[0]
+                        redis_hijack_key = redis_key(
+                                entry[0], # prefix
+                                entry[1], # hijack_as
+                                entry[2] # type
+                        )
                         if action_is_related_to_seen:
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
                             self.db_conn.commit()
+                        elif action_is_ignore:
+                            self.redis.delete(redis_hijack_key)
+                            self.db_cur.execute(
+                                'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
+                            self.db_conn.commit()
                         else:
+                            self.redis.delete(redis_hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
@@ -797,17 +814,17 @@ class Postgresql_db():
                             timestamp = max(withdrawal[2], entry[6])
                             if len(entry[0]) == len(entry[1]):
                                 # set hijack as withdrawn and delete from redis
+                                redis_hijack_key = redis_key(
+                                    withdrawal[0],
+                                    entry[3],
+                                    entry[4])
+                                self.redis.delete(redis_hijack_key)
                                 self.db_cur.execute(
                                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, ' \
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
                                     (timestamp, entry[1], timestamp, entry[2],))
                                 self.db_conn.commit()
                                 log.debug('withdrawn hijack {}'.format(entry))
-                                redis_hijack_key = redis_key(
-                                    withdrawal[0],
-                                    entry[3],
-                                    entry[4])
-                                self.redis.delete(redis_hijack_key)
                             else:
                                 # add withdrawal to hijack
                                 self.db_cur.execute(

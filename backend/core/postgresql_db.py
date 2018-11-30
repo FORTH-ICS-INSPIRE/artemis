@@ -796,7 +796,7 @@ class Postgresql_db():
                             if len(entry[0]) == len(entry[1]):
                                 # set hijack as withdrawn and delete from redis
                                 self.db_cur.execute(
-                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
+                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, ' \
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
                                     (timestamp, entry[1], timestamp, entry[2],))
                                 self.db_conn.commit()

@@ -60,12 +60,12 @@ mapHelpText_system['field_view_hijack'] = "Redirects to the hijack view if the B
 
 
 var mapHelpText_hijack_status = {};
-mapHelpText_hijack_status['field_hijack_status_resolved'] = 'The number of resolved hijack events</br>(true positives that were marked by the user).';
-mapHelpText_hijack_status['field_hijack_status_ongoing'] = 'The number of ongoing hijack events</br>(not ignored or resolved).';
-mapHelpText_hijack_status['field_hijack_status_withdrawn'] = 'The number of withdrawn hijack events.';
-mapHelpText_hijack_status['field_hijack_status_ignored'] = 'The number of ignored hijack events</br>(false positives that were marked by the user).';
-mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'The number of hijack events that are currently under mitigation (triggered by the user).';
-
+mapHelpText_hijack_status['field_hijack_status_resolved'] = 'Resolved hijack events</br>(true positives that were marked by the user).';
+mapHelpText_hijack_status['field_hijack_status_ongoing'] = 'Ongoing hijack events</br>(not ignored or resolved).';
+mapHelpText_hijack_status['field_hijack_status_withdrawn'] = 'Withdrawn hijack events.';
+mapHelpText_hijack_status['field_hijack_status_ignored'] = 'Ignored hijack events</br>(false positives that were marked by the user).';
+mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'Hijack events that are currently under mitigation</br>(triggered by the user).';
+mapHelpText_hijack_status['field_hijack_status_outdated'] = 'Hijack events that match a configuration that is now deprecated.';
 
 function displayHelpTextTable(){
 	$('th[helpText]').each(function( index ) {

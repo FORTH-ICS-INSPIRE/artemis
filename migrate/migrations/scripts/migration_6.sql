@@ -14,9 +14,23 @@ ALTER TABLE hijacks add CONSTRAINT possible_states CHECK (
     ) or (
         active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false and outdated=false
     ) or (
+        active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=true
+    ) or (
+        active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false and outdated=true
+    ) or (
+        active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false and outdated=true
+    ) or (
         active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true and outdated=false
     ) or (
-        active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=true
+        active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true and outdated=true
+    ) or (
+        active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=true and outdated=false
+    ) or (
+        active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=false
+    ) or (
+        active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=true and outdated=true
+    ) or (
+        active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=true
     )
 );
 

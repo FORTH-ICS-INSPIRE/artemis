@@ -33,7 +33,7 @@
         "6": {
             "id": "6",
             "db_version": "6",
-            "description": "Outdated field added",
+            "description": "Outdated field added and db constraints revised",
             "file": "migration_6.sql"
             }
     }

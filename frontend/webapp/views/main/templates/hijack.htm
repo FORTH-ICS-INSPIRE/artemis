@@ -655,7 +655,7 @@
                     $("#mitigation_button").prop("disabled", true);
                     $("#ignored_button").prop("disabled", true);
 
-                }else if(data['under_mitigation'] == true){
+                }else if(data['under_mitigation'] == true || data['outdated'] == true){
                     $("#mitigation_button").prop("disabled", true);
                 }
                 if(data['seen'] == true){

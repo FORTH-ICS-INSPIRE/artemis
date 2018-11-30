@@ -12,11 +12,12 @@ mapHelpText_stats['field_postgresql_db'] = 'ARTEMIS module responsible for provi
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
 
-mapHelpText_system['field_hijack_status'] = 'The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved).</br>';
+mapHelpText_system['field_hijack_status'] = 'The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved|outdated).</br>';
 mapHelpText_system['field_hijack_status'] += '<ul><li>Ongoing: the hijack has not been ignored, resolved or withdrawn.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Withdrawn: all monitors that saw hijack updates for a certain prefix have seen the respective withdrawals.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event was a false positive alert.</li>';
-mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li></ul>';
+mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li>';
+mapHelpText_system['field_hijack_status'] += '<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>';
 
 mapHelpText_system['field_hijack_type'] = 'The type of the hijack:<ul>';
 mapHelpText_system['field_hijack_type'] += '<li>S → Sub-prefix hijack</li>';

@@ -145,7 +145,7 @@
                     <a id="status_ignored_text" style="color:orange" helpText="field_hijack_status_ignored" href="javascript:filter_by_status('ignored');">Ignored</a> /
                     <a id="status_under_mitigation_text" style="color:blue" helpText="field_hijack_under_mitigation" href="javascript:filter_by_status('under_mitigation');">Under Mitigation</a> /
                     <a id="status_withdrawn_text" style="color:purple" helpText="field_hijack_status_withdrawn" href="javascript:filter_by_status('withdrawn');">Withdrawn</a> /
-                    <a id="status_withdrawn_text" style="color:black" helpText="field_hijack_status_outdated" href="javascript:filter_by_status('withdrawn');">Outdated</a>
+                    <a id="status_outdated_text" style="color:black" helpText="field_hijack_status_outdated" href="javascript:filter_by_status('outdated');">Outdated</a>
 
                 </i></p>
             </div>
@@ -290,7 +290,7 @@
                     selected_status = null;
                 }else{
                     selected_status = status;
-                    var status_list = ['active', 'resolved', 'ignored', 'under_mitigation', 'withdrawn'];
+                    var status_list = ['active', 'resolved', 'ignored', 'under_mitigation', 'withdrawn', 'outdated'];
                     var filtered_status_list = status_list.filter(function(e) { return e !== status })
                     $("#status_" + status + "_text").css("font-weight", "bold")
                     filter_parameters['status'] = status;

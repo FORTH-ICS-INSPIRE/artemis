@@ -165,6 +165,14 @@ class Detection():
                 )
             ]
 
+        def on_consume_ready(self, connection, channel, consumers, **kwargs):
+            self.producer.publish(
+                '',
+                exchange=self.hijack_exchange,
+                routing_key='ongoing-request',
+                priority=1
+            )
+
         def handle_config_notify(self, message: Dict) -> NoReturn:
             """
             Consumer for Config-Notify messages that come from the configuration service.

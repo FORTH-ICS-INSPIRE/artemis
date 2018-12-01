@@ -509,7 +509,7 @@ class Postgresql_db():
                 results = []
                 cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type ' \
                     ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) ' \
-                    'WHERE h.active = true AND b.type=\'A\''
+                    'WHERE h.active = true AND b.type=\'A\' AND b.handled=true'
                 self.db_cur.execute(cmd_)
                 entries = self.db_cur.fetchall()
                 for entry in entries:
@@ -730,9 +730,9 @@ class Postgresql_db():
                         entries = self.db_cur.fetchall()
                         entry = entries[0]
                         redis_hijack_key = redis_key(
-                                entry[0], # prefix
-                                entry[1], # hijack_as
-                                entry[2] # type
+                                entry[0],  # prefix
+                                entry[1],  # hijack_as
+                                entry[2]  # type
                         )
                         if action_is_related_to_seen:
                             self.db_cur.execute(
@@ -820,7 +820,7 @@ class Postgresql_db():
                                     entry[4])
                                 self.redis.delete(redis_hijack_key)
                                 self.db_cur.execute(
-                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, ' \
+                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
                                     (timestamp, entry[1], timestamp, entry[2],))
                                 self.db_conn.commit()

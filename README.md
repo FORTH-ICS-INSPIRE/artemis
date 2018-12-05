@@ -97,7 +97,7 @@ generates a hijack entry which is in turn stored in the DB, together with the co
 monitoring entries. Finally, using a web application, the operator can instruct the mitigation
 module to mitigate a hijack or mark it as resolved/ignored. All information is persistently
 stored in the DB, which is accessed by the web application (user interface).
-Clock and observer modules are auxiliary, and take care of periodic clock signaling and module status
+Clock and observer modules are auxiliary, and take care of periodic clock signaling and configuration
 change notifications, respectively.
 
 ## Getting Started
@@ -329,10 +329,15 @@ rules:
 # End of Rule Definitions
 ```
 
+### Viewing ARTEMIS Configurations
+```
+TBD
+```
+
 ### Viewing ARTEMIS state
 After being successfully logged-in to ARTEMIS, you will be redirected to the following webpage:
 ```
-https://<ARTEMIS_HOST>//overview
+https://<ARTEMIS_HOST>/overview
 ```
 Here you can view info about:
 * your last login information (email address, time and IP address)

@@ -22,10 +22,6 @@ consisting of 3 components.
 All of the three components have a single version, denoted by the git
 tag.
 
-### Docs
-
-Contributing guide for docs can be found at <TBD>.
-
 ## Issues
 
 ### Reporting an Issue

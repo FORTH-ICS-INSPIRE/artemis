@@ -23,5 +23,4 @@ ARTEMIS project members are:
 * Alistair King, CAIDA UCSD (advisor)
 
 This file and the "Authors" section in file headers acknowledges contributors
-and does not imply legal ownership. Please see copyright notices in file headers
-for ownership information.
+and does not imply legal ownership. Please see copyright notices in the [license](LICENSE.md) file.

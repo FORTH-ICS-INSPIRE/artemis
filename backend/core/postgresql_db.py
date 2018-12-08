@@ -167,7 +167,7 @@ class Postgresql_db():
                 'db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.db_clock_queue = Queue(
-                uuid(), exchange=self.db_clock_exchange, routing_key='pulse', durable=False, auto_delete=True, max_priority=2,
+                'db-clock-{}'.format(uuid()), exchange=self.db_clock_exchange, routing_key='pulse', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 3})
             self.mitigate_queue = Queue(
                 'db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, auto_delete=True, max_priority=2,
@@ -504,40 +504,39 @@ class Postgresql_db():
                 log.exception('{}'.format(config))
 
         def handle_hijack_ongoing_request(self, message):
-            print('received ongoing_request')
-            try:
-                results = []
-                cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type ' \
-                    ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) ' \
-                    'WHERE h.active = true AND b.type=\'A\' AND b.handled=true'
-                self.db_cur.execute(cmd_)
-                entries = self.db_cur.fetchall()
-                for entry in entries:
-                    results.append({
-                        'key': entry[0],  # key
-                        'prefix': entry[1],  # prefix
-                        # 'origin_as': entry[2],  # origin_as
-                        # 'peer_asn': entry[3],  # peer_asn
-                        'path': entry[2],  # as_path
-                        # 'service': entry[5],  # service
-                        'type': entry[3],  # type
-                        # 'communities': entry[7],  # communities
-                        # 'timestamp': entry[8].timestamp()
-                        'hij_key': entry[4],
-                        'hijack_as': entry[5],
-                        'hij_type': entry[6]
-                    })
-                # log.info('sending {}'.format(len(results)))
-                if len(results):
-                    self.producer.publish(
-                        results,
-                        exchange=self.hijack_exchange,
-                        routing_key='ongoing',
-                        retry=False,
-                        priority=1
-                    )
-            except Exception:
-                log.exception('exception')
+            timestamp = message.payload
+
+            # need redis to handle future case of multiple db processes
+            last_timestamp = self.redis.get('last_handled_timestamp')
+            if last_timestamp is None or timestamp > float(last_timestamp):
+                self.redis.set('last_handled_timestamp', timestamp)
+                try:
+                    results = []
+                    cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type ' \
+                        ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) ' \
+                        'WHERE h.active = true AND b.type=\'A\' AND b.handled=true'
+                    self.db_cur.execute(cmd_)
+                    entries = self.db_cur.fetchall()
+                    for entry in entries:
+                        results.append({
+                            'key': entry[0],  # key
+                            'prefix': entry[1],  # prefix
+                            'path': entry[2],  # as_path
+                            'type': entry[3],  # type
+                            'hij_key': entry[4],
+                            'hijack_as': entry[5],
+                            'hij_type': entry[6]
+                        })
+                    if len(results):
+                        self.producer.publish(
+                            results,
+                            exchange=self.hijack_exchange,
+                            routing_key='ongoing',
+                            retry=False,
+                            priority=1
+                        )
+                except Exception:
+                    log.exception('exception')
 
         def retrieve_hijacks(self):
             try:
@@ -566,7 +565,6 @@ class Postgresql_db():
                         entry[5],
                         entry[6],
                         entry[7])
-                    # log.info('Set redis hijack key {}'.format(redis_hijack_key))
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
                 redis_pipeline.execute()
             except Exception:
@@ -836,8 +834,6 @@ class Postgresql_db():
                     log.exception('exception')
 
             try:
-                # for _add in update_hijack_withdrawals:
-                #     log.info('adding {} to {}'.format(_add[0], _add[1]))
                 cmd_ = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) ' \
                     'FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
                 psycopg2.extras.execute_values(
@@ -884,8 +880,6 @@ class Postgresql_db():
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'
                 try:
-                    # for _add in update_bgp_entries:
-                    #     log.info('b adding {} to {}'.format(_add[0], _add[1]))
                     cmd_2 = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
                     psycopg2.extras.execute_values(
                         self.db_cur,

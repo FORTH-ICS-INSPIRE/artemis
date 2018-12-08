@@ -111,13 +111,13 @@ class Detection():
                 'detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.hijack_ignored_queue = Queue(
-                'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
+                'detection-hijack-ignored-'.format(uuid()), exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.hijack_ongoing_queue = Queue(
                 'detection-hijack-ongoing', exchange=self.hijack_exchange, routing_key='ongoing', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(
-                'detection-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
+                'detection-config-notify-{}'.format(uuid()), exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
                 consumer_arguments={'x-priority': 3})
 
             self.config_request_rpc()
@@ -167,7 +167,7 @@ class Detection():
 
         def on_consume_ready(self, connection, channel, consumers, **kwargs):
             self.producer.publish(
-                '',
+                self.timestamp,
                 exchange=self.hijack_exchange,
                 routing_key='ongoing-request',
                 priority=1
@@ -187,9 +187,8 @@ class Detection():
                 self.rules = raw.get('rules', [])
                 self.init_detection()
                 # Request ongoing hijacks from DB
-                # log.info('sending ongoing-request')
                 self.producer.publish(
-                    '',
+                    self.timestamp,
                     exchange=self.hijack_exchange,
                     routing_key='ongoing-request',
                     priority=1
@@ -339,8 +338,6 @@ class Detection():
                         priority=0
                     )
 
-                # set key with empty value to expire after 1 hour
-
                 self.redis.set(monitor_event['key'], '', ex=60*60)
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
@@ -399,7 +396,6 @@ class Detection():
             (clean_as_path, is_loopy) = Detection.Worker.__remove_prepending(path)
             if is_loopy:
                 clean_as_path = Detection.Worker.__clean_loops(clean_as_path)
-            # log.debug('before: {} / after: {}'.format(path, clean_as_path))
             return clean_as_path
 
         @exception_handler(log)
@@ -511,12 +507,8 @@ class Detection():
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(int(hij_type) + 1)])
 
-            # t0 = time.time()
             result = self.redis.get(redis_hijack_key)
-            # log.info('redis hijack key: {}'.format(redis_hijack_key))
-            # log.info('get {}'.format(time.time()-t0))
             if result is not None:
-                # log.info('existing')
                 result = pickle.loads(result)
                 result['time_started'] = min(
                     result['time_started'], hijack_value['time_started'])
@@ -527,15 +519,12 @@ class Detection():
                 # no update since db already knows!
                 result['monitor_keys'] = hijack_value['monitor_keys']
             else:
-                # log.info('not existing')
                 hijack_value['time_detected'] = time.time()
                 hijack_value['key'] = hashlib.md5(pickle.dumps(
                     [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
                 result = hijack_value
 
-            # t0 = time.time()
             self.redis.set(redis_hijack_key, pickle.dumps(result))
-            # log.info('set {}'.format(time.time()-t0))
 
             self.producer.publish(
                 result,
@@ -551,13 +540,13 @@ class Detection():
             """
             Marks a bgp update as handled on the database.
             """
+            # log.debug('{}'.format(monitor_event['key']))
             self.producer.publish(
                 monitor_event['key'],
                 exchange=self.handled_exchange,
                 routing_key='update',
                 priority=1
             )
-            # log.debug('{}'.format(monitor_event['key']))
 
         def mark_outdated(self, hij_key: str) -> NoReturn:
             """

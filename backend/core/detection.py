@@ -111,7 +111,7 @@ class Detection():
                 'detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.hijack_ignored_queue = Queue(
-                'detection-hijack-ignored-'.format(uuid()), exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
+                'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.hijack_ongoing_queue = Queue(
                 'detection-hijack-ongoing', exchange=self.hijack_exchange, routing_key='ongoing', durable=False, auto_delete=True, max_priority=1,

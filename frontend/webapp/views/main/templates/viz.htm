@@ -54,15 +54,63 @@
         <script src="https://d3js.org/d3.v5.min.js"></script>
         <script src="{{ url_for('static', filename='js/viz.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/d3-graphviz.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
         <script>
             var json_config = '{{ config|tojson }}';
             var config_data = JSON.parse(json_config);
+            var cachedData = {};
 
+            function getName(ASN){
+                return fetch('https://stat.ripe.net/data/as-names/data.json?resource=AS' + ASN).then((response) => response.json())
+            }
+
+            function getCountry(ASN){
+                return fetch('https://stat.ripe.net/data/geoloc/data.json?resource=AS' + ASN).then((response) => response.json())
+            }
+
+            function getData(ASN){
+                return Promise.all([getName(ASN), getCountry(ASN)]);
+            }
+
+            function dataStr(ASN){
+                var data_str = "Information not available yet";
+                if (typeof cachedData[ASN] !== 'undefined'){
+                    data_str = `ASN: ${ASN} (ASN-DOT: ${cachedData[ASN][2]})`;
+                    data_str += `\nName: ${cachedData[ASN][0]}`;
+                    data_str += `\nCountries operating: ${cachedData[ASN][1]}`;
+                }
+                return data_str;
+            }
+
+            <!--extract per asn information from ripestat util functions-->
+            function get_asn_data(asn) {
+                var data_ = [];
+                var asn_int = parseInt(asn);
+                if (asn_int != NaN && asn_int > 0 && asn_int < 4199999999){
+                    getData(asn_int).then(([name, countries]) => {
+                        data_[0] = (name.data.names[asn_int]);
+                        var countries_set = new Set();
+                        for (var country in countries.data.locations){
+                            if(countries.data.locations[country].country.includes('-')){
+                                countries_set.add(countries.data.locations[country].country.split('-')[0]);
+                            }else{
+                                countries_set.add(countries.data.locations[country].country);
+                            }
+                        }
+                        data_[1] = Array.from(countries_set).join(', ');
+                        data_[2] = parseInt(asn_int/65536) + '.' + asn_int%65536;
+                        cachedData[asn] = data_;
+                    });
+                }
+            }
+
+            <!--draw per-prefix graph-->
             function draw_prefix_graph(selected_prefix, config_data) {
                 var digraph = 'digraph {';
                 digraph += 'rankdir="LR";';
                 digraph += 'concentrate=true;';
                 digraph += 'center=true;';
+                digraph += 'node [style=filled]';
                 var prefix_nodes = new Set();
                 var origin_nodes = new Set();
                 var neighbor_nodes = new Set();
@@ -84,11 +132,15 @@
                                 origin_nodes.add(origin);
                                 edge = [current_prefix_str, origin]
                                 prefix_origin_edges.add(edge);
+                                asn_str = origin.replace('"','').replace('(o)','').replace('"','');
+                                get_asn_data(asn_str);
                                 for (var neighbor_idx=0; neighbor_idx<rule.neighbors.length; neighbor_idx++){
                                     neighbor = '"' + rule.neighbors[neighbor_idx] + '(n)' + '"';
                                     neighbor_nodes.add(neighbor);
                                     edge = [origin, neighbor];
                                     origin_neighbor_edges.add(edge);
+                                    asn_str = neighbor.replace('"','').replace('(n)','').replace('"','');
+                                    get_asn_data(asn_str);
                                 }
                             }
                         }
@@ -98,19 +150,23 @@
                 <!--process prefix nodes-->
                 for (var prefix_node_values=prefix_nodes.values(), node=null; node=prefix_node_values.next().value;){
                     digraph += node;
-                    digraph += ' [style=filled, fillcolor=red];';
+                    digraph += ' [fillcolor=red];';
                 }
 
                 <!--process origin nodes-->
                 for (var origin_node_values=origin_nodes.values(), node=null; node=origin_node_values.next().value;){
                     digraph += node;
-                    digraph += ' [style=filled, fillcolor=green];';
+                    asn_str = node.replace('"','').replace('(o)','').replace('"','');
+                    var data_str = dataStr(asn_str);
+                    digraph += ' [fillcolor=green, tooltip="' + data_str + '"];';
                 }
 
                 <!--process neighbor nodes-->
                 for (var neighbor_node_values=neighbor_nodes.values(), node=null; node=neighbor_node_values.next().value;){
                     digraph += node;
-                    digraph += ' [style=filled, fontcolor=white, fillcolor=blue];';
+                    asn_str = node.replace('"','').replace('(n)','').replace('"','');
+                    var data_str = dataStr(asn_str);
+                    digraph += ' [fontcolor=white, fillcolor=blue, tooltip="' + data_str + '"];';
                 }
 
                 <!--process prefix to origin edges-->
@@ -131,8 +187,8 @@
                 digraph += '}';
 
                 <!--render digraph-->
-                console.log(digraph);
                 d3.select("#graph").graphviz(engine='dot').dot(digraph).render();
+                asn_map_to_name();
             }
 
             $("#prefixes_selection").change(function () {
@@ -141,7 +197,9 @@
                 if(option != "None"){
                     selected_prefix = option;
                 }
-                draw_prefix_graph(selected_prefix, config_data);
+                $(document).ready(function(){
+                    draw_prefix_graph(selected_prefix, config_data);
+                });
             });
 
         </script>

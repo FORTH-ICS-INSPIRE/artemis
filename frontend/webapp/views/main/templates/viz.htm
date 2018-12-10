@@ -60,18 +60,39 @@
             var config_data = JSON.parse(json_config);
             var cachedData = {};
 
-            function getName(ASN){
-                return fetch('https://stat.ripe.net/data/as-names/data.json?resource=AS' + ASN).then((response) => response.json())
+            <!--synchronous name extraction from ripestat-->
+            function syncGetName(ASN){
+                var data_ = [];
+                $.ajax('https://stat.ripe.net/data/as-names/data.json?resource=AS' + Number(ASN), {
+                    async: false,
+                    success: function(data){
+                        data_ = (data.data.names[Number(ASN)]);
+                    }
+                });
+                return data_;
             }
 
-            function getCountry(ASN){
-                return fetch('https://stat.ripe.net/data/geoloc/data.json?resource=AS' + ASN).then((response) => response.json())
+            <!--synchronous country extraction from ripestat-->
+            function syncGetCountry(ASN){
+                var data_ = [];
+                $.ajax('https://stat.ripe.net/data/geoloc/data.json?resource=AS' + Number(ASN), {
+                    async: false,
+                    success: function(data){
+                        var countries = new Set();
+                        for(var country in data.data.locations){
+                            if(data.data.locations[country].country.includes('-')){
+                                countries.add(data.data.locations[country].country.split('-')[0]);
+                            }else{
+                                countries.add(data.data.locations[country].country);
+                            }
+                        }
+                        data_ = Array.from(countries).join(', ');
+                    }
+                });
+                return data_;
             }
 
-            function getData(ASN){
-                return Promise.all([getName(ASN), getCountry(ASN)]);
-            }
-
+            <!--format ASN information (name, countries, etc.)-->
             function dataStr(ASN){
                 var data_str = "Information not available yet";
                 if (typeof cachedData[ASN] !== 'undefined'){
@@ -87,20 +108,10 @@
                 var data_ = [];
                 var asn_int = parseInt(asn);
                 if (asn_int != NaN && asn_int > 0 && asn_int < 4199999999){
-                    getData(asn_int).then(([name, countries]) => {
-                        data_[0] = (name.data.names[asn_int]);
-                        var countries_set = new Set();
-                        for (var country in countries.data.locations){
-                            if(countries.data.locations[country].country.includes('-')){
-                                countries_set.add(countries.data.locations[country].country.split('-')[0]);
-                            }else{
-                                countries_set.add(countries.data.locations[country].country);
-                            }
-                        }
-                        data_[1] = Array.from(countries_set).join(', ');
-                        data_[2] = parseInt(asn_int/65536) + '.' + asn_int%65536;
-                        cachedData[asn] = data_;
-                    });
+                    data_[0] = syncGetName(asn_int);
+                    data_[1] = syncGetCountry(asn_int);
+                    data_[2] = parseInt(asn_int/65536) + '.' + asn_int%65536;
+                    cachedData[asn] = data_;
                 }
             }
 

@@ -528,13 +528,14 @@ class Postgresql_db():
                             'hij_type': entry[6]
                         })
                     if len(results):
-                        self.producer.publish(
-                            results,
-                            exchange=self.hijack_exchange,
-                            routing_key='ongoing',
-                            retry=False,
-                            priority=1
-                        )
+                        for result_bucket in [results[i:i + 10] for i in range(0, len(results), 10)]:
+                            self.producer.publish(
+                                result_bucket,
+                                exchange=self.hijack_exchange,
+                                routing_key='ongoing',
+                                retry=False,
+                                priority=1
+                            )
                 except Exception:
                     log.exception('exception')
 

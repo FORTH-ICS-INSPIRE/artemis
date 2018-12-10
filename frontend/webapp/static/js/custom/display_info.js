@@ -12,11 +12,12 @@ mapHelpText_stats['field_postgresql_db'] = 'ARTEMIS module responsible for provi
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
 
-mapHelpText_system['field_hijack_status'] = 'The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved).</br>';
+mapHelpText_system['field_hijack_status'] = 'The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved|outdated).</br>';
 mapHelpText_system['field_hijack_status'] += '<ul><li>Ongoing: the hijack has not been ignored, resolved or withdrawn.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Withdrawn: all monitors that saw hijack updates for a certain prefix have seen the respective withdrawals.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event was a false positive alert.</li>';
-mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li></ul>';
+mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li>';
+mapHelpText_system['field_hijack_status'] += '<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>';
 
 mapHelpText_system['field_hijack_type'] = 'The type of the hijack:<ul>';
 mapHelpText_system['field_hijack_type'] += '<li>S → Sub-prefix hijack</li>';
@@ -60,12 +61,12 @@ mapHelpText_system['field_view_hijack'] = "Redirects to the hijack view if the B
 
 
 var mapHelpText_hijack_status = {};
-mapHelpText_hijack_status['field_hijack_status_resolved'] = 'The number of resolved hijack events</br>(true positives that were marked by the user).';
-mapHelpText_hijack_status['field_hijack_status_ongoing'] = 'The number of ongoing hijack events</br>(not ignored or resolved).';
-mapHelpText_hijack_status['field_hijack_status_withdrawn'] = 'The number of withdrawn hijack events.';
-mapHelpText_hijack_status['field_hijack_status_ignored'] = 'The number of ignored hijack events</br>(false positives that were marked by the user).';
-mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'The number of hijack events that are currently under mitigation (triggered by the user).';
-
+mapHelpText_hijack_status['field_hijack_status_resolved'] = 'Resolved hijack events</br>(true positives that were marked by the user).';
+mapHelpText_hijack_status['field_hijack_status_ongoing'] = 'Ongoing hijack events</br>(not ignored or resolved).';
+mapHelpText_hijack_status['field_hijack_status_withdrawn'] = 'Withdrawn hijack events.';
+mapHelpText_hijack_status['field_hijack_status_ignored'] = 'Ignored hijack events</br>(false positives that were marked by the user).';
+mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'Hijack events that are currently under mitigation</br>(triggered by the user).';
+mapHelpText_hijack_status['field_hijack_status_outdated'] = 'Hijack events that match a configuration that is now deprecated.';
 
 function displayHelpTextTable(){
 	$('th[helpText]').each(function( index ) {

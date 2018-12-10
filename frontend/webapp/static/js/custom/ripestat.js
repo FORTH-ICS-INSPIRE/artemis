@@ -25,6 +25,7 @@ function asn_map_to_name(){
             if(ASN_str in cachedData){
                 var html = '<p class="tooltip-custom-margin">ASN: ' + ASN_str + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';
                 html += 'Name: ' + cachedData[ASN_str][0] + '</br>';
+                html += 'Type: ' + cachedData[ASN_str][3] + '</br>';
                 html += 'Countries operating: ' + cachedData[ASN_str][1] +'</p>';
                 $(this).prop('title', html);
                 $(this).attr('data-toggle', "tooltip");
@@ -35,7 +36,7 @@ function asn_map_to_name(){
             }else{
                 var data_ = [];
 
-                if(ASN_int != NaN && ASN_int > 0 && ASN_int < 4199999999){
+                if(ASN_int != NaN && ASN_int > 0 && ASN_int < 4294967295){
                     getData(ASN_int)
                         .then(([name, countries]) => {
                         data_[0] = (name.data.names[ASN_int]);
@@ -49,10 +50,18 @@ function asn_map_to_name(){
                         }
                         data_[1] = Array.from(countries_set).join(', ');
                         data_[2] = parseInt(ASN_int/65536) + '.' + ASN_int%65536;
+
+                        if((ASN_int >= 64512 && ASN_int <= 65534) || (ASN_int >= 4200000000 && ASN_int <= 4294967294)){
+                            data_[3] = 'Private';
+                        }else{
+                            data_[3] = 'Non-Private';
+                        }
+                        
                         cachedData[ASN_str] = data_;
 
                         var html = '<p class="tooltip-custom-margin">ASN: ' + $(this).text() + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';
                         html += 'Name: ' + cachedData[ASN_str][0] + '</br>';
+                        html += 'Type: ' + cachedData[ASN_str][3] + '</br>';
                         html += 'Countries operating: ' + cachedData[ASN_str][1] +'</p>';
                         $(this).prop('title', html);
                         $(this).attr('data-toggle', "tooltip");
@@ -68,11 +77,13 @@ function asn_map_to_name(){
                 }else{
                     data_[0] = 'Not a valid ASN';
                     data_[1] = 'None';
-                    data_[2] = "None";
+                    data_[2] = 'None';
+                    data_[3] = 'Unknown'
                     cachedData[ASN_str] = data_;
 
                     var html = '<p class="tooltip-custom-margin">ASN: ' + $(this).text() + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ' )</br>';
                     html += 'Name: ' + cachedData[ASN_str][0] + '</br>';
+                    html += 'Type: ' + cachedData[ASN_str][3] + '</br>';
                     html += 'Countries operating: ' + cachedData[ASN_str][1] +'</p>';
                     $(this).prop('title', html);
                     $(this).attr('data-toggle', "tooltip");

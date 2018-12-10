@@ -106,9 +106,13 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 
 --- searching hijacks using the prefix, hijack type, and/or hijack AS fields
 
--- view the status of a hijack: ongoing, ignored, resolved, under mitigation, withdrawn
+-- view the status of a hijack: ongoing, ignored, resolved, under mitigation, withdrawn, outdated
 
--- view DB statistics (total/unhandled BGP updates, total/resolved/ignored/under mitigation/ongoing/ignored/withdrawn/seen hijacks)
+-- automatic characterization of a hijack as withdrawn if all the monitor peers that saw a hijack update saw also a withdrawal
+
+-- automatic characterization of a hijack as outdated if the configuration that triggered the hijack is outdated
+
+-- view DB statistics (total/unhandled BGP updates, total/resolved/ignored/under mitigation/ongoing/ignored/withdrawn/outdated/seen hijacks)
 
 -- view help boxes for every field used in the system
 

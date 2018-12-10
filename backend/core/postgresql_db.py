@@ -80,6 +80,7 @@ class Postgresql_db():
             self.insert_bgp_entries = []
             self.handle_bgp_withdrawals = set()
             self.handled_bgp_entries = set()
+            self.outdate_hijacks = set()
             self.tmp_hijacks_dict = {}
 
             # DB variables
@@ -89,10 +90,10 @@ class Postgresql_db():
             try:
                 server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
                 cmd_ = 'INSERT INTO process_states (name, running) ' \
-                        'VALUES (%s, %s) ON CONFLICT (name) DO UPDATE ' \
-                        'SET running = EXCLUDED.running'
+                       'VALUES (%s, %s) ON CONFLICT (name) DO UPDATE ' \
+                       'SET running = EXCLUDED.running'
                 processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
-                        if x['name'] != 'listener']
+                             if x['name'] != 'listener']
                 psycopg2.extras.execute_batch(
                     self.db_cur, cmd_, processes)
                 self.db_conn.commit()
@@ -147,6 +148,12 @@ class Postgresql_db():
             self.hijack_queue = Queue(
                 'db-hijack-update', exchange=self.hijack_exchange, routing_key='update', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
+            self.hijack_ongoing_request_queue = Queue(
+                'db-hijack-request-ongoing', exchange=self.hijack_exchange, routing_key='ongoing-request', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
+            self.hijack_outdate_queue = Queue(
+                'db-hijack-outdate', exchange=self.hijack_exchange, routing_key='outdate', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
             self.hijack_resolved_queue = Queue(
                 'db-hijack-resolve', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
@@ -160,7 +167,7 @@ class Postgresql_db():
                 'db-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.db_clock_queue = Queue(
-                uuid(), exchange=self.db_clock_exchange, routing_key='pulse', durable=False, auto_delete=True, max_priority=2,
+                'db-clock-{}'.format(uuid()), exchange=self.db_clock_exchange, routing_key='pulse', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 3})
             self.mitigate_queue = Queue(
                 'db-mitigation-start', exchange=self.mitigation_exchange, routing_key='mit-start', durable=False, auto_delete=True, max_priority=2,
@@ -171,7 +178,7 @@ class Postgresql_db():
                                            consumer_arguments={'x-priority': 4})
 
             self.hijack_multiple_action_queue = Queue('db-hijack-multiple-action', durable=False, auto_delete=True, max_priority=4,
-                                           consumer_arguments={'x-priority': 4})
+                                                      consumer_arguments={'x-priority': 4})
 
             self.config_request_rpc()
 
@@ -251,8 +258,19 @@ class Postgresql_db():
                     on_message=self.handle_hijack_multiple_action,
                     prefetch_count=1,
                     no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_ongoing_request_queue],
+                    on_message=self.handle_hijack_ongoing_request,
+                    prefetch_count=1,
+                    no_ack=True
+                ),
+                Consumer(
+                    queues=[self.hijack_outdate_queue],
+                    on_message=self.handle_hijack_outdate,
+                    prefetch_count=1,
+                    no_ack=True
                 )
-
             ]
 
         def config_request_rpc(self):
@@ -343,6 +361,14 @@ class Postgresql_db():
                 self.handle_bgp_withdrawals.add(extract_msg)
             except Exception:
                 log.exception('{}'.format(msg_))
+
+        def handle_hijack_outdate(self, message):
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            try:
+                key_ = (message.payload,)
+                self.outdate_hijacks.add(key_)
+            except Exception:
+                log.exception('{}'.format(message))
 
         def handle_hijack_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -477,6 +503,42 @@ class Postgresql_db():
             except Exception:
                 log.exception('{}'.format(config))
 
+        def handle_hijack_ongoing_request(self, message):
+            timestamp = message.payload
+
+            # need redis to handle future case of multiple db processes
+            last_timestamp = self.redis.get('last_handled_timestamp')
+            if last_timestamp is None or timestamp > float(last_timestamp):
+                self.redis.set('last_handled_timestamp', timestamp)
+                try:
+                    results = []
+                    cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type ' \
+                        ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) ' \
+                        'WHERE h.active = true AND b.type=\'A\' AND b.handled=true'
+                    self.db_cur.execute(cmd_)
+                    entries = self.db_cur.fetchall()
+                    for entry in entries:
+                        results.append({
+                            'key': entry[0],  # key
+                            'prefix': entry[1],  # prefix
+                            'path': entry[2],  # as_path
+                            'type': entry[3],  # type
+                            'hij_key': entry[4],
+                            'hijack_as': entry[5],
+                            'hij_type': entry[6]
+                        })
+                    if len(results):
+                        for result_bucket in [results[i:i + 10] for i in range(0, len(results), 10)]:
+                            self.producer.publish(
+                                result_bucket,
+                                exchange=self.hijack_exchange,
+                                routing_key='ongoing',
+                                retry=False,
+                                priority=1
+                            )
+                except Exception:
+                    log.exception('exception')
+
         def retrieve_hijacks(self):
             try:
                 cmd_ = 'SELECT time_started, time_last, peers_seen, ' \
@@ -504,7 +566,6 @@ class Postgresql_db():
                         entry[5],
                         entry[6],
                         entry[7])
-                    # log.info('Set redis hijack key {}'.format(redis_hijack_key))
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
                 redis_pipeline.execute()
             except Exception:
@@ -514,15 +575,15 @@ class Postgresql_db():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             try:
-                self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
-                    (datetime.datetime.now(), raw['key'],))
-                self.db_conn.commit()
                 redis_hijack_key = redis_key(
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
+                self.db_cur.execute(
+                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
+                    (datetime.datetime.now(), raw['key'],))
+                self.db_conn.commit()
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -543,16 +604,16 @@ class Postgresql_db():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             try:
-                self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
-                    (raw['key'],
-                     ))
-                self.db_conn.commit()
                 redis_hijack_key = redis_key(
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
+                self.db_cur.execute(
+                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
+                    (raw['key'],
+                     ))
+                self.db_conn.commit()
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -625,11 +686,13 @@ class Postgresql_db():
             log.debug('payload: {}'.format(raw))
             action_ = ""
             action_is_related_to_seen = False
+            action_is_ignore = False
             try:
                 if(raw['action'] == 'mark_resolved'):
                     action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND withdrawn=false AND'
                 elif(raw['action'] == 'mark_ignored'):
-                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE ignored=false AND resolved=false AND withdrawn=false AND'
+                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND withdrawn=false AND'
+                    action_is_ignore = True
                 elif(raw['action'] == 'mark_seen'):
                     action_ = 'seen=true'
                     action_is_related_to_seen = True
@@ -661,11 +724,26 @@ class Postgresql_db():
             else:
                 for hijack_key in raw['keys']:
                     try:
+                        self.db_cur.execute(
+                            'SELECT prefix, hijack_as, type FROM hijacks WHERE key = %s;', (hijack_key, ))
+                        entries = self.db_cur.fetchall()
+                        entry = entries[0]
+                        redis_hijack_key = redis_key(
+                                entry[0],  # prefix
+                                entry[1],  # hijack_as
+                                entry[2]  # type
+                        )
                         if action_is_related_to_seen:
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
                             self.db_conn.commit()
+                        elif action_is_ignore:
+                            self.redis.delete(redis_hijack_key)
+                            self.db_cur.execute(
+                                'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
+                            self.db_conn.commit()
                         else:
+                            self.redis.delete(redis_hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
@@ -735,17 +813,17 @@ class Postgresql_db():
                             timestamp = max(withdrawal[2], entry[6])
                             if len(entry[0]) == len(entry[1]):
                                 # set hijack as withdrawn and delete from redis
-                                self.db_cur.execute(
-                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, ' \
-                                            'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
-                                    (timestamp, entry[1], timestamp, entry[2],))
-                                self.db_conn.commit()
-                                log.debug('withdrawn hijack {}'.format(entry))
                                 redis_hijack_key = redis_key(
                                     withdrawal[0],
                                     entry[3],
                                     entry[4])
                                 self.redis.delete(redis_hijack_key)
+                                self.db_cur.execute(
+                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
+                                    'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
+                                    (timestamp, entry[1], timestamp, entry[2],))
+                                self.db_conn.commit()
+                                log.debug('withdrawn hijack {}'.format(entry))
                             else:
                                 # add withdrawal to hijack
                                 self.db_cur.execute(
@@ -757,8 +835,6 @@ class Postgresql_db():
                     log.exception('exception')
 
             try:
-                # for _add in update_hijack_withdrawals:
-                #     log.info('adding {} to {}'.format(_add[0], _add[1]))
                 cmd_ = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) ' \
                     'FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
                 psycopg2.extras.execute_values(
@@ -805,8 +881,6 @@ class Postgresql_db():
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'
                 try:
-                    # for _add in update_bgp_entries:
-                    #     log.info('b adding {} to {}'.format(_add[0], _add[1]))
                     cmd_2 = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
                     psycopg2.extras.execute_values(
                         self.db_cur,
@@ -938,10 +1012,23 @@ class Postgresql_db():
                     priority=2
                 )
 
+        def _handle_hijack_outdate(self):
+            if len(self.outdate_hijacks) == 0:
+                return
+            try:
+                cmd_ = 'UPDATE hijacks SET active=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
+                psycopg2.extras.execute_values(
+                    self.db_cur, cmd_, list(self.outdate_hijacks), page_size=1000)
+                self.db_conn.commit()
+                self.outdate_hijacks.clear()
+            except Exception:
+                log.exception('')
+
         def _update_bulk(self):
             inserts, updates, hijacks, withdrawals = self._insert_bgp_updates(
             ), self._update_bgp_updates(), self._insert_update_hijacks(
             ), self._handle_bgp_withdrawals()
+            self._handle_hijack_outdate()
             str_ = ''
             if inserts > 0:
                 str_ += 'BGP Updates Inserted: {}\n'.format(inserts)

@@ -1,3 +1,4 @@
+drop trigger if exists send_update_event on bgp_updates;
 drop function if exists rabbitmq.send_message;
 create function rabbitmq.send_message(
   channel text,
@@ -21,7 +22,6 @@ create function rabbitmq.on_row_change() returns trigger as $$
   end;
 $$ stable language plpgsql;
 
-drop trigger if exists send_update_event on bgp_updates;
 create trigger send_update_event
 after insert on bgp_updates
 for each row execute procedure rabbitmq.on_row_change();

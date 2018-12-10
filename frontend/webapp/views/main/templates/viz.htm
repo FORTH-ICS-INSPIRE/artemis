@@ -19,14 +19,20 @@
 
         <div class="row">
             <div class="col-lg-12">
+                <h3>Configured Prefix Graph: prefix(p) -> origin(o) -> neighbor(n)</h3>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
                 <div class="row">
                     <div class="col-lg-1">
                         <p>Select prefix: </p>
                     </div>
                     <div class="col-lg-2">
                         <div class="form-group">
-                            <select class="form-control" id="prefixes_selection">
-                                <option>All</option>
+                            <select autocomplete="off" class="form-control" id="prefixes_selection">
+                                <option selected="selected">None</option>
                                 {% for prefix in prefixes %}
                                     <option>{{ prefix }}</option>
                                 {% endfor %}
@@ -37,13 +43,106 @@
             </div>
         </div>
 
+        <div id="graph"></div>
+
 {% endblock %}
 
 {% block body %}
     {{super()}}
     {% block scripts %}
         {{super()}}
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="{{ url_for('static', filename='js/viz.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/d3-graphviz.js') }}{{ js_version }}"></script>
         <script>
+            var json_config = '{{ config|tojson }}';
+            var config_data = JSON.parse(json_config);
+
+            function draw_prefix_graph(selected_prefix, config_data) {
+                var digraph = 'digraph {';
+                digraph += 'rankdir="LR";';
+                digraph += 'concentrate=true;';
+                digraph += 'center=true;';
+                var prefix_nodes = new Set();
+                var origin_nodes = new Set();
+                var neighbor_nodes = new Set();
+                var prefix_origin_edges = new Set();
+                var origin_neighbor_edges = new Set();
+                var node = null;
+                var edge = null;
+
+                <!--calculate nodes and edges-->
+                for (var rule_idx=0; rule_idx<config_data.rules.length; rule_idx++){
+                    var rule = config_data.rules[rule_idx];
+                    for (var prefix_idx=0; prefix_idx<rule.prefixes.length; prefix_idx++){
+                        var current_prefix = rule.prefixes[prefix_idx];
+                        if (current_prefix == selected_prefix){
+                            var current_prefix_str = '"' + current_prefix + '(p)' + '"';
+                            prefix_nodes.add(current_prefix_str);
+                            for (var origin_idx=0; origin_idx<rule.origin_asns.length; origin_idx++){
+                                origin = '"' + rule.origin_asns[origin_idx] + '(o)' + '"';
+                                origin_nodes.add(origin);
+                                edge = [current_prefix_str, origin]
+                                prefix_origin_edges.add(edge);
+                                for (var neighbor_idx=0; neighbor_idx<rule.neighbors.length; neighbor_idx++){
+                                    neighbor = '"' + rule.neighbors[neighbor_idx] + '(n)' + '"';
+                                    neighbor_nodes.add(neighbor);
+                                    edge = [origin, neighbor];
+                                    origin_neighbor_edges.add(edge);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                <!--process prefix nodes-->
+                for (var prefix_node_values=prefix_nodes.values(), node=null; node=prefix_node_values.next().value;){
+                    digraph += node;
+                    digraph += ' [style=filled, fillcolor=red];';
+                }
+
+                <!--process origin nodes-->
+                for (var origin_node_values=origin_nodes.values(), node=null; node=origin_node_values.next().value;){
+                    digraph += node;
+                    digraph += ' [style=filled, fillcolor=green];';
+                }
+
+                <!--process neighbor nodes-->
+                for (var neighbor_node_values=neighbor_nodes.values(), node=null; node=neighbor_node_values.next().value;){
+                    digraph += node;
+                    digraph += ' [style=filled, fontcolor=white, fillcolor=blue];';
+                }
+
+                <!--process prefix to origin edges-->
+                for (var po_edge_values=prefix_origin_edges.values(), edge=null; edge=po_edge_values.next().value;){
+                    digraph += edge[0];
+                    digraph += ' -> ';
+                    digraph += edge[1];
+                    digraph += ';';
+                }
+
+                <!--process origin to neighbor edges-->
+                for (var on_edge_values=origin_neighbor_edges.values(), edge=null; edge=on_edge_values.next().value;){
+                    digraph += edge[0];
+                    digraph += ' -> ';
+                    digraph += edge[1];
+                    digraph += ';';
+                }
+                digraph += '}';
+
+                <!--render digraph-->
+                console.log(digraph);
+                d3.select("#graph").graphviz(engine='dot').dot(digraph).render();
+            }
+
+            $("#prefixes_selection").change(function () {
+                var option = this.value;
+                var selected_prefix = null;
+                if(option != "None"){
+                    selected_prefix = option;
+                }
+                draw_prefix_graph(selected_prefix, config_data);
+            });
 
         </script>
     {% endblock %}

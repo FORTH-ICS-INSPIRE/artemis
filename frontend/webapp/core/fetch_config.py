@@ -56,7 +56,8 @@ class Configuration():
             for rule in self.config_yaml['rules']:
                 rule['prefixes'] = flatten(rule['prefixes'])
                 for prefix in rule['prefixes']:
-                    prefixes_list.append(prefix)
+                    if prefix not in prefixes_list:
+                        prefixes_list.append(prefix)
             return prefixes_list
 
     def get_raw_response(self):

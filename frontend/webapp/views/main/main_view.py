@@ -80,7 +80,7 @@ def display_hijack():
 def display_visualizations():
     app.config['configuration'].get_newest_config()
     prefixes_list = app.config['configuration'].get_prefixes_list()
-    json_config = app.config['configuration'].get_raw_response()
+    json_config = app.config['configuration'].get_raw_json_config()
     return render_template('viz.htm',
         prefixes=prefixes_list,
         config=json_config,

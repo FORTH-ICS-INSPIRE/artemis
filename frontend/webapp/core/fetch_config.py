@@ -74,6 +74,9 @@ class Configuration():
     def get_config_comment(self):
         return self.config_comment
 
+    def get_raw_json_config(self):
+        return self.raw_json_config
+
 def fetch_all_config_timestamps():
     try:
         log.debug('send request to fetch all config timestamps')

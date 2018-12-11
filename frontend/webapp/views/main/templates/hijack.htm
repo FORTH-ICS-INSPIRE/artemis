@@ -629,7 +629,7 @@
             }
 
             function update_hijack_details(data){
-                $( "#hijack_status" ).html( hijack_status(data)) ;
+                $( "#hijack_status" ).html( format_hijack_status(data)) ;
                 prefix = data['prefix'];
                 $( "#info_key" ).val( data['key'] );
                 $( "#info_type" ).val( data['type'] );
@@ -655,7 +655,7 @@
                     $("#mitigation_button").prop("disabled", true);
                     $("#ignored_button").prop("disabled", true);
 
-                }else if(data['under_mitigation'] == true){
+                }else if(data['under_mitigation'] == true || data['outdated'] == true){
                     $("#mitigation_button").prop("disabled", true);
                 }
                 if(data['seen'] == true){
@@ -663,25 +663,7 @@
                     $('#hijack_seen_button').html('Mark Hijack as <b>not seen</b>');
                 }
                 $('#hijack_seen_button').show();
-
-            }     
-
-            function hijack_status(data){
-                if(data['withdrawn'] == true){
-                    return '<b style="color:purple">(Withdrawn)</b>'
-                }else if(data['under_mitigation'] == true){
-                    return '<b style="color:blue">(Under Mitigation)</b>'
-                }else if(data['resolved'] == true){
-                    return '<b style="color:green">(Resolved)</b>'
-                }else if(data['active'] == true){
-                    return '<b style="color:red">(Ongoing)</b>'
-                }else if(data['ignored'] == true){
-                    return '<b style="color:orange">(Ignored)</b>'
-                }else{
-                    return "Uknown"
-                }
-            } 
-
+            }
            
             {% if current_user.has_roles('admin') %}
             $( "#resolved_button" ).click(function() {

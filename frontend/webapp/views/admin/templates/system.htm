@@ -114,8 +114,8 @@
         <script>
             var editor = null;
             var comment_editor = null;
-            var valid_conf = $('#code_yaml').val();
-            var valid_comment = $('#code_config_comment_box').val();
+            var valid_conf;
+            var valid_comment;
 
             $('#config_action').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
@@ -192,7 +192,8 @@
                 $("#code_yaml").val(data["view_configs"][0]["raw_config"]);
                 $("#code_config_comment_box").val(data["view_configs"][0]["comment"]);
                 $("#conf_timestamp").html("Last Update: " + transform_date_to_local(data["view_configs"][0]["timestamp"]))
-
+                valid_conf = data["view_configs"][0]["raw_config"];
+                valid_comment = data["view_configs"][0]["comment"];
                 editor.setValue($("#code_yaml").val());
                 editor.options.readOnly = true;
                 comment_editor.setValue($("#code_config_comment_box").val());

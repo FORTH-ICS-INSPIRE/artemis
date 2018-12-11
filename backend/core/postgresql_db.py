@@ -375,6 +375,22 @@ class Postgresql_db():
             msg_ = message.payload
             try:
                 key = msg_['key']
+
+                # check if it is ok to remove an ignored/resolved/withdrawn hijack entry from redis,
+                # since detection has moved on (and this is not needed anymore)
+                redis_hijack_key = redis_key(
+                    msg_['prefix'],
+                    msg_['hijack_as'],
+                    msg_['type']
+                )
+                corresponding_hijack_pickle = self.redis.get(redis_hijack_key)
+                if corresponding_hijack_pickle is not None:
+                    corresponding_hijack = pickle.loads(corresponding_hijack_pickle)
+                    corresponding_hijack_key = corresponding_hijack['key']
+                    if corresponding_hijack_key != key:
+                        self.redis.delete(corresponding_hijack_key)
+                        log.info('Hijack {} cleared from redis (persistent key)'.format(corresponding_hijack_key))
+
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']

@@ -50,7 +50,7 @@
 | ........... | .......... | .......... |
 | SWN         | LICN       | .......... |
 
-## OTHER (USED CONTAINERS)
+## USED CONTAINERS
 
 | CONTAINER  |  License   | Link       |
 | :---------: | :--------: | :--------: |
@@ -63,3 +63,9 @@
 | syslog-ng-alpine | [GNU LGPL 2.1](https://github.com/balabit/syslog-ng-docker/blob/master/LICENSE) | [GitHub](https://github.com/mumblepins-docker/syslog-ng-alpine) |
 | grafana | [Apache 2.0](https://github.com/grafana/grafana/blob/master/LICENSE.md) | [DockerHub](https://hub.docker.com/r/grafana/grafana/) |
 | exabgp-monitor | [BSD-3](https://github.com/Exa-Networks/exabgp/blob/master/COPYRIGHT) | [DockerHub](https://hub.docker.com/r/mavromat/exabgp-monitor/) |
+| alpine-python | [MIT](https://github.com/jfloff/alpine-python/blob/master/LICENSE) | [GitHub](https://github.com/jfloff/alpine-python) |
+
+## OTHER
+| SW package  |  License   | Link       |
+| :---------: | :--------: | :--------: |
+| postgresql-dev | [Permissive-Custom](https://www.postgresql.org/about/licence/) | [Homepage](https://pkgs.alpinelinux.org/package/edge/main/x86/postgresql-dev) |

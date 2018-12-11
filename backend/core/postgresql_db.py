@@ -870,13 +870,22 @@ class Postgresql_db():
             update_bgp_entries = set()
             # Update the BGP entries using the hijack messages
             for hijack_key in self.tmp_hijacks_dict:
-                for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
-                    num_of_updates += 1
-                    update_bgp_entries.add(
-                        (hijack_key, bgp_entry_to_update))
-                    # exclude handle bgp updates that point to same bgp as this
-                    # hijack
-                    self.handled_bgp_entries.discard(bgp_entry_to_update)
+                redis_hijack_key = redis_key(
+                    self.tmp_hijacks_dict[hijack_key]['prefix'],
+                    self.tmp_hijacks_dict[hijack_key]['hijack_as'],
+                    self.tmp_hijacks_dict[hijack_key]['type'])
+                # check if hijack's persistent key is in redis
+                if self.redis.get(hijack_key) is None:
+                    self.redis.delete(redis_hijack_key)
+                    # TODO: here need to republish to detection!
+                else:
+                    for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
+                        num_of_updates += 1
+                        update_bgp_entries.add(
+                            (hijack_key, bgp_entry_to_update))
+                        # exclude handle bgp updates that point to same bgp as this
+                        # hijack
+                        self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if len(update_bgp_entries) > 0:
                 cmd_1 = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \

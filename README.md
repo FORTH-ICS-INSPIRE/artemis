@@ -59,6 +59,7 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 * Real-time monitoring of the changes in the BGP routes of the network's prefixes.
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types:
 exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
+* Automatic/custom tagging of detected BGP hijack events.
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
 * Comprehensive web interface.
 * Configuration file editable by the operator (directly or via the web interface),
@@ -347,7 +348,7 @@ Here you can view info about:
 * statistics about the ARTEMIS db, in particular:
 ** Total number of BGP updates, as well as of unhandled (by the detection module) updates
 ** Total number of detected BGP hijacks (as well as a break-down in "resolved",
-"under mitigation", "ongoing", "withdrawn", "ignored" and "seen").
+"under mitigation", "ongoing", "withdrawn", "outdated", "ignored" and "seen").
 
 Please use the embedded mouse-hover info for more information on the fields.
 
@@ -380,7 +381,7 @@ All BGP hijacks detected by the detection system in real-time can be seen here:
 https://<ARTEMIS_HOST>/main/hijacks/
 ```
 The following fields are supported:
-* Status (ongoing|under mitigation|ignored|resolved|withdrawn)
+* Status (ongoing|under mitigation|ignored|resolved|withdrawn|outdated)
 * Prefix (IPv4/IPv6)
 * Type (S - Subprefix|Q - Squatting|0 - Origin|1 - fake first hop)
 * Hijack AS
@@ -409,13 +410,9 @@ hijack to under mitigation state. Note that the mitigation module should be acti
 * Acknowledge: mark the hijack as seen.
 
 Note that only the following state transitions are enabled:
-* ongoing --> under mitigation (under mitigation hijacks are also ongoing)
-* ongoing --> resolved
-* ongoing --> ignored
-* ongoing --> withdrawn
-* under mitigation --> withdrawn
-* under mitigation --> resolved
-* under mitigation --> ignored
+* ongoing (--> under mitigation) (--> outdated) --> resolved
+* ongoing (--> under mitigation) (--> outdated) --> ignored
+* ongoing (--> under mitigation) (--> outdated) --> withdrawn
 
 The VIEWER use can see the status of a hijack but cannot activate any buttons.
 

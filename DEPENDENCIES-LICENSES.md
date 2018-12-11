@@ -36,7 +36,11 @@
 | searchcursor | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror/tree/master/addon/search) |
 | textile-js | [MIT](https://github.com/borgar/textile-js/blob/master/LICENSE) | [GitHub](https://github.com/borgar/textile-js) |
 | js-yaml | [MIT](https://github.com/nodeca/js-yaml) | [GitHub](https://github.com/nodeca/js-yaml) |
-
+| openssl-dev | [Apache 2.0](https://github.com/openssl/openssl/blob/master/LICENSE) | [GitHub](https://github.com/openssl/openssl) |
+| libffi-dev | [MIT](https://github.com/libffi/libffi/blob/master/LICENSE) | [GitHub](https://github.com/libffi/libffi) |
+| pyopenssl | [Apache 2.0](https://github.com/pyca/pyopenssl/blob/master/LICENSE) | [GitHub](https://github.com/pyca/pyopenssl) |
+| sqlite-dev, sqlite | [Permissive-Custom](https://www.sqlite.org/copyright.html) | [HomePage](https://www.sqlite.org/index.html) |
+| gunicorn | [MIT](https://github.com/benoitc/gunicorn/blob/master/LICENSE) | [GitHub](https://github.com/benoitc/gunicorn) |
 
 ## BACKEND
 

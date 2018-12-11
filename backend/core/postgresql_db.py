@@ -375,7 +375,6 @@ class Postgresql_db():
             msg_ = message.payload
             try:
                 key = msg_['key']
-                self.redis.set(key, '')
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
@@ -875,7 +874,7 @@ class Postgresql_db():
                     self.tmp_hijacks_dict[hijack_key]['hijack_as'],
                     self.tmp_hijacks_dict[hijack_key]['type'])
                 # check if hijack's persistent key is in redis
-                if self.redis.get(hijack_key) is None:
+                if self.redis.get(hijack_key) is not None:
                     self.redis.delete(redis_hijack_key)
                     # TODO: here need to republish to detection!
                 else:

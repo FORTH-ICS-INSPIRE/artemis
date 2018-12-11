@@ -876,7 +876,7 @@ class Postgresql_db():
                 cmd_1 = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
                     'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( ' \
                     'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B, (VALUES %s) AS data (v1, v2) ' \
-                    'WHERE H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\' AND B.handled = true) AS curr_update ' \
+                    'WHERE H.withdrawn=false AND H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\' AND B.handled = true) AS curr_update ' \
                     'WHERE curr_update.key = ANY(bgp_updates.hijack_key) AND bgp_updates.peer_asn = curr_update.peer_asn ' \
                     'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '\
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'

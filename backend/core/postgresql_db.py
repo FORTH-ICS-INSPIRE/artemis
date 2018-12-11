@@ -581,7 +581,7 @@ class Postgresql_db():
                     raw['hijack_as'],
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
-                self.redis.delete(raw['key'])
+                self.redis.set(raw['key'], 'resolved')
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
@@ -611,7 +611,7 @@ class Postgresql_db():
                     raw['hijack_as'],
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
-                self.redis.delete(raw['key'])
+                self.redis.set(raw['key'], 'ignored')
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                     (raw['key'],
@@ -742,13 +742,13 @@ class Postgresql_db():
                             self.db_conn.commit()
                         elif action_is_ignore:
                             self.redis.delete(redis_hijack_key)
-                            self.redis.delete(hijack_key)
+                            self.redis.set(hijack_key, 'ignored')
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         else:
                             self.redis.delete(redis_hijack_key)
-                            self.redis.delete(hijack_key)
+                            self.redis.set(hijack_key, 'resolved')
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
@@ -823,7 +823,7 @@ class Postgresql_db():
                                     entry[3],
                                     entry[4])
                                 self.redis.delete(redis_hijack_key)
-                                self.redis.delete(entry[2])
+                                self.redis.set(entry[2], 'withdrawn')
                                 self.db_cur.execute(
                                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',

@@ -50,11 +50,16 @@
 | ........... | .......... | .......... |
 | SWN         | LICN       | .......... |
 
-## OTHER
+## OTHER (USED CONTAINERS)
 
-| SW package  |  License   | Link       |
+| CONTAINER  |  License   | Link       |
 | :---------: | :--------: | :--------: |
-| SW1         | LIC1       | .......... |
-| ........... | .......... | .......... |
-| SWN         | LICN       | .......... |
-
+| nginx | [BSD-2](http://nginx.org/LICENSE) | [DockerHub](https://hub.docker.com/_/nginx/) |
+| rabbitmq | [MPL](https://www.rabbitmq.com/mpl.html) | [DockerHub](https://hub.docker.com/_/rabbitmq/) |
+| timescale | [Apache 2.0](https://github.com/timescale/timescaledb-docker/blob/master/LICENSE) | [DockerHub](https://hub.docker.com/r/timescale/timescaledb/) |
+| postgrest | [MIT](https://github.com/PostgREST/postgrest/blob/master/LICENSE) | [DockerHub](https://hub.docker.com/r/postgrest/postgrest/) |
+| pg-amqp-bridge | [MIT](https://github.com/subzerocloud/pg-amqp-bridge/blob/master/LICENSE.txt) | [GitHub](https://github.com/subzerocloud/pg-amqp-bridge) |
+| graphql-engine | [AGPL-3.0](https://github.com/hasura/graphql-engine/blob/master/LICENSE), [Backend Permissions](https://github.com/hasura/graphql-engine/wiki/License-Explained) | [DockerHub](https://hub.docker.com/r/hasura/graphql-engine/) |
+| syslog-ng-alpine | [GNU LGPL 2.1](https://github.com/balabit/syslog-ng-docker/blob/master/LICENSE) | [GitHub](https://github.com/mumblepins-docker/syslog-ng-alpine) |
+| grafana | [Apache 2.0](https://github.com/grafana/grafana/blob/master/LICENSE.md) | [DockerHub](https://hub.docker.com/r/grafana/grafana/) |
+| exabgp-monitor | [BSD-3](https://github.com/Exa-Networks/exabgp/blob/master/COPYRIGHT) | [DockerHub](https://hub.docker.com/r/mavromat/exabgp-monitor/) |

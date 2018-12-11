@@ -322,6 +322,7 @@ class Detection():
                                 monitor_event['hijack_as'],
                                 monitor_event['hij_type'])
                             self.redis.delete(redis_hijack_key)
+                            self.redis.delete(monitor_event['hij_key'])
                             self.mark_outdated(monitor_event['hij_key'])
                         else:
                             self.mark_handled(raw)

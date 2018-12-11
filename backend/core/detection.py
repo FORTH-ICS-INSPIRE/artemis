@@ -119,6 +119,9 @@ class Detection():
             self.config_queue = Queue(
                 'detection-config-notify-{}'.format(uuid()), exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
                 consumer_arguments={'x-priority': 3})
+            self.update_rekey_queue = Queue(
+                'detection-update-rekey', exchange=self.update_exchange, routing_key='hijack-rekey', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
 
             self.config_request_rpc()
 
@@ -160,6 +163,12 @@ class Detection():
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,
+                    prefetch_count=10,
+                    no_ack=True
+                ),
+                Consumer(
+                    queues=[self.update_rekey_queue],
+                    on_message=self.handle_bgp_update,
                     prefetch_count=10,
                     no_ack=True
                 )

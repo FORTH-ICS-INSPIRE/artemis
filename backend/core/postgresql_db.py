@@ -876,7 +876,35 @@ class Postgresql_db():
                 # check if hijack's persistent key is in redis
                 if self.redis.get(hijack_key) is not None:
                     self.redis.delete(redis_hijack_key)
-                    # TODO: here need to republish to detection!
+                    # TODO: republish to detection (under work)
+                    log.info('unhandled updates related to hijack {} need to be rekeyed!'.format(hijack_key))
+                    # rekey_updates = []
+                    # rekey_update_keys = list(self.tmp_hijacks_dict[hijack_key]['monitor_keys'])
+                    #     cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
+                    #     'type, communities, timestamp FROM bgp_updates WHERE ' \
+                    #     'handled = false ORDER BY timestamp DESC LIMIT(%s)'
+                    #     self.db_cur.execute(
+                    #         cmd_, (amount,))
+                    #     entries = self.db_cur.fetchall()
+                    #     for entry in entries:
+                    #         results.append({
+                    #             'key': entry[0],  # key
+                    #             'prefix': entry[1],  # prefix
+                    #             'origin_as': entry[2],  # origin_as
+                    #             'peer_asn': entry[3],  # peer_asn
+                    #             'path': entry[4],  # as_path
+                    #             'service': entry[5],  # service
+                    #             'type': entry[6],  # type
+                    #             'communities': entry[7],  # communities
+                    #             'timestamp': entry[8].timestamp()
+                    #         })
+                    # self.producer.publish(
+                    #     results,
+                    #     exchange=self.update_exchange,
+                    #     routing_key='hijack-rekey',
+                    #     retry=False,
+                    #     priority=1
+                    # )
                 else:
                     for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                         num_of_updates += 1

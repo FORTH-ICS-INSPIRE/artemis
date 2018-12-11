@@ -23,6 +23,20 @@
 | requests | [Apache 2.0](https://github.com/requests/requests/blob/master/LICENSE) | [GitHub](https://github.com/requests/requests) |
 | sqlalchemy | [MIT](https://github.com/sqlalchemy/sqlalchemy/blob/master/LICENSE) | [GitHub](https://github.com/sqlalchemy/sqlalchemy) |
 | wtforms | [BSD-3](https://github.com/wtforms/wtforms/blob/master/LICENSE.rst) | [GitHub](https://github.com/wtforms/wtforms) |
+| jquery | [MIT](https://tldrlegal.com/license/mit-license) | [Homepage](https://jquery.org/) |
+| datatables | [MIT](https://github.com/DataTables/DataTables/blob/master/license.txt) | [GitHub](https://github.com/DataTables/DataTables) |
+| bootstrap4 | [MIT](https://getbootstrap.com/docs/4.0/about/license/) | [Homepage](https://getbootstrap.com/) |
+| codemirror | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror) |
+| daterangepicker | [MIT](https://github.com/dangrossman/daterangepicker) | [GitHub](https://github.com/dangrossman/daterangepicker) |
+| dialog | [MIT](https://tldrlegal.com/license/mit-license) | [Homepage](https://jqueryui.com/dialog/) |
+| diff-match-patch | [Apache 2.0](https://github.com/google/diff-match-patch/blob/master/LICENSE) | [GitHub](https://github.com/google/diff-match-patch) |
+| merge | [MIT](https://github.com/yeikos/js.merge/blob/master/LICENSE) | [GitHub](https://github.com/yeikos/js.merge) |
+| moment | [MIT](https://github.com/moment/moment/blob/develop/LICENSE) | [GitHub](https://github.com/moment/moment/) |
+| search | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror/tree/master/addon/search) |
+| searchcursor | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror/tree/master/addon/search) |
+| textile-js | [MIT](https://github.com/borgar/textile-js/blob/master/LICENSE) | [GitHub](https://github.com/borgar/textile-js) |
+| js-yaml | [MIT](https://github.com/nodeca/js-yaml) | [GitHub](https://github.com/nodeca/js-yaml) |
+
 
 ## BACKEND
 

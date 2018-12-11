@@ -19,12 +19,6 @@
 
         <div class="row">
             <div class="col-lg-12">
-                <h3>Configured Prefix Graph: prefix(p) -> origin(o) -> neighbor(n)</h3>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-12">
                 <div class="row">
                     <div class="col-lg-1">
                         <p>Select prefix: </p>
@@ -43,7 +37,25 @@
             </div>
         </div>
 
+        <div class="row">
+            <div class="col-lg-12">
+                <h3>Configured Prefix Graph: <font color="red">prefix (p)</font> -> <font color="green">origin (o)</font> -> <font color="blue">neighbor (n)</font></h3>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <h3></h3>
+            </div>
+        </div>
+
         <div id="graph"></div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <h3>Other Visualization (TBD)</h3>
+            </div>
+        </div>
 
 {% endblock %}
 
@@ -136,21 +148,21 @@
                     for (var prefix_idx=0; prefix_idx<rule.prefixes.length; prefix_idx++){
                         var current_prefix = rule.prefixes[prefix_idx];
                         if (current_prefix == selected_prefix){
-                            var current_prefix_str = '"' + current_prefix + '(p)' + '"';
+                            var current_prefix_str = '"' + current_prefix + ' (p)' + '"';
                             prefix_nodes.add(current_prefix_str);
                             for (var origin_idx=0; origin_idx<rule.origin_asns.length; origin_idx++){
-                                origin = '"' + rule.origin_asns[origin_idx] + '(o)' + '"';
+                                origin = '"' + rule.origin_asns[origin_idx] + ' (o)' + '"';
                                 origin_nodes.add(origin);
                                 edge = [current_prefix_str, origin]
                                 prefix_origin_edges.add(edge);
-                                asn_str = origin.replace('"','').replace('(o)','').replace('"','');
+                                asn_str = origin.replace('"','').replace('(o)','').replace(' ','').replace('"','');
                                 get_asn_data(asn_str);
                                 for (var neighbor_idx=0; neighbor_idx<rule.neighbors.length; neighbor_idx++){
-                                    neighbor = '"' + rule.neighbors[neighbor_idx] + '(n)' + '"';
+                                    neighbor = '"' + rule.neighbors[neighbor_idx] + ' (n)' + '"';
                                     neighbor_nodes.add(neighbor);
                                     edge = [origin, neighbor];
                                     origin_neighbor_edges.add(edge);
-                                    asn_str = neighbor.replace('"','').replace('(n)','').replace('"','');
+                                    asn_str = neighbor.replace('"','').replace('(n)','').replace(' ','').replace('"','');
                                     get_asn_data(asn_str);
                                 }
                             }
@@ -167,7 +179,7 @@
                 <!--process origin nodes-->
                 for (var origin_node_values=origin_nodes.values(), node=null; node=origin_node_values.next().value;){
                     digraph += node;
-                    asn_str = node.replace('"','').replace('(o)','').replace('"','');
+                    asn_str = node.replace('"','').replace('(o)','').replace(' ','').replace('"','');
                     var data_str = dataStr(asn_str);
                     digraph += ' [fillcolor=green, tooltip="' + data_str + '"];';
                 }
@@ -175,7 +187,7 @@
                 <!--process neighbor nodes-->
                 for (var neighbor_node_values=neighbor_nodes.values(), node=null; node=neighbor_node_values.next().value;){
                     digraph += node;
-                    asn_str = node.replace('"','').replace('(n)','').replace('"','');
+                    asn_str = node.replace('"','').replace('(n)','').replace(' ','').replace('"','');
                     var data_str = dataStr(asn_str);
                     digraph += ' [fontcolor=white, fillcolor=blue, tooltip="' + data_str + '"];';
                 }

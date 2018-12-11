@@ -650,12 +650,11 @@
                 $( "#seenHijackUpdate_text").html( data['peers_seen'].join() );
                 $( "#seenHijackWithdraw_text").html( data['peers_withdrawn'].join() );
 
-                if(data['resolved'] == true || data['ignored'] == true || data['withdrawn'] == true){
+                if(data['resolved'] == true || data['ignored'] == true){
                     $("#resolved_button").prop("disabled", true);
                     $("#mitigation_button").prop("disabled", true);
                     $("#ignored_button").prop("disabled", true);
-
-                }else if(data['under_mitigation'] == true){
+                }else if(data['under_mitigation'] == true || data['withdrawn'] == true){
                     $("#mitigation_button").prop("disabled", true);
                 }
                 if(data['seen'] == true){

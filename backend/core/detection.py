@@ -333,7 +333,7 @@ class Detection():
                                 monitor_event['hijack_as'],
                                 monitor_event['hij_type'])
                             self.redis.delete(redis_hijack_key)
-                            self.redis.set(monitor_event['hij_key'], 'outdated')
+                            self.redis.delete(monitor_event['hij_key'])
                             self.mark_outdated(monitor_event['hij_key'], redis_hijack_key)
                         else:
                             self.mark_handled(raw)
@@ -576,24 +576,24 @@ class Detection():
                 priority=1
             )
 
-        def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
-            """
-            Remove for redis the ongoing hijack entry.
-            """
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
-            try:
-                data = message.payload
-                redis_hijack_key = redis_key(
-                    data['prefix'],
-                    data['hijack_as'],
-                    data['type'])
-                self.redis.delete(redis_hijack_key)
-            except Exception:
-                log.exception(
-                    "couldn't erase data: {}".format(
-                        message.payload))
+        # def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
+        #     """
+        #     Remove for redis the ongoing hijack entry.
+        #     """
+        #     log.debug(
+        #         'message: {}\npayload: {}'.format(
+        #             message, message.payload))
+        #     try:
+        #         data = message.payload
+        #         redis_hijack_key = redis_key(
+        #             data['prefix'],
+        #             data['hijack_as'],
+        #             data['type'])
+        #         self.redis.delete(redis_hijack_key)
+        #     except Exception:
+        #         log.exception(
+        #             "couldn't erase data: {}".format(
+        #                 message.payload))
 
 
 def run():

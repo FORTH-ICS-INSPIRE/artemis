@@ -374,16 +374,49 @@ class Postgresql_db():
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             try:
-                key = msg_['key']
+                key = msg_['key'] # persistent hijack key
+                if not self.redis.exists(key):
+                    # fetch BGP updates with deprecated hijack keys and republish to detection
+                    # log.debug('unhandled updates related to hijack {} need to be rekeyed!'.format(key))
+                    rekey_update_keys = list(msg_['monitor_keys'])
+                    rekey_updates = []
+                    try:
+                        cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
+                            'type, communities, timestamp FROM bgp_updates ' \
+                            'WHERE bgp_updates.handled=false AND bgp_updates.key = %s'
+                        psycopg2.extras.execute_batch(
+                            self.db_cur,
+                            cmd_,
+                            rekey_update_keys)
+                        entries = self.db_cur.fetchall()
+                        for entry in entries:
+                            rekey_updates.append({
+                                'key': entry[0],  # key
+                                'prefix': entry[1],  # prefix
+                                'origin_as': entry[2],  # origin_as
+                                'peer_asn': entry[3],  # peer_asn
+                                'path': entry[4],  # as_path
+                                'service': entry[5],  # service
+                                'type': entry[6],  # type
+                                'communities': entry[7],  # communities
+                                'timestamp': entry[8].timestamp()
+                            })
 
-                # check if it is ok to remove an ignored/resolved/withdrawn hijack entry from redis,
-                # since detection has moved on (and this is not needed anymore)
-                redis_hijack_key = redis_key(
-                    msg_['prefix'],
-                    msg_['hijack_as'],
-                    msg_['type']
-                )
-                # TODO: correctly remove the persistent key from redis only if last state is ignored or resolved
+                        # delete monitor keys from redis so that they can be reprocessed
+                        for key in rekey_update_keys:
+                            self.redis.delete(key)
+
+                        # send to detection
+                        self.producer.publish(
+                            rekey_updates,
+                            exchange=self.update_exchange,
+                            routing_key='hijack-rekey',
+                            retry=False,
+                            priority=1
+                        )
+                    except Exception:
+                        log.exception('exception')
+
 
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
@@ -577,6 +610,7 @@ class Postgresql_db():
                         entry[6],
                         entry[7])
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+                    redis_pipeline.set(entry[4], '')
                 redis_pipeline.execute()
             except Exception:
                 log.exception('exception')
@@ -589,10 +623,9 @@ class Postgresql_db():
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
-                # delete ephemeral key only if the hijack is truly ongoing
+                # check if hijack is ongoing
                 if not self.redis.exists(raw['key']):
                     self.redis.delete(redis_hijack_key)
-                self.redis.set(raw['key'], 'resolved')
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
@@ -621,10 +654,9 @@ class Postgresql_db():
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
-                # delete ephemeral key only if the hijack is truly ongoing
+                 # check if hijack is ongoing
                 if not self.redis.exists(raw['key']):
                     self.redis.delete(redis_hijack_key)
-                self.redis.set(raw['key'], 'ignored')
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                     (raw['key'],
@@ -754,18 +786,16 @@ class Postgresql_db():
                                 'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         elif action_is_ignore:
-                            # delete ephemeral key only if the hijack is truly ongoing
+                            # check if hijack is ongoing
                             if not self.redis.exists(hijack_key):
                                 self.redis.delete(redis_hijack_key)
-                            self.redis.set(hijack_key, 'ignored')
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         else:
-                            # delete ephemeral key only if the hijack is truly ongoing
+                            # check if hijack is ongoing
                             if not self.redis.exists(hijack_key):
                                 self.redis.delete(redis_hijack_key)
-                            self.redis.set(hijack_key, 'resolved')
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
@@ -839,10 +869,9 @@ class Postgresql_db():
                                     withdrawal[0],
                                     entry[3],
                                     entry[4])
-                                # delete ephemeral key only if the hijack is truly ongoing
+                                # check if hijack is ongoing
                                 if not self.redis.exists(entry[2]):
                                     self.redis.delete(redis_hijack_key)
-                                self.redis.set(entry[2], 'withdrawn')
                                 self.db_cur.execute(
                                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
@@ -889,61 +918,13 @@ class Postgresql_db():
             update_bgp_entries = set()
             # Update the BGP entries using the hijack messages
             for hijack_key in self.tmp_hijacks_dict:
-                redis_hijack_key = redis_key(
-                    self.tmp_hijacks_dict[hijack_key]['prefix'],
-                    self.tmp_hijacks_dict[hijack_key]['hijack_as'],
-                    self.tmp_hijacks_dict[hijack_key]['type'])
-                # check if hijack's persistent key is in redis (resolved/ignored/withdrawn/outdated)
-                if self.redis.exists(hijack_key):
-                    self.redis.delete(redis_hijack_key)
-                    # fetch BGP updates with deprecated hijack keys and republish to detection
-                    # log.debug('unhandled updates related to hijack {} need to be rekeyed!'.format(hijack_key))
-                    rekey_update_keys = list(self.tmp_hijacks_dict[hijack_key]['monitor_keys'])
-                    rekey_updates = []
-                    try:
-                        cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
-                            'type, communities, timestamp FROM bgp_updates ' \
-                            'WHERE bgp_updates.handled=false AND bgp_updates.key = %s'
-                        psycopg2.extras.execute_batch(
-                            self.db_cur,
-                            cmd_,
-                            rekey_update_keys)
-                        entries = self.db_cur.fetchall()
-                        for entry in entries:
-                            rekey_updates.append({
-                                'key': entry[0],  # key
-                                'prefix': entry[1],  # prefix
-                                'origin_as': entry[2],  # origin_as
-                                'peer_asn': entry[3],  # peer_asn
-                                'path': entry[4],  # as_path
-                                'service': entry[5],  # service
-                                'type': entry[6],  # type
-                                'communities': entry[7],  # communities
-                                'timestamp': entry[8].timestamp()
-                            })
-
-                        # delete monitor keys from redis so that they can be reprocessed
-                        for key in rekey_update_keys:
-                            self.redis.delete(key)
-
-                        # send to detection
-                        self.producer.publish(
-                            rekey_updates,
-                            exchange=self.update_exchange,
-                            routing_key='hijack-rekey',
-                            retry=False,
-                            priority=1
-                        )
-                    except Exception:
-                        log.exception('exception')
-                else:
-                    for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
-                        num_of_updates += 1
-                        update_bgp_entries.add(
-                            (hijack_key, bgp_entry_to_update))
-                        # exclude handle bgp updates that point to same bgp as this
-                        # hijack
-                        self.handled_bgp_entries.discard(bgp_entry_to_update)
+                for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
+                    num_of_updates += 1
+                    update_bgp_entries.add(
+                        (hijack_key, bgp_entry_to_update))
+                    # exclude handle bgp updates that point to same bgp as this
+                    # hijack
+                    self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if len(update_bgp_entries) > 0:
                 cmd_1 = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
@@ -1089,7 +1070,6 @@ class Postgresql_db():
             if len(self.outdate_hijacks) == 0:
                 return
             try:
-                log.info(self.outdate_hijacks)
                 cmd_ = 'UPDATE hijacks SET active=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
                 psycopg2.extras.execute_values(
                     self.db_cur, cmd_, list(self.outdate_hijacks), page_size=1000)

@@ -107,7 +107,7 @@
             <!--format ASN information (name, countries, etc.)-->
             function dataStr(ASN){
                 var data_str = "Information not available yet";
-                if (typeof cachedData[ASN] !== 'undefined'){
+                if (typeof cachedData[ASN] !== 'undefined' && cachedData[ASN] != null){
                     data_str = `ASN: ${ASN} (ASN-DOT: ${cachedData[ASN][2]})`;
                     data_str += `\nName: ${cachedData[ASN][0]}`;
                     data_str += `\nCountries operating: ${cachedData[ASN][1]}`;
@@ -156,14 +156,20 @@
                                 edge = [current_prefix_str, origin]
                                 prefix_origin_edges.add(edge);
                                 asn_str = origin.replace('"','').replace('(o)','').replace(' ','').replace('"','');
-                                get_asn_data(asn_str);
+                                <!--get_asn_data(asn_str);-->
+                                if (typeof cachedData[asn_str] == 'undefined') {
+                                    cachedData[asn_str] = null;
+                                }
                                 for (var neighbor_idx=0; neighbor_idx<rule.neighbors.length; neighbor_idx++){
                                     neighbor = '"' + rule.neighbors[neighbor_idx] + ' (n)' + '"';
                                     neighbor_nodes.add(neighbor);
                                     edge = [origin, neighbor];
                                     origin_neighbor_edges.add(edge);
                                     asn_str = neighbor.replace('"','').replace('(n)','').replace(' ','').replace('"','');
-                                    get_asn_data(asn_str);
+                                    <!--get_asn_data(asn_str);-->
+                                    if (typeof cachedData[asn_str] == 'undefined') {
+                                        cachedData[asn_str] = null;
+                                    }
                                 }
                             }
                         }
@@ -214,6 +220,24 @@
                 asn_map_to_name();
             }
 
+            <!--periodic call of graph rendering until all info is available-->
+            function periodic_graph_render(selected_prefix, config_data) {
+                var all_resolved = true;
+                for (asn in cachedData) {
+                    if (typeof cachedData[asn] == 'undefined' || cachedData[asn] == null){
+                        get_asn_data(asn);
+                        console.log(asn);
+                        console.log(cachedData[asn]);
+                        all_resolved = false;
+                        break;
+                    }
+                }
+                draw_prefix_graph(selected_prefix, config_data);
+                if (all_resolved == false) {
+                    setTimeout(function() {periodic_graph_render(selected_prefix, config_data)}, 1000);
+                }
+            }
+
             $("#prefixes_selection").change(function () {
                 var option = this.value;
                 var selected_prefix = null;
@@ -221,6 +245,7 @@
                     selected_prefix = option;
                 }
                 draw_prefix_graph(selected_prefix, config_data);
+                periodic_graph_render(selected_prefix, config_data);
             });
 
         </script>

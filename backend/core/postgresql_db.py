@@ -82,7 +82,7 @@ class Postgresql_db():
             self.handled_bgp_entries = set()
             self.outdate_hijacks = set()
             self.tmp_hijacks_dict = {}
-            self.del_eph_to_per_keys = {} # mapping of ephemeral to persistent keys (redis aux dict)
+            self.del_eph_to_per_keys = {} # mapping of deleted ephemeral to persistent keys (redis aux dict)
 
             # DB variables
             self.db_conn = db_conn
@@ -393,7 +393,7 @@ class Postgresql_db():
                     # ))
                     if deleted_persistent_key != key:
                         self.redis.delete(self.del_eph_to_per_keys[redis_hijack_key])
-                        del self.del_eph_to_per_keys[redis_hijack_key]
+                        #del self.del_eph_to_per_keys[redis_hijack_key]
                         # log.debug('Persistent key successfully removed from redis!'.format(deleted_persistent_key))
 
                 if key not in self.tmp_hijacks_dict:
@@ -600,7 +600,9 @@ class Postgresql_db():
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
-                self.redis.delete(redis_hijack_key)
+                # delete ephemeral key only if the hijack is truly ongoing
+                if redis_hijack_key not in self.del_eph_to_per_keys:
+                    self.redis.delete(redis_hijack_key)
                 self.redis.set(raw['key'], 'resolved')
                 self.del_eph_to_per_keys[redis_hijack_key] = raw['key']
                 self.db_cur.execute(
@@ -631,7 +633,9 @@ class Postgresql_db():
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
-                self.redis.delete(redis_hijack_key)
+                # delete ephemeral key only if the hijack is truly ongoing
+                if redis_hijack_key not in self.del_eph_to_per_keys:
+                    self.redis.delete(redis_hijack_key)
                 self.redis.set(raw['key'], 'ignored')
                 self.del_eph_to_per_keys[redis_hijack_key] = raw['key']
                 self.db_cur.execute(
@@ -763,14 +767,18 @@ class Postgresql_db():
                                 'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         elif action_is_ignore:
-                            self.redis.delete(redis_hijack_key)
+                            # delete ephemeral key only if the hijack is truly ongoing
+                            if redis_hijack_key not in self.del_eph_to_per_keys:
+                                self.redis.delete(redis_hijack_key)
                             self.redis.set(hijack_key, 'ignored')
                             self.del_eph_to_per_keys[redis_hijack_key] = hijack_key
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         else:
-                            self.redis.delete(redis_hijack_key)
+                            # delete ephemeral key only if the hijack is truly ongoing
+                            if redis_hijack_key not in self.del_eph_to_per_keys:
+                                self.redis.delete(redis_hijack_key)
                             self.redis.set(hijack_key, 'resolved')
                             self.del_eph_to_per_keys[redis_hijack_key] = hijack_key
                             self.db_cur.execute(
@@ -846,7 +854,9 @@ class Postgresql_db():
                                     withdrawal[0],
                                     entry[3],
                                     entry[4])
-                                self.redis.delete(redis_hijack_key)
+                                # delete ephemeral key only if the hijack is truly ongoing
+                                if redis_hijack_key not in self.del_eph_to_per_keys:
+                                    self.redis.delete(redis_hijack_key)
                                 self.redis.set(entry[2], 'withdrawn')
                                 self.del_eph_to_per_keys[redis_hijack_key] = entry[2]
                                 self.db_cur.execute(

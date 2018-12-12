@@ -527,8 +527,23 @@ class Detection():
                 'timestamp_of_config': self.timestamp
             }
 
-            if hij_type in {'S', 'Q'}:
-                hijack_value['asns_inf'] = set(monitor_event['path'])
+            hijack_value['asns_inf'] = set()
+            # for squatting, all ASes except the origin are considered infected
+            if hij_type == 'Q':
+                if len(monitor_event['path']) > 0:
+                    hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
+            # for sub-prefix hijacks, the infection depends on whether the hijacker is the origin/neighbor/sth else
+            elif hij_type == 'S':
+                if len(monitor_event['path']) > 1:
+                    if hijacker == monitor_event['path'][-1]:
+                        hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
+                    elif hijacker == monitor_event['path'][-2]:
+                        hijack_value['asns_inf'] = set(monitor_event['path'][:-2])
+                    else:
+                        # assume the hijacker does a Type-2
+                        if len(monitor_event['path']) > 2:
+                            hijack_value['asns_inf'] = set(monitor_event['path'][:-3])
+            # for exact-prefix type-0/type-1 hijacks, the pollution depends on the type
             else:
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(int(hij_type) + 1)])

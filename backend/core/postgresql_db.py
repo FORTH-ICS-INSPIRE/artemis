@@ -383,13 +383,7 @@ class Postgresql_db():
                     msg_['hijack_as'],
                     msg_['type']
                 )
-                corresponding_hijack_pickle = self.redis.get(redis_hijack_key)
-                if corresponding_hijack_pickle is not None:
-                    corresponding_hijack = pickle.loads(corresponding_hijack_pickle)
-                    corresponding_hijack_key = corresponding_hijack['key']
-                    if corresponding_hijack_key != key:
-                        self.redis.delete(corresponding_hijack_key)
-                        # log.debug('Hijack {} cleared from redis (persistent key)'.format(corresponding_hijack_key))
+                # TODO: correctly remove the key (unimplemented)
 
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}

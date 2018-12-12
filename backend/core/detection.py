@@ -168,7 +168,7 @@ class Detection():
                 ),
                 Consumer(
                     queues=[self.update_rekey_queue],
-                    on_message=self.handle_bgp_update,
+                    on_message=self.handle_rekey_update,
                     prefetch_count=10,
                     no_ack=True
                 )
@@ -287,6 +287,14 @@ class Detection():
             Handles unhanlded bgp updates from the database in batches of 50.
             """
             # log.debug('{} unhandled events'.format(len(message.payload)))
+            for update in message.payload:
+                self.handle_bgp_update(update)
+
+        def handle_rekey_update(self, message:Dict) -> NoReturn:
+            """
+            Handles BGP updates, needing hijack rekeying from the database.
+            """
+            # log.debug('{} rekeying events'.format(len(message.payload)))
             for update in message.payload:
                 self.handle_bgp_update(update)
 

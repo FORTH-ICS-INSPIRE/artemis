@@ -389,7 +389,7 @@ class Postgresql_db():
                     corresponding_hijack_key = corresponding_hijack['key']
                     if corresponding_hijack_key != key:
                         self.redis.delete(corresponding_hijack_key)
-                        log.info('Hijack {} cleared from redis (persistent key)'.format(corresponding_hijack_key))
+                        # log.debug('Hijack {} cleared from redis (persistent key)'.format(corresponding_hijack_key))
 
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
@@ -889,38 +889,49 @@ class Postgresql_db():
                     self.tmp_hijacks_dict[hijack_key]['prefix'],
                     self.tmp_hijacks_dict[hijack_key]['hijack_as'],
                     self.tmp_hijacks_dict[hijack_key]['type'])
-                # check if hijack's persistent key is in redis
-                if self.redis.get(hijack_key) is not None:
+                # check if hijack's persistent key is in redis (resolved/ignored/withdrawn)
+                if self.redis.exists(hijack_key):
                     self.redis.delete(redis_hijack_key)
-                    # TODO: republish to detection (under work)
-                    log.info('unhandled updates related to hijack {} need to be rekeyed!'.format(hijack_key))
-                    # rekey_updates = []
-                    # rekey_update_keys = list(self.tmp_hijacks_dict[hijack_key]['monitor_keys'])
-                    #     cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
-                    #     'type, communities, timestamp FROM bgp_updates WHERE ' \
-                    #     'handled = false ORDER BY timestamp DESC LIMIT(%s)'
-                    #     self.db_cur.execute(
-                    #         cmd_, (amount,))
-                    #     entries = self.db_cur.fetchall()
-                    #     for entry in entries:
-                    #         results.append({
-                    #             'key': entry[0],  # key
-                    #             'prefix': entry[1],  # prefix
-                    #             'origin_as': entry[2],  # origin_as
-                    #             'peer_asn': entry[3],  # peer_asn
-                    #             'path': entry[4],  # as_path
-                    #             'service': entry[5],  # service
-                    #             'type': entry[6],  # type
-                    #             'communities': entry[7],  # communities
-                    #             'timestamp': entry[8].timestamp()
-                    #         })
-                    # self.producer.publish(
-                    #     results,
-                    #     exchange=self.update_exchange,
-                    #     routing_key='hijack-rekey',
-                    #     retry=False,
-                    #     priority=1
-                    # )
+                    # fetch BGP updates with deprecated hijack keys and republish to detection
+                    # log.debug('unhandled updates related to hijack {} need to be rekeyed!'.format(hijack_key))
+                    rekey_update_keys = list(self.tmp_hijacks_dict[hijack_key]['monitor_keys'])
+                    rekey_updates = []
+                    try:
+                        cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
+                            'type, communities, timestamp FROM bgp_updates ' \
+                            'WHERE bgp_updates.handled=false AND bgp_updates.key = %s'
+                        psycopg2.extras.execute_batch(
+                            self.db_cur,
+                            cmd_,
+                            rekey_update_keys)
+                        entries = self.db_cur.fetchall()
+                        for entry in entries:
+                            rekey_updates.append({
+                                'key': entry[0],  # key
+                                'prefix': entry[1],  # prefix
+                                'origin_as': entry[2],  # origin_as
+                                'peer_asn': entry[3],  # peer_asn
+                                'path': entry[4],  # as_path
+                                'service': entry[5],  # service
+                                'type': entry[6],  # type
+                                'communities': entry[7],  # communities
+                                'timestamp': entry[8].timestamp()
+                            })
+
+                        # delete monitor keys from redis so that they can be reprocessed
+                        for key in rekey_update_keys:
+                            self.redis.delete(key)
+
+                        # send to detection
+                        self.producer.publish(
+                            rekey_updates,
+                            exchange=self.update_exchange,
+                            routing_key='hijack-rekey',
+                            retry=False,
+                            priority=1
+                        )
+                    except Exception:
+                        log.exception('exception')
                 else:
                     for bgp_entry_to_update in self.tmp_hijacks_dict[hijack_key]['monitor_keys']:
                         num_of_updates += 1

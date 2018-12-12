@@ -107,12 +107,12 @@ class Detection():
             self.update_unhandled_queue = Queue(
                 'detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue(
-                'detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
-                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue(
-                'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
-                consumer_arguments={'x-priority': 2})
+            # self.hijack_resolved_queue = Queue(
+            #     'detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
+            #     consumer_arguments={'x-priority': 2})
+            # self.hijack_ignored_queue = Queue(
+            #     'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
+            #     consumer_arguments={'x-priority': 2})
             self.hijack_ongoing_queue = Queue(
                 'detection-hijack-ongoing', exchange=self.hijack_exchange, routing_key='ongoing', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
@@ -148,18 +148,12 @@ class Detection():
                     prefetch_count=1000,
                     no_ack=True
                 ),
-                Consumer(
-                    queues=[self.hijack_resolved_queue],
-                    on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=1,
-                    no_ack=True
-                ),
-                Consumer(
-                    queues=[self.hijack_ignored_queue],
-                    on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=1,
-                    no_ack=True
-                ),
+                # Consumer(
+                #     queues=[self.hijack_resolved_queue],
+                #     on_message=self.handle_resolved_or_ignored_hijack,
+                #     prefetch_count=1,
+                #     no_ack=True
+                # ),
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,

@@ -334,7 +334,7 @@ class Detection():
                                 monitor_event['hij_type'])
                             self.redis.delete(redis_hijack_key)
                             self.redis.set(monitor_event['hij_key'], 'outdated')
-                            self.mark_outdated(monitor_event['hij_key'])
+                            self.mark_outdated(monitor_event['hij_key'], redis_hijack_key)
                         else:
                             self.mark_handled(raw)
                 elif monitor_event['type'] == 'W':
@@ -560,13 +560,16 @@ class Detection():
                 priority=1
             )
 
-        def mark_outdated(self, hij_key: str) -> NoReturn:
+        def mark_outdated(self, hij_key: str, redis_hij_key: str) -> NoReturn:
             """
             Marks a hijack as outdated on the database.
             """
             # log.debug('{}'.format(hij_key))
             self.producer.publish(
-                hij_key,
+                {
+                    'persistent_hijack_key': hij_key,
+                    'redis_hijack_key': redis_hijack_key
+                },
                 exchange=self.hijack_exchange,
                 routing_key='outdate',
                 priority=1

@@ -71,6 +71,7 @@
             var json_config = '{{ config|tojson }}';
             var config_data = JSON.parse(json_config);
             var cachedData = {};
+            var timeoutObj = null;
 
             <!--synchronous name extraction from ripestat-->
             function syncGetName(ASN){
@@ -234,11 +235,14 @@
                 }
                 draw_prefix_graph(selected_prefix, config_data);
                 if (all_resolved == false) {
-                    setTimeout(function() {periodic_graph_render(selected_prefix, config_data)}, 1000);
+                    timeoutObj = setTimeout(function() {periodic_graph_render(selected_prefix, config_data)}, 5000);
                 }
             }
 
             $("#prefixes_selection").change(function () {
+                if (timeoutObj != null){
+                    clearTimeout(timeoutObj);
+                }
                 var option = this.value;
                 var selected_prefix = null;
                 if(option != "None"){

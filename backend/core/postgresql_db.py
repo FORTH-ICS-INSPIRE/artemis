@@ -82,7 +82,7 @@ class Postgresql_db():
             self.handled_bgp_entries = set()
             self.outdate_hijacks = set()
             self.tmp_hijacks_dict = {}
-            self.del_eph_to_per_keys = {} # mapping of deleted ephemeral to persistent keys (redis aux dict)
+            self.del_eph_to_per_keys = {} # mapping of deleted ephemeral to persistent keys (aux dict)
 
             # DB variables
             self.db_conn = db_conn
@@ -366,8 +366,9 @@ class Postgresql_db():
         def handle_hijack_outdate(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             try:
-                key_ = (message.payload,)
-                self.outdate_hijacks.add(key_)
+                raw = message.payload
+                self.del_eph_to_per_keys[raw['redis_hijack_key']] = raw['persistent_hijack_key']
+                self.outdate_hijacks.add(raw['persistent_hijack_key'])
             except Exception:
                 log.exception('{}'.format(message))
 
@@ -387,14 +388,9 @@ class Postgresql_db():
                 # correctly remove the persistent key from redis if deprecated
                 if redis_hijack_key in self.del_eph_to_per_keys:
                     deleted_persistent_key = self.del_eph_to_per_keys[redis_hijack_key]
-                    # log.debug('Incoming ephemeral key {} matching deleted persistent key {}'.format(
-                    #     redis_hijack_key,
-                    #     deleted_persistent_key
-                    # ))
                     if deleted_persistent_key != key:
                         self.redis.delete(self.del_eph_to_per_keys[redis_hijack_key])
                         #del self.del_eph_to_per_keys[redis_hijack_key]
-                        # log.debug('Persistent key successfully removed from redis!'.format(deleted_persistent_key))
 
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}

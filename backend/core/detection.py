@@ -565,11 +565,12 @@ class Detection():
             Marks a hijack as outdated on the database.
             """
             # log.debug('{}'.format(hij_key))
+            msg = {
+                'persistent_hijack_key': hij_key,
+                'redis_hijack_key': redis_hij_key
+            }
             self.producer.publish(
-                {
-                    'persistent_hijack_key': hij_key,
-                    'redis_hijack_key': redis_hijack_key
-                },
+                msg,
                 exchange=self.hijack_exchange,
                 routing_key='outdate',
                 priority=1

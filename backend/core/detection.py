@@ -548,6 +548,13 @@ class Detection():
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(int(hij_type) + 1)])
 
+            #make the following operation atomic
+            # wait for semaphore with a granularity of 1 msec
+            while self.redis.exists('{}token'.format(redis_hijack_key)):
+                time.sleep(0.001)
+            # lock
+            self.redis.set('{}token'.format(redis_hijack_key), '')
+            # proceed now that we have clearance
             result = self.redis.get(redis_hijack_key)
             if result is not None:
                 result = pickle.loads(result)
@@ -567,6 +574,8 @@ class Detection():
                 result = hijack_value
 
             self.redis.set(redis_hijack_key, pickle.dumps(result))
+            # unlock
+            self.redis.delete('{}token'.format(redis_hijack_key))
 
             self.producer.publish(
                 result,

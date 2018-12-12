@@ -82,6 +82,7 @@ class Postgresql_db():
             self.handled_bgp_entries = set()
             self.outdate_hijacks = set()
             self.tmp_hijacks_dict = {}
+            self.del_eph_to_per_keys = {} # mapping of ephemeral to persistent keys (redis aux dict)
 
             # DB variables
             self.db_conn = db_conn
@@ -383,7 +384,17 @@ class Postgresql_db():
                     msg_['hijack_as'],
                     msg_['type']
                 )
-                # TODO: correctly remove the key (unimplemented)
+                # correctly remove the persistent key from redis if deprecated
+                if redis_hijack_key in self.del_eph_to_per_keys:
+                    deleted_persistent_key = self.del_eph_to_per_keys[redis_hijack_key]
+                    # log.debug('Incoming ephemeral key {} matching deleted persistent key {}'.format(
+                    #     redis_hijack_key,
+                    #     deleted_persistent_key
+                    # ))
+                    if deleted_persistent_key != key:
+                        self.redis.delete(self.del_eph_to_per_keys[redis_hijack_key])
+                        del self.del_eph_to_per_keys[redis_hijack_key]
+                        # log.debug('Persistent key successfully removed from redis!'.format(deleted_persistent_key))
 
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
@@ -591,6 +602,7 @@ class Postgresql_db():
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
                 self.redis.set(raw['key'], 'resolved')
+                self.del_eph_to_per_keys[redis_hijack_key] = raw['key']
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
@@ -621,6 +633,7 @@ class Postgresql_db():
                     raw['type'])
                 self.redis.delete(redis_hijack_key)
                 self.redis.set(raw['key'], 'ignored')
+                self.del_eph_to_per_keys[redis_hijack_key] = raw['key']
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                     (raw['key'],
@@ -752,12 +765,14 @@ class Postgresql_db():
                         elif action_is_ignore:
                             self.redis.delete(redis_hijack_key)
                             self.redis.set(hijack_key, 'ignored')
+                            self.del_eph_to_per_keys[redis_hijack_key] = hijack_key
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         else:
                             self.redis.delete(redis_hijack_key)
                             self.redis.set(hijack_key, 'resolved')
+                            self.del_eph_to_per_keys[redis_hijack_key] = hijack_key
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
@@ -833,6 +848,7 @@ class Postgresql_db():
                                     entry[4])
                                 self.redis.delete(redis_hijack_key)
                                 self.redis.set(entry[2], 'withdrawn')
+                                self.del_eph_to_per_keys[redis_hijack_key] = entry[2]
                                 self.db_cur.execute(
                                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',

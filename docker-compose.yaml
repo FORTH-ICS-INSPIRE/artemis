@@ -49,6 +49,7 @@ services:
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+            JS_VERSION: ${JS_VERSION}
             # SYSLOG_HOST: 'syslog:514'
         volumes:
             - ./frontend/:/root/

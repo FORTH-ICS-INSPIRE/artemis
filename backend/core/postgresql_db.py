@@ -366,7 +366,7 @@ class Postgresql_db():
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             try:
                 raw = message.payload
-                self.outdate_hijacks.add(raw['persistent_hijack_key'])
+                self.outdate_hijacks.add((raw['persistent_hijack_key'],))
             except Exception:
                 log.exception('{}'.format(message))
 
@@ -383,7 +383,7 @@ class Postgresql_db():
                     msg_['hijack_as'],
                     msg_['type']
                 )
-                # TODO: correctly remove the persistent key from redis if deprecated
+                # TODO: correctly remove the persistent key from redis only if last state is ignored or resolved
 
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
@@ -893,7 +893,7 @@ class Postgresql_db():
                     self.tmp_hijacks_dict[hijack_key]['prefix'],
                     self.tmp_hijacks_dict[hijack_key]['hijack_as'],
                     self.tmp_hijacks_dict[hijack_key]['type'])
-                # check if hijack's persistent key is in redis (resolved/ignored/withdrawn)
+                # check if hijack's persistent key is in redis (resolved/ignored/withdrawn/outdated)
                 if self.redis.exists(hijack_key):
                     self.redis.delete(redis_hijack_key)
                     # fetch BGP updates with deprecated hijack keys and republish to detection
@@ -1089,6 +1089,7 @@ class Postgresql_db():
             if len(self.outdate_hijacks) == 0:
                 return
             try:
+                log.info(self.outdate_hijacks)
                 cmd_ = 'UPDATE hijacks SET active=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
                 psycopg2.extras.execute_values(
                     self.db_cur, cmd_, list(self.outdate_hijacks), page_size=1000)

@@ -534,6 +534,7 @@ class Detection():
                 hijack_value['time_detected'] = time.time()
                 hijack_value['key'] = hashlib.md5(pickle.dumps(
                     [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
+                self.redis.set(hijack_value['key'], '')
                 result = hijack_value
 
             self.redis.set(redis_hijack_key, pickle.dumps(result))

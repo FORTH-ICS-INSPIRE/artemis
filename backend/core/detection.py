@@ -306,6 +306,15 @@ class Detection():
 
             if not self.redis.exists(monitor_event['key']) or 'hij_key' in monitor_event:
                 raw = monitor_event.copy()
+
+                # mark the initial redis hijack key since it may change upon outdated checks
+                if 'hij_key' in monitor_event:
+                    monitor_event['initial_redis_hijack_key'] = redis_key(
+                        monitor_event['prefix'],
+                        monitor_event['hijack_as'],
+                        monitor_event['hij_type']
+                    )
+
                 is_hijack = False
                 # ignore withdrawals for now
                 if monitor_event['type'] == 'A':
@@ -326,17 +335,19 @@ class Detection():
                         except Exception:
                             log.exception('exception')
 
-                    if not is_hijack:
-                        if 'hij_key' in monitor_event:
-                            redis_hijack_key = redis_key(
-                                monitor_event['prefix'],
-                                monitor_event['hijack_as'],
-                                monitor_event['hij_type'])
-                            self.redis.delete(redis_hijack_key)
-                            self.redis.delete(monitor_event['hij_key'])
-                            self.mark_outdated(monitor_event['hij_key'], redis_hijack_key)
-                        else:
-                            self.mark_handled(raw)
+                    if (not is_hijack and 'hij_key' in monitor_event) or \
+                        (is_hijack and 'hij_key' in monitor_event and \
+                            monitor_event['initial_redis_hijack_key'] != monitor_event['final_redis_hijack_key']):
+                        redis_hijack_key = redis_key(
+                            monitor_event['prefix'],
+                            monitor_event['hijack_as'],
+                            monitor_event['hij_type'])
+                        self.redis.delete(redis_hijack_key)
+                        self.redis.delete(monitor_event['hij_key'])
+                        self.mark_outdated(monitor_event['hij_key'], redis_hijack_key)
+                    elif not is_hijack:
+                        self.mark_handled(raw)
+
                 elif monitor_event['type'] == 'W':
                     self.producer.publish(
                         {
@@ -495,12 +506,15 @@ class Detection():
             Commit new or update an existing hijack to the database.
             It uses redis server to store ongoing hijacks information to not stress the db.
             """
-            if 'hij_key' in monitor_event:
-                return
             redis_hijack_key = redis_key(
                 monitor_event['prefix'],
                 hijacker,
                 hij_type)
+
+            if 'hij_key' in monitor_event:
+                monitor_event['final_redis_hijack_key'] = redis_hijack_key
+                return
+
             hijack_value = {
                 'prefix': monitor_event['prefix'],
                 'hijack_as': hijacker,

@@ -27,7 +27,7 @@ Table of Contents
      * [Migrating an existing DB to a new version](#migrating-an-existing-db-to-a-new-version)
      * [Exiting ARTEMIS](#exiting-artemis)
   * [Contributing](#contributing)
-  * [Development](#development)
+  * [Development Team and Contact](#development-team-and-contact)
   * [Versioning](#versioning)
   * [Authors and Contributors](#authors-and-contributors)
   * [License](#license)

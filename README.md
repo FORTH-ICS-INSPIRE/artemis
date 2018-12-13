@@ -16,6 +16,7 @@ Table of Contents
      * [Managing users (ADMIN-only)](#managing-users-admin-only)
      * [User account actions (ADMIN-VIEWER)](#user-account-actions-admin-viewer)
      * [Configuring and Controlling ARTEMIS through the web application (ADMIN-only)](#configuring-and-controlling-artemis-through-the-web-application-admin-only)
+     * [Viewing ARTEMIS Configurations](#viewing-artemis-configurations)
      * [Viewing ARTEMIS state](#viewing-artemis-state)
      * [Viewing BGP updates](#viewing-bgp-updates)
      * [Viewing BGP hijacks](#viewing-bgp-hijacks)
@@ -48,7 +49,7 @@ You can read more about ARTEMIS (and check e.g., news and related publications)
 on the INSPIRE Group ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
-ARTEMIS can be run on a testing server/VM as a modular
+ARTEMIS can be run on a testing server/VM as a modular (and extensible)
 multi-container application.
 
 ## Features
@@ -59,7 +60,7 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 * Real-time monitoring of the changes in the BGP routes of the network's prefixes.
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types:
 exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
-* Automatic/custom tagging of detected BGP hijack events.
+* Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn and outdated).
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
 * Comprehensive web interface.
 * Configuration file editable by the operator (directly or via the web interface),
@@ -67,11 +68,11 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 * Support for both IPv4 and IPv6 prefixes.
 * Modularity/extensibility by design.
 
-## Architecture
+## System Architecture
 
 ![Architecture](docs/images/artemis_system_overview.png)
 
-The philosophy behind the ARTEMIS architecture is the use of a message bus (MBUS) in the core,
+The philosophy behind the ARTEMIS architecture is the use of a message bus (MBUS) in its core,
 used for routing messages (RPC, pub/sub, etc.) between different processes/services
 and containers, using the kombu framework (https://github.com/celery/kombu) to interface
 between rabbitmq and the message senders/receivers (e.g., consumers). The controller/supervisor
@@ -116,7 +117,7 @@ in e.g., a Kubernetes environment, please contact the ARTEMIS team.
 * HDD: 100 GB (less may suffice, depending on the use case)
 * NETWORK: 1 public-facing network interface
 * OS: Ubuntu Linux 16.04+
-* SW PACKAGES: docker-ce and docker-compose should be pre-installed
+* SW PACKAGES: docker-ce and docker-compose should be pre-installed (see instructions later)
 and docker should have sudo privileges, if only non-sudo user is allowed
 * Other: SSH server
 
@@ -329,11 +330,13 @@ rules:
 - ...
 # End of Rule Definitions
 ```
+Optionally the user can accompany the configuration with comments.
 
 ### Viewing ARTEMIS Configurations
 ```
-TBD
+https://<ARTEMIS_HOST>/admin/config_comparison
 ```
+Here the user (ADMIN|VIEWER) can view the ARTEMIS configuration history and diffs, as well as the (optional) comments attached to each configuration. Since configuration changes are atomic operations, the different configurations are keyed with their modification timestamp.
 
 ### Viewing ARTEMIS state
 After being successfully logged-in to ARTEMIS, you will be redirected to the following webpage:

@@ -30,11 +30,13 @@ contains information about: prefixes, ASNs, monitors and ARTEMIS rules (e.g., "A
 
 - Mitigation module, providing manual or manually controlled mitigation of BGP prefix hijacking attacks.
 
-- Observer module, dealing with the monitoring of the status of other modules/services.
+- Observer module, dealing with the monitoring of the changes in the ARTEMIS configuration file, triggering the reloading of the affected modules.
 
 - Scheduler module, providing a clock service for periodical messages consumed by different modules/services.
 
 - Postgres DB access module, providing programmatic R+W access to the main database of ARTEMIS.
+
+- Supervisord for managing the backend services of the system as processes, and listener module to listen for changes in the process status (e.g., running --> stopped).
 
 - Integration of Monitor, Configuration, Detection, Mitigation, Observer, Scheduler and Postgres DB module in ARTEMIS
 "backend".
@@ -158,6 +160,8 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 
 - Composition of multiple containers via docker-compose
 
+- Support for running multiple detector instances.
+
 - Optional support for Kubernetes setups (single physical machine)
 
 # SAMPLE
@@ -183,4 +187,3 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 ## ACKS
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-

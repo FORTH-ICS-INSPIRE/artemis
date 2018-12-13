@@ -516,8 +516,12 @@ docker-compose -f ... down
 ## Contributing
 Please check [this file](CONTRIBUTING.md).
 
-## Development
+## Development Team and Contact
 We follow a custom Agile approach for our development.
+You can contact the ARTEMIS developers as follows:
+* Dimitrios Mavrommatis (backend): mavromat_at_ics_dot_forth_dot_gr
+* Petros Gigis (frontend): gkigkis_at_ics_dot_forth_dot_gr
+* Vasileios Kotronis (coordinator): vkotronis_at_ics_dot_forth_dot_gr
 
 ## Versioning
 Please check [this file](CHANGELOG.md).

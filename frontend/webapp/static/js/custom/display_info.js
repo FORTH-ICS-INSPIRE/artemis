@@ -9,6 +9,17 @@ mapHelpText_stats['field_monitor'] = 'ARTEMIS module responsible for real-time m
 mapHelpText_stats['field_observer'] = 'ARTEMIS module responsible for observing async changes in the configuration file, triggering the reloading of ARTEMIS modules.';
 mapHelpText_stats['field_postgresql_db'] = 'ARTEMIS module responsible for providing access to the Postgres DB used in the core of ARTEMIS for persistent storage of configuration, BGP update and BGP prefix hijack event data.';
 
+mapHelpText_stats['field_stats_Total_BGP_Updates'] = 'The total number of BGP updates seen on the monitors.';
+mapHelpText_stats['field_stats_Total_Unhandled_Updates'] = 'The total number of BGP updates not processed by the detection (either because they are in the queue, or because the detection was not running when they were fed to the monitors).';
+mapHelpText_stats['field_stats_Total_Hijacks'] = 'The total number of hijack events stored in the system.';
+mapHelpText_stats['field_stats_Resolved_Hijacks'] = 'The number of resolved hijack events (true positives that were marked by the user).';
+mapHelpText_stats['field_stats_Mitigation_Hijacks'] = 'The number of hijack events that are currently under mitigation (triggered by the user).';
+mapHelpText_stats['field_stats_Ongoing_Hijacks'] = 'The number of ongoing hijack events (not ignored or resolved or withdrawn or outdated).';
+mapHelpText_stats['field_stats_Ignored_Hijacks'] = 'The number of ignored hijack events (false positives that were marked by the user)';
+mapHelpText_stats['field_stats_Withdrawn_Hijacks'] = 'The number of withdrawn hijack events.';
+mapHelpText_stats['field_stats_Seen_Hijacks'] = 'The number of acknowledged/seen hijack events.';
+mapHelpText_stats['field_stats_Outdated_Hijacks'] = 'The number of hijack events that are currently outdated.';
+
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
 
@@ -67,6 +78,7 @@ mapHelpText_hijack_status['field_hijack_status_withdrawn'] = 'Withdrawn hijack e
 mapHelpText_hijack_status['field_hijack_status_ignored'] = 'Ignored hijack events</br>(false positives that were marked by the user).';
 mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'Hijack events that are currently under mitigation</br>(triggered by the user).';
 mapHelpText_hijack_status['field_hijack_status_outdated'] = 'Hijack events that match a configuration that is now deprecated.';
+
 
 function displayHelpTextTable(){
 	$('th[helpText]').each(function( index ) {

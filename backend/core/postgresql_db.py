@@ -737,9 +737,9 @@ class Postgresql_db():
             action_is_ignore = False
             try:
                 if(raw['action'] == 'mark_resolved'):
-                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND withdrawn=false AND'
+                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND'
                 elif(raw['action'] == 'mark_ignored'):
-                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND withdrawn=false AND'
+                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND'
                     action_is_ignore = True
                 elif(raw['action'] == 'mark_seen'):
                     action_ = 'seen=true'

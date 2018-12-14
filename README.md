@@ -532,9 +532,12 @@ Please check [this file](AUTHORS.md).
 ## License
 The ARTEMIS software is open-sourced under the BSD-3 license.
 Please check the [license file](LICENSE).
-All external dependencies are used in a way compatible with BSD-3;
-the software packages and their respective licenses are documented
-in detail in [this file](DEPENDENCIES-LICENSES.md).
+
+Note that all external dependencies are used in a way compatible with BSD-3
+(that is, we obey the compatibility rules of each and every dependency);
+the associated software packages and their respective licenses are documented
+in detail in [this file](DEPENDENCIES-LICENSES.md), where we provide links
+to their homepages and licenses.
 
 ## Acknowledgements and Funding Sources
 Please check [this file](ACKS.md).

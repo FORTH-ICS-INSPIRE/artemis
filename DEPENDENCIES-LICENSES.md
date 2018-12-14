@@ -70,7 +70,6 @@
 | netaddr | [BSD-3](https://github.com/drkjam/netaddr/blob/rel-0.7.x/LICENSE) | [GitHub](https://github.com/drkjam/netaddr/) |
 | pid | [Apache 2.0](https://github.com/trbs/pid/blob/master/LICENSE) | [GitHub](https://github.com/trbs/pid/) |
 | py-radix | [Custom-Permissive](https://github.com/mjschultz/py-radix/blob/master/LICENSE) | [GitHub](https://github.com/mjschultz/py-radix) |
-| pymemcache | [Apache 2.0](https://github.com/pinterest/pymemcache/blob/master/LICENSE.txt) | [GitHub](https://github.com/Pinterest/pymemcache) |
 | pytz | [MIT](https://pythonhosted.org/pytz/) | [Homepage](https://pythonhosted.org/pytz/) |
 | pyaml | [MIT](https://pyyaml.org/wiki/PyYAML) | [Homepage](https://pyyaml.org/wiki/PyYAML) |
 | ruamel.yaml | [MIT](https://bitbucket.org/ruamel/yaml/src/7ccdf8d0cb6d68b1847ca5088deffb55f0d73c98/LICENSE?at=default&fileviewer=file-view-default) | [BitBucket](https://bitbucket.org/ruamel/yaml) |

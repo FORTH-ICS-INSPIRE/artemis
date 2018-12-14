@@ -45,12 +45,14 @@ desirable to network operators such as comprehensiveness, accuracy, speed,
 privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
 can be neutralized within a minute!
 
-You can read more about ARTEMIS (and check e.g., news and related publications)
+You can read more about ARTEMIS (and check e.g., news, presentations and related publications)
 on the INSPIRE Group ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a testing server/VM as a modular (and extensible)
-multi-container application.
+multi-container application. Up to today it has been tested at a major 
+greek ISP, a dual-homed edge academic network (our home institutional network),
+and a major R&E US backbone network.
 
 ## Features
 
@@ -100,7 +102,7 @@ monitoring entries. Finally, using a web application, the operator can instruct 
 module to mitigate a hijack or mark it as resolved/ignored. All information is persistently
 stored in the DB, which is accessed by the web application (user interface).
 Clock and observer modules are auxiliary, and take care of periodic clock signaling and configuration
-change notifications, respectively.
+change notifications, respectively. For brevity we do not elaborate more on further auxiliary modules.
 
 ## Getting Started
 
@@ -108,7 +110,7 @@ ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine
 for testing purposes. For instructions on how to set up ARTEMIS
-in e.g., a Kubernetes environment, please contact the ARTEMIS team.
+in e.g., a Kubernetes environment, please contact the [ARTEMIS team](#development-team-and-contact).
 
 ## Min. technical requirements of testing server/VM
 

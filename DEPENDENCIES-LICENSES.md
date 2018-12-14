@@ -2,6 +2,7 @@
 
 | SW package  |  License   | Link       |
 | :---------: | :--------: | :--------: |
+| python 3.6 | [PSFL](https://docs.python.org/3/license.html) | [Homepage](https://www.python.org/downloads/) |
 | kombu | [BSD-3](https://github.com/celery/kombu/blob/master/LICENSE) | [GitHub](https://github.com/celery/kombu) |
 | bcrypt | [Apache 2.0](https://github.com/pyca/bcrypt/blob/master/LICENSE) | [GitHub](https://github.com/pyca/bcrypt/) |
 | flask | [BSD-3](https://github.com/pallets/flask/blob/master/LICENSE) | [GitHub](https://github.com/pallets/flask) |
@@ -19,7 +20,7 @@
 | flask-security | [MIT](https://github.com/mattupstate/flask-security/blob/develop/LICENSE) | [GitHub](https://github.com/mattupstate/flask-security) |
 | flask-sqlalchemy | [BSD-3](https://github.com/mitsuhiko/flask-sqlalchemy/blob/master/LICENSE) | [GitHub](https://github.com/mitsuhiko/flask-sqlalchemy) |
 | flask-wtf | [BSD-3](https://github.com/lepture/flask-wtf/blob/master/LICENSE) | [GitHub](https://github.com/lepture/flask-wtf) |
-| pyaml | [Permissive-Custom](https://github.com/mk-fg/pretty-yaml/blob/master/COPYING) | [GitHub](https://github.com/mk-fg/pretty-yaml) |
+| pyaml | [Custom-Permissive](https://github.com/mk-fg/pretty-yaml/blob/master/COPYING) | [GitHub](https://github.com/mk-fg/pretty-yaml) |
 | requests | [Apache 2.0](https://github.com/requests/requests/blob/master/LICENSE) | [GitHub](https://github.com/requests/requests) |
 | sqlalchemy | [MIT](https://github.com/sqlalchemy/sqlalchemy/blob/master/LICENSE) | [GitHub](https://github.com/sqlalchemy/sqlalchemy) |
 | wtforms | [BSD-3](https://github.com/wtforms/wtforms/blob/master/LICENSE.rst) | [GitHub](https://github.com/wtforms/wtforms) |
@@ -39,16 +40,28 @@
 | openssl-dev | [Apache 2.0](https://github.com/openssl/openssl/blob/master/LICENSE) | [GitHub](https://github.com/openssl/openssl) |
 | libffi-dev | [MIT](https://github.com/libffi/libffi/blob/master/LICENSE) | [GitHub](https://github.com/libffi/libffi) |
 | pyopenssl | [Apache 2.0](https://github.com/pyca/pyopenssl/blob/master/LICENSE) | [GitHub](https://github.com/pyca/pyopenssl) |
-| sqlite-dev, sqlite | [Permissive-Custom](https://www.sqlite.org/copyright.html) | [HomePage](https://www.sqlite.org/index.html) |
+| sqlite-dev, sqlite | [Custom-Permissive](https://www.sqlite.org/copyright.html) | [HomePage](https://www.sqlite.org/index.html) |
 | gunicorn | [MIT](https://github.com/benoitc/gunicorn/blob/master/LICENSE) | [GitHub](https://github.com/benoitc/gunicorn) |
 
 ## BACKEND
 
 | SW package  |  License   | Link       |
 | :---------: | :--------: | :--------: |
-| SW1         | LIC1       | .......... |
-| ........... | .......... | .......... |
-| SWN         | LICN       | .......... |
+| python 3.6 | [PSFL](https://docs.python.org/3/license.html) | [Homepage](https://www.python.org/downloads/) |
+| build-essential | [Apache 2.0](https://github.com/chef-cookbooks/build-essential/blob/master/LICENSE) | [GitHub](https://github.com/chef-cookbooks/build-essential/blob/master/LICENSE) |
+| zlib1g-dev | [Custom-Permissive](http://changelogs.ubuntu.com/changelogs/pool/main/z/zlib/zlib_1.2.8.dfsg-2ubuntu4/copyright) | [Package](https://packages.ubuntu.com/xenial/zlib1g-dev) |
+| libbz2-dev | [BSD-4](https://metadata.ftp-master.debian.org/changelogs/main/b/bzip2/bzip2_1.0.6-7_copyright) | [Package](https://packages.debian.org/jessie/libbz2-1.0) |
+| libcurl4-openssl-dev | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs//main/c/curl/curl_7.62.0-1_copyright) | [Package](https://packages.debian.org/sid/libcurl4-openssl-dev) |
+| python-dev | [PSFL](https://metadata.ftp-master.debian.org/changelogs/main/p/python-defaults/python-defaults_2.7.15-3_copyright) | [Package](https://packages.debian.org/sid/python-dev) |
+| python3-pip | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs/main/p/python-pip/python-pip_1.5.6-5_copyright) | [Package](https://packages.debian.org/jessie/python3-pip) |
+| cron | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs//main/c/cron/cron_3.0pl1-130_copyright) | [Package](https://packages.debian.org/sid/cron) |
+| supervisor | [BSD-4](https://github.com/Supervisor/supervisor/blob/master/LICENSES.txt) | [GitHub](https://github.com/Supervisor/supervisor) |
+| tcl | [Custom-Permissive](https://www.tcl.tk/software/tcltk/license.html) | [Homepage](https://www.tcl.tk/) |
+| wandio | [LGPL](https://github.com/alistairking/wandio/blob/master/COPYING.LESSER) | [GitHub](https://github.com/alistairking/wandio) |
+| librdkafka | [Custom-Permissive](https://github.com/edenhill/librdkafka/blob/master/LICENSES.txt) | [GitHub](https://github.com/edenhill/librdkafka) |
+| libbgpstream-2 (beta) | [BSD-2](https://github.com/CAIDA/libbgpstream/blob/master/LICENSE) | [GitHub](https://github.com/CAIDA/libbgpstream) |
+| pybgpstream-2 (beta) | [BSD-2](https://github.com/CAIDA/pybgpstream/blob/v2-beta/LICENSE) | [GitHub](https://github.com/caida/pybgpstream/tree/v2-beta) |
+| redis | [BSD-3](https://redis.io/topics/license/) | [Homepage](https://redis.io/) |
 
 ## USED CONTAINERS
 
@@ -68,4 +81,4 @@
 ## OTHER
 | SW package  |  License   | Link       |
 | :---------: | :--------: | :--------: |
-| postgresql-dev | [Permissive-Custom](https://www.postgresql.org/about/licence/) | [Homepage](https://pkgs.alpinelinux.org/package/edge/main/x86/postgresql-dev) |
+| postgresql-dev | [Custom-Permissive](https://www.postgresql.org/about/licence/) | [Homepage](https://pkgs.alpinelinux.org/package/edge/main/x86/postgresql-dev) |

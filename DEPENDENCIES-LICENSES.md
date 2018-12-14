@@ -62,6 +62,25 @@
 | libbgpstream-2 (beta) | [BSD-2](https://github.com/CAIDA/libbgpstream/blob/master/LICENSE) | [GitHub](https://github.com/CAIDA/libbgpstream) |
 | pybgpstream-2 (beta) | [BSD-2](https://github.com/CAIDA/pybgpstream/blob/v2-beta/LICENSE) | [GitHub](https://github.com/caida/pybgpstream/tree/v2-beta) |
 | redis | [BSD-3](https://redis.io/topics/license/) | [Homepage](https://redis.io/) |
+| py-amqp | [BSD-3](https://github.com/celery/py-amqp/blob/master/LICENSE) | [GitHub](https://github.com/celery/py-amqp) |
+| watchdog | [Apache 2.0](https://github.com/gorakhargosh/watchdog/blob/master/LICENSE) | [GitHub](https://github.com/gorakhargosh/watchdog) |
+| billiard | [BSD-3](https://github.com/celery/billiard/blob/master/LICENSE.txt) | [GitHub](https://github.com/celery/billiard) |
+| kombu | [BSD-3](https://github.com/celery/kombu/blob/master/LICENSE) | [GitHub](https://github.com/celery/kombu) |
+| pamqp | [BSD-3](https://github.com/gmr/pamqp/blob/master/LICENSE) | [GitHub](https://github.com/gmr/pamqp) |
+| netaddr | [BSD-3](https://github.com/drkjam/netaddr/blob/rel-0.7.x/LICENSE) | [GitHub](https://github.com/drkjam/netaddr/) |
+| pid | [Apache 2.0](https://github.com/trbs/pid/blob/master/LICENSE) | [GitHub](https://github.com/trbs/pid/) |
+| py-radix | [Custom-Permissive](https://github.com/mjschultz/py-radix/blob/master/LICENSE) | [GitHub](https://github.com/mjschultz/py-radix) |
+| pymemcache | [Apache 2.0](https://github.com/pinterest/pymemcache/blob/master/LICENSE.txt) | [GitHub](https://github.com/Pinterest/pymemcache) |
+| pytz | [MIT](https://pythonhosted.org/pytz/) | [Homepage](https://pythonhosted.org/pytz/) |
+| pyaml | [MIT](https://pyyaml.org/wiki/PyYAML) | [Homepage](https://pyyaml.org/wiki/PyYAML) |
+| ruamel.yaml | [MIT](https://bitbucket.org/ruamel/yaml/src/7ccdf8d0cb6d68b1847ca5088deffb55f0d73c98/LICENSE?at=default&fileviewer=file-view-default) | [BitBucket](https://bitbucket.org/ruamel/yaml) |
+| setproctitle | [BSD-3](https://github.com/dvarrazzo/py-setproctitle/blob/master/COPYRIGHT) | [GitHub](https://github.com/dvarrazzo/py-setproctitle) |
+| socketIO-client-nexus | [MIT](https://github.com/nexus-devs/socketIO-client-2.0.3/blob/master/LICENSE) | [GitHub](https://github.com/nexus-devs/socketIO-client-2.0.3) |
+| socketIO-client | [MIT](https://github.com/invisibleroads/socketIO-client/blob/master/LICENSE) | [GitHub](https://github.com/invisibleroads/socketIO-client) |
+| vine | [BSD-3](https://github.com/celery/vine/blob/master/LICENSE) | [GitHub](https://github.com/celery/vine) |
+| psycopg2-binary | [LGPL](https://github.com/psycopg/psycopg2/blob/master/LICENSE) | [[GitHub](https://github.com/psycopg/psycopg2) |
+| redis-py | [MIT](https://github.com/andymccurdy/redis-py/blob/master/LICENSE) | [GitHub](https://github.com/andymccurdy/redis-py) |
+| cython | [Apache 2.0](https://cython.org/) | [Homepage](https://cython.org/) |
 
 ## USED CONTAINERS
 

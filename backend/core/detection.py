@@ -536,15 +536,21 @@ class Detection():
                     monitor_event['path'][:-(int(hij_type) + 1)])
 
             # make the following operation atomic using blpop (blocking)
-            # first, make sure that the semaphore is initialized only once
-            if self.redis.getset('{}token_start'.format(redis_hijack_key), 1) != b'1':
-                self.redis.lpush('{}token'.format(redis_hijack_key), 'token')
-
-            # lock, by extracting the token (other processes that access it at the same time will be blocked)
-            if self.redis.exists('{}token'.format(redis_hijack_key)):
+            # first, make sure that the semaphore is initialized
+            if self.redis.getset('{}token_active'.format(redis_hijack_key), 1) != b'1':
+                redis_pipeline = self.redis.pipeline()
+                redis_pipeline.lpush('{}token'.format(redis_hijack_key), 'token')
+                # lock, by extracting the token (other processes that access it at the same time will be blocked)
+                # attention: it is important that this command is batched in the pipeline since the db may async delete
+                # the token
+                redis_pipeline.blpop('{}token'.format(redis_hijack_key))
+                redis_pipeline.execute()
+            else:
+                # lock, by extracting the token (other processes that access it at the same time will be blocked)
                 self.redis.blpop('{}token'.format(redis_hijack_key))
 
             # proceed now that we have clearance
+            redis_pipeline = self.redis.pipeline()
             try:
                 result = self.redis.get(redis_hijack_key)
                 if result is not None:
@@ -561,15 +567,16 @@ class Detection():
                     hijack_value['time_detected'] = time.time()
                     hijack_value['key'] = hashlib.md5(pickle.dumps(
                         [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
-                    self.redis.set(hijack_value['key'], '')
+                    redis_pipeline.set(hijack_value['key'], '')
                     result = hijack_value
-                self.redis.set(redis_hijack_key, pickle.dumps(result))
+                redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
             except Exception:
                 log.exception('exception')
             finally:
                 # unlock, by pushing back the token (at most one other process waiting will be unlocked)
-                if self.redis.exists('{}token'.format(redis_hijack_key)):
-                    self.redis.lpush('{}token'.format(redis_hijack_key), 'token')
+                redis_pipeline.set('{}token_active'.format(redis_hijack_key), 1)
+                redis_pipeline.lpush('{}token'.format(redis_hijack_key), 'token')
+                redis_pipeline.execute()
 
             self.producer.publish(
                 result,

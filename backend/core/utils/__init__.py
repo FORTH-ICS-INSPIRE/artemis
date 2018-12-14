@@ -111,7 +111,7 @@ def redis_key(prefix, hijack_as, _type):
 def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline = redis_instance.pipeline()
     # purge also tokens since they are not relevant any more
-    redis_pipeline.delete('{}token_start'.format(ephemeral_key))
+    redis_pipeline.delete('{}token_active'.format(ephemeral_key))
     redis_pipeline.delete('{}token'.format(ephemeral_key))
     redis_pipeline.delete(ephemeral_key)
     redis_pipeline.delete(persistent_key)

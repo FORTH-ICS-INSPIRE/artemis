@@ -1,7 +1,7 @@
 import radix
 import re
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, get_logger, redis_key
+from utils import exception_handler, RABBITMQ_HOST, get_logger, redis_key, purge_redis_eph_pers_keys
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
@@ -330,8 +330,7 @@ class Detection():
                             monitor_event['prefix'],
                             monitor_event['hijack_as'],
                             monitor_event['hij_type'])
-                        self.redis.delete(redis_hijack_key)
-                        self.redis.delete(monitor_event['hij_key'])
+                        purge_redis_eph_pers_keys(self.redis, redis_hijack_key, monitor_event['hij_key'])
                         self.mark_outdated(monitor_event['hij_key'], redis_hijack_key)
                     elif not is_hijack:
                         self.mark_handled(raw)

@@ -1,7 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT
+from utils import RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT, purge_redis_eph_pers_keys
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 from xmlrpc.client import ServerProxy
@@ -625,8 +625,7 @@ class Postgresql_db():
                     raw['type'])
                 # if ongoing, force rekeying and delete persistent too
                 if self.redis.exists(raw['key']):
-                    self.redis.delete(redis_hijack_key)
-                    self.redis.delete(raw['key'])
+                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
@@ -657,8 +656,7 @@ class Postgresql_db():
                     raw['type'])
                 # if ongoing, force rekeying and delete persistent too
                 if self.redis.exists(raw['key']):
-                    self.redis.delete(redis_hijack_key)
-                    self.redis.delete(raw['key'])
+                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                     (raw['key'],
@@ -790,16 +788,14 @@ class Postgresql_db():
                         elif action_is_ignore:
                             # if ongoing, force rekeying and delete persistent too
                             if self.redis.exists(hijack_key):
-                                self.redis.delete(redis_hijack_key)
-                                self.redis.delete(hijack_key)
+                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         else:
                             # if ongoing, force rekeying and delete persistent too
                             if self.redis.exists(hijack_key):
-                                self.redis.delete(redis_hijack_key)
-                                self.redis.delete(hijack_key)
+                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
@@ -873,8 +869,7 @@ class Postgresql_db():
                                     withdrawal[0],
                                     entry[3],
                                     entry[4])
-                                self.redis.delete(redis_hijack_key) # delete persistent key
-                                self.redis.delete(entry[2]) # delete ephemeral key
+                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, entry[2])
                                 self.db_cur.execute(
                                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',

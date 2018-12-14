@@ -535,34 +535,41 @@ class Detection():
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(int(hij_type) + 1)])
 
-            #make the following operation atomic
-            # wait for semaphore with a granularity of 1 msec
-            while self.redis.exists('{}token'.format(redis_hijack_key)):
-                time.sleep(0.001)
-            # lock
-            self.redis.set('{}token'.format(redis_hijack_key), '')
-            # proceed now that we have clearance
-            result = self.redis.get(redis_hijack_key)
-            if result is not None:
-                result = pickle.loads(result)
-                result['time_started'] = min(
-                    result['time_started'], hijack_value['time_started'])
-                result['time_last'] = max(
-                    result['time_last'], hijack_value['time_last'])
-                result['peers_seen'].update(hijack_value['peers_seen'])
-                result['asns_inf'].update(hijack_value['asns_inf'])
-                # no update since db already knows!
-                result['monitor_keys'] = hijack_value['monitor_keys']
-            else:
-                hijack_value['time_detected'] = time.time()
-                hijack_value['key'] = hashlib.md5(pickle.dumps(
-                    [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
-                self.redis.set(hijack_value['key'], '')
-                result = hijack_value
+            # make the following operation atomic using blpop (blocking)
+            # first, make sure that the semaphore is initialized only once
+            if self.redis.getset('{}token_start'.format(redis_hijack_key), 1) != b'1':
+                self.redis.lpush('{}token'.format(redis_hijack_key), 'token')
 
-            self.redis.set(redis_hijack_key, pickle.dumps(result))
-            # unlock
-            self.redis.delete('{}token'.format(redis_hijack_key))
+            # lock, by extracting the token (other processes that access it at the same time will be blocked)
+            if self.redis.exists('{}token'.format(redis_hijack_key)):
+                self.redis.blpop('{}token'.format(redis_hijack_key))
+
+            # proceed now that we have clearance
+            try:
+                result = self.redis.get(redis_hijack_key)
+                if result is not None:
+                    result = pickle.loads(result)
+                    result['time_started'] = min(
+                        result['time_started'], hijack_value['time_started'])
+                    result['time_last'] = max(
+                        result['time_last'], hijack_value['time_last'])
+                    result['peers_seen'].update(hijack_value['peers_seen'])
+                    result['asns_inf'].update(hijack_value['asns_inf'])
+                    # no update since db already knows!
+                    result['monitor_keys'] = hijack_value['monitor_keys']
+                else:
+                    hijack_value['time_detected'] = time.time()
+                    hijack_value['key'] = hashlib.md5(pickle.dumps(
+                        [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
+                    self.redis.set(hijack_value['key'], '')
+                    result = hijack_value
+                self.redis.set(redis_hijack_key, pickle.dumps(result))
+            except Exception:
+                log.exception('exception')
+            finally:
+                # unlock, by pushing back the token (at most one other process waiting will be unlocked)
+                if self.redis.exists('{}token'.format(redis_hijack_key)):
+                    self.redis.lpush('{}token'.format(redis_hijack_key), 'token')
 
             self.producer.publish(
                 result,

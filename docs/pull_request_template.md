@@ -1,0 +1,47 @@
+<!-- Thanks for issuing a Pull Request! -->
+
+### Description
+<!-- Describe your changes in detail -->
+
+<!-- Please mark the checkboxes below with an 'x' -->
+What component does this PR affect?
+
+- [ ] Back-End (Database, Microservices, Containers, etc)
+- [ ] Front-End (Flask, API, etc)
+- [ ] Docs
+- [ ] Build System
+
+<!-- Please mark the checkboxes below with an 'x' -->
+Requires changes from other components? If yes, please mark the components:
+
+- [ ] Back-End (Database, Microservices, Containers, etc)
+- [ ] Front-End (Flask, API, etc)
+- [ ] Docs
+- [ ] Build System
+
+### Related Issue
+<!-- Please make sure you have an issue associated with this Pull Request -->
+<!-- If you are suggesting a new feature or change, please discuss it in an issue first -->
+<!-- If you are fixing a bug, there should be an issue describing it with steps to reproduce -->
+<!-- Please don't forget to add `(close/fix #<issue-no>)` to the pull request title -->
+
+<!-- Please link to the issue here: -->
+
+### Solution and Design
+<!-- How is this issue solved/fixed? What is the design? -->
+<!-- It's better if we elaborate -->
+
+### Type
+<!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to change)
+- [ ] Docs update
+
+### Checklist:
+<!-- Go over all the following points, and put an `x` in all the boxes that apply. -->
+<!-- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->
+- [ ] I have read the **[contributing guide](https://github.com/FORTH-ICS-INSPIRE/artemis-tool/blob/master/CONTRIBUTING.md)** and my code conforms to the guidelines.
+- [ ] This change requires a change in the documentation.
+- [ ] I have updated the documentation accordingly.
+

@@ -36,12 +36,13 @@ services:
         networks:
             - artemis
         expose:
-            - 8000
+            - ${FLASK_PORT}
         environment:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             POSTGRES_HOST: ${POSTGRES_HOST}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
             MACHINE_IP: ${MACHINE_IP}
+            FLASK_PORT: ${FLASK_PORT}
             USER_ROOT_USERNAME: ${ADMIN_USER}
             USER_ROOT_PASSWORD: ${ADMIN_PASS}
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}
@@ -49,14 +50,15 @@ services:
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
             JS_VERSION: ${JS_VERSION}
-            # SYSLOG_HOST: 'syslog:514'
+            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
         volumes:
             - ./frontend/:/root/
             - ./frontend/webapp/configs/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
     nginx:
-        image: nginx:latest
+        image: nginx:1.15-alpine
         container_name: nginx
         restart: always
         depends_on:
@@ -108,7 +110,7 @@ services:
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
     postgrest:
-        image: postgrest/postgrest
+        image: postgrest/postgrest:v5.2.0
         container_name: postgrest
         restart: always
         depends_on:
@@ -123,7 +125,7 @@ services:
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
     pg_amqp_bridge:
-        image: subzerocloud/pg-amqp-bridge
+        image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg_amqp_bridge
         depends_on:
             - postgres
@@ -136,7 +138,7 @@ services:
         - AMQP_URI=amqp://${RABBITMQ_HOST}//
         - BRIDGE_CHANNELS=events:amq.direct
     graphql:
-        image: hasura/graphql-engine:latest
+        image: hasura/graphql-engine:v1.0.0-alpha31
         container_name: graphql
         restart: always
         depends_on:

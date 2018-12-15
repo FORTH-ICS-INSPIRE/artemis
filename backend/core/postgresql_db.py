@@ -374,9 +374,9 @@ class Postgresql_db():
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             try:
-                key = msg_['key'] # persistent hijack key
+                key = msg_['key']  # persistent hijack key
 
-                if not self.redis.exists(key):
+                if not self.redis.sismember('persistent-keys', key):
                     # fetch BGP updates with deprecated hijack keys and republish to detection
                     rekey_update_keys = list(msg_['monitor_keys'])
                     rekey_updates = []
@@ -610,7 +610,7 @@ class Postgresql_db():
                         entry[6],
                         entry[7])
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
-                    redis_pipeline.set(entry[4], '')
+                    redis_pipeline.sadd('persistent-keys', entry[4])
                 redis_pipeline.execute()
             except Exception:
                 log.exception('exception')
@@ -624,7 +624,7 @@ class Postgresql_db():
                     raw['hijack_as'],
                     raw['type'])
                 # if ongoing, force rekeying and delete persistent too
-                if self.redis.exists(raw['key']):
+                if self.redis.sismember('persistent-keys', raw['key']):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
@@ -655,7 +655,7 @@ class Postgresql_db():
                     raw['hijack_as'],
                     raw['type'])
                 # if ongoing, force rekeying and delete persistent too
-                if self.redis.exists(raw['key']):
+                if self.redis.sismember('persistent-keys', raw['key']):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
@@ -787,14 +787,14 @@ class Postgresql_db():
                             self.db_conn.commit()
                         elif action_is_ignore:
                             # if ongoing, force rekeying and delete persistent too
-                            if self.redis.exists(hijack_key):
+                            if self.redis.sismember('persistent-keys', hijack_key):
                                 purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         else:
                             # if ongoing, force rekeying and delete persistent too
-                            if self.redis.exists(hijack_key):
+                            if self.redis.sismember('persistent-keys', hijack_key):
                                 purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))

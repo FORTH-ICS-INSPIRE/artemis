@@ -272,7 +272,7 @@ class Detection():
             for update in message.payload:
                 self.handle_bgp_update(update)
 
-        def handle_rekey_update(self, message:Dict) -> NoReturn:
+        def handle_rekey_update(self, message: Dict) -> NoReturn:
             """
             Handles BGP updates, needing hijack rekeying from the database.
             """
@@ -323,9 +323,9 @@ class Detection():
                         except Exception:
                             log.exception('exception')
 
-                    if (not is_hijack and 'hij_key' in monitor_event) or \
-                        (is_hijack and 'hij_key' in monitor_event and \
-                            monitor_event['initial_redis_hijack_key'] != monitor_event['final_redis_hijack_key']):
+                    if ((not is_hijack and 'hij_key' in monitor_event) or
+                        (is_hijack and 'hij_key' in monitor_event and
+                            monitor_event['initial_redis_hijack_key'] != monitor_event['final_redis_hijack_key'])):
                         redis_hijack_key = redis_key(
                             monitor_event['prefix'],
                             monitor_event['hijack_as'],
@@ -567,7 +567,7 @@ class Detection():
                     hijack_value['time_detected'] = time.time()
                     hijack_value['key'] = hashlib.md5(pickle.dumps(
                         [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
-                    redis_pipeline.set(hijack_value['key'], '')
+                    redis_pipeline.sadd('persistent-keys', hijack_value['key'])
                     result = hijack_value
                 redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
             except Exception:

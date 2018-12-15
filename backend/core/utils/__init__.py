@@ -114,5 +114,5 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.delete('{}token_active'.format(ephemeral_key))
     redis_pipeline.delete('{}token'.format(ephemeral_key))
     redis_pipeline.delete(ephemeral_key)
-    redis_pipeline.delete(persistent_key)
+    redis_pipeline.srem('persistent-keys', persistent_key)
     redis_pipeline.execute()

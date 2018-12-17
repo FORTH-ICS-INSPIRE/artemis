@@ -79,7 +79,7 @@ used for routing messages (RPC, pub/sub, etc.) between different processes/servi
 and containers, using the kombu framework (https://github.com/celery/kombu) to interface
 between rabbitmq and the message senders/receivers (e.g., consumers). The controller/supervisor
 service is responsible for checking the status of the other backend services.
-In a nutshell, there are 6 basic modules:
+In a nutshell, there the following basic modules:
 * Configuration
 * Monitoring
 * Detection

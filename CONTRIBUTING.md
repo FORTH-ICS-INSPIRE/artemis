@@ -12,12 +12,12 @@ can quickly merge or address your contributions will increase.
 
 ## Overview
 
-[artemis](https://github.com/FORTH-ICS-INSPIRE/artemis-tool) is a mono-repo
+[artemis](https://github.com/FORTH-ICS-INSPIRE/artemis) is a mono-repo
 consisting of 3 components.
 
-1. Root container composition (docker-compose)
-2. Frontend code
-3. Backend code
+1. Back-End (Database, Microservices, Containers, etc)
+2. Front-End (Flask, API, etc)
+3. Build System
 
 All of the three components have a single version, denoted by the git
 tag.
@@ -46,7 +46,9 @@ tag.
 
 - Rebase master with your branch before submitting a pull request.
 
-## Extensions (TBD)
+- For a PR template, please check [this file](docs/pull_request_template.md).
+
+## Extensions
 
 ### Implementing additional Monitors (taps)
 

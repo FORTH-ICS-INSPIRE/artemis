@@ -1,7 +1,7 @@
 import radix
 import re
 import ipaddress
-from utils import exception_handler, RABBITMQ_HOST, get_logger, redis_key
+from utils import exception_handler, RABBITMQ_HOST, get_logger, redis_key, purge_redis_eph_pers_keys
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
@@ -107,18 +107,15 @@ class Detection():
             self.update_unhandled_queue = Queue(
                 'detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, auto_delete=True, max_priority=2,
                 consumer_arguments={'x-priority': 2})
-            self.hijack_resolved_queue = Queue(
-                'detection-hijack-resolved', exchange=self.hijack_exchange, routing_key='resolved', durable=False, auto_delete=True, max_priority=2,
-                consumer_arguments={'x-priority': 2})
-            self.hijack_ignored_queue = Queue(
-                'detection-hijack-ignored', exchange=self.hijack_exchange, routing_key='ignored', durable=False, auto_delete=True, max_priority=2,
-                consumer_arguments={'x-priority': 2})
             self.hijack_ongoing_queue = Queue(
                 'detection-hijack-ongoing', exchange=self.hijack_exchange, routing_key='ongoing', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(
                 'detection-config-notify-{}'.format(uuid()), exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
                 consumer_arguments={'x-priority': 3})
+            self.update_rekey_queue = Queue(
+                'detection-update-rekey', exchange=self.update_exchange, routing_key='hijack-rekey', durable=False, auto_delete=True, max_priority=1,
+                consumer_arguments={'x-priority': 1})
 
             self.config_request_rpc()
 
@@ -146,20 +143,14 @@ class Detection():
                     no_ack=True
                 ),
                 Consumer(
-                    queues=[self.hijack_resolved_queue],
-                    on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=1,
-                    no_ack=True
-                ),
-                Consumer(
-                    queues=[self.hijack_ignored_queue],
-                    on_message=self.handle_resolved_or_ignored_hijack,
-                    prefetch_count=1,
-                    no_ack=True
-                ),
-                Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,
+                    prefetch_count=10,
+                    no_ack=True
+                ),
+                Consumer(
+                    queues=[self.update_rekey_queue],
+                    on_message=self.handle_rekey_update,
                     prefetch_count=10,
                     no_ack=True
                 )
@@ -281,6 +272,14 @@ class Detection():
             for update in message.payload:
                 self.handle_bgp_update(update)
 
+        def handle_rekey_update(self, message: Dict) -> NoReturn:
+            """
+            Handles BGP updates, needing hijack rekeying from the database.
+            """
+            # log.debug('{} rekeying events'.format(len(message.payload)))
+            for update in message.payload:
+                self.handle_bgp_update(update)
+
         def handle_bgp_update(self, message: Dict) -> NoReturn:
             """
             Callback function that runs the main logic of detecting hijacks for every bgp update.
@@ -295,6 +294,15 @@ class Detection():
 
             if not self.redis.exists(monitor_event['key']) or 'hij_key' in monitor_event:
                 raw = monitor_event.copy()
+
+                # mark the initial redis hijack key since it may change upon outdated checks
+                if 'hij_key' in monitor_event:
+                    monitor_event['initial_redis_hijack_key'] = redis_key(
+                        monitor_event['prefix'],
+                        monitor_event['hijack_as'],
+                        monitor_event['hij_type']
+                    )
+
                 is_hijack = False
                 # ignore withdrawals for now
                 if monitor_event['type'] == 'A':
@@ -315,16 +323,18 @@ class Detection():
                         except Exception:
                             log.exception('exception')
 
-                    if not is_hijack:
-                        if 'hij_key' in monitor_event:
-                            redis_hijack_key = redis_key(
-                                monitor_event['prefix'],
-                                monitor_event['hijack_as'],
-                                monitor_event['hij_type'])
-                            self.redis.delete(redis_hijack_key)
-                            self.mark_outdated(monitor_event['hij_key'])
-                        else:
-                            self.mark_handled(raw)
+                    if ((not is_hijack and 'hij_key' in monitor_event) or
+                        (is_hijack and 'hij_key' in monitor_event and
+                            monitor_event['initial_redis_hijack_key'] != monitor_event['final_redis_hijack_key'])):
+                        redis_hijack_key = redis_key(
+                            monitor_event['prefix'],
+                            monitor_event['hijack_as'],
+                            monitor_event['hij_type'])
+                        purge_redis_eph_pers_keys(self.redis, redis_hijack_key, monitor_event['hij_key'])
+                        self.mark_outdated(monitor_event['hij_key'], redis_hijack_key)
+                    elif not is_hijack:
+                        self.mark_handled(raw)
+
                 elif monitor_event['type'] == 'W':
                     self.producer.publish(
                         {
@@ -483,12 +493,15 @@ class Detection():
             Commit new or update an existing hijack to the database.
             It uses redis server to store ongoing hijacks information to not stress the db.
             """
-            if 'hij_key' in monitor_event:
-                return
             redis_hijack_key = redis_key(
                 monitor_event['prefix'],
                 hijacker,
                 hij_type)
+
+            if 'hij_key' in monitor_event:
+                monitor_event['final_redis_hijack_key'] = redis_hijack_key
+                return
+
             hijack_value = {
                 'prefix': monitor_event['prefix'],
                 'hijack_as': hijacker,
@@ -501,30 +514,69 @@ class Detection():
                 'timestamp_of_config': self.timestamp
             }
 
-            if hij_type in {'S', 'Q'}:
-                hijack_value['asns_inf'] = set(monitor_event['path'])
+            hijack_value['asns_inf'] = set()
+            # for squatting, all ASes except the origin are considered infected
+            if hij_type == 'Q':
+                if len(monitor_event['path']) > 0:
+                    hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
+            # for sub-prefix hijacks, the infection depends on whether the hijacker is the origin/neighbor/sth else
+            elif hij_type == 'S':
+                if len(monitor_event['path']) > 1:
+                    if hijacker == monitor_event['path'][-1]:
+                        hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
+                    elif hijacker == monitor_event['path'][-2]:
+                        hijack_value['asns_inf'] = set(monitor_event['path'][:-2])
+                    else:
+                        # assume the hijacker does a Type-2
+                        if len(monitor_event['path']) > 2:
+                            hijack_value['asns_inf'] = set(monitor_event['path'][:-3])
+            # for exact-prefix type-0/type-1 hijacks, the pollution depends on the type
             else:
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(int(hij_type) + 1)])
 
-            result = self.redis.get(redis_hijack_key)
-            if result is not None:
-                result = pickle.loads(result)
-                result['time_started'] = min(
-                    result['time_started'], hijack_value['time_started'])
-                result['time_last'] = max(
-                    result['time_last'], hijack_value['time_last'])
-                result['peers_seen'].update(hijack_value['peers_seen'])
-                result['asns_inf'].update(hijack_value['asns_inf'])
-                # no update since db already knows!
-                result['monitor_keys'] = hijack_value['monitor_keys']
+            # make the following operation atomic using blpop (blocking)
+            # first, make sure that the semaphore is initialized
+            if self.redis.getset('{}token_active'.format(redis_hijack_key), 1) != b'1':
+                redis_pipeline = self.redis.pipeline()
+                redis_pipeline.lpush('{}token'.format(redis_hijack_key), 'token')
+                # lock, by extracting the token (other processes that access it at the same time will be blocked)
+                # attention: it is important that this command is batched in the pipeline since the db may async delete
+                # the token
+                redis_pipeline.blpop('{}token'.format(redis_hijack_key))
+                redis_pipeline.execute()
             else:
-                hijack_value['time_detected'] = time.time()
-                hijack_value['key'] = hashlib.md5(pickle.dumps(
-                    [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
-                result = hijack_value
+                # lock, by extracting the token (other processes that access it at the same time will be blocked)
+                self.redis.blpop('{}token'.format(redis_hijack_key))
 
-            self.redis.set(redis_hijack_key, pickle.dumps(result))
+            # proceed now that we have clearance
+            redis_pipeline = self.redis.pipeline()
+            try:
+                result = self.redis.get(redis_hijack_key)
+                if result is not None:
+                    result = pickle.loads(result)
+                    result['time_started'] = min(
+                        result['time_started'], hijack_value['time_started'])
+                    result['time_last'] = max(
+                        result['time_last'], hijack_value['time_last'])
+                    result['peers_seen'].update(hijack_value['peers_seen'])
+                    result['asns_inf'].update(hijack_value['asns_inf'])
+                    # no update since db already knows!
+                    result['monitor_keys'] = hijack_value['monitor_keys']
+                else:
+                    hijack_value['time_detected'] = time.time()
+                    hijack_value['key'] = hashlib.md5(pickle.dumps(
+                        [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
+                    redis_pipeline.sadd('persistent-keys', hijack_value['key'])
+                    result = hijack_value
+                redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+            except Exception:
+                log.exception('exception')
+            finally:
+                # unlock, by pushing back the token (at most one other process waiting will be unlocked)
+                redis_pipeline.set('{}token_active'.format(redis_hijack_key), 1)
+                redis_pipeline.lpush('{}token'.format(redis_hijack_key), 'token')
+                redis_pipeline.execute()
 
             self.producer.publish(
                 result,
@@ -548,36 +600,21 @@ class Detection():
                 priority=1
             )
 
-        def mark_outdated(self, hij_key: str) -> NoReturn:
+        def mark_outdated(self, hij_key: str, redis_hij_key: str) -> NoReturn:
             """
             Marks a hijack as outdated on the database.
             """
             # log.debug('{}'.format(hij_key))
+            msg = {
+                'persistent_hijack_key': hij_key,
+                'redis_hijack_key': redis_hij_key
+            }
             self.producer.publish(
-                hij_key,
+                msg,
                 exchange=self.hijack_exchange,
                 routing_key='outdate',
                 priority=1
             )
-
-        def handle_resolved_or_ignored_hijack(self, message: Dict) -> NoReturn:
-            """
-            Remove for redis the ongoing hijack entry.
-            """
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
-            try:
-                data = message.payload
-                redis_hijack_key = redis_key(
-                    data['prefix'],
-                    data['hijack_as'],
-                    data['type'])
-                self.redis.delete(redis_hijack_key)
-            except Exception:
-                log.exception(
-                    "couldn't erase data: {}".format(
-                        message.payload))
 
 
 def run():

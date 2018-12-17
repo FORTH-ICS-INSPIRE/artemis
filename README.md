@@ -199,9 +199,17 @@ ADMIN_USER=admin
 ADMIN_PASS=admin123
 ADMIN_EMAIL=admin@admin
 ```
-and modifying the secret key for your own deployment:
+and modifying the secrets for your own deployment:
 ```
 JWT_SECRET_KEY
+FLASK_SECRET_KEY
+SECURITY_PASSWORD_SALT
+HASURA_SECRET_KEY
+```
+Except the `HASURA_SECRET_KEY` which is a password used to login to the console. The other
+keys needs to be random generated with the following command:
+```
+openssl rand -base64 32
 ```
 The ARTEMIS web application supports https to ensure secure access to the application.
 We use a nginx reverse proxy to terminate SSL connections before forwarding the requests

@@ -5,6 +5,10 @@ from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ
 
 
 log = get_logger()
+update_to_type = {
+    'announcements': 'A',
+    'withdrawls': 'W'
+}
 
 
 def normalize_ripe_ris(msg):
@@ -23,6 +27,12 @@ def normalize_ripe_ris(msg):
             msg['path'] = []
         if 'timestamp' in msg:
             msg['timestamp'] = float(msg['timestamp'])
+        if 'type' in msg:
+            del msg['type']
+        if 'source' in msg:
+            source = msg['source']
+            if source in update_to_type:
+                msg['type'] = update_to_type[source]
 
 
 def parse_ripe_ris(connection, prefix, host):
@@ -58,6 +68,7 @@ def parse_ripe_ris(connection, prefix, host):
         socket_io.emit('ris_subscribe',
                        {
                            'host': host,
+                           'type': 'UPDATE',
                            'prefix': prefix,
                            'moreSpecific': True,
                            'lessSpecific': False,

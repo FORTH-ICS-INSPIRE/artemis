@@ -6,7 +6,6 @@ netaddr==0.7.19
 pamqp==1.6.1
 pid==2.2.0
 py-radix==0.10.0
-pymemcache==1.4.4
 pytz==2018.5
 PyYAML==3.13
 ruamel.yaml==0.15.47

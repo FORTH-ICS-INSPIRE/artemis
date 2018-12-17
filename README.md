@@ -179,7 +179,6 @@ currently the following (it is optional to use them):
 * exabgp: local exaBGP monitor
 * grafana: alternative UI (currently not in use)
 * migrate: for migration of already existing DBs in production deployments
-* pgadmin: UI for database management
 * syslog: additional syslog container for collecting ARTEMIS logs
 * test: test container (under development)
 

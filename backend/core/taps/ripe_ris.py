@@ -7,7 +7,7 @@ from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ
 log = get_logger()
 update_to_type = {
     'announcements': 'A',
-    'withdrawls': 'W'
+    'withdrawals': 'W'
 }
 
 

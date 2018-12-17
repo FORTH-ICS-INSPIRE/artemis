@@ -91,7 +91,7 @@ services:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     postgres:
-        image: timescale/timescaledb:latest-pg10
+        image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
         restart: always
         networks:

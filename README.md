@@ -56,35 +56,6 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 
 ![Architecture](docs/images/artemis_system_overview.png)
 
-The philosophy behind the ARTEMIS architecture is the use of a message bus (MBUS) in its core,
-used for routing messages (RPC, pub/sub, etc.) between different processes/services
-and containers, using the kombu framework (https://github.com/celery/kombu) to interface
-between rabbitmq and the message senders/receivers (e.g., consumers). The controller/supervisor
-service is responsible for checking the status of the other backend services.
-In a nutshell, there are 6 basic modules:
-* Configuration
-* Monitoring
-* Detection
-* Mitigation
-* DB access/management
-* Clock
-* Observer
-* User interface
-
-The operator (i.e., the “user”) interfaces with the system by filling in a configuration file
-and by interacting with the web application (UI) to control the various modules and
-see useful information related to monitoring entries and detected hijacks (including their
-current status). Configuration is imported in all modules since it is used for monitor
-filtering, detection tuning, mitigation configuration and other functions. The feed from
-the monitoring module (which can stem from multiple BGP monitoring sources around the world,
-including local monitors) is validated and transmitted to the detection and db access modules.
-The detection module reasons about whether what it sees is a hijack or not; if it is, it
-generates a hijack entry which is in turn stored in the DB, together with the corresponding
-monitoring entries. Finally, using a web application, the operator can instruct the mitigation
-module to mitigate a hijack or mark it as resolved/ignored. All information is persistently
-stored in the DB, which is accessed by the web application (user interface).
-Clock and observer modules are auxiliary, and take care of periodic clock signaling and configuration
-change notifications, respectively. For brevity we do not elaborate more on further auxiliary modules.
 
 ## Getting Started
 

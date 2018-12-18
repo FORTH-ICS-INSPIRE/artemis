@@ -42,6 +42,8 @@
 | pyopenssl | [Apache 2.0](https://github.com/pyca/pyopenssl/blob/master/LICENSE) | [GitHub](https://github.com/pyca/pyopenssl) |
 | sqlite-dev, sqlite | [Custom-Permissive](https://www.sqlite.org/copyright.html) | [HomePage](https://www.sqlite.org/index.html) |
 | gunicorn | [MIT](https://github.com/benoitc/gunicorn/blob/master/LICENSE) | [GitHub](https://github.com/benoitc/gunicorn) |
+| viz.js | [MIT](https://github.com/mdaines/viz.js/blob/master/LICENSE) | [GitHub](https://github.com/mdaines/viz.js/) |
+| d3-graphviz | [BSD-3](https://github.com/magjac/d3-graphviz/blob/master/LICENSE) | [GitHub](https://github.com/magjac/d3-graphviz) |
 
 ## BACKEND
 

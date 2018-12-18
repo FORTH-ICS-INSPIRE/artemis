@@ -7,10 +7,7 @@ from webapp.templates.forms import ApproveUserForm, MakeAdminForm, DeleteUserFor
 from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack, Comment_hijack, Seen_hijack, Hijacks_multiple_action
 from webapp.core.modules import Modules_state
 from webapp.core import app
-import logging
 import json
-
-log = logging.getLogger('webapp_logger')
 
 actions = Blueprint('actions', __name__, template_folder='templates')
 
@@ -23,7 +20,7 @@ def resolve_hijack():
     prefix = request.values.get('prefix')
     type_ = request.values.get('type_')
     hijack_as = int(request.values.get('hijack_as'))
-    log.debug('url: /hijacks/resolve/{}'.format(hijack_key))
+    app.artemis_logger.debug('url: /hijacks/resolve/{}'.format(hijack_key))
     resolve_hijack_ = Resolve_hijack(hijack_key, prefix, type_, hijack_as)
     resolve_hijack_.resolve()
     return jsonify({'status': 'success'})
@@ -40,7 +37,7 @@ def mitigate_hijack():
         _mitigate_hijack = Mitigate_hijack(hijack_key, prefix)
         _mitigate_hijack.mitigate()
     except BaseException:
-        log.debug('mitigate_hijack failed')
+        app.artemis_logger.debug('mitigate_hijack failed')
 
     return jsonify({'status': 'success'})
 
@@ -59,7 +56,7 @@ def ignore_hijack():
         _ignore_hijack.ignore()
 
     except BaseException:
-        log.debug('ignore_hijack failed')
+        app.artemis_logger.debug('ignore_hijack failed')
 
     return jsonify({'status': 'success'})
 
@@ -70,7 +67,7 @@ def submit_new_comment():
     # log info
     new_comment = request.values.get('new_comment')
     hijack_key = request.values.get('hijack_key')
-    log.debug(
+    app.artemis_logger.debug(
         'hijack_key: {0} new_comment: {1}'.format(
             hijack_key,
             new_comment))
@@ -91,7 +88,7 @@ def submit_new_comment():
 def approve_user():
     # log info
     form = ApproveUserForm(request.form)
-    log.debug('approve_user {}'.format(form))
+    app.artemis_logger.debug('approve_user {}'.format(form))
 
     if form.user_to_approve.data is not None:
         user = app.security.datastore.find_user(id=form.user_to_approve.data)
@@ -112,7 +109,7 @@ def approve_user():
 def create_admin():
     # log info
     form = MakeAdminForm(request.form)
-    log.debug('create_admin {}'.format(form))
+    app.artemis_logger.debug('create_admin {}'.format(form))
 
     if form.user_to_make_admin.data is not None:
         user = app.security.datastore.find_user(
@@ -134,7 +131,7 @@ def create_admin():
 def delete_user():
     # log info
     form = DeleteUserForm(request.form)
-    log.debug('delete user {}'.format(form))
+    app.artemis_logger.debug('delete user {}'.format(form))
 
     if form.user_to_delete.data is not None:
         db.session.query(User).filter(
@@ -155,13 +152,13 @@ def set_new_password():
 
     if form.validate_on_submit():
         if form.old_password.data is not None:
-            log.debug(
+            app.artemis_logger.debug(
                 'verify: {}'.format(
                     verify_password(
                         form.old_password.data,
                         old_password)))
             if verify_password(form.old_password.data, old_password):
-                log.debug('password_match')
+                app.artemis_logger.debug('password_match')
                 user = User.query.filter_by(username=user.username).first()
                 user.password = hash_password(form.password.data)
                 db.session.commit()

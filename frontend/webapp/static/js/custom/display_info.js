@@ -1,13 +1,13 @@
 
 
 var mapHelpText_stats = {};
-mapHelpText_stats['field_clock'] = 'ARTEMIS module serving as the clock signal generator for periodic tasks done in other modules (e.g., postgresql_db).';
+mapHelpText_stats['field_clock'] = 'ARTEMIS module serving as the clock signal generator for periodic tasks done in other modules (e.g., database).';
 mapHelpText_stats['field_configuration'] = 'ARTEMIS module responsible for the configuration of the other ARTEMIS modules.';
 mapHelpText_stats['field_detection'] = 'ARTEMIS module responsible for the detection of hijack events (current support for exact-prefix Type-0/1, any type of sub-prefix hijacks, and squatting attacks).';
 mapHelpText_stats['field_mitigation'] = 'ARTEMIS module responsible for the manual or automated mitigation of hijack events (current support for manual mitigation or via the invocation of a custom operator-supplied script).';
 mapHelpText_stats['field_monitor'] = 'ARTEMIS module responsible for real-time monitoring of BGP updates appearing on the visible control plane of public and local BGP monitors (current support for RIPE RIS, BGPStream RouteViews, RIPE RIS and beta BMP, local exaBGP monitors, historical trace replay).';
 mapHelpText_stats['field_observer'] = 'ARTEMIS module responsible for observing async changes in the configuration file, triggering the reloading of ARTEMIS modules.';
-mapHelpText_stats['field_postgresql_db'] = 'ARTEMIS module responsible for providing access to the Postgres DB used in the core of ARTEMIS for persistent storage of configuration, BGP update and BGP prefix hijack event data.';
+mapHelpText_stats['field_database'] = 'ARTEMIS module responsible for providing access to the Postgres DB used in the core of ARTEMIS for persistent storage of configuration, BGP update and BGP prefix hijack event data.';
 
 mapHelpText_stats['field_stats_Total_BGP_Updates'] = 'The total number of BGP updates seen on the monitors.';
 mapHelpText_stats['field_stats_Total_Unhandled_Updates'] = 'The total number of BGP updates not processed by the detection (either because they are in the queue, or because the detection was not running when they were fed to the monitors).';
@@ -128,5 +128,22 @@ function displayHelpMoreBGPupdate(){
         $(this).attr('data-html', "true");
         $(this).attr('data-placement', "top");
         $(this).tooltip()
+    });
+}
+
+function service_to_name(){
+	$("service").mouseover(function() {
+		console.log($(this).text().split('-> ')[2]);
+		var value = '<p class="tooltip-custom-margin">test</p>'
+        $(this).prop('title', value);
+        $(this).attr('data-toggle', "tooltip");
+        $(this).attr('data-html', "true");
+        $(this).attr('data-placement', "top");
+        $(this).tooltip()
+	});
+
+    $("cc_as").mouseout(function() {
+        $(this).attr('mouse_hovered', 'false');
+        $(this).tooltip('hide');
     });
 }

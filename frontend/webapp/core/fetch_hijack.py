@@ -1,6 +1,6 @@
-import logging
 import requests
 from webapp.utils import API_URL_FLASK
+import logging
 
 log = logging.getLogger('webapp_logger')
 

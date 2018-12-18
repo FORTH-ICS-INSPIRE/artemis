@@ -422,7 +422,7 @@ You can also control ARTEMIS (if required) via a CLI, by executing the following
 docker-compose exec backend bash
 supervisorctl
 ```
-Note that module = configuration|clock|postgresql_db|monitor|detection|observer|mitigation,
+Note that module = configuration|clock|database|monitor|detection|observer|mitigation,
 and action=start|stop|status.
 
 Also note that the web application (frontend) and the backend operate in their own separate containers; 

@@ -5,10 +5,7 @@ from webapp.templates.forms import ApproveUserForm, MakeAdminForm, DeleteUserFor
 from webapp.core import app
 from webapp.core.actions import Submit_new_config
 from webapp.core.fetch_config import fetch_all_config_timestamps
-import logging
 import json
-
-log = logging.getLogger('webapp_logger')
 
 admin = Blueprint('admin', __name__, template_folder='templates')
 
@@ -44,7 +41,7 @@ def handle_new_config():
             return jsonify(
                 {'status': 'fail', 'response': response})
     except Exception as e:
-        log.exception("")
+        app.artemis_logger.exception("")
         return jsonify(
             {'status': 'fail', 'response': str(e)})
 

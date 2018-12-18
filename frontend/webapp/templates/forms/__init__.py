@@ -3,10 +3,10 @@ from wtforms import BooleanField, StringField, SubmitField, \
     PasswordField, validators, TextField, SelectField, validators
 from wtforms.fields.html5 import EmailField
 from flask_security.forms import RegisterForm, LoginForm, Required
+from webapp.data.models import db, User
 import logging
 
 log = logging.getLogger('webapp_logger')
-
 
 class CheckboxMonitorForm(FlaskForm):
     monitor_switch = BooleanField('Monitor', default=False)
@@ -28,6 +28,19 @@ class ExtendedRegisterForm(RegisterForm):
                 message='email is required '), validators.Email(
                 message='invalid email address')])
 
+    def validate(self):
+        if db.session.query(User).filter(User.username == self.username.data.strip()).first():
+            self.username.errors += ("Username already registered",)
+            return False
+
+        if db.session.query(User).filter(User.email == self.email.data.strip()).first():
+            self.email.errors += ("Email already registered",)
+            return False
+
+        if not super(ExtendedRegisterForm, self).validate():
+            return False
+
+        return True
 
 class ExtendedLoginForm(LoginForm):
     email = StringField('Username or Email Address', [Required()])
@@ -63,3 +76,4 @@ class ChangePasswordForm(FlaskForm):
     ])
     confirm = PasswordField('Repeat Password')
     submit = SubmitField('Change Password')
+    

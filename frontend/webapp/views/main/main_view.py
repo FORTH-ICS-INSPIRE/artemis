@@ -3,10 +3,7 @@ from flask_security.decorators import login_required, roles_accepted
 from flask import Blueprint, render_template, request
 from webapp.core.modules import Modules_state
 from webapp.core.fetch_hijack import get_hijack_by_key
-import logging
 import json
-
-log = logging.getLogger('webapp_logger')
 
 main = Blueprint('main', __name__, template_folder='templates')
 
@@ -57,7 +54,7 @@ def display_hijack():
 
     # Case hijack id not found
     if hijack_data is None:
-        log.debug('Hijack with id found: {}'.format(_key))
+        app.artemis_logger.debug('Hijack with id found: {}'.format(_key))
         return render_template('404.htm')
 
     if 'configured_prefix' in hijack_data:

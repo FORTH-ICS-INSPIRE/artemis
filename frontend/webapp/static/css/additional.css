@@ -11,6 +11,7 @@ html {
     padding-left: 15px;
     margin-right: auto;
     margin-left: auto;
+    margin-top: 16px;
 }
 
 body {
@@ -40,8 +41,7 @@ body {
   bottom: 0;
   width: 100%;
   /* Set the fixed height of the footer here */
-  height: 60px;
-  line-height: 60px; /* Vertically center the text there */
+  line-height: 46px;
   background-color: #f2f2f2;
   border-top: 1px solid #e4e4e4;
 }

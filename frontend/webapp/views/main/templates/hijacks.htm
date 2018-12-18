@@ -32,33 +32,16 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="row">
-                    {% if prefixes %}
                     <div class="col-lg-1">
-                        <p>Select prefix: </p>
-                    </div>
-                    <div class="col-lg-2">
-                        <div class="form-group">
-                            <select class="form-control" id="prefixes_selection">
-                                <option>All</option>
-                                {% for prefix in prefixes %}
-                                    <option>{{ prefix }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-lg-1 offset-lg-5">
-                    {% else %}
-                    <div class="col-lg-1 offset-lg-8">
-                    {% endif %}
                         <p id="display_entries_time"> <b helpText="field_time_window_custom"> Timewindow: </b></p>
                     </div>
                     <div class="col-lg-3">
                         <div id="timewindow_buttons">
-                            <button type="button" id="select_timewindow_all" class="btn btn-outline-primary">All</button>
-                            <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary">1h</button>
-                            <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary">24h</button>
-                            <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary">48h</button>
-                            <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary">Custom</button>
+                            <button type="button" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
+                            <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">1h</button>
+                            <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">24h</button>
+                            <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">48h</button>
+                            <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
                         </div>
                         <div id="custom_time" style="display: none;">
                             <div class="row">
@@ -74,39 +57,6 @@
                     </div>
                 </div>
             </div>
-            {% if current_user.has_roles('admin') %}
-            <div class="col-lg-12">
-                <div class="row">
-                    <div class="col-lg-2 offset-lg-6">
-                        <div class="btn-group-toggle" data-toggle="buttons">
-                          <label class="btn btn-secondary active">
-                            <input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>
-                          </label>
-                        </div>
-                    </div>
-                    <div class="col-lg-2">
-                        <div class="form-group">
-                            <select class="form-control" id="action_selection">
-                                <option value="mark_resolved">Mark as Resolved</option>
-                                <option value="mark_ignored">Mark as Ignored</option>
-                                <option value="mark_seen">Mark as Seen</option>
-                                <option value="mark_not_seen">Mark as Not Seen</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-lg-1">
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <button id="apply_selected" type="button" disabled class="btn btn-primary">Apply</button>
-                            </div>
-                            <div class="col-lg-6">
-                                <button id="clear_all_selected" type="button" disabled class="btn btn-danger">Clear</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
         <div class="col-lg-12">
             <table class="table table-striped table-bordered" id="hijacks">
@@ -154,6 +104,42 @@
                 <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
             </div>
         </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Additional information
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-lg-3">
+                                                View distinct values
+                                            </div>
+                                            <div class="col-lg-4">
+                                                <select class="form-control" id="distinct_values_selection">
+                                                    <option value="select">Select</option>
+                                                    <option value="prefix">Prefix</option>
+                                                    <option value="hijack_as">Hijack AS</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-1">
+                                <div class="col-lg-10 offset-lg-1">
+                                    <div class="card card-body card-body-hide" id="distinct_values_text"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     
 {% endblock %}
 
@@ -184,6 +170,7 @@
                     'offset': 0,
                     'limit': 0
                 };
+            var downloadTable_parameters = null;
             var selected_status = null;
             // Columns that can be sorted
             var columns = [
@@ -235,8 +222,8 @@
             function display_time_selection(custom_time_data){
                 for(item in custom_time_data){
                     $(custom_time_data[item]["id"]).on('click', function(event) {
-                        $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
-                        $(this).attr('class', 'btn btn-outline-primary');
+                        $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary btn-sm'); });
+                        $(this).attr('class', 'btn btn-outline-primary btn-sm');
                         if(event.target.id == 'select_timewindow_all'){
                             filter_parameters['time'] = null;
                         }else if(event.target.id == 'select_timewindow_other'){
@@ -267,19 +254,6 @@
                     });
                 }
             }
-
-            {% if prefixes %}
-                $("#prefixes_selection").change(function () {
-                    var option = this.value;
-                    if(option == "All"){
-                        filter_parameters['prefixes_selection'] = null;
-                    }else{
-                        filter_parameters['prefixes_selection'] = option;
-                    }
-                    construct_filter_hijacks_query();
-                    table.draw();
-                });
-            {% endif %}
 
             function filter_by_status(status){
                 // no status selected
@@ -393,6 +367,7 @@
 
             function construct_filter_hijacks_query(){
                 var filters = [];
+                var download_filters = [];
                 inspect_input_of_search_boxes();
 
                 {% if hijack_keys %}
@@ -407,34 +382,46 @@
                 if(filter_parameters['time'] != null){
                     filters.push('{ time_detected: {_gte: "' + filter_parameters['time']['start_time'] + '"} }');
                     filters.push('{ time_detected: {_lte: "' + filter_parameters['time']['end_time'] + '"} }');
+                    download_filters.push('time_detected.gte.' + filter_parameters['time']['start_time'] + ',time_detected.lte.' + filter_parameters['time']['end_time']);
                 }
 
                 if(filter_parameters['prefixes_selection'] != null){
                     filters.push('{ configured_prefix: {_eq: "' + filter_parameters['prefixes_selection'] + '"} }');
+                    download_filters.push('matched_prefix.eq.' + filter_parameters['prefixes_selection']);
                 }
 
                 if(filter_parameters['prefix'] != null){
                     filters.push('{ prefix: {_eq: "' + filter_parameters['prefix'] + '"} }');
+                    download_filters.push('prefix.eq.' + filter_parameters['prefix']);
                 }
 
                 if(filter_parameters['hijack_as'] != null){
                     filters.push('{ hijack_as: {_eq: "' + filter_parameters['hijack_as'] + '"} }');
+                    download_filters.push('hijack_as.eq.' + filter_parameters['hijack_as']);
                 }
 
                 if(filter_parameters['type'] != null){
                     filters.push('{ type: {_eq: "' + filter_parameters['type'] + '"} }');
+                    download_filters.push('type.eq.' + filter_parameters['type']);
                 }
 
                 if(filter_parameters['status'] != null){
                     filters.push('{' + filter_parameters['status'] + ': {_eq: true } }');
+                    download_filters.push(filter_parameters['status'] + ".eq.true");
                 }
 
 
                 if(filters.length > 0){
+                    $("#distinct_values_selection").val('select');
+                    $('#distinct_values_text').val("");
+                    $('#distinct_values_text').hide();
                     datatable_parameters['and'] = 'where: { _and: [' + filters.join() + '] }';
+                    downloadTable_parameters = '(' + download_filters.join() + ')';
                 }else{
                     datatable_parameters['and'] = null;
+                    downloadTable_parameters = null;
                 }
+                downloadTable_update_link();
             }
 
 
@@ -487,6 +474,75 @@
                                 }
                             });
                         });
+                        var tool_elems = $("#hijacks_wrapper").children('div').eq(0).children('div');
+                        
+                        var prefixes_select = "  |  <label>Select prefix</label>  ";
+                        prefixes_select += '<select class="form-control form-control-sm custom-select custom-select-sm" id="prefixes_selection">';
+                        prefixes_select += '<option>All</option>';       
+                        {% for prefix in prefixes %}
+                            prefixes_select += '<option>{{ prefix }}</option>';
+                        {% endfor %}
+                        prefixes_select += '</select>';
+
+                        $(tool_elems).eq(0).children('div').append(prefixes_select);
+
+                        $("#prefixes_selection").change(function () {
+                            var option = this.value;
+                            if(option == "All"){
+                                filter_parameters['prefixes_selection'] = null;
+                            }else{
+                                filter_parameters['prefixes_selection'] = option;
+                            }
+                            construct_filter_hijacks_query();
+                            table.draw();
+                        });
+
+                        {% if current_user.has_roles('admin') %}
+                        var display_multiple_actions = '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
+                        display_multiple_actions += '<input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>';
+                        display_multiple_actions += '</label></span>  <select class="form-control form-control-sm-auto" id="action_selection">';
+                        display_multiple_actions += '<option value="mark_resolved">Mark as Resolved</option>';
+                        display_multiple_actions += '<option value="mark_ignored">Mark as Ignored</option>';
+                        display_multiple_actions += '<option value="mark_seen">Mark as Seen</option>';
+                        display_multiple_actions += '<option value="mark_not_seen">Mark as Not Seen</option></select>';
+                        display_multiple_actions += '  <button id="apply_selected" type="button" disabled class="btn btn-primary btn-sm">Apply</button>';
+                        display_multiple_actions += '  <button id="clear_all_selected" type="button" disabled class="btn btn-danger btn-sm">Clear</button>';
+
+                        $(tool_elems).eq(1).html( display_multiple_actions + '<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
+
+                        $('#apply_selected').click(function() {
+                            $.ajax({
+                                type: 'POST',
+                                url: "{{ url_for('actions.submit_hijacks_actions') }}",
+                                data: {
+                                    "hijack_keys" : JSON.stringify(selected_hijacks),
+                                    "action": $("#action_selection option:selected").val()
+                                },
+                                success: function(result){
+                                    table.draw(false);
+                                },
+                                dataType: 'json'
+                            });
+                            selected_hijacks = [];
+                            $('#selected_hijacks_num').html(selected_hijacks.length);
+                            table.draw(false);
+                            $('#clear_all_selected').prop('disabled', true);
+                            $('#apply_selected').prop('disabled', true);
+
+                        } );
+
+                        $('#clear_all_selected').click(function() {
+                            selected_hijacks = [];
+                            $('#selected_hijacks_num').html(selected_hijacks.length);
+                            table.draw(false);
+                            $('#clear_all_selected').prop('disabled', true);
+                            $('#apply_selected').prop('disabled', true);
+                        } );
+
+                        {% else %}
+                            $(tool_elems).eq(1).html('<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
+                        {% endif %}
+                        downloadTable_update_link();
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
@@ -588,41 +644,13 @@
                 );
                 {% if current_user.has_roles('admin') %}
 
-                $('#clear_all_selected').click(function() {
-                    selected_hijacks = [];
-                    $('#selected_hijacks_num').html(selected_hijacks.length);
-                    table.draw(false);
-                    $('#clear_all_selected').prop('disabled', true);
-                    $('#apply_selected').prop('disabled', true);
-                } );
+                
                 {% endif %}
 
                 $('#timezone').html(display_timezone());
                 displayHelpHijackStatus();
                 displayHelpTextB();
             });
-            {% if current_user.has_roles('admin') %}
-            $('#apply_selected').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: "{{ url_for('actions.submit_hijacks_actions') }}",
-                    data: {
-                        "hijack_keys" : JSON.stringify(selected_hijacks),
-                        "action": $("#action_selection option:selected").val()
-                    },
-                    success: function(result){
-                        table.draw(false);
-                    },
-                    dataType: 'json'
-                });
-                selected_hijacks = [];
-                $('#selected_hijacks_num').html(selected_hijacks.length);
-                table.draw(false);
-                $('#clear_all_selected').prop('disabled', true);
-                $('#apply_selected').prop('disabled', true);
-
-            } );
-            {% endif %}
 
             $("#live_update_button").on('change', function() {
                 if ($(this).is(':checked')) {
@@ -633,6 +661,32 @@
                     refresh_state_live = false;
                 }
             });
+
+            $("#distinct_values_selection").on('change', function() {
+                var distinct_on = $(this).val();
+
+                if(distinct_on == "select"){
+                    $('#distinct_values_text').hide();
+                    return;
+                }
+
+                var query = "{ view_data: view_hijacks(distinct_on: [" + distinct_on + "] ";
+                if(datatable_parameters['and'] != null){
+                    query += datatable_parameters['and'] +  ")";
+                }else{
+                    query += ")";
+                }
+                query += " { " + distinct_on + " } }";
+                fetchDistinctValues(distinct_on, query);
+            });
+
+            function downloadTable_update_link(){
+                var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
+                if(downloadTable_parameters != null){
+                    url += "&parameters=" + downloadTable_parameters;
+                }
+                $("#download_table_button").attr("href", url);
+            }
 
 
         </script>

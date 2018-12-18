@@ -179,11 +179,20 @@
 
             function render_module_state(data) {
                 data = data["view_processes"]
-                for (var key in data) {
-                    if(data[key]["running"]) {
-                        $("#"+data[key]["name"]+"_switch").prop("checked", true)
+                var agg_data = {};
+                for (var elem in data) {
+                    var group = data[elem]['name'].split('_')[0];
+                    if(group in agg_data){
+                        agg_data[group] = agg_data[group] && data[elem]["running"];
+                    }else{
+                        agg_data[group] = data[elem]["running"];
+                    }
+                }
+                for (var group in agg_data) {
+                    if(agg_data[group]) {
+                        $("#"+group+"_switch").prop("checked", true)
                     } else {
-                        $("#"+data[key]["name"]+"_switch").prop("checked", false)
+                        $("#"+group+"_switch").prop("checked", false)
                     }
                 }
             }
@@ -251,7 +260,7 @@
                     data = JSON.parse(event.data);
                     if(data.type === 'connection_ack') {
                         ws.removeEventListener('message', conn_ack);
-                        fetchBasicProcStatesLive(ws, render_module_state);
+                        fetchProcStatesLive(ws, render_module_state);
                         fetchConfigStatsLive(ws, render_configuration);
                     }
                 });

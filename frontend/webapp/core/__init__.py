@@ -1,5 +1,4 @@
 import os
-import logging
 from flask import Flask, g, render_template, request, current_app, jsonify, redirect, session
 from flask_security import current_user
 from flask_security.utils import hash_password
@@ -11,7 +10,7 @@ from webapp.utils.path import get_app_base_path
 from webapp.configs.config import configure_app
 from webapp.core.modules import Modules_state
 from flask_security import user_registered
-from webapp.core.proxy_api import get_proxy_api
+from webapp.core.proxy_api import proxy_api_post, proxy_api_downloadTable
 from datetime import timedelta
 from webapp.core.fetch_config import Configuration
 import time
@@ -28,8 +27,6 @@ with app.app_context():
     db.init_app(app)
     babel = Babel(app)
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)
     data_store = app.security.datastore
     jwt = JWTManager(app)
 
@@ -61,35 +58,35 @@ def setup():
     app.config['configuration'] = Configuration()
     while not app.config['configuration'].get_newest_config():
         time.sleep(1)
-        log.info('waiting for postgrest')
+        app.artemis_logger.info('waiting for postgrest')
 
     try:
         app.config['VERSION'] = os.getenv('SYSTEM_VERSION')
     except BaseException:
         app.config['VERSION'] = 'Fail'
-        log.debug('failed to get version')
+        app.artemis_logger.debug('failed to get version')
 
     modules = Modules_state()
 
     try:
-        log.debug('Starting Postgresql_db..')
-        modules.call('postgresql_db', 'start')
+        app.artemis_logger.debug('Starting Database..')
+        modules.call('database', 'start')
 
-        if not modules.is_up_or_running('postgresql_db'):
-            log.error('Couldn\'t start postgresql_db.')
+        if not modules.is_up_or_running('database'):
+            app.artemis_logger.error('Couldn\'t start Database.')
             exit(-1)
     except BaseException:
-        log.exception('exception while starting postgresql_db')
+        app.artemis_logger.exception('exception while starting Database')
         exit(-1)
 
     try:
-        log.debug('Request status of all modules..')
+        app.artemis_logger.debug('Request status of all modules..')
         app.config['status'] = modules.get_response_all()
     except BaseException:
-        log.exception('exception while retrieving status of modules..')
+        app.artemis_logger.exception('exception while retrieving status of modules..')
         exit(-1)
 
-    log.debug("setting database for the first time")
+    app.artemis_logger.debug("setting database for the first time")
     if not os.path.isfile(app.config['DB_FULL_PATH']):
         db.create_all()
 
@@ -120,28 +117,28 @@ def setup():
                 ctx.add_role_to_user(user, role)
                 ctx.commit()
             except BaseException:
-                log.exception("exception")
+                app.artemis_logger.exception("exception")
 
         create_user(data_store)
 
 
 @app.errorhandler(404)
 def page_not_found(error):
-    current_app.logger.error('Page not found: %s', (request.path, error))
-    log.debug('{}'.format(error))
+    current_app.artemis_logger.error('Page not found: %s', (request.path, error))
+    app.artemis_logger.debug('{}'.format(error))
     return render_template('404.htm')
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    current_app.logger.error('Server Error: %s', (error))
+    current_app.artemis_logger.error('Server Error: %s', (error))
     return render_template('500.htm')
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(error):
-    current_app.logger.error('Unhandled Exception: %s', (error))
-    log.error('Unhandled Exception', exc_info=True)
+    current_app.artemis_logger.error('Unhandled Exception: %s', (error))
+    app.artemis_logger.error('Unhandled Exception', exc_info=True)
     return render_template('500.htm')
 
 
@@ -226,7 +223,7 @@ def pending():
 @login_required
 @roles_accepted('admin', 'user')
 def overview():
-    log.debug("url: /")
+    app.artemis_logger.debug("url: /")
     app.config['configuration'].get_newest_config()
     newest_config = app.config['configuration'].get_raw_config()
     return render_template('index.htm',
@@ -239,12 +236,19 @@ def overview():
 def unauth_handler():
     return render_template('401.htm')
 
-
 @login_required
 @roles_accepted('admin', 'user')
-@app.route('/proxy_api', methods=['POST'])
+@app.route('/proxy_api', methods=['GET', 'POST'])
 def proxy_api():
-    log.debug("/proxy_api")
-    parameters = request.values.get('parameters')
-    action = request.values.get('action')
-    return jsonify(get_proxy_api(action, parameters))
+    if request.method == 'POST':
+        parameters = request.values.get('parameters')
+        action = request.values.get('action')
+        return jsonify(proxy_api_post(action, parameters))
+    else:
+        download_table = request.args.get('download_table')
+        parameters = request.args.get('parameters')
+        action = request.args.get('action')
+        if(download_table == 'true'):
+            return proxy_api_downloadTable(action, parameters)
+        else:
+            return jsonify(proxy_api_post(action, parameters))

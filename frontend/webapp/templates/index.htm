@@ -121,7 +121,6 @@
                 { data: 'hijack_as' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }];
-
             function render_db_stats(data) {
                 if($('#db_stats_list li').length == 0){
                     for (var key in data) {
@@ -140,10 +139,11 @@
 
             function render_modules_state(data) {
                 $('#modules_states li').not('li:first').remove();
+                data['view_processes'].sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
                 for (var key in data['view_processes']) {
                     var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-4" helpText="field_'
-                    html_ += data['view_processes'][key].name +'">'
-                    html_ += data['view_processes'][key].name + '</div><div class="col-lg-8">'
+                    html_ += data['view_processes'][key].name.split('_')[0] +'">'
+                    html_ += data['view_processes'][key].name.charAt(0).toUpperCase() + data['view_processes'][key].name.slice(1) + '</div><div class="col-lg-8">'
                     html_ += '<div class="row"><div class="col-lg-4">'
                     if(data['view_processes'][key].running){
                         html_ += '<b style="color:#008000">On</b></div>'

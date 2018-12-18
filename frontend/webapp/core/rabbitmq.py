@@ -3,9 +3,7 @@ from webapp.utils import RABBITMQ_HOST
 from webapp.utils.conf import Config
 import logging
 
-
 log = logging.getLogger('webapp_logger')
-
 
 class Configuration_request():
 
@@ -18,10 +16,10 @@ class Configuration_request():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.info('Configuration_request failed to connect to rabbitmq..')
+            app.log.info('Configuration_request failed to connect to rabbitmq..')
 
     def config_request_rpc(self):
-        log.info("Config request..")
+        app.log.info("Config request..")
         self.correlation_id = uuid()
         callback_queue = Queue(uuid(),
                                durable=False,
@@ -56,7 +54,7 @@ class Configuration_request():
                 self.connection.drain_events()
 
     def handle_config_request_reply(self, message):
-        log.info(' [x] Webapp - Received Configuration')
+        app.log.info(' [x] Webapp - Received Configuration')
         if self.correlation_id == message.properties['correlation_id']:
             self.conf = Config(message.payload)
 

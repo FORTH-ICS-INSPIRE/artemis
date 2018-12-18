@@ -56,7 +56,8 @@ class Configuration():
             for rule in self.config_yaml['rules']:
                 rule['prefixes'] = flatten(rule['prefixes'])
                 for prefix in rule['prefixes']:
-                    prefixes_list.append(prefix)
+                    if prefix not in prefixes_list:
+                        prefixes_list.append(prefix)
             return prefixes_list
 
     def get_raw_response(self):
@@ -73,6 +74,9 @@ class Configuration():
 
     def get_config_comment(self):
         return self.config_comment
+
+    def get_raw_json_config(self):
+        return self.raw_json_config
 
 def fetch_all_config_timestamps():
     try:

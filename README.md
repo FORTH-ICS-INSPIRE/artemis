@@ -137,6 +137,27 @@ currently the following (it is optional to use them):
 
 Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
 
+There, you will find information on the following topics (more to come):
+* The basic logic of ARTEMIS
+* Configuring the web application
+* Starting ARTEMIS
+* Configuring logging and accessing ARTEMIS logs
+* Using the web application
+* Registering users
+* Managing users (ADMIN-only)
+* User account actions (ADMIN-VIEWER)
+* Configuring and Controlling ARTEMIS through the web application (ADMIN-only)
+* Viewing ARTEMIS Configurations
+* Viewing ARTEMIS state
+* Viewing BGP updates
+* Viewing BGP hijacks
+* Actions on BGP hijacks (ADMIN-only)
+* CLI controls [optional]
+* Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
+* Configuring backups
+* Migrating an existing DB to a new version
+* Exiting ARTEMIS
+
 **Note: We highly recommend going through the wiki instructions before using ARTEMIS for the first time.**
 
 ## Contributing

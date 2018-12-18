@@ -1,7 +1,7 @@
 # Changelog
 
-## [UNRELEASED] - YYYY-MM-DD
-### Added
+## [1.0] - 2018-12-DD
+### Added (initial release)
 * Monitor module, providing real-time monitoring of the changes in the BGP routes of the network's prefixes.
 Support for the following route collectors and interfaces:
   * [RIPE RIS](http://stream-dev.ris.ripe.net/demo2) (real-time streaming)
@@ -38,6 +38,7 @@ with the following capabilities:
     * number of visible entries tuning
     * paginated viewing
     * basic information per update (timestamp, prefix, origin AS, AS-path, peer AS, route collector service, type, hijack, status)
+    * auxiliary information per route collector that has seen the BGP update(s) (mouse hover)
     * auxiliary information per update (original AS-path, communities, hijack key, matched prefix)
     * ASN, name, private or not, and countries of operation for origin and peer ASes, as well as ASes present on an AS-path (mouse hover)
     * sorting per update timestamp
@@ -89,11 +90,11 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 * JWT authentication in graphql
 * DB access optimized via indexes
 * Composition of multiple containers via docker-compose
-* Support for running multiple detector instances.
+* Support for running multiple detector instances
 * Optional support for Kubernetes setups (single physical machine)
 
 # SAMPLE
-## [RELEASE_VERSION] - YEAR-MONTH-DAY
+## [RELEASE_VERSION] - YYYY-MM-DD
 ### Added
 - TBD (Added a new feature)
 

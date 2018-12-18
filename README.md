@@ -5,9 +5,9 @@ Table of Contents
   * [Features](#features)
   * [Architecture](#architecture)
   * [Getting Started](#getting-started)
-  * [Min. technical requirements of testing server/VM](#min-technical-requirements-of-testing-servervm)
-  * [How to install](#how-to-install)
-  * [How to run](#how-to-run)
+  * [Minimum Technical Requirements](#minimum-technical-requirements)
+  * [How to Install](#how-to-install)
+  * [How to Run](#how-to-run)
   * [Contributing](#contributing)
   * [Development Team and Contact](#development-team-and-contact)
   * [Versioning](#versioning)
@@ -56,7 +56,6 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 
 ![Architecture](docs/images/artemis_system_overview.png)
 
-
 ## Getting Started
 
 ARTEMIS is built as a multi-container Docker application.
@@ -65,8 +64,9 @@ copy of the ARTEMIS tool up and running on your local machine
 for testing purposes. For instructions on how to set up ARTEMIS
 in e.g., a Kubernetes environment, please contact the [ARTEMIS team](#development-team-and-contact).
 
-## Min. technical requirements of testing server/VM
+## Minimum Technical Requirements
 
+* 1 testing server/VM
 * CPU: 4 cores
 * RAM: 4 GB
 * HDD: 100 GB (less may suffice, depending on the use case)
@@ -83,8 +83,9 @@ set the corresponding <> fields in the file before running:
 ```
 sudo ./other/ufw_setup.sh
 ```
+**NOTE: For security reasons, we highly recommend protecting your machine with such rules.**
 
-## How to install
+## How to Install
 
 Make sure that your Ubuntu package sources are up-to-date:
 ```
@@ -130,21 +131,20 @@ docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml bui
 after you have entered the root folder of the cloned ARTEMIS repo. Note that extra services are
 currently the following (it is optional to use them):
 * exabgp: local exaBGP monitor
-* grafana: alternative UI (currently not in use)
 * migrate: for migration of already existing DBs in production deployments
-* pgadmin: UI for database management
-* syslog: additional syslog container for collecting ARTEMIS logs
-* test: test container (under development)
 
-## How to configure and run
+## How to Configure and Run
 
 Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
+
+**Note: We highly recommend going through the wiki instructions before using ARTEMIS for the first time.**
 
 ## Contributing
 Please check [this file](CONTRIBUTING.md).
 
 ## Development Team and Contact
 We follow a custom Agile approach for our development.
+
 You can contact the ARTEMIS developers as follows:
 * Dimitrios Mavrommatis (backend): mavromat_at_ics_dot_forth_dot_gr
 * Petros Gigis (frontend): gkigkis_at_ics_dot_forth_dot_gr

@@ -76,4 +76,3 @@ class ChangePasswordForm(FlaskForm):
     ])
     confirm = PasswordField('Repeat Password')
     submit = SubmitField('Change Password')
-    

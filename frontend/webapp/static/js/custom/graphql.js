@@ -73,7 +73,6 @@ function fetchDatatableLive(ws, cb_func, query) {
         }
     }));
 
-    // Need to remove previous event listener...
     if(!datatableCalled) {
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
@@ -83,6 +82,7 @@ function fetchDatatableLive(ws, cb_func, query) {
                     recordsFiltered: data.payload.data.datatable.aggregate.totalCount,
                     data: format_datatable(data.payload.data.view_data)
                 });
+                $('.tooltip').tooltip('hide');
             }
         });
         datatableCalled = true;

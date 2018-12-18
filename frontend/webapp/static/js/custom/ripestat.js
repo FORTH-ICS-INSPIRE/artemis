@@ -98,5 +98,6 @@ function asn_map_to_name(){
     $("cc_as").mouseout(function() {
         $(this).attr('mouse_hovered', 'false');
         $(this).tooltip('hide');
+        $('.tooltip').tooltip('hide');
     });
 }

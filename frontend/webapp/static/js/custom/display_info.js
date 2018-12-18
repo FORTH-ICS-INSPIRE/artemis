@@ -131,18 +131,47 @@ function displayHelpMoreBGPupdate(){
     });
 }
 
+var services_map = null;
+
+function get_services_mapping(){
+    return fetch(static_urls['rrcs_location']
+        ).then(response => response.json()
+        ).then(data => services_map = data
+        ).catch(err => console.log(err));
+}
+
 function service_to_name(){
+	if(services_map == null){
+		get_services_mapping();
+	}
+
 	$("service").mouseover(function() {
-		console.log($(this).text().split('-> ')[2]);
-		var value = '<p class="tooltip-custom-margin">test</p>'
+		var text = $(this).text();
+		var collector_info = "Unknown";
+		if(text.includes('->')){
+			var list_ = text.split('-> ');
+			var collector_name = list_[list_.length - 1];
+			if(collector_name in services_map){
+				if(collector_name.includes('route-views')){
+					collector_info = "Name: " + collector_name + "</br>"
+					collector_info += "MFG: " + services_map[collector_name].MFG + "</br>"
+					collector_info += "BGP_proto: " + services_map[collector_name].BGP_proto + "</br>"
+					collector_info += "Location: " + services_map[collector_name].location + "</br>"
+				}else{
+					collector_info = "Name: " + collector_name + "</br>";
+					collector_info += "Information: " + services_map[collector_name].info;
+				}
+			}
+		}
+		var value = '<p class="tooltip-custom-margin">' + collector_info + '</p>';
         $(this).prop('title', value);
         $(this).attr('data-toggle', "tooltip");
         $(this).attr('data-html', "true");
         $(this).attr('data-placement', "top");
-        $(this).tooltip()
+        $(this).tooltip('show')
 	});
 
-    $("cc_as").mouseout(function() {
+    $("service").mouseout(function() {
         $(this).attr('mouse_hovered', 'false');
         $(this).tooltip('hide');
     });

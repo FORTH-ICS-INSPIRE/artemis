@@ -155,6 +155,7 @@
             var static_urls = {
                 "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
                 "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
+                "rrcs_location": "{{ url_for('static', filename='js/rrcs_info/collectors_info.json') }}"
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
             var datatable_parameters = {
@@ -660,7 +661,6 @@
                 }
                 $("#download_table_button").attr("href", url);
             }
-
 
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>

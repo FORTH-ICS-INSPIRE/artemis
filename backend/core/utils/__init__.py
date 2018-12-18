@@ -106,3 +106,13 @@ def redis_key(prefix, hijack_as, _type):
     assert(isinstance(hijack_as, int))
     assert(isinstance(_type, str))
     return hashlib.md5(pickle.dumps([prefix, hijack_as, _type])).hexdigest()
+
+
+def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
+    redis_pipeline = redis_instance.pipeline()
+    # purge also tokens since they are not relevant any more
+    redis_pipeline.delete('{}token_active'.format(ephemeral_key))
+    redis_pipeline.delete('{}token'.format(ephemeral_key))
+    redis_pipeline.delete(ephemeral_key)
+    redis_pipeline.srem('persistent-keys', persistent_key)
+    redis_pipeline.execute()

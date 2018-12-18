@@ -1,7 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT
+from utils import RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT, purge_redis_eph_pers_keys
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 from xmlrpc.client import ServerProxy
@@ -366,8 +366,8 @@ class Database():
         def handle_hijack_outdate(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             try:
-                key_ = (message.payload,)
-                self.outdate_hijacks.add(key_)
+                raw = message.payload
+                self.outdate_hijacks.add((raw['persistent_hijack_key'],))
             except Exception:
                 log.exception('{}'.format(message))
 
@@ -375,7 +375,50 @@ class Database():
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             msg_ = message.payload
             try:
-                key = msg_['key']
+                key = msg_['key']  # persistent hijack key
+
+                if not self.redis.sismember('persistent-keys', key):
+                    # fetch BGP updates with deprecated hijack keys and republish to detection
+                    rekey_update_keys = list(msg_['monitor_keys'])
+                    rekey_updates = []
+                    try:
+                        cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
+                            'type, communities, timestamp FROM bgp_updates ' \
+                            'WHERE bgp_updates.handled=false AND bgp_updates.key = %s'
+                        psycopg2.extras.execute_batch(
+                            self.db_cur,
+                            cmd_,
+                            rekey_update_keys)
+                        entries = self.db_cur.fetchall()
+                        for entry in entries:
+                            rekey_updates.append({
+                                'key': entry[0],  # key
+                                'prefix': entry[1],  # prefix
+                                'origin_as': entry[2],  # origin_as
+                                'peer_asn': entry[3],  # peer_asn
+                                'path': entry[4],  # as_path
+                                'service': entry[5],  # service
+                                'type': entry[6],  # type
+                                'communities': entry[7],  # communities
+                                'timestamp': entry[8].timestamp()
+                            })
+
+                        # delete monitor keys from redis so that they can be reprocessed
+                        for key in rekey_update_keys:
+                            self.redis.delete(key)
+
+                        # send to detection
+                        self.producer.publish(
+                            rekey_updates,
+                            exchange=self.update_exchange,
+                            routing_key='hijack-rekey',
+                            retry=False,
+                            priority=1
+                        )
+                    except Exception:
+                        log.exception('exception')
+                    return
+
                 if key not in self.tmp_hijacks_dict:
                     self.tmp_hijacks_dict[key] = {}
                     self.tmp_hijacks_dict[key]['prefix'] = msg_['prefix']
@@ -568,6 +611,7 @@ class Database():
                         entry[6],
                         entry[7])
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+                    redis_pipeline.sadd('persistent-keys', entry[4])
                 redis_pipeline.execute()
             except Exception:
                 log.exception('exception')
@@ -580,7 +624,9 @@ class Database():
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
-                self.redis.delete(redis_hijack_key)
+                # if ongoing, force rekeying and delete persistent too
+                if self.redis.sismember('persistent-keys', raw['key']):
+                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
@@ -609,7 +655,9 @@ class Database():
                     raw['prefix'],
                     raw['hijack_as'],
                     raw['type'])
-                self.redis.delete(redis_hijack_key)
+                # if ongoing, force rekeying and delete persistent too
+                if self.redis.sismember('persistent-keys', raw['key']):
+                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                     (raw['key'],
@@ -690,9 +738,9 @@ class Database():
             action_is_ignore = False
             try:
                 if(raw['action'] == 'mark_resolved'):
-                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND withdrawn=false AND'
+                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND'
                 elif(raw['action'] == 'mark_ignored'):
-                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND withdrawn=false AND'
+                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND'
                     action_is_ignore = True
                 elif(raw['action'] == 'mark_seen'):
                     action_ = 'seen=true'
@@ -739,12 +787,16 @@ class Database():
                                 'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         elif action_is_ignore:
-                            self.redis.delete(redis_hijack_key)
+                            # if ongoing, force rekeying and delete persistent too
+                            if self.redis.sismember('persistent-keys', hijack_key):
+                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
                             self.db_conn.commit()
                         else:
-                            self.redis.delete(redis_hijack_key)
+                            # if ongoing, force rekeying and delete persistent too
+                            if self.redis.sismember('persistent-keys', hijack_key):
+                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(
                                 'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
@@ -818,7 +870,7 @@ class Database():
                                     withdrawal[0],
                                     entry[3],
                                     entry[4])
-                                self.redis.delete(redis_hijack_key)
+                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, entry[2])
                                 self.db_cur.execute(
                                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',

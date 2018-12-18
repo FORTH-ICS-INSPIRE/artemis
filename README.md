@@ -16,6 +16,7 @@ Table of Contents
      * [Managing users (ADMIN-only)](#managing-users-admin-only)
      * [User account actions (ADMIN-VIEWER)](#user-account-actions-admin-viewer)
      * [Configuring and Controlling ARTEMIS through the web application (ADMIN-only)](#configuring-and-controlling-artemis-through-the-web-application-admin-only)
+     * [Viewing ARTEMIS Configurations](#viewing-artemis-configurations)
      * [Viewing ARTEMIS state](#viewing-artemis-state)
      * [Viewing BGP updates](#viewing-bgp-updates)
      * [Viewing BGP hijacks](#viewing-bgp-hijacks)
@@ -26,7 +27,7 @@ Table of Contents
      * [Migrating an existing DB to a new version](#migrating-an-existing-db-to-a-new-version)
      * [Exiting ARTEMIS](#exiting-artemis)
   * [Contributing](#contributing)
-  * [Development](#development)
+  * [Development Team and Contact](#development-team-and-contact)
   * [Versioning](#versioning)
   * [Authors and Contributors](#authors-and-contributors)
   * [License](#license)
@@ -44,12 +45,14 @@ desirable to network operators such as comprehensiveness, accuracy, speed,
 privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
 can be neutralized within a minute!
 
-You can read more about ARTEMIS (and check e.g., news and related publications)
+You can read more about ARTEMIS (and check e.g., news, presentations and related publications)
 on the INSPIRE Group ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
-ARTEMIS can be run on a testing server/VM as a modular
-multi-container application.
+ARTEMIS can be run on a testing server/VM as a modular (and extensible)
+multi-container application. Up to today it has been tested at a major 
+greek ISP, a dual-homed edge academic network (our home institutional network),
+and a major R&E US backbone network.
 
 ## Features
 
@@ -59,7 +62,7 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 * Real-time monitoring of the changes in the BGP routes of the network's prefixes.
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types:
 exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
-* Automatic/custom tagging of detected BGP hijack events.
+* Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn and outdated).
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
 * Comprehensive web interface.
 * Configuration file editable by the operator (directly or via the web interface),
@@ -67,16 +70,16 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 * Support for both IPv4 and IPv6 prefixes.
 * Modularity/extensibility by design.
 
-## Architecture
+## System Architecture
 
 ![Architecture](docs/images/artemis_system_overview.png)
 
-The philosophy behind the ARTEMIS architecture is the use of a message bus (MBUS) in the core,
+The philosophy behind the ARTEMIS architecture is the use of a message bus (MBUS) in its core,
 used for routing messages (RPC, pub/sub, etc.) between different processes/services
 and containers, using the kombu framework (https://github.com/celery/kombu) to interface
 between rabbitmq and the message senders/receivers (e.g., consumers). The controller/supervisor
 service is responsible for checking the status of the other backend services.
-In a nutshell, there are 6 basic modules:
+In a nutshell, there the following basic modules:
 * Configuration
 * Monitoring
 * Detection
@@ -99,7 +102,7 @@ monitoring entries. Finally, using a web application, the operator can instruct 
 module to mitigate a hijack or mark it as resolved/ignored. All information is persistently
 stored in the DB, which is accessed by the web application (user interface).
 Clock and observer modules are auxiliary, and take care of periodic clock signaling and configuration
-change notifications, respectively.
+change notifications, respectively. For brevity we do not elaborate more on further auxiliary modules.
 
 ## Getting Started
 
@@ -107,7 +110,7 @@ ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine
 for testing purposes. For instructions on how to set up ARTEMIS
-in e.g., a Kubernetes environment, please contact the ARTEMIS team.
+in e.g., a Kubernetes environment, please contact the [ARTEMIS team](#development-team-and-contact).
 
 ## Min. technical requirements of testing server/VM
 
@@ -116,7 +119,7 @@ in e.g., a Kubernetes environment, please contact the ARTEMIS team.
 * HDD: 100 GB (less may suffice, depending on the use case)
 * NETWORK: 1 public-facing network interface
 * OS: Ubuntu Linux 16.04+
-* SW PACKAGES: docker-ce and docker-compose should be pre-installed
+* SW PACKAGES: docker-ce and docker-compose should be pre-installed (see instructions later)
 and docker should have sudo privileges, if only non-sudo user is allowed
 * Other: SSH server
 
@@ -176,7 +179,6 @@ currently the following (it is optional to use them):
 * exabgp: local exaBGP monitor
 * grafana: alternative UI (currently not in use)
 * migrate: for migration of already existing DBs in production deployments
-* pgadmin: UI for database management
 * syslog: additional syslog container for collecting ARTEMIS logs
 * test: test container (under development)
 
@@ -329,11 +331,13 @@ rules:
 - ...
 # End of Rule Definitions
 ```
+Optionally the user can accompany the configuration with comments.
 
 ### Viewing ARTEMIS Configurations
 ```
-TBD
+https://<ARTEMIS_HOST>/admin/config_comparison
 ```
+Here the user (ADMIN|VIEWER) can view the ARTEMIS configuration history and diffs, as well as the (optional) comments attached to each configuration. Since configuration changes are atomic operations, the different configurations are keyed with their modification timestamp.
 
 ### Viewing ARTEMIS state
 After being successfully logged-in to ARTEMIS, you will be redirected to the following webpage:
@@ -513,8 +517,12 @@ docker-compose -f ... down
 ## Contributing
 Please check [this file](CONTRIBUTING.md).
 
-## Development
+## Development Team and Contact
 We follow a custom Agile approach for our development.
+You can contact the ARTEMIS developers as follows:
+* Dimitrios Mavrommatis (backend): mavromat_at_ics_dot_forth_dot_gr
+* Petros Gigis (frontend): gkigkis_at_ics_dot_forth_dot_gr
+* Vasileios Kotronis (coordinator): vkotronis_at_ics_dot_forth_dot_gr
 
 ## Versioning
 Please check [this file](CHANGELOG.md).
@@ -525,9 +533,12 @@ Please check [this file](AUTHORS.md).
 ## License
 The ARTEMIS software is open-sourced under the BSD-3 license.
 Please check the [license file](LICENSE).
-All external dependencies are used in a way compatible with BSD-3;
-the software packages and their respective licenses are documented
-in detail in [this file](DEPENDENCIES-LICENSES.md).
+
+Note that all external dependencies are used in a way compatible with BSD-3
+(that is, we obey the compatibility rules of each and every dependency);
+the associated software packages and their respective licenses are documented
+in detail in [this file](DEPENDENCIES-LICENSES.md), where we provide links
+to their homepages and licenses.
 
 ## Acknowledgements and Funding Sources
 Please check [this file](ACKS.md).

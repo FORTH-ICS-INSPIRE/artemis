@@ -70,3 +70,15 @@ def display_hijack():
                            configured=_configured,
                            js_version=app.config['JS_VERSION']
                            )
+
+@main.route('/visualizations/', methods=['GET'])
+@login_required
+@roles_accepted('admin', 'user')
+def display_visualizations():
+    app.config['configuration'].get_newest_config()
+    prefixes_list = app.config['configuration'].get_prefixes_list()
+    json_config = app.config['configuration'].get_raw_json_config()
+    return render_template('viz.htm',
+        prefixes=prefixes_list,
+        config=json_config,
+        js_version=app.config['JS_VERSION'])

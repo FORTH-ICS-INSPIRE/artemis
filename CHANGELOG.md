@@ -39,9 +39,11 @@ with the following capabilities:
     * paginated viewing
     * basic information per update (timestamp, prefix, origin AS, AS-path, peer AS, route collector service, type, hijack, status)
     * auxiliary information per update (original AS-path, communities, hijack key, matched prefix)
-    * ASN, name and countries of operation for origin and peer ASes, as well as ASes present on an AS-path (mouse hover)
+    * ASN, name, private or not, and countries of operation for origin and peer ASes, as well as ASes present on an AS-path (mouse hover)
     * sorting per update timestamp
     * searching updates using the prefix, origin AS, peer AS, service, and/or update type fields
+    * downloading the (filtered) bgp updates table in json format
+    * displaying the distinct values involved in the prefix, origin AS, peer AS, service and type fields
   * view in real-time the BGP prefix hijacking events related to the (configured) IP prefixes of interest,
 with the following capabilities:
     * per-prefix grouping
@@ -55,9 +57,11 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
     * buttons to mark an individual hijack as seen, resolve, mitigate or ignore it
     * comment box to associate a hijack with a certain comment
     * group actions to mark multiple hijacks as seen/not seen, ignored, or resolved
-    * ASN, name and countries of operation for hijack ASes (mouse hover)
+    * ASN, name, private or not, and countries of operation for hijack ASes (mouse hover)
     * sorting per time detected timestamp
     * searching hijacks using the prefix, hijack type, and/or hijack AS fields
+    * downloading the (filtered) hijacks table in json format
+    * displaying the distinct values involved in the prefix, type and hijack AS fields
   * view the status of a hijack: ongoing, ignored, resolved, under mitigation, withdrawn, outdated
   * automatic characterization of a hijack as withdrawn if all the monitor peers that saw a hijack update saw also a withdrawal
   * automatic characterization of a hijack as outdated if the configuration that triggered the hijack is outdated
@@ -66,6 +70,7 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
   * view additional login information
   * change password
   * manage users
+  * view visualization of per-prefix AS-level graphs (until the first hop neighbor), according to configuration
 * Support for both IPv4 and IPv6 prefixes
 * Support for handling AS-Sets, Confederations, AS sequences, path prepending, loops, etc. appearing during the monitoring + detection processes
 * Support for email/syslog/other notifications for new hijacks

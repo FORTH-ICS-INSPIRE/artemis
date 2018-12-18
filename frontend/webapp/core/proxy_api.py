@@ -13,7 +13,7 @@ def proxy_api_post(action, parameters):
     try:
         total_count = 0
         url_ = API_PATH + "/" + action + build_arguments(parameters)
-        app.log.debug("url: {}".format(url_))
+        log.debug("url: {}".format(url_))
         req = requests.get(url=url_, headers={"Prefer": "count=exact"})
         if 'Content-Range' in req.headers:
             total_count = int(req.headers['Content-Range'].split('/')[1])
@@ -22,14 +22,14 @@ def proxy_api_post(action, parameters):
         ret['total'] = total_count
         return ret
     except BaseException:
-        app.log.exception(
+        log.exception(
             "action: {0}, parameters: {1}".format(
                 action, parameters))
     return None
 
 
 def proxy_api_downloadTable(action, parameters):
-    app.log.debug("{0}{1}".format(parameters, action))
+    log.debug("{0}{1}".format(parameters, action))
     url_ = API_PATH + "/" + action
     if(parameters != None):
         url_ += "?and=" + parameters
@@ -45,7 +45,7 @@ def build_arguments(parameters):
     try:
         params_ = json.loads(parameters)
     except BaseException:
-        app.log.exception("couldn't json load: {}".format(parameters))
+        log.exception("couldn't json load: {}".format(parameters))
     for parameter in params_:
         url_ += parameter + "=" + str(params_[parameter]) + "&"
     return url_[:-1]

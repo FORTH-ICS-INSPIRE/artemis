@@ -500,7 +500,7 @@
                         datatable_parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
                         $.ajax({
                             type: "POST",
-                            url: '{{ url_for('proxy_api') }}',
+                            url: "{{ url_for('proxy_api') }}",
                             dataType: "json",
                             data: { "action": "view_bgpupdates", "parameters" : JSON.stringify(datatable_parameters) },
                             success: function(data, status, xhr){

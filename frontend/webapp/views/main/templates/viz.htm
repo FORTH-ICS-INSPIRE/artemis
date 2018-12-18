@@ -1,0 +1,257 @@
+{% extends "layout.htm" %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12 page-header">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1>Visualizations</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="row">
+                    <div class="col-lg-1">
+                        <p>Select prefix: </p>
+                    </div>
+                    <div class="col-lg-2">
+                        <div class="form-group">
+                            <select autocomplete="off" class="form-control" id="prefixes_selection">
+                                <option selected="selected">None</option>
+                                {% for prefix in prefixes %}
+                                    <option>{{ prefix }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <h3>Configured Prefix Graph: <font color="red">prefix (p)</font> -> <font color="green">origin (o)</font> -> <font color="blue">neighbor (n)</font></h3>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <h3></h3>
+            </div>
+        </div>
+
+        <div id="graph"></div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <h3>Other Visualization (TBD)</h3>
+            </div>
+        </div>
+
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="{{ url_for('static', filename='js/viz.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/d3-graphviz.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
+        <script>
+            var json_config = '{{ config|tojson }}';
+            var config_data = JSON.parse(json_config);
+            var cachedData = {};
+            var timeoutObj = null;
+
+            <!--synchronous name extraction from ripestat-->
+            function syncGetName(ASN){
+                var data_ = [];
+                $.ajax('https://stat.ripe.net/data/as-names/data.json?resource=AS' + Number(ASN), {
+                    async: false,
+                    success: function(data){
+                        data_ = (data.data.names[Number(ASN)]);
+                    }
+                });
+                return data_;
+            }
+
+            <!--synchronous country extraction from ripestat-->
+            function syncGetCountry(ASN){
+                var data_ = [];
+                $.ajax('https://stat.ripe.net/data/geoloc/data.json?resource=AS' + Number(ASN), {
+                    async: false,
+                    success: function(data){
+                        var countries = new Set();
+                        for(var country in data.data.locations){
+                            if(data.data.locations[country].country.includes('-')){
+                                countries.add(data.data.locations[country].country.split('-')[0]);
+                            }else{
+                                countries.add(data.data.locations[country].country);
+                            }
+                        }
+                        data_ = Array.from(countries).join(', ');
+                    }
+                });
+                return data_;
+            }
+
+            <!--format ASN information (name, countries, etc.)-->
+            function dataStr(ASN){
+                var data_str = "Information not available yet";
+                if (typeof cachedData[ASN] !== 'undefined' && cachedData[ASN] != null){
+                    data_str = `ASN: ${ASN} (ASN-DOT: ${cachedData[ASN][2]})`;
+                    data_str += `\nName: ${cachedData[ASN][0]}`;
+                    data_str += `\nCountries operating: ${cachedData[ASN][1]}`;
+                }
+                return data_str;
+            }
+
+            <!--extract per asn information from ripestat util functions-->
+            function get_asn_data(asn) {
+                var data_ = [];
+                var asn_int = parseInt(asn);
+                if (asn_int != NaN && asn_int > 0 && asn_int < 4199999999){
+                    data_[0] = syncGetName(asn_int);
+                    data_[1] = syncGetCountry(asn_int);
+                    data_[2] = parseInt(asn_int/65536) + '.' + asn_int%65536;
+                    cachedData[asn] = data_;
+                }
+            }
+
+            <!--draw per-prefix graph-->
+            function draw_prefix_graph(selected_prefix, config_data) {
+                var digraph = 'digraph {';
+                digraph += 'rankdir="LR";';
+                digraph += 'concentrate=true;';
+                digraph += 'center=true;';
+                digraph += 'node [style=filled, shape=box]';
+                var prefix_nodes = new Set();
+                var origin_nodes = new Set();
+                var neighbor_nodes = new Set();
+                var prefix_origin_edges = new Set();
+                var origin_neighbor_edges = new Set();
+                var node = null;
+                var edge = null;
+
+                <!--calculate nodes and edges-->
+                for (var rule_idx=0; rule_idx<config_data.rules.length; rule_idx++){
+                    var rule = config_data.rules[rule_idx];
+                    for (var prefix_idx=0; prefix_idx<rule.prefixes.length; prefix_idx++){
+                        var current_prefix = rule.prefixes[prefix_idx];
+                        if (current_prefix == selected_prefix){
+                            var current_prefix_str = '"' + current_prefix + ' (p)' + '"';
+                            prefix_nodes.add(current_prefix_str);
+                            for (var origin_idx=0; origin_idx<rule.origin_asns.length; origin_idx++){
+                                origin = '"' + rule.origin_asns[origin_idx] + ' (o)' + '"';
+                                origin_nodes.add(origin);
+                                edge = [current_prefix_str, origin]
+                                prefix_origin_edges.add(edge);
+                                asn_str = origin.replace('"','').replace('(o)','').replace(' ','').replace('"','');
+                                <!--get_asn_data(asn_str);-->
+                                if (typeof cachedData[asn_str] == 'undefined') {
+                                    cachedData[asn_str] = null;
+                                }
+                                for (var neighbor_idx=0; neighbor_idx<rule.neighbors.length; neighbor_idx++){
+                                    neighbor = '"' + rule.neighbors[neighbor_idx] + ' (n)' + '"';
+                                    neighbor_nodes.add(neighbor);
+                                    edge = [origin, neighbor];
+                                    origin_neighbor_edges.add(edge);
+                                    asn_str = neighbor.replace('"','').replace('(n)','').replace(' ','').replace('"','');
+                                    <!--get_asn_data(asn_str);-->
+                                    if (typeof cachedData[asn_str] == 'undefined') {
+                                        cachedData[asn_str] = null;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                <!--process prefix nodes-->
+                for (var prefix_node_values=prefix_nodes.values(), node=null; node=prefix_node_values.next().value;){
+                    digraph += node;
+                    digraph += ' [fillcolor=red];';
+                }
+
+                <!--process origin nodes-->
+                for (var origin_node_values=origin_nodes.values(), node=null; node=origin_node_values.next().value;){
+                    digraph += node;
+                    asn_str = node.replace('"','').replace('(o)','').replace(' ','').replace('"','');
+                    var data_str = dataStr(asn_str);
+                    digraph += ' [fillcolor=green, tooltip="' + data_str + '"];';
+                }
+
+                <!--process neighbor nodes-->
+                for (var neighbor_node_values=neighbor_nodes.values(), node=null; node=neighbor_node_values.next().value;){
+                    digraph += node;
+                    asn_str = node.replace('"','').replace('(n)','').replace(' ','').replace('"','');
+                    var data_str = dataStr(asn_str);
+                    digraph += ' [fontcolor=white, fillcolor=blue, tooltip="' + data_str + '"];';
+                }
+
+                <!--process prefix to origin edges-->
+                for (var po_edge_values=prefix_origin_edges.values(), edge=null; edge=po_edge_values.next().value;){
+                    digraph += edge[0];
+                    digraph += ' -> ';
+                    digraph += edge[1];
+                    digraph += ';';
+                }
+
+                <!--process origin to neighbor edges-->
+                for (var on_edge_values=origin_neighbor_edges.values(), edge=null; edge=on_edge_values.next().value;){
+                    digraph += edge[0];
+                    digraph += ' -> ';
+                    digraph += edge[1];
+                    digraph += ';';
+                }
+                digraph += '}';
+
+                <!--render digraph-->
+                d3.select("#graph").graphviz(engine='dot').dot(digraph).render();
+                asn_map_to_name();
+            }
+
+            <!--periodic call of graph rendering until all info is available-->
+            function periodic_graph_render(selected_prefix, config_data) {
+                var all_resolved = true;
+                for (asn in cachedData) {
+                    if (typeof cachedData[asn] == 'undefined' || cachedData[asn] == null){
+                        get_asn_data(asn);
+                        console.log(asn);
+                        console.log(cachedData[asn]);
+                        all_resolved = false;
+                        break;
+                    }
+                }
+                draw_prefix_graph(selected_prefix, config_data);
+                if (all_resolved == false) {
+                    timeoutObj = setTimeout(function() {periodic_graph_render(selected_prefix, config_data)}, 5000);
+                }
+            }
+
+            $("#prefixes_selection").change(function () {
+                if (timeoutObj != null){
+                    clearTimeout(timeoutObj);
+                }
+                var option = this.value;
+                var selected_prefix = null;
+                if(option != "None"){
+                    selected_prefix = option;
+                }
+                draw_prefix_graph(selected_prefix, config_data);
+                periodic_graph_render(selected_prefix, config_data);
+            });
+
+        </script>
+    {% endblock %}
+{% endblock %}

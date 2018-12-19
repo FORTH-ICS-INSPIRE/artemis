@@ -16,11 +16,11 @@ The authors of ARTEMIS are:
 ARTEMIS project members are:
 * Dimitrios Mavrommatis, FORTH-ICS (lead developer - backend)
 * Petros Gigis, FORTH-ICS (lead developer - frontend)
-* Vasileios Kotronis, FORTH-ICS (development coordinator, researcher)
+* Vasileios Kotronis, FORTH-ICS (development coordinator, researcher/engineer)
 * Xenofontas Dimitropoulos, FORTH-ICS and UoC (project PI, FORTH's side)
 * Pavlos Sermpezis, FORTH-ICS (researcher)
 * Alberto Dainotti, CAIDA UCSD (project PI, CAIDA's side)
-* Alistair King, CAIDA UCSD (advisor)
+* Alistair King, CAIDA UCSD (researcher/engineer)
 
 This file and the "Authors" section in file headers acknowledges contributors
-and does not imply legal ownership. Please see copyright notices in the [license](LICENSE.md) file.
+and does not imply legal ownership. Please see copyright notices in the [license file](LICENSE).

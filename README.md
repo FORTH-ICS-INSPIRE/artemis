@@ -51,6 +51,7 @@ exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
 * Configuration file editable by the operator (directly or via the web interface),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * Support for both IPv4 and IPv6 prefixes.
+* Support for both mobile and desktop environments (UI).
 * Modularity/extensibility by design.
 
 ## System Architecture
@@ -153,6 +154,7 @@ There, you will find information on the following topics (more to come):
 * Viewing BGP updates
 * Viewing BGP hijacks
 * Actions on BGP hijacks (ADMIN-only)
+* Invoking multiple detectors
 * CLI controls [optional]
 * Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
 * Configuring backups
@@ -211,5 +213,6 @@ Please check [this file](ACKS.md).
 *DISCLAIMER: We do not own these images. All links to the respective project pages
 from where the logos were downloaded are contained in [this file](DEPENDENCIES-LICENSES.md),
 together with the respective licenses. The sole purpose of this section is to thank the
-open-source projects that enabled ARTEMIS with their APIs by making them as visible as possible.
-The list of project logos is not exhaustive. Image copyrights are retained by the respective project(s).*
+open-source software projects that enabled ARTEMIS with their functionality and APIs,
+by making them as visible as possible.
+The list of project logos is not exhaustive. Image copyrights are retained by the respective project copyright owners.*

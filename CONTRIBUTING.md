@@ -33,6 +33,8 @@ tag.
 
 - Please include ARTEMIS logs, if relevant.
 
+- Please include appropriate issue labels, if relevant.
+
 ## Common guidelines
 
 - Please make sure there is an issue associated with the work that you're doing.
@@ -60,5 +62,6 @@ RIPE RIS BGP update publisher.
 ### Adding custom (containerized) modules
 
 - Usage of character '\_' on module name is prohibited.
+- For more information contact the ARTEMIS team (details in the [README](README.md).
 
-(Credits: Some of the content of this file is adapted from https://raw.githubusercontent.com/hasura/graphql-engine/master/CONTRIBUTING.md)
+(Credits: Some of the content of this file is adapted from [here](https://raw.githubusercontent.com/hasura/graphql-engine/master/CONTRIBUTING.md).)

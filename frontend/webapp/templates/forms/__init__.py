@@ -48,19 +48,23 @@ class ExtendedLoginForm(LoginForm):
 
 
 class ApproveUserForm(FlaskForm):
-    user_to_approve = SelectField(
+    select_field = SelectField(
         'Select pending user to approve:', [
             Required()], choices=[])
 
 
 class MakeAdminForm(FlaskForm):
-    user_to_make_admin = SelectField(
+    select_field = SelectField(
         'Select user to promote to admin:', [
             Required()], choices=[])
 
+class RemoveAdminForm(FlaskForm):
+    select_field = SelectField(
+        'Select user to demote from admin:', [
+            Required()], choices=[])
 
 class DeleteUserForm(FlaskForm):
-    user_to_delete = SelectField(
+    select_field = SelectField(
         'Select user to delete:', [
             Required()], choices=[])
 

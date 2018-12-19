@@ -1,5 +1,3 @@
-
-
 var mapHelpText_stats = {};
 mapHelpText_stats['field_clock'] = 'ARTEMIS module serving as the clock signal generator for periodic tasks done in other modules (e.g., database).';
 mapHelpText_stats['field_configuration'] = 'ARTEMIS module responsible for the configuration of the other ARTEMIS modules.';

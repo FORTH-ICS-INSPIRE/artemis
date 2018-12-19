@@ -1,8 +1,11 @@
 {% extends "layout_container.htm" %}
 
+{% block title %}
+    {{super()}} - Error 401: Unauthorized to access this page
+{% endblock %}
+
 {% block head %}
     {{super()}}
-  	<title>ARTEMIS - Error 401: Unauthorized to access this page</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 	<meta http-equiv="refresh" content="3;url={{ url_for('security.login') }}" />

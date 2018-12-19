@@ -27,7 +27,6 @@ function fetchDbStatsLive(ws, cb_func) {
     }));
 
     if(!dbstatsCalled) {
-        // Listen for messages
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
             if(data.type === 'data' && data.id === "1") {

@@ -3,6 +3,7 @@ from flask_security.decorators import login_required, roles_accepted
 from flask import Blueprint, render_template, request
 from webapp.core.modules import Modules_state
 from webapp.core.fetch_hijack import get_hijack_by_key
+from webapp.core.fetch_config import fetch_all_config_timestamps
 import json
 
 main = Blueprint('main', __name__, template_folder='templates')
@@ -43,7 +44,6 @@ def display_hijacks():
 @login_required
 @roles_accepted('admin', 'user')
 def display_hijack():
-    # log debug
     app.config['configuration'].get_newest_config()
     _key = request.args.get('key')
     mitigation_status_request = Modules_state()
@@ -52,7 +52,6 @@ def display_hijack():
     hijack_data = get_hijack_by_key(_key)
     _configured = False
 
-    # Case hijack id not found
     if hijack_data is None:
         app.artemis_logger.debug('Hijack with id found: {}'.format(_key))
         return render_template('404.htm')
@@ -82,3 +81,12 @@ def display_visualizations():
         prefixes=prefixes_list,
         config=json_config,
         js_version=app.config['JS_VERSION'])
+
+@main.route('/config_comparison', methods=['GET'])
+@roles_accepted('admin', 'user')
+def config_comparison():
+    # log info
+    _configs = fetch_all_config_timestamps()
+    return render_template('config_comparison.htm',
+                           configs=list(reversed(_configs)),
+                           js_version=app.config['JS_VERSION'])

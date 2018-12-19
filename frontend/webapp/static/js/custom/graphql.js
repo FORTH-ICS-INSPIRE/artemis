@@ -137,16 +137,29 @@ function fetchDistinctValues(type, query) {
         .then(response => response.json())
         .then(data => {
                 var list_of_values = [];
-                console.log(data);
-                for(var elem in data['data']['view_data']){
-                    list_of_values.push(data['data']['view_data'][elem][type]);
-                }
-
-                if(list_of_values[0] == "-1"){
-                    list_of_values.shift();
+                $('.tooltip').tooltip('hide');
+                if(type == 'origin_as' || type == 'peer_asn' || type == 'hijack_as'){
+                    for(var elem in data['data']['view_data']){
+                        list_of_values.push('<cc_as>' + data['data']['view_data'][elem][type] + '</cc_as>');
+                    }
+                    if(list_of_values[0] == "<cc_as>-1</cc_as>"){
+                        list_of_values.shift();
+                    }
+                    $('#distinct_values_text').html(list_of_values.join(', '));
+                    asn_map_to_name();
+                }else if(type == 'service'){
+                    for(var elem in data['data']['view_data']){
+                        list_of_values.push(format_service(data['data']['view_data'][elem][type]));
+                    }
+                    $('#distinct_values_text').html(list_of_values.join(', '));
+                    service_to_name();
+                }else{
+                    for(var elem in data['data']['view_data']){
+                        list_of_values.push(data['data']['view_data'][elem][type]);
+                    }
+                    $('#distinct_values_text').text(list_of_values.join(', '));
                 }
                 $('#distinct_values_text').show();
-                $('#distinct_values_text').text(list_of_values.join(', '));
             }
         )
         .catch(error => console.error(error));

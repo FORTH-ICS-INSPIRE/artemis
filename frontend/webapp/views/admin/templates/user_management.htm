@@ -8,6 +8,8 @@
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
 {% endblock %}
 
 {% block page_content %}
@@ -72,7 +74,7 @@
                                 {{ render_field(users_to_remove_admin_form.select_field, class_="form-control") }}
                             </div>
                             <div class="w-25 p-3">
-                                <button type="submit" class="btn btn-danger">Demote to Admin</button>
+                                <button type="submit" class="btn btn-danger">Demote to User</button>
                             </div>
                         </form>
                     </div>
@@ -104,7 +106,7 @@
                         <i class="fa fa-bell fa-fw"></i> User list
                     </div>
                     <div class="panel-body">
-                        <table class="table table-striped" id="users_list">
+                        <table class="table table-striped" style="width:100%" id="users_list">
                             <thead>
                                 <tr>
                                     <th scope="col">ID</th>
@@ -153,7 +155,13 @@
                     $(this).text(transform_unix_timestamp_to_client_local_time(timestamp));
                 });
 
-                $('#users_list').DataTable();
+                $('#users_list').DataTable({
+                    "pagingType": "numbers",
+                    "rowReorder": {
+                        "selector": 'td:nth-child(2)'
+                    },
+                    "responsive": true
+                });
             });
 
         </script>
@@ -161,6 +169,8 @@
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
+        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
     {% endblock %}
 {% endblock %}
 

@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
 {% endblock %}
 
 {% block page_content %}
@@ -20,10 +22,10 @@
                     <div class="col-lg-6">
                         <h1>BGP Updates</h1>
                     </div>
-                    <div class="col-lg-2 offset-lg-2">
+                    <div class="col-lg-2 offset-lg-3">
                         <h2>Live Update:</h2>
                     </div>
-                    <div class="col-lg-2">
+                    <div class="col-lg-1">
                         <label class="switch">
                             <input data-toggle="toggle" id="live_update_button" name="live_update_switch" type="checkbox" checked>
                             <span class="slider round"></span>
@@ -65,7 +67,7 @@
         <div class="row">
             <div class="col-lg-12">
                 
-                <table class="table table-striped table-bordered" id="bgp_updates">
+                <table class="table table-striped table-bordered" style="width:100%" id="bgp_updates">
                     <thead>
                         <th helpText="field_bgp_timestamp">Timestamp</th>
                         <th helpText="field_prefix">Prefix</th>
@@ -444,7 +446,7 @@
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
-                    "pagingType": "full_numbers",
+                    "pagingType": "numbers",
                     "ajax": (data, callback, settings) => {
                         var sort;
                         if(data.order[0].dir == 'desc'){
@@ -541,9 +543,13 @@
                             "className": "text-center",
                         }
                     ],
+                    "rowReorder": {
+                        "selector": 'td:nth-child(2)'
+                    },
                     "language": {
                         "emptyTable": "<h3>No BGP Updates to display</h3>"
-                    }
+                    },
+                    "responsive": true
                 });
             }
 
@@ -674,6 +680,8 @@
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
         <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
         <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>

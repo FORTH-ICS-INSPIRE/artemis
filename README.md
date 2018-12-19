@@ -44,11 +44,13 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 
 * Real-time monitoring of the changes in the BGP routes of the network's prefixes.
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types:
-exact-prefix type-0/1, sub-prefix of any type, and squatting attacks.
+  * exact-prefix type-0/1
+  * sub-prefix of any type
+  * squatting attacks.
 * Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn and outdated).
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
-* Comprehensive web interface.
-* Configuration file editable by the operator (directly or via the web interface),
+* Comprehensive web-based User Interface (UI).
+* Configuration file editable by the operator (directly or via the UI),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * Support for both IPv4 and IPv6 prefixes.
 * Support for both mobile and desktop environments (UI).
@@ -65,6 +67,7 @@ The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine
 for testing purposes. For instructions on how to set up ARTEMIS
 in e.g., a Kubernetes environment, please contact the [ARTEMIS team](#development-team-and-contact).
+Physical distribution of ARTEMIS containers (and functionality in general) is future work.
 
 ## Minimum Technical Requirements
 
@@ -154,19 +157,19 @@ There, you will find information on the following topics (more to come):
 * The basic logic of ARTEMIS
 * Configuring the ARTEMIS system
 * Starting ARTEMIS
-* Configuring logging and accessing ARTEMIS logs
+* Configuring logging and notifications and accessing ARTEMIS logs
 * Using the web application
 * Registering users
-* Managing users (ADMIN-only)
-* User account actions (ADMIN-VIEWER)
-* Configuring and controlling ARTEMIS through the web application (ADMIN-only)
-* Viewing ARTEMIS Configurations
+* Managing users
+* User account actions
+* Configuring and controlling ARTEMIS through the web application
+* Viewing ARTEMIS configurations
 * Viewing ARTEMIS state
 * Viewing BGP updates
 * Viewing BGP hijacks
-* Actions on BGP hijacks (ADMIN-only)
-* Invoking multiple detectors [optional]
-* CLI controls [optional]
+* Performing actions on BGP hijacks
+* Invoking multiple detectors
+* CLI controls
 * Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
 * Configuring backups
 * Migrating an existing DB to a new version
@@ -196,7 +199,7 @@ The ARTEMIS software is open-sourced under the BSD-3 license.
 Please check the [license file](LICENSE).
 
 Note that all external dependencies are used in a way compatible with BSD-3
-(that is, we obey the compatibility rules of each and every dependency);
+(that is, we conform to the compatibility rules of each and every dependency);
 the associated software packages and their respective licenses are documented
 in detail in [this file](DEPENDENCIES-LICENSES.md), where we provide links
 to their homepages and licenses.
@@ -221,9 +224,9 @@ Please check [this file](ACKS.md).
 <img src="docs/images/powered_by/sqlite.jpeg" width="100"/>
 </p>
 
-*DISCLAIMER: We do not own these images. All links to the respective project pages
+*DISCLAIMER: We do not own these logo images. All links to the respective project pages
 from where the logos were downloaded are contained in [this file](DEPENDENCIES-LICENSES.md),
-together with the respective licenses. The sole purpose of this section is to thank the
+together with their respective licenses. The sole purpose of this section is to thank the
 open-source software projects that enabled ARTEMIS with their functionality and APIs,
 by making them as visible as possible.
-The list of project logos is not exhaustive. Image copyrights are retained by the respective project copyright owners.*
+The list of project logos is not exhaustive. Image copyright is retained by the respective project's copyright owners.*

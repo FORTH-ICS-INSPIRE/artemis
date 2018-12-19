@@ -207,3 +207,9 @@ Please check [this file](ACKS.md).
 <img src="docs/images/powered_by/redis.png" width="100"/>
 <img src="docs/images/powered_by/sqlite.jpeg" width="100"/>
 </p>
+
+*DISCLAIMER: We do not own these images. All links to the respective project pages
+from where the logos were downloaded are contained in [this file](DEPENDENCIES-LICENSES.md),
+together with the respective licenses. The sole purpose of this section is to thank the
+open-source projects that enabled ARTEMIS with their APIs by making them as visible as possible.
+The list of project logos is not exhaustive.*

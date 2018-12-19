@@ -8,7 +8,7 @@ from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
 
 class BaseConfig(object):
     if not os.path.exists('/etc/webapp/db'):
-        os.makedir('/etc/webapp/db')
+        os.makedirs('/etc/webapp/db')
 
     # SQLALCHEMY
     SQLALCHEMY_TRACK_MODIFICATIONS = False

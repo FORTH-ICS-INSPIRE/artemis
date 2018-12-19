@@ -1,5 +1,5 @@
 import os
-from flask import Flask, g, render_template, request, current_app, jsonify, redirect, session
+from flask import Flask, g, render_template, request, jsonify, redirect, session
 from flask_security import current_user
 from flask_security.utils import hash_password
 from flask_security.decorators import login_required, roles_accepted
@@ -123,21 +123,19 @@ def setup():
 
 @app.errorhandler(404)
 def page_not_found(error):
-    current_app.artemis_logger.error('Page not found: %s', (request.path, error))
-    app.artemis_logger.debug('{}'.format(error))
+    app.artemis_logger.debug('Page Not Found Error: {}'.format(error))
     return render_template('404.htm')
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    current_app.artemis_logger.error('Server Error: %s', (error))
+    app.artemis_logger.error('Server Error: {}'.format(error))
     return render_template('500.htm')
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(error):
-    current_app.artemis_logger.error('Unhandled Exception: %s', (error))
-    app.artemis_logger.error('Unhandled Exception', exc_info=True)
+    app.artemis_logger.error('Unhandled Exception: {}'.format(error))
     return render_template('500.htm')
 
 
@@ -176,7 +174,7 @@ def jwt_auth():
         # if user and pass does not correspond to user return unauthorized
         user = data_store.find_user(username=username, password=password)
         if user is None:
-            return current_app.login_manager.unauthorized()
+            return app.login_manager.unauthorized()
     else:
         user = current_user
     # Create the tokens we will be sending back to the user

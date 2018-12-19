@@ -2,15 +2,20 @@
 
 | SW package  |  License   | Link       |
 | :---------: | :--------: | :--------: |
-| python 3.6 | [PSFL](https://docs.python.org/3/license.html) | [Homepage](https://www.python.org/downloads/) |
-| kombu | [BSD-3](https://github.com/celery/kombu/blob/master/LICENSE) | [GitHub](https://github.com/celery/kombu) |
 | bcrypt | [Apache 2.0](https://github.com/pyca/bcrypt/blob/master/LICENSE) | [GitHub](https://github.com/pyca/bcrypt/) |
+| bootstrap4 | [MIT](https://getbootstrap.com/docs/4.0/about/license/) | [Homepage](https://getbootstrap.com/) |
+| codemirror | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror) |
+| datatables | [MIT](https://github.com/DataTables/DataTables/blob/master/license.txt) | [GitHub](https://github.com/DataTables/DataTables) |
+| daterangepicker | [MIT](https://github.com/dangrossman/daterangepicker) | [GitHub](https://github.com/dangrossman/daterangepicker) |
+| dialog | [MIT](https://tldrlegal.com/license/mit-license) | [Homepage](https://jqueryui.com/dialog/) |
+| diff-match-patch | [Apache 2.0](https://github.com/google/diff-match-patch/blob/master/LICENSE) | [GitHub](https://github.com/google/diff-match-patch) |
+| d3-graphviz | [BSD-3](https://github.com/magjac/d3-graphviz/blob/master/LICENSE) | [GitHub](https://github.com/magjac/d3-graphviz) |
 | flask | [BSD-3](https://github.com/pallets/flask/blob/master/LICENSE) | [GitHub](https://github.com/pallets/flask) |
 | flask-babel | [BSD-3](https://github.com/python-babel/flask-babel/blob/master/LICENSE) | [GitHub](https://github.com/python-babel/flask-babel) |
 | flask-babelex | [BSD-3](https://github.com/mrjoes/flask-babelex/blob/master/LICENSE) | [GitHub](https://github.com/mrjoes/flask-babelex) |
 | flask-caching | [BSD-3](https://github.com/sh4nks/flask-caching/blob/master/LICENSE) | [GitHub](https://github.com/sh4nks/flask-caching) |
 | flask-compress | [MIT](https://github.com/jmcarp/flask-compress/blob/master/LICENSE) | [GitHub](https://github.com/jmcarp/flask-compress) |
-| flask-caching | [MIT](https://github.com/ThaWeatherman/flask-hashing/blob/master/LICENSE.txt) | [GitHub](https://github.com/ThaWeatherman/flask-hashing) |
+| flask-hashing | [MIT](https://github.com/ThaWeatherman/flask-hashing/blob/master/LICENSE.txt) | [GitHub](https://github.com/ThaWeatherman/flask-hashing) |
 | flask-jwt-extended | [MIT](https://github.com/vimalloc/flask-jwt-extended/blob/master/LICENSE) | [GitHub](https://github.com/vimalloc/flask-jwt-extended) |
 | flask-login | [MIT](https://github.com/maxcountryman/flask-login/blob/master/LICENSE) | [GitHub](https://github.com/maxcountryman/flask-login) |
 | flask-mail | [BSD-3](https://github.com/mattupstate/flask-mail/blob/master/LICENSE) | [GitHub](https://github.com/mattupstate/flask-mail) |
@@ -20,30 +25,25 @@
 | flask-security | [MIT](https://github.com/mattupstate/flask-security/blob/develop/LICENSE) | [GitHub](https://github.com/mattupstate/flask-security) |
 | flask-sqlalchemy | [BSD-3](https://github.com/mitsuhiko/flask-sqlalchemy/blob/master/LICENSE) | [GitHub](https://github.com/mitsuhiko/flask-sqlalchemy) |
 | flask-wtf | [BSD-3](https://github.com/lepture/flask-wtf/blob/master/LICENSE) | [GitHub](https://github.com/lepture/flask-wtf) |
-| pyaml | [Custom-Permissive](https://github.com/mk-fg/pretty-yaml/blob/master/COPYING) | [GitHub](https://github.com/mk-fg/pretty-yaml) |
-| requests | [Apache 2.0](https://github.com/requests/requests/blob/master/LICENSE) | [GitHub](https://github.com/requests/requests) |
-| sqlalchemy | [MIT](https://github.com/sqlalchemy/sqlalchemy/blob/master/LICENSE) | [GitHub](https://github.com/sqlalchemy/sqlalchemy) |
-| wtforms | [BSD-3](https://github.com/wtforms/wtforms/blob/master/LICENSE.rst) | [GitHub](https://github.com/wtforms/wtforms) |
+| gunicorn | [MIT](https://github.com/benoitc/gunicorn/blob/master/LICENSE) | [GitHub](https://github.com/benoitc/gunicorn) |
 | jquery | [MIT](https://tldrlegal.com/license/mit-license) | [Homepage](https://jquery.org/) |
-| datatables | [MIT](https://github.com/DataTables/DataTables/blob/master/license.txt) | [GitHub](https://github.com/DataTables/DataTables) |
-| bootstrap4 | [MIT](https://getbootstrap.com/docs/4.0/about/license/) | [Homepage](https://getbootstrap.com/) |
-| codemirror | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror) |
-| daterangepicker | [MIT](https://github.com/dangrossman/daterangepicker) | [GitHub](https://github.com/dangrossman/daterangepicker) |
-| dialog | [MIT](https://tldrlegal.com/license/mit-license) | [Homepage](https://jqueryui.com/dialog/) |
-| diff-match-patch | [Apache 2.0](https://github.com/google/diff-match-patch/blob/master/LICENSE) | [GitHub](https://github.com/google/diff-match-patch) |
+| js-yaml | [MIT](https://github.com/nodeca/js-yaml) | [GitHub](https://github.com/nodeca/js-yaml) |
+| kombu | [BSD-3](https://github.com/celery/kombu/blob/master/LICENSE) | [GitHub](https://github.com/celery/kombu) |
+| libffi-dev | [MIT](https://github.com/libffi/libffi/blob/master/LICENSE) | [GitHub](https://github.com/libffi/libffi) |
 | merge | [MIT](https://github.com/yeikos/js.merge/blob/master/LICENSE) | [GitHub](https://github.com/yeikos/js.merge) |
 | moment | [MIT](https://github.com/moment/moment/blob/develop/LICENSE) | [GitHub](https://github.com/moment/moment/) |
+| openssl-dev | [Apache 2.0](https://github.com/openssl/openssl/blob/master/LICENSE) | [GitHub](https://github.com/openssl/openssl) |
+| pyaml | [Custom-Permissive](https://github.com/mk-fg/pretty-yaml/blob/master/COPYING) | [GitHub](https://github.com/mk-fg/pretty-yaml) |
+| pyopenssl | [Apache 2.0](https://github.com/pyca/pyopenssl/blob/master/LICENSE) | [GitHub](https://github.com/pyca/pyopenssl) |
+| python 3.6 | [PSFL](https://docs.python.org/3/license.html) | [Homepage](https://www.python.org/downloads/) |
+| requests | [Apache 2.0](https://github.com/requests/requests/blob/master/LICENSE) | [GitHub](https://github.com/requests/requests) |
 | search | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror/tree/master/addon/search) |
 | searchcursor | [MIT](https://github.com/codemirror/CodeMirror/blob/master/LICENSE) | [GitHub](https://github.com/codemirror/CodeMirror/tree/master/addon/search) |
-| textile-js | [MIT](https://github.com/borgar/textile-js/blob/master/LICENSE) | [GitHub](https://github.com/borgar/textile-js) |
-| js-yaml | [MIT](https://github.com/nodeca/js-yaml) | [GitHub](https://github.com/nodeca/js-yaml) |
-| openssl-dev | [Apache 2.0](https://github.com/openssl/openssl/blob/master/LICENSE) | [GitHub](https://github.com/openssl/openssl) |
-| libffi-dev | [MIT](https://github.com/libffi/libffi/blob/master/LICENSE) | [GitHub](https://github.com/libffi/libffi) |
-| pyopenssl | [Apache 2.0](https://github.com/pyca/pyopenssl/blob/master/LICENSE) | [GitHub](https://github.com/pyca/pyopenssl) |
+| sqlalchemy | [MIT](https://github.com/sqlalchemy/sqlalchemy/blob/master/LICENSE) | [GitHub](https://github.com/sqlalchemy/sqlalchemy) |
 | sqlite-dev, sqlite | [Custom-Permissive](https://www.sqlite.org/copyright.html) | [HomePage](https://www.sqlite.org/index.html) |
-| gunicorn | [MIT](https://github.com/benoitc/gunicorn/blob/master/LICENSE) | [GitHub](https://github.com/benoitc/gunicorn) |
+| textile-js | [MIT](https://github.com/borgar/textile-js/blob/master/LICENSE) | [GitHub](https://github.com/borgar/textile-js) |
 | viz.js | [MIT](https://github.com/mdaines/viz.js/blob/master/LICENSE) | [GitHub](https://github.com/mdaines/viz.js/) |
-| d3-graphviz | [BSD-3](https://github.com/magjac/d3-graphviz/blob/master/LICENSE) | [GitHub](https://github.com/magjac/d3-graphviz) |
+| wtforms | [BSD-3](https://github.com/wtforms/wtforms/blob/master/LICENSE.rst) | [GitHub](https://github.com/wtforms/wtforms) |
 
 ## BACKEND
 
@@ -87,16 +87,16 @@
 
 | CONTAINER  |  License   | Link       |
 | :---------: | :--------: | :--------: |
+| alpine-python | [MIT](https://github.com/jfloff/alpine-python/blob/master/LICENSE) | [GitHub](https://github.com/jfloff/alpine-python) |
+| exabgp-monitor | [BSD-3](https://github.com/Exa-Networks/exabgp/blob/master/COPYRIGHT) | [DockerHub](https://hub.docker.com/r/mavromat/exabgp-monitor/) |
+| grafana | [Apache 2.0](https://github.com/grafana/grafana/blob/master/LICENSE.md) | [DockerHub](https://hub.docker.com/r/grafana/grafana/) |
+| graphql-engine | [AGPL-3.0](https://github.com/hasura/graphql-engine/blob/master/LICENSE), [Backend Permissions](https://github.com/hasura/graphql-engine/wiki/License-Explained) | [DockerHub](https://hub.docker.com/r/hasura/graphql-engine/) |
+| pg-amqp-bridge | [MIT](https://github.com/subzerocloud/pg-amqp-bridge/blob/master/LICENSE.txt) | [GitHub](https://github.com/subzerocloud/pg-amqp-bridge) |
+| postgrest | [MIT](https://github.com/PostgREST/postgrest/blob/master/LICENSE) | [DockerHub](https://hub.docker.com/r/postgrest/postgrest/) |
 | nginx | [BSD-2](http://nginx.org/LICENSE) | [DockerHub](https://hub.docker.com/_/nginx/) |
 | rabbitmq | [MPL](https://www.rabbitmq.com/mpl.html) | [DockerHub](https://hub.docker.com/_/rabbitmq/) |
-| timescale | [Apache 2.0](https://github.com/timescale/timescaledb-docker/blob/master/LICENSE) | [DockerHub](https://hub.docker.com/r/timescale/timescaledb/) |
-| postgrest | [MIT](https://github.com/PostgREST/postgrest/blob/master/LICENSE) | [DockerHub](https://hub.docker.com/r/postgrest/postgrest/) |
-| pg-amqp-bridge | [MIT](https://github.com/subzerocloud/pg-amqp-bridge/blob/master/LICENSE.txt) | [GitHub](https://github.com/subzerocloud/pg-amqp-bridge) |
-| graphql-engine | [AGPL-3.0](https://github.com/hasura/graphql-engine/blob/master/LICENSE), [Backend Permissions](https://github.com/hasura/graphql-engine/wiki/License-Explained) | [DockerHub](https://hub.docker.com/r/hasura/graphql-engine/) |
 | syslog-ng-alpine | [GNU LGPL 2.1](https://github.com/balabit/syslog-ng-docker/blob/master/LICENSE) | [GitHub](https://github.com/mumblepins-docker/syslog-ng-alpine) |
-| grafana | [Apache 2.0](https://github.com/grafana/grafana/blob/master/LICENSE.md) | [DockerHub](https://hub.docker.com/r/grafana/grafana/) |
-| exabgp-monitor | [BSD-3](https://github.com/Exa-Networks/exabgp/blob/master/COPYRIGHT) | [DockerHub](https://hub.docker.com/r/mavromat/exabgp-monitor/) |
-| alpine-python | [MIT](https://github.com/jfloff/alpine-python/blob/master/LICENSE) | [GitHub](https://github.com/jfloff/alpine-python) |
+| timescale | [Apache 2.0](https://github.com/timescale/timescaledb-docker/blob/master/LICENSE) | [DockerHub](https://hub.docker.com/r/timescale/timescaledb/) |
 
 ## OTHER
 | SW package  |  License   | Link       |

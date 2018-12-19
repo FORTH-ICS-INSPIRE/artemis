@@ -189,3 +189,19 @@ to their homepages and licenses.
 
 ## Acknowledgements and Funding Sources
 Please check [this file](ACKS.md).
+
+## Powered by
+
+.. image:: docs/images/powered_by/bgpstream.png
+.. image:: docs/images/powered_by/bootstrap.png
+.. image:: docs/images/powered_by/exabgp.jpg
+.. image:: docs/images/powered_by/flask.png
+.. image:: docs/images/powered_by/gunicorn.png
+.. image:: docs/images/powered_by/hasura.png
+.. image:: docs/images/powered_by/jquery.png
+.. image:: docs/images/powered_by/nginx.jpeg
+.. image:: docs/images/powered_by/postgresql.png
+.. image:: docs/images/powered_by/python.jpeg
+.. image:: docs/images/powered_by/rabbitmq.png
+.. image:: docs/images/powered_by/redis.png
+.. image:: docs/images/powered_by/sqlite.jpeg

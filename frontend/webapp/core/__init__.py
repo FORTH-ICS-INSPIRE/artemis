@@ -54,7 +54,6 @@ def make_session_permanent():
 
 @app.before_first_request
 def setup():
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', default='')
     app.config['configuration'] = Configuration()
     while not app.config['configuration'].get_newest_config():
         time.sleep(1)

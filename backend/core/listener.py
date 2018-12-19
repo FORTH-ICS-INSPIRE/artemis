@@ -43,7 +43,7 @@ def create_connect_db():
     return _db_conn
 
 
-def main():
+def run():
     db_conn = create_connect_db()
     db_cursor = db_conn.cursor()
     while True:
@@ -67,4 +67,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    run()

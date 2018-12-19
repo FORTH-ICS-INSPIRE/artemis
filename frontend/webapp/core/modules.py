@@ -66,10 +66,10 @@ class Modules_state():
         try:
             if up:
                 return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
-                    if x['group'] == module and (x['state'] == 20 or x['state'] == 10)]
+                        if x['group'] == module and (x['state'] == 20 or x['state'] == 10)]
             else:
                 return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
-                    if x['group'] == module and (x['state'] != 20 and x['state'] != 10)]
+                        if x['group'] == module and (x['state'] != 20 and x['state'] != 10)]
         except Exception:
             log.exception('exception')
             return False

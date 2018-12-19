@@ -233,6 +233,7 @@ def overview():
 def unauth_handler():
     return render_template('401.htm')
 
+
 @login_required
 @roles_accepted('admin', 'user')
 @app.route('/proxy_api', methods=['GET', 'POST'])

@@ -778,9 +778,9 @@ class Database():
                         entries = self.db_cur.fetchall()
                         entry = entries[0]
                         redis_hijack_key = redis_key(
-                                entry[0],  # prefix
-                                entry[1],  # hijack_as
-                                entry[2]  # type
+                            entry[0],  # prefix
+                            entry[1],  # hijack_as
+                            entry[2]  # type
                         )
                         if action_is_related_to_seen:
                             self.db_cur.execute(

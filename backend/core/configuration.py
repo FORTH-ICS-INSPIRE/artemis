@@ -339,5 +339,6 @@ def run():
     service = Configuration()
     service.run()
 
+
 if __name__ == '__main__':
     run()

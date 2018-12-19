@@ -31,7 +31,7 @@ def proxy_api_post(action, parameters):
 def proxy_api_downloadTable(action, parameters):
     log.debug("{0}{1}".format(parameters, action))
     url_ = API_PATH + "/" + action
-    if(parameters != None):
+    if(parameters is not None):
         url_ += "?and=" + parameters
 
     req = requests.get(url=url_, stream=True)

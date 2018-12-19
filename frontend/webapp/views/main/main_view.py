@@ -16,8 +16,8 @@ def display_monitors():
     app.config['configuration'].get_newest_config()
     prefixes_list = app.config['configuration'].get_prefixes_list()
     return render_template('bgpupdates.htm',
-        prefixes=prefixes_list,
-        js_version=app.config['JS_VERSION'])
+                           prefixes=prefixes_list,
+                           js_version=app.config['JS_VERSION'])
 
 
 @main.route('/hijacks/')
@@ -35,9 +35,9 @@ def display_hijacks():
         app.config['configuration'].get_newest_config()
         prefixes_list = app.config['configuration'].get_prefixes_list()
         return render_template('hijacks.htm',
-            hijack_keys=None,
-            prefixes=prefixes_list,
-            js_version=app.config['JS_VERSION'])
+                               hijack_keys=None,
+                               prefixes=prefixes_list,
+                               js_version=app.config['JS_VERSION'])
 
 
 @main.route('/hijack', methods=['GET'])
@@ -70,6 +70,7 @@ def display_hijack():
                            js_version=app.config['JS_VERSION']
                            )
 
+
 @main.route('/visualizations/', methods=['GET'])
 @login_required
 @roles_accepted('admin', 'user')
@@ -78,9 +79,10 @@ def display_visualizations():
     prefixes_list = app.config['configuration'].get_prefixes_list()
     json_config = app.config['configuration'].get_raw_json_config()
     return render_template('viz.htm',
-        prefixes=prefixes_list,
-        config=json_config,
-        js_version=app.config['JS_VERSION'])
+                           prefixes=prefixes_list,
+                           config=json_config,
+                           js_version=app.config['JS_VERSION'])
+
 
 @main.route('/config_comparison', methods=['GET'])
 @roles_accepted('admin', 'user')

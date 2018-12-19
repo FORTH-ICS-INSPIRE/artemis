@@ -55,7 +55,7 @@ class Monitor():
             # QUEUES
             self.config_queue = Queue(
                 'monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
-                                      consumer_arguments={'x-priority': 2})
+                consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
             log.info('started')
@@ -244,6 +244,7 @@ class Monitor():
 def run():
     service = Monitor()
     service.run()
+
 
 if __name__ == '__main__':
     run()

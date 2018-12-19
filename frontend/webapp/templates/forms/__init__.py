@@ -8,6 +8,7 @@ import logging
 
 log = logging.getLogger('webapp_logger')
 
+
 class CheckboxMonitorForm(FlaskForm):
     monitor_switch = BooleanField('Monitor', default=False)
 
@@ -42,6 +43,7 @@ class ExtendedRegisterForm(RegisterForm):
 
         return True
 
+
 class ExtendedLoginForm(LoginForm):
     email = StringField('Username or Email Address', [Required()])
     password = PasswordField('Password', [Required()])
@@ -58,10 +60,12 @@ class MakeAdminForm(FlaskForm):
         'Select user to promote to admin:', [
             Required()], choices=[])
 
+
 class RemoveAdminForm(FlaskForm):
     select_field = SelectField(
         'Select user to demote from admin:', [
             Required()], choices=[])
+
 
 class DeleteUserForm(FlaskForm):
     select_field = SelectField(

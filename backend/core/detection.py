@@ -348,7 +348,7 @@ class Detection():
                         priority=0
                     )
 
-                self.redis.set(monitor_event['key'], '', ex=60*60)
+                self.redis.set(monitor_event['key'], '', ex=60 * 60)
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 

@@ -2,8 +2,8 @@ import os
 import json
 import psycopg2
 import time
-import codecs
-from codecs import open
+from codecs import c_open
+
 
 def get_target_version():
     print("Getting target version...")
@@ -14,7 +14,7 @@ def get_target_version():
 
 def load_migrations_json():
     print("Loading migrations file...")
-    with open('migrations/target_steps.json') as json_data:
+    with c_open('migrations/target_steps.json') as json_data:
         data = json.load(json_data)
     return data
 
@@ -22,7 +22,7 @@ def load_migrations_json():
 def read_migration_sql_file(filename):
     print("Reading migration .sql file: {}...".format(filename))
     try:
-        with open("migrations/scripts/" + filename, mode='r', encoding='utf-8-sig') as f:
+        with c_open("migrations/scripts/" + filename, mode='r', encoding='utf-8-sig') as f:
             migration_file = f.read()
     except Exception:
         print("Couldn't open migrations/scripts/{}".format(filename))
@@ -113,14 +113,14 @@ def extract_db_version(db_conn):
     print("Getting db version...")
     try:
         cur = db_conn.cursor()
-        cur.execute('SELECT version from db_details') 
+        cur.execute('SELECT version from db_details')
         version = cur.fetchone()[0]
     except psycopg2.DatabaseError as e:
         db_conn.rollback()
         print("db version not found")
         version = None
 
-    if version == None:
+    if version is None:
         version = 0
     print("-> Current db version is: {}".format(version))
     return version

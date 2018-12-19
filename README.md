@@ -99,6 +99,13 @@ If not already installed, follow the instructions
 to install the latest version of the docker tool for managing containers,
 and [here](https://docs.docker.com/compose/install/#install-compose)
 to install the docker-compose tool for supporting multi-container Docker applications.
+In production, we have used the following versions successfully:
+```
+$ docker -v
+Docker version 18.09.0, build 4d60db4
+$ docker-compose -v
+docker-compose version 1.20.0, build ca8d3c6
+```
 
 If you would like to run docker without using sudo, please create
 a docker group, if not existing:
@@ -125,15 +132,19 @@ and then download ARTEMIS from github (if not already downloaded).
 
 Note that while the backend and frontend code is available in the repository,
 docker-compose is configured to pull the latest images that are built remotely
-on [docker cloud](https://cloud.docker.com/)(TBD). 
-In any case, you can build ARTEMIS locally by running:
+on [docker cloud](https://cloud.docker.com/) (TBD). 
+In any case, you can build ARTEMIS locally (optional) by running:
 ```
 docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml build
 ```
-after you have entered the root folder of the cloned ARTEMIS repo. Note that extra services are
+after you have entered the root folder of the cloned ARTEMIS repo and configured docker-compose.yaml
+to build from local images instead of pulling remotely. 
+
+Note extra services that you can use are
 currently the following (it is optional to use them):
 * exabgp: local exaBGP monitor
 * migrate: for migration of already existing DBs in production deployments
+* grafana: UI factory, under evaluation
 
 ## How to Configure and Run
 
@@ -141,20 +152,20 @@ Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
 
 There, you will find information on the following topics (more to come):
 * The basic logic of ARTEMIS
-* Configuring the web application
+* Configuring the ARTEMIS system
 * Starting ARTEMIS
 * Configuring logging and accessing ARTEMIS logs
 * Using the web application
 * Registering users
 * Managing users (ADMIN-only)
 * User account actions (ADMIN-VIEWER)
-* Configuring and Controlling ARTEMIS through the web application (ADMIN-only)
+* Configuring and controlling ARTEMIS through the web application (ADMIN-only)
 * Viewing ARTEMIS Configurations
 * Viewing ARTEMIS state
 * Viewing BGP updates
 * Viewing BGP hijacks
 * Actions on BGP hijacks (ADMIN-only)
-* Invoking multiple detectors
+* Invoking multiple detectors [optional]
 * CLI controls [optional]
 * Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
 * Configuring backups

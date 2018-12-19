@@ -1,5 +1,10 @@
 # ARTEMIS
 
+<p align="right">
+<img src="docs/images/inst_logos/caida_logo.png" width="200"/>
+<img src="docs/images/inst_logos/forth_logo.png" width="200"/>
+</p>
+
 Table of Contents
   * [General](#general)
   * [Features](#features)

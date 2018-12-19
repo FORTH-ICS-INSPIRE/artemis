@@ -5,8 +5,6 @@ from flask_security import Security, SQLAlchemyUserDatastore
 from webapp.data.models import db, Role, User
 from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
 
-log = logging.getLogger('webapp_logger')
-
 
 class BaseConfig(object):
     if not os.path.exists('/etc/webapp/db'):
@@ -18,11 +16,6 @@ class BaseConfig(object):
     DB_NAME = "artemis_webapp.db"
     DB_FULL_PATH = "/etc/webapp/db/" + DB_NAME
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + DB_FULL_PATH
-
-    # LOGGING
-    LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    LOGGING_LOCATION = '/var/log/artemis/webapp.log'
-    LOGGING_LEVEL = logging.INFO
 
     # CACHE / COMPRESS
     CACHE_TYPE = 'simple'
@@ -65,21 +58,11 @@ class BaseConfig(object):
 
 
 def configure_app(app):
-    app.config.from_object('webapp.configs.config.BaseConfig')
-    log.info('Loading default configuration..')
 
-    log.info('Reading additional configuration from webapp.cfg..')
+    app.config.from_object('webapp.configs.config.BaseConfig')
     app.config.from_pyfile('/etc/artemis/webapp.cfg', silent=False)
 
-    # Configure logging
-    logging_dir = '/'.join(app.config['LOGGING_LOCATION'].split('/')[:-1])
-    if logging_dir != '' and not os.path.isdir(logging_dir):
-        os.mkdir(logging_dir)
-    handler = logging.FileHandler(app.config['LOGGING_LOCATION'])
-    handler.setLevel(app.config['LOGGING_LEVEL'])
-    formatter = logging.Formatter(app.config['LOGGING_FORMAT'])
-    handler.setFormatter(formatter)
-    app.logger.addHandler(handler)
+    app.artemis_logger = logging.getLogger('webapp_logger')
 
     # Configure Security
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)

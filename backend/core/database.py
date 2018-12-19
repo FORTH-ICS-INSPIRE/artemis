@@ -19,7 +19,7 @@ TABLES = ['bgp_updates', 'hijacks', 'configs']
 VIEWS = ['view_configs', 'view_bgpupdates', 'view_hijacks']
 
 
-class Postgresql_db():
+class Database():
 
     def __init__(self):
         self.worker = None
@@ -88,10 +88,11 @@ class Postgresql_db():
             self.db_cur = db_cursor
 
             try:
+                self.db_cur.execute('TRUNCATE table process_states')
+                self.db_conn.commit()
                 server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
                 cmd_ = 'INSERT INTO process_states (name, running) ' \
-                       'VALUES (%s, %s) ON CONFLICT (name) DO UPDATE ' \
-                       'SET running = EXCLUDED.running'
+                       'VALUES (%s, %s)'
                 processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
                              if x['name'] != 'listener']
                 psycopg2.extras.execute_batch(
@@ -1133,7 +1134,7 @@ class Postgresql_db():
 
 
 def run():
-    service = Postgresql_db()
+    service = Database()
     service.run()
 
 

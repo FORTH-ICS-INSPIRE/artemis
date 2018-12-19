@@ -1,11 +1,17 @@
 {% extends "layout.htm" %}
 
+{% block title %}
+    {{super()}} - BGP Updates
+{% endblock %}
+
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
 {% endblock %}
 
 {% block page_content %}
@@ -16,10 +22,10 @@
                     <div class="col-lg-6">
                         <h1>BGP Updates</h1>
                     </div>
-                    <div class="col-lg-2 offset-lg-2">
+                    <div class="col-lg-2 offset-lg-3">
                         <h2>Live Update:</h2>
                     </div>
-                    <div class="col-lg-2">
+                    <div class="col-lg-1">
                         <label class="switch">
                             <input data-toggle="toggle" id="live_update_button" name="live_update_switch" type="checkbox" checked>
                             <span class="slider round"></span>
@@ -33,28 +39,15 @@
             <div class="col-lg-12">
                 <div class="row">
                     <div class="col-lg-1">
-                        <p>Select prefix: </p>
-                    </div>
-                    <div class="col-lg-2">
-                        <div class="form-group">
-                            <select class="form-control" id="prefixes_selection">
-                                <option>All</option>
-                                {% for prefix in prefixes %}
-                                    <option>{{ prefix }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-lg-1 offset-lg-4">
                         <p id="display_entries_time"> <b helpText="field_time_window_custom"> Timewindow: </b></p>
                     </div>
                     <div class="col-lg-3">
                         <div id="timewindow_buttons">
-                            <button type="button" id="select_timewindow_all" class="btn btn-outline-primary">All</button>
-                            <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary">1h</button>
-                            <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary">24h</button>
-                            <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary">48h</button>
-                            <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary">Custom</button>
+                            <button type="button" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
+                            <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">1h</button>
+                            <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">24h</button>
+                            <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">48h</button>
+                            <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
                         </div>
                         <div id="custom_time" style="display: none;">
                             <div class="row">
@@ -74,7 +67,7 @@
         <div class="row">
             <div class="col-lg-12">
                 
-                <table class="table table-striped table-bordered" id="bgp_updates">
+                <table class="table table-striped table-bordered" style="width:100%" id="bgp_updates">
                     <thead>
                         <th helpText="field_bgp_timestamp">Timestamp</th>
                         <th helpText="field_prefix">Prefix</th>
@@ -107,10 +100,47 @@
             </div>
         </div>
         <div class="row mt-3">
-            <div class="col-lg-6"></div>
-            <div class="col-lg-6">
+            <div class="col-lg-6 offset-lg-6">
                 </hr>
                 <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Additional actions
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-lg-3">
+                                                View distinct values
+                                            </div>
+                                            <div class="col-lg-4">
+                                                <select class="form-control" id="distinct_values_selection">
+                                                    <option value="select">Select</option>
+                                                    <option value="prefix">Prefix</option>
+                                                    <option value="origin_as">Origin AS</option>
+                                                    <option value="peer_asn">Peer AS</option>
+                                                    <option value="service">Service</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-1">
+                            <div class="col-lg-10 offset-lg-1">
+                                <div class="card card-body card-body-hide" id="distinct_values_text"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -131,6 +161,7 @@
             var static_urls = {
                 "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
                 "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
+                "rrcs_location": "{{ url_for('static', filename='js/rrcs_info/collectors_info.json') }}"
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
             var datatable_parameters = {
@@ -143,6 +174,7 @@
                     'offset': 0,
                     'limit': 0
                 };
+            var downloadTable_parameters = null;
             var fields_to_display = [
                 ['prefix', 'Prefix', 'field_prefix'],
                 ['origin_as', 'Origin AS', 'field_origin_as'],
@@ -215,8 +247,8 @@
             function display_time_selection(custom_time_data){
                 for(item in custom_time_data){
                     $(custom_time_data[item]["id"]).on('click', function(event) {
-                        $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary'); });
-                        $(this).attr('class', 'btn btn-outline-primary');
+                        $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary btn-sm'); });
+                        $(this).attr('class', 'btn btn-outline-primary btn-sm');
                         if(event.target.id == 'select_timewindow_all'){
                             filter_parameters['time'] = null;
                         }else if(event.target.id == 'select_timewindow_other'){
@@ -247,17 +279,6 @@
                     });
                 }
             }
-
-            $("#prefixes_selection").change(function () {
-                var option = this.value;
-                if(option == "All"){
-                    filter_parameters['prefixes_selection'] = null;
-                }else{
-                    filter_parameters['prefixes_selection'] = option;
-                }
-                construct_filter_bgp_update_query();
-                table.draw();
-            });
 
             $('#bgp_updates tfoot th').each(function() {
                 var title = $(this).text();
@@ -360,47 +381,62 @@
 
             function construct_filter_bgp_update_query(){
                 var filters = [];
+                var download_filters = [];
                 inspect_input_of_search_boxes();
 
                 if(filter_parameters['time'] != null){
                     filters.push('{ timestamp: {_gte: "' + filter_parameters['time']['start_time'] + '"} }');
                     filters.push('{ timestamp: {_lte: "' + filter_parameters['time']['end_time'] + '"} }');
+                    download_filters.push('timestamp.gte.' + filter_parameters['time']['start_time'] + ',timestamp.lte.' + filter_parameters['time']['end_time']);
                 }
 
                 if(filter_parameters['prefixes_selection'] != null){
                     filters.push('{ matched_prefix: {_eq: "' + filter_parameters['prefixes_selection'] + '"} }');
+                    download_filters.push('matched_prefix.eq.' + filter_parameters['prefixes_selection']);
                 }
 
                 if(filter_parameters['prefix'] != null){
                     filters.push('{ prefix: {_eq: "' + filter_parameters['prefix'] + '"} }');
+                    download_filters.push('prefix.eq.' + filter_parameters['prefix']);
                 }
 
                 if(filter_parameters['origin_as'] != null){
                     filters.push('{ origin_as: {_eq: "' + filter_parameters['origin_as'] + '"} }');
+                    download_filters.push('origin_as.eq.' + filter_parameters['origin_as']);
                 }
 
                 if(filter_parameters['as_path'] != null){
                     filters.push('{ as_path: {_in: [' + filter_parameters['as_path'] + ']} }');
+                    download_filters.push('as_path.cs.{' + filter_parameters['as_path'] + "}");
                 }
 
                 if(filter_parameters['peer_asn'] != null){
                     filters.push('{ peer_asn: {_eq: "' + filter_parameters['peer_asn'] + '"} }');
+                    download_filters = filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
                 }
 
                 if(filter_parameters['service'] != null){
                     var _service = filter_parameters['service'].replace(/ -> |-> | -> |->/gi, '|');
                     filters.push('{ service: {_like: "%' + _service + '%"} }');
+                    download_filters.push('service.like.*' + _service + '*');
                 }
 
                 if(filter_parameters['type'] != null){
                     filters.push('{ type: {_eq: "' + filter_parameters['type'] + '"} }');
+                    download_filters.push('type.eq.' + filter_parameters['type']);
                 }
 
                 if(filters.length > 0){
+                    $("#distinct_values_selection").val('select');
+                    $('#distinct_values_text').val("");
+                    $('#distinct_values_text').hide();
                     datatable_parameters['and'] = 'where: { _and: [' + filters.join() + '] }';
+                    downloadTable_parameters = '(' + download_filters.join() + ')';
                 }else{
                     datatable_parameters['and'] = null;
+                    downloadTable_parameters = null;
                 }
+                downloadTable_update_link();
             }
 
             function render_table(ws){
@@ -410,7 +446,7 @@
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
-                    "pagingType": "full_numbers",
+                    "pagingType": "numbers",
                     "ajax": (data, callback, settings) => {
                         var sort;
                         if(data.order[0].dir == 'desc'){
@@ -453,6 +489,30 @@
                                 }
                             });
                         });
+                        var tool_elems = $("#bgp_updates_wrapper").children('div').eq(0).children('div');
+                        var prefixes_select = "  |  <label>Select prefix</label>  ";
+                        prefixes_select += '<select class="custom-select custom-select-sm form-control form-control-sm" id="prefixes_selection">';
+                        prefixes_select += '<option>All</option>';
+                        {% for prefix in prefixes %}
+                            prefixes_select += '<option>{{ prefix }}</option>';
+                        {% endfor %}
+                        prefixes_select += '</select>';
+
+                        $(tool_elems).eq(0).children('div').append(prefixes_select);
+
+                        $("#prefixes_selection").change(function () {
+                            var option = this.value;
+                            if(option == "All"){
+                                filter_parameters['prefixes_selection'] = null;
+                            }else{
+                                filter_parameters['prefixes_selection'] = option;
+                            }
+                            construct_filter_bgp_update_query();
+                            table.draw();
+                        });
+
+                        $(tool_elems).eq(1).html('<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
+                        downloadTable_update_link();
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
@@ -483,9 +543,13 @@
                             "className": "text-center",
                         }
                     ],
+                    "rowReorder": {
+                        "selector": 'td:nth-child(2)'
+                    },
                     "language": {
                         "emptyTable": "<h3>No BGP Updates to display</h3>"
-                    }
+                    },
+                    "responsive": true
                 });
             }
 
@@ -532,10 +596,12 @@
                                 tr.addClass('shown');
                                 displayHelpMoreBGPupdate();
                                 asn_map_to_name();
+                                service_to_name();
                             }
                         });
                         $('#bgp_updates').on( 'draw.dt', function () {
                             asn_map_to_name();
+                            service_to_name();
                         });
                         displayHelpTextTable();
                     }
@@ -580,6 +646,31 @@
                 }
             });
 
+            $("#distinct_values_selection").on('change', function() {
+                var distinct_on = $(this).val();
+
+                if(distinct_on == "select"){
+                    $('#distinct_values_text').hide();
+                    return;
+                }
+
+                var query = "{ view_data: view_bgpupdates(distinct_on: [" + distinct_on + "] ";
+                if(datatable_parameters['and'] != null){
+                    query += datatable_parameters['and'] +  ")";
+                }else{
+                    query += ")";
+                }
+                query += " { " + distinct_on + " } }";
+                fetchDistinctValues(distinct_on, query);
+            });
+
+            function downloadTable_update_link(){
+                var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_bgpupdates";
+                if(downloadTable_parameters != null){
+                    url += "&parameters=" + downloadTable_parameters;
+                }
+                $("#download_table_button").attr("href", url);
+            }
 
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
@@ -589,6 +680,8 @@
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
         <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
         <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>

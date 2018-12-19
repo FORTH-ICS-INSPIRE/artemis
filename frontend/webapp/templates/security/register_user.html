@@ -1,4 +1,9 @@
 {% extends "layout_container.htm" %}
+
+{% block title %}
+    {{super()}} - Register
+{% endblock %}
+
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/signin.css') }}">

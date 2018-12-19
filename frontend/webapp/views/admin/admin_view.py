@@ -1,14 +1,10 @@
 from flask import Blueprint, render_template, redirect, request, jsonify
 from flask_security.decorators import roles_required, roles_accepted
 from webapp.data.models import User, Role
-from webapp.templates.forms import ApproveUserForm, MakeAdminForm, DeleteUserForm
+from webapp.templates.forms import ApproveUserForm, MakeAdminForm, RemoveAdminForm, DeleteUserForm
 from webapp.core import app
 from webapp.core.actions import Submit_new_config
-from webapp.core.fetch_config import fetch_all_config_timestamps
-import logging
 import json
-
-log = logging.getLogger('webapp_logger')
 
 admin = Blueprint('admin', __name__, template_folder='templates')
 
@@ -44,7 +40,7 @@ def handle_new_config():
             return jsonify(
                 {'status': 'fail', 'response': response})
     except Exception as e:
-        log.exception("")
+        app.artemis_logger.exception("")
         return jsonify(
             {'status': 'fail', 'response': str(e)})
 
@@ -52,7 +48,8 @@ def handle_new_config():
 @admin.route('/user_management', methods=['GET'])
 @roles_required('admin')
 def user_management():
-    # log info
+    
+    # Approve pending User
     _pending_users_form = ApproveUserForm()
 
     _pending_users_list = []
@@ -62,8 +59,9 @@ def user_management():
     for _pending_user in _pending_users:
         _pending_users_list.append((_pending_user.id, _pending_user.username))
 
-    _pending_users_form.user_to_approve.choices = _pending_users_list
+    _pending_users_form.select_field.choices = _pending_users_list
 
+    # Promote User to admin
     _users_to_promote_to_admin = MakeAdminForm()
     _users_list = []
     _users = User.query.filter(User.roles.any(Role.id.in_(
@@ -72,14 +70,26 @@ def user_management():
     for _user in _users:
         _users_list.append((_user.id, _user.username))
 
-    _users_to_promote_to_admin.user_to_make_admin.choices = _users_list
+    _users_to_promote_to_admin.select_field.choices = _users_list
 
-    _users_to_delete = DeleteUserForm()
-    _users_to_delete.user_to_delete.choices = _pending_users_list + _users_list
-
-    user_list = []
+    # Demote User from admin
+    _users_to_remove_from_admin = RemoveAdminForm()
+    _admins_list = []
     _admins = User.query.filter(User.roles.any(Role.id.in_(
         [(app.security.datastore.find_role("admin")).id]))).all()
+
+    for _user in _admins:
+        if _user.id == 1:
+            continue
+        _admins_list.append((_user.id, _user.username))
+
+    _users_to_remove_from_admin.select_field.choices = _admins_list
+
+    # Start Delete User
+    _users_to_delete = DeleteUserForm()
+    _users_to_delete.select_field.choices = _pending_users_list + _users_list
+
+    user_list = []
 
     for user in _pending_users:
         user_list.append(
@@ -122,17 +132,8 @@ def user_management():
     return render_template('user_management.htm',
                            users_to_approve_form=_pending_users_form,
                            users_to_make_admin_form=_users_to_promote_to_admin,
+                           users_to_remove_admin_form=_users_to_remove_from_admin,
                            users_to_delete_form=_users_to_delete,
                            users_list=user_list,
                            js_version=app.config['JS_VERSION']
                            )
-
-
-@admin.route('/config_comparison', methods=['GET'])
-@roles_accepted('admin', 'user')
-def config_comparison():
-    # log info
-    _configs = fetch_all_config_timestamps()
-    return render_template('config_comparison.htm',
-                           configs=list(reversed(_configs)),
-                           js_version=app.config['JS_VERSION'])

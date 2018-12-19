@@ -1,13 +1,22 @@
-
-
 var mapHelpText_stats = {};
-mapHelpText_stats['field_clock'] = 'ARTEMIS module serving as the clock signal generator for periodic tasks done in other modules (e.g., postgresql_db).';
+mapHelpText_stats['field_clock'] = 'ARTEMIS module serving as the clock signal generator for periodic tasks done in other modules (e.g., database).';
 mapHelpText_stats['field_configuration'] = 'ARTEMIS module responsible for the configuration of the other ARTEMIS modules.';
 mapHelpText_stats['field_detection'] = 'ARTEMIS module responsible for the detection of hijack events (current support for exact-prefix Type-0/1, any type of sub-prefix hijacks, and squatting attacks).';
 mapHelpText_stats['field_mitigation'] = 'ARTEMIS module responsible for the manual or automated mitigation of hijack events (current support for manual mitigation or via the invocation of a custom operator-supplied script).';
 mapHelpText_stats['field_monitor'] = 'ARTEMIS module responsible for real-time monitoring of BGP updates appearing on the visible control plane of public and local BGP monitors (current support for RIPE RIS, BGPStream RouteViews, RIPE RIS and beta BMP, local exaBGP monitors, historical trace replay).';
 mapHelpText_stats['field_observer'] = 'ARTEMIS module responsible for observing async changes in the configuration file, triggering the reloading of ARTEMIS modules.';
-mapHelpText_stats['field_postgresql_db'] = 'ARTEMIS module responsible for providing access to the Postgres DB used in the core of ARTEMIS for persistent storage of configuration, BGP update and BGP prefix hijack event data.';
+mapHelpText_stats['field_database'] = 'ARTEMIS module responsible for providing access to the Postgres DB used in the core of ARTEMIS for persistent storage of configuration, BGP update and BGP prefix hijack event data.';
+
+mapHelpText_stats['field_stats_Total_BGP_Updates'] = 'The total number of BGP updates seen on the monitors.';
+mapHelpText_stats['field_stats_Total_Unhandled_Updates'] = 'The total number of BGP updates not processed by the detection (either because they are in the queue, or because the detection was not running when they were fed to the monitors).';
+mapHelpText_stats['field_stats_Total_Hijacks'] = 'The total number of hijack events stored in the system.';
+mapHelpText_stats['field_stats_Resolved_Hijacks'] = 'The number of resolved hijack events (true positives that were marked by the user).';
+mapHelpText_stats['field_stats_Mitigation_Hijacks'] = 'The number of hijack events that are currently under mitigation (triggered by the user).';
+mapHelpText_stats['field_stats_Ongoing_Hijacks'] = 'The number of ongoing hijack events (not ignored or resolved or withdrawn or outdated).';
+mapHelpText_stats['field_stats_Ignored_Hijacks'] = 'The number of ignored hijack events (false positives that were marked by the user)';
+mapHelpText_stats['field_stats_Withdrawn_Hijacks'] = 'The number of withdrawn hijack events.';
+mapHelpText_stats['field_stats_Seen_Hijacks'] = 'The number of acknowledged/seen hijack events.';
+mapHelpText_stats['field_stats_Outdated_Hijacks'] = 'The number of hijack events that are currently outdated.';
 
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
@@ -68,6 +77,7 @@ mapHelpText_hijack_status['field_hijack_status_ignored'] = 'Ignored hijack event
 mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'Hijack events that are currently under mitigation</br>(triggered by the user).';
 mapHelpText_hijack_status['field_hijack_status_outdated'] = 'Hijack events that match a configuration that is now deprecated.';
 
+
 function displayHelpTextTable(){
 	$('th[helpText]').each(function( index ) {
 		var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
@@ -116,5 +126,51 @@ function displayHelpMoreBGPupdate(){
         $(this).attr('data-html', "true");
         $(this).attr('data-placement', "top");
         $(this).tooltip()
+    });
+}
+
+var services_map = null;
+
+function get_services_mapping(){
+    return fetch(static_urls['rrcs_location']
+        ).then(response => response.json()
+        ).then(data => services_map = data
+        ).catch(err => console.log(err));
+}
+
+function service_to_name(){
+	if(services_map == null){
+		get_services_mapping();
+	}
+
+	$("service").mouseover(function() {
+		var text = $(this).text();
+		var collector_info = "Unknown";
+		if(text.includes('->')){
+			var list_ = text.split('-> ');
+			var collector_name = list_[list_.length - 1];
+			if(collector_name in services_map){
+				if(collector_name.includes('route-views')){
+					collector_info = "Name: " + collector_name + "</br>"
+					collector_info += "MFG: " + services_map[collector_name].MFG + "</br>"
+					collector_info += "BGP_proto: " + services_map[collector_name].BGP_proto + "</br>"
+					collector_info += "Location: " + services_map[collector_name].location + "</br>"
+				}else{
+					collector_info = "Name: " + collector_name + "</br>";
+					collector_info += "Information: " + services_map[collector_name].info;
+				}
+			}
+		}
+		var value = '<p class="tooltip-custom-margin">' + collector_info + '</p>';
+        $(this).prop('title', value);
+        $(this).attr('data-toggle', "tooltip");
+        $(this).attr('data-html', "true");
+        $(this).attr('data-placement', "top");
+        $(this).tooltip('show')
+	});
+
+    $("service").mouseout(function() {
+        $(this).attr('mouse_hovered', 'false');
+        $(this).tooltip('hide');
     });
 }

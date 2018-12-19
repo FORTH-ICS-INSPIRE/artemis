@@ -1,15 +1,13 @@
 from yaml import load as yload
-import logging
 import requests
 import json
 from webapp.utils import flatten
 from webapp.utils import API_URL_FLASK
-
+import logging
 
 log = logging.getLogger('webapp_logger')
 
 API_PATH = 'http://' + API_URL_FLASK
-
 
 class Configuration():
 

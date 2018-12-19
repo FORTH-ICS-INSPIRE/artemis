@@ -1,5 +1,9 @@
 {% extends "layout.htm" %}
 
+{% block title %}
+    {{super()}} - Visualizations
+{% endblock %}
+
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -39,21 +43,29 @@
 
         <div class="row">
             <div class="col-lg-12">
-                <h3>Configured Prefix Graph: <font color="red">prefix (p)</font> -> <font color="green">origin (o)</font> -> <font color="blue">neighbor (n)</font></h3>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-12">
-                <h3></h3>
-            </div>
-        </div>
-
-        <div id="graph"></div>
-
-        <div class="row">
-            <div class="col-lg-12">
-                <h3>Other Visualization (TBD)</h3>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> <h3>Configured Prefix Graph: <font color="red">prefix (p)</font> -> <font color="green">origin (o)</font> -> <font color="blue">neighbor (n)</font></h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div id="graph"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-1">
+                            <div class="col-lg-10 offset-lg-1">
+                                <div class="card card-body card-body-hide" id="distinct_values_text"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -227,8 +239,6 @@
                 for (asn in cachedData) {
                     if (typeof cachedData[asn] == 'undefined' || cachedData[asn] == null){
                         get_asn_data(asn);
-                        console.log(asn);
-                        console.log(cachedData[asn]);
                         all_resolved = false;
                         break;
                     }

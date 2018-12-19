@@ -58,8 +58,7 @@ which implements the exaBGP BGP update publisher, or
 RIPE RIS BGP update publisher.
 
 ### Adding custom (containerized) modules
-```
-TBD
-```
+
+- Usage of character '\_' on module name is prohibited.
 
 (Credits: Some of the content of this file is adapted from https://raw.githubusercontent.com/hasura/graphql-engine/master/CONTRIBUTING.md)

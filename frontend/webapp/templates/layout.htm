@@ -48,8 +48,12 @@
                                 <a class="navbar-brand dropdown-toggle" href="#" id="admin_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</a>
                                 <div class="dropdown-menu" aria-labelledby="admin_dropdown">
                                     <a class="dropdown-item" href="{{ url_for('actions.password_change') }}">Change Password</a>
-                                    <a class="dropdown-item" href="{{ url_for('admin.config_comparison') }}">{{ _('Config Comparison') }}</a>
+                                    <a class="dropdown-item" href="{{ url_for('main.config_comparison') }}">{{ _('Config Comparison') }}</a>
                                 </div>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="navbar-brand" target="_blank" href="https://www.inspire.edu.gr/artemis/">{{ _('About') }}</a>
                             </li>
 
                             {% endif %} {% if not user.is_authenticated %}

@@ -1,8 +1,11 @@
 {% extends "layout_container.htm" %}
 
+{% block title %}
+    {{super()}} - Pending Administrator Approval
+{% endblock %}
+
 {% block head %}
     {{super()}}
-  	<title>ARTEMIS - Pending Administrator Approval</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 {% endblock %}

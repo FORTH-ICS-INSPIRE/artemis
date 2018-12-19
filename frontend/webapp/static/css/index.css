@@ -128,3 +128,17 @@ tr.shown td.details-control {
     margin-left:20px;
     margin-right:20px;
 }
+
+.card-body-hide {
+    display: none;
+}
+
+.form-control-sm-auto {
+    height: calc(1.8125rem + 2px);
+    padding: .25rem .5rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .2rem;
+    width: auto;
+    display: inline-block;
+}

@@ -160,7 +160,7 @@ function format_hijack_status(data){
 }
 
 function format_service(service) {
-    return service.replace(/\|/g, ' -> ');
+    return "<service>" + service.replace(/\|/g, ' -> ') + "</service>";
 }
 
 function format_origin_as(n) {

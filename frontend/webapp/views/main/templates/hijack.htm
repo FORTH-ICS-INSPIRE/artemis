@@ -1,10 +1,16 @@
 {% extends "layout.htm" %}
 
+{% block title %}
+    {{super()}} - Hijack
+{% endblock %}
+
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
 {% endblock %}
 
 {% block page_content %}
@@ -215,7 +221,7 @@
                         <i class="fa fa-bell fa-fw"></i> Related BGP Updates
                     </div>
                     <div class="panel-body">
-                        <table class="table table-striped table-bordered" id="bgp_updates">
+                        <table class="table table-striped table-bordered" style="width:100%" id="bgp_updates">
                             <thead>
                                 <th helpText="field_bgp_timestamp">Timestamp</th>
                                 <th helpText="field_prefix">Prefix</th>
@@ -285,6 +291,7 @@
                     'offset': 0,
                     'limit': 0
                 };
+            var downloadTable_parameters = null;
             var fields_to_display = [
                 ['prefix', 'Prefix', 'field_prefix'],
                 ['origin_as', 'Origin AS', 'field_origin_as'],
@@ -436,43 +443,53 @@
 
             function construct_filter_bgp_update_query(){
                 var filters = [];
+                var download_filters = [];
                 inspect_input_of_search_boxes();
 
                 filters.push('hijack_key.cs.{'+ initial_data['key'] + "}");
 
                 if(filter_parameters['time'] != null){
                     filters.push('timestamp.gte.' + filter_parameters['time']['start_time'] + ',timestamp.lte.' + filter_parameters['time']['end_time']);
+                    download_filters.push('timestamp.gte.' + filter_parameters['time']['start_time'] + ',timestamp.lte.' + filter_parameters['time']['end_time']);
                 }
 
                 if(filter_parameters['prefix'] != null){
                     filters.push('prefix.eq.' + filter_parameters['prefix']);
+                    download_filters.push('prefix.eq.' + filter_parameters['prefix']);
                 }
 
                 if(filter_parameters['origin_as'] != null){
                     filters.push('origin_as.eq.' + filter_parameters['origin_as']);
+                    download_filters.push('origin_as.eq.' + filter_parameters['origin_as']);
                 }
 
                 if(filter_parameters['as_path'] != null){
                     filters.push('as_path.cs.{' + filter_parameters['as_path'] + "}");
+                    download_filters.push('as_path.cs.{' + filter_parameters['as_path'] + "}");
                 }
 
                 if(filter_parameters['peer_asn'] != null){
                     filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
+                    download_filters = filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
                 }
 
                 if(filter_parameters['service'] != null){
                     var _service = filter_parameters['service'].replace(/ -> |-> | -> |->/gi, '|');
                     filters.push('service.like.*' + _service + '*');
+                    download_filters.push('service.like.*' + _service + '*');
                 }
 
                 if(filter_parameters['type'] != null){
                     filters.push('type.eq.' + filter_parameters['type']);
+                    download_filters.push('type.eq.' + filter_parameters['type']);
+                    downloadTable_parameters = '(' + download_filters.join() + ')';
                 }
 
                 if(filters.length > 0){
                     datatable_parameters['and'] = '(' + filters.join() + ')';
                 }else{
                     delete datatable_parameters['and'];
+                    downloadTable_parameters = null;
                 }
             }
             
@@ -483,13 +500,14 @@
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
+                    "pagingType": "numbers",
                     ajax: function(data, callback, settings) {
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
                         datatable_parameters['order'] =  columns[data.order[0].column].data + "." + data.order[0].dir;
                         $.ajax({
                             type: "POST",
-                            url: '{{ url_for('proxy_api') }}',
+                            url: "{{ url_for('proxy_api') }}",
                             dataType: "json",
                             data: { "action": "view_bgpupdates", "parameters" : JSON.stringify(datatable_parameters) },
                             success: function(data, status, xhr){
@@ -513,6 +531,8 @@
                                 }
                             });
                         });
+                        $("#bgp_updates_wrapper").children('div').eq(0).children('div').eq(1).html('<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
+                        downloadTable_update_link();
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
@@ -532,6 +552,9 @@
                             "width": "14px"
                         }
                     ],
+                    "rowReorder": {
+                        "selector": 'td:nth-child(2)'
+                    },
                     "columnDefs": [
                         {
                             "targets": [7,8],
@@ -541,7 +564,8 @@
                             "targets": [6,7,8],
                             "className": "text-center",
                         }
-                    ]
+                    ],
+                    "responsive": true
                 });
             }
 
@@ -784,6 +808,15 @@
                 });
             }
             {% endif %}
+
+            function downloadTable_update_link(){
+                var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_bgpupdates";
+                if(downloadTable_parameters != null){
+                    url += "&parameters=" + downloadTable_parameters;
+                }
+                $("#download_table_button").attr("href", url);
+            }
+
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
         <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
@@ -791,6 +824,8 @@
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
+        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
         <script src="{{ url_for('static', filename='js/codemirror.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/textile.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>

@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0] - 2018-12-DD
+## [1.0] - 2018-12-20
 ### Added (initial release)
 * Monitor module, providing real-time monitoring of the changes in the BGP routes of the network's prefixes.
 Support for the following route collectors and interfaces:
@@ -72,6 +72,7 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
   * change password
   * manage users
   * view visualization of per-prefix AS-level graphs (until the first hop neighbor), according to configuration
+* User interface for both mobile and desktop environments
 * Support for both IPv4 and IPv6 prefixes
 * Support for handling AS-Sets, Confederations, AS sequences, path prepending, loops, etc. appearing during the monitoring + detection processes
 * Support for email/syslog/other notifications for new hijacks
@@ -93,7 +94,22 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 * Support for running multiple detector instances
 * Optional support for Kubernetes setups (single physical machine)
 
-# SAMPLE
+### Changed
+- NA (Not Applicable)
+
+### Fixed
+- NA
+
+### Removed
+- NA
+
+### Deprecated
+- NA
+
+### Security
+- NA
+
+# TEMPLATE FOR NEW RELEASES
 ## [RELEASE_VERSION] - YYYY-MM-DD
 ### Added
 - TBD (Added a new feature)

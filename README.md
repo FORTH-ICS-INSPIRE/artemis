@@ -23,32 +23,31 @@ Table of Contents
 
 ## General
 
-ARTEMIS is a defense approach versus BGP prefix hijacking attacks
-(a) based on accurate and fast detection operated by the AS itself,
-leveraging the pervasiveness of publicly available BGP monitoring
-services and their recent shift towards real-time streaming,
-thus (b) enabling flexible and fast mitigation of hijacking events.
+ARTEMIS is a defense approach against BGP prefix hijacking attacks.
+It is (a) based on accurate and fast detection operated by the AS itself,
+by leveraging the pervasiveness of publicly available BGP monitoring
+services and it (b) enables flexible and fast mitigation of hijacking events.
 Compared to existing approaches/tools, ARTEMIS combines characteristics
 desirable to network operators such as comprehensiveness, accuracy, speed,
 privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
 can be neutralized within a minute!
 
-You can read more about ARTEMIS (and check e.g., news, presentations and related publications)
-on the INSPIRE Group ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
+You can read more about the ARTEMIS methodology and research experiments 
+on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
-ARTEMIS can be run on a testing server/VM as a modular (and extensible)
-multi-container application. Up to today it has been tested at a major 
-greek ISP, a dual-homed edge academic network (our home institutional network),
-and a major R&E US backbone network.
+ARTEMIS can be run on a server/VM as a modular and extensible
+multi-container application. It has been tested at a major 
+greek ISP, a dual-homed edge academic network,
+and a major US R&E backbone network.
 
 ## Features
 
 For a detailed list of supported features please check the [CHANGELOG](CHANGELOG.md) file
-(section: "Added"). On a high level, the following main features are supported:
+(section: "Added"). The following main features are supported:
 
-* Real-time monitoring of the changes in the BGP routes of the network's prefixes.
-* Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types:
+* Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS.
+* Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types (please refer to the attack taxonomy in the ARTEMIS ToN paper):
   * exact-prefix type-0/1
   * sub-prefix of any type
   * squatting attacks.
@@ -69,14 +68,11 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 
 ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
-copy of the ARTEMIS tool up and running on your local machine
-for testing purposes. For instructions on how to set up ARTEMIS
-in e.g., a Kubernetes environment, please contact the [ARTEMIS team](#development-team-and-contact).
-Physical distribution of ARTEMIS containers (and functionality in general) is future work.
+copy of the ARTEMIS tool up and running on your local machine. For instructions on how to set up ARTEMIS
+in a Kubernetes environment, please contact the [ARTEMIS team](#development-team-and-contact).
 
 ## Minimum Technical Requirements
 
-* 1 testing server/VM
 * CPU: 4 cores
 * RAM: 4 GB
 * HDD: 100 GB (less may suffice, depending on the use case)
@@ -86,7 +82,7 @@ Physical distribution of ARTEMIS containers (and functionality in general) is fu
 and docker should have sudo privileges, if only non-sudo user is allowed
 * Other: SSH server
 
-Moreover, one may optionally configure firewall rules related to the testing server/VM.
+Moreover, one may optionally configure firewall rules related to the server/VM.
 We recommend using [ufw](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-ubuntu-16-04)
 for this task. Please check the comments in the respective script we provide and
 set the corresponding <> fields in the file before running:
@@ -148,37 +144,14 @@ docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml bui
 after you have entered the root folder of the cloned ARTEMIS repo and configured docker-compose.yaml
 to build from local images instead of pulling remotely. 
 
-Note extra services that you can use are
-currently the following (it is optional to use them):
+Extra services that you can use with ARTEMIS are:
 * exabgp: local exaBGP monitor
 * migrate: for migration of already existing DBs in production deployments
-* grafana: UI factory, under evaluation
+* grafana: visual interfaces
 
 ## How to Configure and Run
 
 Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
-
-There, you will find information on the following topics (more to come):
-* The basic logic of ARTEMIS
-* Configuring the ARTEMIS system
-* Starting ARTEMIS
-* Configuring logging and notifications and accessing ARTEMIS logs
-* Using the web application
-* Registering users
-* Managing users
-* User account actions
-* Configuring and controlling ARTEMIS through the web application
-* Viewing ARTEMIS configurations
-* Viewing ARTEMIS state
-* Viewing BGP updates
-* Viewing BGP hijacks
-* Performing actions on BGP hijacks
-* Invoking multiple detectors
-* CLI controls
-* Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
-* Configuring backups
-* Migrating an existing DB to a new version
-* Exiting ARTEMIS
 
 **Note: We highly recommend going through the wiki instructions before using ARTEMIS for the first time.**
 

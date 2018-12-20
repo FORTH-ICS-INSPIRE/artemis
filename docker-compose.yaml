@@ -21,6 +21,8 @@ services:
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
         volumes:
+            # uncomment to run from source code
+            # - ./backend/:/root/
             - ./backend/configs/:/etc/artemis/
             - ./backend/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
@@ -52,6 +54,8 @@ services:
             JS_VERSION: ${JS_VERSION}
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
         volumes:
+            # uncomment to run from source code
+            # - ./frontend/:/root/
             - ./frontend/webapp/configs/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
     nginx:

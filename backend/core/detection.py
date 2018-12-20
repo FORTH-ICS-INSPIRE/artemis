@@ -569,6 +569,7 @@ class Detection():
                         [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
                     redis_pipeline.sadd('persistent-keys', hijack_value['key'])
                     result = hijack_value
+                    mail_log.info('{}'.format(result))
                 redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
             except Exception:
                 log.exception('exception')
@@ -586,7 +587,6 @@ class Detection():
                 priority=0
             )
             hij_log.info('{}'.format(result))
-            mail_log.info('{}'.format(result))
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

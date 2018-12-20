@@ -1,8 +1,7 @@
-from flask import Blueprint, render_template, redirect, request, jsonify
+from flask import Blueprint, render_template, redirect, request, jsonify, current_app as app
 from flask_security.decorators import roles_required
 from webapp.data.models import User, Role
 from webapp.templates.forms import ApproveUserForm, MakeAdminForm, RemoveAdminForm, DeleteUserForm
-from webapp.core import app
 from webapp.core.actions import Submit_new_config
 import json
 

@@ -13,7 +13,11 @@ from flask_security import user_registered
 from webapp.core.proxy_api import proxy_api_post, proxy_api_downloadTable
 from datetime import timedelta
 from webapp.core.fetch_config import Configuration
+from webapp.views.main.main_view import main
+from webapp.views.admin.admin_view import admin
+from webapp.views.actions.actions_view import actions
 import time
+import logging
 
 app = Flask(__name__,
             instance_path=get_app_base_path(),
@@ -27,15 +31,12 @@ with app.app_context():
     db.init_app(app)
     babel = Babel(app)
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
+    werk_log = logging.getLogger('werkzeug')
+    werk_log.setLevel(logging.ERROR)
     data_store = app.security.datastore
     jwt = JWTManager(app)
 
 app.login_manager.session_protection = "strong"
-
-from webapp.views.main.main_view import main
-from webapp.views.admin.admin_view import admin
-from webapp.views.actions.actions_view import actions
-
 app.register_blueprint(main, url_prefix='/main')
 app.register_blueprint(admin, url_prefix='/admin')
 app.register_blueprint(actions, url_prefix='/actions')

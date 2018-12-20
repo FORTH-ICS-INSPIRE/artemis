@@ -2,7 +2,7 @@ import os
 import json
 import psycopg2
 import time
-from codecs import c_open
+from codecs import open as c_open
 
 
 def get_target_version():

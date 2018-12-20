@@ -4,7 +4,7 @@ from webapp.utils import API_URL_FLASK
 from flask import stream_with_context, Response
 import logging
 
-log = logging.getLogger('webapp_log')
+log = logging.getLogger('webapp_logger')
 
 API_PATH = "http://" + API_URL_FLASK
 

@@ -47,7 +47,7 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 (section: "Added"). The following main features are supported:
 
 * Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS.
-* Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types (please refer to the attack taxonomy in the ARTEMIS ToN paper):
+* Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types (please refer to the attack taxonomy in our [ARTEMIS ToN paper](https://www.inspire.edu.gr/wp-content/pdfs/artemis_TON2018.pdf)):
   * exact-prefix type-0/1
   * sub-prefix of any type
   * squatting attacks.
@@ -93,56 +93,53 @@ sudo ./other/ufw_setup.sh
 
 ## How to Install
 
-Make sure that your Ubuntu package sources are up-to-date:
-```
-sudo apt-get update
-```
+1. Make sure that your Ubuntu package sources are up-to-date:
 
-If not already installed, follow the instructions
-[here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce)
-to install the latest version of the docker tool for managing containers,
-and [here](https://docs.docker.com/compose/install/#install-compose)
-to install the docker-compose tool for supporting multi-container Docker applications.
-In production, we have used the following versions successfully:
-```
-$ docker -v
-Docker version 18.09.0, build 4d60db4
-$ docker-compose -v
-docker-compose version 1.20.0, build ca8d3c6
-```
+   ```
+   sudo apt-get update
+   ```
 
-If you would like to run docker without using sudo, please create
-a docker group, if not existing:
-```
-sudo groupadd docker
-```
-and then add the user to the docker group:
-```
-sudo usermod -aG docker $USER
-```
-For more instructions and potential debugging on this please consult this
-[webpage](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user).
+2. If not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install the latest version of the docker tool for managing containers, and [here](https://docs.docker.com/compose/install/#install-compose) to install the docker-compose tool for supporting multi-container Docker applications.
 
-Install ntp for time synchronization:
-```
-sudo apt-get install ntp
-```
+   In production, we have used the following versions successfully:
+   ```
+   $ docker -v
+   Docker version 18.09.0, build 4d60db4
+   $ docker-compose -v
+   docker-compose version 1.20.0, build ca8d3c6
+   ```
 
-Install git for downloading ARTEMIS:
-```
-sudo apt-get install git
-```
-and then download ARTEMIS from github (if not already downloaded).
+3. If you would like to run docker without using sudo, please create a docker group, if not existing:
 
-Note that while the backend and frontend code is available in the repository,
-docker-compose is configured to pull the latest images that are built remotely
-on [docker cloud](https://cloud.docker.com/) (TBD). 
-In any case, you can build ARTEMIS locally (optional) by running:
-```
-docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml build
-```
-after you have entered the root folder of the cloned ARTEMIS repo and configured docker-compose.yaml
-to build from local images instead of pulling remotely. 
+   ```
+   sudo groupadd docker
+   ```
+   and then add the user to the docker group:
+   ```
+   sudo usermod -aG docker $USER
+   ```
+   For more instructions and potential debugging on this please consult this [webpage](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user).
+
+4. Install ntp for time synchronization:
+
+   ```
+   sudo apt-get install ntp
+   ```
+
+5. Install git for downloading ARTEMIS:
+   ```
+   sudo apt-get install git
+   ```
+   and then download ARTEMIS from github (if not already downloaded).
+
+6. Note that while the backend and frontend code is available in the repository, docker-compose is configured to pull the latest images that are built remotely on [docker cloud](https://cloud.docker.com/) (TBD).
+
+   In any case, you can build ARTEMIS locally (optional) by running:
+   ```
+   docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml build
+   ```
+   after you have entered the root folder of the cloned ARTEMIS repo and configured docker-compose.yaml
+   to build from local images instead of pulling remotely.
 
 Extra services that you can use with ARTEMIS are:
 * exabgp: local exaBGP monitor
@@ -153,7 +150,44 @@ Extra services that you can use with ARTEMIS are:
 
 Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
 
-**Note: We highly recommend going through the wiki instructions before using ARTEMIS for the first time.**
+The basic actions that you will need to do, stated here for brevity, are the following:
+
+1. Edit environment variables in .env file (especially the security-related variables)
+
+2. Configure certificates and NGINX reverse proxy for https termination
+
+   ```
+   frontend/webapp/configs/certs
+   frontend/webapp/configs/nginx.conf
+   ```
+
+3. Start ARTEMIS
+
+   ```
+   docker-compose -f docker.compose.yaml up -d
+   ```
+
+4. Visit UI and configure ARTEMIS
+
+   ```
+   https://<ARTEMIS_HOST>
+   ```
+
+5. Activate backups (recommended)
+
+   ```
+   docker-compose exec postgres bash
+   crond
+   exit
+   ```
+
+6. Stop ARTEMIS (optional)
+
+   ```
+   docker-compose -f docker.compose.yaml stop
+   ```
+
+**Note: We highly recommend going through the detailed wiki instructions before using ARTEMIS for the first time.**
 
 ## Contributing
 Please check [this file](CONTRIBUTING.md).

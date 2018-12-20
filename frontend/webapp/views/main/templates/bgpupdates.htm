@@ -161,7 +161,7 @@
             var static_urls = {
                 "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
                 "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
-                "rrcs_location": "{{ url_for('static', filename='js/rrcs_info/collectors_info.json') }}"
+                "rrcs_location": "{{ url_for('static', filename='rrcs_info/collectors_info.json') }}"
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
             var datatable_parameters = {
@@ -412,7 +412,7 @@
 
                 if(filter_parameters['peer_asn'] != null){
                     filters.push('{ peer_asn: {_eq: "' + filter_parameters['peer_asn'] + '"} }');
-                    download_filters = filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
+                    download_filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
                 }
 
                 if(filter_parameters['service'] != null){
@@ -674,16 +674,16 @@
 
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/graphql-prod.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils-prod.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
         <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
         <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
         <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/display_info-prod.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/ripestat-prod.js') }}{{ js_version }}"></script>
     {% endblock %}
 {% endblock %}

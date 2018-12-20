@@ -282,13 +282,13 @@
             });
 
         </script>
-        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/codemirror.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/yaml.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/graphql-prod.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils-prod.js') }}{{ js_version }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/yaml/yaml.min.js"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/dialog.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/search.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/searchcursor.js') }}{{ js_version }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/dialog/dialog.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/search.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/searchcursor.min.js"></script>
     {% endblock %}
 {% endblock %}

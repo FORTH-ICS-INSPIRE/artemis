@@ -447,6 +447,7 @@
                 inspect_input_of_search_boxes();
 
                 filters.push('hijack_key.cs.{'+ initial_data['key'] + "}");
+                download_filters.push('hijack_key.cs.{'+ initial_data['key'] + "}");
 
                 if(filter_parameters['time'] != null){
                     filters.push('timestamp.gte.' + filter_parameters['time']['start_time'] + ',timestamp.lte.' + filter_parameters['time']['end_time']);
@@ -470,7 +471,7 @@
 
                 if(filter_parameters['peer_asn'] != null){
                     filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
-                    download_filters = filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
+                    download_filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
                 }
 
                 if(filter_parameters['service'] != null){
@@ -482,15 +483,16 @@
                 if(filter_parameters['type'] != null){
                     filters.push('type.eq.' + filter_parameters['type']);
                     download_filters.push('type.eq.' + filter_parameters['type']);
-                    downloadTable_parameters = '(' + download_filters.join() + ')';
                 }
 
                 if(filters.length > 0){
                     datatable_parameters['and'] = '(' + filters.join() + ')';
+                    downloadTable_parameters = '(' + download_filters.join() + ')';
                 }else{
                     delete datatable_parameters['and'];
                     downloadTable_parameters = null;
                 }
+                downloadTable_update_link();
             }
             
             function render_table(){
@@ -819,17 +821,17 @@
 
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/utils-prod.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
         <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
-        <script src="{{ url_for('static', filename='js/codemirror.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/textile.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/textile/textile.min.js"></script>
+        <script src="{{ url_for('static', filename='js/custom/display_info-prod.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/ripestat-prod.js') }}{{ js_version }}"></script>
 
     {% endblock %}
 {% endblock %}

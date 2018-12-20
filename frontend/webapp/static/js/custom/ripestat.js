@@ -36,7 +36,7 @@ function asn_map_to_name(){
             }else{
                 var data_ = [];
 
-                if(ASN_int != NaN && ASN_int > 0 && ASN_int < 4294967295){
+                if(!isNaN(ASN_int) && ASN_int > 0 && ASN_int < 4294967295){
                     getData(ASN_int)
                         .then(([name, countries]) => {
                         data_[0] = (name.data.names[ASN_int]);

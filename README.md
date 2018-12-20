@@ -1,8 +1,8 @@
 # ARTEMIS
 
 <p align="left">
-<img src="docs/images/inst_logos/forth_logo.png" height="100" width="200"/>
-<img src="docs/images/inst_logos/caida_logo.png" height="100" width="100" hspace="50"/>
+<img src="docs/images/inst_logos/forth_logo.png" height="140" width="200"/>
+<img src="docs/images/inst_logos/caida_logo.png" height="143" width="100" hspace="50"/>
 </p>
 
 Table of Contents

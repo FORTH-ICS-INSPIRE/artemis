@@ -55,7 +55,7 @@ services:
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
         volumes:
             # uncomment to run from source code
-            - ./frontend/:/root/
+            # - ./frontend/:/root/
             - ./frontend/webapp/configs/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
     nginx:

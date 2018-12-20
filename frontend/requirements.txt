@@ -17,5 +17,5 @@ Flask-WTF==0.14.2
 WTForms==2.1
 SQLAlchemy==1.2.5
 PyYAML==3.13
-requests==2.19.1
+requests==2.21.0
 Flask-JWT-Extended==3.13.1

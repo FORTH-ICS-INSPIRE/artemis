@@ -132,19 +132,7 @@ sudo ./other/ufw_setup.sh
    ```
    and then download ARTEMIS from github (if not already downloaded).
 
-6. Note that while the backend and frontend code is available in the repository, docker-compose is configured to pull the latest images that are built remotely on [docker cloud](https://cloud.docker.com/) (TBD).
-
-   In any case, you can build ARTEMIS locally (optional) by running:
-   ```
-   docker-compose -f docker.compose.yaml -f docker_compose.<extra_service>.yaml build
-   ```
-   after you have entered the root folder of the cloned ARTEMIS repo and configured docker-compose.yaml
-   to build from local images instead of pulling remotely.
-
-Extra services that you can use with ARTEMIS are:
-* exabgp: local exaBGP monitor
-* migrate: for migration of already existing DBs in production deployments
-* grafana: visual interfaces
+6. The docker-compose utility is configured to pull the latest **stable** released images that are built remotely on [docker cloud](https://cloud.docker.com/). No further installation/building actions are required on your side at this point.
 
 ## How to Configure and Run
 

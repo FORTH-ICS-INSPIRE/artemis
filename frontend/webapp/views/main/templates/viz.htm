@@ -76,7 +76,7 @@
     {% block scripts %}
         {{super()}}
         <script src="https://d3js.org/d3.v5.min.js"></script>
-        <script src="{{ url_for('static', filename='js/viz.js') }}{{ js_version }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
         <script src="{{ url_for('static', filename='js/d3-graphviz.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
         <script>
@@ -248,18 +248,19 @@
                     timeoutObj = setTimeout(function() {periodic_graph_render(selected_prefix, config_data)}, 5000);
                 }
             }
-
-            $("#prefixes_selection").change(function () {
-                if (timeoutObj != null){
-                    clearTimeout(timeoutObj);
-                }
-                var option = this.value;
-                var selected_prefix = null;
-                if(option != "None"){
-                    selected_prefix = option;
-                }
-                draw_prefix_graph(selected_prefix, config_data);
-                periodic_graph_render(selected_prefix, config_data);
+            $(document).ready(function(){
+                $("#prefixes_selection").change(function () {
+                    if (timeoutObj != null){
+                        clearTimeout(timeoutObj);
+                    }
+                    var option = this.value;
+                    var selected_prefix = null;
+                    if(option != "None"){
+                        selected_prefix = option;
+                    }
+                    draw_prefix_graph(selected_prefix, config_data);
+                    periodic_graph_render(selected_prefix, config_data);
+                });
             });
 
         </script>

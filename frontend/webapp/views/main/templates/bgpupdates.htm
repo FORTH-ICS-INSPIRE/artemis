@@ -412,7 +412,7 @@
 
                 if(filter_parameters['peer_asn'] != null){
                     filters.push('{ peer_asn: {_eq: "' + filter_parameters['peer_asn'] + '"} }');
-                    download_filters = filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
+                    download_filters.push('peer_asn.eq.' + filter_parameters['peer_asn']);
                 }
 
                 if(filter_parameters['service'] != null){

@@ -1,7 +1,7 @@
 # ARTEMIS
 
 <p align="left">
-<img src="docs/images/inst_logos/forth_logo.png" height="140" width="200"/>
+<img src="docs/images/inst_logos/forth_logo.png" height="92" width="300" style="margin-bottom: 15px;"/>
 <img src="docs/images/inst_logos/caida_logo.png" height="143" width="100" hspace="50"/>
 </p>
 

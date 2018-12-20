@@ -9,6 +9,7 @@ log = logging.getLogger('webapp_logger')
 
 API_PATH = 'http://' + API_URL_FLASK
 
+
 class Configuration():
 
     def __init__(self):
@@ -75,6 +76,7 @@ class Configuration():
 
     def get_raw_json_config(self):
         return self.raw_json_config
+
 
 def fetch_all_config_timestamps():
     try:

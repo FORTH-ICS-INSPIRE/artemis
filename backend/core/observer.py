@@ -106,5 +106,6 @@ def run():
     service = Observer()
     service.run()
 
+
 if __name__ == '__main__':
     run()

@@ -13,3 +13,4 @@ postgres-data-current/*
 postgres-data-backup/*
 .idea
 *.rdb
+*_history

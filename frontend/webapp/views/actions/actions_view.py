@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session
+from flask import Blueprint, render_template, session, current_app as app
 from flask import redirect, request, jsonify
 from flask_security.decorators import roles_required, login_required
 from flask_security.utils import hash_password, verify_password
@@ -6,7 +6,6 @@ from webapp.data.models import db, User
 from webapp.templates.forms import ApproveUserForm, MakeAdminForm, RemoveAdminForm, DeleteUserForm, ChangePasswordForm
 from webapp.core.actions import Resolve_hijack, Mitigate_hijack, Ignore_hijack, Comment_hijack, Seen_hijack, Hijacks_multiple_action
 from webapp.core.modules import Modules_state
-from webapp.core import app
 import json
 
 actions = Blueprint('actions', __name__, template_folder='templates')

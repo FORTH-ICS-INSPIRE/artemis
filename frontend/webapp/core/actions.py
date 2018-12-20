@@ -5,6 +5,7 @@ import logging
 
 log = logging.getLogger('webapp_logger')
 
+
 class Resolve_hijack():
 
     def __init__(self, hijack_key, prefix, type_, hijack_as):
@@ -233,6 +234,7 @@ class Submit_new_config():
         else:
             return "No changes found on the new configuration.", False
 
+
 class Seen_hijack():
 
     def __init__(self):
@@ -289,6 +291,7 @@ class Seen_hijack():
             return True
         else:
             return False
+
 
 class Hijacks_multiple_action():
 

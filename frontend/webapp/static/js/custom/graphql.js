@@ -221,17 +221,3 @@ function fetchConfigStatsLive(ws, cb_func) {
     }
 }
 
-function fetchDbStats() {
-    return fetch("/api/graphql", {
-        method: "POST",
-        headers: {
-            "X-Hasura-Access-Key": "@rt3m1s.",
-            "Content-Type": "application/json; charset=utf-8"
-        },
-        body: JSON.stringify({
-            query: 'query ' + db_stats_query
-        })
-    })
-    .then(response => response.json())
-    .catch(error => console.error(error));
-}

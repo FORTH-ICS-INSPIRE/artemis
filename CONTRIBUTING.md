@@ -59,9 +59,9 @@ which implements the exaBGP BGP update publisher, or
 [this script](backend/core/taps/ripe_ris.py) which implements the
 RIPE RIS BGP update publisher.
 
-### Adding custom (containerized) modules
+### Adding custom (containerized) micro-services
 
-- Usage of character '\_' on module name is prohibited.
-- For more information contact the ARTEMIS team (details in the [README](README.md).
+- Usage of character '\_' on micro-service names is prohibited.
+- For more information contact the ARTEMIS team (details in the [README](README.md)).
 
 (Credits: Some of the content of this file is adapted from [here](https://raw.githubusercontent.com/hasura/graphql-engine/master/CONTRIBUTING.md).)

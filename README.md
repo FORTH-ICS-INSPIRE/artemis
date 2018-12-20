@@ -164,7 +164,7 @@ The basic actions that you will need to do, stated here for brevity, are the fol
 3. Start ARTEMIS
 
    ```
-   docker-compose -f docker.compose.yaml up -d
+   docker-compose up -d
    ```
 
 4. Visit UI and configure ARTEMIS
@@ -184,7 +184,7 @@ The basic actions that you will need to do, stated here for brevity, are the fol
 6. Stop ARTEMIS (optional)
 
    ```
-   docker-compose -f docker.compose.yaml stop
+   docker-compose stop
    ```
 
 **Note: We highly recommend going through the detailed wiki instructions before using ARTEMIS for the first time.**

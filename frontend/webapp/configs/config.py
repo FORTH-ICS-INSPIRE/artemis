@@ -1,9 +1,9 @@
 import os
-import logging
 from flask_compress import Compress
 from flask_security import Security, SQLAlchemyUserDatastore
 from webapp.data.models import db, Role, User
 from webapp.templates.forms import ExtendedRegisterForm, ExtendedLoginForm
+import logging
 
 
 class BaseConfig(object):

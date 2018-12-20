@@ -1,8 +1,7 @@
-from flask import Blueprint, render_template, redirect, request, jsonify
-from flask_security.decorators import roles_required, roles_accepted
+from flask import Blueprint, render_template, redirect, request, jsonify, current_app as app
+from flask_security.decorators import roles_required
 from webapp.data.models import User, Role
 from webapp.templates.forms import ApproveUserForm, MakeAdminForm, RemoveAdminForm, DeleteUserForm
-from webapp.core import app
 from webapp.core.actions import Submit_new_config
 import json
 
@@ -48,7 +47,7 @@ def handle_new_config():
 @admin.route('/user_management', methods=['GET'])
 @roles_required('admin')
 def user_management():
-    
+
     # Approve pending User
     _pending_users_form = ApproveUserForm()
 

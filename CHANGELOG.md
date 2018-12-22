@@ -2,11 +2,11 @@
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- bug report and feature request issue templates
 
 ### Changed
-- Misc updates on README
-- Moved static js libraries to CDN
+- done misc updates on README
+- moved static js libraries to CDN
 
 ### Fixed
 - TBD (bug-fix)

@@ -1,5 +1,26 @@
 # Changelog
 
+## [UNRELEASED] - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- Misc updates on README
+- Moved static js libraries to CDN
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- ACKS file (moved to README in-line)
+
+### Deprecated
+- removed deprecated graphql query
+
+### Security
+- Bumped flask from 0.12.2 to 1.0.2 in /frontend
+- Bumped requests from 2.19.1 to 2.21.0 in /frontend
+
 ## [1.0] - 2018-12-20
 ### Added (initial release)
 * Monitor micro-service, providing real-time monitoring of the changes in the BGP routes of the network's prefixes.

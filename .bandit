@@ -1,0 +1,3 @@
+[bandit]
+skips: B303
+exclude: frontend\webapp\static

@@ -158,7 +158,7 @@ class Mitigation():
                         'starting custom mitigation of hijack {}'.format(hijack_event))
                     hijack_event_str = json.dumps(hijack_event)
                     subprocess.Popen(
-                        [mitigation_action, '-i', hijack_event_str])
+                        ' '.join([mitigation_action, '-i', hijack_event_str]), shell=False)
                 # do something
                 mit_started = {'key': hijack_event['key'], 'time': time.time()}
                 self.producer.publish(

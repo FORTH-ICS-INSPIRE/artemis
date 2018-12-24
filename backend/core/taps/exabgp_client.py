@@ -29,7 +29,8 @@ class ExaBGP():
             self.exchange.declare()
 
             try:
-                self.sio = SocketIO('http://' + self.host, namespace=BaseNamespace)
+                self.sio = SocketIO('http://' + self.host,
+                                    namespace=BaseNamespace)
 
                 def exabgp_msg(bgp_message):
                     msg = {

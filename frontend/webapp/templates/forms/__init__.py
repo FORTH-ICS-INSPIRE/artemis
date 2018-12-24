@@ -30,11 +30,13 @@ class ExtendedRegisterForm(RegisterForm):
                 message='invalid email address')])
 
     def validate(self):
-        if db.session.query(User).filter(User.username == self.username.data.strip()).first():
+        if db.session.query(User).filter(
+                User.username == self.username.data.strip()).first():
             self.username.errors += ("Username already registered",)
             return False
 
-        if db.session.query(User).filter(User.email == self.email.data.strip()).first():
+        if db.session.query(User).filter(
+                User.email == self.email.data.strip()).first():
             self.email.errors += ("Email already registered",)
             return False
 

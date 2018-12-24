@@ -30,7 +30,8 @@ def display_hijacks():
             hijack_keys = hijack_keys.split(',')
         else:
             hijack_keys = [hijack_keys]
-        return render_template('hijacks.htm', hijack_keys=hijack_keys, prefixes=None)
+        return render_template(
+            'hijacks.htm', hijack_keys=hijack_keys, prefixes=None)
     else:
         app.config['configuration'].get_newest_config()
         prefixes_list = app.config['configuration'].get_prefixes_list()

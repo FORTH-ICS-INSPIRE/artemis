@@ -47,7 +47,8 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                             peer_asn = int(row[2])
                             for prefix in prefixes:
                                 try:
-                                    base_ip, mask_length = this_prefix.split('/')
+                                    base_ip, mask_length = this_prefix.split(
+                                        '/')
                                     our_prefix = IPNetwork(prefix)
                                     if IPAddress(base_ip) in our_prefix and int(
                                             mask_length) >= our_prefix.prefixlen:
@@ -72,7 +73,8 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                                     serializer='json'
                                                 )
                                         else:
-                                            log.warning('Invalid format message: {}'.format(msg))
+                                            log.warning(
+                                                'Invalid format message: {}'.format(msg))
                                 except Exception:
                                     log.exception('prefix')
                         except Exception:

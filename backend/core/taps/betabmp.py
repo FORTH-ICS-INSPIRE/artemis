@@ -103,7 +103,8 @@ def run_bgpstream_beta_bmp(prefixes=[]):
                                         serializer='json'
                                     )
                             else:
-                                log.warning('Invalid format message: {}'.format(msg))
+                                log.warning(
+                                    'Invalid format message: {}'.format(msg))
                 try:
                     elem = rec.get_next_elem()
                 except BaseException:

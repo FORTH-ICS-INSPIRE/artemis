@@ -15,47 +15,50 @@ RUN pip3 install git+https://github.com/supervisor/supervisor@master
 RUN make clean && make
 
 RUN mkdir src
-WORKDIR src
+WORKDIR /root/src
 
 RUN curl -O https://research.wand.net.nz/software/wandio/wandio-1.0.4.tar.gz && \
     tar zxf wandio-1.0.4.tar.gz
-WORKDIR wandio-1.0.4
+WORKDIR /root/src/wandio-1.0.4
 RUN ./configure && make && make install && ldconfig
 
-WORKDIR ..
+WORKDIR /root/src
 
 RUN curl -LO https://github.com/edenhill/librdkafka/archive/v0.11.1.tar.gz && \
     tar zxf v0.11.1.tar.gz
-WORKDIR librdkafka-0.11.1
+WORKDIR /root/src/librdkafka-0.11.1
 RUN ./configure && make && make install && ldconfig
 
-WORKDIR ..
+WORKDIR /root/src
 
 RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/libbgpstream-2.0.0-beta-5.tar.gz && \
     tar zxf libbgpstream-2.0.0-beta-5.tar.gz
 RUN patch -p0 < ../patches/libbgpstream.patch
-WORKDIR libbgpstream-2.0.0
+WORKDIR /root/src/libbgpstream-2.0.0
 RUN ./configure && make && make install && ldconfig
 
-WORKDIR ..
+WORKDIR /root/src
 
 RUN curl -O http://bgpstream.caida.org/bundles/caidabgpstreamwebhomepage/dists/pybgpstream-2.0.0-beta-2.tar.gz && \
     tar zxf pybgpstream-2.0.0-beta-2.tar.gz
-WORKDIR pybgpstream-2.0.0
+WORKDIR /root/src/pybgpstream-2.0.0
 RUN python setup.py build_ext && python setup.py install
 
-WORKDIR ..
+WORKDIR /root/src
 
 RUN curl -O http://download.redis.io/redis-stable.tar.gz && \
     tar xzvf redis-stable.tar.gz
-WORKDIR redis-stable
+WORKDIR /root/src/redis-stable
 RUN make && make install && ldconfig && \
     mkdir -p /etc/redis/ && cp redis.conf /etc/redis/
 
-WORKDIR ../..
+WORKDIR /root
 
 RUN mkdir -p /etc/artemis/ && \
-    mkdir -p /var/log/artemis/
+    mkdir -p /var/log/artemis/ && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY ./configs/* /etc/artemis/
 
 ENTRYPOINT ["./entrypoint"]

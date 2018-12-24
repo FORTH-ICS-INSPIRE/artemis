@@ -61,7 +61,7 @@ def decompose_path(path):
         else:
             decomposed_hops = [hop]
         new_paths = []
-        if len(decomposed_paths) == 0:
+        if not decomposed_paths:
             for dec_hop in decomposed_hops:
                 new_paths.append([dec_hop])
         else:
@@ -83,7 +83,7 @@ def normalize_msg_path(msg):
     msg['orig_path'] = None
     if isinstance(path, list):
         dec_paths = decompose_path(path)
-        if len(dec_paths) == 0:
+        if not dec_paths:
             msg['path'] = []
             msgs = [msg]
         elif len(dec_paths) == 1:
@@ -162,7 +162,7 @@ def mformat_validator(msg):
         for comm in msg['communities']:
             if not isinstance(comm, dict):
                 return False
-            if len(community_keys - set(comm.keys())) != 0:
+            if (community_keys - set(comm.keys())):
                 return False
         return True
 

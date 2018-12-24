@@ -207,9 +207,11 @@ def monitor_state():
             modules_state.call(data['name'], 'start')
         else:
             modules_state.call(data['name'], 'stop')
-        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+        return json.dumps({'success': True}), 200, {
+            'ContentType': 'application/json'}
     except Exception as e:
-        return json.dumps({'success': False, 'error': str(e)}), 500, {'ContentType': 'application/json'}
+        return json.dumps({'success': False, 'error': str(e)}), 500, {
+            'ContentType': 'application/json'}
 
 
 @actions.route('/submit_hijack_seen', methods=['POST'])

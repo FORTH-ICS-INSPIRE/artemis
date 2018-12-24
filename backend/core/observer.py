@@ -45,10 +45,10 @@ class Observer():
 
     class Handler(FileSystemEventHandler):
 
-        def __init__(self, d, f, connection):
+        def __init__(self, d, fn, connection):
             super().__init__()
             self.connection = connection
-            self.path = '{}/{}'.format(d, f)
+            self.path = '{}/{}'.format(d, fn)
             with open(self.path, 'r') as f:
                 self.content = f.readlines()
 
@@ -64,7 +64,7 @@ class Observer():
                     content = f.readlines()
                 # Taken any action here when a file is modified.
                 changes = ''.join(difflib.unified_diff(self.content, content))
-                if len(changes) > 0:
+                if changes:
                     self.response = None
                     self.correlation_id = uuid()
                     callback_queue = Queue(uuid(),

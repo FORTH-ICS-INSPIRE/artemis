@@ -83,7 +83,8 @@ def setup():
         app.artemis_logger.debug('Request status of all modules..')
         app.config['status'] = modules.get_response_all()
     except BaseException:
-        app.artemis_logger.exception('exception while retrieving status of modules..')
+        app.artemis_logger.exception(
+            'exception while retrieving status of modules..')
         exit(-1)
 
     app.artemis_logger.debug("setting database for the first time")
@@ -206,8 +207,7 @@ def index():
         return redirect("/login")
     elif current_user.has_role(data_store.find_role("pending")):
         return redirect("/pending")
-    else:
-        return redirect("/overview")
+    return redirect("/overview")
 
 
 @app.route('/pending', methods=['GET', 'POST'])
@@ -226,7 +226,8 @@ def overview():
     newest_config = app.config['configuration'].get_raw_config()
     return render_template('index.htm',
                            config=newest_config,
-                           config_timestamp=app.config['configuration'].get_config_last_modified(),
+                           config_timestamp=app.config['configuration'].get_config_last_modified(
+                           ),
                            js_version=app.config['JS_VERSION'])
 
 
@@ -243,11 +244,12 @@ def proxy_api():
         parameters = request.values.get('parameters')
         action = request.values.get('action')
         return jsonify(proxy_api_post(action, parameters))
-    else:
-        download_table = request.args.get('download_table')
-        parameters = request.args.get('parameters')
-        action = request.args.get('action')
-        if(download_table == 'true'):
-            return proxy_api_downloadTable(action, parameters)
-        else:
-            return jsonify(proxy_api_post(action, parameters))
+
+    download_table = request.args.get('download_table')
+    parameters = request.args.get('parameters')
+    action = request.args.get('action')
+
+    if download_table == 'true':
+        return proxy_api_downloadTable(action, parameters)
+
+    return jsonify(proxy_api_post(action, parameters))

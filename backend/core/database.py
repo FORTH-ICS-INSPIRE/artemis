@@ -740,22 +740,24 @@ class Database():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             cmd_ = None
-            action_is_related_to_seen = False
-            action_is_ignore = False
+            seen_action = False
+            ignore_action = False
+            resolve_action = False
             try:
                 if not raw['keys']:
                     cmd_ = None
                 elif raw['action'] == 'mark_resolved':
                     cmd_ = 'UPDATE hijacks SET resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;'
+                    resolve_action = True
                 elif raw['action'] == 'mark_ignored':
                     cmd_ = 'UPDATE hijacks SET ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND key=%s;'
-                    action_is_ignore = True
+                    ignore_action = True
                 elif raw['action'] == 'mark_seen':
                     cmd_ = 'UPDATE hijacks SET seen=true WHERE key=%s;'
-                    action_is_related_to_seen = True
+                    seen_action = True
                 elif raw['action'] == 'mark_not_seen':
                     cmd_ = 'UPDATE hijacks SET seen=false WHERE key=%s;'
-                    action_is_related_to_seen = True
+                    seen_action = True
 
             except Exception:
                 log.exception('None action: {}'.format(raw))
@@ -785,10 +787,10 @@ class Database():
                             entry[1],  # hijack_as
                             entry[2]  # type
                         )
-                        if action_is_related_to_seen:
+                        if seen_action:
                             self.db_cur.execute(cmd_, (hijack_key, ))
                             self.db_conn.commit()
-                        elif action_is_ignore:
+                        elif ignore_action:
                             # if ongoing, force rekeying and delete persistent
                             # too
                             if self.redis.sismember(
@@ -797,7 +799,7 @@ class Database():
                                     self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(cmd_, (hijack_key, ))
                             self.db_conn.commit()
-                        else:
+                        elif resolve_action:
                             # if ongoing, force rekeying and delete persistent
                             # too
                             if self.redis.sismember(
@@ -806,6 +808,9 @@ class Database():
                                     self.redis, redis_hijack_key, hijack_key)
                             self.db_cur.execute(cmd_, (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
+                        else:
+                            raise BaseException('unreachable code reached')
+
                     except Exception:
                         log.exception('{}'.format(raw))
 

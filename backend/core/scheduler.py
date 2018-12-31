@@ -41,7 +41,8 @@ class Scheduler():
             self._db_clock_send()
 
         def _get_module_status(self, module):
-            server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
+            server = ServerProxy(
+                'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
             try:
                 return any([x['name'] for x in server.supervisor.getAllProcessInfo()
                             if x['group'] == module and x['state'] == 20])

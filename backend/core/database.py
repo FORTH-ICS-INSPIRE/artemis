@@ -90,7 +90,8 @@ class Database():
             try:
                 self.db_cur.execute('TRUNCATE table process_states')
                 self.db_conn.commit()
-                server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
+                server = ServerProxy(
+                    'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
                 cmd_ = 'INSERT INTO process_states (name, running) ' \
                        'VALUES (%s, %s)'
                 processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
@@ -378,7 +379,8 @@ class Database():
                 key = msg_['key']  # persistent hijack key
 
                 if not self.redis.sismember('persistent-keys', key):
-                    # fetch BGP updates with deprecated hijack keys and republish to detection
+                    # fetch BGP updates with deprecated hijack keys and
+                    # republish to detection
                     rekey_update_keys = list(msg_['monitor_keys'])
                     rekey_updates = []
                     try:
@@ -403,7 +405,8 @@ class Database():
                                 'timestamp': entry[8].timestamp()
                             })
 
-                        # delete monitor keys from redis so that they can be reprocessed
+                        # delete monitor keys from redis so that they can be
+                        # reprocessed
                         for key in rekey_update_keys:
                             self.redis.delete(key)
 
@@ -487,8 +490,7 @@ class Database():
             prefix_node = self.prefix_tree.search_best(prefix)
             if prefix_node is not None:
                 return prefix_node.prefix
-            else:
-                return None
+            return None
 
         def handle_config_notify(self, message):
             log.debug(
@@ -541,7 +543,8 @@ class Database():
                             pickle.dumps(config)).hexdigest()
                         latest_config_in_db_hash = self._retrieve_most_recent_config_hash()
                         if config_hash != latest_config_in_db_hash:
-                            self._save_config(config_hash, config, raw_config, comment)
+                            self._save_config(
+                                config_hash, config, raw_config, comment)
                         else:
                             log.debug('database config is up-to-date')
             except Exception:
@@ -571,8 +574,9 @@ class Database():
                             'hijack_as': entry[5],
                             'hij_type': entry[6]
                         })
-                    if len(results):
-                        for result_bucket in [results[i:i + 10] for i in range(0, len(results), 10)]:
+                    if results:
+                        for result_bucket in [results[i:i + 10]
+                                              for i in range(0, len(results), 10)]:
                             self.producer.publish(
                                 result_bucket,
                                 exchange=self.hijack_exchange,
@@ -626,7 +630,8 @@ class Database():
                     raw['type'])
                 # if ongoing, force rekeying and delete persistent too
                 if self.redis.sismember('persistent-keys', raw['key']):
-                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
+                    purge_redis_eph_pers_keys(
+                        self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
                     (datetime.datetime.now(), raw['key'],))
@@ -657,7 +662,8 @@ class Database():
                     raw['type'])
                 # if ongoing, force rekeying and delete persistent too
                 if self.redis.sismember('persistent-keys', raw['key']):
-                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw['key'])
+                    purge_redis_eph_pers_keys(
+                        self.redis, redis_hijack_key, raw['key'])
                 self.db_cur.execute(
                     'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                     (raw['key'],
@@ -733,32 +739,31 @@ class Database():
         def handle_hijack_multiple_action(self, message):
             raw = message.payload
             log.debug('payload: {}'.format(raw))
-            action_ = ""
-            action_is_related_to_seen = False
-            action_is_ignore = False
+            cmd_ = None
+            seen_action = False
+            ignore_action = False
+            resolve_action = False
             try:
-                if(raw['action'] == 'mark_resolved'):
-                    action_ = 'resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND'
-                elif(raw['action'] == 'mark_ignored'):
-                    action_ = 'ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND'
-                    action_is_ignore = True
-                elif(raw['action'] == 'mark_seen'):
-                    action_ = 'seen=true'
-                    action_is_related_to_seen = True
-                elif(raw['action'] == 'mark_not_seen'):
-                    action_ = 'seen=false'
-                    action_is_related_to_seen = True
-                else:
-                    action_ = None
-
-                if len(raw['keys']) == 0:
-                    action_ = None
+                if not raw['keys']:
+                    cmd_ = None
+                elif raw['action'] == 'mark_resolved':
+                    cmd_ = 'UPDATE hijacks SET resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;'
+                    resolve_action = True
+                elif raw['action'] == 'mark_ignored':
+                    cmd_ = 'UPDATE hijacks SET ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND key=%s;'
+                    ignore_action = True
+                elif raw['action'] == 'mark_seen':
+                    cmd_ = 'UPDATE hijacks SET seen=true WHERE key=%s;'
+                    seen_action = True
+                elif raw['action'] == 'mark_not_seen':
+                    cmd_ = 'UPDATE hijacks SET seen=false WHERE key=%s;'
+                    seen_action = True
 
             except Exception:
                 log.exception('None action: {}'.format(raw))
-                action_ = None
+                cmd_ = None
 
-            if action_ is None:
+            if cmd_ is None:
                 self.producer.publish(
                     {
                         'status': 'rejected'
@@ -782,24 +787,30 @@ class Database():
                             entry[1],  # hijack_as
                             entry[2]  # type
                         )
-                        if action_is_related_to_seen:
-                            self.db_cur.execute(
-                                'UPDATE hijacks SET ' + action_ + ' WHERE key=%s;', (hijack_key, ))
+                        if seen_action:
+                            self.db_cur.execute(cmd_, (hijack_key, ))
                             self.db_conn.commit()
-                        elif action_is_ignore:
-                            # if ongoing, force rekeying and delete persistent too
-                            if self.redis.sismember('persistent-keys', hijack_key):
-                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
-                            self.db_cur.execute(
-                                'UPDATE hijacks SET ' + action_ + ' key=%s;', (hijack_key, ))
+                        elif ignore_action:
+                            # if ongoing, force rekeying and delete persistent
+                            # too
+                            if self.redis.sismember(
+                                    'persistent-keys', hijack_key):
+                                purge_redis_eph_pers_keys(
+                                    self.redis, redis_hijack_key, hijack_key)
+                            self.db_cur.execute(cmd_, (hijack_key, ))
+                            self.db_conn.commit()
+                        elif resolve_action:
+                            # if ongoing, force rekeying and delete persistent
+                            # too
+                            if self.redis.sismember(
+                                    'persistent-keys', hijack_key):
+                                purge_redis_eph_pers_keys(
+                                    self.redis, redis_hijack_key, hijack_key)
+                            self.db_cur.execute(cmd_, (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
                         else:
-                            # if ongoing, force rekeying and delete persistent too
-                            if self.redis.sismember('persistent-keys', hijack_key):
-                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, hijack_key)
-                            self.db_cur.execute(
-                                'UPDATE hijacks SET ' + action_ + ' key=%s;', (datetime.datetime.now(), hijack_key))
-                            self.db_conn.commit()
+                            raise BaseException('unreachable code reached')
+
                     except Exception:
                         log.exception('{}'.format(raw))
 
@@ -830,7 +841,7 @@ class Database():
             finally:
                 num_of_entries = len(self.insert_bgp_entries)
                 self.insert_bgp_entries.clear()
-                return num_of_entries
+            return num_of_entries
 
         def _handle_bgp_withdrawals(self):
             cmd_ = 'SELECT DISTINCT ON (hijacks.key) hijacks.peers_seen, hijacks.peers_withdrawn, ' \
@@ -850,14 +861,15 @@ class Database():
                     # key
                     self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1]))
                     entries = self.db_cur.fetchall()
-                    if entries is None or len(entries) == 0:
+                    if entries is None or not entries:
                         update_normal_withdrawals.add((withdrawal[3],))
                         continue
                     for entry in entries:
                         # entry -> 0: peers_seen, 1: peers_withdrawn, 2:
                         # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
                         # 6: time_last
-                        update_hijack_withdrawals.add((entry[2], withdrawal[3]))
+                        update_hijack_withdrawals.add(
+                            (entry[2], withdrawal[3]))
                         if entry[5] >= withdrawal[2]:
                             continue
                         # matching withdraw with a hijack
@@ -870,7 +882,8 @@ class Database():
                                     withdrawal[0],
                                     entry[3],
                                     entry[4])
-                                purge_redis_eph_pers_keys(self.redis, redis_hijack_key, entry[2])
+                                purge_redis_eph_pers_keys(
+                                    self.redis, redis_hijack_key, entry[2])
                                 self.db_cur.execute(
                                     'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                     'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
@@ -925,7 +938,7 @@ class Database():
                     # hijack
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
-            if len(update_bgp_entries) > 0:
+            if update_bgp_entries:
                 cmd_1 = 'UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) ' \
                     'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( ' \
                     'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B, (VALUES %s) AS data (v1, v2) ' \
@@ -958,7 +971,7 @@ class Database():
             update_bgp_entries.clear()
 
             # Update the BGP entries using the handled messages
-            if len(self.handled_bgp_entries) > 0:
+            if self.handled_bgp_entries:
                 try:
                     cmd_ = 'UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key'
                     psycopg2.extras.execute_values(
@@ -1056,7 +1069,7 @@ class Database():
                     'communities': entry[7],  # communities
                     'timestamp': entry[8].timestamp()
                 })
-            if len(results):
+            if results:
                 self.producer.publish(
                     results,
                     exchange=self.update_exchange,
@@ -1066,7 +1079,7 @@ class Database():
                 )
 
         def _handle_hijack_outdate(self):
-            if len(self.outdate_hijacks) == 0:
+            if not self.outdate_hijacks:
                 return
             try:
                 cmd_ = 'UPDATE hijacks SET active=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
@@ -1083,13 +1096,13 @@ class Database():
             ), self._handle_bgp_withdrawals()
             self._handle_hijack_outdate()
             str_ = ''
-            if inserts > 0:
+            if inserts:
                 str_ += 'BGP Updates Inserted: {}\n'.format(inserts)
-            if updates > 0:
+            if updates:
                 str_ += 'BGP Updates Updated: {}\n'.format(updates)
-            if hijacks > 0:
+            if hijacks:
                 str_ += 'Hijacks Inserted: {}'.format(hijacks)
-            if withdrawals > 0:
+            if withdrawals:
                 str_ += 'Withdrawals Handled: {}'.format(withdrawals)
             if str_ != '':
                 log.debug('{}'.format(str_))

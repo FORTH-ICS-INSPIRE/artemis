@@ -73,9 +73,9 @@ def migrate(next_db_version, db_cur, db_conn):
 
 def update_version(current_db_version, db_cur, db_conn):
     print("Updating db version to {}...".format(current_db_version))
-    cmd = "UPDATE db_details SET version={0}, upgraded_on=now();".format(current_db_version)
+    cmd = "UPDATE db_details SET version=%s, upgraded_on=now();"
     try:
-        db_cur.execute(cmd)
+        db_cur.execute(cmd, (current_db_version,))
         db_conn.commit()
     except Exception:
         db_conn.rollback()
@@ -96,7 +96,8 @@ def start_migrations(current_db_version, target_db_version, db_conn):
         next_db_version = int(current_db_version) + 1
         next_db_version_key_str = str(next_db_version)
         if next_db_version_key_str in migration_data['migrations']:
-            status = migrate(migration_data['migrations'][next_db_version_key_str], db_cur, db_conn)
+            status = migrate(
+                migration_data['migrations'][next_db_version_key_str], db_cur, db_conn)
             if status:
                 current_db_version = int(current_db_version) + 1
                 update_version(current_db_version, db_cur, db_conn)
@@ -139,9 +140,11 @@ if __name__ == "__main__":
 
     if current_db_version < target_db_version:
         msg = "The db schema is old.\n"
-        msg += "Migrating from version {0} to {1}".format(current_db_version, target_db_version)
+        msg += "Migrating from version {0} to {1}".format(
+            current_db_version, target_db_version)
         print(msg)
-        result = start_migrations(current_db_version, target_db_version, db_conn)
+        result = start_migrations(
+            current_db_version, target_db_version, db_conn)
         print("The db schema has been succesfully updated!")
     else:
         print("The db schema is uptodate.")

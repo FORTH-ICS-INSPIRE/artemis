@@ -30,7 +30,8 @@ def display_time(seconds, granularity=2):
 class Modules_state():
 
     def __init__(self):
-        self.server = ServerProxy('http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
+        self.server = ServerProxy(
+            'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
 
     def call(self, module, action):
         try:
@@ -42,12 +43,12 @@ class Modules_state():
             else:
                 if action == 'start':
                     modules = self.is_any_up_or_running(module, up=False)
-                    for module in modules:
-                        self.server.supervisor.startProcess(module)
+                    for mod in modules:
+                        self.server.supervisor.startProcess(mod)
                 elif action == 'stop':
                     modules = self.is_any_up_or_running(module)
-                    for module in modules:
-                        self.server.supervisor.stopProcess(module)
+                    for mod in modules:
+                        self.server.supervisor.stopProcess(mod)
         except Exception:
             log.exception('exception')
 
@@ -67,9 +68,8 @@ class Modules_state():
             if up:
                 return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
                         if x['group'] == module and (x['state'] == 20 or x['state'] == 10)]
-            else:
-                return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
-                        if x['group'] == module and (x['state'] != 20 and x['state'] != 10)]
+            return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
+                    if x['group'] == module and (x['state'] != 20 and x['state'] != 10)]
         except Exception:
             log.exception('exception')
             return False

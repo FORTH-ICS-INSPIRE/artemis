@@ -177,8 +177,8 @@ class Monitor():
                     self.prefixes))
             for ris_monitor in self.monitors.get('riperis', []):
                 for prefix in self.prefixes:
-                    p = Popen(['python3', 'taps/ripe_ris.py',
-                               '--prefix', prefix, '--host', ris_monitor])
+                    p = Popen(['/usr/local/bin/python3', 'taps/ripe_ris.py',
+                               '--prefix', prefix, '--host', ris_monitor], shell=False)
                     self.process_ids.append(
                         ('RIPEris {} {}'.format(ris_monitor, prefix), p))
 
@@ -193,8 +193,8 @@ class Monitor():
             for exabgp_monitor in self.monitors.get('exabgp', []):
                 exabgp_monitor_str = '{}:{}'.format(
                     exabgp_monitor['ip'], exabgp_monitor['port'])
-                p = Popen(['python3', 'taps/exabgp_client.py',
-                           '--prefix', ','.join(self.prefixes), '--host', exabgp_monitor_str])
+                p = Popen(['/usr/local/bin/python3', 'taps/exabgp_client.py',
+                           '--prefix', ','.join(self.prefixes), '--host', exabgp_monitor_str], shell=False)
                 self.process_ids.append(
                     ('ExaBGP {} {}'.format(
                         exabgp_monitor_str, self.prefixes), p))
@@ -207,8 +207,8 @@ class Monitor():
                         self.monitors['bgpstreamhist'],
                         self.prefixes))
                 bgpstreamhist_dir = self.monitors['bgpstreamhist']
-                p = Popen(['python3', 'taps/bgpstreamhist.py',
-                           '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir])
+                p = Popen(['/usr/local/bin/python3', 'taps/bgpstreamhist.py',
+                           '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir], shell=False)
                 self.process_ids.append(
                     ('BGPStreamHist {} {}'.format(
                         bgpstreamhist_dir, self.prefixes), p))
@@ -221,8 +221,8 @@ class Monitor():
                         self.monitors['bgpstreamlive'],
                         self.prefixes))
                 bgpstream_projects = ','.join(self.monitors['bgpstreamlive'])
-                p = Popen(['python3', 'taps/bgpstreamlive.py',
-                           '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects])
+                p = Popen(['/usr/local/bin/python3', 'taps/bgpstreamlive.py',
+                           '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects], shell=False)
                 self.process_ids.append(
                     ('BGPStreamLive {} {}'.format(
                         bgpstream_projects, self.prefixes), p))
@@ -234,8 +234,8 @@ class Monitor():
                     'starting {} for {}'.format(
                         self.monitors['betabmp'],
                         self.prefixes))
-                p = Popen(['python3', 'taps/betabmp.py',
-                           '--prefix', ','.join(self.prefixes)])
+                p = Popen(['/usr/local/bin/python3', 'taps/betabmp.py',
+                           '--prefix', ','.join(self.prefixes)], shell=False)
                 self.process_ids.append(
                     ('Beta BMP {}'.format(
                         self.prefixes), p))

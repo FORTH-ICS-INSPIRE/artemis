@@ -290,12 +290,15 @@ class Detection():
             else:
                 monitor_event = json.loads(message.payload)
                 monitor_event['path'] = monitor_event['as_path']
-                monitor_event['timestamp'] = datetime(*map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
+                monitor_event['timestamp'] = datetime(
+                    *map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
 
-            if not self.redis.exists(monitor_event['key']) or 'hij_key' in monitor_event:
+            if not self.redis.exists(
+                    monitor_event['key']) or 'hij_key' in monitor_event:
                 raw = monitor_event.copy()
 
-                # mark the initial redis hijack key since it may change upon outdated checks
+                # mark the initial redis hijack key since it may change upon
+                # outdated checks
                 if 'hij_key' in monitor_event:
                     monitor_event['initial_redis_hijack_key'] = redis_key(
                         monitor_event['prefix'],
@@ -330,8 +333,10 @@ class Detection():
                             monitor_event['prefix'],
                             monitor_event['hijack_as'],
                             monitor_event['hij_type'])
-                        purge_redis_eph_pers_keys(self.redis, redis_hijack_key, monitor_event['hij_key'])
-                        self.mark_outdated(monitor_event['hij_key'], redis_hijack_key)
+                        purge_redis_eph_pers_keys(
+                            self.redis, redis_hijack_key, monitor_event['hij_key'])
+                        self.mark_outdated(
+                            monitor_event['hij_key'], redis_hijack_key)
                     elif not is_hijack:
                         self.mark_handled(raw)
 
@@ -519,34 +524,42 @@ class Detection():
             if hij_type == 'Q':
                 if len(monitor_event['path']) > 0:
                     hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
-            # for sub-prefix hijacks, the infection depends on whether the hijacker is the origin/neighbor/sth else
+            # for sub-prefix hijacks, the infection depends on whether the
+            # hijacker is the origin/neighbor/sth else
             elif hij_type == 'S':
                 if len(monitor_event['path']) > 1:
                     if hijacker == monitor_event['path'][-1]:
-                        hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
+                        hijack_value['asns_inf'] = set(
+                            monitor_event['path'][:-1])
                     elif hijacker == monitor_event['path'][-2]:
-                        hijack_value['asns_inf'] = set(monitor_event['path'][:-2])
+                        hijack_value['asns_inf'] = set(
+                            monitor_event['path'][:-2])
                     else:
                         # assume the hijacker does a Type-2
                         if len(monitor_event['path']) > 2:
-                            hijack_value['asns_inf'] = set(monitor_event['path'][:-3])
-            # for exact-prefix type-0/type-1 hijacks, the pollution depends on the type
+                            hijack_value['asns_inf'] = set(
+                                monitor_event['path'][:-3])
+            # for exact-prefix type-0/type-1 hijacks, the pollution depends on
+            # the type
             else:
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(int(hij_type) + 1)])
 
             # make the following operation atomic using blpop (blocking)
             # first, make sure that the semaphore is initialized
-            if self.redis.getset('{}token_active'.format(redis_hijack_key), 1) != b'1':
+            if self.redis.getset('{}token_active'.format(
+                    redis_hijack_key), 1) != b'1':
                 redis_pipeline = self.redis.pipeline()
-                redis_pipeline.lpush('{}token'.format(redis_hijack_key), 'token')
+                redis_pipeline.lpush(
+                    '{}token'.format(redis_hijack_key), 'token')
                 # lock, by extracting the token (other processes that access it at the same time will be blocked)
                 # attention: it is important that this command is batched in the pipeline since the db may async delete
                 # the token
                 redis_pipeline.blpop('{}token'.format(redis_hijack_key))
                 redis_pipeline.execute()
             else:
-                # lock, by extracting the token (other processes that access it at the same time will be blocked)
+                # lock, by extracting the token (other processes that access it
+                # at the same time will be blocked)
                 self.redis.blpop('{}token'.format(redis_hijack_key))
 
             # proceed now that we have clearance
@@ -574,9 +587,12 @@ class Detection():
             except Exception:
                 log.exception('exception')
             finally:
-                # unlock, by pushing back the token (at most one other process waiting will be unlocked)
-                redis_pipeline.set('{}token_active'.format(redis_hijack_key), 1)
-                redis_pipeline.lpush('{}token'.format(redis_hijack_key), 'token')
+                # unlock, by pushing back the token (at most one other process
+                # waiting will be unlocked)
+                redis_pipeline.set(
+                    '{}token_active'.format(redis_hijack_key), 1)
+                redis_pipeline.lpush(
+                    '{}token'.format(redis_hijack_key), 'token')
                 redis_pipeline.execute()
 
             self.producer.publish(

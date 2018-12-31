@@ -170,8 +170,7 @@ class Comment_hijack():
                 self.connection.drain_events()
         if self.response['status'] == 'accepted':
             return 'Comment saved.', True
-        else:
-            return "Error while saving.", False
+        return "Error while saving.", False
 
 
 class Submit_new_config():
@@ -193,7 +192,7 @@ class Submit_new_config():
     def send(self, new_config, old_config, comment):
 
         changes = ''.join(difflib.unified_diff(new_config, old_config))
-        if len(changes) > 0:
+        if changes:
             self.response = None
             self.correlation_id = uuid()
             callback_queue = Queue(uuid(),
@@ -227,12 +226,11 @@ class Submit_new_config():
             if self.response['status'] == 'accepted':
                 log.info('new configuration accepted:\n{}'.format(changes))
                 return 'Configuration file updated.', True
-            else:
-                log.info('invalid configuration:\n{}'.format(new_config))
-                return "Invalid configuration file.\n{}".format(
-                    self.response['reason']), False
-        else:
-            return "No changes found on the new configuration.", False
+
+            log.info('invalid configuration:\n{}'.format(new_config))
+            return "Invalid configuration file.\n{}".format(
+                self.response['reason']), False
+        return "No changes found on the new configuration.", False
 
 
 class Seen_hijack():
@@ -287,10 +285,7 @@ class Seen_hijack():
                       no_ack=True):
             while self.response is None:
                 self.connection.drain_events()
-        if self.response['status'] == 'accepted':
-            return True
-        else:
-            return False
+        return self.response['status'] == 'accepted'
 
 
 class Hijacks_multiple_action():
@@ -308,7 +303,8 @@ class Hijacks_multiple_action():
         try:
             self.connection = Connection(RABBITMQ_HOST)
         except BaseException:
-            log.exception('Hijacks_multiple_action failed to connect to rabbitmq.')
+            log.exception(
+                'Hijacks_multiple_action failed to connect to rabbitmq.')
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -345,7 +341,4 @@ class Hijacks_multiple_action():
                       no_ack=True):
             while self.response is None:
                 self.connection.drain_events()
-        if self.response['status'] == 'accepted':
-            return True
-        else:
-            return False
+        return self.response['status'] == 'accepted'

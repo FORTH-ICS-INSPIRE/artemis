@@ -30,7 +30,7 @@ class Configuration():
             self.raw_json = response.json()
             log.debug('received config json: {}'.format(self.raw_json))
             # Check if postgrest is up and if a valid config exists
-            if not isinstance(self.raw_json, list) or len(self.raw_json) == 0:
+            if not isinstance(self.raw_json, list) or not self.raw_json:
                 return False
             if 'config_data' in self.raw_json[0]:
                 self.raw_json_config = self.raw_json[0]['config_data']
@@ -48,16 +48,16 @@ class Configuration():
         return True
 
     def get_prefixes_list(self):
-        if self.config_yaml is None:
+        if not self.config_yaml:
             return []
-        else:
-            prefixes_list = []
-            for rule in self.config_yaml['rules']:
-                rule['prefixes'] = flatten(rule['prefixes'])
-                for prefix in rule['prefixes']:
-                    if prefix not in prefixes_list:
-                        prefixes_list.append(prefix)
-            return prefixes_list
+
+        prefixes_list = []
+        for rule in self.config_yaml['rules']:
+            rule['prefixes'] = flatten(rule['prefixes'])
+            for prefix in rule['prefixes']:
+                if prefix not in prefixes_list:
+                    prefixes_list.append(prefix)
+        return prefixes_list
 
     def get_raw_response(self):
         return self.raw_json
@@ -84,10 +84,8 @@ def fetch_all_config_timestamps():
         url_ = API_PATH + '/view_configs'
         response = requests.get(url=url_)
         raw_json = response.json()
-        if len(raw_json) > 0:
+        if raw_json:
             return raw_json
-        else:
-            return None
     except BaseException:
         log.exception('failed to fetch all config timestamps')
     return None

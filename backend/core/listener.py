@@ -51,7 +51,8 @@ def run():
         body = dict([pair.split(":") for pair in body.split(" ")])
         # write_stderr('{} | {}'.format(headers, body))
 
-        if headers['eventname'] in ('PROCESS_STATE_RUNNING', 'PROCESS_STATE_STOPPED'):
+        if headers['eventname'] in (
+                'PROCESS_STATE_RUNNING', 'PROCESS_STATE_STOPPED'):
             process = body['processname']
             if process != 'listener':
                 new_state = headers['eventname'] == 'PROCESS_STATE_RUNNING'

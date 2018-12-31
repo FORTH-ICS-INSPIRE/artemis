@@ -1,12 +1,13 @@
 import json
-from urllib.request import urlopen
+import requests
 from bs4 import BeautifulSoup
 
 collectors_obj = {}
 
 
 def parse_routeviews():
-    html = urlopen("http://www.routeviews.org/routeviews/index.php/collectors/")
+    html = requests.get(
+        "http://www.routeviews.org/routeviews/index.php/collectors/").text
     soup = BeautifulSoup(html, "html.parser")
     rows = soup.find_all('tr')
 
@@ -26,7 +27,8 @@ def parse_routeviews():
 
 
 def parse_ripe_ris():
-    html = urlopen("https://www.ripe.net/analyse/internet-measurements/routing-information-service-ris/ris-raw-data")
+    html = requests.get(
+        "https://www.ripe.net/analyse/internet-measurements/routing-information-service-ris/ris-raw-data").text
     soup = BeautifulSoup(html, "html.parser")
     rows = soup.find_all('li')
 
@@ -35,7 +37,8 @@ def parse_ripe_ris():
         if '.ripe.net' in text:
             name = text.split('.')[0]
             collectors_obj[name] = {}
-            collectors_obj[name]['info'] = text.split('ripe.net')[1].lstrip().rstrip('\n')
+            collectors_obj[name]['info'] = text.split(
+                'ripe.net')[1].lstrip().rstrip('\n')
 
 
 def main():

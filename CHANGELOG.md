@@ -3,13 +3,14 @@
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
 - bug report and feature request issue templates
+- code of conduct
 
 ### Changed
 - done misc updates on README
 - moved static js libraries to CDN
 
 ### Fixed
-- TBD (bug-fix)
+- misc code quality improvements
 
 ### Removed
 - ACKS file (moved to README in-line)
@@ -22,7 +23,7 @@
 - Bumped requests from 2.19.1 to 2.21.0 in /frontend
 
 ## [1.0] - 2018-12-20
-### Added (initial release)
+### Added (initial Apollo release)
 * Monitor micro-service, providing real-time monitoring of the changes in the BGP routes of the network's prefixes.
 Support for the following route collectors and interfaces:
   * [RIPE RIS](http://stream-dev.ris.ripe.net/demo2) (real-time streaming)

@@ -12,7 +12,8 @@ Table of Contents
   * [Getting Started](#getting-started)
   * [Minimum Technical Requirements](#minimum-technical-requirements)
   * [How to Install](#how-to-install)
-  * [How to Run](#how-to-run)
+  * [How to Configure and Run](#how-to-configure-and-run)
+  * [Demo](#demo)
   * [Contributing](#contributing)
   * [Development Team and Contact](#development-team-and-contact)
   * [Versioning](#versioning)
@@ -183,6 +184,14 @@ The basic actions that you will need to do, stated here for brevity, are the fol
    ```
 
 **Note: We highly recommend going through the detailed wiki instructions before using ARTEMIS for the first time.**
+
+## Demo
+A running demo of ARTEMIS based on the configuration of our home institute (FORTH) can be found [here](http://www.inspire.edu.gr/artemis/demo/).
+You can access the demo as a guest (non-admin) user by using the following credentials:
+* username: "guest"
+* password: "guest@artemis2018"
+
+*Please do not request new accounts on the demo portal. Use the given credentials to browse ARTEMIS as a guest user.*
 
 ## Contributing
 Please check [this file](CONTRIBUTING.md).

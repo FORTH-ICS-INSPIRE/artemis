@@ -19,6 +19,8 @@
 - removed deprecated graphql query
 
 ### Security
+- Bumped pyyaml from 3.13 to 4.2b4 in /backend
+- Bumped pyyaml from 3.13 to 4.2b4 in /frontend
 - Bumped flask from 0.12.2 to 1.0.2 in /frontend
 - Bumped requests from 2.19.1 to 2.21.0 in /frontend
 

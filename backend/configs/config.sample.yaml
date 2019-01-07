@@ -31,11 +31,11 @@ asns:
     my_asn: &my_asn
         1234
     my_asns: &my_asns
-        321, 432
+        [321, 432]
     my_neighbor: &my_neighbor
         222
     my_neighbors: &my_neighbors
-        333, 444
+        [333, 444]
 # End of ASN Definitions
 
 # Start of Rule Definitions

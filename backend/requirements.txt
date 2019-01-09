@@ -12,7 +12,7 @@ ruamel.yaml==0.15.47
 setproctitle==1.1.10
 socketIO-client-nexus==0.7.6
 socketIO-client==0.7.2
-vine==1.1.4
+vine==1.2.0
 psycopg2-binary==2.7.5
 redis==2.10.6
 Cython==0.29

@@ -8,7 +8,7 @@ pid==2.2.0
 py-radix==0.10.0
 pytz==2018.5
 PyYAML==3.13
-ruamel.yaml==0.15.47
+ruamel.yaml==0.15.85
 setproctitle==1.1.10
 socketIO-client-nexus==0.7.6
 socketIO-client==0.7.2

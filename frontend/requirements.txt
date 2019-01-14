@@ -15,7 +15,7 @@ Flask-Security==3.0.0
 Flask-SQLAlchemy==2.3.2
 Flask-WTF==0.14.2
 WTForms==2.1
-SQLAlchemy==1.2.5
+SQLAlchemy==1.2.16
 PyYAML==3.13
 requests==2.21.0
 Flask-JWT-Extended==3.13.1

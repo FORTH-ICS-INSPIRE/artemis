@@ -252,6 +252,7 @@
                 ws.addEventListener('open', (event) => {
                     fetch("/jwt/auth", {
                         method: "GET",
+                        credentials: 'include',
                     })
                     .then(response => response.json())
                     .then(data => ws.send(JSON.stringify({

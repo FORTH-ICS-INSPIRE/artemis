@@ -2,21 +2,22 @@
 
 ## [UNRELEASED] - YYYY-MM-DD
 ### Added
-- bug report and feature request issue templates
-- code of conduct
+- Bug report and feature request issue templates
+- Code of conduct
 
 ### Changed
-- done misc updates on README
-- moved static js libraries to CDN
+- Done misc updates on README
+- Moved static js libraries to CDN
 
 ### Fixed
-- misc code quality improvements
+- Misc code quality improvements
+- Fetch API support for older browsers
 
 ### Removed
 - ACKS file (moved to README in-line)
 
 ### Deprecated
-- removed deprecated graphql query
+- Removed deprecated graphql query
 
 ### Security
 - Bumped flask from 0.12.2 to 1.0.2 in /frontend

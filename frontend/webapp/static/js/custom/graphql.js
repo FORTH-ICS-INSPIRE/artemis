@@ -91,6 +91,7 @@ function fetchDatatableLive(ws, cb_func, query) {
 function fetchDatatable(cb_func, query) {
     fetch("/jwt/auth", {
         method: "GET",
+        credentials: 'include'
     })
     .then(response => response.json())
     .then(data => {
@@ -121,6 +122,7 @@ function fetchDatatable(cb_func, query) {
 function fetchDistinctValues(type, query) {
     fetch("/jwt/auth", {
         method: "GET",
+        credentials: 'include'
     })
     .then(response => response.json())
     .then(data => {

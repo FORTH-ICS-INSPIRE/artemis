@@ -1,3 +1,5 @@
+<a href="https://discord.gg/8UerJvh"><img src="https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat"></a>
+
 # ARTEMIS
 
 <p align="left">

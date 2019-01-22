@@ -74,6 +74,8 @@ class Detection():
                 type='direct',
                 durable=False,
                 delivery_mode=1)
+            self.update_exchange.declare()
+
             self.hijack_exchange = Exchange(
                 'hijack-update',
                 channel=connection,
@@ -81,19 +83,21 @@ class Detection():
                 durable=False,
                 delivery_mode=1)
             self.hijack_exchange.declare()
+
             self.handled_exchange = Exchange(
                 'handled-update',
                 channel=connection,
                 type='direct',
                 durable=False,
                 delivery_mode=1)
-            self.handled_exchange.declare()
+
             self.config_exchange = Exchange(
                 'config',
                 channel=connection,
                 type='direct',
                 durable=False,
                 delivery_mode=1)
+
             self.pg_amq_bridge = Exchange(
                 'amq.direct',
                 type='direct',
@@ -118,7 +122,6 @@ class Detection():
                 consumer_arguments={'x-priority': 1})
 
             self.config_request_rpc()
-
             log.info('started')
 
         def get_consumers(self, Consumer: Consumer,

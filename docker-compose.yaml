@@ -20,6 +20,7 @@ services:
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            GUI_ENABLED: ${GUI_ENABLED}
         volumes:
             # uncomment to run from source code
             # - ./backend/:/root/

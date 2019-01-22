@@ -4,6 +4,7 @@
 ### Added
 - Bug report and feature request issue templates
 - Code of conduct
+- CI/CD container
 
 ### Changed
 - Done misc updates on README

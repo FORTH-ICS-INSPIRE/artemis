@@ -1,0 +1,82 @@
+version: '3'
+services:
+    sut:
+        build: ./testing/
+        depends_on:
+            - backend
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            POSTGRES_HOST: postgres
+            DATABASE_NAME: artemis_db
+            DATABASE_USER: artemis_user
+            DATABASE_HOST: postgres
+            DATABASE_PASSWORD: Art3m1s
+            BACKEND_HOST: backend
+    backend:
+        build: .
+        container_name: backend
+        depends_on:
+            - rabbitmq
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - 9001
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            POSTGRES_HOST: postgres
+            DATABASE_NAME: artemis_db
+            DATABASE_USER: artemis_user
+            DATABASE_HOST: postgres
+            DATABASE_PASSWORD: Art3m1s
+            SUPERVISOR_HOST: backend
+            SUPERVISOR_PORT: 9001
+            GUI_ENABLED: "false"
+        volumes:
+            - ./testing/configs/:/etc/artemis/
+            - ./testing/supervisor.d/:/etc/supervisor/conf.d/
+    rabbitmq:
+        image: rabbitmq:3.7.8-management-alpine
+        container_name: rabbitmq
+        restart: always
+        networks:
+            - artemis
+        expose:
+            - 5671
+            - 5672
+        environment:
+            RABBITMQ_DEFAULT_USER: guest
+            RABBITMQ_DEFAULT_PASS: guest
+    postgres:
+        image: timescale/timescaledb:1.1.0-pg10
+        container_name: postgres
+        restart: always
+        networks:
+            - artemis
+        expose:
+            - 5432
+        environment:
+            POSTGRES_DB: artemis_db
+            POSTGRES_USER: artemis_user
+            POSTGRES_PASSWORD: Art3m1s
+        volumes:
+            - ./testing/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./testing/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./testing/db/libs/:/docker-entrypoint-initdb.d/libs/
+    pg_amqp_bridge:
+        image: subzerocloud/pg-amqp-bridge:0.0.6
+        container_name: pg_amqp_bridge
+        depends_on:
+            - postgres
+            - backend
+        networks:
+            - artemis
+        environment:
+            - POSTGRESQL_URI=postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
+            - AMQP_URI=amqp://rabbitmq//
+            - BRIDGE_CHANNELS=events:amq.direct
+
+networks:
+    artemis:

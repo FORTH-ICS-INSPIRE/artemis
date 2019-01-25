@@ -18,8 +18,12 @@ function asn_map_to_name(){
         if($(this).is("[data-toggle]")){
             return;
         }else{
-            var ASN_int = parseInt($(this).text());
-            var ASN_str = $(this).text();
+            if($(this).children().length > 0){
+                var ASN_str = $(this).children(":first").val();
+            }else{
+                var ASN_str = $(this).text();
+            }
+            var ASN_int = parseInt(ASN_str);
             var result = null;
 
             if(ASN_str in cachedData){
@@ -59,7 +63,7 @@ function asn_map_to_name(){
                         
                         cachedData[ASN_str] = data_;
 
-                        var html = '<p class="tooltip-custom-margin">ASN: ' + $(this).text() + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';
+                        var html = '<p class="tooltip-custom-margin">ASN: ' + ASN_str + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';
                         html += 'Name: ' + cachedData[ASN_str][0] + '</br>';
                         html += 'Type: ' + cachedData[ASN_str][3] + '</br>';
                         html += 'Countries operating: ' + cachedData[ASN_str][1] +'</p>';

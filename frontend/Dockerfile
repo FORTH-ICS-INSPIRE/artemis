@@ -7,6 +7,7 @@ WORKDIR /root
 COPY . ./
 
 RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
+RUN pip install --upgrade 'pip<19.0'
 RUN pip --no-cache-dir install -r requirements.txt
 RUN pip --no-cache-dir install gunicorn
 

@@ -37,7 +37,7 @@
                                         <p><b helpText="field_hijack_as">Hijacker AS:</b></p>
                                     </div>
                                     <div class="col-lg-8">
-                                        <input id="info_hijack_as" class="form-control" type="text" readonly>
+                                        <cc_as><input id="info_hijack_as" class="form-control" type="text" readonly></cc_as>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -278,6 +278,7 @@
             var static_urls = {
                 "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
                 "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
+                "rrcs_location": "{{ url_for('static', filename='rrcs_info/collectors_info.json') }}"
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
             var refresh_status = true;
@@ -588,6 +589,7 @@
                         refresh_status = false;
                         tr.addClass('shown');
                         asn_map_to_name();
+                        service_to_name();
                         displayHelpMoreBGPupdate();
                     }
                 });
@@ -617,6 +619,7 @@
                 displayHelpTextTable();
                 $('#bgp_updates').on( 'draw.dt', function () {
                     asn_map_to_name();
+                    service_to_name();
                 });
             });
 
@@ -688,6 +691,7 @@
                     $('#hijack_seen_button').html('Mark Hijack as <b>not seen</b>');
                 }
                 $('#hijack_seen_button').show();
+                asn_map_to_name();
             }
            
             {% if current_user.has_roles('admin') %}

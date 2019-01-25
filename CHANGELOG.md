@@ -16,6 +16,8 @@
 - Bumped PyYAML from 3.13 to 4.2b4 in /frontend
 - Bumped Flask-JWT-Extended from 3.13.1 to 3.15.0 in /frontend
 - Bumped pip from 10.0.1 to 18.1 in /frontend
+- Display tooltip for hijack ASN in hijack view page
+- Display tooltip for monitors in BGP Updates table in hijack view page
 
 ### Fixed
 - Misc code quality improvements

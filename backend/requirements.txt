@@ -4,7 +4,7 @@ billiard==3.5.0.4
 kombu==4.2.1
 netaddr==0.7.19
 pamqp==1.6.1
-pid==2.2.0
+pid==2.2.1
 py-radix==0.10.0
 pytz==2018.5
 PyYAML==4.2b4

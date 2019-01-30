@@ -44,6 +44,6 @@ Does the PR require changes on other components? If yes, please mark the compone
 
 ### Checklist:
 <!-- Go over all the following points, and mark what applies. -->
-- [ ] I have read the **[contributing guide](https://github.com/FORTH-ICS-INSPIRE/artemis-tool/blob/master/CONTRIBUTING.md)** and my code conforms to the guidelines.
+- [ ] I have read the **[contributing guide](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/CONTRIBUTING.md)** and my code conforms to the guidelines.
 - [ ] This change requires a change in the documentation.
 - [ ] I have updated the documentation accordingly.

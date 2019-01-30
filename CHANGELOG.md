@@ -10,12 +10,14 @@
 - Moved static js libraries to CDN
 - Bumped kombu from 4.2.1 to 4.2.2.post1 in /frontend
 - Bumped bcrypt from 3.1.4 to 3.1.5 in /frontend
+- Bumped Flask-Babel from 0.11.2 to 0.12.2 in /frontend
 - Bumped Flask-Migrate from 2.2.1 to 2.3.1 in /frontend
 - Bumped WTForms from 2.1 to 2.2.1 in /frontend
 - Bumped SQLAlchemy from 1.2.5 to 1.2.16 in /frontend
 - Bumped PyYAML from 3.13 to 4.2b4 in /frontend
 - Bumped Flask-JWT-Extended from 3.13.1 to 3.15.0 in /frontend
 - Bumped pip from 10.0.1 to 18.1 in /frontend
+- Bumped PyYAML from 3.13 to 4.2b4 in /backend
 - Display tooltip for hijack ASN in hijack view page
 - Display tooltip for monitors in BGP Updates table in hijack view page
 

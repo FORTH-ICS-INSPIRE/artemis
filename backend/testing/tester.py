@@ -16,6 +16,9 @@ class Tester():
         self.expected_messages = 0
 
     def getConn(self):
+        '''
+        Return a connection for the postgres database.
+        '''
         db_conn = None
         time_sleep_connection_retry = 5
         while db_conn is None:
@@ -37,8 +40,13 @@ class Tester():
         return db_conn
 
     def test(self):
+        '''
+        Loads a test file that includes crafted bgp updates as input and expected messages as output.
+        '''
+
         RABBITMQ_HOST = os.getenv('RABBITMQ_HOST')
 
+        # exchanges
         update_exchange = Exchange(
             'bgp-update',
             type='direct',
@@ -57,6 +65,7 @@ class Tester():
             durable=True,
             delivery_mode=1)
 
+        # queues
         update_queue = Queue(
             'detection-testing',
             exchange=pg_amq_bridge,
@@ -85,19 +94,25 @@ class Tester():
             consumer_arguments={'x-priority': 1})
 
         messages = {}
+        # load test
         with open('messages.json', 'r') as f:
             messages = json.load(f)
 
         send_len = len(messages)
 
         def validate_message(body, message):
-            print('\t- Receiving Batch #{} - Type {} - Remaining {}'.format(self.curr_idx, message.delivery_info['routing_key'], self.expected_messages-1))
+            '''
+            Callback method for message validation from the queues.
+            '''
+            print('\t- Receiving Batch #{} - Type {} - Remaining {}'.format(self.curr_idx,
+                                                                            message.delivery_info['routing_key'], self.expected_messages - 1))
             if isinstance(body, dict):
                 event = body
             else:
                 event = json.loads(body)
             # logging.debug(event)
 
+            # distinguish between type of messages
             if message.delivery_info['routing_key'] == 'update-insert':
                 expected = messages[self.curr_idx]['detection_update_response']
             elif message.delivery_info['routing_key'] == 'update':
@@ -105,6 +120,7 @@ class Tester():
             elif message.delivery_info['routing_key'] == 'hijack-update':
                 expected = messages[self.curr_idx]['database_hijack_response']
 
+            # compare expected message with received one. exit on mismatch.
             for key in set(event.keys()).intersection(expected.keys()):
                 if event[key] != expected[key]:
                     sys.exit('Unexpected value for key \"{}\"\nReceived: {}, Expected: {}'
@@ -116,6 +132,9 @@ class Tester():
             message.ack()
 
         def send_next_message(conn):
+            '''
+            Publish next custom BGP update on the bgp-updates exchange.
+            '''
             with conn.Producer() as producer:
                 self.expected_messages = len(messages[self.curr_idx]) - 1
                 print('Publishing #{}'.format(self.curr_idx))
@@ -129,6 +148,9 @@ class Tester():
                 )
 
         def waitExchange(exchange, channel):
+            '''
+            Wait passively until the exchange is declared.
+            '''
             while True:
                 try:
                     exchange.declare(passive=True, channel=channel)
@@ -143,10 +165,12 @@ class Tester():
             print('Waiting for update exchange..')
             waitExchange(update_exchange, connection.default_channel)
 
+            # query database for the states of the processes
             db_con = self.getConn()
             db_cur = db_con.cursor()
             query = 'SELECT COUNT(*) FROM process_states WHERE running=True'
             res = (0,)
+            # wait until all 6 modules are running
             while res[0] < 6:
                 db_cur.execute(query)
                 res = db_cur.fetchall()[0]
@@ -155,6 +179,7 @@ class Tester():
             db_con.close()
 
             send_cnt = 0
+            # send and validate all messages in the messages.json file
             while send_cnt < send_len:
                 self.curr_idx = send_cnt
                 send_next_message(connection)
@@ -175,11 +200,13 @@ class Tester():
                         )
 
                 ):
+                    # sleep until we receive all expected messages
                     while self.curr_idx != send_cnt:
                         time.sleep(0.1)
                         try:
                             connection.drain_events(timeout=100)
                         except socket.timeout:
+                            # avoid infinite loop by timeout
                             sys.exit('Consumer timeout after 100sec..')
             connection.close()
 

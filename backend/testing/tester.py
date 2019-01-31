@@ -5,6 +5,7 @@ import time
 import json
 import sys
 import psycopg2
+import socket
 
 
 class Tester():
@@ -176,7 +177,10 @@ class Tester():
                 ):
                     while self.curr_idx != send_cnt:
                         time.sleep(0.1)
-                        connection.drain_events()
+                        try:
+                            connection.drain_events(timeout=100)
+                        except socket.timeout:
+                            sys.exit('Consumer timeout after 100sec..')
             connection.close()
 
 

@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (3, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (6, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,

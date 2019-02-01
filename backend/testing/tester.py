@@ -173,8 +173,10 @@ class Tester():
             res = (0,)
             # wait until all 6 modules are running
             while res[0] < 6:
+                print('executing query')
                 db_cur.execute(query)
                 res = db_cur.fetchall()[0]
+                db_con.commit()
                 time.sleep(1)
             db_cur.close()
             db_con.close()

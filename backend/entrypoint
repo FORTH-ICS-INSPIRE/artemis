@@ -17,4 +17,5 @@ if [ "$version" == "$DATABASE_VERSION" ]; then
     supervisord -n
 else
     echo "You must upgrade the database schema. Please run 'docker-compose -f docker-compose.migrate.yaml up'"
+    exit -1
 fi

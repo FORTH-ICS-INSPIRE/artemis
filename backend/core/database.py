@@ -133,6 +133,7 @@ class Database():
                 durable=False,
                 delivery_mode=1)
             self.hijack_exchange.declare()
+
             self.handled_exchange = Exchange(
                 'handled-update', type='direct', durable=False, delivery_mode=1)
             self.db_clock_exchange = Exchange(

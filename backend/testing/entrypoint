@@ -1,0 +1,7 @@
+#!/bin/bash
+
+./wait-for rabbitmq:5672 -t 60
+./wait-for postgres:5432 -t 60
+./wait-for backend:9001 -t 60
+
+python -u tester.py

@@ -10,5 +10,6 @@ fi
 service cron start
 # service supervisor start
 # supervisorctl
-redis-server /etc/redis/redis.conf --daemonize yes
+sed -i 's/bind 127.0.0.1/# bind 127.0.0.1/g' /etc/redis/redis.conf
+redis-server /etc/redis/redis.conf --daemonize yes --protected-mode no
 supervisord -n

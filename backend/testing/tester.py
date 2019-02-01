@@ -6,6 +6,7 @@ import json
 import sys
 import psycopg2
 import socket
+import redis
 
 
 class Tester():
@@ -15,7 +16,7 @@ class Tester():
         self.send_cnt = 0
         self.expected_messages = 0
 
-    def getConn(self):
+    def getDbConnection(self):
         '''
         Return a connection for the postgres database.
         '''
@@ -38,6 +39,18 @@ class Tester():
             except BaseException:
                 time.sleep(1)
         return db_conn
+
+    def startRedisSubscriber(self):
+        redis_ = redis.Redis(
+            host=os.getenv('BACKEND_HOST', 'backend'),
+            port=6379
+        )
+        redis_.config_set('notify-keyspace-events', 'KEA')
+
+        pubsub = redis_.pubsub()
+        pubsub.psubscribe('*keyevent*:*')
+
+        return pubsub
 
     def test(self):
         '''
@@ -159,6 +172,8 @@ class Tester():
                 except Exception:
                     time.sleep(1)
 
+        pubsub = self.startRedisSubscriber()
+
         with Connection(RABBITMQ_HOST) as connection:
             pg_amq_bridge.declare(channel=connection.default_channel)
             print('Waiting for hijack exchange..')
@@ -167,7 +182,7 @@ class Tester():
             waitExchange(update_exchange, connection.default_channel)
 
             # query database for the states of the processes
-            db_con = self.getConn()
+            db_con = self.getDbConnection()
             db_cur = db_con.cursor()
             query = 'SELECT COUNT(*) FROM process_states WHERE running=True'
             res = (0,)
@@ -211,7 +226,17 @@ class Tester():
                         except socket.timeout:
                             # avoid infinite loop by timeout
                             sys.exit('Consumer timeout after 100sec..')
+
             connection.close()
+
+        message = pubsub.get_message()
+        while message:
+            # TODO: @vk we should check redis value with an expected value.
+            # Messages has format:
+            # {'type': 'pmessage', 'channel': b'__keyevent@0__:set', 'pattern': b'*keyevent*:*', 'data': b'key'}
+            # Ideally we get keys and compare stored information
+            print(message)
+            message = pubsub.get_message()
 
 
 if __name__ == "__main__":

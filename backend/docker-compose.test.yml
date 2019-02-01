@@ -24,6 +24,7 @@ services:
             - artemis
         expose:
             - 9001
+            - 6379
         environment:
             RABBITMQ_HOST: rabbitmq
             POSTGRES_HOST: postgres
@@ -31,6 +32,7 @@ services:
             DATABASE_USER: artemis_user
             DATABASE_HOST: postgres
             DATABASE_PASSWORD: Art3m1s
+            DATABASE_VERSION: ${DB_VERSION}
             SUPERVISOR_HOST: backend
             SUPERVISOR_PORT: 9001
             GUI_ENABLED: "false"

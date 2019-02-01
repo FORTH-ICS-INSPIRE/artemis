@@ -122,7 +122,8 @@ class Tester():
 
             # compare expected message with received one. exit on mismatch.
             for key in set(event.keys()).intersection(expected.keys()):
-                if event[key] != expected[key]:
+                if not (event[key] == expected[key] or (isinstance(
+                        event[key], (list, set)) and set(event[key]) == set(expected[key]))):
                     sys.exit('Unexpected value for key \"{}\"\nReceived: {}, Expected: {}'
                              .format(key, event[key], expected[key]))
 
@@ -178,28 +179,28 @@ class Tester():
             db_cur.close()
             db_con.close()
 
-            send_cnt = 0
-            # send and validate all messages in the messages.json file
-            while send_cnt < send_len:
-                self.curr_idx = send_cnt
-                send_next_message(connection)
-                send_cnt += 1
-                with nested(
-                        connection.Consumer(
-                            hijack_queue,
-                            callbacks=[validate_message],
-                            accept=['pickle']
-                        ),
-                        connection.Consumer(
-                            update_queue,
-                            callbacks=[validate_message],
-                        ),
-                        connection.Consumer(
-                            hijack_db_queue,
-                            callbacks=[validate_message]
-                        )
+            with nested(
+                    connection.Consumer(
+                        hijack_queue,
+                        callbacks=[validate_message],
+                        accept=['pickle']
+                    ),
+                    connection.Consumer(
+                        update_queue,
+                        callbacks=[validate_message],
+                    ),
+                    connection.Consumer(
+                        hijack_db_queue,
+                        callbacks=[validate_message]
+                    )
 
-                ):
+            ):
+                send_cnt = 0
+                # send and validate all messages in the messages.json file
+                while send_cnt < send_len:
+                    self.curr_idx = send_cnt
+                    send_next_message(connection)
+                    send_cnt += 1
                     # sleep until we receive all expected messages
                     while self.curr_idx != send_cnt:
                         time.sleep(0.1)

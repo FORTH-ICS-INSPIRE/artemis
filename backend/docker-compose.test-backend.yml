@@ -1,7 +1,8 @@
 version: '3'
 services:
-    sut:
+    testing:
         build: ./testing/
+        container_name: testing
         depends_on:
             - backend
         networks:
@@ -73,12 +74,16 @@ services:
         depends_on:
             - postgres
             - backend
+            - rabbitmq
         networks:
             - artemis
         environment:
             - POSTGRESQL_URI=postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
             - AMQP_URI=amqp://rabbitmq//
             - BRIDGE_CHANNELS=events:amq.direct
+        volumes:
+            - ./wait-for:/root/wait-for
+        command: ["/root/wait-for", "rabbitmq:5672", "-t", "60", "--", "pg-amqp-bridge"]
 
 networks:
     artemis:

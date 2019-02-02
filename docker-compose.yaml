@@ -1,7 +1,7 @@
 version: '3'
 services:
     backend:
-        image: inspiregroup/artemis-backend:release-${SYSTEM_VERSION}
+        image: inspiregroup/artemis-backend:${SYSTEM_VERSION}
         container_name: backend
         depends_on:
             - rabbitmq
@@ -27,7 +27,7 @@ services:
             - ./backend/configs/:/etc/artemis/
             - ./backend/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
-        image: inspiregroup/artemis-frontend:release-${SYSTEM_VERSION}
+        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
         depends_on:
             - rabbitmq
@@ -130,13 +130,17 @@ services:
         depends_on:
             - postgres
             - backend
+            - rabbitmq
         networks:
             - artemis
         environment:
-        # - RUST_LOG=info # output forwarded messages
-        - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-        - AMQP_URI=amqp://${RABBITMQ_HOST}//
-        - BRIDGE_CHANNELS=events:amq.direct
+            # - RUST_LOG=info # output forwarded messages
+            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            - AMQP_URI=amqp://${RABBITMQ_HOST}//
+            - BRIDGE_CHANNELS=events:amq.direct
+        volumes:
+            - ./backend/wait-for:/root/wait-for
+        command: ["/root/wait-for", "rabbitmq:5672", "-t", "60", "--", "pg-amqp-bridge"]
     graphql:
         image: hasura/graphql-engine:v1.0.0-alpha31
         container_name: graphql

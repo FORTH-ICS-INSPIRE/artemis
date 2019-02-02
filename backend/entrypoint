@@ -25,7 +25,7 @@ else
         echo "[+] Migration sucessful.."
         start_backend
     else
-        echo "[+] Automated migration failed. Please provide the logs on the development team."
+        echo "[+] Automated migration failed. Please provide the logs to the development team."
         exit -1
     fi
 fi

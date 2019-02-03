@@ -3,12 +3,29 @@ make
 ./wait-for rabbitmq:5672 -t 60
 ./wait-for postgres:5432 -t 60
 
-if [ "$GUI_ENABLED" = "true" ]; then
-    ./wait-for graphql:8080 -t 60
-    curl -s "http://graphql:8080/v1/query" -H "Content-Type: application/json" -H "X-Hasura-Access-Key: ${HASURA_GRAPHQL_ACCESS_KEY}" --data '{"type":"replace_metadata","args":{"tables":[{"table":"view_processes","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["name","running","timestamp"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]},{"table":"view_bgpupdates","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["prefix","origin_as","peer_asn","as_path","service","type","communities","timestamp","hijack_key","handled","matched_prefix","orig_path"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]},{"table":"view_configs","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["raw_config","comment","time_modified"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]},{"table":"view_hijacks","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["active","comment","configured_prefix","hijack_as","ignored","key","mitigation_started","num_asns_inf","num_peers_seen","peers_seen","peers_withdrawn","prefix","resolved","seen","time_detected","time_ended","time_last","time_started","timestamp_of_config","type","under_mitigation","withdrawn","outdated"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]}],"query_templates":[],"remote_schemas":[]}}' > /dev/null
+version=$(PGPASSWORD=$DATABASE_PASSWORD psql -U $DATABASE_USER -d $DATABASE_NAME -h $DATABASE_HOST -c "select version from db_details;" -tA)
+
+start_backend() {
+    echo "[+] Starting Backend"
+    if [ "$GUI_ENABLED" = "true" ]; then
+        ./wait-for graphql:8080 -t 60
+        curl -s "http://graphql:8080/v1/query" -H "Content-Type: application/json" -H "X-Hasura-Access-Key: ${HASURA_GRAPHQL_ACCESS_KEY}" --data '{"type":"replace_metadata","args":{"tables":[{"table":"view_processes","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["name","running","timestamp"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]},{"table":"view_bgpupdates","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["prefix","origin_as","peer_asn","as_path","service","type","communities","timestamp","hijack_key","handled","matched_prefix","orig_path"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]},{"table":"view_configs","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["raw_config","comment","time_modified"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]},{"table":"view_hijacks","object_relationships":[],"array_relationships":[],"insert_permissions":[],"select_permissions":[{"role":"user","comment":null,"permission":{"allow_aggregations":true,"columns":["active","comment","configured_prefix","hijack_as","ignored","key","mitigation_started","num_asns_inf","num_peers_seen","peers_seen","peers_withdrawn","prefix","resolved","seen","time_detected","time_ended","time_last","time_started","timestamp_of_config","type","under_mitigation","withdrawn","outdated"],"filter":{}}}],"update_permissions":[],"delete_permissions":[],"event_triggers":[]}],"query_templates":[],"remote_schemas":[]}}' > /dev/null
+    fi
+    service cron start
+    redis-server /etc/redis/redis.conf --daemonize yes
+    supervisord -n
+}
+
+if [ "$version" == "$DATABASE_VERSION" ]; then
+    start_backend
+else
+    echo "[!] Old Database version found.. Trying to migrate database automatically"
+    python -u migrate/migrate.py
+    if [ "$?" -eq 0 ]; then
+        echo "[+] Migration sucessful.."
+        start_backend
+    else
+        echo "[+] Automated migration failed. Please provide the logs to the development team."
+        exit -1
+    fi
 fi
-service cron start
-# service supervisor start
-# supervisorctl
-redis-server /etc/redis/redis.conf --daemonize yes
-supervisord -n

@@ -1,3 +1,0 @@
-#!/bin/bash
-./wait-for postgres:5432 -t 60
-python migrate.py

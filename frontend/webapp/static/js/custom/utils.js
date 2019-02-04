@@ -101,9 +101,9 @@ function format_bgp_update(data){
 
 function format_handled_seen(data){
     if(data){
-        return '<img src=\"' + static_urls['handled.png'] + '\" />'
+        return '<img src="' + static_urls['handled.png'] + '" />'
     }else{
-        return '<img src=\"' + static_urls['unhadled.png'] + '\" />'
+        return '<img src="' + static_urls['unhadled.png'] + '" />'
     }
 }
 

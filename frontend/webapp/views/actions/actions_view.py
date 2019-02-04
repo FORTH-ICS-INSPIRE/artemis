@@ -75,9 +75,8 @@ def submit_new_comment():
     if success:
         return jsonify(
             {'status': 'success', 'data': new_comment, 'response': response})
-    else:
-        return jsonify(
-            {'status': 'fail', 'data': new_comment, 'response': response})
+    return jsonify(
+        {'status': 'fail', 'data': new_comment, 'response': response})
 
 
 @actions.route('/approve_user', methods=['POST'])
@@ -225,8 +224,7 @@ def submit_hijack_seen():
 
     if success:
         return jsonify({'status': 'success'})
-    else:
-        return jsonify({'status': 'fail'})
+    return jsonify({'status': 'fail'})
 
 
 @actions.route('/hijacks_actions', methods=['POST'])
@@ -240,5 +238,4 @@ def submit_hijacks_actions():
 
     if success:
         return jsonify({'status': 'success'})
-    else:
-        return jsonify({'status': 'fail'})
+    return jsonify({'status': 'fail'})

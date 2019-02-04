@@ -425,7 +425,8 @@ class Detection():
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
-                if len(item['origin_asns']) > 0:
+                # check if there are origin_asns defined
+                if item['origin_asns']:
                     return False
             self.commit_hijack(monitor_event, origin_asn, 'Q')
             return True
@@ -454,7 +455,7 @@ class Detection():
             for item in prefix_node.data['confs']:
                 # [] neighbors means "allow everything"
                 if origin_asn in item['origin_asns'] and (
-                        len(item['neighbors']) == 0 or first_neighbor_asn in item['neighbors']):
+                        (not item['neighbors']) or first_neighbor_asn in item['neighbors']):
                     return False
             self.commit_hijack(monitor_event, first_neighbor_asn, '1')
             return True
@@ -471,7 +472,7 @@ class Detection():
                 try:
                     origin_asn = None
                     first_neighbor_asn = None
-                    if len(monitor_event['path']) > 0:
+                    if monitor_event['path']:
                         origin_asn = monitor_event['path'][-1]
                     if len(monitor_event['path']) > 1:
                         first_neighbor_asn = monitor_event['path'][-2]
@@ -480,8 +481,8 @@ class Detection():
                     for item in prefix_node.data['confs']:
                         if origin_asn in item['origin_asns']:
                             false_origin = False
-                            if first_neighbor_asn in item['neighbors'] or len(
-                                    item['neighbors']) == 0:
+                            if first_neighbor_asn in item['neighbors'] or (
+                                    not item['neighbors']):
                                 false_first_neighbor = False
                             break
                     if origin_asn is not None and false_origin:
@@ -525,7 +526,7 @@ class Detection():
             hijack_value['asns_inf'] = set()
             # for squatting, all ASes except the origin are considered infected
             if hij_type == 'Q':
-                if len(monitor_event['path']) > 0:
+                if monitor_event['path']:
                     hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
             # for sub-prefix hijacks, the infection depends on whether the
             # hijacker is the origin/neighbor/sth else

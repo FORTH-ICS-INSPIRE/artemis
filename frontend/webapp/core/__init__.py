@@ -208,7 +208,7 @@ def add_claims_to_access_token(identity):
 def index():
     if not current_user.is_authenticated:
         return redirect("/login")
-    elif current_user.has_role(data_store.find_role("pending")):
+    if current_user.has_role(data_store.find_role("pending")):
         return redirect("/pending")
     return redirect("/overview")
 

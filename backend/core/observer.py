@@ -59,7 +59,8 @@ class Observer():
         def on_modified(self, event):
             if event.is_directory:
                 return None
-            elif event.src_path == self.path:
+
+            if event.src_path == self.path:
                 with open(self.path, 'r') as f:
                     content = f.readlines()
                 # Taken any action here when a file is modified.

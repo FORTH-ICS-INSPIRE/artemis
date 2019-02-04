@@ -161,8 +161,11 @@ def get_timezone():
 
 @user_registered.connect_via(app)
 def on_user_registered(app, user, confirm_token):
-    default_role = data_store.find_role("pending")
-    data_store.add_role_to_user(user, default_role)
+    user_ = data_store.find_role("user")
+    data_store.remove_role_from_user(user, user_)
+
+    pending_ = data_store.find_role("pending")
+    data_store.add_role_to_user(user, pending_)
     db.session.commit()
 
 

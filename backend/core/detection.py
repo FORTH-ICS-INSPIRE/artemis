@@ -580,8 +580,8 @@ class Detection():
                     result['monitor_keys'] = hijack_value['monitor_keys']
                 else:
                     hijack_value['time_detected'] = time.time()
-                    hijack_value['key'] = hashlib.md5(pickle.dumps(
-                        [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
+                    hijack_value['key'] = hashlib.shake_128(pickle.dumps(
+                        [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest(16)
                     redis_pipeline.sadd('persistent-keys', hijack_value['key'])
                     result = hijack_value
                     mail_log.info('{}'.format(result))

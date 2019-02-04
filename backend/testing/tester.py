@@ -115,8 +115,8 @@ class Tester():
             assert isinstance(prefix, str)
             assert isinstance(hijack_as, int)
             assert isinstance(_type, str)
-            return hashlib.md5(pickle.dumps(
-                [prefix, hijack_as, _type])).hexdigest()
+            return hashlib.shake_128(pickle.dumps(
+                [prefix, hijack_as, _type])).hexdigest(16)
 
         def validate_message(body, message):
             '''
@@ -133,14 +133,16 @@ class Tester():
             # distinguish between type of messages
             if message.delivery_info['routing_key'] == 'update-update':
                 expected = messages[self.curr_idx]['detection_update_response']
-                assert self.redis.exists(event['key']), 'Monitor key not found in Redis'
+                assert self.redis.exists(
+                    event['key']), 'Monitor key not found in Redis'
             elif message.delivery_info['routing_key'] == 'update':
                 expected = messages[self.curr_idx]['detection_hijack_response']
                 redis_hijack_key = redis_key(
                     event['prefix'],
                     event['hijack_as'],
                     event['type'])
-                assert self.redis.exists(redis_hijack_key), 'Hijack key not found in Redis'
+                assert self.redis.exists(
+                    redis_hijack_key), 'Hijack key not found in Redis'
             elif message.delivery_info['routing_key'] == 'hijack-update':
                 expected = messages[self.curr_idx]['database_hijack_response']
                 if event['active']:

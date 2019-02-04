@@ -3,7 +3,7 @@ FROM mavromat/bgpstream-redis:v1.0
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
-    apt-get -y install python3-pip cron supervisor tcl
+    apt-get -y install python3-pip cron supervisor tcl postgresql-client
 
 WORKDIR /root
 

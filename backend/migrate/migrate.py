@@ -7,14 +7,14 @@ from codecs import open as c_open
 
 def get_target_version():
     print("Getting target version...")
-    target_version = os.getenv('DB_VERSION', None)
+    target_version = os.getenv('DATABASE_VERSION', None)
     print("-> Target version is: {}".format(target_version))
     return target_version
 
 
 def load_migrations_json():
     print("Loading migrations file...")
-    with c_open('migrations/target_steps.json') as json_data:
+    with c_open('/root/migrate/migrations/target_steps.json') as json_data:
         data = json.load(json_data)
     return data
 
@@ -22,10 +22,10 @@ def load_migrations_json():
 def read_migration_sql_file(filename):
     print("Reading migration .sql file: {}...".format(filename))
     try:
-        with c_open("migrations/scripts/" + filename, mode='r', encoding='utf-8-sig') as f:
+        with c_open("/root/migrate/migrations/scripts/" + filename, mode='r', encoding='utf-8-sig') as f:
             migration_file = f.read()
     except Exception:
-        print("Couldn't open migrations/scripts/{}".format(filename))
+        print("Couldn't open migrations script: {}".format(filename))
         exit(-1)
     return migration_file
 

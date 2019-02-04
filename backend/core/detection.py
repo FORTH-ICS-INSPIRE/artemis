@@ -298,6 +298,7 @@ class Detection():
 
             if not self.redis.exists(
                     monitor_event['key']) or 'hij_key' in monitor_event:
+                self.redis.set(monitor_event['key'], '', ex=60 * 60)
                 raw = monitor_event.copy()
 
                 # mark the initial redis hijack key since it may change upon
@@ -355,8 +356,6 @@ class Detection():
                         routing_key='withdraw',
                         priority=0
                     )
-
-                self.redis.set(monitor_event['key'], '', ex=60 * 60)
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 

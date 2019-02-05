@@ -27,13 +27,13 @@ def get_logger(path='/etc/artemis/logging.yaml'):
 
 
 def key_generator(msg):
-    msg['key'] = hashlib.md5(pickle.dumps([
+    msg['key'] = hashlib.shake_128(pickle.dumps([
         msg['prefix'],
         msg['path'],
         msg['type'],
         msg['timestamp'],
         msg['peer_asn']
-    ])).hexdigest()
+    ])).hexdigest(16)
 
 
 def decompose_path(path):

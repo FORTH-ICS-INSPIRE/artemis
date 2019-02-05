@@ -13,7 +13,7 @@
         },
         "detection_update_response": {
             "key": "1",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "origin_as": 100
         },
@@ -50,7 +50,7 @@
         },
         "detection_update_response": {
             "key": "2",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "origin_as": 1
         },
@@ -87,7 +87,7 @@
         },
         "detection_update_response": {
             "key": "3",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "origin_as": 100
         },
@@ -124,7 +124,7 @@
         },
         "detection_update_response": {
             "key": "4",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "origin_as": 101
         },
@@ -161,7 +161,7 @@
         },
         "detection_update_response": {
             "key": "5",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "origin_as": 102
         },
@@ -198,7 +198,7 @@
         },
         "detection_update_response": {
             "key": "6",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/16",
             "origin_as": 100
         },
@@ -235,7 +235,7 @@
         },
         "detection_update_response": {
             "key": "7",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "origin_as": 100
         },
@@ -273,7 +273,7 @@
         },
         "detection_update_response": {
             "key": "8",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "peer_asn": 7
         },
@@ -296,7 +296,7 @@
         },
         "detection_update_response": {
             "key": "9",
-            "handled": false,
+            "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "peer_asn": 8
         },

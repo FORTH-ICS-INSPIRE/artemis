@@ -25,6 +25,7 @@ services:
             - artemis
         expose:
             - 9001
+            - 6379
         environment:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             POSTGRES_HOST: ${POSTGRES_HOST}

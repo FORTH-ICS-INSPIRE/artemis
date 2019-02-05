@@ -514,7 +514,8 @@ class Database():
                         comment = config['comment']
                         del config['comment']
 
-                    config_hash = hashlib.md5(pickle.dumps(config)).hexdigest()
+                    config_hash = hashlib.shake_128(
+                        pickle.dumps(config)).hexdigest(16)
                     self._save_config(config_hash, config, raw_config, comment)
             except Exception:
                 log.exception('{}'.format(config))
@@ -540,8 +541,8 @@ class Database():
                         if 'comment' in config:
                             comment = config['comment']
                             del config['comment']
-                        config_hash = hashlib.md5(
-                            pickle.dumps(config)).hexdigest()
+                        config_hash = hashlib.shake_128(
+                            pickle.dumps(config)).hexdigest(16)
                         latest_config_in_db_hash = self._retrieve_most_recent_config_hash()
                         if config_hash != latest_config_in_db_hash:
                             self._save_config(
@@ -807,7 +808,8 @@ class Database():
                                     'persistent-keys', hijack_key):
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, hijack_key)
-                            self.db_cur.execute(cmd_, (datetime.datetime.now(), hijack_key))
+                            self.db_cur.execute(
+                                cmd_, (datetime.datetime.now(), hijack_key))
                             self.db_conn.commit()
                         else:
                             raise BaseException('unreachable code reached')

@@ -70,6 +70,7 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 * Support for both IPv4 and IPv6 prefixes.
 * Support for both mobile and desktop environments (UI).
 * Modularity/extensibility by design.
+* CI/CD.
 
 ## System Architecture
 

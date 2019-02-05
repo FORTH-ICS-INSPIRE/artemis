@@ -1,7 +1,6 @@
 from ipaddress import ip_network as str2ip
 from yaml import load as yload
 from utils import flatten, ArtemisError, RABBITMQ_HOST, get_logger
-import utils.conf_lib as clib
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, Consumer
 from kombu.mixins import ConsumerProducerMixin
@@ -303,7 +302,7 @@ class Configuration():
                         log.warning(
                             'unavailable monitor {}'.format(unavailable))
                 elif key == 'bgpstreamlive':
-                    if len(info) == 0 or not set(info).issubset(
+                    if not info or not set(info).issubset(
                             self.available_bgpstreamlive):
                         raise ArtemisError(
                             'invalid-bgpstreamlive-project', info)

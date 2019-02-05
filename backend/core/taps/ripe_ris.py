@@ -49,11 +49,11 @@ def parse_ripe_ris(connection, prefix, host):
             normalize_ripe_ris(msg)
             if mformat_validator(msg):
                 msgs = normalize_msg_path(msg)
-                for msg in msgs:
-                    key_generator(msg)
-                    log.debug(msg)
+                for msg_ in msgs:
+                    key_generator(msg_)
+                    log.debug(msg_)
                     producer.publish(
-                        msg,
+                        msg_,
                         exchange=exchange,
                         routing_key='update',
                         serializer='json'

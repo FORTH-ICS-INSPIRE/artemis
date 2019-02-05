@@ -92,12 +92,12 @@ if __name__ == '__main__':
                         help='Directory with csvs to read')
 
     args = parser.parse_args()
-    dir = args.dir.rstrip('/')
+    dir_ = args.dir.rstrip('/')
 
     prefixes = args.prefix.split(',')
 
     try:
-        parse_bgpstreamhist_csvs(prefixes, dir)
+        parse_bgpstreamhist_csvs(prefixes, dir_)
     except Exception:
         log.exception('exception')
     except KeyboardInterrupt:

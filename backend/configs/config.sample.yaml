@@ -1,7 +1,13 @@
 #
-# ARTEMIS Configuration File
+# ARTEMIS Configuration File (sample, please do not use as-is)
 #
-
+# Defining a named variable:
+#     named_variable: &named_variable
+#         value_of_variable
+# Use named variable:
+#     *named_variable
+# - denotes an entry
+#
 # Start of Prefix Definitions
 prefixes:
     # A reference for a single prefix
@@ -9,61 +15,66 @@ prefixes:
         A.B.C.D/24
     # A reference for a list of prefixes
     simple_prefix_list: &my_prefixes
-        [ X.Y.Z.W/23, K.L.M.N/24 ]
+        - X.Y.Z.W/23
+        - K.L.M.N/24
+        - O:P::/64
 # End of Prefix Definitions
-
+#
 # Start of Monitor Definitions
 monitors:
-    riperis: [rrc01, rrc02, rrc03, rrc04, rrc05, rrc06, rrc07, rrc08, rrc09, rrc10, rrc11, rrc12, rrc13, rrc14, rrc15, rrc16, rrc17, rrc18, rrc19, rrc20, rrc21, rrc22, rrc23]
+    riperis: ['']
     bgpstreamlive:
-    - routeviews
-    - ris
+        - routeviews
+        - ris
+    betabmp:
+        - betabmp
     exabgp:
-    - ip: ip_to_exabgp_1
-      port: port_1
-    - ip: ip_to_exabgp_2
-      port: port_2
-    bgpstreamhist: directory_of_csv
+        - ip: ip_to_exabgp_1
+          port: port_1
+        - ip: ip_to_exabgp_2
+          port: port_2
+    bgpstreamhist:
+        - <csv_dir_with_formatted_BGP_updates>
 # End of Monitor Definitions
-
+#
 # Start of ASN Definitions
 asns:
     my_asn: &my_asn
         1234
     my_asns: &my_asns
-        [321, 432]
+        - 321
+        - 432
     my_neighbor: &my_neighbor
         222
     my_neighbors: &my_neighbors
-        [333, 444]
+        - 333
+        - 444
 # End of ASN Definitions
-
+#
 # Start of Rule Definitions
 rules:
 # 1st Rule
 - prefixes:
-  - *my_prefix
+    - *my_prefix
   origin_asns:
-  - *my_asn
+    - *my_asn
   neighbors:
-  - *my_neighbor
+    - *my_neighbor
   mitigation:
-      manual
+    manual
 # 2nd Rule
 - prefixes:
-  - *my_prefixes
-  - OTHER_PREFIX
+    - *my_prefixes
+    - other_prefix
   origin_asns:
-  - *my_asns
-  - *my_asn
-  - 7895
-  neighbors:
-  - *my_neighbors
-  - 7658
+    - *my_asns
+    - *my_asn
+    - 7895
   mitigation:
-      manual
+    manual
 # Unannounced prefix rule
-- prefixes: A.B.C.E/24
+- prefixes:
+    A.B.C.E/24
   mitigation:
       manual
 # Note: Everything can be a list or a single element

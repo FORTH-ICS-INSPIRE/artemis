@@ -15,6 +15,7 @@
 - Upgraded requirements in backend
 - Display tooltip for hijack ASN in hijack view page
 - Display tooltip for monitors in BGP Updates table in hijack view page
+- Updated default and sample configuration files in backend/configs
 
 ### Fixed
 - Misc code quality improvements

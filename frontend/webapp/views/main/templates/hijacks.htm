@@ -38,16 +38,13 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="row">
-                    <div class="col-lg-1">
-                        <p id="display_entries_time"> <b helpText="field_time_window_custom"> Timewindow: </b></p>
-                    </div>
                     <div class="col-lg-3">
                         <div id="timewindow_buttons">
-                            <button type="button" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
-                            <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">1h</button>
-                            <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">24h</button>
-                            <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">48h</button>
-                            <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">Past 1h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">Past 24h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">Past 48h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
                         </div>
                         <div id="custom_time" style="display: none;">
                             <div class="row">
@@ -64,37 +61,39 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-12">
-            <table class="table table-striped table-bordered" style="width:100%" id="hijacks">
-                <thead>
-                    <th helpText="field_time_detected">Time Detected</th>
-                    <th helpText="field_hijack_status">Status</th>
-                    <th helpText="field_prefix">Prefix</th>
-                    <th helpText="field_hijack_type">Type</th>
-                    <th helpText="field_hijack_as">Hijack AS</th>
-                    <th helpText="field_peers_seen"># Peers Seen</th>
-                    <th helpText="field_ases_infected"># ASes Infected</th>
-                    <th helpText="field_hijack_seen">Seen</th>
-                    <th helpText="field_hijack_more">More</th>
-                </thead>
-                <tfoot>
-                    <tr>
-                        <th>Time Detected</th>
-                        <th>Status</th>
-                        <th>Prefix</th>
-                        <th>Type</th>
-                        <th>Hijack AS</th>
-                        <th># Peers Seen</th>
-                        <th># ASes Infected</th>
-                        <th>Seen</th>
-                        <th>More</th>
-                    </tr>
-                </tfoot>
-            </table>
+        <div class="row">
+            <div class="col-lg-12">
+                <table class="table table-striped table-bordered" style="width:100%" id="hijacks">
+                    <thead>
+                        <th helpText="field_time_detected">Time Detected</th>
+                        <th helpText="field_hijack_status">Status</th>
+                        <th helpText="field_prefix">Prefix</th>
+                        <th helpText="field_hijack_type">Type</th>
+                        <th helpText="field_hijack_as">Hijack AS</th>
+                        <th helpText="field_peers_seen"># Peers Seen</th>
+                        <th helpText="field_ases_infected"># ASes Infected</th>
+                        <th helpText="field_hijack_seen">Seen</th>
+                        <th helpText="field_hijack_more">More</th>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Time Detected</th>
+                            <th>Status</th>
+                            <th>Prefix</th>
+                            <th>Type</th>
+                            <th>Hijack AS</th>
+                            <th># Peers Seen</th>
+                            <th># ASes Infected</th>
+                            <th>Seen</th>
+                            <th>More</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
-        <div class="row mt-3"">
-            <div class="col-lg-6">
-                </hr>
+
+        <div class="row mt-3">
+            <div class="col-lg-8">
                 <p> <i>
                     <a id="status_active_text" style="color:red" helpText="field_hijack_status_ongoing" href="javascript:filter_by_status('active');">Ongoing</a> /
                     <a id="status_resolved_text" style="color:green" helpText="field_hijack_status_resolved" href="javascript:filter_by_status('resolved');">Resolved</a> /
@@ -102,19 +101,26 @@
                     <a id="status_under_mitigation_text" style="color:blue" helpText="field_hijack_under_mitigation" href="javascript:filter_by_status('under_mitigation');">Under Mitigation</a> /
                     <a id="status_withdrawn_text" style="color:purple" helpText="field_hijack_status_withdrawn" href="javascript:filter_by_status('withdrawn');">Withdrawn</a> /
                     <a id="status_outdated_text" style="color:black" helpText="field_hijack_status_outdated" href="javascript:filter_by_status('outdated');">Outdated</a>
-
                 </i></p>
             </div>
-            <div class="col-lg-6">
-                </hr>
+            <div class="col-lg-4">
                 <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1>Additional actions</h1>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row">
             <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <i class="fa fa-bell fa-fw"></i> Additional information
+                        View distinct values
                     </div>
                     <div class="panel-body">
                         <div class="row">
@@ -122,9 +128,6 @@
                                 <div class="panel-body">
                                     <div class="form-group">
                                         <div class="row">
-                                            <div class="col-lg-3">
-                                                View distinct values
-                                            </div>
                                             <div class="col-lg-4">
                                                 <select class="form-control" id="distinct_values_selection">
                                                     <option value="select">Select</option>
@@ -230,14 +233,13 @@
                     $(custom_time_data[item]["id"]).on('click', function(event) {
                         $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary btn-sm'); });
                         $(this).attr('class', 'btn btn-outline-primary btn-sm');
+                        if($('#custom_time').is(":visible")){
+                            $('#custom_time').hide();
+                        }
                         if(event.target.id == 'select_timewindow_all'){
                             filter_parameters['time'] = null;
                         }else if(event.target.id == 'select_timewindow_other'){
-                            if($('#custom_time').is(":visible")){
-                                $('#custom_time').hide();
-                            }else{
-                                $('#custom_time').show();
-                            }
+                            $('#custom_time').show();
                         }else{
                             var hours_back = 0;
                             if(event.target.id == 'select_timewindow_1h'){
@@ -661,6 +663,7 @@
                 $('#timezone').html(display_timezone());
                 displayHelpHijackStatus();
                 displayHelpTextB();
+                $("#navbar_hijacks").addClass("active");
             });
 
             $("#live_update_button").on('change', function() {

@@ -90,6 +90,19 @@ def user_management():
 
     user_list = []
 
+    for user in _admins:
+        user_list.append(
+            (
+                {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': 'admin',
+                    'last_login_at': user.last_login_at.timestamp()
+                }
+            )
+        )
+
     for user in _pending_users:
         user_list.append(
             (
@@ -111,18 +124,6 @@ def user_management():
                     'username': user.username,
                     'email': user.email,
                     'role': 'user',
-                    'last_login_at': user.last_login_at.timestamp()
-                }
-            )
-        )
-    for user in _admins:
-        user_list.append(
-            (
-                {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'role': 'admin',
                     'last_login_at': user.last_login_at.timestamp()
                 }
             )

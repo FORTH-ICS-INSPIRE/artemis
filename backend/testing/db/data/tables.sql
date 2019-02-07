@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+-- CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 
 CREATE TABLE IF NOT EXISTS db_details (
 version BIGINT NOT NULL,
@@ -48,7 +48,7 @@ ON bgp_updates(prefix, peer_asn, type, hijack_key);
 CREATE INDEX handled_idx
 ON bgp_updates(handled);
 
-SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
+-- SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
 create trigger send_update_event
 after insert on bgp_updates
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
 CREATE INDEX active_idx
 ON hijacks(active);
 
-SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
+-- SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 
 create trigger send_hijack_event
 after insert or update on hijacks

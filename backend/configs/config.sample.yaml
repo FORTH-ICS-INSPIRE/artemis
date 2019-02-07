@@ -53,7 +53,7 @@ asns:
 #
 # Start of Rule Definitions
 rules:
-# 1st Rule
+# 1st Rule (specific origins and neighbors)
 - prefixes:
     - *my_prefix
   origin_asns:
@@ -62,7 +62,7 @@ rules:
     - *my_neighbor
   mitigation:
     manual
-# 2nd Rule
+# 2nd Rule (specific origins, missing neighbors or '*' neighbors are wildcarded)
 - prefixes:
     - *my_prefixes
     - other_prefix
@@ -74,7 +74,13 @@ rules:
     manual
 # Unannounced prefix rule
 - prefixes:
-    A.B.C.E/24
+    - A.B.C.E/24
+  mitigation:
+      manual
+# Wildcard rule (wildcarded origins, missing neighbors or '*' neighbors are wilcarded)
+- prefixes:
+    - *my_prefix
+  origin_asns: '*'
   mitigation:
       manual
 # Note: Everything can be a list or a single element

@@ -424,7 +424,7 @@ class Detection():
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
-                # check if there are origin_asns defined
+                # check if there are origin_asns defined (even wildcards)
                 if item['origin_asns']:
                     return False
             self.commit_hijack(monitor_event, origin_asn, 'Q')
@@ -438,7 +438,7 @@ class Detection():
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
-                if origin_asn in item['origin_asns']:
+                if origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]:
                     return False
             self.commit_hijack(monitor_event, origin_asn, '0')
             return True
@@ -452,9 +452,10 @@ class Detection():
             origin_asn = monitor_event['path'][-1]
             first_neighbor_asn = monitor_event['path'][-2]
             for item in prefix_node.data['confs']:
-                # [] neighbors means "allow everything"
-                if origin_asn in item['origin_asns'] and (
-                        (not item['neighbors']) or first_neighbor_asn in item['neighbors']):
+                # [] or [-1] neighbors means "allow everything"
+                if (origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]) and (
+                        (not item['neighbors']) or item['neighbors'] == [-1] or
+                                first_neighbor_asn in item['neighbors']):
                     return False
             self.commit_hijack(monitor_event, first_neighbor_asn, '1')
             return True
@@ -478,10 +479,10 @@ class Detection():
                     false_origin = True
                     false_first_neighbor = True
                     for item in prefix_node.data['confs']:
-                        if origin_asn in item['origin_asns']:
+                        if origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]:
                             false_origin = False
                             if first_neighbor_asn in item['neighbors'] or (
-                                    not item['neighbors']):
+                                    not item['neighbors']) or item['neighbors'] == [-1]:
                                 false_first_neighbor = False
                             break
                     if origin_asn is not None and false_origin:

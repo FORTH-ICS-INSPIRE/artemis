@@ -1,7 +1,10 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT, purge_redis_eph_pers_keys
+from utils import (
+    RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST,
+    SUPERVISOR_PORT, purge_redis_eph_pers_keys, get_wo_cursor, get_ro_cursor
+)
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 from xmlrpc.client import ServerProxy
@@ -27,11 +30,10 @@ class Database():
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-    def create_connect_db(self):
+    def connectDb(self):
         _db_conn = None
         time_sleep_connection_retry = 5
-        while _db_conn is None:
-            time.sleep(time_sleep_connection_retry)
+        while not _db_conn:
             try:
                 _db_name = os.getenv('DATABASE_NAME', 'artemis_db')
                 _user = os.getenv('DATABASE_USER', 'artemis_user')
@@ -47,24 +49,29 @@ class Database():
 
             except Exception:
                 log.exception('exception')
+                time.sleep(time_sleep_connection_retry)
             finally:
                 log.debug('PostgreSQL DB created/connected..')
 
         return _db_conn
 
     def run(self):
-        db_conn = self.create_connect_db()
-        db_cursor = db_conn.cursor()
+        # read-only connection
+        ro_conn = self.connectDb()
+        ro_conn.set_session(autocommit=True, readonly=True)
+        # write-only connection
+        wo_conn = self.connectDb()
+
         try:
             with Connection(RABBITMQ_HOST) as connection:
-                self.worker = self.Worker(connection, db_conn, db_cursor)
+                self.worker = self.Worker(connection, ro_conn, wo_conn)
                 self.worker.run()
         except Exception:
             log.exception('exception')
         finally:
             log.info('stopped')
-            db_cursor.close()
-            db_conn.close()
+            ro_conn.close()
+            wo_conn.close()
 
     def exit(self, signum, frame):
         if self.worker is not None:
@@ -72,7 +79,7 @@ class Database():
 
     class Worker(ConsumerProducerMixin):
 
-        def __init__(self, connection, db_conn, db_cursor):
+        def __init__(self, connection, ro_conn, wo_conn):
             self.connection = connection
             self.prefix_tree = None
             self.rules = None
@@ -84,24 +91,26 @@ class Database():
             self.tmp_hijacks_dict = {}
 
             # DB variables
-            self.db_conn = db_conn
-            self.db_cur = db_cursor
+            self.ro_conn = ro_conn
+            self.wo_conn = wo_conn
 
             try:
-                self.db_cur.execute('TRUNCATE table process_states')
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute('TRUNCATE table process_states')
+
                 server = ServerProxy(
                     'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
                 cmd_ = 'INSERT INTO process_states (name, running) ' \
-                       'VALUES (%s, %s)'
+                       'VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running'
                 processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
                              if x['name'] != 'listener']
-                psycopg2.extras.execute_batch(
-                    self.db_cur, cmd_, processes)
-                self.db_conn.commit()
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_batch(
+                        db_cur, cmd_, processes)
+
             except Exception:
                 log.exception('exception')
-                self.db_conn.rollback()
 
             # redis db
             self.redis = redis.Redis(
@@ -198,20 +207,20 @@ class Database():
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
-                    prefetch_count=1000,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
                     queues=[self.hijack_queue],
                     on_message=self.handle_hijack_update,
-                    prefetch_count=1000,
+                    prefetch_count=100,
                     no_ack=True,
                     accept=['pickle']
                 ),
                 Consumer(
                     queues=[self.withdraw_queue],
                     on_message=self.handle_withdraw_update,
-                    prefetch_count=1000,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
@@ -223,7 +232,7 @@ class Database():
                 Consumer(
                     queues=[self.handled_queue],
                     on_message=self.handle_handled_bgp_update,
-                    prefetch_count=1000,
+                    prefetch_count=100,
                     no_ack=True
                 ),
                 Consumer(
@@ -316,38 +325,40 @@ class Database():
             # prefix, key, origin_as, peer_asn, as_path, service, type, communities,
             # timestamp, hijack_key, handled, matched_prefix, orig_path
 
-            best_match = self.find_best_prefix_match(
-                msg_['prefix']),  # matched_prefix
+            if not self.redis.getset(msg_['key'], '1'):
+                self.redis.expire(msg_['key'], 60 * 60)
+                best_match = self.find_best_prefix_match(
+                    msg_['prefix']),  # matched_prefix
 
-            if best_match is None:
-                return
+                if best_match is None:
+                    return
 
-            try:
-                origin_as = -1
-                if len(msg_['path']) >= 1:
-                    origin_as = msg_['path'][-1]
+                try:
+                    origin_as = -1
+                    if len(msg_['path']) >= 1:
+                        origin_as = msg_['path'][-1]
 
-                extract_msg = (
-                    msg_['prefix'],  # prefix
-                    msg_['key'],  # key
-                    origin_as,  # origin_as
-                    msg_['peer_asn'],  # peer_asn
-                    msg_['path'],  # as_path
-                    msg_['service'],  # service
-                    msg_['type'],   # type
-                    json.dumps([(k['asn'], k['value'])
-                                for k in msg_['communities']]),  # communities
-                    datetime.datetime.fromtimestamp(
-                        (msg_['timestamp'])),  # timestamp
-                    [],  # hijack_key
-                    False,  # handled
-                    best_match,
-                    json.dumps(msg_['orig_path'])  # orig_path
-                )
-                # insert all types of BGP updates
-                self.insert_bgp_entries.append(extract_msg)
-            except Exception:
-                log.exception('{}'.format(msg_))
+                    extract_msg = (
+                        msg_['prefix'],  # prefix
+                        msg_['key'],  # key
+                        origin_as,  # origin_as
+                        msg_['peer_asn'],  # peer_asn
+                        msg_['path'],  # as_path
+                        msg_['service'],  # service
+                        msg_['type'],   # type
+                        json.dumps([(k['asn'], k['value'])
+                                    for k in msg_['communities']]),  # communities
+                        datetime.datetime.fromtimestamp(
+                            (msg_['timestamp'])),  # timestamp
+                        [],  # hijack_key
+                        False,  # handled
+                        best_match,
+                        json.dumps(msg_['orig_path'])  # orig_path
+                    )
+                    # insert all types of BGP updates
+                    self.insert_bgp_entries.append(extract_msg)
+                except Exception:
+                    log.exception('{}'.format(msg_))
 
         def handle_withdraw_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -388,11 +399,14 @@ class Database():
                         cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
                             'type, communities, timestamp FROM bgp_updates ' \
                             'WHERE bgp_updates.handled=false AND bgp_updates.key = %s'
-                        psycopg2.extras.execute_batch(
-                            self.db_cur,
-                            cmd_,
-                            rekey_update_keys)
-                        entries = self.db_cur.fetchall()
+
+                        with get_ro_cursor(self.ro_conn) as db_cur:
+                            psycopg2.extras.execute_batch(
+                                db_cur,
+                                cmd_,
+                                rekey_update_keys)
+                            entries = db_cur.fetchall()
+
                         for entry in entries:
                             rekey_updates.append({
                                 'key': entry[0],  # key
@@ -564,8 +578,11 @@ class Database():
                     cmd_ = 'SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type ' \
                         ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) ' \
                         'WHERE h.active = true AND b.type=\'A\' AND b.handled=true'
-                    self.db_cur.execute(cmd_)
-                    entries = self.db_cur.fetchall()
+
+                    with get_ro_cursor(self.ro_conn) as db_cur:
+                        db_cur.execute(cmd_)
+                        entries = db_cur.fetchall()
+
                     for entry in entries:
                         results.append({
                             'key': entry[0],  # key
@@ -595,8 +612,11 @@ class Database():
                     'asns_inf, key, prefix, hijack_as, type, time_detected, ' \
                     'configured_prefix, timestamp_of_config ' \
                     'FROM hijacks WHERE active = true'
-                self.db_cur.execute(cmd_)
-                entries = self.db_cur.fetchall()
+
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(cmd_)
+                    entries = db_cur.fetchall()
+
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
                     result = {
@@ -634,10 +654,12 @@ class Database():
                 if self.redis.sismember('persistent-keys', raw['key']):
                     purge_redis_eph_pers_keys(
                         self.redis, redis_hijack_key, raw['key'])
-                self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
-                    (datetime.datetime.now(), raw['key'],))
-                self.db_conn.commit()
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        'UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;',
+                        (datetime.datetime.now(), raw['key'],))
+
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -645,12 +667,12 @@ class Database():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             try:
-                self.db_cur.execute(
-                    'UPDATE hijacks SET mitigation_started=%s, seen=true, under_mitigation=true WHERE key=%s;',
-                    (datetime.datetime.fromtimestamp(
-                        raw['time']),
-                        raw['key']))
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        'UPDATE hijacks SET mitigation_started=%s, seen=true, under_mitigation=true WHERE key=%s;',
+                        (datetime.datetime.fromtimestamp(
+                            raw['time']),
+                            raw['key']))
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -666,11 +688,11 @@ class Database():
                 if self.redis.sismember('persistent-keys', raw['key']):
                     purge_redis_eph_pers_keys(
                         self.redis, redis_hijack_key, raw['key'])
-                self.db_cur.execute(
-                    'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
-                    (raw['key'],
-                     ))
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
+                        (raw['key'],
+                         ))
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -678,9 +700,10 @@ class Database():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             try:
-                self.db_cur.execute(
-                    'UPDATE hijacks SET comment=%s WHERE key=%s;', (raw['comment'], raw['key']))
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        'UPDATE hijacks SET comment=%s WHERE key=%s;', (raw['comment'], raw['key']))
+
                 self.producer.publish(
                     {
                         'status': 'accepted'
@@ -710,9 +733,10 @@ class Database():
             raw = message.payload
             log.debug('payload: {}'.format(raw))
             try:
-                self.db_cur.execute(
-                    'UPDATE hijacks SET seen=%s WHERE key=%s;', (raw['state'], raw['key']))
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        'UPDATE hijacks SET seen=%s WHERE key=%s;', (raw['state'], raw['key']))
+
                 self.producer.publish(
                     {
                         'status': 'accepted'
@@ -780,9 +804,11 @@ class Database():
             else:
                 for hijack_key in raw['keys']:
                     try:
-                        self.db_cur.execute(
-                            'SELECT prefix, hijack_as, type FROM hijacks WHERE key = %s;', (hijack_key, ))
-                        entries = self.db_cur.fetchall()
+                        with get_ro_cursor(self.ro_conn) as db_cur:
+                            db_cur.execute(
+                                'SELECT prefix, hijack_as, type FROM hijacks WHERE key = %s;', (hijack_key, ))
+                            entries = db_cur.fetchall()
+
                         entry = entries[0]
                         redis_hijack_key = redis_key(
                             entry[0],  # prefix
@@ -790,8 +816,8 @@ class Database():
                             entry[2]  # type
                         )
                         if seen_action:
-                            self.db_cur.execute(cmd_, (hijack_key, ))
-                            self.db_conn.commit()
+                            with get_wo_cursor(self.wo_conn) as db_cur:
+                                db_cur.execute(cmd_, (hijack_key, ))
                         elif ignore_action:
                             # if ongoing, force rekeying and delete persistent
                             # too
@@ -799,8 +825,8 @@ class Database():
                                     'persistent-keys', hijack_key):
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, hijack_key)
-                            self.db_cur.execute(cmd_, (hijack_key, ))
-                            self.db_conn.commit()
+                            with get_wo_cursor(self.wo_conn) as db_cur:
+                                db_cur.execute(cmd_, (hijack_key, ))
                         elif resolve_action:
                             # if ongoing, force rekeying and delete persistent
                             # too
@@ -808,9 +834,9 @@ class Database():
                                     'persistent-keys', hijack_key):
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, hijack_key)
-                            self.db_cur.execute(
-                                cmd_, (datetime.datetime.now(), hijack_key))
-                            self.db_conn.commit()
+                            with get_wo_cursor(self.wo_conn) as db_cur:
+                                db_cur.execute(
+                                    cmd_, (datetime.datetime.now(), hijack_key))
                         else:
                             raise BaseException('unreachable code reached')
 
@@ -831,15 +857,15 @@ class Database():
 
         def _insert_bgp_updates(self):
             try:
-                cmd_ = 'INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, ' \
-                    'timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES ' \
-                    '%s ON CONFLICT(key, timestamp) DO NOTHING;'
-                psycopg2.extras.execute_values(
-                    self.db_cur, cmd_, self.insert_bgp_entries, page_size=1000)
-                self.db_conn.commit()
+                query = 'INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, ' \
+                    'timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s'
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_values(
+                        db_cur, query, self.insert_bgp_entries, page_size=1000)
+
             except Exception:
                 log.exception('exception')
-                self.db_conn.rollback()
                 return -1
             finally:
                 num_of_entries = len(self.insert_bgp_entries)
@@ -862,8 +888,10 @@ class Database():
                 try:
                     # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3:
                     # key
-                    self.db_cur.execute(cmd_, (withdrawal[0], withdrawal[1]))
-                    entries = self.db_cur.fetchall()
+                    with get_ro_cursor(self.ro_conn) as db_cur:
+                        db_cur.execute(cmd_, (withdrawal[0], withdrawal[1]))
+                        entries = db_cur.fetchall()
+
                     if entries is None or not entries:
                         update_normal_withdrawals.add((withdrawal[3],))
                         continue
@@ -887,18 +915,20 @@ class Database():
                                     entry[4])
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2])
-                                self.db_cur.execute(
-                                    'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
-                                    'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
-                                    (timestamp, entry[1], timestamp, entry[2],))
-                                self.db_conn.commit()
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(
+                                        'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
+                                        'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
+                                        (timestamp, entry[1], timestamp, entry[2],))
+
                                 log.debug('withdrawn hijack {}'.format(entry))
                             else:
                                 # add withdrawal to hijack
-                                self.db_cur.execute(
-                                    'UPDATE hijacks SET peers_withdrawn=%s, time_last=%s WHERE key=%s;',
-                                    (entry[1], timestamp, entry[2],))
-                                self.db_conn.commit()
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(
+                                        'UPDATE hijacks SET peers_withdrawn=%s, time_last=%s WHERE key=%s;',
+                                        (entry[1], timestamp, entry[2],))
+
                                 log.debug('updating hijack {}'.format(entry))
                 except Exception:
                     log.exception('exception')
@@ -906,23 +936,24 @@ class Database():
             try:
                 cmd_ = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) ' \
                     'FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
-                psycopg2.extras.execute_values(
-                    self.db_cur,
-                    cmd_,
-                    list(update_hijack_withdrawals),
-                    page_size=1000
-                )
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_values(
+                        db_cur,
+                        cmd_,
+                        list(update_hijack_withdrawals),
+                        page_size=1000
+                    )
+
                 cmd_ = 'UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key'
-                psycopg2.extras.execute_values(
-                    self.db_cur,
-                    cmd_,
-                    list(update_normal_withdrawals),
-                    page_size=1000
-                )
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_values(
+                        db_cur,
+                        cmd_,
+                        list(update_normal_withdrawals),
+                        page_size=1000
+                    )
             except Exception:
                 log.exception('exception')
-                self.db_conn.rollback()
 
             num_of_entries = len(self.handle_bgp_withdrawals)
             self.handle_bgp_withdrawals.clear()
@@ -951,23 +982,21 @@ class Database():
                     'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key'
                 try:
                     cmd_2 = 'UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2'
-                    psycopg2.extras.execute_values(
-                        self.db_cur,
-                        cmd_2,
-                        list(update_bgp_entries),
-                        page_size=1000
-                    )
-                    self.db_conn.commit()
-                    psycopg2.extras.execute_values(
-                        self.db_cur,
-                        cmd_1,
-                        list(update_bgp_entries),
-                        page_size=1000
-                    )
-                    self.db_conn.commit()
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_values(
+                            db_cur,
+                            cmd_2,
+                            list(update_bgp_entries),
+                            page_size=1000
+                        )
+                        psycopg2.extras.execute_values(
+                            db_cur,
+                            cmd_1,
+                            list(update_bgp_entries),
+                            page_size=1000
+                        )
                 except Exception:
                     log.exception('exception')
-                    self.db_conn.rollback()
                     return -1
 
             num_of_updates += len(update_bgp_entries)
@@ -977,18 +1006,17 @@ class Database():
             if self.handled_bgp_entries:
                 try:
                     cmd_ = 'UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key'
-                    psycopg2.extras.execute_values(
-                        self.db_cur,
-                        cmd_,
-                        self.handled_bgp_entries,
-                        page_size=1000
-                    )
-                    self.db_conn.commit()
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_values(
+                            db_cur,
+                            cmd_,
+                            self.handled_bgp_entries,
+                            page_size=1000
+                        )
                 except Exception:
                     log.exception(
                         'handled bgp entries {}'.format(
                             self.handled_bgp_entries))
-                    self.db_conn.rollback()
                     return -1
 
             num_of_updates += len(self.handled_bgp_entries)
@@ -996,57 +1024,57 @@ class Database():
             return num_of_updates
 
         def _insert_update_hijacks(self):
+            fails = 0
+            while True:
+                try:
+                    cmd_ = 'INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, ' \
+                        'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, ' \
+                        'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) ' \
+                        'VALUES %s ON CONFLICT(key) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf ' \
+                        ', time_started=excluded.time_started, time_last=excluded.time_last, peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf'
 
-            try:
-                cmd_ = 'INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, ' \
-                    'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, ' \
-                    'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) ' \
-                    'VALUES %s ' \
-                    'ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf ' \
-                    ', time_started=excluded.time_started, time_last=excluded.time_last, peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf'
+                    for key in self.tmp_hijacks_dict:
+                        values_ = (
+                            key,  # key
+                            self.tmp_hijacks_dict[key]['type'],  # type
+                            self.tmp_hijacks_dict[key]['prefix'],  # prefix
+                            self.tmp_hijacks_dict[key]['hijack_as'],  # hijack_as
+                            # num_peers_seen
+                            self.tmp_hijacks_dict[key]['num_peers_seen'],
+                            # num_asns_inf
+                            self.tmp_hijacks_dict[key]['num_asns_inf'],
+                            datetime.datetime.fromtimestamp(
+                                self.tmp_hijacks_dict[key]['time_started']),  # time_started
+                            datetime.datetime.fromtimestamp(
+                                self.tmp_hijacks_dict[key]['time_last']),  # time_last
+                            None,  # time_ended
+                            None,  # mitigation_started
+                            datetime.datetime.fromtimestamp(
+                                self.tmp_hijacks_dict[key]['time_detected']),  # time_detected
+                            False,  # under_mitigation
+                            True,  # active
+                            False,  # resolved
+                            False,  # ignored
+                            False,  # withdrawn
+                            # configured_prefix
+                            self.tmp_hijacks_dict[key]['configured_prefix'],
+                            datetime.datetime.fromtimestamp(
+                                self.tmp_hijacks_dict[key]['timestamp_of_config']),  # timestamp_of_config
+                            '',  # comment
+                            self.tmp_hijacks_dict[key]['peers_seen'],  # peers_seen
+                            [],  # peers_withdrawn
+                            self.tmp_hijacks_dict[key]['asns_inf']  # asns_inf
+                        )
 
-                values = []
-                for key in self.tmp_hijacks_dict:
-                    values_ = (
-                        key,  # key
-                        self.tmp_hijacks_dict[key]['type'],  # type
-                        self.tmp_hijacks_dict[key]['prefix'],  # prefix
-                        self.tmp_hijacks_dict[key]['hijack_as'],  # hijack_as
-                        # num_peers_seen
-                        self.tmp_hijacks_dict[key]['num_peers_seen'],
-                        # num_asns_inf
-                        self.tmp_hijacks_dict[key]['num_asns_inf'],
-                        datetime.datetime.fromtimestamp(
-                            self.tmp_hijacks_dict[key]['time_started']),  # time_started
-                        datetime.datetime.fromtimestamp(
-                            self.tmp_hijacks_dict[key]['time_last']),  # time_last
-                        None,  # time_ended
-                        None,  # mitigation_started
-                        datetime.datetime.fromtimestamp(
-                            self.tmp_hijacks_dict[key]['time_detected']),  # time_detected
-                        False,  # under_mitigation
-                        True,  # active
-                        False,  # resolved
-                        False,  # ignored
-                        False,  # withdrawn
-                        # configured_prefix
-                        self.tmp_hijacks_dict[key]['configured_prefix'],
-                        datetime.datetime.fromtimestamp(
-                            self.tmp_hijacks_dict[key]['timestamp_of_config']),  # timestamp_of_config
-                        '',  # comment
-                        self.tmp_hijacks_dict[key]['peers_seen'],  # peers_seen
-                        [],  # peers_withdrawn
-                        self.tmp_hijacks_dict[key]['asns_inf']  # asns_inf
-                    )
-                    values.append(values_)
+                        with get_wo_cursor(self.wo_conn) as db_cur:
+                            psycopg2.extras.execute_values(
+                                db_cur, cmd_, (values_, ))
 
-                psycopg2.extras.execute_values(
-                    self.db_cur, cmd_, values, page_size=1000)
-                self.db_conn.commit()
-            except Exception:
-                log.exception('exception')
-                self.db_conn.rollback()
-                return -1
+                except Exception:
+                    log.info('fails {}'.format(fails))
+                    fails += 1
+                else:
+                    break
 
             num_of_entries = len(self.tmp_hijacks_dict)
             self.tmp_hijacks_dict.clear()
@@ -1057,9 +1085,11 @@ class Database():
             cmd_ = 'SELECT key, prefix, origin_as, peer_asn, as_path, service, ' \
                 'type, communities, timestamp FROM bgp_updates WHERE ' \
                 'handled = false ORDER BY timestamp DESC LIMIT(%s)'
-            self.db_cur.execute(
-                cmd_, (amount,))
-            entries = self.db_cur.fetchall()
+            with get_ro_cursor(self.ro_conn) as db_cur:
+                db_cur.execute(
+                    cmd_, (amount,))
+                entries = db_cur.fetchall()
+
             for entry in entries:
                 results.append({
                     'key': entry[0],  # key
@@ -1086,9 +1116,9 @@ class Database():
                 return
             try:
                 cmd_ = 'UPDATE hijacks SET active=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;'
-                psycopg2.extras.execute_values(
-                    self.db_cur, cmd_, list(self.outdate_hijacks), page_size=1000)
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_values(
+                        db_cur, cmd_, list(self.outdate_hijacks), page_size=1000)
                 self.outdate_hijacks.clear()
             except Exception:
                 log.exception('')
@@ -1125,22 +1155,24 @@ class Database():
                 log.debug('Config Store..')
                 cmd_ = 'INSERT INTO configs (key, config_data, raw_config, time_modified, comment)'
                 cmd_ += 'VALUES (%s, %s, %s, %s, %s);'
-                self.db_cur.execute(
-                    cmd_,
-                    (config_hash,
-                     json.dumps(yaml_config),
-                        raw_config,
-                        datetime.datetime.now(),
-                        comment))
-                self.db_conn.commit()
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        cmd_,
+                        (config_hash,
+                         json.dumps(yaml_config),
+                            raw_config,
+                            datetime.datetime.now(),
+                            comment))
             except Exception:
                 log.exception('failed to save config in db')
 
         def _retrieve_most_recent_config_hash(self):
             try:
-                self.db_cur.execute(
-                    'SELECT key from configs ORDER BY time_modified DESC LIMIT 1')
-                hash_ = self.db_cur.fetchone()
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(
+                        'SELECT key from configs ORDER BY time_modified DESC LIMIT 1')
+                    hash_ = db_cur.fetchone()
+
                 if isinstance(hash_, tuple):
                     return hash_[0]
             except Exception:

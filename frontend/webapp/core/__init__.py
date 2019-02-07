@@ -68,16 +68,16 @@ def setup():
 
     modules = Modules_state()
 
-    try:
-        app.artemis_logger.debug('Starting Database..')
-        modules.call('database', 'start')
-
-        if not modules.is_up_or_running('database'):
-            app.artemis_logger.error('Couldn\'t start Database.')
-            exit(-1)
-    except BaseException:
-        app.artemis_logger.exception('exception while starting Database')
-        exit(-1)
+    # try:
+    #     app.artemis_logger.debug('Starting Database..')
+    #     modules.call('database', 'start')
+    #
+    #     if not modules.is_up_or_running('database'):
+    #         app.artemis_logger.error('Couldn\'t start Database.')
+    #         exit(-1)
+    # except BaseException:
+    #     app.artemis_logger.exception('exception while starting Database')
+    #     exit(-1)
 
     try:
         app.artemis_logger.debug('Request status of all modules..')

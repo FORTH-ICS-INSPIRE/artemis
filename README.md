@@ -154,26 +154,57 @@ The basic actions that you will need to do, stated here for brevity, are the fol
 
 1. Edit environment variables in .env file (especially the security-related variables)
 
-2. Configure certificates and NGINX reverse proxy for https termination
-
+2. Decouple your configs from the default ones (that are under version control), by doing the following in your local artemis directory:
    ```
-   frontend/webapp/configs/certs
-   frontend/webapp/configs/nginx.conf
+   mkdir -p local_configs
+   mkdir -p local_configs/backend
+   mkdir -p local_configs/frontend
+   cp -r backend/configs/* local_configs/backend
+   cp -r backend/supervisor.d local_configs/backend
+   cp -r frontend/webapp/configs/* local_configs/frontend
+   ```
+   and then change the following source mappings:
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28) to:
+   ```
+   - ./local_configs/backend/:/etc/artemis/
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L29) to:
+   ```
+   - ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L61) to:
+   ```
+   - ./local_configs/frontend/:/etc/artemis/
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L79) to:
+   ```
+   - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L80) to:
+   ```
+   - ./local_configs/frontend/certs/:/etc/nginx/certs/
+   ```
+   The local_configs folder is NOT under version control.
+
+3. Configure certificates and NGINX reverse proxy for https termination
+   ```
+   local_configs/frontend/certs
+   local_configs/frontend/nginx.conf
    ```
 
-3. Start ARTEMIS
+4. Start ARTEMIS
 
    ```
    docker-compose up -d
    ```
 
-4. Visit UI and configure ARTEMIS
+5. Visit UI and configure ARTEMIS
 
    ```
    https://<ARTEMIS_HOST>
    ```
 
-5. Activate backups (recommended)
+6. Activate backups (recommended)
 
    ```
    docker-compose exec postgres bash
@@ -181,7 +212,7 @@ The basic actions that you will need to do, stated here for brevity, are the fol
    exit
    ```
 
-6. Stop ARTEMIS (optional)
+7. Stop ARTEMIS (optional)
 
    ```
    docker-compose stop

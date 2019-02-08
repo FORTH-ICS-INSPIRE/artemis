@@ -7,6 +7,7 @@
 - CI/CD container
 - SemaphoreCI testing for backend
 - Automation of system and DB migration
+- Instructions on local configuration decoupling
 
 ### Changed
 - Done misc updates on README

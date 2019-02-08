@@ -156,12 +156,12 @@ The basic actions that you will need to do, stated here for brevity, are the fol
 
 2. Decouple your configs from the default ones (that are under version control), by doing the following in your local artemis directory:
    ```
-   mkdir -p local_configs
-   mkdir -p local_configs/backend
-   mkdir -p local_configs/frontend
-   cp -r backend/configs/* local_configs/backend
-   cp -r backend/supervisor.d local_configs/backend
-   cp -r frontend/webapp/configs/* local_configs/frontend
+   mkdir -p local_configs && \
+   mkdir -p local_configs/backend && \
+   mkdir -p local_configs/frontend && \
+   cp -rn backend/configs/* local_configs/backend && \
+   cp -rn backend/supervisor.d local_configs/backend && \
+   cp -rn frontend/webapp/configs/* local_configs/frontend
    ```
    and then change the following source mappings:
    * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28) to:

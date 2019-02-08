@@ -1,12 +1,19 @@
 #
-# ARTEMIS Configuration File (default config, please change in your deployment)
+# ARTEMIS Configuration File (default working config for demonstration purposes)
 #
+# PLEASE DO THE FOLLOWING:
+# 1. COPY THIS FILE AND SIBLING FILES AND PARENT DIRECTORY TO A DIFFERENT LOCATION OF YOUR CHOICE
+# 2. CHANGE THE SOURCE VOLUME MAPPING IN DOCKER-COMPOSE.YAML (LINE 28)
+# 3. READ THE WIKI PAGE: https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file
+# 4. USE THE UI TO EDIT THE CONFIGURATION
+#
+# Quick instructions:
 # Defining a named variable:
 #     named_variable: &named_variable
 #         value_of_variable
 # Use named variable:
 #     *named_variable
-# - denotes an entry
+# - denotes an entry in a list
 #
 # Start of Prefix Definitions (IPv4 and IPv6 are supported)
 prefixes:

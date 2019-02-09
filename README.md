@@ -1,5 +1,5 @@
 [![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis) [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
-[![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh) [![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat) [!License](https://img.shields.io/badge/license-BSD--3-blue.svg)
+[![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh) ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat) [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/LICENSE)
 
 # ARTEMIS
 
@@ -41,7 +41,7 @@ can be neutralized within a minute!
 2. Passive detector (monitoring + detection enabled)
 3. Active joint detector and user-triggered mitigator (monitoring + detection + mitigation enabled)
 
-*Any of this combinations is valid. To start with, we recommend using mode (2).*
+*Any of these combinations is valid. To start with, we recommend using mode (2).*
 
 You can read more about the ARTEMIS methodology and research experiments 
 on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).

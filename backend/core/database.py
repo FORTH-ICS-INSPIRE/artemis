@@ -411,7 +411,7 @@ class Database():
                             psycopg2.extras.execute_batch(
                                 db_cur,
                                 query,
-                                rekey_update_keys)
+                                (rekey_update_keys,))
                             entries = db_cur.fetchall()
 
                         for entry in entries:

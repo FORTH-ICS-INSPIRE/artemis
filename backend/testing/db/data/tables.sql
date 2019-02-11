@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+
 CREATE TABLE IF NOT EXISTS db_details (
 version BIGINT NOT NULL,
 upgraded_on TIMESTAMPTZ NOT NULL);
@@ -23,7 +25,7 @@ FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 INSERT INTO db_details (version, upgraded_on) VALUES (6, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
-    key VARCHAR ( 32 ) PRIMARY KEY,
+    key VARCHAR ( 32 ) NOT NULL,
     prefix inet,
     origin_as BIGINT,
     peer_asn   BIGINT,
@@ -35,7 +37,9 @@ CREATE TABLE IF NOT EXISTS bgp_updates (
     hijack_key text[],
     handled   BOOLEAN,
     matched_prefix inet,
-    orig_path json
+    orig_path json,
+    PRIMARY KEY(timestamp, key),
+    UNIQUE(timestamp, key)
 );
 
 CREATE INDEX withdrawal_idx
@@ -43,6 +47,8 @@ ON bgp_updates(prefix, peer_asn, type, hijack_key);
 
 CREATE INDEX handled_idx
 ON bgp_updates(handled);
+
+SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
 create trigger send_update_event
 after insert on bgp_updates
@@ -53,7 +59,7 @@ after update on bgp_updates
 for each row execute procedure rabbitmq.on_row_change('update-update');
 
 CREATE TABLE IF NOT EXISTS hijacks (
-    key VARCHAR ( 32 ) PRIMARY KEY,
+    key VARCHAR ( 32 ) NOT NULL,
     type  VARCHAR ( 1 ),
     prefix inet,
     hijack_as BIGINT,
@@ -77,6 +83,8 @@ CREATE TABLE IF NOT EXISTS hijacks (
     timestamp_of_config TIMESTAMP,
     comment text,
     seen BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY(time_detected, key),
+    UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (
         (
             active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=false
@@ -110,6 +118,8 @@ CREATE TABLE IF NOT EXISTS hijacks (
 
 CREATE INDEX active_idx
 ON hijacks(active);
+
+SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 
 create trigger send_hijack_event
 after insert or update on hijacks

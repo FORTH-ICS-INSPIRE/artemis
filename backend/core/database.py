@@ -1038,7 +1038,7 @@ class Database():
                 query = ('INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, '
                          'time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, '
                          'active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) '
-                         'VALUES %s ON CONFLICT(key) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf '
+                         'VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf '
                          ', time_started=excluded.time_started, time_last=excluded.time_last, peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf')
 
                 values = []

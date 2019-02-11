@@ -26,7 +26,7 @@ def run():
                 durable=False)
             exchange.declare()
             with Producer(connection) as producer:
-                for i in range(100):
+                for i in range(1000):
                     msg_['timestamp'] = i
                     msg_['key'] = '{}-{}'.format(k, i)
                     producer.publish(
@@ -37,8 +37,8 @@ def run():
                     )
     import threading
     threads = []
-    for i in range(5):
-        threads.append(threading.Thread(target=runner, args=(chr(i+97),)))
+    for i in range(10):
+        threads.append(threading.Thread(target=runner, args=(chr(i + 97),)))
     for t in threads:
         t.start()
     for t in threads:

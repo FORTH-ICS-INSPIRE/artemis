@@ -84,13 +84,13 @@ class Detection():
                 delivery_mode=1)
             self.hijack_exchange.declare()
 
-            self.hijack_shard = Exchange(
-                'hijack-sharding',
+            self.hijack_hashing = Exchange(
+                'hijack-hashing',
                 channel=connection,
-                type='x-modulus-hash',
+                type='x-consistent-hash',
                 durable=False,
                 delivery_mode=1)
-            self.hijack_shard.declare()
+            self.hijack_hashing.declare()
 
             self.handled_exchange = Exchange(
                 'handled-update',
@@ -611,7 +611,7 @@ class Detection():
 
             self.producer.publish(
                 result,
-                exchange=self.hijack_shard,
+                exchange=self.hijack_hashing,
                 routing_key=redis_hijack_key,
                 serializer='pickle',
                 priority=0

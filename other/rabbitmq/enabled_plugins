@@ -1,1 +1,1 @@
-[rabbitmq_management,rabbitmq_sharding].
+[rabbitmq_management,rabbitmq_consistent_hash_exchange].

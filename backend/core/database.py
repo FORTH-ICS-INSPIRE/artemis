@@ -97,7 +97,7 @@ class Database():
                 server = ServerProxy(
                     'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
                 query = ('INSERT INTO process_states (name, running) '
-                        'VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running')
+                         'VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running')
                 processes = [(x['name'], x['state'] == 20) for x in server.supervisor.getAllProcessInfo()
                              if x['name'] != 'listener']
 
@@ -139,13 +139,13 @@ class Database():
                 delivery_mode=1)
             self.hijack_exchange.declare()
 
-            self.hijack_shard = Exchange(
-                'hijack-sharding',
+            self.hijack_hashing = Exchange(
+                'hijack-hashing',
                 channel=connection,
-                type='x-modulus-hash',
+                type='x-consistent-hash',
                 durable=False,
                 delivery_mode=1)
-            self.hijack_shard.declare()
+            self.hijack_hashing.declare()
 
             self.handled_exchange = Exchange(
                 'handled-update', type='direct', durable=False, delivery_mode=1)
@@ -163,7 +163,7 @@ class Database():
                 consumer_arguments={'x-priority': 1})
 
             self.hijack_queue = Queue(
-                'db-hijack-update', exchange=self.hijack_shard, routing_key='update', durable=False, auto_delete=True, max_priority=1,
+                'db-hijack-update-{}'.format(uuid()), exchange=self.hijack_hashing, routing_key='1', durable=False, auto_delete=True, max_priority=1,
                 consumer_arguments={'x-priority': 1})
 
             self.hijack_ongoing_request_queue = Queue(
@@ -445,13 +445,16 @@ class Database():
                     return
 
                 if key not in self.insert_hijacks_entries:
+                    # log.info('key {} at {}'.format(key, os.getpid()))
                     self.insert_hijacks_entries[key] = {}
                     self.insert_hijacks_entries[key]['prefix'] = msg_['prefix']
-                    self.insert_hijacks_entries[key]['hijack_as'] = msg_['hijack_as']
+                    self.insert_hijacks_entries[key]['hijack_as'] = msg_[
+                        'hijack_as']
                     self.insert_hijacks_entries[key]['type'] = msg_['type']
                     self.insert_hijacks_entries[key]['time_started'] = msg_[
                         'time_started']
-                    self.insert_hijacks_entries[key]['time_last'] = msg_['time_last']
+                    self.insert_hijacks_entries[key]['time_last'] = msg_[
+                        'time_last']
                     self.insert_hijacks_entries[key]['peers_seen'] = list(
                         msg_['peers_seen'])
                     self.insert_hijacks_entries[key]['asns_inf'] = list(
@@ -459,7 +462,7 @@ class Database():
                     self.insert_hijacks_entries[key]['num_peers_seen'] = len(
                         msg_['peers_seen'])
                     self.insert_hijacks_entries[key]['num_asns_inf'] = len(msg_[
-                                                                     'asns_inf'])
+                        'asns_inf'])
                     self.insert_hijacks_entries[key]['monitor_keys'] = msg_[
                         'monitor_keys']
                     self.insert_hijacks_entries[key]['time_detected'] = msg_[
@@ -699,7 +702,7 @@ class Database():
                     db_cur.execute(
                         'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
                         (raw['key'],
-                        ))
+                         ))
             except Exception:
                 log.exception('{}'.format(raw))
 
@@ -921,7 +924,7 @@ class Database():
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2])
                                 with get_wo_cursor(self.wo_conn) as db_cur:
-                                   db_cur.execute(
+                                    db_cur.execute(
                                         'UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, '
                                         'peers_withdrawn=%s, time_last=%s WHERE key=%s;',
                                         (timestamp, entry[1], timestamp, entry[2],))
@@ -1045,7 +1048,8 @@ class Database():
                         key,  # key
                         self.insert_hijacks_entries[key]['type'],  # type
                         self.insert_hijacks_entries[key]['prefix'],  # prefix
-                        self.insert_hijacks_entries[key]['hijack_as'],  # hijack_as
+                        # hijack_as
+                        self.insert_hijacks_entries[key]['hijack_as'],
                         # num_peers_seen
                         self.insert_hijacks_entries[key]['num_peers_seen'],
                         # num_asns_inf
@@ -1068,9 +1072,11 @@ class Database():
                         datetime.datetime.fromtimestamp(
                             self.insert_hijacks_entries[key]['timestamp_of_config']),  # timestamp_of_config
                         '',  # comment
-                        self.insert_hijacks_entries[key]['peers_seen'],  # peers_seen
+                        # peers_seen
+                        self.insert_hijacks_entries[key]['peers_seen'],
                         [],  # peers_withdrawn
-                        self.insert_hijacks_entries[key]['asns_inf']  # asns_inf
+                        # asns_inf
+                        self.insert_hijacks_entries[key]['asns_inf']
                     )
                     values.append(entry)
 
@@ -1164,7 +1170,7 @@ class Database():
                     db_cur.execute(
                         query,
                         (config_hash,
-                        json.dumps(yaml_config),
+                         json.dumps(yaml_config),
                             raw_config,
                             datetime.datetime.now(),
                             comment))

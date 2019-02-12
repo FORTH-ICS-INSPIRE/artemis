@@ -163,28 +163,28 @@ The basic actions that you will need to do, stated here for brevity, are the fol
    cp -rn backend/supervisor.d local_configs/backend && \
    cp -rn frontend/webapp/configs/* local_configs/frontend
    ```
-   and then change the following source mappings:
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28) to:
+   and then change the following source mappings in docker-compose.yaml:
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L29) (see also comments in docker-compose.yaml file)  to:
    ```
    - ./local_configs/backend/:/etc/artemis/
    ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L29) to:
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L33) (see also comments in docker-compose.yaml file) to:
    ```
    - ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
    ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L61) to:
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L68) (see also comments in docker-compose.yaml file) to:
    ```
    - ./local_configs/frontend/:/etc/artemis/
    ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L79) to:
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L89) (see also comments in docker-compose.yaml file) to:
    ```
    - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
    ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L80) to:
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L93) (see also comments in docker-compose.yaml file) to:
    ```
    - ./local_configs/frontend/certs/:/etc/nginx/certs/
    ```
-   The local_configs folder is NOT under version control.
+   The local_configs directory is NOT under version control.
 
 3. Configure certificates and NGINX reverse proxy for https termination
    ```

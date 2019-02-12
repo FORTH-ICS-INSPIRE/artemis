@@ -23,7 +23,7 @@ services:
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             GUI_ENABLED: ${GUI_ENABLED}
         volumes:
-            # uncomment to run from source code
+            # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/
             # comment after Step 2 of README
             - ./backend/configs/:/etc/artemis/
@@ -62,7 +62,7 @@ services:
             JS_VERSION: ${JS_VERSION}
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
         volumes:
-            # uncomment to run from source code
+            # uncomment to run from source code  (only if you build from source)
             # - ./frontend/:/root/
             # comment after Step 2 of README
             - ./frontend/webapp/configs/:/etc/artemis/

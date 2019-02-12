@@ -1,7 +1,7 @@
 import os
 from flask import Flask, g, render_template, request, jsonify, redirect, session
 from flask_security import current_user
-from flask_security.utils import hash_password
+from flask_security.utils import hash_password, verify_password
 from flask_security.decorators import login_required, roles_accepted
 from flask_babel import Babel
 from flask_jwt_extended import JWTManager, create_access_token
@@ -107,7 +107,7 @@ def setup():
                 username = os.getenv('USER_ROOT_USERNAME', 'admin')
                 password = os.getenv('USER_ROOT_PASSWORD', 'admin')
                 is_active = True
-                if password is not None:
+                if password:
                     password = hash_password(password)
 
                 user = ctx.create_user(username=username,
@@ -169,17 +169,22 @@ def on_user_registered(app, user, confirm_token):
     db.session.commit()
 
 
-@app.route('/jwt/auth', methods=['GET'])
+@app.route('/jwt/auth', methods=['GET', 'POST'])
 def jwt_auth():
     user = None
+
     # if user is not logged in check parameters
     if not current_user.is_authenticated:
-        username = request.values.get('username')
-        password = request.values.get('password')
+        data = request.get_json()
+        username = data['username']
+        password = data['password']
+        app.artemis_logger.info(username)
         # if user and pass does not correspond to user return unauthorized
-        user = data_store.find_user(username=username, password=password)
-        if user is None:
-            return app.login_manager.unauthorized()
+        user = data_store.find_user(username=username)
+
+        if not user or not verify_password(password, user.password):
+            resp = jsonify({'error': 'wrong credentials'})
+            return resp, 401
     else:
         user = current_user
     # Create the tokens we will be sending back to the user

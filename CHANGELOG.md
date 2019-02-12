@@ -9,6 +9,7 @@
 - Automation of system and DB migration
 - Instructions on local configuration decoupling
 - Support for wildcards (origin_asns, neighbors) in configuration
+- Enabled POST request on /jwt/auth to retrieve authentication token
 
 ### Changed
 - Done misc updates on README

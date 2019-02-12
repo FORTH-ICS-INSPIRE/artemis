@@ -1,5 +1,5 @@
 [![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis) [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
-[![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
+[![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh) ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat) [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/LICENSE)
 
 # ARTEMIS
 
@@ -41,7 +41,7 @@ can be neutralized within a minute!
 2. Passive detector (monitoring + detection enabled)
 3. Active joint detector and user-triggered mitigator (monitoring + detection + mitigation enabled)
 
-*Any of this combinations is valid. To start with, we recommend using mode (2).*
+*Any of these combinations is valid. To start with, we recommend using mode (2).*
 
 You can read more about the ARTEMIS methodology and research experiments 
 on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
@@ -154,26 +154,57 @@ The basic actions that you will need to do, stated here for brevity, are the fol
 
 1. Edit environment variables in .env file (especially the security-related variables)
 
-2. Configure certificates and NGINX reverse proxy for https termination
-
+2. Decouple your configs from the default ones (that are under version control), by doing the following in your local artemis directory:
    ```
-   frontend/webapp/configs/certs
-   frontend/webapp/configs/nginx.conf
+   mkdir -p local_configs && \
+   mkdir -p local_configs/backend && \
+   mkdir -p local_configs/frontend && \
+   cp -rn backend/configs/* local_configs/backend && \
+   cp -rn backend/supervisor.d local_configs/backend && \
+   cp -rn frontend/webapp/configs/* local_configs/frontend
+   ```
+   and then change the following source mappings in docker-compose.yaml:
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L29) (see also comments in docker-compose.yaml file)  to:
+   ```
+   - ./local_configs/backend/:/etc/artemis/
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L33) (see also comments in docker-compose.yaml file) to:
+   ```
+   - ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L68) (see also comments in docker-compose.yaml file) to:
+   ```
+   - ./local_configs/frontend/:/etc/artemis/
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L89) (see also comments in docker-compose.yaml file) to:
+   ```
+   - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
+   ```
+   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L93) (see also comments in docker-compose.yaml file) to:
+   ```
+   - ./local_configs/frontend/certs/:/etc/nginx/certs/
+   ```
+   The local_configs directory is NOT under version control.
+
+3. Configure certificates and NGINX reverse proxy for https termination
+   ```
+   local_configs/frontend/certs
+   local_configs/frontend/nginx.conf
    ```
 
-3. Start ARTEMIS
+4. Start ARTEMIS
 
    ```
    docker-compose up -d
    ```
 
-4. Visit UI and configure ARTEMIS
+5. Visit UI and configure ARTEMIS
 
    ```
    https://<ARTEMIS_HOST>
    ```
 
-5. Activate backups (recommended)
+6. Activate backups (recommended)
 
    ```
    docker-compose exec postgres bash
@@ -181,7 +212,7 @@ The basic actions that you will need to do, stated here for brevity, are the fol
    exit
    ```
 
-6. Stop ARTEMIS (optional)
+7. Stop ARTEMIS (optional)
 
    ```
    docker-compose stop

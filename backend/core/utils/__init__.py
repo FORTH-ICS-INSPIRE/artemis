@@ -6,7 +6,6 @@ import yaml
 from logging.handlers import SMTPHandler
 import pickle
 import hashlib
-import psycopg2
 from contextlib import contextmanager
 
 
@@ -17,6 +16,24 @@ DB_NAME = os.getenv('DATABASE_NAME', 'artemis_db')
 DB_USER = os.getenv('DATABASE_USER', 'artemis_user')
 DB_HOST = os.getenv('DATABASE_HOST', 'postgres')
 DB_PASSWORD = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
+
+
+def get_logger(path='/etc/artemis/logging.yaml'):
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            config = yaml.safe_load(f.read())
+        logging.config.dictConfig(config)
+        log = logging.getLogger('artemis_logger')
+        log.info('Loaded configuration from {}'.format(path))
+    else:
+        FORMAT = '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
+        logging.basicConfig(format=FORMAT, level=logging.INFO)
+        log = logging
+        log.info('Loaded default configuration')
+    return log
+
+
+log = get_logger()
 
 
 @contextmanager
@@ -38,21 +55,6 @@ def get_wo_cursor(conn):
             raise
         else:
             conn.commit()
-
-
-def get_logger(path='/etc/artemis/logging.yaml'):
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            config = yaml.safe_load(f.read())
-        logging.config.dictConfig(config)
-        log = logging.getLogger('artemis_logger')
-        log.info('Loaded configuration from {}'.format(path))
-    else:
-        FORMAT = '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
-        logging.basicConfig(format=FORMAT, level=logging.INFO)
-        log = logging
-        log.info('Loaded default configuration')
-    return log
 
 
 def flatten(items, seqtypes=(list, tuple)):

@@ -88,8 +88,6 @@ services:
             - 5671
             - 5672
             - 15672
-        ports:
-            - "15672:15672"
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}

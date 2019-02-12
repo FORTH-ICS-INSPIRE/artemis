@@ -38,16 +38,13 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="row">
-                    <div class="col-lg-1">
-                        <p id="display_entries_time"> <b helpText="field_time_window_custom"> Timewindow: </b></p>
-                    </div>
                     <div class="col-lg-3">
                         <div id="timewindow_buttons">
-                            <button type="button" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
-                            <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">1h</button>
-                            <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">24h</button>
-                            <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">48h</button>
-                            <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">Past 1h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">Past 24h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">Past 48h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
                         </div>
                         <div id="custom_time" style="display: none;">
                             <div class="row">
@@ -107,9 +104,18 @@
         </div>
         <div class="row">
             <div class="col-lg-12">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1>Additional actions</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <i class="fa fa-bell fa-fw"></i> Additional actions
+                        View distinct values
                     </div>
                     <div class="panel-body">
                         <div class="row">
@@ -117,9 +123,6 @@
                                 <div class="panel-body">
                                     <div class="form-group">
                                         <div class="row">
-                                            <div class="col-lg-3">
-                                                View distinct values
-                                            </div>
                                             <div class="col-lg-4">
                                                 <select class="form-control" id="distinct_values_selection">
                                                     <option value="select">Select</option>
@@ -249,14 +252,13 @@
                     $(custom_time_data[item]["id"]).on('click', function(event) {
                         $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary btn-sm'); });
                         $(this).attr('class', 'btn btn-outline-primary btn-sm');
+                        if($('#custom_time').is(":visible")){
+                            $('#custom_time').hide();
+                        }
                         if(event.target.id == 'select_timewindow_all'){
                             filter_parameters['time'] = null;
                         }else if(event.target.id == 'select_timewindow_other'){
-                            if($('#custom_time').is(":visible")){
-                                $('#custom_time').hide();
-                            }else{
-                                $('#custom_time').show();
-                            }
+                            $('#custom_time').show();
                         }else{
                             var hours_back = 0;
                             if(event.target.id == 'select_timewindow_1h'){
@@ -624,7 +626,8 @@
                 );
 
                 $('#timezone').html(display_timezone());
-                displayHelpTextB();
+                displayHelpTextButton();
+                $("#navbar_bgpupdates").addClass("active");
             });
 
             function format ( d ) {

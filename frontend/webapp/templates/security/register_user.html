@@ -42,3 +42,15 @@
       Already have an account? <a href="{{ url_for_security('login') }}">Sign in</a>
   </div>
 {% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            $( document ).ready(function() {
+                $("#security\\.register_user").addClass("active");
+            });
+        </script>
+    {% endblock %}
+{% endblock %}

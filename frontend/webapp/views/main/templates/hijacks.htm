@@ -38,16 +38,13 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="row">
-                    <div class="col-lg-1">
-                        <p id="display_entries_time"> <b helpText="field_time_window_custom"> Timewindow: </b></p>
-                    </div>
                     <div class="col-lg-3">
                         <div id="timewindow_buttons">
-                            <button type="button" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
-                            <button type="button" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">1h</button>
-                            <button type="button" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">24h</button>
-                            <button type="button" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">48h</button>
-                            <button type="button" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">Past 1h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">Past 24h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">Past 48h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
                         </div>
                         <div id="custom_time" style="display: none;">
                             <div class="row">
@@ -64,57 +61,66 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-12">
-            <table class="table table-striped table-bordered" style="width:100%" id="hijacks">
-                <thead>
-                    <th helpText="field_time_detected">Time Detected</th>
-                    <th helpText="field_hijack_status">Status</th>
-                    <th helpText="field_prefix">Prefix</th>
-                    <th helpText="field_hijack_type">Type</th>
-                    <th helpText="field_hijack_as">Hijack AS</th>
-                    <th helpText="field_peers_seen"># Peers Seen</th>
-                    <th helpText="field_ases_infected"># ASes Infected</th>
-                    <th helpText="field_hijack_seen">Seen</th>
-                    <th helpText="field_hijack_more">More</th>
-                </thead>
-                <tfoot>
-                    <tr>
-                        <th>Time Detected</th>
-                        <th>Status</th>
-                        <th>Prefix</th>
-                        <th>Type</th>
-                        <th>Hijack AS</th>
-                        <th># Peers Seen</th>
-                        <th># ASes Infected</th>
-                        <th>Seen</th>
-                        <th>More</th>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-        <div class="row mt-3"">
-            <div class="col-lg-6">
-                </hr>
-                <p> <i>
-                    <a id="status_active_text" style="color:red" helpText="field_hijack_status_ongoing" href="javascript:filter_by_status('active');">Ongoing</a> /
-                    <a id="status_resolved_text" style="color:green" helpText="field_hijack_status_resolved" href="javascript:filter_by_status('resolved');">Resolved</a> /
-                    <a id="status_ignored_text" style="color:orange" helpText="field_hijack_status_ignored" href="javascript:filter_by_status('ignored');">Ignored</a> /
-                    <a id="status_under_mitigation_text" style="color:blue" helpText="field_hijack_under_mitigation" href="javascript:filter_by_status('under_mitigation');">Under Mitigation</a> /
-                    <a id="status_withdrawn_text" style="color:purple" helpText="field_hijack_status_withdrawn" href="javascript:filter_by_status('withdrawn');">Withdrawn</a> /
-                    <a id="status_outdated_text" style="color:black" helpText="field_hijack_status_outdated" href="javascript:filter_by_status('outdated');">Outdated</a>
-
-                </i></p>
+        <div class="row">
+            <div class="col-lg-12">
+                <table class="table table-striped table-bordered" style="width:100%" id="hijacks">
+                    <thead>
+                        <th helpText="field_time_detected">Time Detected</th>
+                        <th helpText="field_hijack_status">Status</th>
+                        <th helpText="field_prefix">Prefix</th>
+                        <th helpText="field_hijack_type">Type</th>
+                        <th helpText="field_hijacker_as">Hijacker AS</th>
+                        <th helpText="field_peers_seen"># Peers Seen</th>
+                        <th helpText="field_ases_infected"># ASes Infected</th>
+                        <th helpText="field_hijack_ack">Ack</th>
+                        <th helpText="field_hijack_more">More</th>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Time Detected</th>
+                            <th>Status</th>
+                            <th>Prefix</th>
+                            <th>Type</th>
+                            <th>Hijack AS</th>
+                            <th># Peers Seen</th>
+                            <th># ASes Infected</th>
+                            <th>Ack</th>
+                            <th>More</th>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
-            <div class="col-lg-6">
-                </hr>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-lg-8">
+                <p> Select Status: 
+                    <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm" onclick="filter_by_status('active');">Ongoing</button> /
+                    <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm" onclick="filter_by_status('resolved');">Resolved</button> /
+                    <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm" onclick="filter_by_status('ignored');">Ignored</button> /
+                    <button type="button" id="status_under_mitigation_button" helpText="field_hijack_under_mitigation" class="btn btn-outline-primary btn-sm" onclick="filter_by_status('under_mitigation');">Under Mitigation</button> /
+                    <button type="button" id="status_withdrawn_button" helpText="field_hijack_status_withdrawn" class="btn btn-outline-info btn-sm" onclick="filter_by_status('withdrawn');">Withdrawn</button> /
+                    <button type="button" id="status_outdated_button" helpText="field_hijack_status_outdated" class="btn btn-outline-dark btn-sm" onclick="filter_by_status('outdated');">Outdated</button>
+                </p>
+            </div>
+            <div class="col-lg-4">
                 <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1>Additional actions</h1>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row">
             <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <i class="fa fa-bell fa-fw"></i> Additional information
+                        View distinct values
                     </div>
                     <div class="panel-body">
                         <div class="row">
@@ -122,9 +128,6 @@
                                 <div class="panel-body">
                                     <div class="form-group">
                                         <div class="row">
-                                            <div class="col-lg-3">
-                                                View distinct values
-                                            </div>
                                             <div class="col-lg-4">
                                                 <select class="form-control" id="distinct_values_selection">
                                                     <option value="select">Select</option>
@@ -184,7 +187,7 @@
                 null,
                 { data: 'prefix' },
                 { data: 'type' },
-                { data: 'hijack_as' },
+                { data: 'hijacker_as' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }
             ];
@@ -197,7 +200,16 @@
                 'type': null
             };
 
-            var exlude_columns_from_search = ['Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Seen', 'Mark', 'More'];
+            var filter_status_map = {
+                'active' : "danger",
+                'resolved' : "success",
+                'ignored' : "warning",
+                'under_mitigation' : "primary",
+                'withdrawn' : "info",
+                'outdated' : "dark"
+            }
+
+            var exlude_columns_from_search = ['Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Ack', 'Mark', 'More'];
 
             var custom_message_for_search = {};
 
@@ -230,14 +242,13 @@
                     $(custom_time_data[item]["id"]).on('click', function(event) {
                         $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary btn-sm'); });
                         $(this).attr('class', 'btn btn-outline-primary btn-sm');
+                        if($('#custom_time').is(":visible")){
+                            $('#custom_time').hide();
+                        }
                         if(event.target.id == 'select_timewindow_all'){
                             filter_parameters['time'] = null;
                         }else if(event.target.id == 'select_timewindow_other'){
-                            if($('#custom_time').is(":visible")){
-                                $('#custom_time').hide();
-                            }else{
-                                $('#custom_time').show();
-                            }
+                            $('#custom_time').show();
                         }else{
                             var hours_back = 0;
                             if(event.target.id == 'select_timewindow_1h'){
@@ -265,17 +276,21 @@
                 // no status selected
                 if(selected_status == status){
                     selected_status = status;
-                    $("#status_" + status + "_text").css("font-weight", "");
+                    $("#status_" + selected_status + "_button").removeClass("btn-" + filter_status_map[status]);
+                    $("#status_" + selected_status + "_button").addClass("btn-outline-" + filter_status_map[status]);
                     filter_parameters['status'] = null;
                     selected_status = null;
                 }else{
                     selected_status = status;
+                    $("#status_" + status + "_button").removeClass("btn-outline-" + filter_status_map[status]);
+                    $("#status_" + status + "_button").addClass("btn-" + filter_status_map[status]);
+                    filter_parameters['status'] = status;
                     var status_list = ['active', 'resolved', 'ignored', 'under_mitigation', 'withdrawn', 'outdated'];
                     var filtered_status_list = status_list.filter(function(e) { return e !== status })
-                    $("#status_" + status + "_text").css("font-weight", "bold")
-                    filter_parameters['status'] = status;
-                    for (status_ in filtered_status_list){
-                        $("#status_" + filtered_status_list[status_] + "_text").css("font-weight", "");
+                    for (i in filtered_status_list){
+                        status_ = filtered_status_list[i]
+                        $("#status_" + status_ + "_button").removeClass("btn-" + filter_status_map[status_]);
+                        $("#status_" + status_ + "_button").addClass("btn-outline-" + filter_status_map[status_]);
                     }
                 }
                 construct_filter_hijacks_query();
@@ -438,6 +453,7 @@
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
+                    "select": false,
                     "pagingType": "numbers",
                     "ajax": (data, callback, settings) => {
                         var sort;
@@ -659,8 +675,8 @@
                 {% endif %}
 
                 $('#timezone').html(display_timezone());
-                displayHelpHijackStatus();
-                displayHelpTextB();
+                displayHelpTextButton();
+                $("#navbar_hijacks").addClass("active");
             });
 
             $("#live_update_button").on('change', function() {

@@ -34,7 +34,7 @@
                             <div class="col-lg-6">
                                 <div class="row">
                                     <div class="col-lg-4">
-                                        <p><b helpText="field_hijack_as">Hijacker AS:</b></p>
+                                        <p><b helpText="field_hijacker_as">Hijacker AS:</b></p>
                                     </div>
                                     <div class="col-lg-8">
                                         <cc_as><input id="info_hijack_as" class="form-control" type="text" readonly></cc_as>
@@ -162,7 +162,7 @@
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Actions
                         {% if current_user.has_roles('admin') %}
-                        <button type="button" id="hijack_seen_button" class="btn btn-primary btn-sm float-right hijack-seen-button">Mark Hijack as <b>seen</b></button>
+                        <button type="button" id="hijack_acknowledged_button" class="btn btn-primary btn-sm float-right hijack-seen-button">Mark Hijack as <b>acknowledged</b></button>
                         {% endif %}
                     </div>
                     <div class="panel-body">
@@ -621,6 +621,7 @@
                     asn_map_to_name();
                     service_to_name();
                 });
+                $("#navbar_hijack").addClass("active");
             });
 
         
@@ -687,10 +688,10 @@
                     $("#mitigation_button").prop("disabled", true);
                 }
                 if(data['seen'] == true){
-                    $('#hijack_seen_button').removeClass('btn-primary').addClass('btn-danger');
-                    $('#hijack_seen_button').html('Mark Hijack as <b>not seen</b>');
+                    $('#hijack_acknowledged_button').removeClass('btn-primary').addClass('btn-danger');
+                    $('#hijack_acknowledged_button').html('Mark Hijack as <b>not acknowledged</b>');
                 }
-                $('#hijack_seen_button').show();
+                $('#hijack_acknowledged_button').show();
                 asn_map_to_name();
             }
            
@@ -785,7 +786,7 @@
 
             
 
-            $('#hijack_seen_button').on('click', function (event, state) {
+            $('#hijack_acknowledged_button').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
                     submit_seen(true);
                 }else if($(this).hasClass("btn-danger")){
@@ -802,11 +803,11 @@
                     success: function(result){
                         if(result["status"] == "success"){
                             if(state == true){
-                                $('#hijack_seen_button').removeClass('btn-primary').addClass('btn-danger');
-                                $('#hijack_seen_button').html('Mark Hijack as <b>not seen</b>');
+                                $('#hijack_acknowledged_button').removeClass('btn-primary').addClass('btn-danger');
+                                $('#hijack_acknowledged_button').html('Mark Hijack as <b>not acknowledged</b>');
                             }else{
-                                $('#hijack_seen_button').removeClass('btn-danger').addClass('btn-primary');
-                                $('#hijack_seen_button').html('Mark Hijack as <b>seen</b>');
+                                $('#hijack_acknowledged_button').removeClass('btn-danger').addClass('btn-primary');
+                                $('#hijack_acknowledged_button').html('Mark Hijack as <b>acknowledged</b>');
                             }   
                         }
                     },

@@ -129,6 +129,9 @@ def remove_admin():
     if form.select_field.data is not None:
         user = app.security.datastore.find_user(
             id=form.select_field.data)
+        # Protect admin (user id == 1)
+        if user.id == 1:
+            return redirect('admin/user_management')
 
         admin_role = app.security.datastore.find_role('admin')
         app.security.datastore.remove_role_from_user(user, admin_role)

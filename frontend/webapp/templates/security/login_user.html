@@ -36,3 +36,16 @@
         Don't have an account yet? <a href="{{ url_for_security('register') }}">Create account</a>
     </div>
 {% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            $( document ).ready(function() {
+                $("#security\\.login").addClass("active");
+            });
+        </script>
+    {% endblock %}
+{% endblock %}
+

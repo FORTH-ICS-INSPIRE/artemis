@@ -21,48 +21,48 @@
                         <ul class="navbar-nav mr-auto">
                             {% if user.has_role('admin') or user.has_role('user') %}
                             <li class="nav-item">
-                                <a class="navbar-brand" href="{{ url_for('overview') }}">{{ _('Overview') }}</a>
+                                <a id="overview" class="nav-link" href="{{ url_for('overview') }}">{{ _('Overview') }}</a>
                             </li>
                             <li class="nav-item">
-                                <a class="navbar-brand" href="{{ url_for('main.display_monitors') }}">{{ _('BGP Updates') }}</a>
+                                <a id="navbar_bgpupdates" class="nav-link" href="{{ url_for('main.display_monitors') }}">{{ _('BGP Updates') }}</a>
                             </li>
                             <li class="nav-item">
-                                <a class="navbar-brand" href="{{ url_for('main.display_hijacks') }}">{{ _('Hijacks') }}</a>
+                                <a id="navbar_hijacks" class="nav-link" href="{{ url_for('main.display_hijacks') }}">{{ _('Hijacks') }}</a>
                             </li>
                             <li class="nav-item">
-                                <a class="navbar-brand" href="{{ url_for('main.display_visualizations') }}">{{ _('Visualizations') }}</a>
+                                <a id="navbar_visualizations" class="nav-link" href="{{ url_for('main.display_visualizations') }}">{{ _('Visualizations') }}</a>
                             </li>
                             {% endif %}
                         </ul>
                         <ul class="nav navbar-nav navbar-right">
                             {% if user.has_role('admin') %}
-                            <li class="nav-item dropdown">
-                                <a class="navbar-brand dropdown-toggle" href="#" id="admin_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ _('Admin') }}</a>
+                            <li id="navbar_admin" class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="admin_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ _('Admin') }}</a>
                                 <div class="dropdown-menu" aria-labelledby="admin_dropdown">
                                     <a class="dropdown-item" href="{{ url_for('admin.index') }}">System</a>
                                     <a class="dropdown-item" href="{{ url_for('admin.user_management') }}">{{ _('User Management') }}</a>
                                 </div>
                             </li>
-                            {% endif %} {% if user.has_role('admin') or user.has_role('user') %}
-                            <li class="nav-item dropdown">
-                                <a class="navbar-brand dropdown-toggle" href="#" id="admin_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</a>
+                            {% endif %}
+                            {% if user.has_role('admin') or user.has_role('user') %}
+                            <li id="navbar_actions" class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="admin_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</a>
                                 <div class="dropdown-menu" aria-labelledby="admin_dropdown">
                                     <a class="dropdown-item" href="{{ url_for('actions.password_change') }}">Change Password</a>
                                     <a class="dropdown-item" href="{{ url_for('main.config_comparison') }}">{{ _('Config Comparison') }}</a>
                                 </div>
                             </li>
-
                             <li class="nav-item">
-                                <a class="navbar-brand" target="_blank" href="https://www.inspire.edu.gr/artemis/">{{ _('About') }}</a>
+                                <a class="nav-link" target="_blank" href="https://www.inspire.edu.gr/artemis/">{{ _('About') }}</a>
                             </li>
-
-                            {% endif %} {% if not user.is_authenticated %}
+                            {% endif %}
+                            {% if not user.is_authenticated %}
                             <li class="nav-item">
-                                <a class="navbar-brand" href="/login">{{ _('Sign in') }}</a>
+                                <a class="nav-link" href="/login">{{ _('Sign in') }}</a>
                             </li>
                             {% else %}
                             <li class="nav-item">
-                                <a class="navbar-brand" href="/logout">{{ _('Sign out') }}</a>
+                                <a class="nav-link" href="/logout">{{ _('Sign out') }}</a>
                             </li>
                             {% endif %}
                         </ul>

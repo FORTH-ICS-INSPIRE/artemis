@@ -34,10 +34,10 @@ mapHelpText_system['field_hijack_type'] += '<li>0 → Type-0 exact-prefix hijack
 mapHelpText_system['field_hijack_type'] += '<li>1 → Type-1 exact-prefix hijack</li>';
 mapHelpText_system['field_hijack_type'] += '<li>Q → Squatting attack </li></ul>';
 
-mapHelpText_system['field_hijack_as'] = 'The possible AS that is responsible the hijack.</br>Note that this is an experimental field.';
+mapHelpText_system['field_hijacker_as'] = 'The possible AS that is responsible the hijack.</br>Note that this is an experimental field.';
 mapHelpText_system['field_peers_seen'] = 'Number of peers/monitors (i.e., ASNs)</br>that have seen hijack updates.';
 mapHelpText_system['field_ases_infected'] = 'Number of infected ASes that seem to</br>route traffic towards the hijacker AS.</br>Note that this is an experimental field.';
-mapHelpText_system['field_hijack_seen'] = 'Whether the user has acknowledged seeing the hijack.<br>If the ignore|resolve|mitigate buttons are pressed this<br>is automatically set to True (default value: False).';
+mapHelpText_system['field_hijack_ack'] = 'Whether the user has acknowledged seeing the hijack.<br>If the ignore|resolve|mitigate buttons are pressed this<br>is automatically set to True (default value: False).';
 mapHelpText_system['field_hijack_more'] = 'Further information related to the hijack.';
 
 mapHelpText_system['field_service'] = 'The route collector service that is connected to the monitor AS that observed the BGP update.';
@@ -98,9 +98,13 @@ function displayHelpTextB(){
 	});
 }
 
-function displayHelpTextStats(){
-	$('div[helpText]').each(function( index ) {
-		var value = '<p class="tooltip-custom-margin">' + mapHelpText_stats[$(this).attr( "helpText" )]  + '</p>'
+function displayHelpTextButton(){
+	$('button[helpText]').each(function( index ) {
+		if($(this).attr( "helpText" ) in mapHelpText_hijack_status){
+			var value = '<p class="tooltip-custom-margin">' + mapHelpText_hijack_status[$(this).attr( "helpText" )]  + '</p>'
+		}else{
+			var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
+		}
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
 		$(this).attr('data-placement', "top");
@@ -108,9 +112,10 @@ function displayHelpTextStats(){
 	});
 }
 
-function displayHelpHijackStatus(){
-	$('a[helpText]').each(function( index ) {
-		var value = '<p class="tooltip-custom-margin">' + mapHelpText_hijack_status[$(this).attr( "helpText" )]  + '</p>'
+
+function displayHelpTextStats(){
+	$('div[helpText]').each(function( index ) {
+		var value = '<p class="tooltip-custom-margin">' + mapHelpText_stats[$(this).attr( "helpText" )]  + '</p>'
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
 		$(this).attr('data-placement', "top");

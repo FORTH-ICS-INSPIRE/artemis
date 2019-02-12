@@ -287,7 +287,11 @@ class Configuration():
                     except Exception:
                         raise ArtemisError('invalid-prefix', prefix)
                 rule['origin_asns'] = flatten(rule.get('origin_asns', []))
+                if rule['origin_asns'] == ['*']:
+                    rule['origin_asns'] = [-1]
                 rule['neighbors'] = flatten(rule.get('neighbors', []))
+                if rule['neighbors'] == ['*']:
+                    rule['neighbors'] = [-1]
                 rule['mitigation'] = flatten(rule.get('mitigation', 'manual'))
                 for asn in (rule['origin_asns'] + rule['neighbors']):
                     if not isinstance(asn, int):

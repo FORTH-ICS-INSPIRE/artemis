@@ -8,6 +8,7 @@
 - SemaphoreCI testing for backend
 - Automation of system and DB migration
 - Instructions on local configuration decoupling
+- Support for wildcards (origin_asns, neighbors) in configuration
 
 ### Changed
 - Done misc updates on README
@@ -17,6 +18,7 @@
 - Display tooltip for hijack ASN in hijack view page
 - Display tooltip for monitors in BGP Updates table in hijack view page
 - Updated default and sample configuration files in backend/configs
+- Moved js minifier to container builder
 
 ### Fixed
 - Misc code quality improvements

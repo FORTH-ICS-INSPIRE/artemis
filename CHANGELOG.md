@@ -23,11 +23,12 @@
 ### Fixed
 - Misc code quality improvements
 - Fetch API support for older browsers
-- Change Hijack AS to Hijacker AS
+- UI fixes (Hijack->Hijacker)
 - Fix indentation on hijacks table
 - Make more clear the buttons of navbar
 - Change Timewindow phrase on BGP Updates and Hijacks tables
 - Bug with custom window
+- Update Hijack tags filter
 
 ### Removed
 - ACKS file (moved to README in-line)

@@ -37,8 +37,8 @@ def create_connect_db():
                 host=_host,
                 password=_password
             )
-        except Exception:
-            pass
+        except BaseException as e:
+            write_stderr('Db connection exception: {}'.format(e))
 
     return _db_conn
 

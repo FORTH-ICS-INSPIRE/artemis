@@ -23,10 +23,16 @@ services:
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             GUI_ENABLED: ${GUI_ENABLED}
         volumes:
-            # uncomment to run from source code
+            # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/
+            # comment after Step 2 of README
             - ./backend/configs/:/etc/artemis/
+            # uncomment after Step 2 of README
+            # - ./local_configs/backend/:/etc/artemis/
+            # comment after Step 2 of README
             - ./backend/supervisor.d/:/etc/supervisor/conf.d/
+            # uncomment after Step 2 of README
+            #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
@@ -56,9 +62,12 @@ services:
             JS_VERSION: ${JS_VERSION}
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
         volumes:
-            # uncomment to run from source code
+            # uncomment to run from source code  (only if you build from source)
             # - ./frontend/:/root/
+            # comment after Step 2 of README
             - ./frontend/webapp/configs/:/etc/artemis/
+            # uncomment after Step 2 of README
+            # - ./local_configs/frontend/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
     nginx:
         image: nginx:1.15-alpine
@@ -76,8 +85,14 @@ services:
             - "80:80"
             - "443:443"
         volumes:
+            # comment after Step 2 of README
             - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
+            # uncomment after Step 2 of README
+            # - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
+            # comment after Step 2 of README
             - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+            # uncomment after Step 2 of README
+            # - ./local_configs/frontend/certs/:/etc/nginx/certs/
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq

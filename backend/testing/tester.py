@@ -3,9 +3,11 @@ from kombu.utils.compat import nested
 import os
 import time
 import json
-import sys
 import psycopg2
 import socket
+import redis
+import hashlib
+import pickle
 
 
 class Tester():
@@ -15,7 +17,9 @@ class Tester():
         self.send_cnt = 0
         self.expected_messages = 0
 
-    def getConn(self):
+        self.initRedis()
+
+    def getDbConnection(self):
         '''
         Return a connection for the postgres database.
         '''
@@ -38,6 +42,13 @@ class Tester():
             except BaseException:
                 time.sleep(1)
         return db_conn
+
+    def initRedis(self):
+        redis_ = redis.Redis(
+            host=os.getenv('BACKEND_HOST', 'backend'),
+            port=6379
+        )
+        self.redis = redis_
 
     def test(self):
         '''
@@ -69,7 +80,7 @@ class Tester():
         update_queue = Queue(
             'detection-testing',
             exchange=pg_amq_bridge,
-            routing_key='update-insert',
+            routing_key='update-update',
             durable=False,
             auto_delete=True,
             max_priority=1,
@@ -100,6 +111,13 @@ class Tester():
 
         send_len = len(messages)
 
+        def redis_key(prefix, hijack_as, _type):
+            assert isinstance(prefix, str)
+            assert isinstance(hijack_as, int)
+            assert isinstance(_type, str)
+            return hashlib.shake_128(pickle.dumps(
+                [prefix, hijack_as, _type])).hexdigest(16)
+
         def validate_message(body, message):
             '''
             Callback method for message validation from the queues.
@@ -113,19 +131,32 @@ class Tester():
             # logging.debug(event)
 
             # distinguish between type of messages
-            if message.delivery_info['routing_key'] == 'update-insert':
+            if message.delivery_info['routing_key'] == 'update-update':
                 expected = messages[self.curr_idx]['detection_update_response']
+                assert self.redis.exists(
+                    event['key']), 'Monitor key not found in Redis'
             elif message.delivery_info['routing_key'] == 'update':
                 expected = messages[self.curr_idx]['detection_hijack_response']
+                redis_hijack_key = redis_key(
+                    event['prefix'],
+                    event['hijack_as'],
+                    event['type'])
+                assert self.redis.exists(
+                    redis_hijack_key), 'Hijack key not found in Redis'
             elif message.delivery_info['routing_key'] == 'hijack-update':
                 expected = messages[self.curr_idx]['database_hijack_response']
+                if event['active']:
+                    assert self.redis.sismember(
+                        'persistent-keys', event['key']), 'Persistent key not found in Redis'
+                else:
+                    assert not self.redis.sismember(
+                        'persistent-keys', event['key']), 'Persistent key found in Redis but should have been removed.'
 
             # compare expected message with received one. exit on mismatch.
             for key in set(event.keys()).intersection(expected.keys()):
-                if not (event[key] == expected[key] or (isinstance(
-                        event[key], (list, set)) and set(event[key]) == set(expected[key]))):
-                    sys.exit('Unexpected value for key \"{}\"\nReceived: {}, Expected: {}'
-                             .format(key, event[key], expected[key]))
+                assert (event[key] == expected[key] or (isinstance(
+                        event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
+                    'Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(key, event[key], expected[key]))
 
             self.expected_messages -= 1
             if self.expected_messages <= 0:
@@ -160,14 +191,15 @@ class Tester():
                     time.sleep(1)
 
         with Connection(RABBITMQ_HOST) as connection:
-            pg_amq_bridge.declare(channel=connection.default_channel)
+            print('Waiting for pg_amq exchange..')
+            waitExchange(pg_amq_bridge, connection.default_channel)
             print('Waiting for hijack exchange..')
             waitExchange(hijack_exchange, connection.default_channel)
             print('Waiting for update exchange..')
             waitExchange(update_exchange, connection.default_channel)
 
             # query database for the states of the processes
-            db_con = self.getConn()
+            db_con = self.getDbConnection()
             db_cur = db_con.cursor()
             query = 'SELECT COUNT(*) FROM process_states WHERE running=True'
             res = (0,)
@@ -210,7 +242,8 @@ class Tester():
                             connection.drain_events(timeout=100)
                         except socket.timeout:
                             # avoid infinite loop by timeout
-                            sys.exit('Consumer timeout after 100sec..')
+                            assert False, 'Consumer timeout'
+
             connection.close()
 
 

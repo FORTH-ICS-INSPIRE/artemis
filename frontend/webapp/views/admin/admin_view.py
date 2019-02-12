@@ -35,9 +35,8 @@ def handle_new_config():
         if success:
             return jsonify(
                 {'status': 'success', 'response': response})
-        else:
-            return jsonify(
-                {'status': 'fail', 'response': response})
+        return jsonify(
+            {'status': 'fail', 'response': response})
     except Exception as e:
         app.artemis_logger.exception("")
         return jsonify(

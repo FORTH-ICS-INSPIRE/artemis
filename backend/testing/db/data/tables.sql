@@ -54,6 +54,10 @@ create trigger send_update_event
 after insert on bgp_updates
 for each row execute procedure rabbitmq.on_row_change('update-insert');
 
+create trigger send_update_event2
+after update on bgp_updates
+for each row execute procedure rabbitmq.on_row_change('update-update');
+
 CREATE TABLE IF NOT EXISTS hijacks (
     key VARCHAR ( 32 ) NOT NULL,
     type  VARCHAR ( 1 ),

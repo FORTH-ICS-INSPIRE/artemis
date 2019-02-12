@@ -7,6 +7,8 @@
 - CI/CD container
 - SemaphoreCI testing for backend
 - Automation of system and DB migration
+- Instructions on local configuration decoupling
+- Support for wildcards (origin_asns, neighbors) in configuration
 
 ### Changed
 - Done misc updates on README
@@ -15,6 +17,8 @@
 - Upgraded requirements in backend
 - Display tooltip for hijack ASN in hijack view page
 - Display tooltip for monitors in BGP Updates table in hijack view page
+- Updated default and sample configuration files in backend/configs
+- Moved js minifier to container builder
 
 ### Fixed
 - Misc code quality improvements
@@ -37,6 +41,7 @@
 - Bumped requests from 2.19.1 to 2.21.0 in /frontend
 - Bumped PyYAML from 3.13 to 4.2b4 in /frontend
 - Bumped PyYAML from 3.13 to 4.2b4 in /backend
+- Resolved bug with user roles on registration process
 
 ## [1.0.0] - 2018-12-20
 ### Added (initial Apollo release)

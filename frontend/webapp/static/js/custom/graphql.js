@@ -8,7 +8,7 @@ function waitForConnection(ws, message) {
     } else {
         setTimeout(() => waitForConnection(ws, message), 1000);
     }
-};
+}
 
 var dbstatsCalled = false;
 function fetchDbStatsLive(ws, cb_func) {

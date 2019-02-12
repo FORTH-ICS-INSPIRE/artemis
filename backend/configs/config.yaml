@@ -1,67 +1,76 @@
 #
-# ARTEMIS Configuration File
+# ARTEMIS Configuration File (default config, please change in your deployment)
 #
-# Start of Prefix Definitions
+# Defining a named variable:
+#     named_variable: &named_variable
+#         value_of_variable
+# Use named variable:
+#     *named_variable
+# - denotes an entry
+#
+# Start of Prefix Definitions (IPv4 and IPv6 are supported)
 prefixes:
-    forth_prefix_main: &forth_prefix_main
+    super_prefix: &super_prefix
         - 139.91.0.0/16
-        # - 139.0.0.0/8
-        # [0.0.0.0/0]
-        # [0.0.0.0/0, '::/0']
-    forth_prefix_lamda: &forth_prefix_lamda
+    sub_prefix_1: &sub_prefix_1
         139.91.250.0/24
-    forth_prefix_vod: &forth_prefix_vod
+    sub_prefix_2: &sub_prefix_2
         139.91.2.0/24
 # End of Prefix Definitions
+#
 # Start of Monitor Definitions
 monitors:
-    riperis: ['']
-    # bgpstreamlive:
-    #  - routeviews
-    #  - ris
+    riperis: [''] # by default this uses all available monitors
+    bgpstreamlive:
+        - routeviews
+        - ris
+    betabmp:
+        - betabmp
     # exabgp:
-    # - ip: 192.168.1.1
-    #   port: 5000
-    # - ip: 192.168.5.1
-    #   port: 5000
-    # bgpstreamhist: /home/vkotronis/Desktop/git_projects/artemis-tool/other/bgpstreamhist/test_dir2
+    #     - ip: exabgp
+    #       port: 5000
+    # bgpstreamhist:
+    #     - <csv_dir_with_formatted_BGP_updates>
 # End of Monitor Definitions
+#
 # Start of ASN Definitions
 asns:
-    forth_asn: &forth_asn
+    my_asn: &my_asn
         8522
-    grnet_forth_upstream: &grnet_forth_upstream
+    primary_upstream: &primary_upstream
         5408
-    lamda_forth_upstream_back: &lamda_forth_upstream_back
+    backup_upstream_1: &backup_upstream_1
         56910
-    vodafone_forth_upstream_back: &vodafone_forth_upstream_back
+    backup_upstream_2: &backup_upstream_2
         12361
 # End of ASN Definitions
+#
 # Start of Rule Definitions
 rules:
 - prefixes:
-  - *forth_prefix_main
+    - *super_prefix
   origin_asns:
-  - *forth_asn
+    - *my_asn
   neighbors:
-  - *grnet_forth_upstream
-  - *vodafone_forth_upstream_back
+    - *primary_upstream
+    - *backup_upstream_1
+    - *backup_upstream_2
   mitigation:
       manual
 - prefixes:
-  - *forth_prefix_lamda
+    - *sub_prefix_1
   origin_asns:
-  - *forth_asn
+    - *my_asn
   neighbors:
-  - *lamda_forth_upstream_back
+    - *backup_upstream_1
   mitigation:
-      manual
+    manual
 - prefixes:
-  - *forth_prefix_vod
+    - *sub_prefix_2
   origin_asns:
-  - *forth_asn
+    - *my_asn
   neighbors:
-  - *vodafone_forth_upstream_back
+    - *backup_upstream_2
   mitigation:
-      manual
+    manual
 # End of Rule Definitions

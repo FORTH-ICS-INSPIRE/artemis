@@ -298,6 +298,7 @@ class Detection():
 
             if not self.redis.exists(
                     monitor_event['key']) or 'hij_key' in monitor_event:
+                self.redis.set(monitor_event['key'], '', ex=60 * 60)
                 raw = monitor_event.copy()
 
                 # mark the initial redis hijack key since it may change upon
@@ -355,8 +356,6 @@ class Detection():
                         routing_key='withdraw',
                         priority=0
                     )
-
-                self.redis.set(monitor_event['key'], '', ex=60 * 60)
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
 
@@ -425,7 +424,8 @@ class Detection():
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
-                if len(item['origin_asns']) > 0:
+                # check if there are origin_asns defined (even wildcards)
+                if item['origin_asns']:
                     return False
             self.commit_hijack(monitor_event, origin_asn, 'Q')
             return True
@@ -438,7 +438,7 @@ class Detection():
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
-                if origin_asn in item['origin_asns']:
+                if origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]:
                     return False
             self.commit_hijack(monitor_event, origin_asn, '0')
             return True
@@ -452,9 +452,10 @@ class Detection():
             origin_asn = monitor_event['path'][-1]
             first_neighbor_asn = monitor_event['path'][-2]
             for item in prefix_node.data['confs']:
-                # [] neighbors means "allow everything"
-                if origin_asn in item['origin_asns'] and (
-                        len(item['neighbors']) == 0 or first_neighbor_asn in item['neighbors']):
+                # [] or [-1] neighbors means "allow everything"
+                if (origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]) and (
+                        (not item['neighbors']) or item['neighbors'] == [-1] or
+                                first_neighbor_asn in item['neighbors']):
                     return False
             self.commit_hijack(monitor_event, first_neighbor_asn, '1')
             return True
@@ -471,17 +472,17 @@ class Detection():
                 try:
                     origin_asn = None
                     first_neighbor_asn = None
-                    if len(monitor_event['path']) > 0:
+                    if monitor_event['path']:
                         origin_asn = monitor_event['path'][-1]
                     if len(monitor_event['path']) > 1:
                         first_neighbor_asn = monitor_event['path'][-2]
                     false_origin = True
                     false_first_neighbor = True
                     for item in prefix_node.data['confs']:
-                        if origin_asn in item['origin_asns']:
+                        if origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]:
                             false_origin = False
-                            if first_neighbor_asn in item['neighbors'] or len(
-                                    item['neighbors']) == 0:
+                            if first_neighbor_asn in item['neighbors'] or (
+                                    not item['neighbors']) or item['neighbors'] == [-1]:
                                 false_first_neighbor = False
                             break
                     if origin_asn is not None and false_origin:
@@ -525,7 +526,7 @@ class Detection():
             hijack_value['asns_inf'] = set()
             # for squatting, all ASes except the origin are considered infected
             if hij_type == 'Q':
-                if len(monitor_event['path']) > 0:
+                if monitor_event['path']:
                     hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
             # for sub-prefix hijacks, the infection depends on whether the
             # hijacker is the origin/neighbor/sth else
@@ -581,8 +582,8 @@ class Detection():
                     result['monitor_keys'] = hijack_value['monitor_keys']
                 else:
                     hijack_value['time_detected'] = time.time()
-                    hijack_value['key'] = hashlib.md5(pickle.dumps(
-                        [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest()
+                    hijack_value['key'] = hashlib.shake_128(pickle.dumps(
+                        [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest(16)
                     redis_pipeline.sadd('persistent-keys', hijack_value['key'])
                     result = hijack_value
                     mail_log.info('{}'.format(result))

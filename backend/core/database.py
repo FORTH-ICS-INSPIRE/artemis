@@ -113,8 +113,7 @@ class Database():
                 host='localhost',
                 port=6379
             )
-            self.redis.flushall()
-            self.retrieve_hijacks()
+            self.bootstrap_redis()
 
             # EXCHANGES
             self.config_exchange = Exchange(
@@ -616,7 +615,7 @@ class Database():
                 except Exception:
                     log.exception('exception')
 
-        def retrieve_hijacks(self):
+        def bootstrap_redis(self):
             try:
                 query = ('SELECT time_started, time_last, peers_seen, '
                          'asns_inf, key, prefix, hijack_as, type, time_detected, '
@@ -648,6 +647,18 @@ class Database():
                         entry[7])
                     redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
                     redis_pipeline.sadd('persistent-keys', entry[4])
+                redis_pipeline.execute()
+
+                query = ('SELECT DISTINCT key FROM bgp_updates '
+                         'WHERE timestamp > NOW() - interval \'1 hour\'')
+
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+
+                redis_pipeline = self.redis.pipeline()
+                for entry in entries:
+                    redis_pipeline.set(entry['key'], '1')
                 redis_pipeline.execute()
             except Exception:
                 log.exception('exception')

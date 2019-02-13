@@ -19,6 +19,7 @@
 - Display tooltip for monitors in BGP Updates table in hijack view page
 - Updated default and sample configuration files in backend/configs
 - Moved js minifier to container builder
+- Revised detection logic to account for hijack dimensions
 
 ### Fixed
 - Misc code quality improvements

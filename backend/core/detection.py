@@ -18,6 +18,16 @@ from datetime import datetime
 log = get_logger()
 hij_log = logging.getLogger('hijack_logger')
 mail_log = logging.getLogger('mail_logger')
+HIJACK_DIM_COMBINATIONS = [
+    ['S', '0', '-'],
+    ['S', '1', '-'],
+    ['S', '-', '-'],
+    ['E', '0', '-'],
+    ['E', '1', '-'],
+    ['Q', '0', '-'],
+    ['Q', '1', '-'],
+    ['Q', '-', '-']
+]
 
 
 class Detection():
@@ -322,11 +332,33 @@ class Detection():
                         monitor_event['matched_prefix'] = prefix_node.prefix
 
                         try:
-                            for func in self.__detection_generator(
-                                    len(monitor_event['path'])):
-                                if func(monitor_event, prefix_node):
-                                    is_hijack = True
-                                    break
+                            hijacker = -1
+                            hij_dimensions = ['-', '-', '-'] # prefix, path, dplane
+                            hij_dimension_index = 0
+                            for func_dim in self.__hijack_dimension_checker_gen():
+                                if hij_dimension_index == 0:
+                                    # prefix dimension
+                                    for func_pref in func_dim():
+                                        hij_dimensions[hij_dimension_index] = func_pref(monitor_event, prefix_node)
+                                        if hij_dimensions[hij_dimension_index] != '-':
+                                            break
+                                elif hij_dimension_index == 1:
+                                    # path type dimension
+                                    for func_path in func_dim(len(monitor_event['path'])):
+                                        (hijacker, hij_dimensions[hij_dimension_index]) = func_path(monitor_event, prefix_node)
+                                        if hij_dimensions[hij_dimension_index] != '-':
+                                            break
+                                elif hij_dimension_index == 2:
+                                    # data plane dimension
+                                    for func_dplane in func_dim():
+                                        hij_dimensions[hij_dimension_index] = func_dplane(monitor_event, prefix_node)
+                                        if hij_dimensions[hij_dimension_index] != '-':
+                                            break
+                                hij_dimension_index += 1
+                            # check if dimension combination in hijack combinations
+                            if hij_dimensions in HIJACK_DIM_COMBINATIONS:
+                                is_hijack = True
+                                self.commit_hijack(monitor_event, hijacker, hij_dimensions)
                         except Exception:
                             log.exception('exception')
 
@@ -358,18 +390,6 @@ class Detection():
                     )
             else:
                 log.debug('already handled {}'.format(monitor_event['key']))
-
-        def __detection_generator(self, path_len: int) -> Callable:
-            """
-            Generator that returns detection functions based on rules and path length.
-            Priority: Squatting > Subprefix > Origin > Type-1
-            """
-            yield self.detect_squatting
-            yield self.detect_subprefix_hijack
-            if path_len > 0:
-                yield self.detect_origin_hijack
-                if path_len > 1:
-                    yield self.detect_type_1_hijack
 
         @staticmethod
         def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
@@ -415,37 +435,85 @@ class Detection():
                 clean_as_path = Detection.Worker.__clean_loops(clean_as_path)
             return clean_as_path
 
-        @exception_handler(log)
-        def detect_squatting(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> bool:
+        def __hijack_dimension_checker_gen(self) -> Callable:
             """
-            Squatting detection.
+            Generator that returns hijack dimension checking functions.
+            """
+            yield self.__hijack_prefix_checker_gen
+            yield self.__hijack_path_checker_gen
+            yield self.__hijack_dplane_checker_gen
+
+        def __hijack_prefix_checker_gen(self) -> Callable:
+            """
+            Generator that returns prefix dimension detection functions.
+            """
+            yield self.detect_prefix_squatting_hijack
+            yield self.detect_prefix_subprefix_hijack
+
+        def __hijack_path_checker_gen(
+                self, path_len: int) -> Callable:
+            """
+            Generator that returns path dimension detection functions.
+            """
+            if path_len > 0:
+                yield self.detect_path_type_0_hijack
+                if path_len > 1:
+                    yield self.detect_path_type_1_hijack
+                    if path_len > 2:
+                        yield self.detect_path_type_N_hijack
+            yield self.detect_path_type_U_hijack
+
+        def __hijack_dplane_checker_gen(self) -> Callable:
+            """
+            Generator that returns data plane dimension detection functions.
+            """
+            yield self.detect_dplane_blackholing_hijack
+            yield self.detect_dplane_imposture_hijack
+            yield self.detect_dplane_mitm_hijack
+
+        @exception_handler(log)
+        def detect_prefix_squatting_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> str:
+            """
+            Squatting hijack detection.
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
                 # check if there are origin_asns defined (even wildcards)
                 if item['origin_asns']:
-                    return False
-            self.commit_hijack(monitor_event, origin_asn, 'Q')
-            return True
+                    return '-'
+            return 'Q'
 
         @exception_handler(log)
-        def detect_origin_hijack(
-                self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs) -> bool:
+        def detect_prefix_subprefix_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> str:
+            """
+            Subprefix or exact prefix hijack detection.
+            """
+            mon_prefix = ipaddress.ip_network(monitor_event['prefix'])
+            if prefix_node.prefixlen < mon_prefix.prefixlen:
+                return 'S'
+            return 'E'
+
+        @exception_handler(log)
+        def detect_path_type_0_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
             """
             Origin hijack detection.
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
                 if origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]:
-                    return False
-            self.commit_hijack(monitor_event, origin_asn, '0')
-            return True
+                    return (-1, '-')
+            return (origin_asn, '0')
 
         @exception_handler(log)
-        def detect_type_1_hijack(
-                self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs) -> bool:
+        def detect_path_type_1_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
             """
             Type-1 hijack detection.
             """
@@ -456,52 +524,51 @@ class Detection():
                 if (origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]) and (
                         (not item['neighbors']) or item['neighbors'] == [-1] or
                                 first_neighbor_asn in item['neighbors']):
-                    return False
-            self.commit_hijack(monitor_event, first_neighbor_asn, '1')
-            return True
+                    return (-1, '-')
+            return (first_neighbor_asn, '1')
 
         @exception_handler(log)
-        def detect_subprefix_hijack(
-                self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs) -> bool:
-            """
-            Subprefix hijack detection.
-            """
-            mon_prefix = ipaddress.ip_network(monitor_event['prefix'])
-            if prefix_node.prefixlen < mon_prefix.prefixlen:
-                hijacker_asn = -1
-                try:
-                    origin_asn = None
-                    first_neighbor_asn = None
-                    if monitor_event['path']:
-                        origin_asn = monitor_event['path'][-1]
-                    if len(monitor_event['path']) > 1:
-                        first_neighbor_asn = monitor_event['path'][-2]
-                    false_origin = True
-                    false_first_neighbor = True
-                    for item in prefix_node.data['confs']:
-                        if origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]:
-                            false_origin = False
-                            if first_neighbor_asn in item['neighbors'] or (
-                                    not item['neighbors']) or item['neighbors'] == [-1]:
-                                false_first_neighbor = False
-                            break
-                    if origin_asn is not None and false_origin:
-                        hijacker_asn = origin_asn
-                    elif first_neighbor_asn is not None and false_first_neighbor:
-                        hijacker_asn = first_neighbor_asn
-                except Exception:
-                    log.exception(
-                        'Problem in subprefix hijack detection, event {}'.format(monitor_event))
-                self.commit_hijack(monitor_event, hijacker_asn, 'S')
-                return True
-            return False
+        def detect_path_type_N_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
+            # Placeholder for type-N detection (not supported)
+            return (-1, '-')
+
+        @exception_handler(log)
+        def detect_path_type_U_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
+            # Placeholder for type-U detection (not supported)
+            return (-1, '-')
+
+        @exception_handler(log)
+        def detect_dplane_blackholing_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> str:
+            # Placeholder for blackholing detection  (not supported)
+            return '-'
+
+        @exception_handler(log)
+        def detect_dplane_imposture_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> str:
+            # Placeholder for imposture detection  (not supported)
+            return '-'
+
+        @exception_handler(log)
+        def detect_dplane_mitm_hijack(
+                self, monitor_event: Dict,
+                prefix_node: radix.Radix, *args, **kwargs) -> str:
+            # Placeholder for mitm detection  (not supported)
+            return '-'
 
         def commit_hijack(self, monitor_event: Dict,
-                          hijacker: int, hij_type: str) -> NoReturn:
+                          hijacker: int, hij_dimensions: List[str]) -> NoReturn:
             """
             Commit new or update an existing hijack to the database.
             It uses redis server to store ongoing hijacks information to not stress the db.
             """
+            hij_type = '|'.join(hij_dimensions)
             redis_hijack_key = redis_key(
                 monitor_event['prefix'],
                 hijacker,
@@ -523,31 +590,15 @@ class Detection():
                 'timestamp_of_config': self.timestamp
             }
 
+            # identify the number of infected ases
             hijack_value['asns_inf'] = set()
-            # for squatting, all ASes except the origin are considered infected
-            if hij_type == 'Q':
-                if monitor_event['path']:
-                    hijack_value['asns_inf'] = set(monitor_event['path'][:-1])
-            # for sub-prefix hijacks, the infection depends on whether the
-            # hijacker is the origin/neighbor/sth else
-            elif hij_type == 'S':
-                if len(monitor_event['path']) > 1:
-                    if hijacker == monitor_event['path'][-1]:
-                        hijack_value['asns_inf'] = set(
-                            monitor_event['path'][:-1])
-                    elif hijacker == monitor_event['path'][-2]:
-                        hijack_value['asns_inf'] = set(
-                            monitor_event['path'][:-2])
-                    else:
-                        # assume the hijacker does a Type-2
-                        if len(monitor_event['path']) > 2:
-                            hijack_value['asns_inf'] = set(
-                                monitor_event['path'][:-3])
-            # for exact-prefix type-0/type-1 hijacks, the pollution depends on
-            # the type
-            else:
+            if hij_dimensions[1] in ['0', '1']:
                 hijack_value['asns_inf'] = set(
-                    monitor_event['path'][:-(int(hij_type) + 1)])
+                    monitor_event['path'][:-(int(hij_dimensions[1]) + 1)])
+            # assume the worst-case scenario of a type-2 hijack
+            elif len(monitor_event['path']) > 2:
+                hijack_value['asns_inf'] = set(
+                    monitor_event['path'][:-3])
 
             # make the following operation atomic using blpop (blocking)
             # first, make sure that the semaphore is initialized

@@ -60,7 +60,7 @@ for each row execute procedure rabbitmq.on_row_change('update-update');
 
 CREATE TABLE IF NOT EXISTS hijacks (
     key VARCHAR ( 32 ) NOT NULL,
-    type  VARCHAR ( 1 ),
+    type  VARCHAR ( 5 ),
     prefix inet,
     hijack_as BIGINT,
     peers_seen   BIGINT[],

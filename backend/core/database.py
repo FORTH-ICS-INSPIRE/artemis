@@ -649,8 +649,8 @@ class Database():
                     redis_pipeline.sadd('persistent-keys', entry[4])
                 redis_pipeline.execute()
 
-                query = ('SELECT DISTINCT key FROM bgp_updates '
-                         'WHERE timestamp > NOW() - interval \'1 hour\'')
+                query = ('SELECT DISTINCT key, timestamp FROM bgp_updates '
+                         'WHERE timestamp > NOW() - interval \'1 hours\'')
 
                 with get_ro_cursor(self.ro_conn) as db_cur:
                     db_cur.execute(query)
@@ -658,7 +658,8 @@ class Database():
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
-                    redis_pipeline.set(entry['key'], '1')
+                    expire = int(time.time() - entry[1].timestamp())
+                    redis_pipeline.set(entry[0], '1', ex=expire)
                 redis_pipeline.execute()
             except Exception:
                 log.exception('exception')

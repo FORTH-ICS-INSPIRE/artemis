@@ -14,3 +14,4 @@ postgres-data-backup/*
 .idea
 *.rdb
 *_history
+local_configs/*

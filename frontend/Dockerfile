@@ -3,7 +3,7 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 WORKDIR /root
 
-RUN apk add --update openssl && \
+RUN apk add --no-cache openssl && \
     wget https://dl.google.com/closure-compiler/compiler-latest.tar.gz && \
     tar -xzvf compiler-latest.tar.gz
 

@@ -13,17 +13,17 @@ mapHelpText_stats['field_stats_Total_Hijacks'] = 'The total number of hijack eve
 mapHelpText_stats['field_stats_Resolved_Hijacks'] = 'The number of resolved hijack events (that were marked by the user).';
 mapHelpText_stats['field_stats_Mitigation_Hijacks'] = 'The number of hijack events that are currently under mitigation (triggered by the user).';
 mapHelpText_stats['field_stats_Ongoing_Hijacks'] = 'The number of ongoing hijack events (not ignored or resolved or withdrawn or outdated).';
-mapHelpText_stats['field_stats_Ignored_Hijacks'] = 'The number of ignored hijack events (that were marked by the user)';
+mapHelpText_stats['field_stats_Ignored_Hijacks'] = 'The number of ignored hijack events (that were marked by the user).';
 mapHelpText_stats['field_stats_Withdrawn_Hijacks'] = 'The number of withdrawn hijack events.';
 mapHelpText_stats['field_stats_Acknowledged_Hijacks'] = 'The number of acknowledged hijack events (confirmed as true positives).';
-mapHelpText_stats['field_stats_Outdated_Hijacks'] = 'The number of hijack events that are currently outdated.';
+mapHelpText_stats['field_stats_Outdated_Hijacks'] = 'The number of hijack events that are currently outdated (matching deprecated configurations, but benign now).';
 
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
 
 mapHelpText_system['field_hijack_status'] = 'The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved|outdated).</br>';
 mapHelpText_system['field_hijack_status'] += '<ul><li>Ongoing: the hijack has not been ignored, resolved or withdrawn.</li>';
-mapHelpText_system['field_hijack_status'] += '<li>Withdrawn: all monitors that saw hijack updates for a certain prefix have seen the respective withdrawals.</li>';
+mapHelpText_system['field_hijack_status'] += '<li>Withdrawn: all monitors that saw hijack updates for a certain hijacked prefix have seen the respective withdrawals.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event is ignored (by the user).</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event is resolved (by the user).</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>';
@@ -37,7 +37,7 @@ mapHelpText_system['field_hijack_type'] += '<li>[Path] "1" → Type-1 hijack</li
 mapHelpText_system['field_hijack_type'] += '<li>[Path] "-" → Type-N or Type-U hijack (N/A)</li>';
 mapHelpText_system['field_hijack_type'] += '<li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li></ul>';
 
-mapHelpText_system['field_hijacker_as'] = 'The possible AS that is responsible the hijack.</br>Note that this is an experimental field.';
+mapHelpText_system['field_hijacker_as'] = 'The AS that is potentially responsible for the hijack.</br>Note that this is an experimental field.';
 mapHelpText_system['field_peers_seen'] = 'Number of peers/monitors (i.e., ASNs)</br>that have seen hijack updates.';
 mapHelpText_system['field_ases_infected'] = 'Number of infected ASes that seem to</br>route traffic towards the hijacker AS.</br>Note that this is an experimental field.';
 mapHelpText_system['field_hijack_ack'] = 'Whether the user has acknowledged/confirmed the hijack as a true positive.<br>If the resolve|mitigate buttons are pressed this<br>is automatically set to True (default value: False).';
@@ -114,7 +114,6 @@ function displayHelpTextButton(){
 		$(this).tooltip({html:true})
 	});
 }
-
 
 function displayHelpTextStats(){
 	$('div[helpText]').each(function( index ) {

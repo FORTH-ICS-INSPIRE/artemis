@@ -27,14 +27,6 @@ HIJACK_DIM_COMBINATIONS = [
 log = get_logger()
 hij_log = logging.getLogger('hijack_logger')
 mail_log = logging.getLogger('mail_logger')
-HIJACK_DIM_COMBINATIONS = [
-    ['S', '0', '-'],
-    ['S', '1', '-'],
-    ['S', '-', '-'],
-    ['E', '0', '-'],
-    ['E', '1', '-'],
-    ['Q', '0', '-']
-]
 
 
 class Detection():

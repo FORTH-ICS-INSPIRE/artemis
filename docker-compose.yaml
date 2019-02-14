@@ -106,6 +106,8 @@ services:
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+        volumes:
+            - ./other/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
@@ -150,10 +152,11 @@ services:
         networks:
             - artemis
         environment:
-            # - RUST_LOG=info # output forwarded messages
             - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             - AMQP_URI=amqp://${RABBITMQ_HOST}//
             - BRIDGE_CHANNELS=events:amq.direct
+            # - RUST_LOG=debug
+            # - RUST_BACKTRACE=1
         volumes:
             - ./backend/wait-for:/root/wait-for
         command: ["/root/wait-for", "rabbitmq:5672", "-t", "60", "--", "pg-amqp-bridge"]

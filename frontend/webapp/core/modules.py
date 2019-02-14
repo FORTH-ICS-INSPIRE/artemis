@@ -2,6 +2,7 @@ from webapp.utils import SUPERVISOR_HOST, SUPERVISOR_PORT
 from xmlrpc.client import ServerProxy
 import time
 import logging
+import _thread
 
 log = logging.getLogger('webapp_logger')
 
@@ -44,11 +45,11 @@ class Modules_state():
                 if action == 'start':
                     modules = self.is_any_up_or_running(module, up=False)
                     for mod in modules:
-                        self.server.supervisor.startProcess(mod)
+                        _thread.start_new_thread(self.server.supervisor.startProcess, (mod,))
                 elif action == 'stop':
                     modules = self.is_any_up_or_running(module)
                     for mod in modules:
-                        self.server.supervisor.stopProcess(mod)
+                        _thread.start_new_thread(self.server.supervisor.stopProcess, (mod,))
         except Exception:
             log.exception('exception')
 
@@ -66,7 +67,7 @@ class Modules_state():
     def is_any_up_or_running(self, module, up=True):
         try:
             if up:
-                return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
+                return ['{}:{}'.format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
                         if x['group'] == module and (x['state'] == 20 or x['state'] == 10)]
             return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
                     if x['group'] == module and (x['state'] != 20 and x['state'] != 10)]

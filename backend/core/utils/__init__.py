@@ -6,15 +6,16 @@ import yaml
 from logging.handlers import SMTPHandler
 import pickle
 import hashlib
-
-
-# if not os.path.exists('snapshots'):
-#     os.makedirs('snapshots')
+from contextlib import contextmanager
 
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'localhost')
 SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
+DB_NAME = os.getenv('DATABASE_NAME', 'artemis_db')
+DB_USER = os.getenv('DATABASE_USER', 'artemis_user')
+DB_HOST = os.getenv('DATABASE_HOST', 'postgres')
+DB_PASSWORD = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
 
 
 def get_logger(path='/etc/artemis/logging.yaml'):
@@ -30,6 +31,30 @@ def get_logger(path='/etc/artemis/logging.yaml'):
         log = logging
         log.info('Loaded default configuration')
     return log
+
+
+log = get_logger()
+
+
+@contextmanager
+def get_ro_cursor(conn):
+    with conn.cursor() as curr:
+        try:
+            yield curr
+        except Exception:
+            raise
+
+
+@contextmanager
+def get_wo_cursor(conn):
+    with conn.cursor() as curr:
+        try:
+            yield curr
+        except Exception:
+            conn.rollback()
+            raise
+        else:
+            conn.commit()
 
 
 def flatten(items, seqtypes=(list, tuple)):

@@ -15,9 +15,6 @@ import json
 from datetime import datetime
 
 
-log = get_logger()
-hij_log = logging.getLogger('hijack_logger')
-mail_log = logging.getLogger('mail_logger')
 HIJACK_DIM_COMBINATIONS = [
     ['S', '0', '-'],
     ['S', '1', '-'],
@@ -26,6 +23,10 @@ HIJACK_DIM_COMBINATIONS = [
     ['E', '1', '-'],
     ['Q', '0', '-']
 ]
+
+log = get_logger()
+hij_log = logging.getLogger('hijack_logger')
+mail_log = logging.getLogger('mail_logger')
 
 
 class Detection():
@@ -593,7 +594,7 @@ class Detection():
 
             # identify the number of infected ases
             hijack_value['asns_inf'] = set()
-            if hij_dimensions[1] in ['0', '1']:
+            if hij_dimensions[1] in {'0', '1'}:
                 hijack_value['asns_inf'] = set(
                     monitor_event['path'][:-(int(hij_dimensions[1]) + 1)])
             # assume the worst-case scenario of a type-2 hijack

@@ -712,7 +712,7 @@ class Database():
                         self.redis, redis_hijack_key, raw['key'])
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
-                        'UPDATE hijacks SET active=false, under_mitigation=false, seen=true, ignored=true WHERE key=%s;',
+                        'UPDATE hijacks SET active=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;',
                         (raw['key'],
                          ))
             except Exception:
@@ -798,7 +798,7 @@ class Database():
                     query = 'UPDATE hijacks SET resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;'
                     resolve_action = True
                 elif raw['action'] == 'mark_ignored':
-                    query = 'UPDATE hijacks SET ignored=true, active=false, under_mitigation=false, seen=true WHERE ignored=false AND resolved=false AND key=%s;'
+                    query = 'UPDATE hijacks SET ignored=true, active=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;'
                     ignore_action = True
                 elif raw['action'] == 'mark_seen':
                     query = 'UPDATE hijacks SET seen=true WHERE key=%s;'

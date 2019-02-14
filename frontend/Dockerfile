@@ -1,7 +1,12 @@
-FROM femtopixel/google-closure-compiler:0.1.5 as builder
+FROM java:openjdk-8-jre-alpine as builder
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 WORKDIR /root
+
+RUN apk add --update openssl && \
+    wget https://dl.google.com/closure-compiler/compiler-latest.tar.gz && \
+    tar -xzvf compiler-latest.tar.gz
+
 COPY ./webapp/static/js/custom/ /root/
 COPY ./minify-js.sh /root/
 RUN mkdir /root/prod/

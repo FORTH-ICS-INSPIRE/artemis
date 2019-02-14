@@ -28,14 +28,14 @@ mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event was a false
 mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>';
 
-mapHelpText_system['field_hijack_type'] = 'The type of the hijack in 3 dimensions: prefix|path|data plane<ul>';
-mapHelpText_system['field_hijack_type'] += '<li>[Prefix] S → Sub-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Prefix] E → Exact-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Prefix] Q → Squatting hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Path] 0 → Type-0 hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Path] 1 → Type-1 hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Path] - → Type-N or Type-U hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Data plane] - → Blackholing, Imposture or MitM hijack</li></ul>';
+mapHelpText_system['field_hijack_type'] = 'The type of the hijack in 3 dimensions: <prefix>|<path>|<data plane><ul>';
+mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "S" → Sub-prefix hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "E" → Exact-prefix hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "Q" → Squatting hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Path] "0" → Type-0 hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Path] "1" → Type-1 hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Path] "-" → Type-N or Type-U hijack (N/A)</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li></ul>';
 
 mapHelpText_system['field_hijacker_as'] = 'The possible AS that is responsible the hijack.</br>Note that this is an experimental field.';
 mapHelpText_system['field_peers_seen'] = 'Number of peers/monitors (i.e., ASNs)</br>that have seen hijack updates.';

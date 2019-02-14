@@ -70,9 +70,8 @@ def setup():
 
     try:
         app.artemis_logger.debug('Starting Database..')
-        modules.call('database', 'start')
 
-        if not modules.is_up_or_running('database'):
+        if not modules.is_any_up_or_running('database'):
             app.artemis_logger.error('Couldn\'t start Database.')
             exit(-1)
     except BaseException:

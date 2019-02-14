@@ -92,6 +92,14 @@ class Detection():
                 delivery_mode=1)
             self.hijack_exchange.declare()
 
+            self.hijack_hashing = Exchange(
+                'hijack-hashing',
+                channel=connection,
+                type='x-consistent-hash',
+                durable=False,
+                delivery_mode=1)
+            self.hijack_hashing.declare()
+
             self.handled_exchange = Exchange(
                 'handled-update',
                 channel=connection,
@@ -304,90 +312,85 @@ class Detection():
                 monitor_event['timestamp'] = datetime(
                     *map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
 
-            if not self.redis.exists(
-                    monitor_event['key']) or 'hij_key' in monitor_event:
-                self.redis.set(monitor_event['key'], '', ex=60 * 60)
-                raw = monitor_event.copy()
+            raw = monitor_event.copy()
 
-                # mark the initial redis hijack key since it may change upon
-                # outdated checks
-                if 'hij_key' in monitor_event:
-                    monitor_event['initial_redis_hijack_key'] = redis_key(
+            # mark the initial redis hijack key since it may change upon
+            # outdated checks
+            if 'hij_key' in monitor_event:
+                monitor_event['initial_redis_hijack_key'] = redis_key(
+                    monitor_event['prefix'],
+                    monitor_event['hijack_as'],
+                    monitor_event['hij_type']
+                )
+
+            is_hijack = False
+
+            if monitor_event['type'] == 'A':
+                monitor_event['path'] = Detection.Worker.__clean_as_path(
+                    monitor_event['path'])
+                prefix_node = self.prefix_tree.search_best(
+                    monitor_event['prefix'])
+
+                if prefix_node is not None:
+                    monitor_event['matched_prefix'] = prefix_node.prefix
+
+                    try:
+                        hijacker = -1
+                        hij_dimensions = ['-', '-', '-'] # prefix, path, dplane
+                        hij_dimension_index = 0
+                        for func_dim in self.__hijack_dimension_checker_gen():
+                            if hij_dimension_index == 0:
+                                # prefix dimension
+                                for func_pref in func_dim():
+                                    hij_dimensions[hij_dimension_index] = func_pref(monitor_event, prefix_node)
+                                    if hij_dimensions[hij_dimension_index] != '-':
+                                        break
+                            elif hij_dimension_index == 1:
+                                # path type dimension
+                                for func_path in func_dim(len(monitor_event['path'])):
+                                    (hijacker, hij_dimensions[hij_dimension_index]) = func_path(monitor_event, prefix_node)
+                                    if hij_dimensions[hij_dimension_index] != '-':
+                                        break
+                            elif hij_dimension_index == 2:
+                                # data plane dimension
+                                for func_dplane in func_dim():
+                                    hij_dimensions[hij_dimension_index] = func_dplane(monitor_event, prefix_node)
+                                    if hij_dimensions[hij_dimension_index] != '-':
+                                        break
+                            hij_dimension_index += 1
+                        # check if dimension combination in hijack combinations
+                        if hij_dimensions in HIJACK_DIM_COMBINATIONS:
+                            is_hijack = True
+                            self.commit_hijack(monitor_event, hijacker, hij_dimensions)
+                    except Exception:
+                        log.exception('exception')
+
+                if ((not is_hijack and 'hij_key' in monitor_event) or
+                    (is_hijack and 'hij_key' in monitor_event and
+                        monitor_event['initial_redis_hijack_key'] != monitor_event['final_redis_hijack_key'])):
+                    redis_hijack_key = redis_key(
                         monitor_event['prefix'],
                         monitor_event['hijack_as'],
-                        monitor_event['hij_type']
-                    )
+                        monitor_event['hij_type'])
+                    purge_redis_eph_pers_keys(
+                        self.redis, redis_hijack_key, monitor_event['hij_key'])
+                    self.mark_outdated(
+                        monitor_event['hij_key'], redis_hijack_key)
+                elif not is_hijack:
+                    self.mark_handled(raw)
 
-                is_hijack = False
-                # ignore withdrawals for now
-                if monitor_event['type'] == 'A':
-                    monitor_event['path'] = Detection.Worker.__clean_as_path(
-                        monitor_event['path'])
-                    prefix_node = self.prefix_tree.search_best(
-                        monitor_event['prefix'])
-
-                    if prefix_node is not None:
-                        monitor_event['matched_prefix'] = prefix_node.prefix
-
-                        try:
-                            hijacker = -1
-                            hij_dimensions = ['-', '-', '-'] # prefix, path, dplane
-                            hij_dimension_index = 0
-                            for func_dim in self.__hijack_dimension_checker_gen():
-                                if hij_dimension_index == 0:
-                                    # prefix dimension
-                                    for func_pref in func_dim():
-                                        hij_dimensions[hij_dimension_index] = func_pref(monitor_event, prefix_node)
-                                        if hij_dimensions[hij_dimension_index] != '-':
-                                            break
-                                elif hij_dimension_index == 1:
-                                    # path type dimension
-                                    for func_path in func_dim(len(monitor_event['path'])):
-                                        (hijacker, hij_dimensions[hij_dimension_index]) = func_path(monitor_event, prefix_node)
-                                        if hij_dimensions[hij_dimension_index] != '-':
-                                            break
-                                elif hij_dimension_index == 2:
-                                    # data plane dimension
-                                    for func_dplane in func_dim():
-                                        hij_dimensions[hij_dimension_index] = func_dplane(monitor_event, prefix_node)
-                                        if hij_dimensions[hij_dimension_index] != '-':
-                                            break
-                                hij_dimension_index += 1
-                            # check if dimension combination in hijack combinations
-                            if hij_dimensions in HIJACK_DIM_COMBINATIONS:
-                                is_hijack = True
-                                self.commit_hijack(monitor_event, hijacker, hij_dimensions)
-                        except Exception:
-                            log.exception('exception')
-
-                    if ((not is_hijack and 'hij_key' in monitor_event) or
-                        (is_hijack and 'hij_key' in monitor_event and
-                            monitor_event['initial_redis_hijack_key'] != monitor_event['final_redis_hijack_key'])):
-                        redis_hijack_key = redis_key(
-                            monitor_event['prefix'],
-                            monitor_event['hijack_as'],
-                            monitor_event['hij_type'])
-                        purge_redis_eph_pers_keys(
-                            self.redis, redis_hijack_key, monitor_event['hij_key'])
-                        self.mark_outdated(
-                            monitor_event['hij_key'], redis_hijack_key)
-                    elif not is_hijack:
-                        self.mark_handled(raw)
-
-                elif monitor_event['type'] == 'W':
-                    self.producer.publish(
-                        {
-                            'prefix': monitor_event['prefix'],
-                            'peer_asn': monitor_event['peer_asn'],
-                            'timestamp': monitor_event['timestamp'],
-                            'key': monitor_event['key']
-                        },
-                        exchange=self.update_exchange,
-                        routing_key='withdraw',
-                        priority=0
-                    )
-            else:
-                log.debug('already handled {}'.format(monitor_event['key']))
+            elif monitor_event['type'] == 'W':
+                self.producer.publish(
+                    {
+                        'prefix': monitor_event['prefix'],
+                        'peer_asn': monitor_event['peer_asn'],
+                        'timestamp': monitor_event['timestamp'],
+                        'key': monitor_event['key']
+                    },
+                    exchange=self.update_exchange,
+                    routing_key='withdraw',
+                    priority=0
+                )
 
         @staticmethod
         def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
@@ -652,6 +655,14 @@ class Detection():
                 result,
                 exchange=self.hijack_exchange,
                 routing_key='update',
+                serializer='pickle',
+                priority=0
+            )
+
+            self.producer.publish(
+                result,
+                exchange=self.hijack_hashing,
+                routing_key=redis_hijack_key,
                 serializer='pickle',
                 priority=0
             )

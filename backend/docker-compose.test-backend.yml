@@ -52,6 +52,8 @@ services:
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+        volumes:
+            - ./testing/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres

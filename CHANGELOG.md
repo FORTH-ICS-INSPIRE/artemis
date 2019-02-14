@@ -7,6 +7,8 @@
 - CI/CD container
 - SemaphoreCI testing for backend
 - Automation of system and DB migration
+- Multi-process Database support through supervisor
+- Custom monitor for high-throughput measuring (taps/custom.py)
 - Instructions on local configuration decoupling
 - Support for wildcards (origin_asns, neighbors) in configuration
 

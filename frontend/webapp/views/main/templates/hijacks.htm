@@ -362,12 +362,12 @@
                                     $(this).children("div").show();
                                 }
                             }else if(search_table_map[index] == 'type'){
-                                var type_regex = /^\s*(1|0|S|Q)\s*/;
+                                var type_regex = /^\s*(S|E|Q)\|(0|1|-)\|(-)\s*/;
                                 var match = type_regex.exec(value);
                                 var type = null;
 
                                 if(match != null){
-                                    type = match[1];
+                                    type = match[1].concat("|", match[2], "|", match[3]);
                                     filter_parameters[search_table_map[index]] = type;
                                     if($(this).children("input").hasClass("is-invalid")){
                                         $(this).children("input").removeClass("is-invalid");
@@ -375,7 +375,7 @@
                                     }
                                 }else{
                                     $(this).children("input").addClass("is-invalid");
-                                    $(this).children("div").text('Not 0|1|S|Q');
+                                    $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)');
                                     $(this).children("div").show();   
                                 }
                             }else{

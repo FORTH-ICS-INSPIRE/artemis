@@ -1,7 +1,7 @@
 var mapHelpText_stats = {};
 mapHelpText_stats['field_clock'] = 'ARTEMIS module serving as the clock signal generator for periodic tasks done in other modules (e.g., database).';
 mapHelpText_stats['field_configuration'] = 'ARTEMIS module responsible for the configuration of the other ARTEMIS modules.';
-mapHelpText_stats['field_detection'] = 'ARTEMIS module responsible for the detection of hijack events (current support for exact-prefix Type-0/1, any type of sub-prefix hijacks, and squatting attacks).';
+mapHelpText_stats['field_detection'] = 'ARTEMIS module responsible for the detection of hijack events.';
 mapHelpText_stats['field_mitigation'] = 'ARTEMIS module responsible for the manual or automated mitigation of hijack events (current support for manual mitigation or via the invocation of a custom operator-supplied script).';
 mapHelpText_stats['field_monitor'] = 'ARTEMIS module responsible for real-time monitoring of BGP updates appearing on the visible control plane of public and local BGP monitors (current support for RIPE RIS, BGPStream RouteViews, RIPE RIS and beta BMP, local exaBGP monitors, historical trace replay).';
 mapHelpText_stats['field_observer'] = 'ARTEMIS module responsible for observing async changes in the configuration file, triggering the reloading of ARTEMIS modules.';
@@ -28,11 +28,14 @@ mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event was a false
 mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>';
 
-mapHelpText_system['field_hijack_type'] = 'The type of the hijack:<ul>';
-mapHelpText_system['field_hijack_type'] += '<li>S → Sub-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>0 → Type-0 exact-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>1 → Type-1 exact-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>Q → Squatting attack </li></ul>';
+mapHelpText_system['field_hijack_type'] = 'The type of the hijack in 3 dimensions: prefix|path|data plane<ul>';
+mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "S" → Sub-prefix hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "E" → Exact-prefix hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "Q" → Squatting hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Path] "0" → Type-0 hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Path] "1" → Type-1 hijack</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Path] "-" → Type-N or Type-U hijack (N/A)</li>';
+mapHelpText_system['field_hijack_type'] += '<li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li></ul>';
 
 mapHelpText_system['field_hijacker_as'] = 'The possible AS that is responsible the hijack.</br>Note that this is an experimental field.';
 mapHelpText_system['field_peers_seen'] = 'Number of peers/monitors (i.e., ASNs)</br>that have seen hijack updates.';

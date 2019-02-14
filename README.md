@@ -59,9 +59,9 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 
 * Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS.
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types (please refer to the attack taxonomy in our [ARTEMIS ToN paper](https://www.inspire.edu.gr/wp-content/pdfs/artemis_TON2018.pdf)):
-  * exact-prefix type-0/1
-  * sub-prefix of any type
-  * squatting attacks.
+  * exact-prefix, type 0/1, any data plane manipulation
+  * sub-prefix, any type (0/1/-), any data plane manipulation
+  * squatting attacks, type 0 (others are N/A), any data plane manipulation
 * Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn and outdated).
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
 * Comprehensive web-based User Interface (UI).

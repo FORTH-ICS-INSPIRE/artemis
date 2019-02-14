@@ -35,6 +35,12 @@
             "db_version": "6",
             "description": "Outdated field added and db constraints revised",
             "file": "migration_6.sql"
-            }
+            },
+        "7": {
+            "id": "7",
+            "db_version": "7",
+            "description": "Expanded hijacks type field from 1 to 5 characters and migrated S,0,1,Q hijacks",
+            "file": "migration_7.sql"
+        }
     }
 }

@@ -28,7 +28,7 @@ mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event was a false
 mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event was a true positive that is now resolved.</li>';
 mapHelpText_system['field_hijack_status'] += '<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>';
 
-mapHelpText_system['field_hijack_type'] = 'The type of the hijack in 3 dimensions: <prefix>|<path>|<data plane><ul>';
+mapHelpText_system['field_hijack_type'] = 'The type of the hijack in 3 dimensions: prefix|path|data plane<ul>';
 mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "S" → Sub-prefix hijack</li>';
 mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "E" → Exact-prefix hijack</li>';
 mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "Q" → Squatting hijack</li>';

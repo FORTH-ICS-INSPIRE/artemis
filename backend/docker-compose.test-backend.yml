@@ -49,11 +49,14 @@ services:
             GIT_ID: ${GIT_ID}
             GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME}
             GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL}
-            GIT_COMMITTER_NAME: ${GIT_COMMITER_NAME}
-            GIT_COMMITTER_EMAIL: ${GIT_COMMITER_EMAIL}
+            GIT_COMMITTER_NAME: ${GIT_COMMITTER_NAME}
+            GIT_COMMITTER_EMAIL: ${GIT_COMMITTER_EMAIL}
             GIT_MESSAGE: ${GIT_MESSAGE}
             GIT_REMOTE: ${GIT_REMOTE}
             GIT_URL: ${GIT_URL}
+            PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
+            SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
+            SEMAPHORE: ${SEMAPHORE}
         volumes:
             - ./testing/configs/:/etc/artemis/
             - ./testing/supervisor.d/:/etc/supervisor/conf.d/

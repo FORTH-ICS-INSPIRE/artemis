@@ -17,6 +17,8 @@ services:
             BACKEND_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+        volumes:
+            - ./testing/:/root/
     backend:
         build:
             context: .
@@ -43,6 +45,15 @@ services:
             GUI_ENABLED: "false"
             BULK_TIMER: 0.1
             COVERALLS_REPO_TOKEN: coveralls_token_here
+            GIT_BRANCH: ${GIT_BRANCH}
+            GIT_ID: ${GIT_ID}
+            GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME}
+            GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL}
+            GIT_COMMITTER_NAME: ${GIT_COMMITER_NAME}
+            GIT_COMMITTER_EMAIL: ${GIT_COMMITER_EMAIL}
+            GIT_MESSAGE: ${GIT_MESSAGE}
+            GIT_REMOTE: ${GIT_REMOTE}
+            GIT_URL: ${GIT_URL}
         volumes:
             - ./testing/configs/:/etc/artemis/
             - ./testing/supervisor.d/:/etc/supervisor/conf.d/

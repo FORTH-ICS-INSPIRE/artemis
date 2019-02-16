@@ -1,8 +1,7 @@
-from utils import RABBITMQ_HOST, get_logger, SUPERVISOR_HOST, SUPERVISOR_PORT
+from utils import RABBITMQ_HOST, get_logger
 from kombu import Connection, Exchange, Producer
 import time
 import os
-from xmlrpc.client import ServerProxy
 
 
 log = get_logger()
@@ -17,7 +16,6 @@ class Scheduler():
         try:
             with Connection(RABBITMQ_HOST) as connection:
                 self.worker = self.Worker(connection)
-                self.worker.run()
         except Exception:
             log.exception('exception')
         except KeyboardInterrupt:
@@ -40,15 +38,6 @@ class Scheduler():
             self.db_clock_exchange.declare()
             log.info('started')
             self._db_clock_send()
-
-        def _get_module_status(self, module):
-            server = ServerProxy(
-                'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
-            try:
-                return any([x['name'] for x in server.supervisor.getAllProcessInfo()
-                            if x['group'] == module and x['state'] == 20])
-            except BaseException:
-                return False
 
         def _db_clock_send(self):
             with Producer(self.connection) as producer:

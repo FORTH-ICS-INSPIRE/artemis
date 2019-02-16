@@ -54,6 +54,9 @@ services:
             GIT_MESSAGE: ${GIT_MESSAGE}
             GIT_REMOTE: ${GIT_REMOTE}
             GIT_URL: ${GIT_URL}
+            PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
+            SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
+            SEMAPHORE: ${SEMAPHORE}
         volumes:
             - ./testing/configs/:/etc/artemis/
             - ./testing/supervisor.d/:/etc/supervisor/conf.d/

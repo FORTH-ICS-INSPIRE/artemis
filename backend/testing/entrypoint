@@ -5,5 +5,4 @@
 ./wait-for backend:9001 -t 60
 ./wait-for backend:6379 -t 60
 
-sleep 1000000000
 python -u tester.py

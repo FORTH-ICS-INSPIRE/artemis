@@ -1,6 +1,7 @@
 from utils import RABBITMQ_HOST, get_logger, SUPERVISOR_HOST, SUPERVISOR_PORT
 from kombu import Connection, Exchange, Producer
 import time
+import os
 from xmlrpc.client import ServerProxy
 
 
@@ -28,7 +29,7 @@ class Scheduler():
 
         def __init__(self, connection):
             self.connection = connection
-            self.time_to_wait = 1  # Time in secs to gather entries to perform a bulk operation
+            self.time_to_wait = float(os.getenv('BULK_TIMER', 1))  # Time in secs to gather entries to perform a bulk operation
 
             self.db_clock_exchange = Exchange(
                 'db-clock',

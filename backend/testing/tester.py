@@ -8,6 +8,7 @@ import socket
 import redis
 import hashlib
 import pickle
+from xmlrpc.client import ServerProxy
 
 
 class Tester():
@@ -18,6 +19,7 @@ class Tester():
         self.expected_messages = 0
 
         self.initRedis()
+        self.initSupervisor()
 
     def getDbConnection(self):
         '''
@@ -49,6 +51,12 @@ class Tester():
             port=6379
         )
         self.redis = redis_
+
+    def initSupervisor(self):
+        SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'backend')
+        SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
+        self.supervisor = ServerProxy(
+            'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
 
     def test(self):
         '''
@@ -245,6 +253,27 @@ class Tester():
                             assert False, 'Consumer timeout'
 
             connection.close()
+
+        def waitProcess(mod, target):
+            state = self.supervisor.supervisor.getProcessInfo(mod)['state']
+            while state != target:
+                time.sleep(0.5)
+                state = self.supervisor.supervisor.getProcessInfo(mod)['state']
+
+        self.supervisor.supervisor.stopAllProcesses()
+
+        waitProcess('listener', 0)  # 0 STOPPED
+        waitProcess('clock', 0)  # 0 STOPPED
+        waitProcess('detection', 0)  # 0 STOPPED
+        waitProcess('mitigation', 0)  # 0 STOPPED
+        waitProcess('configuration', 0)  # 0 STOPPED
+        waitProcess('database', 0)  # 0 STOPPED
+        waitProcess('observer', 0)  # 0 STOPPED
+        waitProcess('monitor', 0)  # 0 STOPPED
+
+        self.supervisor.supervisor.startProcess('coveralls')
+
+        waitProcess('coveralls', 20)  # 20 RUNNING
 
 
 if __name__ == "__main__":

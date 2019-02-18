@@ -320,11 +320,6 @@
                                         $(this).children("input").removeClass("is-invalid");
                                         $(this).children("div").hide();
                                     }
-                                    filter_parameters[search_table_map[index]] = value;
-                                    if($(this).children("input").hasClass("is-invalid")){
-                                        $(this).children("input").removeClass("is-invalid");
-                                        $(this).children("div").hide();
-                                    }
                                 }else{
                                     $(this).children("input").addClass("is-invalid");
                                     $(this).children("div").text('Not a valid v4/v6 prefix');
@@ -541,13 +536,10 @@
                             "orderable": false,
                         },
                         {
-                            "targets": [6,7,8,9],
+                            "targets": [0,1,2,4,6,7,8,9],
                             "className": "text-center",
                         }
                     ],
-                    "rowReorder": {
-                        "selector": 'td:nth-child(2)'
-                    },
                     "language": {
                         "emptyTable": "<h3>No BGP Updates to display</h3>"
                     },

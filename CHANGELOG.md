@@ -1,6 +1,25 @@
 # Changelog
 
-## [UNRELEASED] - YYYY-MM-DD
+## [UNRELEASED] (NAME) - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [1.1.0] (Asclepius) - 2019-02-20
 ### Added
 - Bug report and feature request issue templates
 - Code of conduct
@@ -34,7 +53,6 @@
 - Change Timewindow phrase on BGP Updates and Hijacks tables
 - Bug with custom window
 - Update Hijack tags filter
-- Add two indexes in DB (table: hijacks)
 - Add 'Last Update' on hijacks tables
 - Optimizations in file: display_info.js
 
@@ -52,8 +70,8 @@
 - Bumped PyYAML from 3.13 to 4.2b4 in /backend
 - Resolved bug with user roles on registration process
 
-## [1.0.0] - 2018-12-20
-### Added (initial Apollo release)
+## [1.0.0] (Apollo) - 2018-12-20
+### Added
 * Monitor micro-service, providing real-time monitoring of the changes in the BGP routes of the network's prefixes.
 Support for the following route collectors and interfaces:
   * [RIPE RIS](http://stream-dev.ris.ripe.net/demo2) (real-time streaming)
@@ -162,7 +180,7 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 - NA
 
 # TEMPLATE FOR NEW RELEASES
-## [RELEASE_VERSION] - YYYY-MM-DD
+## [RELEASE_VERSION] (NAME) - YYYY-MM-DD
 ### Added
 - TBD (Added a new feature)
 

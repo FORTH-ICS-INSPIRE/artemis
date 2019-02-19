@@ -21,21 +21,21 @@ mapHelpText_stats['field_stats_Outdated_Hijacks'] = 'The number of hijack events
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
 
-mapHelpText_system['field_hijack_status'] = 'The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved|outdated).</br>';
-mapHelpText_system['field_hijack_status'] += '<ul><li>Ongoing: the hijack has not been ignored, resolved or withdrawn.</li>';
-mapHelpText_system['field_hijack_status'] += '<li>Withdrawn: all monitors that saw hijack updates for a certain hijacked prefix have seen the respective withdrawals.</li>';
-mapHelpText_system['field_hijack_status'] += '<li>Ignored: the event is ignored (by the user).</li>';
-mapHelpText_system['field_hijack_status'] += '<li>Resolved: the event is resolved (by the user).</li>';
-mapHelpText_system['field_hijack_status'] += '<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>';
+mapHelpText_system['field_hijack_status'] = `The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved|outdated).</br>
+<ul><li>Ongoing: the hijack has not been ignored, resolved or withdrawn.</li>
+<li>Withdrawn: all monitors that saw hijack updates for a certain hijacked prefix have seen the respective withdrawals.</li>
+<li>Ignored: the event is ignored (by the user).</li>
+<li>Resolved: the event is resolved (by the user).</li>
+<li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>`;
 
-mapHelpText_system['field_hijack_type'] = 'The type of the hijack in 3 dimensions: prefix|path|data plane<ul>';
-mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "S" → Sub-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "E" → Exact-prefix hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Prefix] "Q" → Squatting hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Path] "0" → Type-0 hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Path] "1" → Type-1 hijack</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Path] "-" → Type-N or Type-U hijack (N/A)</li>';
-mapHelpText_system['field_hijack_type'] += '<li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li></ul>';
+mapHelpText_system['field_hijack_type'] = `The type of the hijack in 3 dimensions: prefix|path|data plane<ul>';
+<li>[Prefix] "S" → Sub-prefix hijack</li>
+<li>[Prefix] "E" → Exact-prefix hijack</li>
+<li>[Prefix] "Q" → Squatting hijack</li>
+<li>[Path] "0" → Type-0 hijack</li>
+<li>[Path] "1" → Type-1 hijack</li>
+<li>[Path] "-" → Type-N or Type-U hijack (N/A)</li>
+<li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li></ul>`;
 
 mapHelpText_system['field_hijacker_as'] = 'The AS that is potentially responsible for the hijack.</br>Note that this is an experimental field.';
 mapHelpText_system['field_peers_seen'] = 'Number of peers/monitors (i.e., ASNs)</br>that have seen hijack updates.';
@@ -63,9 +63,9 @@ mapHelpText_system['field_time_started'] = "The timestamp of the oldest known (t
 mapHelpText_system['field_time_detected'] = "The time when a hijack event was first detected by the system.";
 mapHelpText_system['field_time_last_update'] = "The timestamp of the newest known (to the system) BGP update that is related to the hijack.";
 
-mapHelpText_system['field_time_ended'] = "The timestamp when the hijack was ended. It can be set in the following ways:";
-mapHelpText_system['field_time_ended'] += "<ul><li>Manually, when the user presses the “resolved” button.</li>";
-mapHelpText_system['field_time_ended'] += "<li>Automatically, when a hijack is completely withdrawn (all monitors that saw hijack updates for a certain prefix have seen the respective withdrawals).</li></ul>";
+mapHelpText_system['field_time_ended'] = `The timestamp when the hijack was ended. It can be set in the following ways:
+<ul><li>Manually, when the user presses the “resolved” button.</li>
+<li>Automatically, when a hijack is completely withdrawn (all monitors that saw hijack updates for a certain prefix have seen the respective withdrawals).</li></ul>`;
 
 mapHelpText_system['field_mitigation_started'] = "The timestamp when the mitigation was triggered by the user (“mitigate” button).";
 mapHelpText_system['field_time_window_custom'] = "The time window for seeing BGP updates or hijack events.";

@@ -27,13 +27,16 @@ function format_datatable(data){
 }
 
 function format_hijack_entry(data){
-
     if('hijack_as' in data){
         data['hijack_as'] = format_hijack_as(data['hijack_as']);
     }
 
     if('time_detected' in data){
         data['time_detected'] = transform_date_to_local(data['time_detected']);
+    }
+
+    if('time_last' in data){
+        data['time_last'] = transform_date_to_local(data['time_last']);
     }
 
     if('seen' in data){

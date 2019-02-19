@@ -34,6 +34,9 @@
 - Change Timewindow phrase on BGP Updates and Hijacks tables
 - Bug with custom window
 - Update Hijack tags filter
+- Add two indexes in DB (table: hijacks)
+- Add 'Last Update' on hijacks tables
+- Optimizations in file: display_info.js
 
 ### Removed
 - ACKS file (moved to README in-line)

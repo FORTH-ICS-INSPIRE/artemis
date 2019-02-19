@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (7, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (8, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -118,6 +118,9 @@ CREATE TABLE IF NOT EXISTS hijacks (
 
 CREATE INDEX active_idx
 ON hijacks(active);
+
+CREATE INDEX hijack_table_idx
+ON hijacks(time_last, hijack_as, prefix, type);
 
 SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 

@@ -41,6 +41,12 @@
             "db_version": "7",
             "description": "Expanded hijacks type field from 1 to 5 characters and migrated S,0,1,Q hijacks",
             "file": "migration_7.sql"
+        },
+        "8": {
+            "id": "8",
+            "db_version": "8",
+            "description": "Added indexes in table: hijacks",
+            "file": "migration_8.sql"
         }
     }
 }

@@ -65,6 +65,7 @@
             <div class="col-lg-12">
                 <table class="table table-striped table-bordered" style="width:100%" id="hijacks">
                     <thead>
+                        <th helpText="field_time_last_update">Last Update</th>
                         <th helpText="field_time_detected">Time Detected</th>
                         <th helpText="field_hijack_status">Status</th>
                         <th helpText="field_prefix">Prefix</th>
@@ -77,6 +78,7 @@
                     </thead>
                     <tfoot>
                         <tr>
+                            <th>Last Update</th>
                             <th>Time Detected</th>
                             <th>Status</th>
                             <th>Prefix</th>
@@ -183,6 +185,7 @@
             var selected_status = null;
             // Columns that can be sorted
             var columns = [
+                { data: 'time_last' },
                 { data: 'time_detected' },
                 null,
                 { data: 'prefix' },
@@ -209,14 +212,14 @@
                 'outdated' : "dark"
             }
 
-            var exlude_columns_from_search = ['Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Ack', 'Mark', 'More'];
+            var exlude_columns_from_search = ['Last Update', 'Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Ack', 'Mark', 'More'];
 
             var custom_message_for_search = {};
 
             var search_table_map = {
-                2: "prefix",
-                3: "type",
-                4: "hijack_as"
+                3: "prefix",
+                4: "type",
+                5: "hijack_as"
             };
 
             var custom_time = [
@@ -362,13 +365,10 @@
                                     $(this).children("div").show();
                                 }
                             }else if(search_table_map[index] == 'type'){
-                                var type_regex = /^\s*(S|E|Q)\|(0|1|-)\|(-)\s*/;
-                                var match = type_regex.exec(value);
-                                var type = null;
-
-                                if(match != null){
-                                    type = match[1].concat("|", match[2], "|", match[3]);
-                                    filter_parameters[search_table_map[index]] = type;
+                                var type_regex = /^\s*(([S|E|Q]\|[0|1|-]\|-)|((S\|0)|(S\|1)|(E\|0)|(E\|1)|(Q\|0))|([S|E|Q|0|1]))\s*$/;
+                                if(type_regex.exec(value)){
+                                    match_value = value.replace(/^\s+|\s+$/g, '');
+                                    filter_parameters[search_table_map[index]] = match_value;
                                     if($(this).children("input").hasClass("is-invalid")){
                                         $(this).children("input").removeClass("is-invalid");
                                         $(this).children("div").hide();
@@ -376,7 +376,7 @@
                                 }else{
                                     $(this).children("input").addClass("is-invalid");
                                     $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)');
-                                    $(this).children("div").show();   
+                                    $(this).children("div").show();
                                 }
                             }else{
                                 filter_parameters[search_table_map[index]] = value;
@@ -422,8 +422,8 @@
                 }
 
                 if(filter_parameters['type'] != null){
-                    filters.push('{ type: {_eq: "' + filter_parameters['type'] + '"} }');
-                    download_filters.push('type.eq.' + filter_parameters['type']);
+                    filters.push('{ type: {_like: "%' + filter_parameters['type'] + '%"} }');
+                    download_filters.push('type.like.*' + filter_parameters['type'] + '*');
                 }
 
                 if(filter_parameters['status'] != null){
@@ -477,7 +477,7 @@
                         }else{
                             query += ")";
                         }
-                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated } }"
+                        query += " { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated time_last } }"
                         if(refresh_state_live){
                             fetchDatatableLive(ws, callback, query);
                         }else{
@@ -568,6 +568,7 @@
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
+                        { data: 'time_last', "width": "150px" },
                         { data: 'time_detected', "width": "150px" },
                         { data: 'status' },
                         { data: 'prefix' },
@@ -588,17 +589,14 @@
                     {% endif %}
                     "columnDefs": [
                         {
-                            "targets": [1,2,3,4,5,6,7,8],
+                            "targets": [2,3,4,5,6,7,8,9],
                             "orderable": false
                         },
                         {
-                            "targets": [1,3,5,6,7],
+                            "targets": [0,1,2,3,4,5,6,7,8,9],
                             "className": "text-center",
                         }
                     ],
-                    "rowReorder": {
-                        "selector": 'td:nth-child(2)'
-                    },
                     "language": {
                         "emptyTable": "<img src=\"{{ url_for('static', filename='images/checkmark.png') }}\" ></img></br><h3>No hijack alerts. Go grab a beer!</h3></br>"
                     },
@@ -632,8 +630,8 @@
                     if(data.type === 'connection_ack') {
                         ws.removeEventListener('message', conn_ack);
                         render_table(ws);
-                        $('#hijacks tbody').on( 'click', 'tr', function () {
-                            if($(this).hasClass ("selected")) {
+                        $('#hijacks tbody').on( 'click', 'tr[id]', function () {
+                            if($(this).hasClass("selected")){
                                 selected_hijacks.splice(selected_hijacks.indexOf($(this).attr("id")), 1);
                             }else{
                                 selected_hijacks.push($(this).attr("id"));

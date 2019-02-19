@@ -13,7 +13,7 @@ COPY . ./
 
 RUN pip3 --no-cache-dir install -r requirements.txt
 RUN pip3 --no-cache-dir install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49
-RUN pip3 --no-cache-dir install coverage git+https://github.com/slowr/coveralls-python@0dab635688aca5d5b3b81621ac8cdc2f7524b05f
+RUN pip3 --no-cache-dir install coverage git+https://github.com/coveralls-clients/coveralls-python@a9b5e3081c8697b60286b9736e956134a2796d5f
 RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/
 

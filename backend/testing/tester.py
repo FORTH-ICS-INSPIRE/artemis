@@ -164,7 +164,12 @@ class Tester():
             for key in set(event.keys()).intersection(expected.keys()):
                 assert (event[key] == expected[key] or (isinstance(
                         event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
-                    'Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(key, event[key], expected[key]))
+                    'Batch #{} - Type {}: Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(
+                        self.curr_idx,
+                        message.delivery_info['routing_key'],
+                        key,
+                        event[key],
+                        expected[key]))
 
             self.expected_messages -= 1
             if self.expected_messages <= 0:

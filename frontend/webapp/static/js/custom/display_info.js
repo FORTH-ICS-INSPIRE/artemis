@@ -28,7 +28,7 @@ mapHelpText_system['field_hijack_status'] = `The status of a hijack event (possi
 <li>Resolved: the event is resolved (by the user).</li>
 <li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>`;
 
-mapHelpText_system['field_hijack_type'] = `The type of the hijack in 3 dimensions: prefix|path|data plane<ul>';
+mapHelpText_system['field_hijack_type'] = `The type of the hijack in 3 dimensions: prefix|path|data plane<ul>
 <li>[Prefix] "S" → Sub-prefix hijack</li>
 <li>[Prefix] "E" → Exact-prefix hijack</li>
 <li>[Prefix] "Q" → Squatting hijack</li>

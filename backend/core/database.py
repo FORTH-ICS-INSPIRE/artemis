@@ -993,14 +993,15 @@ class Database():
 
             if update_bgp_entries:
                 try:
-                    query = ('UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, witann.peer_asn) FROM '
-                             '(SELECT wit.peer_asn, wit.timestamp FROM '
+                    query = ('UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, removed.peer_asn) FROM '
+                             '(SELECT witann.peer_asn FROM '
+                             '(SELECT wit.peer_asn, wit.timestamp AS wit_time, ann.timestamp AS ann_time FROM '
                              '((VALUES %s) AS data (v1, v2) LEFT JOIN hijacks AS hij ON (data.v1=hij.key) '
                              'LEFT JOIN bgp_updates AS ann ON (data.v2=ann.key) '
                              'LEFT JOIN bgp_updates AS wit ON (hij.key=ANY(wit.hijack_key))) WHERE '
-                             'ann.type=\'A\' AND ann.handled=true '
-                             'AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type=\'W\' '
-                             'AND wit.timestamp < ann.timestamp ORDER BY wit.timestamp DESC LIMIT 1) AS witann')
+                             'ann.type=\'A\' AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type=\'W\' '
+                             'ORDER BY wit_time DESC LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) '
+                             'AS removed')
                     with get_wo_cursor(self.wo_conn) as db_cur:
                         psycopg2.extras.execute_values(
                             db_cur,

@@ -988,19 +988,19 @@ class Database():
                     num_of_updates += 1
                     update_bgp_entries.add(
                         (hijack_key, bgp_entry_to_update))
-                    # exclude handle bgp updates that point to same bgp as this
-                    # hijack
+                    # exclude handle bgp updates that point to same hijack as this
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if update_bgp_entries:
                 try:
-                    query = ('UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) '
-                             'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( '
-                             'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B, (VALUES %s) AS data (v1, v2) '
-                             'WHERE H.withdrawn=false AND H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\' AND B.handled = true) AS curr_update '
-                             'WHERE curr_update.key = ANY(bgp_updates.hijack_key) AND bgp_updates.peer_asn = curr_update.peer_asn '
-                             'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '
-                             'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key')
+                    query = ('UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, witann.peer_asn) FROM '
+                             '(SELECT wit.peer_asn, wit.timestamp FROM '
+                             '((VALUES %s) AS data (v1, v2) LEFT JOIN hijacks AS hij ON (data.v1=hij.key) '
+                             'LEFT JOIN bgp_updates AS ann ON (data.v2=ann.key) '
+                             'LEFT JOIN bgp_updates AS wit ON (hij.key=ANY(wit.hijack_key))) WHERE '
+                             'ann.type=\'A\' AND ann.handled=true '
+                             'AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type=\'W\' '
+                             'AND wit.timestamp < ann.timestamp ORDER BY wit.timestamp DESC LIMIT 1) AS witann')
                     with get_wo_cursor(self.wo_conn) as db_cur:
                         psycopg2.extras.execute_values(
                             db_cur,

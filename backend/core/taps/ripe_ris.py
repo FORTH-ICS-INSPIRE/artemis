@@ -1,5 +1,6 @@
 import argparse
 from copy import deepcopy
+from ipaddress import ip_network as str2ip
 import json
 from kombu import Connection, Producer, Exchange
 import os
@@ -13,7 +14,15 @@ update_to_type = {
 }
 
 
-def normalize_ripe_ris(msg):
+def normalize_ripe_ris(msg, conf_prefix):
+    def is_subnet_of(a, b):
+        try:
+            if a.version == b.version:
+                return (b.network_address <= a.network_address and
+                    b.broadcast_address >= a.broadcast_address)
+        except AttributeError:
+            return False
+
     msgs = []
     if isinstance(msg, dict):
         msg['key'] = None  # initial placeholder before passing the validator
@@ -38,10 +47,11 @@ def normalize_ripe_ris(msg):
                 for element in msg[update_type]:
                     if 'prefixes' in element:
                         for prefix in element['prefixes']:
-                            new_msg = deepcopy(msg)
-                            new_msg['prefix'] = prefix
-                            del new_msg[update_type]
-                            msgs.append(new_msg)
+                            if is_subnet_of(prefix, conf_prefix):
+                                new_msg = deepcopy(msg)
+                                new_msg['prefix'] = prefix
+                                del new_msg[update_type]
+                                msgs.append(new_msg)
     return msgs
 
 
@@ -52,6 +62,11 @@ def parse_ripe_ris(connection, prefix, host):
         type='direct',
         durable=False)
     exchange.declare()
+
+    try:
+        conf_prefix = str2ip(prefix)
+    except Exception:
+        log.exception('exception')
 
     ris_suffix = os.getenv('RIS_ID', 'my_as')
     ws = websocket.WebSocket()
@@ -77,7 +92,7 @@ def parse_ripe_ris(connection, prefix, host):
             parsed = json.loads(data)
             msg = parsed["data"]
             producer = Producer(connection)
-            norm_ris_msgs = normalize_ripe_ris(msg)
+            norm_ris_msgs = normalize_ripe_ris(msg, conf_prefix)
             for norm_ris_msg in norm_ris_msgs:
                 if mformat_validator(norm_ris_msg):
                     norm_path_msgs = normalize_msg_path(norm_ris_msg)

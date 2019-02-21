@@ -267,18 +267,12 @@ class Configuration():
 
             data['prefixes'] = {k: flatten(v)
                                 for k, v in data['prefixes'].items()}
-            # TODO: remove after testing!
-            print('data - BEFORE...')
-            print(str(data['prefixes']))
             for prefix_group in data['prefixes']:
                 full_translated_prefix_set = set()
                 for prefix in data['prefixes'][prefix_group]:
                     this_translated_prefix_list = flatten(translate_rfc2622(prefix))
                     full_translated_prefix_set.update(set(this_translated_prefix_list))
                 data['prefixes'][prefix_group] = list(full_translated_prefix_set)
-            # TODO: remove after testing!
-            print('data - AFTER...')
-            print(str(data['prefixes']))
             for prefix_group, prefixes in data['prefixes'].items():
                 for prefix in prefixes:
                     try:

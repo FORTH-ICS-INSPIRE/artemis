@@ -54,46 +54,46 @@ def parse_ripe_ris(connection, prefix, host):
     exchange.declare()
 
     ris_suffix = os.getenv('RIS_ID', 'my_as')
-    with websocket.WebSocket() as ws:
-        ws.connect("wss://ris-live.ripe.net/v1/ws/?client=artemis-as{}".format(ris_suffix))
-        params = {
-            "host": host,
-            "type": "UPDATE",
-            "prefix": prefix,
-            "moreSpecific": True,
-            "lessSpecific": False,
-            "socketOptions": {
-                "includeRaw": False
-            }
+    ws = websocket.WebSocket()
+    ws.connect("wss://ris-live.ripe.net/v1/ws/?client=artemis-as{}".format(ris_suffix))
+    params = {
+        "host": host,
+        "type": "UPDATE",
+        "prefix": prefix,
+        "moreSpecific": True,
+        "lessSpecific": False,
+        "socketOptions": {
+            "includeRaw": False
         }
+    }
 
-        ws.send(json.dumps({
-            "type": "ris_subscribe",
-            "data": params
-        }))
+    ws.send(json.dumps({
+        "type": "ris_subscribe",
+        "data": params
+    }))
 
-        for data in ws:
-            try:
-                parsed = json.loads(data)
-                msg = parsed["data"]
-                producer = Producer(connection)
-                norm_ris_msgs = normalize_ripe_ris(msg)
-                for norm_ris_msg in norm_ris_msgs:
-                    if mformat_validator(norm_ris_msg):
-                        norm_path_msgs = normalize_msg_path(norm_ris_msg)
-                        for norm_path_msg in norm_path_msgs:
-                            key_generator(norm_path_msg)
-                            log.debug(norm_path_msg)
-                            producer.publish(
-                                norm_path_msg,
-                                exchange=exchange,
-                                routing_key='update',
-                                serializer='json'
-                            )
-                    else:
-                        log.warning('Invalid format message: {}'.format(msg))
-            except Exception:
-                log.exception('exception')
+    for data in ws:
+        try:
+            parsed = json.loads(data)
+            msg = parsed["data"]
+            producer = Producer(connection)
+            norm_ris_msgs = normalize_ripe_ris(msg)
+            for norm_ris_msg in norm_ris_msgs:
+                if mformat_validator(norm_ris_msg):
+                    norm_path_msgs = normalize_msg_path(norm_ris_msg)
+                    for norm_path_msg in norm_path_msgs:
+                        key_generator(norm_path_msg)
+                        log.debug(norm_path_msg)
+                        producer.publish(
+                            norm_path_msg,
+                            exchange=exchange,
+                            routing_key='update',
+                            serializer='json'
+                        )
+                else:
+                    log.warning('Invalid format message: {}'.format(msg))
+        except Exception:
+            log.exception('exception')
 
 
 if __name__ == '__main__':

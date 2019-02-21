@@ -5,7 +5,7 @@
 - TBD (Added a new feature)
 
 ### Changed
-- TBD (Changed existing functionality)
+- RIPE RIS live python websocket client
 
 ### Fixed
 - TBD (bug-fix)

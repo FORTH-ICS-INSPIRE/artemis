@@ -191,6 +191,24 @@ def translate_rfc2622(input_prefix):
             max_length = matched_prefix_ip.max_prefixlen
             return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
 
-    # TODO: more operators: ^n, ^n-m
+    # ^n where n is an integer, stands for all the length n specifics of
+    #    the address prefix.  For example, 30.0.0.0/8^16 contains all the
+    #    more specifics of 30.0.0.0/8 which are of length 16 such as
+    #    30.9.0.0/16.
+    reg_n = re.match('^(\S*)\^(\d+)$', input_prefix)
+    if reg_n:
+        matched_prefix = reg_n.group(1)
+        length = int(reg_n.group(2))
+        if valid_prefix(matched_prefix):
+            matched_prefix_ip = str2ip(matched_prefix)
+            min_length = length
+            max_length = length
+            if min_length < matched_prefix_ip.prefixlen:
+                raise ArtemisError('invalid-n-small', input_prefix)
+            if max_length > matched_prefix_ip.max_prefixlen:
+                raise ArtemisError('invalid-n-large', input_prefix)
+            return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
+
+    # TODO: more operators: ^n-m
 
     return [input_prefix]

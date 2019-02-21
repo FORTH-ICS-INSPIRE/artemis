@@ -68,7 +68,6 @@ class Tester():
         self.send_cnt = 0
         self.expected_messages = 0
 
-
     def test(self):
         '''
         Loads a test file that includes crafted bgp updates as input and expected messages as output.
@@ -180,7 +179,7 @@ class Tester():
                     Callback method for message validation from the queues.
                     '''
                     print('\t- Test \"{}\" - Receiving Batch #{} - Type {} - Remaining {}'.format(self.curr_test, self.curr_idx,
-                                                                                    message.delivery_info['routing_key'], self.expected_messages - 1))
+                                                                                                  message.delivery_info['routing_key'], self.expected_messages - 1))
                     if isinstance(body, dict):
                         event = body
                     else:
@@ -209,7 +208,8 @@ class Tester():
                             assert not self.redis.sismember(
                                 'persistent-keys', event['key']), 'Persistent key found in Redis but should have been removed.'
 
-                    # compare expected message with received one. exit on mismatch.
+                    # compare expected message with received one. exit on
+                    # mismatch.
                     for key in set(event.keys()).intersection(expected.keys()):
                         assert (event[key] == expected[key] or (isinstance(
                                 event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
@@ -225,7 +225,8 @@ class Tester():
                     Publish next custom BGP update on the bgp-updates exchange.
                     '''
                     with conn.Producer() as producer:
-                        self.expected_messages = len(messages[self.curr_idx]) - 1
+                        self.expected_messages = len(
+                            messages[self.curr_idx]) - 1
                         print('Publishing #{}'.format(self.curr_idx))
                         # logging.debug(messages[curr_idx]['send'])
 

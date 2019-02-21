@@ -234,7 +234,7 @@ class Configuration():
                 log.warning('RIPE RIS server is down. Try again later..')
 
         def parse(self, raw: Union[Text, TextIO, StringIO],
-                  yaml: Optional[bool]=False) -> Dict:
+                  yaml: Optional[bool] = False) -> Dict:
             """
             Parser for the configuration file or string. The format can either be a File, StringIO or String
             """
@@ -314,7 +314,8 @@ class Configuration():
                     elif key == 'exabgp':
                         for entry in info:
                             if 'ip' not in entry and 'port' not in entry:
-                                raise ArtemisError('invalid-exabgp-info', entry)
+                                raise ArtemisError(
+                                    'invalid-exabgp-info', entry)
                             if entry['ip'] != 'exabgp':
                                 try:
                                     str2ip(entry['ip'])

@@ -337,32 +337,38 @@ class Detection():
 
                     try:
                         hijacker = -1
-                        hij_dimensions = ['-', '-', '-'] # prefix, path, dplane
+                        hij_dimensions = [
+                            '-', '-', '-']  # prefix, path, dplane
                         hij_dimension_index = 0
                         for func_dim in self.__hijack_dimension_checker_gen():
                             if hij_dimension_index == 0:
                                 # prefix dimension
                                 for func_pref in func_dim():
-                                    hij_dimensions[hij_dimension_index] = func_pref(monitor_event, prefix_node)
+                                    hij_dimensions[hij_dimension_index] = func_pref(
+                                        monitor_event, prefix_node)
                                     if hij_dimensions[hij_dimension_index] != '-':
                                         break
                             elif hij_dimension_index == 1:
                                 # path type dimension
-                                for func_path in func_dim(len(monitor_event['path'])):
-                                    (hijacker, hij_dimensions[hij_dimension_index]) = func_path(monitor_event, prefix_node)
+                                for func_path in func_dim(
+                                        len(monitor_event['path'])):
+                                    (hijacker, hij_dimensions[hij_dimension_index]) = func_path(
+                                        monitor_event, prefix_node)
                                     if hij_dimensions[hij_dimension_index] != '-':
                                         break
                             elif hij_dimension_index == 2:
                                 # data plane dimension
                                 for func_dplane in func_dim():
-                                    hij_dimensions[hij_dimension_index] = func_dplane(monitor_event, prefix_node)
+                                    hij_dimensions[hij_dimension_index] = func_dplane(
+                                        monitor_event, prefix_node)
                                     if hij_dimensions[hij_dimension_index] != '-':
                                         break
                             hij_dimension_index += 1
                         # check if dimension combination in hijack combinations
                         if hij_dimensions in HIJACK_DIM_COMBINATIONS:
                             is_hijack = True
-                            self.commit_hijack(monitor_event, hijacker, hij_dimensions)
+                            self.commit_hijack(
+                                monitor_event, hijacker, hij_dimensions)
                     except Exception:
                         log.exception('exception')
 
@@ -524,8 +530,8 @@ class Detection():
             for item in prefix_node.data['confs']:
                 # [] or [-1] neighbors means "allow everything"
                 if (origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]) and (
-                        (not item['neighbors']) or item['neighbors'] == [-1] or
-                                first_neighbor_asn in item['neighbors']):
+                    (not item['neighbors']) or item['neighbors'] == [-1] or
+                        first_neighbor_asn in item['neighbors']):
                     return (-1, '-')
             return (first_neighbor_asn, '1')
 

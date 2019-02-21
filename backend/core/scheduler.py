@@ -27,7 +27,8 @@ class Scheduler():
 
         def __init__(self, connection):
             self.connection = connection
-            self.time_to_wait = float(os.getenv('BULK_TIMER', 1))  # Time in secs to gather entries to perform a bulk operation
+            # Time in secs to gather entries to perform a bulk operation
+            self.time_to_wait = float(os.getenv('BULK_TIMER', 1))
 
             self.db_clock_exchange = Exchange(
                 'db-clock',

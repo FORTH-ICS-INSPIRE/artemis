@@ -7,6 +7,8 @@ from logging.handlers import SMTPHandler
 import pickle
 import hashlib
 from contextlib import contextmanager
+from ipaddress import ip_network as str2ip
+import re
 
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
@@ -142,3 +144,53 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.delete(ephemeral_key)
     redis_pipeline.srem('persistent-keys', persistent_key)
     redis_pipeline.execute()
+
+
+def translate_rfc2622(input_prefix):
+    """
+
+    :param input_prefix: (str) input IPv4/IPv6 prefix that should be translated according to RFC2622
+    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes
+    """
+    def valid_prefix(input_prefix):
+        try:
+            str2ip(input_prefix)
+        except Exception:
+            return False
+        return True
+
+    def calculate_more_specifics(prefix, min_length, max_length):
+        prefix_list = []
+        for prefix_length in range(min_length, max_length+1):
+            prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
+        return prefix_list
+
+    # ^- is the exclusive more specifics operator; it stands for the more
+    #    specifics of the address prefix excluding the address prefix
+    #    itself.  For example, 128.9.0.0/16^- contains all the more
+    #    specifics of 128.9.0.0/16 excluding 128.9.0.0/16.
+    reg_exclusive = re.match('^(\S*)\^-$', input_prefix)
+    if reg_exclusive:
+        matched_prefix = reg_exclusive.group(1)
+        if valid_prefix(matched_prefix):
+            matched_prefix_ip = str2ip(matched_prefix)
+            min_length = matched_prefix_ip.prefixlen + 1
+            max_length = matched_prefix_ip.max_prefixlen
+            return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
+
+    # ^+ is the inclusive more specifics operator; it stands for the more
+    #    specifics of the address prefix including the address prefix
+    #    itself.  For example, 5.0.0.0/8^+ contains all the more specifics
+    #    of 5.0.0.0/8 including 5.0.0.0/8.
+    reg_inclusive = re.match('^(\S*)\^\+$', input_prefix)
+    if reg_inclusive:
+        matched_prefix = reg_inclusive.group(1)
+        if valid_prefix(matched_prefix):
+            matched_prefix_ip = str2ip(matched_prefix)
+            min_length = matched_prefix_ip.prefixlen
+            max_length = matched_prefix_ip.max_prefixlen
+            return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
+
+    # TODO: more operators: ^n, ^n-m
+
+    return [input_prefix]

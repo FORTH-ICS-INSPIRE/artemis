@@ -9,8 +9,6 @@ prefixes:
         - 10.0.2.0/24
     24_prefix_3: &24_prefix_3
         - 10.0.3.0/24
-monitors:
-    riperis: []
 asns:
     8_origin: &8_origin
         1

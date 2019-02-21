@@ -14,10 +14,6 @@ from xmlrpc.client import ServerProxy
 class Tester():
 
     def __init__(self):
-        self.curr_idx = 0
-        self.send_cnt = 0
-        self.expected_messages = 0
-
         self.initRedis()
         self.initSupervisor()
 
@@ -27,8 +23,7 @@ class Tester():
         '''
         db_conn = None
         time_sleep_connection_retry = 5
-        while db_conn is None:
-            time.sleep(time_sleep_connection_retry)
+        while not db_conn:
             try:
                 _db_name = os.getenv('DATABASE_NAME', 'artemis_db')
                 _user = os.getenv('DATABASE_USER', 'artemis_user')
@@ -42,7 +37,7 @@ class Tester():
                     password=_password
                 )
             except BaseException:
-                time.sleep(1)
+                time.sleep(time_sleep_connection_retry)
         return db_conn
 
     def initRedis(self):
@@ -57,6 +52,22 @@ class Tester():
         SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
         self.supervisor = ServerProxy(
             'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
+
+    def clear(self):
+        db_con = self.getDbConnection()
+        db_cur = db_con.cursor()
+        query = 'delete from bgp_updates; delete from hijacks;'
+        db_cur.execute(query)
+        db_con.commit()
+        db_cur.close()
+        db_con.close()
+
+        self.redis.flushall()
+
+        self.curr_idx = 0
+        self.send_cnt = 0
+        self.expected_messages = 0
+
 
     def test(self):
         '''
@@ -112,81 +123,6 @@ class Tester():
             max_priority=1,
             consumer_arguments={'x-priority': 1})
 
-        messages = {}
-        # load test
-        with open('messages.json', 'r') as f:
-            messages = json.load(f)
-
-        send_len = len(messages)
-
-        def redis_key(prefix, hijack_as, _type):
-            assert isinstance(prefix, str)
-            assert isinstance(hijack_as, int)
-            assert isinstance(_type, str)
-            return hashlib.shake_128(pickle.dumps(
-                [prefix, hijack_as, _type])).hexdigest(16)
-
-        def validate_message(body, message):
-            '''
-            Callback method for message validation from the queues.
-            '''
-            print('\t- Receiving Batch #{} - Type {} - Remaining {}'.format(self.curr_idx,
-                                                                            message.delivery_info['routing_key'], self.expected_messages - 1))
-            if isinstance(body, dict):
-                event = body
-            else:
-                event = json.loads(body)
-            # logging.debug(event)
-
-            # distinguish between type of messages
-            if message.delivery_info['routing_key'] == 'update-update':
-                expected = messages[self.curr_idx]['detection_update_response']
-                assert self.redis.exists(
-                    event['key']), 'Monitor key not found in Redis'
-            elif message.delivery_info['routing_key'] == 'update':
-                expected = messages[self.curr_idx]['detection_hijack_response']
-                redis_hijack_key = redis_key(
-                    event['prefix'],
-                    event['hijack_as'],
-                    event['type'])
-                assert self.redis.exists(
-                    redis_hijack_key), 'Hijack key not found in Redis'
-            elif message.delivery_info['routing_key'] == 'hijack-update':
-                expected = messages[self.curr_idx]['database_hijack_response']
-                if event['active']:
-                    assert self.redis.sismember(
-                        'persistent-keys', event['key']), 'Persistent key not found in Redis'
-                else:
-                    assert not self.redis.sismember(
-                        'persistent-keys', event['key']), 'Persistent key found in Redis but should have been removed.'
-
-            # compare expected message with received one. exit on mismatch.
-            for key in set(event.keys()).intersection(expected.keys()):
-                assert (event[key] == expected[key] or (isinstance(
-                        event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
-                    'Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(key, event[key], expected[key]))
-
-            self.expected_messages -= 1
-            if self.expected_messages <= 0:
-                self.curr_idx += 1
-            message.ack()
-
-        def send_next_message(conn):
-            '''
-            Publish next custom BGP update on the bgp-updates exchange.
-            '''
-            with conn.Producer() as producer:
-                self.expected_messages = len(messages[self.curr_idx]) - 1
-                print('Publishing #{}'.format(self.curr_idx))
-                # logging.debug(messages[curr_idx]['send'])
-
-                producer.publish(
-                    messages[self.curr_idx]['send'],
-                    exchange=update_exchange,
-                    routing_key='update',
-                    serializer='json'
-                )
-
         def waitExchange(exchange, channel):
             '''
             Wait passively until the exchange is declared.
@@ -221,36 +157,115 @@ class Tester():
             db_cur.close()
             db_con.close()
 
-            with nested(
-                    connection.Consumer(
-                        hijack_queue,
-                        callbacks=[validate_message],
-                        accept=['pickle']
-                    ),
-                    connection.Consumer(
-                        update_queue,
-                        callbacks=[validate_message],
-                    ),
-                    connection.Consumer(
-                        hijack_db_queue,
-                        callbacks=[validate_message]
-                    )
+            for testfile in os.listdir('testfiles/'):
+                self.clear()
 
-            ):
-                send_cnt = 0
-                # send and validate all messages in the messages.json file
-                while send_cnt < send_len:
-                    self.curr_idx = send_cnt
-                    send_next_message(connection)
-                    send_cnt += 1
-                    # sleep until we receive all expected messages
-                    while self.curr_idx != send_cnt:
-                        time.sleep(0.1)
-                        try:
-                            connection.drain_events(timeout=100)
-                        except socket.timeout:
-                            # avoid infinite loop by timeout
-                            assert False, 'Consumer timeout'
+                self.curr_test = testfile
+                messages = {}
+                # load test
+                with open('testfiles/{}'.format(testfile), 'r') as f:
+                    messages = json.load(f)
+
+                send_len = len(messages)
+
+                def redis_key(prefix, hijack_as, _type):
+                    assert isinstance(prefix, str)
+                    assert isinstance(hijack_as, int)
+                    assert isinstance(_type, str)
+                    return hashlib.shake_128(pickle.dumps(
+                        [prefix, hijack_as, _type])).hexdigest(16)
+
+                def validate_message(body, message):
+                    '''
+                    Callback method for message validation from the queues.
+                    '''
+                    print('\t- Test \"{}\" - Receiving Batch #{} - Type {} - Remaining {}'.format(self.curr_test, self.curr_idx,
+                                                                                    message.delivery_info['routing_key'], self.expected_messages - 1))
+                    if isinstance(body, dict):
+                        event = body
+                    else:
+                        event = json.loads(body)
+                    # logging.debug(event)
+
+                    # distinguish between type of messages
+                    if message.delivery_info['routing_key'] == 'update-update':
+                        expected = messages[self.curr_idx]['detection_update_response']
+                        assert self.redis.exists(
+                            event['key']), 'Monitor key not found in Redis'
+                    elif message.delivery_info['routing_key'] == 'update':
+                        expected = messages[self.curr_idx]['detection_hijack_response']
+                        redis_hijack_key = redis_key(
+                            event['prefix'],
+                            event['hijack_as'],
+                            event['type'])
+                        assert self.redis.exists(
+                            redis_hijack_key), 'Hijack key not found in Redis'
+                    elif message.delivery_info['routing_key'] == 'hijack-update':
+                        expected = messages[self.curr_idx]['database_hijack_response']
+                        if event['active']:
+                            assert self.redis.sismember(
+                                'persistent-keys', event['key']), 'Persistent key not found in Redis'
+                        else:
+                            assert not self.redis.sismember(
+                                'persistent-keys', event['key']), 'Persistent key found in Redis but should have been removed.'
+
+                    # compare expected message with received one. exit on mismatch.
+                    for key in set(event.keys()).intersection(expected.keys()):
+                        assert (event[key] == expected[key] or (isinstance(
+                                event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
+                            'Test \"{}\" - Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(self.curr_test, key, event[key], expected[key]))
+
+                    self.expected_messages -= 1
+                    if self.expected_messages <= 0:
+                        self.curr_idx += 1
+                    message.ack()
+
+                def send_next_message(conn):
+                    '''
+                    Publish next custom BGP update on the bgp-updates exchange.
+                    '''
+                    with conn.Producer() as producer:
+                        self.expected_messages = len(messages[self.curr_idx]) - 1
+                        print('Publishing #{}'.format(self.curr_idx))
+                        # logging.debug(messages[curr_idx]['send'])
+
+                        producer.publish(
+                            messages[self.curr_idx]['send'],
+                            exchange=update_exchange,
+                            routing_key='update',
+                            serializer='json'
+                        )
+
+                with nested(
+                        connection.Consumer(
+                            hijack_queue,
+                            callbacks=[validate_message],
+                            accept=['pickle']
+                        ),
+                        connection.Consumer(
+                            update_queue,
+                            callbacks=[validate_message],
+                        ),
+                        connection.Consumer(
+                            hijack_db_queue,
+                            callbacks=[validate_message]
+                        )
+
+                ):
+                    send_cnt = 0
+                    # send and validate all messages in the messages.json file
+                    while send_cnt < send_len:
+                        self.curr_idx = send_cnt
+                        send_next_message(connection)
+                        send_cnt += 1
+                        # sleep until we receive all expected messages
+                        while self.curr_idx != send_cnt:
+                            time.sleep(0.1)
+                            try:
+                                connection.drain_events(timeout=100)
+                            except socket.timeout:
+                                # avoid infinite loop by timeout
+                                assert False, 'Consumer timeout'
 
             connection.close()
 

@@ -92,7 +92,6 @@ class Configuration():
                 consumer_arguments={
                     'x-priority': 4})
 
-            self.parse_rrcs()
             log.info('started')
 
         def get_consumers(self, Consumer: Consumer,
@@ -297,32 +296,34 @@ class Configuration():
                     if not isinstance(asn, int):
                         raise ArtemisError('invalid-asn', asn)
 
-            for key, info in data['monitors'].items():
-                if key not in self.supported_monitors:
-                    raise ArtemisError('invalid-monitor', key)
-                elif key == 'riperis':
-                    for unavailable in set(info).difference(
-                            self.available_ris):
-                        log.warning(
-                            'unavailable monitor {}'.format(unavailable))
-                elif key == 'bgpstreamlive':
-                    if not info or not set(info).issubset(
-                            self.available_bgpstreamlive):
-                        raise ArtemisError(
-                            'invalid-bgpstreamlive-project', info)
-                elif key == 'exabgp':
-                    for entry in info:
-                        if 'ip' not in entry and 'port' not in entry:
-                            raise ArtemisError('invalid-exabgp-info', entry)
-                        if entry['ip'] != 'exabgp':
-                            try:
-                                str2ip(entry['ip'])
-                            except Exception:
-                                raise ArtemisError(
-                                    'invalid-exabgp-ip', entry['ip'])
-                        if not isinstance(entry['port'], int):
+            if 'monitors' in data:
+                for key, info in data['monitors'].items():
+                    if key not in self.supported_monitors:
+                        raise ArtemisError('invalid-monitor', key)
+                    elif key == 'riperis':
+                        self.parse_rrcs()
+                        for unavailable in set(info).difference(
+                                self.available_ris):
+                            log.warning(
+                                'unavailable monitor {}'.format(unavailable))
+                    elif key == 'bgpstreamlive':
+                        if not info or not set(info).issubset(
+                                self.available_bgpstreamlive):
                             raise ArtemisError(
-                                'invalid-exabgp-port', entry['port'])
+                                'invalid-bgpstreamlive-project', info)
+                    elif key == 'exabgp':
+                        for entry in info:
+                            if 'ip' not in entry and 'port' not in entry:
+                                raise ArtemisError('invalid-exabgp-info', entry)
+                            if entry['ip'] != 'exabgp':
+                                try:
+                                    str2ip(entry['ip'])
+                                except Exception:
+                                    raise ArtemisError(
+                                        'invalid-exabgp-ip', entry['ip'])
+                            if not isinstance(entry['port'], int):
+                                raise ArtemisError(
+                                    'invalid-exabgp-port', entry['port'])
 
             data['asns'] = {k: flatten(v) for k, v in data['asns'].items()}
             for name, asns in data['asns'].items():

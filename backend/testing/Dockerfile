@@ -10,7 +10,7 @@ RUN pip --no-cache-dir install -r requirements.txt
 
 COPY entrypoint /root/
 COPY wait-for /root/
-COPY messages.json /root/
+COPY testfiles /root/
 COPY tester.py /root/
 
 ENTRYPOINT ["./entrypoint"]

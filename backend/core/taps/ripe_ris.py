@@ -4,7 +4,7 @@ from ipaddress import ip_network as str2ip
 import json
 from kombu import Connection, Producer, Exchange
 import os
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger, is_subnet_of
 import websocket
 
 log = get_logger()
@@ -15,14 +15,6 @@ update_to_type = {
 
 
 def normalize_ripe_ris(msg, conf_prefix):
-    def is_subnet_of(a, b):
-        try:
-            if a.version == b.version:
-                return (b.network_address <= a.network_address and
-                    b.broadcast_address >= a.broadcast_address)
-        except AttributeError:
-            return False
-
     msgs = []
     if isinstance(msg, dict):
         msg['key'] = None  # initial placeholder before passing the validator

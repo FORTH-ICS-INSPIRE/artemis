@@ -47,11 +47,14 @@ def normalize_ripe_ris(msg, conf_prefix):
                 for element in msg[update_type]:
                     if 'prefixes' in element:
                         for prefix in element['prefixes']:
-                            if is_subnet_of(prefix, conf_prefix):
-                                new_msg = deepcopy(msg)
-                                new_msg['prefix'] = prefix
-                                del new_msg[update_type]
-                                msgs.append(new_msg)
+                            try:
+                                if is_subnet_of(str2ip(prefix), conf_prefix):
+                                    new_msg = deepcopy(msg)
+                                    new_msg['prefix'] = prefix
+                                    del new_msg[update_type]
+                                    msgs.append(new_msg)
+                            except Exception:
+                                log.exception('exception')
     return msgs
 
 

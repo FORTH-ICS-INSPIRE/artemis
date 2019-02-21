@@ -17,6 +17,7 @@ class Tester():
         self.curr_idx = 0
         self.send_cnt = 0
         self.expected_messages = 0
+        self.time_now = int(time.time())
 
         self.initRedis()
         self.initSupervisor()
@@ -162,6 +163,9 @@ class Tester():
 
             # compare expected message with received one. exit on mismatch.
             for key in set(event.keys()).intersection(expected.keys()):
+                # offset to account for "real-time" tests
+                if "time" in key:
+                    expected[key] += self.time_now
                 assert (event[key] == expected[key] or (isinstance(
                         event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
                     'Batch #{} - Type {}: Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(
@@ -184,6 +188,11 @@ class Tester():
                 self.expected_messages = len(messages[self.curr_idx]) - 1
                 print('Publishing #{}'.format(self.curr_idx))
                 # logging.debug(messages[curr_idx]['send'])
+
+                # offset to account for "real-time" tests
+                for key in messages[self.curr_idx]['send']:
+                    if "time" in key:
+                        messages[self.curr_idx]['send'][key] += self.time_now
 
                 producer.publish(
                     messages[self.curr_idx]['send'],

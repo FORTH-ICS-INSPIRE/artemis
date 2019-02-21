@@ -585,7 +585,7 @@ class Database():
                 try:
                     results = []
                     query = ('SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type '
-                             ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) '
+                             'FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) '
                              'WHERE h.active = true AND b.type=\'A\' AND b.handled=true')
 
                     with get_ro_cursor(self.ro_conn) as db_cur:
@@ -898,6 +898,7 @@ class Database():
                      'FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) '
                      'WHERE bgp_updates.prefix = %s '
                      'AND bgp_updates.type = \'A\' '
+                     'AND bgp_updates.timestamp >= NOW() - INTERVAL \'1 WEEK\' '
                      'AND hijacks.active = true '
                      'AND bgp_updates.peer_asn = %s '
                      'AND bgp_updates.handled = true '
@@ -999,6 +1000,7 @@ class Database():
                              '((VALUES %s) AS data (v1, v2) LEFT JOIN hijacks AS hij ON (data.v1=hij.key) '
                              'LEFT JOIN bgp_updates AS ann ON (data.v2=ann.key) '
                              'LEFT JOIN bgp_updates AS wit ON (hij.key=ANY(wit.hijack_key))) WHERE '
+                             'ann.timestamp >= NOW() - INTERVAL \'1 WEEK\'  AND wit.timestamp >= NOW() - INTERVAL \'1 WEEK\' AND '
                              'ann.type=\'A\' AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type=\'W\' '
                              'ORDER BY wit_time DESC LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) '
                              'AS removed WHERE hijacks.key=removed.key')

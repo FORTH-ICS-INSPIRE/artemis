@@ -585,7 +585,7 @@ class Database():
                 try:
                     results = []
                     query = ('SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type '
-                             ' FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) '
+                             'FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) '
                              'WHERE h.active = true AND b.type=\'A\' AND b.handled=true')
 
                     with get_ro_cursor(self.ro_conn) as db_cur:
@@ -898,6 +898,7 @@ class Database():
                      'FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) '
                      'WHERE bgp_updates.prefix = %s '
                      'AND bgp_updates.type = \'A\' '
+                     'AND bgp_updates.timestamp >= NOW() - INTERVAL \'1 WEEK\' '
                      'AND hijacks.active = true '
                      'AND bgp_updates.peer_asn = %s '
                      'AND bgp_updates.handled = true '
@@ -988,19 +989,21 @@ class Database():
                     num_of_updates += 1
                     update_bgp_entries.add(
                         (hijack_key, bgp_entry_to_update))
-                    # exclude handle bgp updates that point to same bgp as this
-                    # hijack
+                    # exclude handle bgp updates that point to same hijack as this
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if update_bgp_entries:
                 try:
-                    query = ('UPDATE hijacks SET peers_withdrawn = array_remove(peers_withdrawn, hij.peer_asn) '
-                             'FROM (SELECT bgp_updates.peer_asn, curr_update.key FROM bgp_updates, ( '
-                             'SELECT H.key, B.peer_asn, B.prefix, B.timestamp FROM hijacks AS H, bgp_updates AS B, (VALUES %s) AS data (v1, v2) '
-                             'WHERE H.withdrawn=false AND H.key = data.v1 AND B.key = data.v2 AND B.type = \'A\' AND B.handled = true) AS curr_update '
-                             'WHERE curr_update.key = ANY(bgp_updates.hijack_key) AND bgp_updates.peer_asn = curr_update.peer_asn '
-                             'AND bgp_updates.prefix = curr_update.prefix AND bgp_updates.type = \'W\' '
-                             'AND bgp_updates.timestamp < curr_update.timestamp LIMIT 1) AS hij WHERE hijacks.key = hij.key')
+                    query = ('UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, removed.peer_asn) FROM '
+                             '(SELECT witann.key, witann.peer_asn FROM '
+                             '(SELECT hij.key, wit.peer_asn, wit.timestamp AS wit_time, ann.timestamp AS ann_time FROM '
+                             '((VALUES %s) AS data (v1, v2) LEFT JOIN hijacks AS hij ON (data.v1=hij.key) '
+                             'LEFT JOIN bgp_updates AS ann ON (data.v2=ann.key) '
+                             'LEFT JOIN bgp_updates AS wit ON (hij.key=ANY(wit.hijack_key))) WHERE '
+                             'ann.timestamp >= NOW() - INTERVAL \'1 WEEK\'  AND wit.timestamp >= NOW() - INTERVAL \'1 WEEK\' AND '
+                             'ann.type=\'A\' AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type=\'W\' '
+                             'ORDER BY wit_time DESC LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) '
+                             'AS removed WHERE hijacks.key=removed.key')
                     with get_wo_cursor(self.wo_conn) as db_cur:
                         psycopg2.extras.execute_values(
                             db_cur,

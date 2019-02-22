@@ -18,7 +18,7 @@ services:
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
         volumes:
-            - ./testing/:/root/
+            - ./testing/configs/:/root/configs/
     backend:
         build:
             context: .

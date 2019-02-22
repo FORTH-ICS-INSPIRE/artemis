@@ -1,8 +1,11 @@
-from socketIO_client_nexus import SocketIO
-from kombu import Connection, Producer, Exchange
 import argparse
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
-
+from copy import deepcopy
+from ipaddress import ip_network as str2ip
+import json
+from kombu import Connection, Producer, Exchange
+import os
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger, is_subnet_of
+import websocket
 
 log = get_logger()
 update_to_type = {
@@ -11,7 +14,8 @@ update_to_type = {
 }
 
 
-def normalize_ripe_ris(msg):
+def normalize_ripe_ris(msg, conf_prefix):
+    msgs = []
     if isinstance(msg, dict):
         msg['key'] = None  # initial placeholder before passing the validator
         if 'community' in msg:
@@ -29,10 +33,21 @@ def normalize_ripe_ris(msg):
             msg['timestamp'] = float(msg['timestamp'])
         if 'type' in msg:
             del msg['type']
-        if 'source' in msg:
-            source = msg['source']
-            if source in update_to_type:
-                msg['type'] = update_to_type[source]
+        for update_type in update_to_type:
+            if update_type in msg:
+                msg['type'] = update_to_type[update_type]
+                for element in msg[update_type]:
+                    if 'prefixes' in element:
+                        for prefix in element['prefixes']:
+                            try:
+                                if is_subnet_of(str2ip(prefix), conf_prefix):
+                                    new_msg = deepcopy(msg)
+                                    new_msg['prefix'] = prefix
+                                    del new_msg[update_type]
+                                    msgs.append(new_msg)
+                            except Exception:
+                                log.exception('exception')
+    return msgs
 
 
 def parse_ripe_ris(connection, prefix, host):
@@ -43,42 +58,52 @@ def parse_ripe_ris(connection, prefix, host):
         durable=False)
     exchange.declare()
 
-    def on_ris_msg(msg):
+    try:
+        conf_prefix = str2ip(prefix)
+    except Exception:
+        log.exception('exception')
+
+    ris_suffix = os.getenv('RIS_ID', 'my_as')
+    ws = websocket.WebSocket()
+    ws.connect("wss://ris-live.ripe.net/v1/ws/?client=artemis-as{}".format(ris_suffix))
+    params = {
+        "host": host,
+        "type": "UPDATE",
+        "prefix": prefix,
+        "moreSpecific": True,
+        "lessSpecific": False,
+        "socketOptions": {
+            "includeRaw": False
+        }
+    }
+
+    ws.send(json.dumps({
+        "type": "ris_subscribe",
+        "data": params
+    }))
+
+    for data in ws:
         try:
+            parsed = json.loads(data)
+            msg = parsed["data"]
             producer = Producer(connection)
-            normalize_ripe_ris(msg)
-            if mformat_validator(msg):
-                msgs = normalize_msg_path(msg)
-                for msg_ in msgs:
-                    key_generator(msg_)
-                    log.debug(msg_)
-                    producer.publish(
-                        msg_,
-                        exchange=exchange,
-                        routing_key='update',
-                        serializer='json'
-                    )
-            else:
-                log.warning('Invalid format message: {}'.format(msg))
+            norm_ris_msgs = normalize_ripe_ris(msg, conf_prefix)
+            for norm_ris_msg in norm_ris_msgs:
+                if mformat_validator(norm_ris_msg):
+                    norm_path_msgs = normalize_msg_path(norm_ris_msg)
+                    for norm_path_msg in norm_path_msgs:
+                        key_generator(norm_path_msg)
+                        log.debug(norm_path_msg)
+                        producer.publish(
+                            norm_path_msg,
+                            exchange=exchange,
+                            routing_key='update',
+                            serializer='json'
+                        )
+                else:
+                    log.warning('Invalid format message: {}'.format(msg))
         except Exception:
             log.exception('exception')
-
-    with SocketIO('http://stream-dev.ris.ripe.net/stream2', wait_for_connection=False) as socket_io:
-        socket_io.on('ris_message', on_ris_msg)
-        socket_io.emit('ris_subscribe',
-                       {
-                           'host': host,
-                           'type': 'UPDATE',
-                           'prefix': prefix,
-                           'moreSpecific': True,
-                           'lessSpecific': False,
-                           'socketOptions': {
-                               'includeBody': False,
-                               'explodePrefixes': True,
-                           }
-                       }
-                       )
-        socket_io.wait()
 
 
 if __name__ == '__main__':

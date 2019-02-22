@@ -196,3 +196,16 @@ def mformat_validator(msg):
             return False
 
     return True
+
+
+def is_subnet_of(a, b):
+    """
+    :param a: ipaddress.ip_network object
+    :param b: ipaddress.ip_network object
+    :return: whether a is a subnet of b
+    """
+    try:
+        return a.version == b.version and b.network_address <= a.network_address and
+            b.broadcast_address >= a.broadcast_address
+    except AttributeError:
+        return False

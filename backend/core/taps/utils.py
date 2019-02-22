@@ -205,8 +205,7 @@ def is_subnet_of(a, b):
     :return: whether a is a subnet of b
     """
     try:
-        if a.version == b.version:
-            return (b.network_address <= a.network_address and
-                b.broadcast_address >= a.broadcast_address)
+        return a.version == b.version and b.network_address <= a.network_address and
+            b.broadcast_address >= a.broadcast_address
     except AttributeError:
         return False

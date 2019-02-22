@@ -12,6 +12,10 @@ update_to_type = {
     'announcements': 'A',
     'withdrawals': 'W'
 }
+update_types = [
+    'announcements',
+    'withdrawals'
+]
 
 
 def normalize_ripe_ris(msg, conf_prefix):
@@ -33,20 +37,59 @@ def normalize_ripe_ris(msg, conf_prefix):
             msg['timestamp'] = float(msg['timestamp'])
         if 'type' in msg:
             del msg['type']
-        for update_type in update_to_type:
-            if update_type in msg:
-                msg['type'] = update_to_type[update_type]
-                for element in msg[update_type]:
-                    if 'prefixes' in element:
-                        for prefix in element['prefixes']:
-                            try:
-                                if is_subnet_of(str2ip(prefix), conf_prefix):
-                                    new_msg = deepcopy(msg)
-                                    new_msg['prefix'] = prefix
-                                    del new_msg[update_type]
-                                    msgs.append(new_msg)
-                            except Exception:
-                                log.exception('exception')
+        if 'announcements' in msg and 'withdrawals' in msg:
+            # need 2 separate messages
+            # one for announcements
+            msg_ann = deepcopy(msg)
+            msg_ann['type'] = update_to_type['announcements']
+            prefixes = []
+            for element in msg_ann['announcements']:
+                if 'prefixes' in element:
+                    prefixes.extend(element['prefixes'])
+            for prefix in prefixes:
+                try:
+                    if is_subnet_of(str2ip(prefix), conf_prefix):
+                        new_msg = deepcopy(msg_ann)
+                        new_msg['prefix'] = prefix
+                        del new_msg['announcements']
+                        msgs.append(new_msg)
+                except Exception:
+                    log.exception('exception')
+            # one for withdrawals
+            msg_wit = deepcopy(msg)
+            msg_wit['type'] = update_to_type['withdrawals']
+            msg_wit['path'] = []
+            msg_wit['communities'] = []
+            prefixes = msg_wit['withdrawals']
+            for prefix in prefixes:
+                try:
+                    if is_subnet_of(str2ip(prefix), conf_prefix):
+                        new_msg = deepcopy(msg_wit)
+                        new_msg['prefix'] = prefix
+                        del new_msg['withdrawals']
+                        msgs.append(new_msg)
+                except Exception:
+                    log.exception('exception')
+        else:
+            for update_type in update_types:
+                if update_type in msg:
+                    msg['type'] = update_to_type[update_type]
+                    prefixes = []
+                    for element in msg[update_type]:
+                        if update_type == 'announcements':
+                            if 'prefixes' in element:
+                                prefixes.extend(element['prefixes'])
+                        elif update_type == 'withdrawals':
+                            prefixes.append(element)
+                    for prefix in prefixes:
+                        try:
+                            if is_subnet_of(str2ip(prefix), conf_prefix):
+                                new_msg = deepcopy(msg)
+                                new_msg['prefix'] = prefix
+                                del new_msg[update_type]
+                                msgs.append(new_msg)
+                        except Exception:
+                            log.exception('exception')
     return msgs
 
 
@@ -58,6 +101,7 @@ def parse_ripe_ris(connection, prefix, host):
         durable=False)
     exchange.declare()
 
+    conf_prefix = None
     try:
         conf_prefix = str2ip(prefix)
     except Exception:

@@ -14,6 +14,7 @@ from xmlrpc.client import ServerProxy
 class Tester():
 
     def __init__(self):
+        self.time_now = int(time.time())
         self.initRedis()
         self.initSupervisor()
 
@@ -211,9 +212,17 @@ class Tester():
                     # compare expected message with received one. exit on
                     # mismatch.
                     for key in set(event.keys()).intersection(expected.keys()):
+                        if 'time' in key:
+                            expected[key] += self.time_now
                         assert (event[key] == expected[key] or (isinstance(
                                 event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
-                            'Test \"{}\" - Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(self.curr_test, key, event[key], expected[key]))
+                                'Test \"{}\" - Batch #{} - Type {}: Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(
+                                        self.curr_test,
+                                        self.curr_idx,
+                                        message.delivery_info['routing_key'],
+                                        key,
+                                        event[key],
+                                        expected[key]))
 
                     self.expected_messages -= 1
                     if self.expected_messages <= 0:
@@ -229,6 +238,11 @@ class Tester():
                             messages[self.curr_idx]) - 1
                         print('Publishing #{}'.format(self.curr_idx))
                         # logging.debug(messages[curr_idx]['send'])
+
+                        # offset to account for "real-time" tests
+                        for key in messages[self.curr_idx]['send']:
+                            if 'time' in key:
+                                messages[self.curr_idx]['send'][key] += self.time_now
 
                         producer.publish(
                             messages[self.curr_idx]['send'],

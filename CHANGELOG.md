@@ -3,6 +3,7 @@
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
 - TBD (Added a new feature)
+- Tooltip support for peers seen BGP Update/Withdrawal on hijack view.
 
 ### Changed
 - TBD (Changed existing functionality)

@@ -374,7 +374,6 @@
                                 $(this).children("input").removeClass("is-invalid");
                                 $(this).children("div").hide();
                             }
-
                         }else{
                             if(search_table_map[index] == 'prefix'){
                                 var match_value = null;
@@ -555,9 +554,6 @@
                             "width": "14px"
                         }
                     ],
-                    "rowReorder": {
-                        "selector": 'td:nth-child(2)'
-                    },
                     "columnDefs": [
                         {
                             "targets": [7,8],
@@ -677,8 +673,32 @@
                 $( "#info_last_update" ).val( transform_date_to_local( data['time_last'] )  );
                 $( "#code_comment_box").html( data['comment'] );
 
-                $( "#seenHijackUpdate_text").html( data['peers_seen'].join() );
-                $( "#seenHijackWithdraw_text").html( data['peers_withdrawn'].join() );
+                var peers_seen = data['peers_seen'].sort(function(a,b){ return a - b;});
+                var css_start = ['<div class="row">', '</div>'];
+                var peers_html = "";
+                for (var i = 0; i < peers_seen.length; i++) {
+                    if(peers_html == ""){
+                        peers_html += css_start[0];
+                    }else if(i % 4 == 0){
+                        peers_html += css_start[1] + "</br>" + css_start[0];
+                    }
+                    peers_html += '<div class="col-lg-3"><cc_as><input asn="true" class="form-control" style="text-align:center;" type="text" value="'+ peers_seen[i] +'" readonly></div></cc_as>';
+                }
+                peers_html += css_start[1];
+                $( "#seenHijackUpdate_text").html( peers_html );
+                peers_html = "";
+                var peers_withdrawn = data['peers_withdrawn'].sort(function(a,b){ return a - b;});
+                for (var i = 0; i < peers_withdrawn.length; i++) {
+                    if(peers_html == ""){
+                        peers_html += css_start[0];
+                    }else if(i % 4 == 0){
+                        peers_html += css_start[1] + "</br>" + css_start[0];
+                    }
+                    peers_html += '<div class="col-lg-3"><cc_as><input asn="true" class="form-control" style="text-align:center;" type="text" value="'+ peers_withdrawn[i] +'" readonly></div></cc_as>';
+                }
+                peers_html += css_start[1];
+
+                $( "#seenHijackWithdraw_text").html( peers_html );
 
                 if(data['resolved'] == true || data['ignored'] == true){
                     $("#resolved_button").prop("disabled", true);

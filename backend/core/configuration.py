@@ -142,7 +142,7 @@ class Configuration():
             if _flag:
                 log.debug('accepted new configuration')
                 # compare current with previous data excluding --obviously-- timestamps
-                # TODO: change to sth better
+                # change to sth better
                 prev_data = copy.deepcopy(data)
                 del prev_data['timestamp']
                 new_data = copy.deepcopy(self.data)

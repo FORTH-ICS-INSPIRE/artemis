@@ -216,13 +216,13 @@ class Tester():
                             expected[key] += self.time_now
                         assert (event[key] == expected[key] or (isinstance(
                                 event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
-                                'Test \"{}\" - Batch #{} - Type {}: Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(
-                                        self.curr_test,
-                                        self.curr_idx,
-                                        message.delivery_info['routing_key'],
-                                        key,
-                                        event[key],
-                                        expected[key]))
+                            'Test \"{}\" - Batch #{} - Type {}: Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(
+                                self.curr_test,
+                                self.curr_idx,
+                                message.delivery_info['routing_key'],
+                                key,
+                                event[key],
+                                expected[key]))
 
                     self.expected_messages -= 1
                     if self.expected_messages <= 0:
@@ -304,6 +304,7 @@ class Tester():
         self.supervisor.supervisor.startProcess('coveralls')
 
         waitProcess('coveralls', 20)  # 20 RUNNING
+        waitProcess('coveralls', 100)  # 0 EXITED
 
 
 if __name__ == "__main__":

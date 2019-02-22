@@ -72,7 +72,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                 continue
 
             while elem:
-                if elem.type in ["A", "W"]:
+                if elem.type in {"A", "W"}:
                     this_prefix = str(elem.fields['prefix'])
                     service = "bgpstream|{}|{}".format(
                         str(rec.project), str(rec.collector))

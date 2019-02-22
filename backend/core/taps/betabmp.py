@@ -58,7 +58,7 @@ def run_bgpstream_beta_bmp(prefixes=[]):
                 continue
 
             while elem:
-                if elem.type in ['A', 'W']:
+                if elem.type in {'A', 'W'}:
                     this_prefix = str(elem.fields['prefix'])
                     service = 'betabmp|{}|{}'.format(
                         str(rec.project), str(rec.collector))

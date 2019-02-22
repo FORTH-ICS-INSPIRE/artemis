@@ -68,7 +68,7 @@ class Database():
             wo_conn.close()
 
     def exit(self, signum, frame):
-        if self.worker is not None:
+        if self.worker:
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
@@ -371,7 +371,7 @@ class Database():
                     on_message=self.handle_config_request_reply,
                     queues=[callback_queue],
                     no_ack=True):
-                while self.rules is None:
+                while not self.rules:
                     self.connection.drain_events()
 
         def handle_bgp_update(self, message):
@@ -384,7 +384,7 @@ class Database():
                 best_match = self.find_best_prefix_match(
                     msg_['prefix']),  # matched_prefix
 
-                if best_match is None:
+                if not best_match:
                     return
 
                 try:
@@ -562,7 +562,7 @@ class Database():
             for rule in self.rules:
                 for prefix in rule['prefixes']:
                     node = self.prefix_tree.search_exact(prefix)
-                    if node is None:
+                    if not node:
                         node = self.prefix_tree.add(prefix)
                         node.data['confs'] = []
 
@@ -574,7 +574,7 @@ class Database():
 
         def find_best_prefix_match(self, prefix):
             prefix_node = self.prefix_tree.search_best(prefix)
-            if prefix_node is not None:
+            if prefix_node:
                 return prefix_node.prefix
             return None
 
@@ -641,7 +641,7 @@ class Database():
 
             # need redis to handle future case of multiple db processes
             last_timestamp = self.redis.get('last_handled_timestamp')
-            if last_timestamp is None or timestamp > float(last_timestamp):
+            if not last_timestamp or timestamp > float(last_timestamp):
                 self.redis.set('last_handled_timestamp', timestamp)
                 try:
                     results = []
@@ -960,7 +960,7 @@ class Database():
                         db_cur.execute(query, (withdrawal[0], withdrawal[1]))
                         entries = db_cur.fetchall()
 
-                    if entries is None or not entries:
+                    if not entries:
                         update_normal_withdrawals.add((withdrawal[3], ))
                         continue
                     for entry in entries:

@@ -47,7 +47,7 @@ class Detection():
             log.info('stopped')
 
     def exit(self, signum, frame):
-        if self.worker is not None:
+        if self.worker:
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
@@ -240,7 +240,7 @@ class Detection():
                     on_message=self.handle_config_request_reply,
                     queues=[callback_queue],
                     no_ack=True):
-                while self.rules is None:
+                while not self.rules:
                     self.connection.drain_events()
             log.debug('{}'.format(self.rules))
 
@@ -266,7 +266,7 @@ class Detection():
             for rule in self.rules:
                 for prefix in rule['prefixes']:
                     node = self.prefix_tree.search_exact(prefix)
-                    if node is None:
+                    if not node:
                         node = self.prefix_tree.add(prefix)
                         node.data['confs'] = []
 
@@ -331,7 +331,7 @@ class Detection():
                 prefix_node = self.prefix_tree.search_best(
                     monitor_event['prefix'])
 
-                if prefix_node is not None:
+                if prefix_node:
                     monitor_event['matched_prefix'] = prefix_node.prefix
 
                     try:
@@ -631,7 +631,7 @@ class Detection():
             redis_pipeline = self.redis.pipeline()
             try:
                 result = self.redis.get(redis_hijack_key)
-                if result is not None:
+                if result:
                     result = pickle.loads(result)
                     result['time_started'] = min(result['time_started'],
                                                  hijack_value['time_started'])

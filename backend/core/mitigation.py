@@ -31,7 +31,7 @@ class Mitigation():
             log.info('stopped')
 
     def exit(self, signum, frame):
-        if self.worker is not None:
+        if self.worker:
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
@@ -125,7 +125,7 @@ class Mitigation():
                     on_message=self.handle_config_request_reply,
                     queues=[callback_queue],
                     no_ack=True):
-                while self.rules is None:
+                while not self.rules:
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):
@@ -148,7 +148,7 @@ class Mitigation():
         def handle_mitigation_request(self, message):
             hijack_event = message.payload
             prefix_node = self.prefix_tree.search_best(hijack_event['prefix'])
-            if prefix_node is not None:
+            if prefix_node:
                 mitigation_action = prefix_node.data['mitigation'][0]
                 if mitigation_action == 'manual':
                     log.info('starting manual mitigation of hijack {}'.format(

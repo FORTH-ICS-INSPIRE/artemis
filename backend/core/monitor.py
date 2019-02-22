@@ -26,12 +26,12 @@ class Monitor():
         except Exception:
             log.exception('exception')
         finally:
-            if self.worker is not None:
+            if self.worker:
                 self.worker.stop()
             log.info('stopped')
 
     def exit(self, signum, frame):
-        if self.worker is not None:
+        if self.worker:
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
@@ -151,7 +151,7 @@ class Monitor():
                     on_message=self.handle_config_request_reply,
                     queues=[callback_queue],
                     no_ack=True):
-                while self.rules is None and self.monitors is None:
+                while not self.rules and not self.monitors:
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):

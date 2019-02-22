@@ -39,7 +39,7 @@ class Configuration():
             log.info('stopped')
 
     def exit(self, signum, frame):
-        if self.worker is not None:
+        if self.worker:
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
@@ -144,7 +144,7 @@ class Configuration():
                 if prev_data_str != new_data_str:
                     self.data = data
                     self._update_local_config_file()
-                    if comment is not None:
+                    if comment:
                         self.data['comment'] = comment
 
                     self.producer.publish(

@@ -1,4 +1,4 @@
-from kombu import Connection, Queue, Exchange
+from kombu import Connection, Queue, Exchange, uuid
 from kombu.utils.compat import nested
 import os
 import time
@@ -22,7 +22,6 @@ class Tester():
         Return a connection for the postgres database.
         '''
         db_conn = None
-        time_sleep_connection_retry = 5
         while not db_conn:
             try:
                 _db_name = os.getenv('DATABASE_NAME', 'artemis_db')
@@ -36,7 +35,7 @@ class Tester():
                     host=_host,
                     password=_password)
             except BaseException:
-                time.sleep(time_sleep_connection_retry)
+                time.sleep(1)
         return db_conn
 
     def initRedis(self):
@@ -95,10 +94,11 @@ class Tester():
         '''
         Callback method for message validation from the queues.
         '''
-        print('\t- Test \"{}\" - Receiving Batch #{} - Type {} - Remaining {}'.
-              format(self.curr_test, self.curr_idx,
-                     message.delivery_info['routing_key'],
-                     self.expected_messages - 1))
+        print(
+            '\033[92mTest \"{}\" - Receiving Batch #{} - Type {} - Remaining {}'
+            .format(self.curr_test, self.curr_idx,
+                    message.delivery_info['routing_key'],
+                    self.expected_messages - 1))
         if isinstance(body, dict):
             event = body
         else:
@@ -167,6 +167,43 @@ class Tester():
                 exchange=self.update_exchange,
                 routing_key='update',
                 serializer='json')
+
+    def config_request_rpc(self, conn):
+        """
+        Initial RPC of this service to request the configuration.
+        The RPC is blocked until the configuration service replies back.
+        """
+        self.correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            channel=conn.default_channel,
+            durable=False,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={'x-priority': 4})
+
+        with conn.Producer() as producer:
+            producer.publish(
+                '',
+                exchange='',
+                routing_key='config-request-queue',
+                reply_to=callback_queue.name,
+                correlation_id=self.correlation_id,
+                retry=True,
+                declare=[
+                    Queue(
+                        'config-request-queue',
+                        durable=False,
+                        max_priority=4,
+                        consumer_arguments={'x-priority': 4}), callback_queue
+                ],
+                priority=4)
+
+        while True:
+            if callback_queue.get():
+                break
+            time.sleep(0.1)
+        print('Config RPC finished')
 
     def test(self):
         '''
@@ -237,6 +274,8 @@ class Tester():
                 time.sleep(1)
             db_cur.close()
             db_con.close()
+
+            self.config_request_rpc(connection)
 
             for testfile in os.listdir('testfiles/'):
                 self.clear()

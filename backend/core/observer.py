@@ -87,7 +87,7 @@ class Observer():
                             on_message=self.on_response,
                             queues=[callback_queue],
                             no_ack=True):
-                        while self.response is None:
+                        while not self.response:
                             self.connection.drain_events()
 
                     if self.response['status'] == 'accepted':

@@ -1,0 +1,21 @@
+prefixes:
+    sub_prefix_1: &sub_prefix_1
+        - 139.91.250.0/24
+monitors:
+    riperis: ['rrc01']
+    bgpstreamlive: ['routeviews', 'ris']
+    betabmp: ['betabmp']
+asns:
+    my_asn: &my_asn
+        8522
+    backup_upstream_1: &backup_upstream_1
+        56910
+rules:
+- prefixes:
+    - *sub_prefix_1
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *backup_upstream_1
+  mitigation:
+    manual

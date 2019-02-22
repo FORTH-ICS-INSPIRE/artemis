@@ -168,12 +168,13 @@ class Tester():
                 routing_key='update',
                 serializer='json')
 
-    def config_request_rpc(self, conn):
+    @staticmethod
+    def config_request_rpc(conn):
         """
         Initial RPC of this service to request the configuration.
         The RPC is blocked until the configuration service replies back.
         """
-        self.correlation_id = uuid()
+        correlation_id = uuid()
         callback_queue = Queue(
             uuid(),
             channel=conn.default_channel,
@@ -188,7 +189,7 @@ class Tester():
                 exchange='',
                 routing_key='config-request-queue',
                 reply_to=callback_queue.name,
-                correlation_id=self.correlation_id,
+                correlation_id=correlation_id,
                 retry=True,
                 declare=[
                     Queue(
@@ -275,7 +276,7 @@ class Tester():
             db_cur.close()
             db_con.close()
 
-            self.config_request_rpc(connection)
+            Tester.config_request_rpc(connection)
 
             for testfile in os.listdir('testfiles/'):
                 self.clear()
@@ -317,16 +318,29 @@ class Tester():
 
             connection.close()
 
-        self.supervisor.supervisor.stopAllProcesses()
+        with open('configs/config.yaml', 'r+') as f1, open('configs/config2.yaml') as f2:
+            new_data = f2.read()
+            old_data = f1.read()
 
-        self.waitProcess('listener', 0)  # 0 STOPPED
-        self.waitProcess('clock', 0)  # 0 STOPPED
-        self.waitProcess('detection', 0)  # 0 STOPPED
-        self.waitProcess('mitigation', 0)  # 0 STOPPED
-        self.waitProcess('configuration', 0)  # 0 STOPPED
-        self.waitProcess('database', 0)  # 0 STOPPED
-        self.waitProcess('observer', 0)  # 0 STOPPED
-        self.waitProcess('monitor', 0)  # 0 STOPPED
+            f1.seek(0)
+            f1.write(new_data)
+            f1.truncate()
+
+            time.sleep(5)
+            self.supervisor.supervisor.stopAllProcesses()
+
+            self.waitProcess('listener', 0)  # 0 STOPPED
+            self.waitProcess('clock', 0)  # 0 STOPPED
+            self.waitProcess('detection', 0)  # 0 STOPPED
+            self.waitProcess('mitigation', 0)  # 0 STOPPED
+            self.waitProcess('configuration', 0)  # 0 STOPPED
+            self.waitProcess('database', 0)  # 0 STOPPED
+            self.waitProcess('observer', 0)  # 0 STOPPED
+            self.waitProcess('monitor', 0)  # 0 STOPPED
+
+            f1.seek(0)
+            f1.write(old_data)
+            f1.truncate()
 
         self.supervisor.supervisor.startProcess('coveralls')
 

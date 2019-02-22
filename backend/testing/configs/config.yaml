@@ -11,6 +11,14 @@ prefixes:
         - 10.0.3.0/24
     24_prefix_4: &24_prefix_4
         - 10.0.4.0/24
+    test_exc_op_23: &test_exc_op_23
+        - 10.10.0.0/23^-
+    test_inc_op_23: &test_inc_op_23
+        - 10.11.0.0/23^+
+    test_n_op_16: &test_n_op_16
+        - 10.12.0.0/16^24
+    test_n_m_op_16: &test_n_m_op_16
+        - 10.13.0.0/16^20-24
 monitors:
     riperis: []
 asns:
@@ -24,6 +32,8 @@ asns:
         243
     24_4_origin: &24_4_origin
         244
+    op_test_origin: &op_test_origin
+        444
 rules:
 - prefixes:
   - *8_prefix
@@ -61,5 +71,16 @@ rules:
   - *24_prefix_4
   origin_asns:
   - *24_4_origin
+  mitigation:
+      manual
+- prefixes:
+  - *test_exc_op_23
+  - *test_inc_op_23
+  - *test_n_op_16
+  - *test_n_m_op_16
+  origin_asns:
+  - *op_test_origin
+  neighbors:
+      '*'
   mitigation:
       manual

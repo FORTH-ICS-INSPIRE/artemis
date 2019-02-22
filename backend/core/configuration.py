@@ -1,7 +1,6 @@
 from ipaddress import ip_network as str2ip
 from yaml import load as yload
 from utils import flatten, ArtemisError, RABBITMQ_URI, get_logger, translate_rfc2622
-from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
@@ -61,7 +60,10 @@ class Configuration():
                 'mitigation'}
             self.supported_monitors = {
                 'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive', 'betabmp'}
-            self.available_ris = set()
+            self.available_ris = {'rrc01', 'rrc02', 'rrc03', 'rrc04', 'rrc05', 'rrc06', 'rrc07',
+                                  'rrc08', 'rrc09', 'rrc10', 'rrc11', 'rrc12', 'rrc13', 'rrc14',
+                                  'rrc15', 'rrc16', 'rrc17', 'rrc18', 'rrc19', 'rrc20', 'rrc21',
+                                  'rrc22', 'rrc23', 'rrc00'}
             self.available_bgpstreamlive = {'routeviews', 'ris'}
 
             # reads and parses initial configuration file
@@ -92,7 +94,6 @@ class Configuration():
                 consumer_arguments={
                     'x-priority': 4})
 
-            self.parse_rrcs()
             log.info('started')
 
         def get_consumers(self, Consumer: Consumer,
@@ -215,24 +216,6 @@ class Configuration():
                 retry=True,
                 priority=4
             )
-
-        def parse_rrcs(self) -> NoReturn:
-            """
-            SocketIO connection to RIPE RIS to retrieve all active Route Collectors.
-            """
-            try:
-                socket_io = SocketIO(
-                    'http://stream-dev.ris.ripe.net/stream',
-                    wait_for_connection=False)
-
-                def on_msg(msg):
-                    self.available_ris = set(msg)
-                    socket_io.disconnect()
-
-                socket_io.on('ris_rrc_list', on_msg)
-                socket_io.wait(seconds=3)
-            except Exception:
-                log.warning('RIPE RIS server is down. Try again later..')
 
         def parse(self, raw: Union[Text, TextIO, StringIO],
                   yaml: Optional[bool]=False) -> Dict:

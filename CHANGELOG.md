@@ -7,6 +7,7 @@
 
 
 ### Changed
+- RIPE RIS live python websocket client
 - Updated/optimized db query for removing withdrawn peers (newer announcement)
 
 ### Fixed

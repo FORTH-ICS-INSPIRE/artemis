@@ -1,12 +1,10 @@
 from kombu import Connection, Producer, Exchange
 from utils import RABBITMQ_HOST, get_logger
 
-
 log = get_logger()
 
 
 def run():
-
     def runner(k):
         msg_ = {
             "timestamp": 1,
@@ -20,10 +18,7 @@ def run():
         }
         with Connection(RABBITMQ_HOST) as connection:
             exchange = Exchange(
-                'bgp-update',
-                channel=connection,
-                type='direct',
-                durable=False)
+                'bgp-update', channel=connection, type='direct', durable=False)
             exchange.declare()
             with Producer(connection) as producer:
                 for i in range(1000):
@@ -33,12 +28,12 @@ def run():
                         msg_,
                         exchange=exchange,
                         routing_key='update',
-                        serializer='json'
-                    )
+                        serializer='json')
+
     import threading
     threads = []
     for i in range(10):
-        threads.append(threading.Thread(target=runner, args=(chr(i + 97),)))
+        threads.append(threading.Thread(target=runner, args=(chr(i + 97), )))
     for t in threads:
         t.start()
     for t in threads:

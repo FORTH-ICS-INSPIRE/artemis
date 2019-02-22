@@ -11,12 +11,10 @@ import copy
 from typing import Union, Optional, Dict, TextIO, Text, List, NoReturn
 from io import StringIO
 
-
 log = get_logger()
 
 
 class Configuration():
-
     """
     Configuration Service.
     """
@@ -45,7 +43,6 @@ class Configuration():
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
-
         """
         RabbitMQ Consumer/Producer for this Service.
         """
@@ -55,12 +52,12 @@ class Configuration():
             self.file = '/etc/artemis/config.yaml'
             self.sections = {'prefixes', 'asns', 'monitors', 'rules'}
             self.supported_fields = {
-                'prefixes',
-                'origin_asns',
-                'neighbors',
-                'mitigation'}
+                'prefixes', 'origin_asns', 'neighbors', 'mitigation'
+            }
             self.supported_monitors = {
-                'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive', 'betabmp'}
+                'riperis', 'exabgp', 'bgpstreamhist', 'bgpstreamlive',
+                'betabmp'
+            }
             self.available_ris = set()
             self.available_bgpstreamlive = {'routeviews', 'ris'}
 
@@ -83,14 +80,12 @@ class Configuration():
                 'config-modify-queue',
                 durable=False,
                 max_priority=4,
-                consumer_arguments={
-                    'x-priority': 4})
+                consumer_arguments={'x-priority': 4})
             self.config_request_queue = Queue(
                 'config-request-queue',
                 durable=False,
                 max_priority=4,
-                consumer_arguments={
-                    'x-priority': 4})
+                consumer_arguments={'x-priority': 4})
 
             log.info('started')
 
@@ -102,14 +97,12 @@ class Configuration():
                     on_message=self.handle_config_modify,
                     prefetch_count=1,
                     no_ack=True,
-                    accept=['yaml']
-                ),
+                    accept=['yaml']),
                 Consumer(
                     queues=[self.config_request_queue],
                     on_message=self.handle_config_request,
                     prefetch_count=1,
-                    no_ack=True
-                )
+                    no_ack=True)
             ]
 
         def handle_config_modify(self, message: Dict) -> NoReturn:
@@ -117,9 +110,8 @@ class Configuration():
             Consumer for Config-Modify messages that parses and checks if new configuration is correct.
             Replies back to the sender if the configuration is accepted or rejected and notifies all Subscribers if new configuration is used.
             """
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(
+                message, message.payload))
             raw_ = message.payload
 
             # Case received config from Frontend with comment
@@ -161,8 +153,7 @@ class Configuration():
                         routing_key='notify',
                         serializer='json',
                         retry=True,
-                        priority=2
-                    )
+                        priority=2)
                     # Remove the comment to avoid marking config as different
                     if 'comment' in self.data:
                         del self.data['comment']
@@ -179,8 +170,7 @@ class Configuration():
                     correlation_id=message.properties['correlation_id'],
                     serializer='json',
                     retry=True,
-                    priority=4
-                )
+                    priority=4)
             else:
                 log.debug('rejected new configuration')
                 # replay back to the sender with a configuration rejected and
@@ -195,16 +185,14 @@ class Configuration():
                     correlation_id=message.properties['correlation_id'],
                     serializer='json',
                     retry=True,
-                    priority=4
-                )
+                    priority=4)
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """
             Handles all config requests from other Services by replying back with the current configuration.
             """
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(
+                message, message.payload))
             self.producer.publish(
                 self.data,
                 exchange='',
@@ -212,8 +200,7 @@ class Configuration():
                 correlation_id=message.properties['correlation_id'],
                 serializer='json',
                 retry=True,
-                priority=4
-            )
+                priority=4)
 
         def parse_rrcs(self) -> NoReturn:
             """
@@ -233,7 +220,8 @@ class Configuration():
             except Exception:
                 log.warning('RIPE RIS server is down. Try again later..')
 
-        def parse(self, raw: Union[Text, TextIO, StringIO],
+        def parse(self,
+                  raw: Union[Text, TextIO, StringIO],
                   yaml: Optional[bool] = False) -> Dict:
             """
             Parser for the configuration file or string. The format can either be a File, StringIO or String
@@ -264,8 +252,10 @@ class Configuration():
                 if section not in self.sections:
                     raise ArtemisError('invalid-section', section)
 
-            data['prefixes'] = {k: flatten(v)
-                                for k, v in data['prefixes'].items()}
+            data['prefixes'] = {
+                k: flatten(v)
+                for k, v in data['prefixes'].items()
+            }
             for prefix_group in data['prefixes']:
                 full_translated_prefix_set = set()
                 for prefix in data['prefixes'][prefix_group]:
@@ -285,9 +275,8 @@ class Configuration():
             for rule in data['rules']:
                 for field in rule:
                     if field not in self.supported_fields:
-                        log.warning(
-                            'unsupported field found {} in {}'.format(
-                                field, rule))
+                        log.warning('unsupported field found {} in {}'.format(
+                            field, rule))
                 rule['prefixes'] = flatten(rule['prefixes'])
                 rule_translated_prefix_set = set()
                 for i, prefix in enumerate(rule['prefixes']):
@@ -325,22 +314,22 @@ class Configuration():
                     elif key == 'bgpstreamlive':
                         if not info or not set(info).issubset(
                                 self.available_bgpstreamlive):
-                            raise ArtemisError(
-                                'invalid-bgpstreamlive-project', info)
+                            raise ArtemisError('invalid-bgpstreamlive-project',
+                                               info)
                     elif key == 'exabgp':
                         for entry in info:
                             if 'ip' not in entry and 'port' not in entry:
-                                raise ArtemisError(
-                                    'invalid-exabgp-info', entry)
+                                raise ArtemisError('invalid-exabgp-info',
+                                                   entry)
                             if entry['ip'] != 'exabgp':
                                 try:
                                     str2ip(entry['ip'])
                                 except Exception:
-                                    raise ArtemisError(
-                                        'invalid-exabgp-ip', entry['ip'])
+                                    raise ArtemisError('invalid-exabgp-ip',
+                                                       entry['ip'])
                             if not isinstance(entry['port'], int):
-                                raise ArtemisError(
-                                    'invalid-exabgp-port', entry['port'])
+                                raise ArtemisError('invalid-exabgp-port',
+                                                   entry['port'])
 
             data['asns'] = {k: flatten(v) for k, v in data['asns'].items()}
             for name, asns in data['asns'].items():

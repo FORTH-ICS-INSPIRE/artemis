@@ -4,12 +4,10 @@ from kombu import Connection, Producer, Exchange
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
 import signal
 
-
 log = get_logger()
 
 
 class ExaBGP():
-
     def __init__(self, prefixes, host):
         self.host = host
         self.prefixes = prefixes
@@ -22,15 +20,12 @@ class ExaBGP():
         with Connection(RABBITMQ_HOST) as connection:
             self.connection = connection
             self.exchange = Exchange(
-                'bgp-update',
-                channel=connection,
-                type='direct',
-                durable=False)
+                'bgp-update', channel=connection, type='direct', durable=False)
             self.exchange.declare()
 
             try:
-                self.sio = SocketIO('http://' + self.host,
-                                    namespace=BaseNamespace)
+                self.sio = SocketIO(
+                    'http://' + self.host, namespace=BaseNamespace)
 
                 def exabgp_msg(bgp_message):
                     msg = {
@@ -52,8 +47,7 @@ class ExaBGP():
                                     msg,
                                     exchange=self.exchange,
                                     routing_key='update',
-                                    serializer='json'
-                                )
+                                    serializer='json')
                     else:
                         log.warning('Invalid format message: {}'.format(msg))
 
@@ -74,10 +68,20 @@ class ExaBGP():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ExaBGP Monitor Client')
-    parser.add_argument('-p', '--prefix', type=str, dest='prefix', default=None,
-                        help='Prefix to be monitored')
-    parser.add_argument('-r', '--host', type=str, dest='host', default=None,
-                        help='Prefix to be monitored')
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        type=str,
+        dest='prefix',
+        default=None,
+        help='Prefix to be monitored')
+    parser.add_argument(
+        '-r',
+        '--host',
+        type=str,
+        dest='host',
+        default=None,
+        help='Prefix to be monitored')
 
     args = parser.parse_args()
 

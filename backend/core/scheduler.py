@@ -3,12 +3,10 @@ from kombu import Connection, Exchange, Producer
 import time
 import os
 
-
 log = get_logger()
 
 
 class Scheduler():
-
     def run(self):
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
@@ -24,7 +22,6 @@ class Scheduler():
             log.info('stopped')
 
     class Worker():
-
         def __init__(self, connection):
             self.connection = connection
             # Time in secs to gather entries to perform a bulk operation
@@ -44,13 +41,11 @@ class Scheduler():
             with Producer(self.connection) as producer:
                 while True:
                     time.sleep(self.time_to_wait)
-                    producer.publish(
-                        {'op': 'bulk_operation'},
-                        exchange=self.db_clock_exchange,
-                        routing_key='pulse',
-                        retry=True,
-                        priority=3
-                    )
+                    producer.publish({'op': 'bulk_operation'},
+                                     exchange=self.db_clock_exchange,
+                                     routing_key='pulse',
+                                     retry=True,
+                                     priority=3)
 
 
 def run():

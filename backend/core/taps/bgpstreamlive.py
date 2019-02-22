@@ -6,7 +6,6 @@ from kombu import Connection, Producer, Exchange
 import _pybgpstream
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
 
-
 START_TIME_OFFSET = 3600  # seconds
 log = get_logger()
 
@@ -54,10 +53,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
 
     with Connection(RABBITMQ_HOST) as connection:
         exchange = Exchange(
-            'bgp-update',
-            channel=connection,
-            type='direct',
-            durable=False)
+            'bgp-update', channel=connection, type='direct', durable=False)
         exchange.declare()
         producer = Producer(connection)
         while True:
@@ -83,8 +79,10 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                     type_ = elem.type
                     if type_ == "A":
                         as_path = elem.fields['as-path'].split(' ')
-                        communities = [{'asn': int(comm.split(':')[0]), 'value': int(comm.split(':')[1])}
-                                       for comm in elem.fields['communities']]
+                        communities = [{
+                            'asn': int(comm.split(':')[0]),
+                            'value': int(comm.split(':')[1])
+                        } for comm in elem.fields['communities']]
                     else:
                         as_path = []
                         communities = []
@@ -114,8 +112,7 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
                                         msg,
                                         exchange=exchange,
                                         routing_key='update',
-                                        serializer='json'
-                                    )
+                                        serializer='json')
                             else:
                                 log.warning(
                                     'Invalid format message: {}'.format(msg))
@@ -127,10 +124,20 @@ def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='BGPStream Live Monitor')
-    parser.add_argument('-p', '--prefix', type=str, dest='prefix', default=None,
-                        help='Prefix to be monitored')
-    parser.add_argument('-m', '--mon_projects', type=str, dest='mon_projects', default=None,
-                        help='projects to consider for monitoring')
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        type=str,
+        dest='prefix',
+        default=None,
+        help='Prefix to be monitored')
+    parser.add_argument(
+        '-m',
+        '--mon_projects',
+        type=str,
+        dest='mon_projects',
+        default=None,
+        help='projects to consider for monitoring')
 
     args = parser.parse_args()
 
@@ -141,9 +148,7 @@ if __name__ == '__main__':
         run_bgpstream(
             prefixes,
             projects,
-            start=int(
-                time.time()) -
-            START_TIME_OFFSET,
+            start=int(time.time()) - START_TIME_OFFSET,
             end=0)
     except Exception:
         log.exception('exception')

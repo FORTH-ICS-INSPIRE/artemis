@@ -32,11 +32,7 @@ def create_connect_db():
             _password = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
 
             _db_conn = psycopg2.connect(
-                dbname=_db_name,
-                user=_user,
-                host=_host,
-                password=_password
-            )
+                dbname=_db_name, user=_user, host=_host, password=_password)
         except BaseException as e:
             write_stderr('Db connection exception: {}'.format(e))
 
@@ -51,8 +47,8 @@ def run():
         body = dict([pair.split(":") for pair in body.split(" ")])
         # write_stderr('{} | {}'.format(headers, body))
 
-        if headers['eventname'] in (
-                'PROCESS_STATE_RUNNING', 'PROCESS_STATE_STOPPED'):
+        if headers['eventname'] in ('PROCESS_STATE_RUNNING',
+                                    'PROCESS_STATE_STOPPED'):
             process = body['processname']
             if process != 'listener':
                 new_state = headers['eventname'] == 'PROCESS_STATE_RUNNING'

@@ -12,7 +12,6 @@ from xmlrpc.client import ServerProxy
 
 
 class Tester():
-
     def __init__(self):
         self.time_now = int(time.time())
         self.initRedis()
@@ -35,24 +34,21 @@ class Tester():
                     dbname=_db_name,
                     user=_user,
                     host=_host,
-                    password=_password
-                )
+                    password=_password)
             except BaseException:
                 time.sleep(time_sleep_connection_retry)
         return db_conn
 
     def initRedis(self):
         redis_ = redis.Redis(
-            host=os.getenv('BACKEND_HOST', 'backend'),
-            port=6379
-        )
+            host=os.getenv('BACKEND_HOST', 'backend'), port=6379)
         self.redis = redis_
 
     def initSupervisor(self):
         SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'backend')
         SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
-        self.supervisor = ServerProxy(
-            'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
+        self.supervisor = ServerProxy('http://{}:{}/RPC2'.format(
+            SUPERVISOR_HOST, SUPERVISOR_PORT))
 
     def clear(self):
         db_con = self.getDbConnection()
@@ -78,22 +74,13 @@ class Tester():
 
         # exchanges
         update_exchange = Exchange(
-            'bgp-update',
-            type='direct',
-            durable=False,
-            delivery_mode=1)
+            'bgp-update', type='direct', durable=False, delivery_mode=1)
 
         hijack_exchange = Exchange(
-            'hijack-update',
-            type='direct',
-            durable=False,
-            delivery_mode=1)
+            'hijack-update', type='direct', durable=False, delivery_mode=1)
 
         pg_amq_bridge = Exchange(
-            'amq.direct',
-            type='direct',
-            durable=True,
-            delivery_mode=1)
+            'amq.direct', type='direct', durable=True, delivery_mode=1)
 
         # queues
         update_queue = Queue(
@@ -146,7 +133,7 @@ class Tester():
             db_con = self.getDbConnection()
             db_cur = db_con.cursor()
             query = 'SELECT COUNT(*) FROM process_states WHERE running=True'
-            res = (0,)
+            res = (0, )
             # wait until all 6 modules are running
             while res[0] < 6:
                 print('executing query')
@@ -172,15 +159,18 @@ class Tester():
                     assert isinstance(prefix, str)
                     assert isinstance(hijack_as, int)
                     assert isinstance(_type, str)
-                    return hashlib.shake_128(pickle.dumps(
-                        [prefix, hijack_as, _type])).hexdigest(16)
+                    return hashlib.shake_128(
+                        pickle.dumps([prefix, hijack_as, _type])).hexdigest(16)
 
                 def validate_message(body, message):
                     '''
                     Callback method for message validation from the queues.
                     '''
-                    print('\t- Test \"{}\" - Receiving Batch #{} - Type {} - Remaining {}'.format(self.curr_test, self.curr_idx,
-                                                                                                  message.delivery_info['routing_key'], self.expected_messages - 1))
+                    print(
+                        '\t- Test \"{}\" - Receiving Batch #{} - Type {} - Remaining {}'
+                        .format(self.curr_test, self.curr_idx,
+                                message.delivery_info['routing_key'],
+                                self.expected_messages - 1))
                     if isinstance(body, dict):
                         event = body
                     else:
@@ -189,40 +179,43 @@ class Tester():
 
                     # distinguish between type of messages
                     if message.delivery_info['routing_key'] == 'update-update':
-                        expected = messages[self.curr_idx]['detection_update_response']
+                        expected = messages[
+                            self.curr_idx]['detection_update_response']
                         assert self.redis.exists(
                             event['key']), 'Monitor key not found in Redis'
                     elif message.delivery_info['routing_key'] == 'update':
-                        expected = messages[self.curr_idx]['detection_hijack_response']
+                        expected = messages[
+                            self.curr_idx]['detection_hijack_response']
                         redis_hijack_key = redis_key(
-                            event['prefix'],
-                            event['hijack_as'],
-                            event['type'])
+                            event['prefix'], event['hijack_as'], event['type'])
                         assert self.redis.exists(
                             redis_hijack_key), 'Hijack key not found in Redis'
-                    elif message.delivery_info['routing_key'] == 'hijack-update':
-                        expected = messages[self.curr_idx]['database_hijack_response']
+                    elif message.delivery_info[
+                            'routing_key'] == 'hijack-update':
+                        expected = messages[
+                            self.curr_idx]['database_hijack_response']
                         if event['active']:
                             assert self.redis.sismember(
-                                'persistent-keys', event['key']), 'Persistent key not found in Redis'
+                                'persistent-keys', event['key']
+                            ), 'Persistent key not found in Redis'
                         else:
                             assert not self.redis.sismember(
-                                'persistent-keys', event['key']), 'Persistent key found in Redis but should have been removed.'
+                                'persistent-keys', event['key']
+                            ), 'Persistent key found in Redis but should have been removed.'
 
                     # compare expected message with received one. exit on
                     # mismatch.
                     for key in set(event.keys()).intersection(expected.keys()):
                         if 'time' in key:
                             expected[key] += self.time_now
-                        assert (event[key] == expected[key] or (isinstance(
-                                event[key], (list, set)) and set(event[key]) == set(expected[key]))), (
-                            'Test \"{}\" - Batch #{} - Type {}: Unexpected value for key \"{}\". Received: {}, Expected: {}'.format(
-                                self.curr_test,
-                                self.curr_idx,
-                                message.delivery_info['routing_key'],
-                                key,
-                                event[key],
-                                expected[key]))
+                        assert (
+                            event[key] == expected[key]
+                            or (isinstance(event[key], (list, set))
+                                and set(event[key]) == set(expected[key]))
+                        ), ('Test \"{}\" - Batch #{} - Type {}: Unexpected value for key \"{}\". Received: {}, Expected: {}'
+                            .format(self.curr_test, self.curr_idx,
+                                    message.delivery_info['routing_key'], key,
+                                    event[key], expected[key]))
 
                     self.expected_messages -= 1
                     if self.expected_messages <= 0:
@@ -242,31 +235,26 @@ class Tester():
                         # offset to account for "real-time" tests
                         for key in messages[self.curr_idx]['send']:
                             if 'time' in key:
-                                messages[self.curr_idx]['send'][key] += self.time_now
+                                messages[self.curr_idx]['send'][
+                                    key] += self.time_now
 
                         producer.publish(
                             messages[self.curr_idx]['send'],
                             exchange=update_exchange,
                             routing_key='update',
-                            serializer='json'
-                        )
+                            serializer='json')
 
                 with nested(
                         connection.Consumer(
                             hijack_queue,
                             callbacks=[validate_message],
-                            accept=['pickle']
-                        ),
+                            accept=['pickle']),
                         connection.Consumer(
                             update_queue,
                             callbacks=[validate_message],
                         ),
                         connection.Consumer(
-                            hijack_db_queue,
-                            callbacks=[validate_message]
-                        )
-
-                ):
+                            hijack_db_queue, callbacks=[validate_message])):
                     send_cnt = 0
                     # send and validate all messages in the messages.json file
                     while send_cnt < send_len:

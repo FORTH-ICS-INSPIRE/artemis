@@ -6,12 +6,10 @@ from kombu import Connection, Queue, uuid, Consumer, Producer
 import difflib
 import signal
 
-
 log = get_logger()
 
 
 class Observer():
-
     def __init__(self):
         self.worker = None
         signal.signal(signal.SIGTERM, self.exit)
@@ -44,7 +42,6 @@ class Observer():
         self.should_stop = True
 
     class Handler(FileSystemEventHandler):
-
         def __init__(self, d, fn, connection):
             super().__init__()
             self.connection = connection
@@ -68,12 +65,12 @@ class Observer():
                 if changes:
                     self.response = None
                     self.correlation_id = uuid()
-                    callback_queue = Queue(uuid(),
-                                           durable=False,
-                                           auto_delete=True,
-                                           max_priority=4,
-                                           consumer_arguments={
-                        'x-priority': 4})
+                    callback_queue = Queue(
+                        uuid(),
+                        durable=False,
+                        auto_delete=True,
+                        max_priority=4,
+                        consumer_arguments={'x-priority': 4})
                     with Producer(self.connection) as producer:
                         producer.publish(
                             content,
@@ -84,12 +81,12 @@ class Observer():
                             declare=[callback_queue],
                             reply_to=callback_queue.name,
                             correlation_id=self.correlation_id,
-                            priority=4
-                        )
-                    with Consumer(self.connection,
-                                  on_message=self.on_response,
-                                  queues=[callback_queue],
-                                  no_ack=True):
+                            priority=4)
+                    with Consumer(
+                            self.connection,
+                            on_message=self.on_response,
+                            queues=[callback_queue],
+                            no_ack=True):
                         while self.response is None:
                             self.connection.drain_events()
 

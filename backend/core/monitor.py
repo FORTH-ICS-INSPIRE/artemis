@@ -5,12 +5,10 @@ from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
 
-
 log = get_logger()
 
 
 class Monitor():
-
     def __init__(self):
         self.worker = None
         signal.signal(signal.SIGTERM, self.exit)
@@ -37,7 +35,6 @@ class Monitor():
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
-
         def __init__(self, connection):
             self.connection = connection
             self.timestamp = -1
@@ -54,7 +51,12 @@ class Monitor():
 
             # QUEUES
             self.config_queue = Queue(
-                'monitor-config-notify', exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=2,
+                'monitor-config-notify',
+                exchange=self.config_exchange,
+                routing_key='notify',
+                durable=False,
+                auto_delete=True,
+                max_priority=2,
                 consumer_arguments={'x-priority': 2})
 
             self.config_request_rpc()
@@ -66,14 +68,12 @@ class Monitor():
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
-                    no_ack=True
-                )
+                    no_ack=True)
             ]
 
         def handle_config_notify(self, message):
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(
+                message, message.payload))
             raw = message.payload
             if raw['timestamp'] > self.timestamp:
                 self.timestamp = raw['timestamp']
@@ -124,12 +124,12 @@ class Monitor():
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
-            callback_queue = Queue(uuid(),
-                                   durable=False,
-                                   auto_delete=True,
-                                   max_priority=4,
-                                   consumer_arguments={
-                'x-priority': 4})
+            callback_queue = Queue(
+                uuid(),
+                durable=False,
+                auto_delete=True,
+                max_priority=4,
+                consumer_arguments={'x-priority': 4})
 
             self.producer.publish(
                 '',
@@ -143,22 +143,20 @@ class Monitor():
                         'config-request-queue',
                         durable=False,
                         max_priority=4,
-                        consumer_arguments={
-                            'x-priority': 4}),
-                    callback_queue
+                        consumer_arguments={'x-priority': 4}), callback_queue
                 ],
-                priority=4
-            )
-            with Consumer(self.connection,
-                          on_message=self.handle_config_request_reply,
-                          queues=[callback_queue], no_ack=True):
+                priority=4)
+            with Consumer(
+                    self.connection,
+                    on_message=self.handle_config_request_reply,
+                    queues=[callback_queue],
+                    no_ack=True):
                 while self.rules is None and self.monitors is None:
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(
+                message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
                 if raw['timestamp'] > self.timestamp:
@@ -169,76 +167,76 @@ class Monitor():
 
         @exception_handler(log)
         def init_ris_instances(self):
-            log.debug(
-                'starting {} for {}'.format(
-                    self.monitors.get(
-                        'riperis',
-                        []),
-                    self.prefixes))
+            log.debug('starting {} for {}'.format(
+                self.monitors.get('riperis', []), self.prefixes))
             for ris_monitor in self.monitors.get('riperis', []):
                 for prefix in self.prefixes:
-                    p = Popen(['/usr/local/bin/python3', 'taps/ripe_ris.py',
-                               '--prefix', prefix, '--host', ris_monitor], shell=False)
-                    self.process_ids.append(
-                        ('RIPEris {} {}'.format(ris_monitor, prefix), p))
+                    p = Popen([
+                        '/usr/local/bin/python3', 'taps/ripe_ris.py',
+                        '--prefix', prefix, '--host', ris_monitor
+                    ],
+                              shell=False)
+                    self.process_ids.append(('RIPEris {} {}'.format(
+                        ris_monitor, prefix), p))
 
         @exception_handler(log)
         def init_exabgp_instances(self):
-            log.debug(
-                'starting {} for {}'.format(
-                    self.monitors.get(
-                        'exabgp',
-                        []),
-                    self.prefixes))
+            log.debug('starting {} for {}'.format(
+                self.monitors.get('exabgp', []), self.prefixes))
             for exabgp_monitor in self.monitors.get('exabgp', []):
-                exabgp_monitor_str = '{}:{}'.format(
-                    exabgp_monitor['ip'], exabgp_monitor['port'])
-                p = Popen(['/usr/local/bin/python3', 'taps/exabgp_client.py',
-                           '--prefix', ','.join(self.prefixes), '--host', exabgp_monitor_str], shell=False)
-                self.process_ids.append(
-                    ('ExaBGP {} {}'.format(
-                        exabgp_monitor_str, self.prefixes), p))
+                exabgp_monitor_str = '{}:{}'.format(exabgp_monitor['ip'],
+                                                    exabgp_monitor['port'])
+                p = Popen([
+                    '/usr/local/bin/python3', 'taps/exabgp_client.py',
+                    '--prefix', ','.join(
+                        self.prefixes), '--host', exabgp_monitor_str
+                ],
+                          shell=False)
+                self.process_ids.append(('ExaBGP {} {}'.format(
+                    exabgp_monitor_str, self.prefixes), p))
 
         @exception_handler(log)
         def init_bgpstreamhist_instance(self):
             if 'bgpstreamhist' in self.monitors:
-                log.debug(
-                    'starting {} for {}'.format(
-                        self.monitors['bgpstreamhist'],
-                        self.prefixes))
+                log.debug('starting {} for {}'.format(
+                    self.monitors['bgpstreamhist'], self.prefixes))
                 bgpstreamhist_dir = self.monitors['bgpstreamhist']
-                p = Popen(['/usr/local/bin/python3', 'taps/bgpstreamhist.py',
-                           '--prefix', ','.join(self.prefixes), '--dir', bgpstreamhist_dir], shell=False)
-                self.process_ids.append(
-                    ('BGPStreamHist {} {}'.format(
-                        bgpstreamhist_dir, self.prefixes), p))
+                p = Popen([
+                    '/usr/local/bin/python3', 'taps/bgpstreamhist.py',
+                    '--prefix', ','.join(
+                        self.prefixes), '--dir', bgpstreamhist_dir
+                ],
+                          shell=False)
+                self.process_ids.append(('BGPStreamHist {} {}'.format(
+                    bgpstreamhist_dir, self.prefixes), p))
 
         @exception_handler(log)
         def init_bgpstreamlive_instance(self):
             if 'bgpstreamlive' in self.monitors:
-                log.debug(
-                    'starting {} for {}'.format(
-                        self.monitors['bgpstreamlive'],
-                        self.prefixes))
+                log.debug('starting {} for {}'.format(
+                    self.monitors['bgpstreamlive'], self.prefixes))
                 bgpstream_projects = ','.join(self.monitors['bgpstreamlive'])
-                p = Popen(['/usr/local/bin/python3', 'taps/bgpstreamlive.py',
-                           '--prefix', ','.join(self.prefixes), '--mon_projects', bgpstream_projects], shell=False)
-                self.process_ids.append(
-                    ('BGPStreamLive {} {}'.format(
-                        bgpstream_projects, self.prefixes), p))
+                p = Popen([
+                    '/usr/local/bin/python3', 'taps/bgpstreamlive.py',
+                    '--prefix', ','.join(
+                        self.prefixes), '--mon_projects', bgpstream_projects
+                ],
+                          shell=False)
+                self.process_ids.append(('BGPStreamLive {} {}'.format(
+                    bgpstream_projects, self.prefixes), p))
 
         @exception_handler(log)
         def init_betabmp_instance(self):
             if 'betabmp' in self.monitors:
-                log.debug(
-                    'starting {} for {}'.format(
-                        self.monitors['betabmp'],
-                        self.prefixes))
-                p = Popen(['/usr/local/bin/python3', 'taps/betabmp.py',
-                           '--prefix', ','.join(self.prefixes)], shell=False)
-                self.process_ids.append(
-                    ('Beta BMP {}'.format(
-                        self.prefixes), p))
+                log.debug('starting {} for {}'.format(self.monitors['betabmp'],
+                                                      self.prefixes))
+                p = Popen([
+                    '/usr/local/bin/python3', 'taps/betabmp.py', '--prefix',
+                    ','.join(self.prefixes)
+                ],
+                          shell=False)
+                self.process_ids.append(('Beta BMP {}'.format(self.prefixes),
+                                         p))
 
 
 def run():

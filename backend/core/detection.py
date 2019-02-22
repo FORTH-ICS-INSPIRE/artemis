@@ -14,15 +14,8 @@ import redis
 import json
 from datetime import datetime
 
-
-HIJACK_DIM_COMBINATIONS = [
-    ['S', '0', '-'],
-    ['S', '1', '-'],
-    ['S', '-', '-'],
-    ['E', '0', '-'],
-    ['E', '1', '-'],
-    ['Q', '0', '-']
-]
+HIJACK_DIM_COMBINATIONS = [['S', '0', '-'], ['S', '1', '-'], ['S', '-', '-'],
+                           ['E', '0', '-'], ['E', '1', '-'], ['Q', '0', '-']]
 
 log = get_logger()
 hij_log = logging.getLogger('hijack_logger')
@@ -30,7 +23,6 @@ mail_log = logging.getLogger('mail_logger')
 
 
 class Detection():
-
     """
     Detection Service.
     """
@@ -59,7 +51,6 @@ class Detection():
             self.worker.should_stop = True
 
     class Worker(ConsumerProducerMixin):
-
         """
         RabbitMQ Consumer/Producer for this Service.
         """
@@ -71,10 +62,7 @@ class Detection():
             self.prefix_tree = None
             self.mon_num = 1
 
-            self.redis = redis.Redis(
-                host='localhost',
-                port=6379
-            )
+            self.redis = redis.Redis(host='localhost', port=6379)
 
             # EXCHANGES
             self.update_exchange = Exchange(
@@ -116,26 +104,48 @@ class Detection():
                 delivery_mode=1)
 
             self.pg_amq_bridge = Exchange(
-                'amq.direct',
-                type='direct',
-                durable=True,
-                delivery_mode=1)
+                'amq.direct', type='direct', durable=True, delivery_mode=1)
 
             # QUEUES
             self.update_queue = Queue(
-                'detection-update-update', exchange=self.pg_amq_bridge, routing_key='update-insert', durable=False, auto_delete=True, max_priority=1,
+                'detection-update-update',
+                exchange=self.pg_amq_bridge,
+                routing_key='update-insert',
+                durable=False,
+                auto_delete=True,
+                max_priority=1,
                 consumer_arguments={'x-priority': 1})
             self.update_unhandled_queue = Queue(
-                'detection-update-unhandled', exchange=self.update_exchange, routing_key='unhandled', durable=False, auto_delete=True, max_priority=2,
+                'detection-update-unhandled',
+                exchange=self.update_exchange,
+                routing_key='unhandled',
+                durable=False,
+                auto_delete=True,
+                max_priority=2,
                 consumer_arguments={'x-priority': 2})
             self.hijack_ongoing_queue = Queue(
-                'detection-hijack-ongoing', exchange=self.hijack_exchange, routing_key='ongoing', durable=False, auto_delete=True, max_priority=1,
+                'detection-hijack-ongoing',
+                exchange=self.hijack_exchange,
+                routing_key='ongoing',
+                durable=False,
+                auto_delete=True,
+                max_priority=1,
                 consumer_arguments={'x-priority': 1})
             self.config_queue = Queue(
-                'detection-config-notify-{}'.format(uuid()), exchange=self.config_exchange, routing_key='notify', durable=False, auto_delete=True, max_priority=3,
+                'detection-config-notify-{}'.format(uuid()),
+                exchange=self.config_exchange,
+                routing_key='notify',
+                durable=False,
+                auto_delete=True,
+                max_priority=3,
                 consumer_arguments={'x-priority': 3})
             self.update_rekey_queue = Queue(
-                'detection-update-rekey', exchange=self.update_exchange, routing_key='hijack-rekey', durable=False, auto_delete=True, max_priority=1,
+                'detection-update-rekey',
+                exchange=self.update_exchange,
+                routing_key='hijack-rekey',
+                durable=False,
+                auto_delete=True,
+                max_priority=1,
                 consumer_arguments={'x-priority': 1})
 
             self.config_request_rpc()
@@ -148,32 +158,27 @@ class Detection():
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
-                    no_ack=True
-                ),
+                    no_ack=True),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
                     prefetch_count=1000,
-                    no_ack=True
-                ),
+                    no_ack=True),
                 Consumer(
                     queues=[self.update_unhandled_queue],
                     on_message=self.handle_unhandled_bgp_updates,
                     prefetch_count=1000,
-                    no_ack=True
-                ),
+                    no_ack=True),
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,
                     prefetch_count=10,
-                    no_ack=True
-                ),
+                    no_ack=True),
                 Consumer(
                     queues=[self.update_rekey_queue],
                     on_message=self.handle_rekey_update,
                     prefetch_count=10,
-                    no_ack=True
-                )
+                    no_ack=True)
             ]
 
         def on_consume_ready(self, connection, channel, consumers, **kwargs):
@@ -181,17 +186,15 @@ class Detection():
                 self.timestamp,
                 exchange=self.hijack_exchange,
                 routing_key='ongoing-request',
-                priority=1
-            )
+                priority=1)
 
         def handle_config_notify(self, message: Dict) -> NoReturn:
             """
             Consumer for Config-Notify messages that come from the configuration service.
             Upon arrival this service updates its running configuration.
             """
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(
+                message, message.payload))
             raw = message.payload
             if raw['timestamp'] > self.timestamp:
                 self.timestamp = raw['timestamp']
@@ -202,8 +205,7 @@ class Detection():
                     self.timestamp,
                     exchange=self.hijack_exchange,
                     routing_key='ongoing-request',
-                    priority=1
-                )
+                    priority=1)
 
         def config_request_rpc(self) -> NoReturn:
             """
@@ -211,12 +213,12 @@ class Detection():
             The RPC is blocked until the configuration service replies back.
             """
             self.correlation_id = uuid()
-            callback_queue = Queue(uuid(),
-                                   durable=False,
-                                   auto_delete=True,
-                                   max_priority=4,
-                                   consumer_arguments={
-                'x-priority': 4})
+            callback_queue = Queue(
+                uuid(),
+                durable=False,
+                auto_delete=True,
+                max_priority=4,
+                consumer_arguments={'x-priority': 4})
 
             self.producer.publish(
                 '',
@@ -230,16 +232,14 @@ class Detection():
                         'config-request-queue',
                         durable=False,
                         max_priority=4,
-                        consumer_arguments={
-                            'x-priority': 4}),
-                    callback_queue
+                        consumer_arguments={'x-priority': 4}), callback_queue
                 ],
-                priority=4
-            )
-            with Consumer(self.connection,
-                          on_message=self.handle_config_request_reply,
-                          queues=[callback_queue],
-                          no_ack=True):
+                priority=4)
+            with Consumer(
+                    self.connection,
+                    on_message=self.handle_config_request_reply,
+                    queues=[callback_queue],
+                    no_ack=True):
                 while self.rules is None:
                     self.connection.drain_events()
             log.debug('{}'.format(self.rules))
@@ -249,9 +249,8 @@ class Detection():
             Callback function for the config request RPC.
             Updates running configuration upon receiving a new configuration.
             """
-            log.debug(
-                'message: {}\npayload: {}'.format(
-                    message, message.payload))
+            log.debug('message: {}\npayload: {}'.format(
+                message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:
                 raw = message.payload
                 if raw['timestamp'] > self.timestamp:
@@ -273,7 +272,8 @@ class Detection():
 
                     conf_obj = {
                         'origin_asns': rule['origin_asns'],
-                        'neighbors': rule['neighbors']}
+                        'neighbors': rule['neighbors']
+                    }
                     node.data['confs'].append(conf_obj)
 
         def handle_ongoing_hijacks(self, message: Dict) -> NoReturn:
@@ -311,7 +311,8 @@ class Detection():
                 monitor_event = json.loads(message.payload)
                 monitor_event['path'] = monitor_event['as_path']
                 monitor_event['timestamp'] = datetime(
-                    *map(int, re.findall(r'\d+', monitor_event['timestamp']))).timestamp()
+                    *map(int, re.findall(r'\d+', monitor_event['timestamp']))
+                ).timestamp()
 
             raw = monitor_event.copy()
 
@@ -319,10 +320,8 @@ class Detection():
             # outdated checks
             if 'hij_key' in monitor_event:
                 monitor_event['initial_redis_hijack_key'] = redis_key(
-                    monitor_event['prefix'],
-                    monitor_event['hijack_as'],
-                    monitor_event['hij_type']
-                )
+                    monitor_event['prefix'], monitor_event['hijack_as'],
+                    monitor_event['hij_type'])
 
             is_hijack = False
 
@@ -337,67 +336,71 @@ class Detection():
 
                     try:
                         hijacker = -1
-                        hij_dimensions = [
-                            '-', '-', '-']  # prefix, path, dplane
+                        hij_dimensions = ['-', '-',
+                                          '-']  # prefix, path, dplane
                         hij_dimension_index = 0
                         for func_dim in self.__hijack_dimension_checker_gen():
                             if hij_dimension_index == 0:
                                 # prefix dimension
                                 for func_pref in func_dim():
-                                    hij_dimensions[hij_dimension_index] = func_pref(
-                                        monitor_event, prefix_node)
-                                    if hij_dimensions[hij_dimension_index] != '-':
+                                    hij_dimensions[
+                                        hij_dimension_index] = func_pref(
+                                            monitor_event, prefix_node)
+                                    if hij_dimensions[
+                                            hij_dimension_index] != '-':
                                         break
                             elif hij_dimension_index == 1:
                                 # path type dimension
                                 for func_path in func_dim(
                                         len(monitor_event['path'])):
-                                    (hijacker, hij_dimensions[hij_dimension_index]) = func_path(
-                                        monitor_event, prefix_node)
-                                    if hij_dimensions[hij_dimension_index] != '-':
+                                    (hijacker,
+                                     hij_dimensions[hij_dimension_index]
+                                     ) = func_path(monitor_event, prefix_node)
+                                    if hij_dimensions[
+                                            hij_dimension_index] != '-':
                                         break
                             elif hij_dimension_index == 2:
                                 # data plane dimension
                                 for func_dplane in func_dim():
-                                    hij_dimensions[hij_dimension_index] = func_dplane(
-                                        monitor_event, prefix_node)
-                                    if hij_dimensions[hij_dimension_index] != '-':
+                                    hij_dimensions[
+                                        hij_dimension_index] = func_dplane(
+                                            monitor_event, prefix_node)
+                                    if hij_dimensions[
+                                            hij_dimension_index] != '-':
                                         break
                             hij_dimension_index += 1
                         # check if dimension combination in hijack combinations
                         if hij_dimensions in HIJACK_DIM_COMBINATIONS:
                             is_hijack = True
-                            self.commit_hijack(
-                                monitor_event, hijacker, hij_dimensions)
+                            self.commit_hijack(monitor_event, hijacker,
+                                               hij_dimensions)
                     except Exception:
                         log.exception('exception')
 
-                if ((not is_hijack and 'hij_key' in monitor_event) or
-                    (is_hijack and 'hij_key' in monitor_event and
-                        monitor_event['initial_redis_hijack_key'] != monitor_event['final_redis_hijack_key'])):
-                    redis_hijack_key = redis_key(
-                        monitor_event['prefix'],
-                        monitor_event['hijack_as'],
-                        monitor_event['hij_type'])
-                    purge_redis_eph_pers_keys(
-                        self.redis, redis_hijack_key, monitor_event['hij_key'])
-                    self.mark_outdated(
-                        monitor_event['hij_key'], redis_hijack_key)
+                if ((not is_hijack and 'hij_key' in monitor_event)
+                        or (is_hijack and 'hij_key' in monitor_event
+                            and monitor_event['initial_redis_hijack_key'] !=
+                            monitor_event['final_redis_hijack_key'])):
+                    redis_hijack_key = redis_key(monitor_event['prefix'],
+                                                 monitor_event['hijack_as'],
+                                                 monitor_event['hij_type'])
+                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key,
+                                              monitor_event['hij_key'])
+                    self.mark_outdated(monitor_event['hij_key'],
+                                       redis_hijack_key)
                 elif not is_hijack:
                     self.mark_handled(raw)
 
             elif monitor_event['type'] == 'W':
-                self.producer.publish(
-                    {
-                        'prefix': monitor_event['prefix'],
-                        'peer_asn': monitor_event['peer_asn'],
-                        'timestamp': monitor_event['timestamp'],
-                        'key': monitor_event['key']
-                    },
-                    exchange=self.update_exchange,
-                    routing_key='withdraw',
-                    priority=0
-                )
+                self.producer.publish({
+                    'prefix': monitor_event['prefix'],
+                    'peer_asn': monitor_event['peer_asn'],
+                    'timestamp': monitor_event['timestamp'],
+                    'key': monitor_event['key']
+                },
+                                      exchange=self.update_exchange,
+                                      routing_key='withdraw',
+                                      priority=0)
 
         @staticmethod
         def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
@@ -438,7 +441,8 @@ class Detection():
             """
             Static wrapper method for loop and prepending removal.
             """
-            (clean_as_path, is_loopy) = Detection.Worker.__remove_prepending(path)
+            (clean_as_path,
+             is_loopy) = Detection.Worker.__remove_prepending(path)
             if is_loopy:
                 clean_as_path = Detection.Worker.__clean_loops(clean_as_path)
             return clean_as_path
@@ -458,8 +462,7 @@ class Detection():
             yield self.detect_prefix_squatting_hijack
             yield self.detect_prefix_subprefix_hijack
 
-        def __hijack_path_checker_gen(
-                self, path_len: int) -> Callable:
+        def __hijack_path_checker_gen(self, path_len: int) -> Callable:
             """
             Generator that returns path dimension detection functions.
             """
@@ -480,9 +483,9 @@ class Detection():
             yield self.detect_dplane_mitm_hijack
 
         @exception_handler(log)
-        def detect_prefix_squatting_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> str:
+        def detect_prefix_squatting_hijack(self, monitor_event: Dict,
+                                           prefix_node: radix.Radix, *args,
+                                           **kwargs) -> str:
             """
             Squatting hijack detection.
             """
@@ -493,9 +496,9 @@ class Detection():
             return 'Q'
 
         @exception_handler(log)
-        def detect_prefix_subprefix_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> str:
+        def detect_prefix_subprefix_hijack(self, monitor_event: Dict,
+                                           prefix_node: radix.Radix, *args,
+                                           **kwargs) -> str:
             """
             Subprefix or exact prefix hijack detection.
             """
@@ -505,22 +508,23 @@ class Detection():
             return 'E'
 
         @exception_handler(log)
-        def detect_path_type_0_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
+        def detect_path_type_0_hijack(self, monitor_event: Dict,
+                                      prefix_node: radix.Radix, *args,
+                                      **kwargs) -> Tuple[int, str]:
             """
             Origin hijack detection.
             """
             origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
-                if origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]:
+                if origin_asn in item['origin_asns'] or item[
+                        'origin_asns'] == [-1]:
                     return (-1, '-')
             return (origin_asn, '0')
 
         @exception_handler(log)
-        def detect_path_type_1_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
+        def detect_path_type_1_hijack(self, monitor_event: Dict,
+                                      prefix_node: radix.Radix, *args,
+                                      **kwargs) -> Tuple[int, str]:
             """
             Type-1 hijack detection.
             """
@@ -528,58 +532,58 @@ class Detection():
             first_neighbor_asn = monitor_event['path'][-2]
             for item in prefix_node.data['confs']:
                 # [] or [-1] neighbors means "allow everything"
-                if (origin_asn in item['origin_asns'] or item['origin_asns'] == [-1]) and (
-                    (not item['neighbors']) or item['neighbors'] == [-1] or
-                        first_neighbor_asn in item['neighbors']):
+                if (origin_asn in item['origin_asns']
+                        or item['origin_asns'] == [-1]) and (
+                            (not item['neighbors'])
+                            or item['neighbors'] == [-1]
+                            or first_neighbor_asn in item['neighbors']):
                     return (-1, '-')
             return (first_neighbor_asn, '1')
 
         @exception_handler(log)
-        def detect_path_type_N_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
+        def detect_path_type_N_hijack(self, monitor_event: Dict,
+                                      prefix_node: radix.Radix, *args,
+                                      **kwargs) -> Tuple[int, str]:
             # Placeholder for type-N detection (not supported)
             return (-1, '-')
 
         @exception_handler(log)
-        def detect_path_type_U_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> Tuple[int, str]:
+        def detect_path_type_U_hijack(self, monitor_event: Dict,
+                                      prefix_node: radix.Radix, *args,
+                                      **kwargs) -> Tuple[int, str]:
             # Placeholder for type-U detection (not supported)
             return (-1, '-')
 
         @exception_handler(log)
-        def detect_dplane_blackholing_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> str:
+        def detect_dplane_blackholing_hijack(self, monitor_event: Dict,
+                                             prefix_node: radix.Radix, *args,
+                                             **kwargs) -> str:
             # Placeholder for blackholing detection  (not supported)
             return '-'
 
         @exception_handler(log)
-        def detect_dplane_imposture_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> str:
+        def detect_dplane_imposture_hijack(self, monitor_event: Dict,
+                                           prefix_node: radix.Radix, *args,
+                                           **kwargs) -> str:
             # Placeholder for imposture detection  (not supported)
             return '-'
 
         @exception_handler(log)
-        def detect_dplane_mitm_hijack(
-                self, monitor_event: Dict,
-                prefix_node: radix.Radix, *args, **kwargs) -> str:
+        def detect_dplane_mitm_hijack(self, monitor_event: Dict,
+                                      prefix_node: radix.Radix, *args,
+                                      **kwargs) -> str:
             # Placeholder for mitm detection  (not supported)
             return '-'
 
-        def commit_hijack(self, monitor_event: Dict,
-                          hijacker: int, hij_dimensions: List[str]) -> NoReturn:
+        def commit_hijack(self, monitor_event: Dict, hijacker: int,
+                          hij_dimensions: List[str]) -> NoReturn:
             """
             Commit new or update an existing hijack to the database.
             It uses redis server to store ongoing hijacks information to not stress the db.
             """
             hij_type = '|'.join(hij_dimensions)
-            redis_hijack_key = redis_key(
-                monitor_event['prefix'],
-                hijacker,
-                hij_type)
+            redis_hijack_key = redis_key(monitor_event['prefix'], hijacker,
+                                         hij_type)
 
             if 'hij_key' in monitor_event:
                 monitor_event['final_redis_hijack_key'] = redis_hijack_key
@@ -604,16 +608,15 @@ class Detection():
                     monitor_event['path'][:-(int(hij_dimensions[1]) + 1)])
             # assume the worst-case scenario of a type-2 hijack
             elif len(monitor_event['path']) > 2:
-                hijack_value['asns_inf'] = set(
-                    monitor_event['path'][:-3])
+                hijack_value['asns_inf'] = set(monitor_event['path'][:-3])
 
             # make the following operation atomic using blpop (blocking)
             # first, make sure that the semaphore is initialized
-            if self.redis.getset('{}token_active'.format(
-                    redis_hijack_key), 1) != b'1':
+            if self.redis.getset('{}token_active'.format(redis_hijack_key),
+                                 1) != b'1':
                 redis_pipeline = self.redis.pipeline()
-                redis_pipeline.lpush(
-                    '{}token'.format(redis_hijack_key), 'token')
+                redis_pipeline.lpush('{}token'.format(redis_hijack_key),
+                                     'token')
                 # lock, by extracting the token (other processes that access it at the same time will be blocked)
                 # attention: it is important that this command is batched in the pipeline since the db may async delete
                 # the token
@@ -630,18 +633,21 @@ class Detection():
                 result = self.redis.get(redis_hijack_key)
                 if result is not None:
                     result = pickle.loads(result)
-                    result['time_started'] = min(
-                        result['time_started'], hijack_value['time_started'])
-                    result['time_last'] = max(
-                        result['time_last'], hijack_value['time_last'])
+                    result['time_started'] = min(result['time_started'],
+                                                 hijack_value['time_started'])
+                    result['time_last'] = max(result['time_last'],
+                                              hijack_value['time_last'])
                     result['peers_seen'].update(hijack_value['peers_seen'])
                     result['asns_inf'].update(hijack_value['asns_inf'])
                     # no update since db already knows!
                     result['monitor_keys'] = hijack_value['monitor_keys']
                 else:
                     hijack_value['time_detected'] = time.time()
-                    hijack_value['key'] = hashlib.shake_128(pickle.dumps(
-                        [monitor_event['prefix'], hijacker, hij_type, hijack_value['time_detected']])).hexdigest(16)
+                    hijack_value['key'] = hashlib.shake_128(
+                        pickle.dumps([
+                            monitor_event['prefix'], hijacker, hij_type,
+                            hijack_value['time_detected']
+                        ])).hexdigest(16)
                     redis_pipeline.sadd('persistent-keys', hijack_value['key'])
                     result = hijack_value
                     mail_log.info('{}'.format(result))
@@ -651,10 +657,10 @@ class Detection():
             finally:
                 # unlock, by pushing back the token (at most one other process
                 # waiting will be unlocked)
-                redis_pipeline.set(
-                    '{}token_active'.format(redis_hijack_key), 1)
-                redis_pipeline.lpush(
-                    '{}token'.format(redis_hijack_key), 'token')
+                redis_pipeline.set('{}token_active'.format(redis_hijack_key),
+                                   1)
+                redis_pipeline.lpush('{}token'.format(redis_hijack_key),
+                                     'token')
                 redis_pipeline.execute()
 
             self.producer.publish(
@@ -662,16 +668,14 @@ class Detection():
                 exchange=self.hijack_exchange,
                 routing_key='update',
                 serializer='pickle',
-                priority=0
-            )
+                priority=0)
 
             self.producer.publish(
                 result,
                 exchange=self.hijack_hashing,
                 routing_key=redis_hijack_key,
                 serializer='pickle',
-                priority=0
-            )
+                priority=0)
             hij_log.info('{}'.format(result))
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
@@ -683,8 +687,7 @@ class Detection():
                 monitor_event['key'],
                 exchange=self.handled_exchange,
                 routing_key='update',
-                priority=1
-            )
+                priority=1)
 
         def mark_outdated(self, hij_key: str, redis_hij_key: str) -> NoReturn:
             """
@@ -699,8 +702,7 @@ class Detection():
                 msg,
                 exchange=self.hijack_exchange,
                 routing_key='outdate',
-                priority=1
-            )
+                priority=1)
 
 
 def run():

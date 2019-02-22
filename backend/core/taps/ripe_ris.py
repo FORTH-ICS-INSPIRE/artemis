@@ -3,20 +3,18 @@ from kombu import Connection, Producer, Exchange
 import argparse
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
 
-
 log = get_logger()
-update_to_type = {
-    'announcements': 'A',
-    'withdrawals': 'W'
-}
+update_to_type = {'announcements': 'A', 'withdrawals': 'W'}
 
 
 def normalize_ripe_ris(msg):
     if isinstance(msg, dict):
         msg['key'] = None  # initial placeholder before passing the validator
         if 'community' in msg:
-            msg['communities'] = [{'asn': comm[0], 'value': comm[1]}
-                                  for comm in msg['community']]
+            msg['communities'] = [{
+                'asn': comm[0],
+                'value': comm[1]
+            } for comm in msg['community']]
             del msg['community']
         if 'host' in msg:
             msg['service'] = 'ripe-ris|' + msg['host']
@@ -37,10 +35,7 @@ def normalize_ripe_ris(msg):
 
 def parse_ripe_ris(connection, prefix, host):
     exchange = Exchange(
-        'bgp-update',
-        channel=connection,
-        type='direct',
-        durable=False)
+        'bgp-update', channel=connection, type='direct', durable=False)
     exchange.declare()
 
     def on_ris_msg(msg):
@@ -56,37 +51,47 @@ def parse_ripe_ris(connection, prefix, host):
                         msg_,
                         exchange=exchange,
                         routing_key='update',
-                        serializer='json'
-                    )
+                        serializer='json')
             else:
                 log.warning('Invalid format message: {}'.format(msg))
         except Exception:
             log.exception('exception')
 
-    with SocketIO('http://stream-dev.ris.ripe.net/stream2', wait_for_connection=False) as socket_io:
+    with SocketIO(
+            'http://stream-dev.ris.ripe.net/stream2',
+            wait_for_connection=False) as socket_io:
         socket_io.on('ris_message', on_ris_msg)
-        socket_io.emit('ris_subscribe',
-                       {
-                           'host': host,
-                           'type': 'UPDATE',
-                           'prefix': prefix,
-                           'moreSpecific': True,
-                           'lessSpecific': False,
-                           'socketOptions': {
-                               'includeBody': False,
-                               'explodePrefixes': True,
-                           }
-                       }
-                       )
+        socket_io.emit(
+            'ris_subscribe', {
+                'host': host,
+                'type': 'UPDATE',
+                'prefix': prefix,
+                'moreSpecific': True,
+                'lessSpecific': False,
+                'socketOptions': {
+                    'includeBody': False,
+                    'explodePrefixes': True,
+                }
+            })
         socket_io.wait()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RIPE RIS Monitor')
-    parser.add_argument('-p', '--prefix', type=str, dest='prefix', default=None,
-                        help='Prefix to be monitored')
-    parser.add_argument('-r', '--host', type=str, dest='host', default=None,
-                        help='Directory with csvs to read')
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        type=str,
+        dest='prefix',
+        default=None,
+        help='Prefix to be monitored')
+    parser.add_argument(
+        '-r',
+        '--host',
+        type=str,
+        dest='host',
+        default=None,
+        help='Directory with csvs to read')
 
     args = parser.parse_args()
     prefix = args.prefix

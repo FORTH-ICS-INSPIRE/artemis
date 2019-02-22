@@ -5,7 +5,6 @@ from kombu import Connection, Producer, Exchange
 import _pybgpstream
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
 
-
 log = get_logger()
 
 
@@ -40,10 +39,7 @@ def run_bgpstream_beta_bmp(prefixes=[]):
 
     with Connection(RABBITMQ_HOST) as connection:
         exchange = Exchange(
-            'bgp-update',
-            channel=connection,
-            type='direct',
-            durable=False)
+            'bgp-update', channel=connection, type='direct', durable=False)
         exchange.declare()
         producer = Producer(connection)
         while True:
@@ -69,8 +65,10 @@ def run_bgpstream_beta_bmp(prefixes=[]):
                     type_ = elem.type
                     if type_ == 'A':
                         as_path = elem.fields['as-path'].split(' ')
-                        communities = [{'asn': int(comm.split(':')[0]), 'value': int(comm.split(':')[1])}
-                                       for comm in elem.fields['communities']]
+                        communities = [{
+                            'asn': int(comm.split(':')[0]),
+                            'value': int(comm.split(':')[1])
+                        } for comm in elem.fields['communities']]
                     else:
                         as_path = []
                         communities = []
@@ -100,8 +98,7 @@ def run_bgpstream_beta_bmp(prefixes=[]):
                                         msg,
                                         exchange=exchange,
                                         routing_key='update',
-                                        serializer='json'
-                                    )
+                                        serializer='json')
                             else:
                                 log.warning(
                                     'Invalid format message: {}'.format(msg))
@@ -113,16 +110,20 @@ def run_bgpstream_beta_bmp(prefixes=[]):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Beta BMP Live Monitor')
-    parser.add_argument('-p', '--prefix', type=str, dest='prefix', default=None,
-                        help='Prefix to be monitored')
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        type=str,
+        dest='prefix',
+        default=None,
+        help='Prefix to be monitored')
 
     args = parser.parse_args()
 
     prefixes = args.prefix.split(',')
 
     try:
-        run_bgpstream_beta_bmp(
-            prefixes)
+        run_bgpstream_beta_bmp(prefixes)
     except Exception:
         log.exception('exception')
     except KeyboardInterrupt:

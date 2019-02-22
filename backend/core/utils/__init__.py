@@ -10,7 +10,6 @@ from contextlib import contextmanager
 from ipaddress import ip_network as str2ip
 import re
 
-
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'localhost')
 SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
@@ -72,7 +71,6 @@ def flatten(items, seqtypes=(list, tuple)):
 
 
 class ArtemisError(Exception):
-
     def __init__(self, _type, _where):
         self.type = _type
         self.where = _where
@@ -91,12 +89,13 @@ def exception_handler(log):
             except Exception:
                 log.exception('exception')
                 return True
+
         return wrapper
+
     return function_wrapper
 
 
 class SMTPSHandler(SMTPHandler):
-
     def emit(self, record):
         """
         Overwrite the logging.handlers.SMTPHandler.emit function with SMTP_SSL.
@@ -112,11 +111,8 @@ class SMTPSHandler(SMTPHandler):
             smtp = smtplib.SMTP_SSL(self.mailhost, port)
             msg = self.format(record)
             msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
-                self.fromaddr,
-                ", ".join(self.toaddrs),
-                self.getSubject(record),
-                formatdate(),
-                msg)
+                self.fromaddr, ", ".join(
+                    self.toaddrs), self.getSubject(record), formatdate(), msg)
             if self.username:
                 smtp.ehlo()
                 smtp.login(self.username, self.password)
@@ -129,11 +125,11 @@ class SMTPSHandler(SMTPHandler):
 
 
 def redis_key(prefix, hijack_as, _type):
-    assert(isinstance(prefix, str))
-    assert(isinstance(hijack_as, int))
-    assert(isinstance(_type, str))
-    return hashlib.shake_128(pickle.dumps(
-        [prefix, hijack_as, _type])).hexdigest(16)
+    assert (isinstance(prefix, str))
+    assert (isinstance(hijack_as, int))
+    assert (isinstance(_type, str))
+    return hashlib.shake_128(pickle.dumps([prefix, hijack_as,
+                                           _type])).hexdigest(16)
 
 
 def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
@@ -152,6 +148,7 @@ def translate_rfc2622(input_prefix):
     :param input_prefix: (str) input IPv4/IPv6 prefix that should be translated according to RFC2622
     :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes
     """
+
     def valid_prefix(input_prefix):
         try:
             str2ip(input_prefix)
@@ -176,8 +173,11 @@ def translate_rfc2622(input_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen + 1
             max_length = matched_prefix_ip.max_prefixlen
-            return list(map(str, calculate_more_specifics(
-                matched_prefix_ip, min_length, max_length)))
+            return list(
+                map(
+                    str,
+                    calculate_more_specifics(matched_prefix_ip, min_length,
+                                             max_length)))
 
     # ^+ is the inclusive more specifics operator; it stands for the more
     #    specifics of the address prefix including the address prefix
@@ -190,8 +190,11 @@ def translate_rfc2622(input_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen
             max_length = matched_prefix_ip.max_prefixlen
-            return list(map(str, calculate_more_specifics(
-                matched_prefix_ip, min_length, max_length)))
+            return list(
+                map(
+                    str,
+                    calculate_more_specifics(matched_prefix_ip, min_length,
+                                             max_length)))
 
     # ^n where n is an integer, stands for all the length n specifics of
     #    the address prefix.  For example, 30.0.0.0/8^16 contains all the
@@ -209,8 +212,11 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError('invalid-n-small', input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError('invalid-n-large', input_prefix)
-            return list(map(str, calculate_more_specifics(
-                matched_prefix_ip, min_length, max_length)))
+            return list(
+                map(
+                    str,
+                    calculate_more_specifics(matched_prefix_ip, min_length,
+                                             max_length)))
 
     # ^n-m where n and m are integers, stands for all the length n to
     #      length m specifics of the address prefix.  For example,
@@ -227,7 +233,10 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError('invalid-n-small', input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError('invalid-n-large', input_prefix)
-            return list(map(str, calculate_more_specifics(
-                matched_prefix_ip, min_length, max_length)))
+            return list(
+                map(
+                    str,
+                    calculate_more_specifics(matched_prefix_ip, min_length,
+                                             max_length)))
 
     return [input_prefix]

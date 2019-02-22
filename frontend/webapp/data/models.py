@@ -3,12 +3,10 @@ from flask_security import RoleMixin, UserMixin
 
 db = SQLAlchemy()
 
-roles_users = db.Table('roles_users',
-                       db.Column(
-                           'user_id',
-                           db.Integer(),
-                           db.ForeignKey('user.id')),
-                       db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+roles_users = db.Table(
+    'roles_users', db.Column('user_id', db.Integer(),
+                             db.ForeignKey('user.id')),
+    db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 
 class Role(db.Model, RoleMixin):
@@ -35,8 +33,10 @@ class User(db.Model, UserMixin):
     last_login_ip = db.Column(db.String(255))
     current_login_ip = db.Column(db.String(255))
     login_count = db.Column(db.BigInteger)
-    roles = db.relationship('Role', secondary=roles_users,
-                            backref=db.backref('users', lazy='dynamic'))
+    roles = db.relationship(
+        'Role',
+        secondary=roles_users,
+        backref=db.backref('users', lazy='dynamic'))
 
     def __init__(self, username, email, password, active, roles):
         self.username = username

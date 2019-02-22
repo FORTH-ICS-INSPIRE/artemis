@@ -6,7 +6,6 @@ from kombu import Connection, Producer, Exchange
 from netaddr import IPNetwork, IPAddress
 from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
 
-
 log = get_logger()
 
 
@@ -14,10 +13,7 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
 
     with Connection(RABBITMQ_HOST) as connection:
         exchange = Exchange(
-            'bgp-update',
-            channel=connection,
-            type='direct',
-            durable=False)
+            'bgp-update', channel=connection, type='direct', durable=False)
         exchange.declare()
         producer = Producer(connection)
 
@@ -50,8 +46,10 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                     base_ip, mask_length = this_prefix.split(
                                         '/')
                                     our_prefix = IPNetwork(prefix)
-                                    if IPAddress(base_ip) in our_prefix and int(
-                                            mask_length) >= our_prefix.prefixlen:
+                                    if IPAddress(
+                                            base_ip) in our_prefix and int(
+                                                mask_length
+                                            ) >= our_prefix.prefixlen:
                                         msg = {
                                             'type': type_,
                                             'timestamp': timestamp,
@@ -70,11 +68,11 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                                     msg,
                                                     exchange=exchange,
                                                     routing_key='update',
-                                                    serializer='json'
-                                                )
+                                                    serializer='json')
                                         else:
                                             log.warning(
-                                                'Invalid format message: {}'.format(msg))
+                                                'Invalid format message: {}'.
+                                                format(msg))
                                 except Exception:
                                     log.exception('prefix')
                         except Exception:
@@ -86,10 +84,20 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='BGPStream Historical Monitor')
-    parser.add_argument('-p', '--prefix', type=str, dest='prefix', default=None,
-                        help='Prefix to be monitored')
-    parser.add_argument('-d', '--dir', type=str, dest='dir', default=None,
-                        help='Directory with csvs to read')
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        type=str,
+        dest='prefix',
+        default=None,
+        help='Prefix to be monitored')
+    parser.add_argument(
+        '-d',
+        '--dir',
+        type=str,
+        dest='dir',
+        default=None,
+        help='Directory with csvs to read')
 
     args = parser.parse_args()
     dir_ = args.dir.rstrip('/')

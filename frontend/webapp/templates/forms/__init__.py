@@ -23,21 +23,20 @@ class CheckboxMitigatorForm(FlaskForm):
 
 class ExtendedRegisterForm(RegisterForm):
     username = StringField('Username', [Required()])
-    email = EmailField(
-        'Email', [
-            validators.DataRequired(
-                message='email is required '), validators.Email(
-                message='invalid email address')])
+    email = EmailField('Email', [
+        validators.DataRequired(message='email is required '),
+        validators.Email(message='invalid email address')
+    ])
 
     def validate(self):
         if db.session.query(User).filter(
                 User.username == self.username.data.strip()).first():
-            self.username.errors += ("Username already registered",)
+            self.username.errors += ("Username already registered", )
             return False
 
         if db.session.query(User).filter(
                 User.email == self.email.data.strip()).first():
-            self.email.errors += ("Email already registered",)
+            self.email.errors += ("Email already registered", )
             return False
 
         if not super(ExtendedRegisterForm, self).validate():
@@ -53,33 +52,29 @@ class ExtendedLoginForm(LoginForm):
 
 class ApproveUserForm(FlaskForm):
     select_field = SelectField(
-        'Select pending user to approve:', [
-            Required()], choices=[])
+        'Select pending user to approve:', [Required()], choices=[])
 
 
 class MakeAdminForm(FlaskForm):
     select_field = SelectField(
-        'Select user to promote to admin:', [
-            Required()], choices=[])
+        'Select user to promote to admin:', [Required()], choices=[])
 
 
 class RemoveAdminForm(FlaskForm):
     select_field = SelectField(
-        'Select user to demote from admin:', [
-            Required()], choices=[])
+        'Select user to demote from admin:', [Required()], choices=[])
 
 
 class DeleteUserForm(FlaskForm):
     select_field = SelectField(
-        'Select user to delete:', [
-            Required()], choices=[])
+        'Select user to delete:', [Required()], choices=[])
 
 
 class ChangePasswordForm(FlaskForm):
-    old_password = PasswordField('Old Password',
-                                 [validators.DataRequired(),
-                                  validators.Length(min=6, max=35)]
-                                 )
+    old_password = PasswordField(
+        'Old Password',
+        [validators.DataRequired(),
+         validators.Length(min=6, max=35)])
     password = PasswordField('New Password', [
         validators.DataRequired(),
         validators.EqualTo('confirm', message='Passwords must match')

@@ -7,7 +7,6 @@ import yaml
 import logging
 import logging.config
 
-
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
 
 
@@ -27,13 +26,11 @@ def get_logger(path='/etc/artemis/logging.yaml'):
 
 
 def key_generator(msg):
-    msg['key'] = hashlib.shake_128(pickle.dumps([
-        msg['prefix'],
-        msg['path'],
-        msg['type'],
-        msg['timestamp'],
-        msg['peer_asn']
-    ])).hexdigest(16)
+    msg['key'] = hashlib.shake_128(
+        pickle.dumps([
+            msg['prefix'], msg['path'], msg['type'], msg['timestamp'],
+            msg['peer_asn']
+        ])).hexdigest(16)
 
 
 def decompose_path(path):
@@ -104,20 +101,13 @@ def normalize_msg_path(msg):
 def mformat_validator(msg):
 
     mformat_fields = [
-        'service',
-        'type',
-        'prefix',
-        'path',
-        'communities',
-        'timestamp',
+        'service', 'type', 'prefix', 'path', 'communities', 'timestamp',
         'peer_asn'
     ]
     type_values = {'A', 'W'}
     community_keys = {'asn', 'value'}
 
-    optional_fields_init = {
-        'communities': []
-    }
+    optional_fields_init = {'communities': []}
 
     def valid_dict(msg):
         if not isinstance(msg, dict):

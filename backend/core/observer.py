@@ -1,7 +1,7 @@
 import time
 from watchdog.observers import Observer as WatchObserver
 from watchdog.events import FileSystemEventHandler
-from utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_URI, get_logger
 from kombu import Connection, Queue, uuid, Consumer, Producer
 import difflib
 import signal
@@ -25,7 +25,7 @@ class Observer():
         filename = 'config.yaml'
 
         try:
-            with Connection(RABBITMQ_HOST) as connection:
+            with Connection(RABBITMQ_URI) as connection:
                 event_handler = self.Handler(dirname, filename, connection)
                 observer.schedule(event_handler, dirname, recursive=False)
                 observer.start()

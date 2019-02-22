@@ -1,7 +1,7 @@
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Producer, Exchange
 import argparse
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_URI, get_logger
 
 
 log = get_logger()
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     host = args.host
 
     try:
-        with Connection(RABBITMQ_HOST) as connection:
+        with Connection(RABBITMQ_URI) as connection:
             parse_ripe_ris(connection, prefix, host)
     except Exception:
         log.exception('exception')

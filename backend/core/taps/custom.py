@@ -1,5 +1,5 @@
 from kombu import Connection, Producer, Exchange
-from utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_URI, get_logger
 
 
 log = get_logger()
@@ -18,7 +18,7 @@ def run():
             "prefix": "10.0.0.0/8",
             "peer_asn": 8
         }
-        with Connection(RABBITMQ_HOST) as connection:
+        with Connection(RABBITMQ_URI) as connection:
             exchange = Exchange(
                 'bgp-update',
                 channel=connection,

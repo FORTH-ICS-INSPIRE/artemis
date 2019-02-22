@@ -11,7 +11,7 @@ from ipaddress import ip_network as str2ip
 import re
 
 
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+RABBITMQ_URI = os.getenv('RABBITMQ_URI', 'amqp://guest:guest@rabbitmq//')
 SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'localhost')
 SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
 DB_NAME = os.getenv('DATABASE_NAME', 'artemis_db')
@@ -169,7 +169,7 @@ def translate_rfc2622(input_prefix):
     #    specifics of the address prefix excluding the address prefix
     #    itself.  For example, 128.9.0.0/16^- contains all the more
     #    specifics of 128.9.0.0/16 excluding 128.9.0.0/16.
-    reg_exclusive = re.match('^(\S*)\^-$', input_prefix)
+    reg_exclusive = re.match(r'^(\S*)\^-$', input_prefix)
     if reg_exclusive:
         matched_prefix = reg_exclusive.group(1)
         if valid_prefix(matched_prefix):
@@ -182,7 +182,7 @@ def translate_rfc2622(input_prefix):
     #    specifics of the address prefix including the address prefix
     #    itself.  For example, 5.0.0.0/8^+ contains all the more specifics
     #    of 5.0.0.0/8 including 5.0.0.0/8.
-    reg_inclusive = re.match('^(\S*)\^\+$', input_prefix)
+    reg_inclusive = re.match(r'^(\S*)\^\+$', input_prefix)
     if reg_inclusive:
         matched_prefix = reg_inclusive.group(1)
         if valid_prefix(matched_prefix):
@@ -195,7 +195,7 @@ def translate_rfc2622(input_prefix):
     #    the address prefix.  For example, 30.0.0.0/8^16 contains all the
     #    more specifics of 30.0.0.0/8 which are of length 16 such as
     #    30.9.0.0/16.
-    reg_n = re.match('^(\S*)\^(\d+)$', input_prefix)
+    reg_n = re.match(r'^(\S*)\^(\d+)$', input_prefix)
     if reg_n:
         matched_prefix = reg_n.group(1)
         length = int(reg_n.group(2))
@@ -213,7 +213,7 @@ def translate_rfc2622(input_prefix):
     #      length m specifics of the address prefix.  For example,
     #      30.0.0.0/8^24-32 contains all the more specifics of 30.0.0.0/8
     #      which are of length 24 to 32 such as 30.9.9.96/28.
-    reg_n_m = re.match('^(\S*)\^(\d+)-(\d+)$', input_prefix)
+    reg_n_m = re.match(r'^(\S*)\^(\d+)-(\d+)$', input_prefix)
     if reg_n_m:
         matched_prefix = reg_n_m.group(1)
         min_length = int(reg_n_m.group(2))

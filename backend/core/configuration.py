@@ -1,6 +1,6 @@
 from ipaddress import ip_network as str2ip
 from yaml import load as yload
-from utils import flatten, ArtemisError, RABBITMQ_HOST, get_logger, translate_rfc2622
+from utils import flatten, ArtemisError, RABBITMQ_URI, get_logger, translate_rfc2622
 from socketIO_client_nexus import SocketIO
 from kombu import Connection, Queue, Exchange, Consumer
 from kombu.mixins import ConsumerProducerMixin
@@ -32,7 +32,7 @@ class Configuration():
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
         try:
-            with Connection(RABBITMQ_HOST) as connection:
+            with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:

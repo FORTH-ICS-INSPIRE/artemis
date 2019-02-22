@@ -1,6 +1,6 @@
 import radix
 from subprocess import Popen
-from utils import exception_handler, RABBITMQ_HOST, get_logger
+from utils import exception_handler, RABBITMQ_URI, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import signal
@@ -22,7 +22,7 @@ class Monitor():
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
         try:
-            with Connection(RABBITMQ_HOST) as connection:
+            with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:

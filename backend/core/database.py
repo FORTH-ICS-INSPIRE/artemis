@@ -1,7 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import radix
-from utils import RABBITMQ_HOST, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT, purge_redis_eph_pers_keys, get_wo_cursor, get_ro_cursor
+from utils import RABBITMQ_URI, get_logger, redis_key, SUPERVISOR_HOST, SUPERVISOR_PORT, purge_redis_eph_pers_keys, get_wo_cursor, get_ro_cursor
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 from xmlrpc.client import ServerProxy
@@ -59,7 +59,7 @@ class Database():
         # write-only connection
         wo_conn = self.connectDb()
         try:
-            with Connection(RABBITMQ_HOST) as connection:
+            with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection, ro_conn, wo_conn)
                 self.worker.run()
         except Exception:

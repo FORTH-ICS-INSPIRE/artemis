@@ -8,7 +8,7 @@ services:
         networks:
             - artemis
         environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_URI: amqp://${RABBITMQ_HOST}//
             POSTGRES_HOST: ${POSTGRES_HOST}
             DATABASE_NAME: ${DB_NAME}
             DATABASE_USER: ${DB_USER}
@@ -33,7 +33,7 @@ services:
             - 9001
             - 6379
         environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_URI: amqp://${RABBITMQ_HOST}//
             POSTGRES_HOST: ${POSTGRES_HOST}
             DATABASE_NAME: ${DB_NAME}
             DATABASE_USER: ${DB_USER}
@@ -69,9 +69,6 @@ services:
         expose:
             - 5671
             - 5672
-        environment:
-            RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
         volumes:
             - ./testing/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
     postgres:

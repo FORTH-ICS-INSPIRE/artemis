@@ -64,7 +64,7 @@ class Tester():
         Loads a test file that includes crafted bgp updates as input and expected messages as output.
         '''
 
-        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST')
+        RABBITMQ_URI = os.getenv('RABBITMQ_URI')
 
         # exchanges
         update_exchange = Exchange(
@@ -212,7 +212,7 @@ class Tester():
                 except Exception:
                     time.sleep(1)
 
-        with Connection(RABBITMQ_HOST) as connection:
+        with Connection(RABBITMQ_URI) as connection:
             print('Waiting for pg_amq exchange..')
             waitExchange(pg_amq_bridge, connection.default_channel)
             print('Waiting for hijack exchange..')

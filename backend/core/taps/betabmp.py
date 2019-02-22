@@ -3,7 +3,7 @@ from netaddr import IPNetwork, IPAddress
 from kombu import Connection, Producer, Exchange
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 import _pybgpstream
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_URI, get_logger
 
 
 log = get_logger()
@@ -38,7 +38,7 @@ def run_bgpstream_beta_bmp(prefixes=[]):
     # start the stream
     stream.start()
 
-    with Connection(RABBITMQ_HOST) as connection:
+    with Connection(RABBITMQ_URI) as connection:
         exchange = Exchange(
             'bgp-update',
             channel=connection,

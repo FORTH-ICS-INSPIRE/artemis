@@ -8,7 +8,7 @@ import logging
 import logging.config
 
 
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+RABBITMQ_URI = os.getenv('RABBITMQ_URI', 'amqp://guest:guest@rabbitmq//')
 
 
 def get_logger(path='/etc/artemis/logging.yaml'):

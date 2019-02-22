@@ -161,7 +161,7 @@ def translate_rfc2622(input_prefix):
 
     def calculate_more_specifics(prefix, min_length, max_length):
         prefix_list = []
-        for prefix_length in range(min_length, max_length+1):
+        for prefix_length in range(min_length, max_length + 1):
             prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
         return prefix_list
 
@@ -169,33 +169,35 @@ def translate_rfc2622(input_prefix):
     #    specifics of the address prefix excluding the address prefix
     #    itself.  For example, 128.9.0.0/16^- contains all the more
     #    specifics of 128.9.0.0/16 excluding 128.9.0.0/16.
-    reg_exclusive = re.match('^(\S*)\^-$', input_prefix)
+    reg_exclusive = re.match(r'^(\S*)\^-$', input_prefix)
     if reg_exclusive:
         matched_prefix = reg_exclusive.group(1)
         if valid_prefix(matched_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen + 1
             max_length = matched_prefix_ip.max_prefixlen
-            return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
+            return list(map(str, calculate_more_specifics(
+                matched_prefix_ip, min_length, max_length)))
 
     # ^+ is the inclusive more specifics operator; it stands for the more
     #    specifics of the address prefix including the address prefix
     #    itself.  For example, 5.0.0.0/8^+ contains all the more specifics
     #    of 5.0.0.0/8 including 5.0.0.0/8.
-    reg_inclusive = re.match('^(\S*)\^\+$', input_prefix)
+    reg_inclusive = re.match(r'^(\S*)\^\+$', input_prefix)
     if reg_inclusive:
         matched_prefix = reg_inclusive.group(1)
         if valid_prefix(matched_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen
             max_length = matched_prefix_ip.max_prefixlen
-            return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
+            return list(map(str, calculate_more_specifics(
+                matched_prefix_ip, min_length, max_length)))
 
     # ^n where n is an integer, stands for all the length n specifics of
     #    the address prefix.  For example, 30.0.0.0/8^16 contains all the
     #    more specifics of 30.0.0.0/8 which are of length 16 such as
     #    30.9.0.0/16.
-    reg_n = re.match('^(\S*)\^(\d+)$', input_prefix)
+    reg_n = re.match(r'^(\S*)\^(\d+)$', input_prefix)
     if reg_n:
         matched_prefix = reg_n.group(1)
         length = int(reg_n.group(2))
@@ -207,13 +209,14 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError('invalid-n-small', input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError('invalid-n-large', input_prefix)
-            return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
+            return list(map(str, calculate_more_specifics(
+                matched_prefix_ip, min_length, max_length)))
 
     # ^n-m where n and m are integers, stands for all the length n to
     #      length m specifics of the address prefix.  For example,
     #      30.0.0.0/8^24-32 contains all the more specifics of 30.0.0.0/8
     #      which are of length 24 to 32 such as 30.9.9.96/28.
-    reg_n_m = re.match('^(\S*)\^(\d+)-(\d+)$', input_prefix)
+    reg_n_m = re.match(r'^(\S*)\^(\d+)-(\d+)$', input_prefix)
     if reg_n_m:
         matched_prefix = reg_n_m.group(1)
         min_length = int(reg_n_m.group(2))
@@ -224,6 +227,7 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError('invalid-n-small', input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError('invalid-n-large', input_prefix)
-            return list(map(str, calculate_more_specifics(matched_prefix_ip, min_length, max_length)))
+            return list(map(str, calculate_more_specifics(
+                matched_prefix_ip, min_length, max_length)))
 
     return [input_prefix]

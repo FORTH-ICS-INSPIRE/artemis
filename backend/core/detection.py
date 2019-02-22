@@ -189,7 +189,7 @@ class Detection():
             Consumer for Config-Notify messages that come from the configuration service.
             Upon arrival this service updates its running configuration.
             """
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             raw = message.payload
@@ -249,7 +249,7 @@ class Detection():
             Callback function for the config request RPC.
             Updates running configuration upon receiving a new configuration.
             """
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:
@@ -311,7 +311,7 @@ class Detection():
                 monitor_event = json.loads(message.payload)
                 monitor_event['path'] = monitor_event['as_path']
                 monitor_event['timestamp'] = datetime(
-                    *map(int, re.findall('\d+', monitor_event['timestamp']))).timestamp()
+                    *map(int, re.findall(r'\d+', monitor_event['timestamp']))).timestamp()
 
             raw = monitor_event.copy()
 
@@ -486,7 +486,6 @@ class Detection():
             """
             Squatting hijack detection.
             """
-            origin_asn = monitor_event['path'][-1]
             for item in prefix_node.data['confs']:
                 # check if there are origin_asns defined (even wildcards)
                 if item['origin_asns']:

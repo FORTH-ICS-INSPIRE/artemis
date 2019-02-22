@@ -71,7 +71,7 @@ class Monitor():
             ]
 
         def handle_config_notify(self, message):
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             raw = message.payload
@@ -98,8 +98,8 @@ class Monitor():
                         node.data['origin_asns'] = rule['origin_asns']
                         node.data['neighbors'] = rule['neighbors']
                         node.data['mitigation'] = rule['mitigation']
-                except Exception as e:
-                    log.error('Exception', exc_info=True)
+                except Exception:
+                    log.exception('Exception')
 
             # only keep super prefixes for monitors
             for prefix in self.prefix_tree.prefixes():
@@ -156,7 +156,7 @@ class Monitor():
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:

@@ -989,7 +989,8 @@ class Database():
                     num_of_updates += 1
                     update_bgp_entries.add(
                         (hijack_key, bgp_entry_to_update))
-                    # exclude handle bgp updates that point to same hijack as this
+                    # exclude handle bgp updates that point to same hijack as
+                    # this
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
 
             if update_bgp_entries:

@@ -117,7 +117,7 @@ class Configuration():
             Consumer for Config-Modify messages that parses and checks if new configuration is correct.
             Replies back to the sender if the configuration is accepted or rejected and notifies all Subscribers if new configuration is used.
             """
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             raw_ = message.payload
@@ -202,7 +202,7 @@ class Configuration():
             """
             Handles all config requests from other Services by replying back with the current configuration.
             """
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             self.producer.publish(
@@ -269,9 +269,12 @@ class Configuration():
             for prefix_group in data['prefixes']:
                 full_translated_prefix_set = set()
                 for prefix in data['prefixes'][prefix_group]:
-                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                    full_translated_prefix_set.update(set(this_translated_prefix_list))
-                data['prefixes'][prefix_group] = list(full_translated_prefix_set)
+                    this_translated_prefix_list = flatten(
+                        translate_rfc2622(prefix))
+                    full_translated_prefix_set.update(
+                        set(this_translated_prefix_list))
+                data['prefixes'][prefix_group] = list(
+                    full_translated_prefix_set)
             for prefix_group, prefixes in data['prefixes'].items():
                 for prefix in prefixes:
                     try:
@@ -288,8 +291,10 @@ class Configuration():
                 rule['prefixes'] = flatten(rule['prefixes'])
                 rule_translated_prefix_set = set()
                 for i, prefix in enumerate(rule['prefixes']):
-                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                    rule_translated_prefix_set.update(set(this_translated_prefix_list))
+                    this_translated_prefix_list = flatten(
+                        translate_rfc2622(prefix))
+                    rule_translated_prefix_set.update(
+                        set(this_translated_prefix_list))
                 rule['prefixes'] = list(rule_translated_prefix_set)
                 for prefix in rule['prefixes']:
                     try:

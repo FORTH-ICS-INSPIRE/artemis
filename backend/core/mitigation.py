@@ -83,7 +83,7 @@ class Mitigation():
             ]
 
         def handle_config_notify(self, message):
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             raw = message.payload
@@ -127,7 +127,7 @@ class Mitigation():
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):
-            log.info(
+            log.debug(
                 'message: {}\npayload: {}'.format(
                     message, message.payload))
             if self.correlation_id == message.properties['correlation_id']:

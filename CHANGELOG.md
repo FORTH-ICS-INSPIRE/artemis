@@ -2,10 +2,13 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- Added support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators
+- More tests for checking withdrawn hijacks
+
 
 ### Changed
 - RIPE RIS live python websocket client
+- Updated/optimized db query for removing withdrawn peers (newer announcement)
 
 ### Fixed
 - TBD (bug-fix)

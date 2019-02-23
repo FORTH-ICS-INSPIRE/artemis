@@ -1,36 +1,36 @@
-import os
-import logging
-import logging.handlers
-import logging.config
-import yaml
-from logging.handlers import SMTPHandler
-import pickle
 import hashlib
+import logging.config
+import logging.handlers
+import os
+import pickle
+import re
 from contextlib import contextmanager
 from ipaddress import ip_network as str2ip
-import re
+from logging.handlers import SMTPHandler
 
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
-SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'localhost')
-SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
-DB_NAME = os.getenv('DATABASE_NAME', 'artemis_db')
-DB_USER = os.getenv('DATABASE_USER', 'artemis_user')
-DB_HOST = os.getenv('DATABASE_HOST', 'postgres')
-DB_PASSWORD = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
+import yaml
+
+RABBITMQ_URI = os.getenv("RABBITMQ_URI", "amqp://guest:guest@rabbitmq//")
+SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
+SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
+DB_NAME = os.getenv("DATABASE_NAME", "artemis_db")
+DB_USER = os.getenv("DATABASE_USER", "artemis_user")
+DB_HOST = os.getenv("DATABASE_HOST", "postgres")
+DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "Art3m1s")
 
 
-def get_logger(path='/etc/artemis/logging.yaml'):
+def get_logger(path="/etc/artemis/logging.yaml"):
     if os.path.exists(path):
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             config = yaml.safe_load(f.read())
         logging.config.dictConfig(config)
-        log = logging.getLogger('artemis_logger')
-        log.info('Loaded configuration from {}'.format(path))
+        log = logging.getLogger("artemis_logger")
+        log.info("Loaded configuration from {}".format(path))
     else:
-        FORMAT = '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
+        FORMAT = "%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s"
         logging.basicConfig(format=FORMAT, level=logging.INFO)
         log = logging
-        log.info('Loaded default configuration')
+        log.info("Loaded default configuration")
     return log
 
 
@@ -75,7 +75,7 @@ class ArtemisError(Exception):
         self.type = _type
         self.where = _where
 
-        message = 'type: {}, at: {}'.format(_type, _where)
+        message = "type: {}, at: {}".format(_type, _where)
 
         # Call the base class constructor with the parameters it needs
         super().__init__(message)
@@ -87,7 +87,7 @@ def exception_handler(log):
             try:
                 return f(*args, **kwargs)
             except Exception:
-                log.exception('exception')
+                log.exception("exception")
                 return True
 
         return wrapper
@@ -105,14 +105,19 @@ class SMTPSHandler(SMTPHandler):
         try:
             import smtplib
             from email.utils import formatdate
+
             port = self.mailport
             if not port:
                 port = smtplib.SMTP_PORT
             smtp = smtplib.SMTP_SSL(self.mailhost, port)
             msg = self.format(record)
             msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
-                self.fromaddr, ", ".join(
-                    self.toaddrs), self.getSubject(record), formatdate(), msg)
+                self.fromaddr,
+                ", ".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
             if self.username:
                 smtp.ehlo()
                 smtp.login(self.username, self.password)
@@ -125,20 +130,19 @@ class SMTPSHandler(SMTPHandler):
 
 
 def redis_key(prefix, hijack_as, _type):
-    assert (isinstance(prefix, str))
-    assert (isinstance(hijack_as, int))
-    assert (isinstance(_type, str))
-    return hashlib.shake_128(pickle.dumps([prefix, hijack_as,
-                                           _type])).hexdigest(16)
+    assert isinstance(prefix, str)
+    assert isinstance(hijack_as, int)
+    assert isinstance(_type, str)
+    return hashlib.shake_128(pickle.dumps([prefix, hijack_as, _type])).hexdigest(16)
 
 
 def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline = redis_instance.pipeline()
     # purge also tokens since they are not relevant any more
-    redis_pipeline.delete('{}token_active'.format(ephemeral_key))
-    redis_pipeline.delete('{}token'.format(ephemeral_key))
+    redis_pipeline.delete("{}token_active".format(ephemeral_key))
+    redis_pipeline.delete("{}token".format(ephemeral_key))
     redis_pipeline.delete(ephemeral_key)
-    redis_pipeline.srem('persistent-keys', persistent_key)
+    redis_pipeline.srem("persistent-keys", persistent_key)
     redis_pipeline.execute()
 
 
@@ -166,7 +170,7 @@ def translate_rfc2622(input_prefix):
     #    specifics of the address prefix excluding the address prefix
     #    itself.  For example, 128.9.0.0/16^- contains all the more
     #    specifics of 128.9.0.0/16 excluding 128.9.0.0/16.
-    reg_exclusive = re.match(r'^(\S*)\^-$', input_prefix)
+    reg_exclusive = re.match(r"^(\S*)\^-$", input_prefix)
     if reg_exclusive:
         matched_prefix = reg_exclusive.group(1)
         if valid_prefix(matched_prefix):
@@ -176,14 +180,15 @@ def translate_rfc2622(input_prefix):
             return list(
                 map(
                     str,
-                    calculate_more_specifics(matched_prefix_ip, min_length,
-                                             max_length)))
+                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
+                )
+            )
 
     # ^+ is the inclusive more specifics operator; it stands for the more
     #    specifics of the address prefix including the address prefix
     #    itself.  For example, 5.0.0.0/8^+ contains all the more specifics
     #    of 5.0.0.0/8 including 5.0.0.0/8.
-    reg_inclusive = re.match(r'^(\S*)\^\+$', input_prefix)
+    reg_inclusive = re.match(r"^(\S*)\^\+$", input_prefix)
     if reg_inclusive:
         matched_prefix = reg_inclusive.group(1)
         if valid_prefix(matched_prefix):
@@ -193,14 +198,15 @@ def translate_rfc2622(input_prefix):
             return list(
                 map(
                     str,
-                    calculate_more_specifics(matched_prefix_ip, min_length,
-                                             max_length)))
+                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
+                )
+            )
 
     # ^n where n is an integer, stands for all the length n specifics of
     #    the address prefix.  For example, 30.0.0.0/8^16 contains all the
     #    more specifics of 30.0.0.0/8 which are of length 16 such as
     #    30.9.0.0/16.
-    reg_n = re.match(r'^(\S*)\^(\d+)$', input_prefix)
+    reg_n = re.match(r"^(\S*)\^(\d+)$", input_prefix)
     if reg_n:
         matched_prefix = reg_n.group(1)
         length = int(reg_n.group(2))
@@ -209,20 +215,21 @@ def translate_rfc2622(input_prefix):
             min_length = length
             max_length = length
             if min_length < matched_prefix_ip.prefixlen:
-                raise ArtemisError('invalid-n-small', input_prefix)
+                raise ArtemisError("invalid-n-small", input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
-                raise ArtemisError('invalid-n-large', input_prefix)
+                raise ArtemisError("invalid-n-large", input_prefix)
             return list(
                 map(
                     str,
-                    calculate_more_specifics(matched_prefix_ip, min_length,
-                                             max_length)))
+                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
+                )
+            )
 
     # ^n-m where n and m are integers, stands for all the length n to
     #      length m specifics of the address prefix.  For example,
     #      30.0.0.0/8^24-32 contains all the more specifics of 30.0.0.0/8
     #      which are of length 24 to 32 such as 30.9.9.96/28.
-    reg_n_m = re.match(r'^(\S*)\^(\d+)-(\d+)$', input_prefix)
+    reg_n_m = re.match(r"^(\S*)\^(\d+)-(\d+)$", input_prefix)
     if reg_n_m:
         matched_prefix = reg_n_m.group(1)
         min_length = int(reg_n_m.group(2))
@@ -230,13 +237,14 @@ def translate_rfc2622(input_prefix):
         if valid_prefix(matched_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             if min_length < matched_prefix_ip.prefixlen:
-                raise ArtemisError('invalid-n-small', input_prefix)
+                raise ArtemisError("invalid-n-small", input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
-                raise ArtemisError('invalid-n-large', input_prefix)
+                raise ArtemisError("invalid-n-large", input_prefix)
             return list(
                 map(
                     str,
-                    calculate_more_specifics(matched_prefix_ip, min_length,
-                                             max_length)))
+                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
+                )
+            )
 
     return [input_prefix]

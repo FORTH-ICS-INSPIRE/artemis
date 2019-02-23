@@ -1,4 +1,4 @@
-[![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis) 
+[![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis)
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
 [![Coverage Status](https://coveralls.io/repos/github/FORTH-ICS-INSPIRE/artemis/badge.svg)](https://coveralls.io/github/FORTH-ICS-INSPIRE/artemis)
 [![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
@@ -47,12 +47,12 @@ can be neutralized within a minute!
 
 *Any of these combinations is valid. To start with, we recommend using mode (2).*
 
-You can read more about the ARTEMIS methodology and research experiments 
+You can read more about the ARTEMIS methodology and research experiments
 on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a server/VM as a modular and extensible
-multi-container application. It has been tested at a major 
+multi-container application. It has been tested at a major
 greek ISP, a dual-homed edge academic network,
 and a major US R&E backbone network.
 

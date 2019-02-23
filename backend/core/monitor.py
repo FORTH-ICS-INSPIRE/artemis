@@ -1,14 +1,21 @@
-import radix
-from subprocess import Popen
-from utils import exception_handler, RABBITMQ_HOST, get_logger
-from kombu import Connection, Queue, Exchange, uuid, Consumer
-from kombu.mixins import ConsumerProducerMixin
 import signal
+from subprocess import Popen
+
+import radix
+from kombu import Connection
+from kombu import Consumer
+from kombu import Exchange
+from kombu import Queue
+from kombu import uuid
+from kombu.mixins import ConsumerProducerMixin
+from utils import exception_handler
+from utils import get_logger
+from utils import RABBITMQ_URI
 
 log = get_logger()
 
 
-class Monitor():
+class Monitor:
     def __init__(self):
         self.worker = None
         signal.signal(signal.SIGTERM, self.exit)
@@ -20,15 +27,15 @@ class Monitor():
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
         try:
-            with Connection(RABBITMQ_HOST) as connection:
+            with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:
-            log.exception('exception')
+            log.exception("exception")
         finally:
             if self.worker:
                 self.worker.stop()
-            log.info('stopped')
+            log.info("stopped")
 
     def exit(self, signum, frame):
         if self.worker:
@@ -47,20 +54,22 @@ class Monitor():
 
             # EXCHANGES
             self.config_exchange = Exchange(
-                'config', type='direct', durable=False, delivery_mode=1)
+                "config", type="direct", durable=False, delivery_mode=1
+            )
 
             # QUEUES
             self.config_queue = Queue(
-                'monitor-config-notify',
+                "monitor-config-notify",
                 exchange=self.config_exchange,
-                routing_key='notify',
+                routing_key="notify",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
-                consumer_arguments={'x-priority': 2})
+                consumer_arguments={"x-priority": 2},
+            )
 
             self.config_request_rpc()
-            log.info('started')
+            log.info("started")
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -68,17 +77,17 @@ class Monitor():
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
-                    no_ack=True)
+                    no_ack=True,
+                )
             ]
 
         def handle_config_notify(self, message):
-            log.debug('message: {}\npayload: {}'.format(
-                message, message.payload))
+            log.debug("message: {}\npayload: {}".format(message, message.payload))
             raw = message.payload
-            if raw['timestamp'] > self.timestamp:
-                self.timestamp = raw['timestamp']
-                self.rules = raw.get('rules', [])
-                self.monitors = raw.get('monitors', {})
+            if raw["timestamp"] > self.timestamp:
+                self.timestamp = raw["timestamp"]
+                self.rules = raw.get("rules", [])
+                self.monitors = raw.get("monitors", {})
                 self.start_monitors()
 
         def start_monitors(self):
@@ -86,20 +95,20 @@ class Monitor():
                 try:
                     proc_id[1].terminate()
                 except ProcessLookupError:
-                    log.exception('process terminate')
+                    log.exception("process terminate")
             self.process_ids.clear()
             self.prefixes.clear()
 
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
                 try:
-                    for prefix in rule['prefixes']:
+                    for prefix in rule["prefixes"]:
                         node = self.prefix_tree.add(prefix)
-                        node.data['origin_asns'] = rule['origin_asns']
-                        node.data['neighbors'] = rule['neighbors']
-                        node.data['mitigation'] = rule['mitigation']
+                        node.data["origin_asns"] = rule["origin_asns"]
+                        node.data["neighbors"] = rule["neighbors"]
+                        node.data["mitigation"] = rule["mitigation"]
                 except Exception:
-                    log.exception('Exception')
+                    log.exception("Exception")
 
             # only keep super prefixes for monitors
             for prefix in self.prefix_tree.prefixes():
@@ -117,7 +126,7 @@ class Monitor():
                     try:
                         proc_id[1].terminate()
                     except ProcessLookupError:
-                        log.exception('process terminate')
+                        log.exception("process terminate")
                 self.flag = False
                 self.rules = None
                 self.monitors = None
@@ -129,114 +138,160 @@ class Monitor():
                 durable=False,
                 auto_delete=True,
                 max_priority=4,
-                consumer_arguments={'x-priority': 4})
+                consumer_arguments={"x-priority": 4},
+            )
 
             self.producer.publish(
-                '',
-                exchange='',
-                routing_key='config-request-queue',
+                "",
+                exchange="",
+                routing_key="config-request-queue",
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        'config-request-queue',
+                        "config-request-queue",
                         durable=False,
                         max_priority=4,
-                        consumer_arguments={'x-priority': 4}), callback_queue
+                        consumer_arguments={"x-priority": 4},
+                    ),
+                    callback_queue,
                 ],
-                priority=4)
+                priority=4,
+            )
             with Consumer(
-                    self.connection,
-                    on_message=self.handle_config_request_reply,
-                    queues=[callback_queue],
-                    no_ack=True):
+                self.connection,
+                on_message=self.handle_config_request_reply,
+                queues=[callback_queue],
+                no_ack=True,
+            ):
                 while not self.rules and not self.monitors:
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):
-            log.debug('message: {}\npayload: {}'.format(
-                message, message.payload))
-            if self.correlation_id == message.properties['correlation_id']:
+            log.debug("message: {}\npayload: {}".format(message, message.payload))
+            if self.correlation_id == message.properties["correlation_id"]:
                 raw = message.payload
-                if raw['timestamp'] > self.timestamp:
-                    self.timestamp = raw['timestamp']
-                    self.rules = raw.get('rules', [])
-                    self.monitors = raw.get('monitors', {})
+                if raw["timestamp"] > self.timestamp:
+                    self.timestamp = raw["timestamp"]
+                    self.rules = raw.get("rules", [])
+                    self.monitors = raw.get("monitors", {})
                     self.start_monitors()
 
         @exception_handler(log)
         def init_ris_instances(self):
-            log.debug('starting {} for {}'.format(
-                self.monitors.get('riperis', []), self.prefixes))
-            for ris_monitor in self.monitors.get('riperis', []):
+            log.debug(
+                "starting {} for {}".format(
+                    self.monitors.get("riperis", []), self.prefixes
+                )
+            )
+            for ris_monitor in self.monitors.get("riperis", []):
                 for prefix in self.prefixes:
-                    p = Popen([
-                        '/usr/local/bin/python3', 'taps/ripe_ris.py',
-                        '--prefix', prefix, '--host', ris_monitor
-                    ],
-                              shell=False)
-                    self.process_ids.append(('RIPEris {} {}'.format(
-                        ris_monitor, prefix), p))
+                    p = Popen(
+                        [
+                            "/usr/local/bin/python3",
+                            "taps/ripe_ris.py",
+                            "--prefix",
+                            prefix,
+                            "--host",
+                            ris_monitor,
+                        ],
+                        shell=False,
+                    )
+                    self.process_ids.append(
+                        ("RIPEris {} {}".format(ris_monitor, prefix), p)
+                    )
 
         @exception_handler(log)
         def init_exabgp_instances(self):
-            log.debug('starting {} for {}'.format(
-                self.monitors.get('exabgp', []), self.prefixes))
-            for exabgp_monitor in self.monitors.get('exabgp', []):
-                exabgp_monitor_str = '{}:{}'.format(exabgp_monitor['ip'],
-                                                    exabgp_monitor['port'])
-                p = Popen([
-                    '/usr/local/bin/python3', 'taps/exabgp_client.py',
-                    '--prefix', ','.join(
-                        self.prefixes), '--host', exabgp_monitor_str
-                ],
-                          shell=False)
-                self.process_ids.append(('ExaBGP {} {}'.format(
-                    exabgp_monitor_str, self.prefixes), p))
+            log.debug(
+                "starting {} for {}".format(
+                    self.monitors.get("exabgp", []), self.prefixes
+                )
+            )
+            for exabgp_monitor in self.monitors.get("exabgp", []):
+                exabgp_monitor_str = "{}:{}".format(
+                    exabgp_monitor["ip"], exabgp_monitor["port"]
+                )
+                p = Popen(
+                    [
+                        "/usr/local/bin/python3",
+                        "taps/exabgp_client.py",
+                        "--prefix",
+                        ",".join(self.prefixes),
+                        "--host",
+                        exabgp_monitor_str,
+                    ],
+                    shell=False,
+                )
+                self.process_ids.append(
+                    ("ExaBGP {} {}".format(exabgp_monitor_str, self.prefixes), p)
+                )
 
         @exception_handler(log)
         def init_bgpstreamhist_instance(self):
-            if 'bgpstreamhist' in self.monitors:
-                log.debug('starting {} for {}'.format(
-                    self.monitors['bgpstreamhist'], self.prefixes))
-                bgpstreamhist_dir = self.monitors['bgpstreamhist']
-                p = Popen([
-                    '/usr/local/bin/python3', 'taps/bgpstreamhist.py',
-                    '--prefix', ','.join(
-                        self.prefixes), '--dir', bgpstreamhist_dir
-                ],
-                          shell=False)
-                self.process_ids.append(('BGPStreamHist {} {}'.format(
-                    bgpstreamhist_dir, self.prefixes), p))
+            if "bgpstreamhist" in self.monitors:
+                log.debug(
+                    "starting {} for {}".format(
+                        self.monitors["bgpstreamhist"], self.prefixes
+                    )
+                )
+                bgpstreamhist_dir = self.monitors["bgpstreamhist"]
+                p = Popen(
+                    [
+                        "/usr/local/bin/python3",
+                        "taps/bgpstreamhist.py",
+                        "--prefix",
+                        ",".join(self.prefixes),
+                        "--dir",
+                        bgpstreamhist_dir,
+                    ],
+                    shell=False,
+                )
+                self.process_ids.append(
+                    ("BGPStreamHist {} {}".format(bgpstreamhist_dir, self.prefixes), p)
+                )
 
         @exception_handler(log)
         def init_bgpstreamlive_instance(self):
-            if 'bgpstreamlive' in self.monitors:
-                log.debug('starting {} for {}'.format(
-                    self.monitors['bgpstreamlive'], self.prefixes))
-                bgpstream_projects = ','.join(self.monitors['bgpstreamlive'])
-                p = Popen([
-                    '/usr/local/bin/python3', 'taps/bgpstreamlive.py',
-                    '--prefix', ','.join(
-                        self.prefixes), '--mon_projects', bgpstream_projects
-                ],
-                          shell=False)
-                self.process_ids.append(('BGPStreamLive {} {}'.format(
-                    bgpstream_projects, self.prefixes), p))
+            if "bgpstreamlive" in self.monitors:
+                log.debug(
+                    "starting {} for {}".format(
+                        self.monitors["bgpstreamlive"], self.prefixes
+                    )
+                )
+                bgpstream_projects = ",".join(self.monitors["bgpstreamlive"])
+                p = Popen(
+                    [
+                        "/usr/local/bin/python3",
+                        "taps/bgpstreamlive.py",
+                        "--prefix",
+                        ",".join(self.prefixes),
+                        "--mon_projects",
+                        bgpstream_projects,
+                    ],
+                    shell=False,
+                )
+                self.process_ids.append(
+                    ("BGPStreamLive {} {}".format(bgpstream_projects, self.prefixes), p)
+                )
 
         @exception_handler(log)
         def init_betabmp_instance(self):
-            if 'betabmp' in self.monitors:
-                log.debug('starting {} for {}'.format(self.monitors['betabmp'],
-                                                      self.prefixes))
-                p = Popen([
-                    '/usr/local/bin/python3', 'taps/betabmp.py', '--prefix',
-                    ','.join(self.prefixes)
-                ],
-                          shell=False)
-                self.process_ids.append(('Beta BMP {}'.format(self.prefixes),
-                                         p))
+            if "betabmp" in self.monitors:
+                log.debug(
+                    "starting {} for {}".format(self.monitors["betabmp"], self.prefixes)
+                )
+                p = Popen(
+                    [
+                        "/usr/local/bin/python3",
+                        "taps/betabmp.py",
+                        "--prefix",
+                        ",".join(self.prefixes),
+                    ],
+                    shell=False,
+                )
+                self.process_ids.append(("Beta BMP {}".format(self.prefixes), p))
 
 
 def run():
@@ -244,5 +299,5 @@ def run():
     service.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()

@@ -22,9 +22,7 @@ query = 'INSERT INTO process_states (name, running) ' \
 
 def create_connect_db():
     _db_conn = None
-    time_sleep_connection_retry = 5
-    while _db_conn is None:
-        time.sleep(time_sleep_connection_retry)
+    while not _db_conn:
         try:
             _db_name = os.getenv('DATABASE_NAME', 'artemis_db')
             _user = os.getenv('DATABASE_USER', 'artemis_user')
@@ -32,12 +30,9 @@ def create_connect_db():
             _password = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
 
             _db_conn = psycopg2.connect(
-                dbname=_db_name,
-                user=_user,
-                host=_host,
-                password=_password
-            )
+                dbname=_db_name, user=_user, host=_host, password=_password)
         except BaseException as e:
+            time.sleep(1)
             write_stderr('Db connection exception: {}'.format(e))
 
     return _db_conn
@@ -51,8 +46,8 @@ def run():
         body = dict([pair.split(":") for pair in body.split(" ")])
         # write_stderr('{} | {}'.format(headers, body))
 
-        if headers['eventname'] in (
-                'PROCESS_STATE_RUNNING', 'PROCESS_STATE_STOPPED'):
+        if headers['eventname'] in ('PROCESS_STATE_RUNNING',
+                                    'PROCESS_STATE_STOPPED'):
             process = body['processname']
             if process != 'listener':
                 new_state = headers['eventname'] == 'PROCESS_STATE_RUNNING'

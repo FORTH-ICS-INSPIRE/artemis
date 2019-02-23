@@ -15,9 +15,10 @@ main = Blueprint('main', __name__, template_folder='templates')
 def display_monitors():
     app.config['configuration'].get_newest_config()
     prefixes_list = app.config['configuration'].get_prefixes_list()
-    return render_template('bgpupdates.htm',
-                           prefixes=prefixes_list,
-                           js_version=app.config['JS_VERSION'])
+    return render_template(
+        'bgpupdates.htm',
+        prefixes=prefixes_list,
+        js_version=app.config['JS_VERSION'])
 
 
 @main.route('/hijacks/')
@@ -35,10 +36,11 @@ def display_hijacks():
     else:
         app.config['configuration'].get_newest_config()
         prefixes_list = app.config['configuration'].get_prefixes_list()
-        return render_template('hijacks.htm',
-                               hijack_keys=None,
-                               prefixes=prefixes_list,
-                               js_version=app.config['JS_VERSION'])
+        return render_template(
+            'hijacks.htm',
+            hijack_keys=None,
+            prefixes=prefixes_list,
+            js_version=app.config['JS_VERSION'])
 
 
 @main.route('/hijack', methods=['GET'])
@@ -58,18 +60,19 @@ def display_hijack():
         return render_template('404.htm')
 
     if 'configured_prefix' in hijack_data:
-        if hijack_data['configured_prefix'] in app.config['configuration'].get_prefixes_list():
+        if hijack_data['configured_prefix'] in app.config[
+                'configuration'].get_prefixes_list():
             _configured = True
 
     if mitigation_status_request.is_up_or_running('mitigation'):
         _mitigation_flag = True
 
-    return render_template('hijack.htm',
-                           data=json.dumps(hijack_data),
-                           mitigate=_mitigation_flag,
-                           configured=_configured,
-                           js_version=app.config['JS_VERSION']
-                           )
+    return render_template(
+        'hijack.htm',
+        data=json.dumps(hijack_data),
+        mitigate=_mitigation_flag,
+        configured=_configured,
+        js_version=app.config['JS_VERSION'])
 
 
 @main.route('/visualizations/', methods=['GET'])
@@ -79,10 +82,11 @@ def display_visualizations():
     app.config['configuration'].get_newest_config()
     prefixes_list = app.config['configuration'].get_prefixes_list()
     json_config = app.config['configuration'].get_raw_json_config()
-    return render_template('viz.htm',
-                           prefixes=prefixes_list,
-                           config=json_config,
-                           js_version=app.config['JS_VERSION'])
+    return render_template(
+        'viz.htm',
+        prefixes=prefixes_list,
+        config=json_config,
+        js_version=app.config['JS_VERSION'])
 
 
 @main.route('/config_comparison', methods=['GET'])
@@ -90,6 +94,7 @@ def display_visualizations():
 def config_comparison():
     # log info
     _configs = fetch_all_config_timestamps()
-    return render_template('config_comparison.htm',
-                           configs=list(reversed(_configs)),
-                           js_version=app.config['JS_VERSION'])
+    return render_template(
+        'config_comparison.htm',
+        configs=list(reversed(_configs)),
+        js_version=app.config['JS_VERSION'])

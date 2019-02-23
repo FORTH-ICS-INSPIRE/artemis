@@ -22,16 +22,15 @@ def proxy_api_post(action, parameters):
         ret['total'] = total_count
         return ret
     except BaseException:
-        log.exception(
-            "action: {0}, parameters: {1}".format(
-                action, parameters))
+        log.exception("action: {0}, parameters: {1}".format(
+            action, parameters))
     return None
 
 
 def proxy_api_downloadTable(action, parameters):
     log.debug("{0}{1}".format(parameters, action))
     url_ = API_PATH + "/" + action
-    if(parameters is not None):
+    if (parameters is not None):
         url_ += "?and=" + parameters
 
     req = requests.get(url=url_, stream=True)

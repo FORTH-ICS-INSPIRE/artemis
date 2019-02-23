@@ -13,13 +13,13 @@ def parse_routeviews():
 
     for row in rows:
         cells = row.find_all("td")
-        if(len(cells) == 5):
+        if (len(cells) == 5):
             name = cells[0].text.replace('\n', '').split('.routeviews')[0]
             MFG = cells[1].text
             BGP_proto = cells[2].text
             location = cells[4].text
 
-            if('route-' in name):
+            if ('route-' in name):
                 collectors_obj[name] = {}
                 collectors_obj[name]['MFG'] = MFG
                 collectors_obj[name]['BGP_proto'] = BGP_proto
@@ -28,7 +28,8 @@ def parse_routeviews():
 
 def parse_ripe_ris():
     html = requests.get(
-        "https://www.ripe.net/analyse/internet-measurements/routing-information-service-ris/ris-raw-data").text
+        "https://www.ripe.net/analyse/internet-measurements/routing-information-service-ris/ris-raw-data"
+    ).text
     soup = BeautifulSoup(html, "html.parser")
     rows = soup.find_all('li')
 

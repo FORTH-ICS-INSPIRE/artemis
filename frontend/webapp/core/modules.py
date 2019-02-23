@@ -8,8 +8,8 @@ log = logging.getLogger('webapp_logger')
 
 intervals = (
     ('W', 604800),  # 60 * 60 * 24 * 7
-    ('D', 86400),    # 60 * 60 * 24
-    ('H', 3600),    # 60 * 60
+    ('D', 86400),  # 60 * 60 * 24
+    ('H', 3600),  # 60 * 60
     ('M', 60),
     ('S', 1),
 )
@@ -29,10 +29,9 @@ def display_time(seconds, granularity=2):
 
 
 class Modules_state():
-
     def __init__(self):
-        self.server = ServerProxy(
-            'http://{}:{}/RPC2'.format(SUPERVISOR_HOST, SUPERVISOR_PORT))
+        self.server = ServerProxy('http://{}:{}/RPC2'.format(
+            SUPERVISOR_HOST, SUPERVISOR_PORT))
 
     def call(self, module, action):
         try:
@@ -45,11 +44,13 @@ class Modules_state():
                 if action == 'start':
                     modules = self.is_any_up_or_running(module, up=False)
                     for mod in modules:
-                        _thread.start_new_thread(self.server.supervisor.startProcess, (mod,))
+                        _thread.start_new_thread(
+                            self.server.supervisor.startProcess, (mod, ))
                 elif action == 'stop':
                     modules = self.is_any_up_or_running(module)
                     for mod in modules:
-                        _thread.start_new_thread(self.server.supervisor.stopProcess, (mod,))
+                        _thread.start_new_thread(
+                            self.server.supervisor.stopProcess, (mod, ))
         except Exception:
             log.exception('exception')
 
@@ -67,10 +68,18 @@ class Modules_state():
     def is_any_up_or_running(self, module, up=True):
         try:
             if up:
-                return ['{}:{}'.format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
-                        if x['group'] == module and (x['state'] == 20 or x['state'] == 10)]
-            return ["{}:{}".format(x['group'], x['name']) for x in self.server.supervisor.getAllProcessInfo()
-                    if x['group'] == module and (x['state'] != 20 and x['state'] != 10)]
+                return [
+                    '{}:{}'.format(x['group'], x['name'])
+                    for x in self.server.supervisor.getAllProcessInfo()
+                    if x['group'] == module and (
+                        x['state'] == 20 or x['state'] == 10)
+                ]
+            return [
+                "{}:{}".format(x['group'], x['name'])
+                for x in self.server.supervisor.getAllProcessInfo()
+                if x['group'] == module and (
+                    x['state'] != 20 and x['state'] != 10)
+            ]
         except Exception:
             log.exception('exception')
             return False

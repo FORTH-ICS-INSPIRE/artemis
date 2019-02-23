@@ -120,26 +120,23 @@ def generate_config_yml(prefixes, asns, prefix_pols, yml_file=None):
         create_rule_defs(yaml_conf, prefixes, asns, prefix_pols)
 
         # in-file comments
-        yaml_conf.yaml_set_comment_before_after_key('prefixes',
-                                                    before='Start of Prefix Definitions')
-        yaml_conf.yaml_set_comment_before_after_key('monitors',
-                                                    before='End of Prefix Definitions')
-        yaml_conf.yaml_set_comment_before_after_key('monitors',
-                                                    before='\n')
-        yaml_conf.yaml_set_comment_before_after_key('monitors',
-                                                    before='Start of Monitor Definitions')
-        yaml_conf.yaml_set_comment_before_after_key('asns',
-                                                    before='End of Monitor Definitions')
-        yaml_conf.yaml_set_comment_before_after_key('asns',
-                                                    before='\n')
-        yaml_conf.yaml_set_comment_before_after_key('asns',
-                                                    before='Start of ASN Definitions')
-        yaml_conf.yaml_set_comment_before_after_key('rules',
-                                                    before='End of ASN Definitions')
-        yaml_conf.yaml_set_comment_before_after_key('rules',
-                                                    before='\n')
-        yaml_conf.yaml_set_comment_before_after_key('rules',
-                                                    before='Start of Rule Definitions')
+        yaml_conf.yaml_set_comment_before_after_key(
+            'prefixes', before='Start of Prefix Definitions')
+        yaml_conf.yaml_set_comment_before_after_key(
+            'monitors', before='End of Prefix Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('monitors', before='\n')
+        yaml_conf.yaml_set_comment_before_after_key(
+            'monitors', before='Start of Monitor Definitions')
+        yaml_conf.yaml_set_comment_before_after_key(
+            'asns', before='End of Monitor Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('asns', before='\n')
+        yaml_conf.yaml_set_comment_before_after_key(
+            'asns', before='Start of ASN Definitions')
+        yaml_conf.yaml_set_comment_before_after_key(
+            'rules', before='End of ASN Definitions')
+        yaml_conf.yaml_set_comment_before_after_key('rules', before='\n')
+        yaml_conf.yaml_set_comment_before_after_key(
+            'rules', before='Start of Rule Definitions')
         # dump conf
         yaml.dump(yaml_conf, f)
 

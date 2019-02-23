@@ -22,7 +22,10 @@ def load_migrations_json():
 def read_migration_sql_file(filename):
     print("Reading migration .sql file: {}...".format(filename))
     try:
-        with c_open("/root/migrate/migrations/scripts/" + filename, mode='r', encoding='utf-8-sig') as f:
+        with c_open(
+                "/root/migrate/migrations/scripts/" + filename,
+                mode='r',
+                encoding='utf-8-sig') as f:
             migration_file = f.read()
     except Exception:
         print("Couldn't open migrations script: {}".format(filename))
@@ -43,13 +46,10 @@ def create_connect_db():
             _password = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
 
             _db_conn = psycopg2.connect(
-                dbname=_db_name,
-                user=_user,
-                host=_host,
-                password=_password
-            )
+                dbname=_db_name, user=_user, host=_host, password=_password)
         except Exception:
-            print("Exception couldn't connect to db.\nRetrying in 5 seconds...")
+            print(
+                "Exception couldn't connect to db.\nRetrying in 5 seconds...")
     print('PostgreSQL DB created/connected..')
     return _db_conn
 
@@ -75,7 +75,7 @@ def update_version(current_db_version, db_cur, db_conn):
     print("Updating db version to {}...".format(current_db_version))
     cmd = "UPDATE db_details SET version=%s, upgraded_on=now();"
     try:
-        db_cur.execute(cmd, (current_db_version,))
+        db_cur.execute(cmd, (current_db_version, ))
         db_conn.commit()
     except Exception:
         db_conn.rollback()
@@ -92,12 +92,13 @@ def start_migrations(current_db_version, target_db_version, db_conn):
     count_migration = 0
     total_migrations = int(target_db_version) - int(current_db_version)
 
-    while(current_db_version < target_db_version):
+    while (current_db_version < target_db_version):
         next_db_version = int(current_db_version) + 1
         next_db_version_key_str = str(next_db_version)
         if next_db_version_key_str in migration_data['migrations']:
             status = migrate(
-                migration_data['migrations'][next_db_version_key_str], db_cur, db_conn)
+                migration_data['migrations'][next_db_version_key_str], db_cur,
+                db_conn)
             if status:
                 current_db_version = int(current_db_version) + 1
                 update_version(current_db_version, db_cur, db_conn)
@@ -143,8 +144,8 @@ if __name__ == "__main__":
         msg += "Migrating from version {0} to {1}".format(
             current_db_version, target_db_version)
         print(msg)
-        result = start_migrations(
-            current_db_version, target_db_version, db_conn)
+        result = start_migrations(current_db_version, target_db_version,
+                                  db_conn)
         print("The db schema has been succesfully updated!")
     else:
         print("The db schema is uptodate.")

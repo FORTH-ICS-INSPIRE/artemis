@@ -19,12 +19,13 @@ from webapp.views.actions.actions_view import actions
 import time
 import logging
 
-app = Flask(__name__,
-            instance_path=get_app_base_path(),
-            instance_relative_config=True,
-            template_folder='../templates',
-            static_url_path='',
-            static_folder='../static')
+app = Flask(
+    __name__,
+    instance_path=get_app_base_path(),
+    instance_relative_config=True,
+    template_folder='../templates',
+    static_url_path='',
+    static_folder='../static')
 
 with app.app_context():
     configure_app(app)
@@ -97,6 +98,7 @@ def setup():
             ctx.commit()
             ctx.create_role(name='user')
             ctx.commit()
+
         create_roles(data_store)
 
         def create_user(ctx):
@@ -109,8 +111,11 @@ def setup():
                 if password:
                     password = hash_password(password)
 
-                user = ctx.create_user(username=username,
-                                       email=email, password=password, active=is_active)
+                user = ctx.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    active=is_active)
                 ctx.commit()
                 role = ctx.find_or_create_role('admin')
 
@@ -231,11 +236,12 @@ def overview():
     app.artemis_logger.debug("url: /")
     app.config['configuration'].get_newest_config()
     newest_config = app.config['configuration'].get_raw_config()
-    return render_template('index.htm',
-                           config=newest_config,
-                           config_timestamp=app.config['configuration'].get_config_last_modified(
-                           ),
-                           js_version=app.config['JS_VERSION'])
+    return render_template(
+        'index.htm',
+        config=newest_config,
+        config_timestamp=app.config['configuration'].get_config_last_modified(
+        ),
+        js_version=app.config['JS_VERSION'])
 
 
 @app.login_manager.unauthorized_handler

@@ -1,0 +1,39 @@
+[
+    {
+        "send": {
+            "key": "1",
+            "timestamp": 1,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [4, 3, 2, 100],
+            "prefix": "10.128.0.0/16",
+            "peer_asn": 4
+        },
+        "detection_update_response": {
+            "key": "1",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "origin_as": 100
+        },
+        "detection_hijack_response": {
+            "prefix": "10.128.0.0/16",
+            "hijack_as": 100,
+            "type": "S|0|-",
+            "time_started": 1.0,
+            "configured_prefix": "10.0.0.0/8"
+        },
+        "database_hijack_response": {
+            "type": "S|0|-",
+            "active": true,
+            "prefix": "10.128.0.0/16",
+            "asns_inf": [2, 3, 4],
+            "hijack_as": 100,
+            "peers_seen": [4],
+            "num_asns_inf": 3,
+            "num_peers_seen": 1,
+            "configured_prefix": "10.0.0.0/8"
+        }
+    }
+]

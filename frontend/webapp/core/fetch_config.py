@@ -11,7 +11,6 @@ API_PATH = 'http://' + API_URL_FLASK
 
 
 class Configuration():
-
     def __init__(self):
         self.raw_json = None
         self.raw_json_config = None
@@ -22,9 +21,8 @@ class Configuration():
 
     def get_newest_config(self):
         try:
-            log.debug(
-                'send request for newest config: {}'.format(
-                    self.raw_json))
+            log.debug('send request for newest config: {}'.format(
+                self.raw_json))
             url_ = API_PATH + '/configs?order=time_modified.desc&limit=1'
             response = requests.get(url=url_)
             self.raw_json = response.json()

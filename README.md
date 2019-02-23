@@ -1,5 +1,6 @@
 [![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis)
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Coverage Status](https://coveralls.io/repos/github/FORTH-ICS-INSPIRE/artemis/badge.svg)](https://coveralls.io/github/FORTH-ICS-INSPIRE/artemis)
 [![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)

@@ -6,3 +6,5 @@ exclude_lines =
     raise
     log.warning
     log.exception
+    log.error
+    log.debug

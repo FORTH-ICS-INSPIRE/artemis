@@ -946,35 +946,38 @@ class Database:
                             )
                             entries = db_cur.fetchall()
 
-                        entry = entries[0]
-                        redis_hijack_key = redis_key(
-                            entry[0], entry[1], entry[2]  # prefix  # hijack_as  # type
-                        )
-                        if seen_action:
-                            with get_wo_cursor(self.wo_conn) as db_cur:
-                                db_cur.execute(query, (hijack_key,))
-                        elif ignore_action:
-                            # if ongoing, force rekeying and delete persistent
-                            # too
-                            if self.redis.sismember("persistent-keys", hijack_key):
-                                purge_redis_eph_pers_keys(
-                                    self.redis, redis_hijack_key, hijack_key
-                                )
-                            with get_wo_cursor(self.wo_conn) as db_cur:
-                                db_cur.execute(query, (hijack_key,))
-                        elif resolve_action:
-                            # if ongoing, force rekeying and delete persistent
-                            # too
-                            if self.redis.sismember("persistent-keys", hijack_key):
-                                purge_redis_eph_pers_keys(
-                                    self.redis, redis_hijack_key, hijack_key
-                                )
-                            with get_wo_cursor(self.wo_conn) as db_cur:
-                                db_cur.execute(
-                                    query, (datetime.datetime.now(), hijack_key)
-                                )
-                        else:
-                            raise BaseException("unreachable code reached")
+                        if entries:
+                            entry = entries[0]
+                            redis_hijack_key = redis_key(
+                                entry[0],
+                                entry[1],
+                                entry[2],  # prefix  # hijack_as  # type
+                            )
+                            if seen_action:
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(query, (hijack_key,))
+                            elif ignore_action:
+                                # if ongoing, force rekeying and delete persistent
+                                # too
+                                if self.redis.sismember("persistent-keys", hijack_key):
+                                    purge_redis_eph_pers_keys(
+                                        self.redis, redis_hijack_key, hijack_key
+                                    )
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(query, (hijack_key,))
+                            elif resolve_action:
+                                # if ongoing, force rekeying and delete persistent
+                                # too
+                                if self.redis.sismember("persistent-keys", hijack_key):
+                                    purge_redis_eph_pers_keys(
+                                        self.redis, redis_hijack_key, hijack_key
+                                    )
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(
+                                        query, (datetime.datetime.now(), hijack_key)
+                                    )
+                            else:
+                                raise BaseException("unreachable code reached")
 
                     except Exception:
                         log.exception("{}".format(raw))

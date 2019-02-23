@@ -24,4 +24,3 @@ create or replace function rabbitmq.on_row_change() returns trigger as $$
     return null;
   end;
 $$ stable language plpgsql;
-

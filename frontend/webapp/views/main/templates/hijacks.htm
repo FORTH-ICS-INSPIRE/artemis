@@ -96,7 +96,7 @@
 
         <div class="row mt-3">
             <div class="col-lg-8">
-                <p> Select Status: 
+                <p> Select Status:
                     <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm" onclick="filter_by_status('active');">Ongoing</button> /
                     <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm" onclick="filter_by_status('resolved');">Resolved</button> /
                     <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm" onclick="filter_by_status('ignored');">Ignored</button> /
@@ -151,7 +151,7 @@
                 </div>
             </div>
         </div>
-    
+
 {% endblock %}
 
 {% block body %}
@@ -342,7 +342,7 @@
                                 }else{
                                     $(this).children("input").addClass("is-invalid");
                                     $(this).children("div").text('Not a valid v4/v6 prefix');
-                                    $(this).children("div").show();   
+                                    $(this).children("div").show();
                                 }
                             }else if(search_table_map[index] == 'hijack_as'){
                                 var number_reg = /^\s*(\d+)\s*$/;
@@ -470,7 +470,7 @@
                         }else{
                             query += " { aggregate { totalCount: count } }";
                         }
-                        query += " view_data: view_hijacks(limit: " + datatable_parameters['limit'] + ", offset: " + datatable_parameters['offset'] 
+                        query += " view_data: view_hijacks(limit: " + datatable_parameters['limit'] + ", offset: " + datatable_parameters['offset']
                         query += ", order_by: {" + columns[data.order[0].column].data + ": " + sort + "} "
                         if(datatable_parameters['and'] != null){
                             query += datatable_parameters['and'] +  ")";
@@ -497,10 +497,10 @@
                             });
                         });
                         var tool_elems = $("#hijacks_wrapper").children('div').eq(0).children('div');
-                        
+
                         var prefixes_select = "  |  <label>Select prefix</label>  ";
                         prefixes_select += '<select class="form-control form-control-sm custom-select custom-select-sm" id="prefixes_selection">';
-                        prefixes_select += '<option>All</option>';       
+                        prefixes_select += '<option>All</option>';
                         {% for prefix in prefixes %}
                             prefixes_select += '<option>{{ prefix }}</option>';
                         {% endfor %}
@@ -669,7 +669,7 @@
                 );
                 {% if current_user.has_roles('admin') %}
 
-                
+
                 {% endif %}
 
                 $('#timezone').html(display_timezone());

@@ -222,4 +222,3 @@ function fetchConfigStatsLive(ws, cb_func) {
         configStatsCalled = true;
     }
 }
-

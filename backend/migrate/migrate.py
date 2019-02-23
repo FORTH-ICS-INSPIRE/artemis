@@ -1,20 +1,21 @@
-import os
 import json
-import psycopg2
+import os
 import time
 from codecs import open as c_open
+
+import psycopg2
 
 
 def get_target_version():
     print("Getting target version...")
-    target_version = os.getenv('DATABASE_VERSION', None)
+    target_version = os.getenv("DATABASE_VERSION", None)
     print("-> Target version is: {}".format(target_version))
     return target_version
 
 
 def load_migrations_json():
     print("Loading migrations file...")
-    with c_open('/root/migrate/migrations/target_steps.json') as json_data:
+    with c_open("/root/migrate/migrations/target_steps.json") as json_data:
         data = json.load(json_data)
     return data
 
@@ -23,9 +24,10 @@ def read_migration_sql_file(filename):
     print("Reading migration .sql file: {}...".format(filename))
     try:
         with c_open(
-                "/root/migrate/migrations/scripts/" + filename,
-                mode='r',
-                encoding='utf-8-sig') as f:
+            "/root/migrate/migrations/scripts/" + filename,
+            mode="r",
+            encoding="utf-8-sig",
+        ) as f:
             migration_file = f.read()
     except Exception:
         print("Couldn't open migrations script: {}".format(filename))
@@ -40,25 +42,25 @@ def create_connect_db():
     while _db_conn is None:
         time.sleep(time_sleep_connection_retry)
         try:
-            _db_name = os.getenv('DATABASE_NAME', 'artemis_db')
-            _user = os.getenv('DATABASE_USER', 'artemis_user')
-            _host = os.getenv('DATABASE_HOST', 'postgres')
-            _password = os.getenv('DATABASE_PASSWORD', 'Art3m1s')
+            _db_name = os.getenv("DATABASE_NAME", "artemis_db")
+            _user = os.getenv("DATABASE_USER", "artemis_user")
+            _host = os.getenv("DATABASE_HOST", "postgres")
+            _password = os.getenv("DATABASE_PASSWORD", "Art3m1s")
 
             _db_conn = psycopg2.connect(
-                dbname=_db_name, user=_user, host=_host, password=_password)
+                dbname=_db_name, user=_user, host=_host, password=_password
+            )
         except Exception:
-            print(
-                "Exception couldn't connect to db.\nRetrying in 5 seconds...")
-    print('PostgreSQL DB created/connected..')
+            print("Exception couldn't connect to db.\nRetrying in 5 seconds...")
+    print("PostgreSQL DB created/connected..")
     return _db_conn
 
 
 def migrate(next_db_version, db_cur, db_conn):
-    print("Executing migration {}...".format(next_db_version['db_version']))
-    print("{0}".format(next_db_version['description']))
+    print("Executing migration {}...".format(next_db_version["db_version"]))
+    print("{0}".format(next_db_version["description"]))
 
-    migration_command = read_migration_sql_file(next_db_version['file'])
+    migration_command = read_migration_sql_file(next_db_version["file"])
 
     print(" - - - - - \n\n {0} \n\n - - - - - ".format(migration_command))
     try:
@@ -75,7 +77,7 @@ def update_version(current_db_version, db_cur, db_conn):
     print("Updating db version to {}...".format(current_db_version))
     cmd = "UPDATE db_details SET version=%s, upgraded_on=now();"
     try:
-        db_cur.execute(cmd, (current_db_version, ))
+        db_cur.execute(cmd, (current_db_version,))
         db_conn.commit()
     except Exception:
         db_conn.rollback()
@@ -92,13 +94,13 @@ def start_migrations(current_db_version, target_db_version, db_conn):
     count_migration = 0
     total_migrations = int(target_db_version) - int(current_db_version)
 
-    while (current_db_version < target_db_version):
+    while current_db_version < target_db_version:
         next_db_version = int(current_db_version) + 1
         next_db_version_key_str = str(next_db_version)
-        if next_db_version_key_str in migration_data['migrations']:
+        if next_db_version_key_str in migration_data["migrations"]:
             status = migrate(
-                migration_data['migrations'][next_db_version_key_str], db_cur,
-                db_conn)
+                migration_data["migrations"][next_db_version_key_str], db_cur, db_conn
+            )
             if status:
                 current_db_version = int(current_db_version) + 1
                 update_version(current_db_version, db_cur, db_conn)
@@ -115,9 +117,9 @@ def extract_db_version(db_conn):
     print("Getting db version...")
     try:
         cur = db_conn.cursor()
-        cur.execute('SELECT version from db_details')
+        cur.execute("SELECT version from db_details")
         version = cur.fetchone()[0]
-    except psycopg2.DatabaseError as e:
+    except psycopg2.DatabaseError:
         db_conn.rollback()
         print("db version not found")
         version = None
@@ -142,10 +144,10 @@ if __name__ == "__main__":
     if current_db_version < target_db_version:
         msg = "The db schema is old.\n"
         msg += "Migrating from version {0} to {1}".format(
-            current_db_version, target_db_version)
+            current_db_version, target_db_version
+        )
         print(msg)
-        result = start_migrations(current_db_version, target_db_version,
-                                  db_conn)
+        result = start_migrations(current_db_version, target_db_version, db_conn)
         print("The db schema has been succesfully updated!")
     else:
         print("The db schema is uptodate.")

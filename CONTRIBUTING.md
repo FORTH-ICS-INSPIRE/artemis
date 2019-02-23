@@ -1,7 +1,7 @@
 # Contributing to ARTEMIS
 
 *First*: Feel free to ask, or submit the issue or
-pull request anyway. We appreciate any contributions, 
+pull request anyway. We appreciate any contributions,
 and we don't want a wall of rules to get in
 the way of that.
 
@@ -41,6 +41,14 @@ tag.
 
 - If you're working on an issue, please comment that you are doing so to prevent
   duplicate work by others also.
+
+- Use pre-commit hooks by installing pre-commit and adding the hooks to the repository.
+  This will run all the necessary tests before pushing your code.
+
+```
+pip install pre-commit
+pre-commit install
+```
 
 - Squash your commits and refer to the issue using `fix #<issue-no>` or `close
   #<issue-no>` in the commit message, at the end.

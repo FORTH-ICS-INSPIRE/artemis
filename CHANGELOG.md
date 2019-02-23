@@ -4,6 +4,7 @@
 ### Added
 - Added support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators
 - More tests for checking withdrawn hijacks
+- Pre-commit hooks
 
 
 ### Changed

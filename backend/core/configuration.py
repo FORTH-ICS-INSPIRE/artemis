@@ -327,7 +327,6 @@ class Configuration:
                     if key not in self.supported_monitors:
                         raise ArtemisError("invalid-monitor", key)
                     elif key == "riperis":
-                        self.parse_rrcs()
                         for unavailable in set(info).difference(self.available_ris):
                             log.warning("unavailable monitor {}".format(unavailable))
                     elif key == "bgpstreamlive":

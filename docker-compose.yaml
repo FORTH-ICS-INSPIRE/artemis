@@ -1,8 +1,7 @@
 version: '3'
 services:
     backend:
-        # image: inspiregroup/artemis-backend:${SYSTEM_VERSION}
-        build: ./backend/
+        image: inspiregroup/artemis-backend:${SYSTEM_VERSION}
         container_name: backend
         depends_on:
             - rabbitmq
@@ -35,8 +34,7 @@ services:
             # uncomment after Step 2 of README
             #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
-        # image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
-        build: ./frontend/
+        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
         depends_on:
             - rabbitmq

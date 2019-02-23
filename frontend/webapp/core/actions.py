@@ -1,5 +1,5 @@
 from kombu import Connection, Exchange, Consumer, Producer, Queue, uuid
-from webapp.utils import RABBITMQ_HOST
+from webapp.utils import RABBITMQ_URI
 import difflib
 import logging
 
@@ -23,7 +23,7 @@ class Resolve_hijack():
 
     def init_conn(self):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
+            self.connection = Connection(RABBITMQ_URI)
         except BaseException:
             log.exception('Resolve_hijack failed to connect to rabbitmq.')
 
@@ -57,7 +57,7 @@ class Mitigate_hijack():
 
     def init_conn(self):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
+            self.connection = Connection(RABBITMQ_URI)
         except BaseException:
             log.exception('Resolve_hijack failed to connect to rabbitmq.')
 
@@ -96,7 +96,7 @@ class Ignore_hijack():
 
     def init_conn(self):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
+            self.connection = Connection(RABBITMQ_URI)
         except BaseException:
             log.exception('Ignore_hijack failed to connect to rabbitmq.')
 
@@ -129,7 +129,7 @@ class Comment_hijack():
 
     def init_conn(self):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
+            self.connection = Connection(RABBITMQ_URI)
         except BaseException:
             log.exception('Comment_hijack failed to connect to rabbitmq.')
 
@@ -181,7 +181,7 @@ class Submit_new_config():
 
     def init_conn(self):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
+            self.connection = Connection(RABBITMQ_URI)
         except BaseException:
             log.exception('New_config failed to connect to rabbitmq.')
 
@@ -246,7 +246,7 @@ class Seen_hijack():
 
     def init_conn(self):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
+            self.connection = Connection(RABBITMQ_URI)
         except BaseException:
             log.exception('Seen_hijack failed to connect to rabbitmq.')
 
@@ -301,7 +301,7 @@ class Hijacks_multiple_action():
 
     def init_conn(self):
         try:
-            self.connection = Connection(RABBITMQ_HOST)
+            self.connection = Connection(RABBITMQ_URI)
         except BaseException:
             log.exception(
                 'Hijacks_multiple_action failed to connect to rabbitmq.')

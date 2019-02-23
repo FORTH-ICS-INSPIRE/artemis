@@ -4,7 +4,7 @@ import json
 import argparse
 from kombu import Connection, Producer, Exchange
 from netaddr import IPNetwork, IPAddress
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_URI, get_logger
 
 
 log = get_logger()
@@ -12,7 +12,7 @@ log = get_logger()
 
 def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
 
-    with Connection(RABBITMQ_HOST) as connection:
+    with Connection(RABBITMQ_URI) as connection:
         exchange = Exchange(
             'bgp-update',
             channel=connection,

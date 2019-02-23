@@ -11,7 +11,7 @@ services:
         expose:
             - ${SUPERVISOR_PORT}
         environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_URI: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
             POSTGRES_HOST: ${POSTGRES_HOST}
             DATABASE_NAME: ${DB_NAME}
             DATABASE_USER: ${DB_USER}
@@ -46,7 +46,7 @@ services:
         expose:
             - ${FLASK_PORT}
         environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_URI: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
             POSTGRES_HOST: ${POSTGRES_HOST}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
             MACHINE_IP: ${MACHINE_IP}
@@ -153,7 +153,7 @@ services:
             - artemis
         environment:
             - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-            - AMQP_URI=amqp://${RABBITMQ_HOST}//
+            - AMQP_URI=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
             - BRIDGE_CHANNELS=events:amq.direct
             # - RUST_LOG=debug
             # - RUST_BACKTRACE=1

@@ -1,7 +1,7 @@
 from socketIO_client import SocketIO, BaseNamespace
 import argparse
 from kombu import Connection, Producer, Exchange
-from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_HOST, get_logger
+from utils import mformat_validator, normalize_msg_path, key_generator, RABBITMQ_URI, get_logger
 import signal
 
 
@@ -19,7 +19,7 @@ class ExaBGP():
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def start(self):
-        with Connection(RABBITMQ_HOST) as connection:
+        with Connection(RABBITMQ_URI) as connection:
             self.connection = connection
             self.exchange = Exchange(
                 'bgp-update',

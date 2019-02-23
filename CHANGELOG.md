@@ -12,7 +12,7 @@
 - Updated/optimized db query for removing withdrawn peers (newer announcement)
 
 ### Fixed
-- TBD (bug-fix)
+- Fixed support for different user/pass on rabbitmq
 
 ### Removed
 - TBD (removed a feature)

@@ -1,6 +1,6 @@
 import radix
 import subprocess
-from utils import RABBITMQ_HOST, get_logger
+from utils import RABBITMQ_URI, get_logger
 from kombu import Connection, Queue, Exchange, uuid, Consumer
 from kombu.mixins import ConsumerProducerMixin
 import time
@@ -24,7 +24,7 @@ class Mitigation():
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
         try:
-            with Connection(RABBITMQ_HOST) as connection:
+            with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
                 self.worker.run()
         except Exception:

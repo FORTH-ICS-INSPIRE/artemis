@@ -1,3 +1,4 @@
+import difflib
 import hashlib
 import json
 import os
@@ -107,7 +108,6 @@ class Tester:
             event = body
         else:
             event = json.loads(body)
-        # logging.debug(event)
 
         # distinguish between type of messages
         if message.delivery_info["routing_key"] == "update-update":
@@ -159,7 +159,6 @@ class Tester:
         with conn.Producer() as producer:
             self.expected_messages = len(self.messages[self.curr_idx]) - 1
             print("Publishing #{}".format(self.curr_idx))
-            # logging.debug(messages[curr_idx]['send'])
 
             # offset to account for "real-time" tests
             for key in self.messages[self.curr_idx]["send"]:
@@ -291,6 +290,14 @@ class Tester:
 
             Tester.config_request_rpc(connection)
 
+            # call all helper functions
+            Helper.resolve(connection, "a", "139.5.46.0/24", "S|0|-", 133720)
+            Helper.mitigate(connection, "b", "139.5.236.0/24")
+            Helper.ignore_hijack(connection, "c", "139.5.237.0/24", "S|0|-", 136334)
+            Helper.comment(connection, "d", "test")
+            Helper.ack_hijack(connection, "e", "true")
+            Helper.multiple_action(connection, ["f", "g", "h", "i"], "mark_seen")
+
             for testfile in os.listdir("testfiles/"):
                 self.clear()
 
@@ -362,6 +369,151 @@ class Tester:
 
         self.waitProcess("coveralls", 20)  # 20 RUNNING
         self.waitProcess("coveralls", 100)  # 0 EXITED
+
+
+class Helper:
+    @staticmethod
+    def resolve(connection, hijack_key, prefix, type_, hijack_as):
+        hijack_exchange = Exchange(
+            "hijack-update", type="direct", durable=False, delivery_mode=1
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {
+                    "key": hijack_key,
+                    "prefix": prefix,
+                    "type": type_,
+                    "hijack_as": hijack_as,
+                },
+                exchange=hijack_exchange,
+                routing_key="resolved",
+                priority=2,
+            )
+
+    @staticmethod
+    def mitigate(connection, hijack_key, prefix):
+        mitigation_exchange = Exchange(
+            "mitigation", type="direct", durable=False, delivery_mode=1
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"key": hijack_key, "prefix": prefix},
+                exchange=mitigation_exchange,
+                routing_key="mitigate",
+                priority=2,
+            )
+
+    @staticmethod
+    def ignore_hijack(connection, hijack_key, prefix, type_, hijack_as):
+        hijack_exchange = Exchange(
+            "hijack-update", type="direct", durable=False, delivery_mode=1
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {
+                    "key": hijack_key,
+                    "prefix": prefix,
+                    "type": type_,
+                    "hijack_as": hijack_as,
+                },
+                exchange=hijack_exchange,
+                routing_key="ignored",
+                priority=2,
+            )
+
+    @staticmethod
+    def comment(connection, hijack_key, comment):
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"key": hijack_key, "comment": comment},
+                exchange="",
+                routing_key="db-hijack-comment",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                priority=4,
+            )
+
+    @staticmethod
+    def change_conf(connection, new_config, old_config, comment):
+        changes = "".join(difflib.unified_diff(new_config, old_config))
+        if changes:
+            correlation_id = uuid()
+            callback_queue = Queue(
+                uuid(),
+                durable=False,
+                auto_delete=True,
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
+            )
+            with connection.Producer() as producer:
+                producer.publish(
+                    {"config": new_config, "comment": comment},
+                    exchange="",
+                    routing_key="config-modify-queue",
+                    serializer="yaml",
+                    retry=True,
+                    declare=[callback_queue],
+                    reply_to=callback_queue.name,
+                    correlation_id=correlation_id,
+                    priority=4,
+                )
+
+    @staticmethod
+    def ack_hijack(connection, hijack_key, state):
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"key": hijack_key, "state": state},
+                exchange="",
+                routing_key="db-hijack-seen",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                priority=4,
+            )
+
+    @staticmethod
+    def multiple_action(connection, hijack_keys, action):
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"keys": hijack_keys, "action": action},
+                exchange="",
+                routing_key="db-hijack-multiple-action",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                priority=4,
+            )
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ HIJACK_DIM_COMBINATIONS = [
     ["S", "-", "-"],
     ["E", "0", "-"],
     ["E", "1", "-"],
-    ["E", "N", "-"],
+    ["E", "-", "-"],
     ["Q", "0", "-"],
 ]
 
@@ -315,7 +315,7 @@ class Detection:
                     conf_obj = {
                         "origin_asns": rule["origin_asns"],
                         "neighbors": rule["neighbors"],
-                        "no-export": rule["no-export"],
+                        "policies": set(rule["policies"]),
                     }
                     node.data["confs"].append(conf_obj)
 
@@ -592,8 +592,8 @@ class Detection:
         ) -> Tuple[int, str]:
             # Placeholder for type-N detection (not supported)
             for item in prefix_node.data["confs"]:
-                if item["no-export"]:
-                    return (monitor_event["path"][-3], "N")
+                if "no-export" in item["policies"]:
+                    return (monitor_event["path"][-3], "-")
             return (-1, "-")
 
         @exception_handler(log)

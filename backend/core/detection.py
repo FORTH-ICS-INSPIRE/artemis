@@ -564,7 +564,7 @@ class Detection:
             """
             Generator that returns policy dimension detection functions.
             """
-            if path_len > 2:
+            if path_len > 3:
                 yield self.detect_pol_leak_hijack
             yield self.detect_pol_other_hijack
 
@@ -671,7 +671,7 @@ class Detection:
             """
             for item in prefix_node.data["confs"]:
                 if "no-export" in item["policies"]:
-                    return (monitor_event["path"][-3], "L")
+                    return (monitor_event["path"][-2], "L")
             return (-1, "-")
 
         @exception_handler(log)
@@ -714,6 +714,8 @@ class Detection:
                 hijack_value["asns_inf"] = set(
                     monitor_event["path"][: -(int(hij_dimensions[1]) + 1)]
                 )
+            elif hij_dimensions[3] == "L":
+                hijack_value["asns_inf"] = set(monitor_event["path"][:-2])
             # assume the worst-case scenario of a type-2 hijack
             elif len(monitor_event["path"]) > 2:
                 hijack_value["asns_inf"] = set(monitor_event["path"][:-3])

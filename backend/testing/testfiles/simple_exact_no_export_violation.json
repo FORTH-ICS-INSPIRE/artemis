@@ -20,7 +20,7 @@
         },
         "detection_hijack_response": {
             "prefix": "10.0.5.0/24",
-            "hijack_as": 2,
+            "hijack_as": 1,
             "type": "E|-|-|L",
             "time_started": 1.0,
             "configured_prefix": "10.0.5.0/24"
@@ -29,10 +29,10 @@
             "type": "E|-|-|L",
             "active": true,
             "prefix": "10.0.5.0/24",
-            "asns_inf": [3, 4],
-            "hijack_as": 2,
+            "asns_inf": [2, 3, 4],
+            "hijack_as": 1,
             "peers_seen": [4],
-            "num_asns_inf": 2,
+            "num_asns_inf": 3,
             "num_peers_seen": 1,
             "configured_prefix": "10.0.5.0/24"
         }

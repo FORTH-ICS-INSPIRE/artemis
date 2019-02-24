@@ -20,12 +20,12 @@
         "detection_hijack_response": {
             "prefix": "10.0.5.0/24",
             "hijack_as": 2,
-            "type": "E|-|-",
+            "type": "E|-|-|-",
             "time_started": 1.0,
             "configured_prefix": "10.0.5.0/24"
         },
         "database_hijack_response": {
-            "type": "E|-|-",
+            "type": "E|-|-|-",
             "active": true,
             "prefix": "10.0.5.0/24",
             "asns_inf": [3, 4],

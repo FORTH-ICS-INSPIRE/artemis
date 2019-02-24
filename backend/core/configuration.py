@@ -66,6 +66,7 @@ class Configuration:
             self.sections = {"prefixes", "asns", "monitors", "rules"}
             self.supported_fields = {
                 "prefixes",
+                "no-export",
                 "origin_asns",
                 "neighbors",
                 "mitigation",
@@ -318,6 +319,7 @@ class Configuration:
                 if rule["neighbors"] == ["*"]:
                     rule["neighbors"] = [-1]
                 rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
+                rule["no-export"] = rule.get("no-export", False)
                 for asn in rule["origin_asns"] + rule["neighbors"]:
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)

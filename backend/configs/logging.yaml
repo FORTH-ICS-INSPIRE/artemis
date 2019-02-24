@@ -29,6 +29,7 @@ handlers:
         backupCount: 20
         encoding: utf8
 
+    # for email
     # smtps_handler:
     #     class: utils.SMTPSHandler
     #     level: INFO

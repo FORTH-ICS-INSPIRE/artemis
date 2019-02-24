@@ -143,8 +143,8 @@ class Tester:
                 isinstance(event[key], (list, set))
                 and set(event[key]) == set(expected[key])
             ), (
-                'Test "{}" - Batch #{} - Type {}: Unexpected '
-                'value for key "{}". Received: {}, Expected: {}'.format(
+                'Test "{}" - Batch #{} - Type {}: Unexpected'
+                ' value for key "{}". Received: {}, Expected: {}'.format(
                     self.curr_test,
                     self.curr_idx,
                     message.delivery_info["routing_key"],
@@ -152,6 +152,7 @@ class Tester:
                     event[key],
                     expected[key],
                 )
+            )
 
         self.expected_messages -= 1
         if self.expected_messages <= 0:

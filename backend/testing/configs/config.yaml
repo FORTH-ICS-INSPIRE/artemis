@@ -81,8 +81,8 @@ rules:
   - *24_5_origin
   neighbors:
       '*'
-  no-export:
-      True
+  policies:
+  - 'no-export'
   mitigation:
       manual
 - prefixes:

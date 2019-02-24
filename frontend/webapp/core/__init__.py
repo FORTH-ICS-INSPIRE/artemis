@@ -150,7 +150,7 @@ def internal_server_error(error):
 
 @app.errorhandler(Exception)
 def unhandled_exception(error):
-    app.artemis_logger.error("Unhandled Exception: {}".format(error))
+    app.artemis_logger.exception("Unhandled Exception: {}".format(error))
     return render_template("500.htm")
 
 

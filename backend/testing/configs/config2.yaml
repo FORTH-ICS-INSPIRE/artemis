@@ -5,6 +5,10 @@ monitors:
     riperis: ['rrc01']
     bgpstreamlive: ['routeviews', 'ris']
     betabmp: ['betabmp']
+    bgpstreamhist: ./
+    exabgp:
+        - ip: exabgp
+          port: 5000
 asns:
     my_asn: &my_asn
         8522

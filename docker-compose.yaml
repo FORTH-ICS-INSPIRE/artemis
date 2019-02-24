@@ -122,13 +122,16 @@ services:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
+            DB_BACKUP: ${DB_BACKUP}
+            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
         volumes:
             - ./postgres-data-current:/var/lib/postgresql/data
-            - ./other/postgres-backup.sh:/etc/periodic/daily/backup
+            - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
             - ./postgres-data-backup/:/tmp/
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
+        entrypoint: ["./postgres-entrypoint.sh"]
     postgrest:
         image: postgrest/postgrest:v5.2.0
         container_name: postgrest

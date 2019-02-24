@@ -272,13 +272,13 @@
         "detection_hijack_response": {
             "prefix": "10.0.4.0/24",
             "hijack_as": 110,
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "time_started": 11.0,
             "time_last": 24.0,
             "configured_prefix": "10.0.4.0/24"
         },
         "database_hijack_response": {
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "active": true,
             "prefix": "10.0.4.0/24",
             "asns_inf": [3, 5, 6, 7, 8, 9, 10],
@@ -330,13 +330,13 @@
         "detection_hijack_response": {
             "prefix": "10.0.4.0/24",
             "hijack_as": 110,
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "time_started": 11.0,
             "time_last": 28.0,
             "configured_prefix": "10.0.4.0/24"
         },
         "database_hijack_response": {
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "active": true,
             "prefix": "10.0.4.0/24",
             "asns_inf": [3, 5, 6, 7, 8, 9, 10],
@@ -361,7 +361,7 @@
             "peer_asn": 8
         },
         "database_hijack_response": {
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "active": true,
             "prefix": "10.0.4.0/24",
             "asns_inf": [3, 5, 6, 7, 8, 9, 10, 11],

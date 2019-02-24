@@ -2,7 +2,7 @@
 exclude_lines =
     except Exception:
     except Exception as e:
-    excpet ProcessLookupError:
+    except ProcessLookupError:
     raise
     log.warning
     log.exception

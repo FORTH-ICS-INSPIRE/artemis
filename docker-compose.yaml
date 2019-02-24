@@ -122,10 +122,10 @@ services:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
+            DB_BACKUP: ${DB_BACKUP}
+            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
         volumes:
             - ./postgres-data-current:/var/lib/postgresql/data
-            - ./other/postgres-backup.sh:/etc/periodic/daily/backup
-            - ./other/postgres-cleanup.sh:/etc/periodic/hourly/cleanup
             - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
             - ./postgres-data-backup/:/tmp/
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql

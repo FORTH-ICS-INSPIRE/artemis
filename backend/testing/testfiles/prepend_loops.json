@@ -20,12 +20,12 @@
         "detection_hijack_response": {
             "prefix": "10.0.0.0/8",
             "hijack_as": 101,
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "time_started": 1.0,
             "configured_prefix": "10.0.0.0/8"
         },
         "database_hijack_response": {
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "active": true,
             "prefix": "10.0.0.0/8",
             "asns_inf": [2, 3, 4],
@@ -57,12 +57,12 @@
         "detection_hijack_response": {
             "prefix": "10.0.0.0/8",
             "hijack_as": 102,
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "time_started": 2.0,
             "configured_prefix": "10.0.0.0/8"
         },
         "database_hijack_response": {
-            "type": "E|0|-",
+            "type": "E|0|-|-",
             "active": true,
             "prefix": "10.0.0.0/8",
             "asns_inf": [2, 3, 4],

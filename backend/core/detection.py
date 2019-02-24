@@ -28,12 +28,19 @@ from utils import RABBITMQ_URI
 from utils import redis_key
 
 HIJACK_DIM_COMBINATIONS = [
-    ["S", "0", "-"],
-    ["S", "1", "-"],
-    ["S", "-", "-"],
-    ["E", "0", "-"],
-    ["E", "1", "-"],
-    ["Q", "0", "-"],
+    ["S", "0", "-", "-"],
+    ["S", "0", "-", "L"],
+    ["S", "1", "-", "-"],
+    ["S", "1", "-", "L"],
+    ["S", "-", "-", "-"],
+    ["S", "-", "-", "L"],
+    ["E", "0", "-", "-"],
+    ["E", "0", "-", "L"],
+    ["E", "1", "-", "-"],
+    ["E", "1", "-", "L"],
+    ["E", "-", "-", "L"],
+    ["Q", "0", "-", "-"],
+    ["Q", "0", "-", "L"],
 ]
 
 log = get_logger()
@@ -227,7 +234,8 @@ class Detection:
 
         def handle_config_notify(self, message: Dict) -> NoReturn:
             """
-            Consumer for Config-Notify messages that come from the configuration service.
+            Consumer for Config-Notify messages that come
+            from the configuration service.
             Upon arrival this service updates its running configuration.
             """
             log.debug("message: {}\npayload: {}".format(message, message.payload))
@@ -314,6 +322,7 @@ class Detection:
                     conf_obj = {
                         "origin_asns": rule["origin_asns"],
                         "neighbors": rule["neighbors"],
+                        "policies": set(rule["policies"]),
                     }
                     node.data["confs"].append(conf_obj)
 
@@ -343,7 +352,8 @@ class Detection:
 
         def handle_bgp_update(self, message: Dict) -> NoReturn:
             """
-            Callback function that runs the main logic of detecting hijacks for every bgp update.
+            Callback function that runs the main logic of
+            detecting hijacks for every bgp update.
             """
             # log.debug('{}'.format(message))
             if isinstance(message, dict):
@@ -356,6 +366,10 @@ class Detection:
                 ).timestamp()
 
             raw = monitor_event.copy()
+
+            # register the monitor/peer ASN from whom we learned this BGP update
+            if "peer_asn" in monitor_event:
+                self.redis.sadd("peer-asns", monitor_event["peer_asn"])
 
             # mark the initial redis hijack key since it may change upon
             # outdated checks
@@ -378,8 +392,14 @@ class Detection:
                     monitor_event["matched_prefix"] = prefix_node.prefix
 
                     try:
-                        hijacker = -1
-                        hij_dimensions = ["-", "-", "-"]  # prefix, path, dplane
+                        path_hijacker = -1
+                        pol_hijacker = -1
+                        hij_dimensions = [
+                            "-",
+                            "-",
+                            "-",
+                            "-",
+                        ]  # prefix, path, dplane, policy
                         hij_dimension_index = 0
                         for func_dim in self.__hijack_dimension_checker_gen():
                             if hij_dimension_index == 0:
@@ -394,7 +414,7 @@ class Detection:
                                 # path type dimension
                                 for func_path in func_dim(len(monitor_event["path"])):
                                     (
-                                        hijacker,
+                                        path_hijacker,
                                         hij_dimensions[hij_dimension_index],
                                     ) = func_path(monitor_event, prefix_node)
                                     if hij_dimensions[hij_dimension_index] != "-":
@@ -407,10 +427,24 @@ class Detection:
                                     )
                                     if hij_dimensions[hij_dimension_index] != "-":
                                         break
+                            elif hij_dimension_index == 3:
+                                # policy dimension
+                                for func_pol in func_dim(len(monitor_event["path"])):
+                                    (
+                                        pol_hijacker,
+                                        hij_dimensions[hij_dimension_index],
+                                    ) = func_pol(monitor_event, prefix_node)
+                                    if hij_dimensions[hij_dimension_index] != "-":
+                                        break
                             hij_dimension_index += 1
                         # check if dimension combination in hijack combinations
+                        # and commit hijack
                         if hij_dimensions in HIJACK_DIM_COMBINATIONS:
                             is_hijack = True
+                            # show pol hijacker only if the path hijacker is uncertain
+                            hijacker = path_hijacker
+                            if path_hijacker == -1 and pol_hijacker != -1:
+                                hijacker = pol_hijacker
                             self.commit_hijack(monitor_event, hijacker, hij_dimensions)
                     except Exception:
                         log.exception("exception")
@@ -497,6 +531,7 @@ class Detection:
             yield self.__hijack_prefix_checker_gen
             yield self.__hijack_path_checker_gen
             yield self.__hijack_dplane_checker_gen
+            yield self.__hijack_pol_checker_gen
 
         def __hijack_prefix_checker_gen(self) -> Callable:
             """
@@ -524,6 +559,14 @@ class Detection:
             yield self.detect_dplane_blackholing_hijack
             yield self.detect_dplane_imposture_hijack
             yield self.detect_dplane_mitm_hijack
+
+        def __hijack_pol_checker_gen(self, path_len: int) -> Callable:
+            """
+            Generator that returns policy dimension detection functions.
+            """
+            if path_len > 3:
+                yield self.detect_pol_leak_hijack
+            yield self.detect_pol_other_hijack
 
         @exception_handler(log)
         def detect_prefix_squatting_hijack(
@@ -619,12 +662,32 @@ class Detection:
             # Placeholder for mitm detection  (not supported)
             return "-"
 
+        @exception_handler(log)
+        def detect_pol_leak_hijack(
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+        ) -> Tuple[int, str]:
+            """
+            Route leak hijack detection
+            """
+            for item in prefix_node.data["confs"]:
+                if "no-export" in item["policies"]:
+                    return (monitor_event["path"][-2], "L")
+            return (-1, "-")
+
+        @exception_handler(log)
+        def detect_pol_other_hijack(
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+        ) -> Tuple[int, str]:
+            # Placeholder for policy violation detection (not supported)
+            return (-1, "-")
+
         def commit_hijack(
             self, monitor_event: Dict, hijacker: int, hij_dimensions: List[str]
         ) -> NoReturn:
             """
             Commit new or update an existing hijack to the database.
-            It uses redis server to store ongoing hijacks information to not stress the db.
+            It uses redis server to store ongoing hijacks information
+            to not stress the db.
             """
             hij_type = "|".join(hij_dimensions)
             redis_hijack_key = redis_key(monitor_event["prefix"], hijacker, hij_type)
@@ -651,6 +714,8 @@ class Detection:
                 hijack_value["asns_inf"] = set(
                     monitor_event["path"][: -(int(hij_dimensions[1]) + 1)]
                 )
+            elif hij_dimensions[3] == "L":
+                hijack_value["asns_inf"] = set(monitor_event["path"][:-2])
             # assume the worst-case scenario of a type-2 hijack
             elif len(monitor_event["path"]) > 2:
                 hijack_value["asns_inf"] = set(monitor_event["path"][:-3])
@@ -660,8 +725,10 @@ class Detection:
             if self.redis.getset("{}token_active".format(redis_hijack_key), 1) != b"1":
                 redis_pipeline = self.redis.pipeline()
                 redis_pipeline.lpush("{}token".format(redis_hijack_key), "token")
-                # lock, by extracting the token (other processes that access it at the same time will be blocked)
-                # attention: it is important that this command is batched in the pipeline since the db may async delete
+                # lock, by extracting the token (other processes that access
+                # it at the same time will be blocked)
+                # attention: it is important that this command is batched in the
+                # pipeline since the db may async delete
                 # the token
                 redis_pipeline.blpop("{}token".format(redis_hijack_key))
                 redis_pipeline.execute()

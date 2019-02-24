@@ -11,6 +11,8 @@ prefixes:
         - 10.0.3.0/24
     24_prefix_4: &24_prefix_4
         - 10.0.4.0/24
+    24_prefix_5: &24_prefix_5
+        - 10.0.5.0/24
     test_exc_op_23: &test_exc_op_23
         - 10.10.0.0/23^-
     test_inc_op_23: &test_inc_op_23
@@ -30,6 +32,8 @@ asns:
         243
     24_4_origin: &24_4_origin
         244
+    24_5_origin: &24_5_origin
+        245
     op_test_origin: &op_test_origin
         444
 rules:
@@ -69,6 +73,16 @@ rules:
   - *24_prefix_4
   origin_asns:
   - *24_4_origin
+  mitigation:
+      manual
+- prefixes:
+  - *24_prefix_5
+  origin_asns:
+  - *24_5_origin
+  neighbors:
+      '*'
+  policies:
+  - 'no-export'
   mitigation:
       manual
 - prefixes:

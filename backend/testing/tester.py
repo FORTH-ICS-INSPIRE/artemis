@@ -113,6 +113,10 @@ class Tester:
         if message.delivery_info["routing_key"] == "update-update":
             expected = self.messages[self.curr_idx]["detection_update_response"]
             assert self.redis.exists(event["key"]), "Monitor key not found in Redis"
+            if "peer_asn" in event:
+                assert self.redis.sismember(
+                    "peer-asns", event["peer_asn"]
+                ), "Monitor/Peer ASN not found in Redis"
         elif message.delivery_info["routing_key"] == "update":
             expected = self.messages[self.curr_idx]["detection_hijack_response"]
             redis_hijack_key = Tester.redis_key(
@@ -138,13 +142,16 @@ class Tester:
             assert event[key] == expected[key] or (
                 isinstance(event[key], (list, set))
                 and set(event[key]) == set(expected[key])
-            ), 'Test "{}" - Batch #{} - Type {}: Unexpected value for key "{}" - Received: {}, Expected: {}'.format(
-                self.curr_test,
-                self.curr_idx,
-                message.delivery_info["routing_key"],
-                key,
-                event[key],
-                expected[key],
+            ), (
+                'Test "{}" - Batch #{} - Type {}: Unexpected'
+                ' value for key "{}". Received: {}, Expected: {}'.format(
+                    self.curr_test,
+                    self.curr_idx,
+                    message.delivery_info["routing_key"],
+                    key,
+                    event[key],
+                    expected[key],
+                )
             )
 
         self.expected_messages -= 1
@@ -215,7 +222,8 @@ class Tester:
 
     def test(self):
         """
-        Loads a test file that includes crafted bgp updates as input and expected messages as output.
+        Loads a test file that includes crafted bgp updates as
+        input and expected messages as output.
         """
 
         RABBITMQ_URI = os.getenv("RABBITMQ_URI")

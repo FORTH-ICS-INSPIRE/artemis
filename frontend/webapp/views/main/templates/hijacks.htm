@@ -365,7 +365,7 @@
                                     $(this).children("div").show();
                                 }
                             }else if(search_table_map[index] == 'type'){
-                                var type_regex = /^\s*(([S|E|Q]\|[0|1|-]\|-)|((S\|0)|(S\|1)|(E\|0)|(E\|1)|(Q\|0))|([S|E|Q|0|1]))\s*$/;
+                                var type_regex = /^\s*(([S|E|Q]\|[0|1|-]\|-\|[L-])|([S|E|Q]\|[0|1|-]\|-)|((S\|0)|(S\|1)|(E\|0)|(E\|1)|(Q\|0))|([S|E|Q|0|1|L]))\s*$/;
                                 if(type_regex.exec(value)){
                                     match_value = value.replace(/^\s+|\s+$/g, '');
                                     filter_parameters[search_table_map[index]] = match_value;
@@ -375,7 +375,7 @@
                                     }
                                 }else{
                                     $(this).children("input").addClass("is-invalid");
-                                    $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)');
+                                    $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)|(-|L)');
                                     $(this).children("div").show();
                                 }
                             }else{

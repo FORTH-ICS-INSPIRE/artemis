@@ -12,6 +12,7 @@ services:
             - ${SUPERVISOR_PORT}
         environment:
             RABBITMQ_URI: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
             POSTGRES_HOST: ${POSTGRES_HOST}
             DATABASE_NAME: ${DB_NAME}
             DATABASE_USER: ${DB_USER}
@@ -47,6 +48,7 @@ services:
             - ${FLASK_PORT}
         environment:
             RABBITMQ_URI: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
             POSTGRES_HOST: ${POSTGRES_HOST}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
             MACHINE_IP: ${MACHINE_IP}

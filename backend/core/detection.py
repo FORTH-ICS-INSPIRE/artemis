@@ -660,7 +660,7 @@ class Detection:
             """
             for item in prefix_node.data["confs"]:
                 if "no-export" in item["policies"]:
-                    return (monitor_event["path"][-3], "-")
+                    return (monitor_event["path"][-3], "L")
             return (-1, "-")
 
         @exception_handler(log)

@@ -9,7 +9,7 @@
             "type": "A",
             "path": [4, 3, 2, 1, 245],
             "prefix": "10.0.5.0/24",
-            "peer_asn": 2
+            "peer_asn": 4
         },
         "detection_update_response": {
             "key": "1",
@@ -20,17 +20,17 @@
         "detection_hijack_response": {
             "prefix": "10.0.5.0/24",
             "hijack_as": 2,
-            "type": "E|-|-|-",
+            "type": "E|-|-|L",
             "time_started": 1.0,
             "configured_prefix": "10.0.5.0/24"
         },
         "database_hijack_response": {
-            "type": "E|-|-|-",
+            "type": "E|-|-|L",
             "active": true,
             "prefix": "10.0.5.0/24",
             "asns_inf": [3, 4],
             "hijack_as": 2,
-            "peers_seen": [2],
+            "peers_seen": [4],
             "num_asns_inf": 2,
             "num_peers_seen": 1,
             "configured_prefix": "10.0.5.0/24"

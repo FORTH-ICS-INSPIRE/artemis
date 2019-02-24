@@ -388,7 +388,8 @@ class Detection:
                     monitor_event["matched_prefix"] = prefix_node.prefix
 
                     try:
-                        hijacker = -1
+                        path_hijacker = -1
+                        pol_hijacker = -1
                         hij_dimensions = [
                             "-",
                             "-",
@@ -409,7 +410,7 @@ class Detection:
                                 # path type dimension
                                 for func_path in func_dim(len(monitor_event["path"])):
                                     (
-                                        hijacker,
+                                        path_hijacker,
                                         hij_dimensions[hij_dimension_index],
                                     ) = func_path(monitor_event, prefix_node)
                                     if hij_dimensions[hij_dimension_index] != "-":
@@ -426,15 +427,20 @@ class Detection:
                                 # policy dimension
                                 for func_pol in func_dim(len(monitor_event["path"])):
                                     (
-                                        hijacker,
+                                        pol_hijacker,
                                         hij_dimensions[hij_dimension_index],
                                     ) = func_pol(monitor_event, prefix_node)
                                     if hij_dimensions[hij_dimension_index] != "-":
                                         break
                             hij_dimension_index += 1
                         # check if dimension combination in hijack combinations
+                        # and commit hijack
                         if hij_dimensions in HIJACK_DIM_COMBINATIONS:
                             is_hijack = True
+                            # show pol hijacker only if the path hijacker is uncertain
+                            hijacker = path_hijacker
+                            if path_hijacker == -1 and pol_hijacker != -1:
+                                hijacker = pol_hijacker
                             self.commit_hijack(monitor_event, hijacker, hij_dimensions)
                     except Exception:
                         log.exception("exception")
@@ -521,6 +527,7 @@ class Detection:
             yield self.__hijack_prefix_checker_gen
             yield self.__hijack_path_checker_gen
             yield self.__hijack_dplane_checker_gen
+            yield self.__hijack_pol_checker_gen
 
         def __hijack_prefix_checker_gen(self) -> Callable:
             """
@@ -554,8 +561,8 @@ class Detection:
             Generator that returns policy dimension detection functions.
             """
             if path_len > 2:
-                yield self.detect_leak_hijack
-            yield self.detect_pol_hijack
+                yield self.detect_pol_leak_hijack
+            yield self.detect_pol_other_hijack
 
         @exception_handler(log)
         def detect_prefix_squatting_hijack(
@@ -652,7 +659,7 @@ class Detection:
             return "-"
 
         @exception_handler(log)
-        def detect_leak_hijack(
+        def detect_pol_leak_hijack(
             self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             """
@@ -664,7 +671,7 @@ class Detection:
             return (-1, "-")
 
         @exception_handler(log)
-        def detect_pol_hijack(
+        def detect_pol_other_hijack(
             self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for policy violation detection (not supported)

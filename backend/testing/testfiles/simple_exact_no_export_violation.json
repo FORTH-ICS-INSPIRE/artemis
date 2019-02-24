@@ -15,6 +15,7 @@
             "key": "1",
             "handled": true,
             "matched_prefix": "10.0.5.0/24",
+            "peer_asn": 4,
             "origin_as": 245
         },
         "detection_hijack_response": {

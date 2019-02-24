@@ -47,6 +47,7 @@ can be neutralized within a minute!
 3. Active joint detector and user-triggered mitigator (monitoring + detection + mitigation enabled)
 
 *Any of these combinations is valid. To start with, we recommend using mode (2).*
+Mode (3) is under development (currently only a mitigation wrapper is offered).
 
 You can read more about the ARTEMIS methodology and research experiments
 on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).

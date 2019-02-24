@@ -195,7 +195,7 @@
             "communities": [],
             "service": "c",
             "type": "A",
-            "path": [150, 6, 3, 110],
+            "path": [8, 9, 110],
             "prefix": "10.0.4.0/24",
             "peer_asn": 8
         },
@@ -234,7 +234,7 @@
             "communities": [],
             "service": "c",
             "type": "A",
-            "path": [150, 6, 3, 110],
+            "path": [8, 9, 110],
             "prefix": "10.0.4.0/24",
             "peer_asn": 8
         },
@@ -242,7 +242,7 @@
             "type": "E|0|-",
             "active": true,
             "prefix": "10.0.4.0/24",
-            "asns_inf": [150, 3, 5, 6, 7, 8],
+            "asns_inf": [3, 5, 6, 7, 8, 9],
             "hijack_as": 110,
             "peers_seen": [7, 8],
             "num_asns_inf": 6,
@@ -253,8 +253,47 @@
     },
     {
         "send": {
-            "key": "26",
-            "timestamp": 26,
+            "key": "11",
+            "timestamp": 11,
+            "orig_path": [],
+            "communities": [],
+            "service": "c",
+            "type": "A",
+            "path": [8, 10, 110],
+            "prefix": "10.0.4.0/24",
+            "peer_asn": 8
+        },
+        "detection_update_response": {
+            "key": "11",
+            "handled": true,
+            "matched_prefix": "10.0.4.0/24",
+            "origin_as": 110
+        },
+        "detection_hijack_response": {
+            "prefix": "10.0.4.0/24",
+            "hijack_as": 110,
+            "type": "E|0|-",
+            "time_started": 11.0,
+            "time_last": 24.0,
+            "configured_prefix": "10.0.4.0/24"
+        },
+        "database_hijack_response": {
+            "type": "E|0|-",
+            "active": true,
+            "prefix": "10.0.4.0/24",
+            "asns_inf": [3, 5, 6, 7, 8, 9, 10],
+            "hijack_as": 110,
+            "peers_seen": [7, 8],
+            "num_asns_inf": 7,
+            "num_peers_seen": 2,
+            "peers_withdrawn": [7],
+            "configured_prefix": "10.0.4.0/24"
+        }
+    },
+    {
+        "send": {
+            "key": "12",
+            "timestamp": 12,
             "orig_path": [],
             "communities": [],
             "service": "a",
@@ -264,7 +303,90 @@
             "peer_asn": 8
         },
         "detection_update_response": {
-            "key": "26",
+            "key": "12",
+            "handled": true,
+            "matched_prefix": "10.0.4.0/24",
+            "peer_asn": 8
+        }
+    },
+    {
+        "send": {
+            "key": "28",
+            "timestamp": 28,
+            "orig_path": [],
+            "communities": [],
+            "service": "c",
+            "type": "A",
+            "path": [8, 11, 110],
+            "prefix": "10.0.4.0/24",
+            "peer_asn": 8
+        },
+        "detection_update_response": {
+            "key": "28",
+            "handled": true,
+            "matched_prefix": "10.0.4.0/24",
+            "origin_as": 110
+        },
+        "detection_hijack_response": {
+            "prefix": "10.0.4.0/24",
+            "hijack_as": 110,
+            "type": "E|0|-",
+            "time_started": 11.0,
+            "time_last": 28.0,
+            "configured_prefix": "10.0.4.0/24"
+        },
+        "database_hijack_response": {
+            "type": "E|0|-",
+            "active": true,
+            "prefix": "10.0.4.0/24",
+            "asns_inf": [3, 5, 6, 7, 8, 9, 10],
+            "hijack_as": 110,
+            "peers_seen": [7, 8],
+            "num_asns_inf": 7,
+            "num_peers_seen": 2,
+            "peers_withdrawn": [7],
+            "configured_prefix": "10.0.4.0/24"
+        }
+    },
+    {
+        "send": {
+            "key": "28",
+            "timestamp": 28,
+            "orig_path": [],
+            "communities": [],
+            "service": "c",
+            "type": "A",
+            "path": [8, 11, 110],
+            "prefix": "10.0.4.0/24",
+            "peer_asn": 8
+        },
+        "database_hijack_response": {
+            "type": "E|0|-",
+            "active": true,
+            "prefix": "10.0.4.0/24",
+            "asns_inf": [3, 5, 6, 7, 8, 9, 10, 11],
+            "hijack_as": 110,
+            "peers_seen": [7, 8],
+            "num_asns_inf": 8,
+            "num_peers_seen": 2,
+            "peers_withdrawn": [7],
+            "configured_prefix": "10.0.4.0/24"
+        }
+    },
+    {
+        "send": {
+            "key": "30",
+            "timestamp": 30,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "W",
+            "path": [],
+            "prefix": "10.0.4.0/24",
+            "peer_asn": 8
+        },
+        "detection_update_response": {
+            "key": "30",
             "handled": true,
             "matched_prefix": "10.0.4.0/24",
             "peer_asn": 8

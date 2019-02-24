@@ -11,7 +11,7 @@ re='^[0-9]+$'
 if [[ $DB_AUTOCLEAN =~ $re ]]; then
     cat > /etc/periodic/hourly/cleanup <<EOF
 #!/bin/sh
-psql -d $POSTGRES_DB -U $POSTGRES_USER -c "DELETE FROM bgp_updates WHERE timestamp < NOW() - interval '${DB_AUTOCLEAN} hours' AND handled=true AND hijack_key=ARRAY[]::text[];"
+psql -d $POSTGRES_DB -U $POSTGRES_USER -c "DELETE FROM bgp_updates WHERE timestamp < NOW() - interval '${DB_AUTOCLEAN} hours' AND hijack_key=ARRAY[]::text[];"
 EOF
 fi
 

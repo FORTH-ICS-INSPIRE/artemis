@@ -100,7 +100,7 @@ def approve_user():
     form = ApproveUserForm(request.form)
     app.artemis_logger.debug("approve_user {}".format(form))
 
-    if form.select_field.data is not None:
+    if form.select_field.data:
         user = app.security.datastore.find_user(id=form.select_field.data)
 
         user_role = app.security.datastore.find_role("user")
@@ -120,7 +120,7 @@ def create_admin():
     form = MakeAdminForm(request.form)
     app.artemis_logger.debug("create_admin {}".format(form))
 
-    if form.select_field.data is not None:
+    if form.select_field.data:
         user = app.security.datastore.find_user(id=form.select_field.data)
 
         admin_role = app.security.datastore.find_role("admin")
@@ -140,7 +140,7 @@ def remove_admin():
     form = RemoveAdminForm(request.form)
     app.artemis_logger.debug("remove_admin {}".format(form))
 
-    if form.select_field.data is not None:
+    if form.select_field.data:
         user = app.security.datastore.find_user(id=form.select_field.data)
         # Protect admin (user id == 1)
         if user.id == 1:
@@ -163,7 +163,7 @@ def delete_user():
     form = DeleteUserForm(request.form)
     app.artemis_logger.debug("delete user {}".format(form))
 
-    if form.select_field.data is not None:
+    if form.select_field.data:
         db.session.query(User).filter(User.id == form.select_field.data).delete()
         db.session.commit()
 
@@ -179,7 +179,7 @@ def set_new_password():
     _status = "empty"
 
     if form.validate_on_submit():
-        if form.old_password.data is not None:
+        if form.old_password.data:
             app.artemis_logger.debug(
                 "verify: {}".format(
                     verify_password(form.old_password.data, old_password)

@@ -946,35 +946,38 @@ class Database:
                             )
                             entries = db_cur.fetchall()
 
-                        entry = entries[0]
-                        redis_hijack_key = redis_key(
-                            entry[0], entry[1], entry[2]  # prefix  # hijack_as  # type
-                        )
-                        if seen_action:
-                            with get_wo_cursor(self.wo_conn) as db_cur:
-                                db_cur.execute(query, (hijack_key,))
-                        elif ignore_action:
-                            # if ongoing, force rekeying and delete persistent
-                            # too
-                            if self.redis.sismember("persistent-keys", hijack_key):
-                                purge_redis_eph_pers_keys(
-                                    self.redis, redis_hijack_key, hijack_key
-                                )
-                            with get_wo_cursor(self.wo_conn) as db_cur:
-                                db_cur.execute(query, (hijack_key,))
-                        elif resolve_action:
-                            # if ongoing, force rekeying and delete persistent
-                            # too
-                            if self.redis.sismember("persistent-keys", hijack_key):
-                                purge_redis_eph_pers_keys(
-                                    self.redis, redis_hijack_key, hijack_key
-                                )
-                            with get_wo_cursor(self.wo_conn) as db_cur:
-                                db_cur.execute(
-                                    query, (datetime.datetime.now(), hijack_key)
-                                )
-                        else:
-                            raise BaseException("unreachable code reached")
+                        if entries:
+                            entry = entries[0]
+                            redis_hijack_key = redis_key(
+                                entry[0],
+                                entry[1],
+                                entry[2],  # prefix  # hijack_as  # type
+                            )
+                            if seen_action:
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(query, (hijack_key,))
+                            elif ignore_action:
+                                # if ongoing, force rekeying and delete persistent
+                                # too
+                                if self.redis.sismember("persistent-keys", hijack_key):
+                                    purge_redis_eph_pers_keys(
+                                        self.redis, redis_hijack_key, hijack_key
+                                    )
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(query, (hijack_key,))
+                            elif resolve_action:
+                                # if ongoing, force rekeying and delete persistent
+                                # too
+                                if self.redis.sismember("persistent-keys", hijack_key):
+                                    purge_redis_eph_pers_keys(
+                                        self.redis, redis_hijack_key, hijack_key
+                                    )
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(
+                                        query, (datetime.datetime.now(), hijack_key)
+                                    )
+                            else:
+                                raise BaseException("unreachable code reached")
 
                     except Exception:
                         log.exception("{}".format(raw))
@@ -1222,39 +1225,39 @@ class Database:
             self.insert_hijacks_entries.clear()
             return num_of_entries
 
-        def _retrieve_unhandled(self, amount):
-            results = []
-            query = (
-                "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
-                "type, communities, timestamp FROM bgp_updates WHERE "
-                "handled = false ORDER BY timestamp DESC LIMIT(%s)"
-            )
-            with get_ro_cursor(self.ro_conn) as db_cur:
-                db_cur.execute(query, (amount,))
-                entries = db_cur.fetchall()
-
-            for entry in entries:
-                results.append(
-                    {
-                        "key": entry[0],  # key
-                        "prefix": entry[1],  # prefix
-                        "origin_as": entry[2],  # origin_as
-                        "peer_asn": entry[3],  # peer_asn
-                        "path": entry[4],  # as_path
-                        "service": entry[5],  # service
-                        "type": entry[6],  # type
-                        "communities": entry[7],  # communities
-                        "timestamp": entry[8].timestamp(),
-                    }
-                )
-            if results:
-                self.producer.publish(
-                    results,
-                    exchange=self.update_exchange,
-                    routing_key="unhandled",
-                    retry=False,
-                    priority=2,
-                )
+        # def _retrieve_unhandled(self, amount):
+        #     results = []
+        #     query = (
+        #         "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
+        #         "type, communities, timestamp FROM bgp_updates WHERE "
+        #         "handled = false ORDER BY timestamp DESC LIMIT(%s)"
+        #     )
+        #     with get_ro_cursor(self.ro_conn) as db_cur:
+        #         db_cur.execute(query, (amount,))
+        #         entries = db_cur.fetchall()
+        #
+        #     for entry in entries:
+        #         results.append(
+        #             {
+        #                 "key": entry[0],  # key
+        #                 "prefix": entry[1],  # prefix
+        #                 "origin_as": entry[2],  # origin_as
+        #                 "peer_asn": entry[3],  # peer_asn
+        #                 "path": entry[4],  # as_path
+        #                 "service": entry[5],  # service
+        #                 "type": entry[6],  # type
+        #                 "communities": entry[7],  # communities
+        #                 "timestamp": entry[8].timestamp(),
+        #             }
+        #         )
+        #     if results:
+        #         self.producer.publish(
+        #             results,
+        #             exchange=self.update_exchange,
+        #             routing_key="unhandled",
+        #             retry=False,
+        #             priority=2,
+        #         )
 
         def _handle_hijack_outdate(self):
             if not self.outdate_hijacks:
@@ -1293,8 +1296,8 @@ class Database:
             msg_ = message.payload
             if msg_["op"] == "bulk_operation":
                 self._update_bulk()
-            elif msg_["op"] == "send_unhandled":
-                self._retrieve_unhandled(msg_["amount"])
+            # elif msg_["op"] == "send_unhandled":
+            #     self._retrieve_unhandled(msg_["amount"])
             else:
                 log.warning(
                     "Received uknown instruction from scheduler: {}".format(msg_)

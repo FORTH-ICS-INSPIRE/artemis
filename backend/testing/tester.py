@@ -1,3 +1,4 @@
+import difflib
 import hashlib
 import json
 import os
@@ -107,7 +108,6 @@ class Tester:
             event = body
         else:
             event = json.loads(body)
-        # logging.debug(event)
 
         # distinguish between type of messages
         if message.delivery_info["routing_key"] == "update-update":
@@ -152,7 +152,6 @@ class Tester:
                     event[key],
                     expected[key],
                 )
-            )
 
         self.expected_messages -= 1
         if self.expected_messages <= 0:
@@ -165,8 +164,6 @@ class Tester:
         """
         with conn.Producer() as producer:
             self.expected_messages = len(self.messages[self.curr_idx]) - 1
-            print("Publishing #{}".format(self.curr_idx))
-            # logging.debug(messages[curr_idx]['send'])
 
             # offset to account for "real-time" tests
             for key in self.messages[self.curr_idx]["send"]:
@@ -299,6 +296,17 @@ class Tester:
 
             Tester.config_request_rpc(connection)
 
+            # call all helper functions
+            Helper.resolve(connection, "a", "139.5.46.0/24", "S|0|-", 133720)
+            Helper.mitigate(connection, "b", "139.5.236.0/24")
+            Helper.ignore_hijack(connection, "c", "139.5.237.0/24", "S|0|-", 136334)
+            Helper.comment(connection, "d", "test")
+            Helper.ack_hijack(connection, "e", "true")
+            Helper.multiple_action(connection, ["f", "g"], "mark_seen")
+            Helper.multiple_action(connection, ["f", "g"], "mark_not_seen")
+            Helper.multiple_action(connection, ["h"], "mark_resolved")
+            Helper.multiple_action(connection, ["i"], "mark_ignored")
+
             for testfile in os.listdir("testfiles/"):
                 self.clear()
 
@@ -333,43 +341,200 @@ class Tester:
                         while self.curr_idx != send_cnt:
                             time.sleep(0.1)
                             try:
-                                connection.drain_events(timeout=100)
+                                connection.drain_events(timeout=10)
                             except socket.timeout:
                                 # avoid infinite loop by timeout
                                 assert False, "Consumer timeout"
 
             connection.close()
 
-        with open("configs/config.yaml", "r+") as f1, open(
-            "configs/config2.yaml"
-        ) as f2:
+        with open("configs/config.yaml") as f1, open("configs/config2.yaml") as f2:
             new_data = f2.read()
             old_data = f1.read()
 
-            f1.seek(0)
-            f1.write(new_data)
-            f1.truncate()
+        Helper.change_conf(connection, new_data, old_data, "test")
 
-            time.sleep(5)
-            self.supervisor.supervisor.stopAllProcesses()
+        time.sleep(5)
+        self.supervisor.supervisor.stopAllProcesses()
 
-            self.waitProcess("listener", 0)  # 0 STOPPED
-            self.waitProcess("clock", 0)  # 0 STOPPED
-            self.waitProcess("detection", 0)  # 0 STOPPED
-            self.waitProcess("mitigation", 0)  # 0 STOPPED
-            self.waitProcess("configuration", 0)  # 0 STOPPED
-            self.waitProcess("database", 0)  # 0 STOPPED
-            self.waitProcess("observer", 0)  # 0 STOPPED
-            self.waitProcess("monitor", 0)  # 0 STOPPED
-
-            f1.seek(0)
-            f1.write(old_data)
-            f1.truncate()
+        self.waitProcess("listener", 0)  # 0 STOPPED
+        self.waitProcess("clock", 0)  # 0 STOPPED
+        self.waitProcess("detection", 0)  # 0 STOPPED
+        self.waitProcess("mitigation", 0)  # 0 STOPPED
+        self.waitProcess("configuration", 0)  # 0 STOPPED
+        self.waitProcess("database", 0)  # 0 STOPPED
+        self.waitProcess("observer", 0)  # 0 STOPPED
+        self.waitProcess("monitor", 0)  # 0 STOPPED
 
         self.supervisor.supervisor.startProcess("coveralls")
 
         self.waitProcess("coveralls", 20)  # 20 RUNNING
         self.waitProcess("coveralls", 100)  # 0 EXITED
+
+
+class Helper:
+    @staticmethod
+    def resolve(connection, hijack_key, prefix, type_, hijack_as):
+        hijack_exchange = Exchange(
+            "hijack-update", type="direct", durable=False, delivery_mode=1
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {
+                    "key": hijack_key,
+                    "prefix": prefix,
+                    "type": type_,
+                    "hijack_as": hijack_as,
+                },
+                exchange=hijack_exchange,
+                routing_key="resolved",
+                priority=2,
+            )
+
+    @staticmethod
+    def mitigate(connection, hijack_key, prefix):
+        mitigation_exchange = Exchange(
+            "mitigation", type="direct", durable=False, delivery_mode=1
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"key": hijack_key, "prefix": prefix},
+                exchange=mitigation_exchange,
+                routing_key="mitigate",
+                priority=2,
+            )
+
+    @staticmethod
+    def ignore_hijack(connection, hijack_key, prefix, type_, hijack_as):
+        hijack_exchange = Exchange(
+            "hijack-update", type="direct", durable=False, delivery_mode=1
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {
+                    "key": hijack_key,
+                    "prefix": prefix,
+                    "type": type_,
+                    "hijack_as": hijack_as,
+                },
+                exchange=hijack_exchange,
+                routing_key="ignored",
+                priority=2,
+            )
+
+    @staticmethod
+    def comment(connection, hijack_key, comment):
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            channel=connection.default_channel,
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"key": hijack_key, "comment": comment},
+                exchange="",
+                routing_key="db-hijack-comment",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                priority=4,
+            )
+        while True:
+            if callback_queue.get():
+                break
+            time.sleep(0.1)
+
+    @staticmethod
+    def change_conf(connection, new_config, old_config, comment):
+        changes = "".join(difflib.unified_diff(new_config, old_config))
+        if changes:
+            correlation_id = uuid()
+            callback_queue = Queue(
+                uuid(),
+                channel=connection.default_channel,
+                durable=False,
+                auto_delete=True,
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
+            )
+            with connection.Producer() as producer:
+                producer.publish(
+                    {"config": new_config, "comment": comment},
+                    exchange="",
+                    routing_key="config-modify-queue",
+                    serializer="yaml",
+                    retry=True,
+                    declare=[callback_queue],
+                    reply_to=callback_queue.name,
+                    correlation_id=correlation_id,
+                    priority=4,
+                )
+            while True:
+                if callback_queue.get():
+                    break
+                time.sleep(0.1)
+
+    @staticmethod
+    def ack_hijack(connection, hijack_key, state):
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            channel=connection.default_channel,
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"key": hijack_key, "state": state},
+                exchange="",
+                routing_key="db-hijack-seen",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                priority=4,
+            )
+        while True:
+            if callback_queue.get():
+                break
+            time.sleep(0.1)
+
+    @staticmethod
+    def multiple_action(connection, hijack_keys, action):
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            channel=connection.default_channel,
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {"keys": hijack_keys, "action": action},
+                exchange="",
+                routing_key="db-hijack-multiple-action",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                priority=4,
+            )
+        while True:
+            if callback_queue.get():
+                break
+            time.sleep(0.1)
 
 
 if __name__ == "__main__":

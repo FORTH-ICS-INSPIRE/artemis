@@ -18,5 +18,8 @@ begin;
 \echo # Loading application definitions
 \ir data/tables.sql
 
+\echo # Load some default values
+\ir data/data.sql
+
 commit;
 \echo # ==========================================

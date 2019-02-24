@@ -158,7 +158,7 @@ Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
 
 The basic actions that you will need to do, stated here for brevity, are the following:
 
-1. Edit environment variables in .env file (especially the security-related variables)
+1. Edit environment variables in .env file (especially the security-related variables); please check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Environment-variables) for more information on the env variables.
 
 2. Decouple your configs from the default ones (that are under version control), by doing the following in your local artemis directory:
    ```
@@ -210,15 +210,7 @@ The basic actions that you will need to do, stated here for brevity, are the fol
    https://<ARTEMIS_HOST>
    ```
 
-6. Activate backups (recommended)
-
-   ```
-   docker-compose exec postgres bash
-   crond
-   exit
-   ```
-
-7. Stop ARTEMIS (optional)
+6. Stop ARTEMIS (optional)
 
    ```
    docker-compose stop

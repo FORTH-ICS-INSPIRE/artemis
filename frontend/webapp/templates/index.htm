@@ -279,7 +279,7 @@
                         displayHelpTextTable();
                     }
                 });
-                
+
                 $("#last_login").html("(" + transform_unix_timestamp_to_client_local_time($("#last_login").text()) + ")")
                 $('#timezone').html(display_timezone());
                 $("#{{request.endpoint}}").addClass("active");
@@ -299,4 +299,3 @@
         <script src="{{ url_for('static', filename='js/custom/prod-ripestat.js') }}{{ js_version }}"></script>
     {% endblock %}
 {% endblock %}
-

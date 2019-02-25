@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (8, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (9, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -56,7 +56,7 @@ for each row execute procedure rabbitmq.on_row_change();
 
 CREATE TABLE IF NOT EXISTS hijacks (
     key VARCHAR ( 32 ) NOT NULL,
-    type  VARCHAR ( 5 ),
+    type  VARCHAR ( 7 ),
     prefix inet,
     hijack_as BIGINT,
     peers_seen   BIGINT[],

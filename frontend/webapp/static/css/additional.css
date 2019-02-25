@@ -33,7 +33,7 @@ body {
 .page-wrap {
   min-height: 100%;
   /* equal to footer height */
-  margin-bottom: -60px; 
+  margin-bottom: -60px;
 }
 
 .footer {
@@ -134,5 +134,3 @@ code {
   font-size: 12px;
   color: #777;
 }
-
-

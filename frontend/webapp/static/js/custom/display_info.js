@@ -28,14 +28,16 @@ mapHelpText_system['field_hijack_status'] = `The status of a hijack event (possi
 <li>Resolved: the event is resolved (by the user).</li>
 <li>Outdated: the event was triggered by a configuration that is now deprecated.</li></ul>`;
 
-mapHelpText_system['field_hijack_type'] = `The type of the hijack in 3 dimensions: prefix|path|data plane<ul>
+mapHelpText_system['field_hijack_type'] = `The type of the hijack in 4 dimensions: prefix|path|data plane|policy<ul>
 <li>[Prefix] "S" → Sub-prefix hijack</li>
 <li>[Prefix] "E" → Exact-prefix hijack</li>
 <li>[Prefix] "Q" → Squatting hijack</li>
 <li>[Path] "0" → Type-0 hijack</li>
 <li>[Path] "1" → Type-1 hijack</li>
 <li>[Path] "-" → Type-N or Type-U hijack (N/A)</li>
-<li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li></ul>`;
+<li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li>
+<li>[Policy] "L" → Route Leak due to no-export policy violation</li>
+<li>[Policy] "-" → Other policy violation (N/A)</li></ul>`;
 
 mapHelpText_system['field_hijacker_as'] = 'The AS that is potentially responsible for the hijack.</br>Note that this is an experimental field.';
 mapHelpText_system['field_peers_seen'] = 'Number of peers/monitors (i.e., ASNs)</br>that have seen hijack updates.';
@@ -177,7 +179,7 @@ function service_to_name(){
 				collector_info += "Information: " + services_map[collector_name].info;
 			}
 		}
-	
+
 		var value = '<p class="tooltip-custom-margin">' + collector_info + '</p>';
         $(this).prop('title', value);
         $(this).attr('data-toggle', "tooltip");

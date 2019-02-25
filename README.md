@@ -1,6 +1,7 @@
-[![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis) 
+[![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis)
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
-[![Coverage Status](https://coveralls.io/repos/github/FORTH-ICS-INSPIRE/artemis/badge.svg)](https://coveralls.io/github/FORTH-ICS-INSPIRE/artemis)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Coverage Status](https://coveralls.io/repos/github/FORTH-ICS-INSPIRE/artemis/badge.svg?branch=master)](https://coveralls.io/github/FORTH-ICS-INSPIRE/artemis?branch=master)
 [![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)
 [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/LICENSE)
@@ -46,13 +47,14 @@ can be neutralized within a minute!
 3. Active joint detector and user-triggered mitigator (monitoring + detection + mitigation enabled)
 
 *Any of these combinations is valid. To start with, we recommend using mode (2).*
+Mode (3) is under development (currently only a mitigation wrapper is offered).
 
-You can read more about the ARTEMIS methodology and research experiments 
+You can read more about the ARTEMIS methodology and research experiments
 on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a server/VM as a modular and extensible
-multi-container application. It has been tested at a major 
+multi-container application. It has been tested at a major
 greek ISP, a dual-homed edge academic network,
 and a major US R&E backbone network.
 
@@ -66,6 +68,7 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
   * exact-prefix, type 0/1, any data plane manipulation
   * sub-prefix, any type (0/1/-), any data plane manipulation
   * squatting attacks, type 0 (others are N/A), any data plane manipulation
+  * policy violations (route leaks) due to long paths towards no-export prefixes
 * Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn and outdated).
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
 * Comprehensive web-based User Interface (UI).
@@ -156,7 +159,7 @@ Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
 
 The basic actions that you will need to do, stated here for brevity, are the following:
 
-1. Edit environment variables in .env file (especially the security-related variables)
+1. Edit environment variables in .env file (especially the security-related variables); please check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Environment-variables) for more information on the env variables.
 
 2. Decouple your configs from the default ones (that are under version control), by doing the following in your local artemis directory:
    ```
@@ -208,15 +211,7 @@ The basic actions that you will need to do, stated here for brevity, are the fol
    https://<ARTEMIS_HOST>
    ```
 
-6. Activate backups (recommended)
-
-   ```
-   docker-compose exec postgres bash
-   crond
-   exit
-   ```
-
-7. Stop ARTEMIS (optional)
+6. Stop ARTEMIS (optional)
 
    ```
    docker-compose stop

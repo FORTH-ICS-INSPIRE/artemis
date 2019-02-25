@@ -1,58 +1,66 @@
-from flask import Blueprint, render_template, redirect, request, jsonify, current_app as app
-from flask_security.decorators import roles_required
-from webapp.data.models import User, Role
-from webapp.templates.forms import ApproveUserForm, MakeAdminForm, RemoveAdminForm, DeleteUserForm
-from webapp.core.actions import Submit_new_config
 import json
 
-admin = Blueprint('admin', __name__, template_folder='templates')
+from flask import Blueprint
+from flask import current_app as app
+from flask import jsonify
+from flask import redirect
+from flask import render_template
+from flask import request
+from flask_security.decorators import roles_required
+from webapp.core.actions import Submit_new_config
+from webapp.data.models import Role
+from webapp.data.models import User
+from webapp.templates.forms import ApproveUserForm
+from webapp.templates.forms import DeleteUserForm
+from webapp.templates.forms import MakeAdminForm
+from webapp.templates.forms import RemoveAdminForm
+
+admin = Blueprint("admin", __name__, template_folder="templates")
 
 
-@admin.route('/', methods=['GET', 'POST'])
-@roles_required('admin')
+@admin.route("/", methods=["GET", "POST"])
+@roles_required("admin")
 def default():
     return redirect("admin/system")
 
 
-@admin.route('/system', methods=['GET', 'POST'])
-@roles_required('admin')
+@admin.route("/system", methods=["GET", "POST"])
+@roles_required("admin")
 def index():
-    return render_template('system.htm', js_version=app.config['JS_VERSION'])
+    return render_template("system.htm", js_version=app.config["JS_VERSION"])
 
 
-@admin.route('/config', methods=['POST'])
-@roles_required('admin')
+@admin.route("/config", methods=["POST"])
+@roles_required("admin")
 def handle_new_config():
     try:
-        app.config['configuration'].get_newest_config()
-        old_config = app.config['configuration'].get_raw_config()
+        app.config["configuration"].get_newest_config()
+        old_config = app.config["configuration"].get_raw_config()
         data = json.loads(request.data)
-        comment = data['comment']
-        new_config = data['new_config']
+        comment = data["comment"]
+        new_config = data["new_config"]
         config_modify = Submit_new_config()
         response, success = config_modify.send(new_config, old_config, comment)
 
         if success:
-            return jsonify(
-                {'status': 'success', 'response': response})
-        return jsonify(
-            {'status': 'fail', 'response': response})
+            return jsonify({"status": "success", "response": response})
+        return jsonify({"status": "fail", "response": response})
     except Exception as e:
         app.artemis_logger.exception("")
-        return jsonify(
-            {'status': 'fail', 'response': str(e)})
+        return jsonify({"status": "fail", "response": str(e)})
 
 
-@admin.route('/user_management', methods=['GET'])
-@roles_required('admin')
+@admin.route("/user_management", methods=["GET"])
+@roles_required("admin")
 def user_management():
 
     # Approve pending User
     _pending_users_form = ApproveUserForm()
 
     _pending_users_list = []
-    _pending_users = User.query.filter(User.roles.any(Role.id.in_(
-        [(app.security.datastore.find_role("pending")).id]))).all()
+    _pending_users = User.query.filter(
+        User.roles.any(Role.id.in_([(app.security.datastore.find_role("pending")).id]))
+    ).all()
 
     for _pending_user in _pending_users:
         _pending_users_list.append((_pending_user.id, _pending_user.username))
@@ -62,8 +70,9 @@ def user_management():
     # Promote User to admin
     _users_to_promote_to_admin = MakeAdminForm()
     _users_list = []
-    _users = User.query.filter(User.roles.any(Role.id.in_(
-        [(app.security.datastore.find_role("user")).id]))).all()
+    _users = User.query.filter(
+        User.roles.any(Role.id.in_([(app.security.datastore.find_role("user")).id]))
+    ).all()
 
     for _user in _users:
         _users_list.append((_user.id, _user.username))
@@ -73,8 +82,9 @@ def user_management():
     # Demote User from admin
     _users_to_remove_from_admin = RemoveAdminForm()
     _admins_list = []
-    _admins = User.query.filter(User.roles.any(Role.id.in_(
-        [(app.security.datastore.find_role("admin")).id]))).all()
+    _admins = User.query.filter(
+        User.roles.any(Role.id.in_([(app.security.datastore.find_role("admin")).id]))
+    ).all()
 
     for _user in _admins:
         if _user.id == 1:
@@ -93,11 +103,11 @@ def user_management():
         user_list.append(
             (
                 {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'role': 'admin',
-                    'last_login_at': user.last_login_at.timestamp()
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": "admin",
+                    "last_login_at": user.last_login_at.timestamp(),
                 }
             )
         )
@@ -106,11 +116,11 @@ def user_management():
         user_list.append(
             (
                 {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'role': 'pending',
-                    'last_login_at': user.last_login_at.timestamp()
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": "pending",
+                    "last_login_at": user.last_login_at.timestamp(),
                 }
             )
         )
@@ -119,20 +129,21 @@ def user_management():
         user_list.append(
             (
                 {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'role': 'user',
-                    'last_login_at': user.last_login_at.timestamp()
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": "user",
+                    "last_login_at": user.last_login_at.timestamp(),
                 }
             )
         )
 
-    return render_template('user_management.htm',
-                           users_to_approve_form=_pending_users_form,
-                           users_to_make_admin_form=_users_to_promote_to_admin,
-                           users_to_remove_admin_form=_users_to_remove_from_admin,
-                           users_to_delete_form=_users_to_delete,
-                           users_list=user_list,
-                           js_version=app.config['JS_VERSION']
-                           )
+    return render_template(
+        "user_management.htm",
+        users_to_approve_form=_pending_users_form,
+        users_to_make_admin_form=_users_to_promote_to_admin,
+        users_to_remove_admin_form=_users_to_remove_from_admin,
+        users_to_delete_form=_users_to_delete,
+        users_list=user_list,
+        js_version=app.config["JS_VERSION"],
+    )

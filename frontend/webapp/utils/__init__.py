@@ -1,10 +1,9 @@
 import os
 
-
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
-API_URL_FLASK = os.getenv('POSTGREST_FLASK_HOST', 'postgrest:3000')
-SUPERVISOR_HOST = os.getenv('SUPERVISOR_HOST', 'localhost')
-SUPERVISOR_PORT = os.getenv('SUPERVISOR_PORT', 9001)
+RABBITMQ_URI = os.getenv("RABBITMQ_URI", "amqp://guest:guest@rabbitmq//")
+API_URL_FLASK = os.getenv("POSTGREST_FLASK_HOST", "postgrest:3000")
+SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
+SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
 
 
 def flatten(items, seqtypes=(list, tuple)):

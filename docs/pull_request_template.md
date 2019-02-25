@@ -28,6 +28,7 @@ Does the PR require changes on other components? If yes, please mark the compone
 <!-- Please don't forget to add `(close/fix #<issue-no>)` to the pull request title -->
 
 <!-- Please link to the issue here: -->
+Resolves #
 
 ### Solution
 <!-- How is this issue solved/fixed? What is the main design/logic? -->

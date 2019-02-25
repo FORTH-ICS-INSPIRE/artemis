@@ -88,8 +88,8 @@
     {% block scripts %}
         {{super()}}
         <script>
-            
-            var config_a_data, config_b_data; 
+
+            var config_a_data, config_b_data;
             var connect = "align", collapse = false, highlight = true;
             var target = document.getElementById("view_diffs");
             var cache_configs = {};
@@ -183,8 +183,8 @@
                             }
                         },
                         dataType: 'json'
-                    }); 
-                } 
+                    });
+                }
             });
 
             $( "#config_b" ).on('change', function() {
@@ -242,4 +242,3 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/searchcursor.min.js"></script>
     {% endblock %}
 {% endblock %}
-

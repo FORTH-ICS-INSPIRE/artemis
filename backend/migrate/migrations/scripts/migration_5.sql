@@ -25,4 +25,3 @@ $$ stable language plpgsql;
 create trigger send_update_event
 after insert on bgp_updates
 for each row execute procedure rabbitmq.on_row_change();
-

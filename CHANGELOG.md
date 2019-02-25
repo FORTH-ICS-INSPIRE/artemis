@@ -1,24 +1,27 @@
 # Changelog
 
-## [UNRELEASED] (NAME) - YYYY-MM-DD
+## [UNRELEASED] (Atlas) - YYYY-MM-DD
 ### Added
 - TBD (Added a new feature)
 - Tooltip support for peers seen BGP Announcement/Withdrawal on hijack view.
+- Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration
+- More tests for checking withdrawn hijacks
+- Coverage tests for frontend actions
+- Pre-commit hooks
+- Policy dimension on hijacks (route leak detection based on no-export)
+- Support for auto-cleaning unneeded BGP updates
+- Automated DB backups
 
 ### Changed
-- TBD (Changed existing functionality)
+- Testing refactoring
+- RIPE RIS live python websocket client
 
 ### Fixed
-- TBD (bug-fix)
-
-### Removed
-- TBD (removed a feature)
+- Updated/optimized db query for removing withdrawn peers (newer announcement)
+- Support for different user/pass on rabbitmq
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
-
-### Security
-- TBD (addressing vulnerability)
+- Backup files
 
 ## [1.1.0] (Asclepius) - 2019-02-20
 ### Added

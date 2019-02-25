@@ -213,4 +213,3 @@ function display_timezone(){
     else
         return "GMT-" + (offset/60) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
 }
-

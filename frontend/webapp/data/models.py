@@ -1,14 +1,14 @@
+from flask_security import RoleMixin
+from flask_security import UserMixin
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import RoleMixin, UserMixin
 
 db = SQLAlchemy()
 
-roles_users = db.Table('roles_users',
-                       db.Column(
-                           'user_id',
-                           db.Integer(),
-                           db.ForeignKey('user.id')),
-                       db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+roles_users = db.Table(
+    "roles_users",
+    db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
+    db.Column("role_id", db.Integer(), db.ForeignKey("role.id")),
+)
 
 
 class Role(db.Model, RoleMixin):
@@ -20,7 +20,7 @@ class Role(db.Model, RoleMixin):
         self.name = name
 
     def __repr__(self):
-        return '<Role %r>' % (self.name)
+        return "<Role %r>" % (self.name)
 
 
 class User(db.Model, UserMixin):
@@ -35,8 +35,9 @@ class User(db.Model, UserMixin):
     last_login_ip = db.Column(db.String(255))
     current_login_ip = db.Column(db.String(255))
     login_count = db.Column(db.BigInteger)
-    roles = db.relationship('Role', secondary=roles_users,
-                            backref=db.backref('users', lazy='dynamic'))
+    roles = db.relationship(
+        "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
+    )
 
     def __init__(self, username, email, password, active, roles):
         self.username = username
@@ -46,7 +47,7 @@ class User(db.Model, UserMixin):
         self.roles = roles
 
     def __repr__(self):
-        return '<User %r>' % (self.email)
+        return "<User %r>" % (self.email)
 
     def has_roles(self, *args):
         return set(args).issubset({role.name for role in self.roles})

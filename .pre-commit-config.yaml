@@ -1,0 +1,26 @@
+- repo: https://github.com/ambv/black
+  rev: stable
+  hooks:
+    - id: black
+      language_version: python3.6
+- repo: git://github.com/asottile/reorder_python_imports
+  sha: v1.3.4
+  hooks:
+    - id: reorder-python-imports
+      language_version: 'python3.6'
+- repo: git://github.com/pre-commit/pre-commit-hooks
+  sha: v0.9.1
+  hooks:
+    - id: check-added-large-files
+    - id: check-ast
+    - id: check-docstring-first
+    - id: check-merge-conflict
+    - id: check-yaml
+    - id: check-json
+    - id: debug-statements
+    - id: end-of-file-fixer
+    - id: flake8
+      exclude: .git, __pycache__, postgres-*
+      args: ['--ignore=E203,W503','--max-line-length=88']
+    - id: requirements-txt-fixer
+    - id: trailing-whitespace

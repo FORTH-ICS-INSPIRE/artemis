@@ -67,7 +67,7 @@ function asn_map_to_name(){
                         }else{
                             data_[3] = 'Non-Private';
                         }
-                        
+
                         cachedData[ASN_str] = data_;
 
                         var html = '<p class="tooltip-custom-margin">ASN: ' + ASN_str + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';

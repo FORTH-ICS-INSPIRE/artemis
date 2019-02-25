@@ -40,7 +40,7 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Ongoing Hijacks
+                            <i class="fa fa-bell fa-fw"></i> Ongoing, Non-Dormant Hijacks
                         </div>
                         <div class="panel-body">
                             <div class="row">
@@ -182,9 +182,9 @@
                         }else{
                             sort = 'asc';
                         }
-                        var query = "{ datatable: view_hijacks_aggregate( where: { active: {_eq: true} }) { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
+                        var query = "{ datatable: view_hijacks_aggregate( where: {_and: [ {active: {_eq: true} }, {dormant: {_eq: false} } ]}) { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
                         query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + sort;
-                        query += "}, where: { active: {_eq: true} }) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated time_last } }"
+                        query += "}, where: {_and: [ {active: {_eq: true} }, {dormant: {_eq: false} } ]}) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active dormant under_mitigation outdated time_last } }"
                     fetchDatatableLive(ws, callback, query);
                     },
                     "order": [[ 0, "desc" ]],

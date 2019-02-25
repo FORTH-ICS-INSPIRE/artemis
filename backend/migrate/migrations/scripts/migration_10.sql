@@ -1,8 +1,7 @@
 DROP VIEW view_hijacks;
 
-ALTER TABLE hijacks
-    ADD COLUMN withdrawn BOOLEAN DEFAULT FALSE,
-    ADD CONSTRAINT dormant_active CHECK (
+ALTER TABLE hijacks ADD COLUMN dormant BOOLEAN DEFAULT FALSE;
+ALTER TABLE hijacks ADD CONSTRAINT dormant_active CHECK (
     (
         active=true and dormant=false
     ) or (

@@ -2,6 +2,8 @@
 
 ## [UNRELEASED] (Atlas) - YYYY-MM-DD
 ### Added
+- TBD (Added a new feature)
+- Tooltip support for peers seen BGP Announcement/Withdrawal on hijack view.
 - Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration
 - More tests for checking withdrawn hijacks
 - Coverage tests for frontend actions

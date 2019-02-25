@@ -23,13 +23,13 @@ fi
 
 re='^[0-9]+$'
 if [[ $DB_HIJACK_DORMANT =~ $re ]]; then
-    cat > /etc/periodic/daily/dormant <<EOF
+    cat > /etc/periodic/hourly/dormant <<EOF
 #!/bin/sh
 psql -d $POSTGRES_DB -U $POSTGRES_USER -c "UPDATE hijacks SET dormant=true WHERE time_last < NOW() - interval '${DB_HIJACK_DORMANT} hours' AND active=true AND dormant=false;"
 EOF
-    chmod +x /etc/periodic/daily/dormant
+    chmod +x /etc/periodic/hourly/dormant
 else
-    [ -e /etc/periodic/daily/dormant ] && rm /etc/periodic/daily/dormant
+    [ -e /etc/periodic/hourly/dormant ] && rm /etc/periodic/hourly/dormant
 fi
 
 crond && docker-entrypoint.sh postgres

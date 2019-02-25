@@ -58,6 +58,20 @@
                                             <th helpText="field_hijack_ack">Ack</th>
                                             <th helpText="field_hijack_more">More</th>
                                         </thead>
+                                        <tfoot>
+                                            <tr>
+                                                <th>Last Update</th>
+                                                <th>Time Detected</th>
+                                                <th>Status</th>
+                                                <th>Prefix</th>
+                                                <th>Type</th>
+                                                <th>Hijack AS</th>
+                                                <th># Peers Seen</th>
+                                                <th># ASes Infected</th>
+                                                <th>Ack</th>
+                                                <th>More</th>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -120,6 +134,35 @@
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
 
+            var datatable_parameters = {
+                    'order': [
+                        {
+                            'column': 0,
+                            'dir': "desc"
+                        }
+                    ],
+                    'offset': 0,
+                    'limit': 0
+                };
+
+            var filter_parameters = {
+                'prefixes_selection': null,
+                'time': null,
+                'prefix': null,
+                'hijack_as': null,
+                'type': null
+            };
+
+            var exlude_columns_from_search = ['Last Update', 'Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Ack', 'Mark', 'More'];
+
+            var custom_message_for_search = {};
+
+            var search_table_map = {
+                3: "prefix",
+                4: "type",
+                5: "hijack_as"
+            };
+
             var columns = [
                 { data: 'time_last' },
                 { data: 'time_detected' },
@@ -129,6 +172,7 @@
                 { data: 'hijack_as' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }];
+
             function render_db_stats(data) {
                 if($('#db_stats_list li').length == 0){
                     for (var key in data) {
@@ -169,11 +213,129 @@
                 displayHelpTextStats();
             }
 
+            $('#hijacks_table tfoot th').each(function() {
+                var title = $(this).text();
+                if(!(exlude_columns_from_search.includes(title))){
+                    if(title in custom_message_for_search){
+                        var html_ = '<input class="form-control" id="input_' + title + '" type="text" placeholder="' + custom_message_for_search[title] + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
+                    }else{
+                        var html_ = '<input class="form-control" id="input_' + title + '"s type="text" placeholder="' + title + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
+                    }
+                }else{
+                    $(this).html('');
+                }
+            });
+
+            function inspect_input_of_search_boxes(){
+                $("#hijacks_table tfoot tr th").each(function (index, item) {
+                    if(index in search_table_map){
+                        var value = $(this).children("input").val();
+                        if(value == null || value == ''){
+                            filter_parameters[search_table_map[index]] = null;
+                            if($(this).children("input").hasClass("is-invalid")){
+                                $(this).children("input").removeClass("is-invalid");
+                                $(this).children("div").hide();
+                            }
+                        }else{
+                            if(search_table_map[index] == 'prefix'){
+                                var match_value = null;
+                                var regex_match = /((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))(\/([0-9]|[1-2][0-9]|3[0-2]))?\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?\s*$))/;
+                                if(regex_match.exec(value)){
+                                    match_value = value.replace(/^\s+|\s+$/g, '');
+                                    filter_parameters[search_table_map[index]] = match_value;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not a valid v4/v6 prefix');
+                                    $(this).children("div").show();
+                                }
+                            }else if(search_table_map[index] == 'hijack_as'){
+                                var number_reg = /^\s*(\d+)\s*$/;
+                                var match = number_reg.exec(value);
+                                var hijack_as = null;
+                                if(match != null){
+                                    hijack_as = parseInt(match[1]);
+                                }else{
+                                    hijack_as = -1;
+                                }
+                                if(0 < hijack_as && hijack_as < 4199999999){
+                                    filter_parameters[search_table_map[index]] = hijack_as;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not an ASN');
+                                    $(this).children("div").show();
+                                }
+                            }else if(search_table_map[index] == 'type'){
+                                var type_regex = /^\s*(([S|E|Q]\|[0|1|-]\|-\|[L-])|([S|E|Q]\|[0|1|-]\|-)|((S\|0)|(S\|1)|(E\|0)|(E\|1)|(Q\|0))|([S|E|Q|0|1|L]))\s*$/;
+                                if(type_regex.exec(value)){
+                                    match_value = value.replace(/^\s+|\s+$/g, '');
+                                    filter_parameters[search_table_map[index]] = match_value;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)|(-|L), or valid subset');
+                                    $(this).children("div").show();
+                                }
+                            }else{
+                                filter_parameters[search_table_map[index]] = value;
+                            }
+                        }
+                    }
+                });
+            }
+
+            function construct_filter_hijacks_query(){
+                var filters = [];
+                inspect_input_of_search_boxes();
+
+                if(filter_parameters['prefixes_selection'] != null){
+                    filters.push('{ configured_prefix: {_eq: "' + filter_parameters['prefixes_selection'] + '"} }');
+                }
+
+                if(filter_parameters['prefix'] != null){
+                    filters.push('{ prefix: {_eq: "' + filter_parameters['prefix'] + '"} }');
+                }
+
+                if(filter_parameters['hijack_as'] != null){
+                    filters.push('{ hijack_as: {_eq: "' + filter_parameters['hijack_as'] + '"} }');
+                }
+
+                if(filter_parameters['type'] != null){
+                    filters.push('{ type: {_like: "%' + filter_parameters['type'] + '%"} }');
+                }
+
+                if(filters.length > 0){
+                    $("#distinct_values_selection").val('select');
+                    $('#distinct_values_text').val("");
+                    $('#distinct_values_text').hide();
+                    datatable_parameters['and'] = 'where: { _and: [' + filters.join() + ', { active : {_eq: true } }] }';
+                }else{
+                    datatable_parameters['and'] = null;
+                }
+            }
+
             function render_table(ws){
+                construct_filter_hijacks_query();
+
                 table = $('#hijacks_table').DataTable( {
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
+                    "select": false,
                     "pagingType": "numbers",
                     "ajax": (data, callback, settings) => {
                         var sort;
@@ -182,10 +344,69 @@
                         }else{
                             sort = 'asc';
                         }
-                        var query = "{ datatable: view_hijacks_aggregate( where: { active: {_eq: true} }) { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
-                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + sort;
-                        query += "}, where: { active: {_eq: true} }) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated time_last } }"
-                    fetchDatatableLive(ws, callback, query);
+                        datatable_parameters['offset'] = data.start;
+                        datatable_parameters['limit'] = data.length;
+                        query = [];
+                        query.push("{ datatable: view_hijacks_aggregate");
+                        if(datatable_parameters['and'] != null){
+                            query.push("(");
+                            query.push(datatable_parameters['and']);
+                            query.push(") { aggregate { totalCount: count } }");
+                        }else{
+                            query.push(" { aggregate { totalCount: count } }");
+                        }
+                        query.push(" view_data: view_hijacks(limit: ");
+                        query.push(datatable_parameters['limit']);
+                        query.push(", offset: ");
+                        query.push(datatable_parameters['offset']);
+                        query.push(", order_by: {");
+                        query.push(columns[data.order[0].column].data);
+                        query.push(": ");
+                        query.push(sort);
+                        query.push("} ");
+                        if(datatable_parameters['and'] != null){
+                            query.push(datatable_parameters['and']);
+                            query.push(")");
+                        }else{
+                            query.push(")");
+                        }
+                        query.push(" { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated time_last } }");
+                        fetchDatatableLive(ws, callback, query.join(''));
+                    },
+                    initComplete: function() {
+                        var api = this.api();
+                        api.columns().every(function() {
+                            var that = this;
+                            var column_index = that[0][0]
+                            $('input', this.footer()).on('keydown', function(ev) {
+                                if (ev.keyCode == 13) { //only on enter keypress (code 13)
+                                    construct_filter_hijacks_query();
+                                    that.draw()
+                                }
+                            });
+                        });
+                        var tool_elems = $("#hijacks_table_wrapper").children('div').eq(0).children('div');
+
+                        var prefixes_select = "  |  <label>Select prefix</label>  ";
+                        prefixes_select += '<select class="form-control form-control-sm custom-select custom-select-sm" id="prefixes_selection">';
+                        prefixes_select += '<option>All</option>';
+                        {% for prefix in prefixes %}
+                            prefixes_select += '<option>{{ prefix }}</option>';
+                        {% endfor %}
+                        prefixes_select += '</select>';
+
+                        $(tool_elems).eq(0).children('div').append(prefixes_select);
+
+                        $("#prefixes_selection").change(function () {
+                            var option = this.value;
+                            if(option == "All"){
+                                filter_parameters['prefixes_selection'] = null;
+                            }else{
+                                filter_parameters['prefixes_selection'] = option;
+                            }
+                            construct_filter_hijacks_query();
+                            table.draw();
+                        });
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
@@ -206,7 +427,7 @@
                     ],
                     "columnDefs": [
                         {
-                            "targets": [2,3,4,5,6,7,8,9],
+                            "targets": [2,3,4,5,8,9],
                             "orderable": false
                         },
                         {

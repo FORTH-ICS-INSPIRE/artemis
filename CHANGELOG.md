@@ -11,6 +11,8 @@
 - Policy dimension on hijacks (route leak detection based on no-export)
 - Support for auto-cleaning unneeded BGP updates
 - Automated DB backups
+- View hijack by key
+- Enable sorting for columns: # Peers Seen/# ASes Infected
 
 ### Changed
 - Testing refactoring

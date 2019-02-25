@@ -245,11 +245,13 @@ def overview():
     app.artemis_logger.debug("url: /")
     app.config["configuration"].get_newest_config()
     newest_config = app.config["configuration"].get_raw_config()
+    prefixes_list = app.config["configuration"].get_prefixes_list()
     return render_template(
         "index.htm",
         config=newest_config,
         config_timestamp=app.config["configuration"].get_config_last_modified(),
         js_version=app.config["JS_VERSION"],
+        prefixes=prefixes_list,
     )
 
 

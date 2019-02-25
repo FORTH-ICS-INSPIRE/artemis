@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
         ) or (
             active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=true
         )
-    )
+    ),
     CONSTRAINT dormant_active CHECK (
         (
             active=true and dormant=false

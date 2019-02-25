@@ -65,10 +65,20 @@ class LDAPLoginForm(Form, NextFormMixin):
                 # note that this is being stored per user login
                 self.user.password = password
             else:
-                self.user = _datastore.create_user(email=ldap_email, password=password)
+                self.user = _datastore.create_user(
+                    username=ldap_email,
+                    email=ldap_email,
+                    password=password,
+                    active=True,
+                )
+                # need to somehow decide what role they are
+                ldap_role = ldap_data[config_value("LDAP_ROLE")].value
+                role = _datastore.find_or_create_role(ldap_role)
+                _datastore.add_role_to_user(self.user, role)
                 _datastore.commit()
         except LDAPExceptionError:
-            self.email.errors.append("LDAP Server is down..")
+            # current_app.artemis_logger.exception("")
+            self.email.errors.append("LDAP Auth failed")
             return self._try_local_auth()
 
         return True

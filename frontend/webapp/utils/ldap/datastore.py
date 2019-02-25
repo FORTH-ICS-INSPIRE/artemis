@@ -41,9 +41,8 @@ class LDAPUserDatastore(SQLAlchemyUserDatastore):
         self._close_ldap_con(con)
 
         if result and data:
-            return (data[0]["DistinguishedName"].value, data[0])
-        else:
-            raise LDAPExceptionError("User not found in LDAP")
+            return (data[0].entry_dn, data[0])
+        raise LDAPExceptionError("User not found in LDAP")
 
     def verify_password(self, user_dn, password):
         """Attempt to authenticate against AD."""

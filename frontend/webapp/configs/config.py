@@ -9,8 +9,8 @@ from webapp.data.models import Role
 from webapp.data.models import User
 from webapp.templates.forms import ExtendedLoginForm
 from webapp.templates.forms import ExtendedRegisterForm
-from webapp.utils.ldap import LDAPLoginForm
-from webapp.utils.ldap import LDAPUserDatastore
+from webapp.utils.ldap.datastore import LDAPUserDatastore
+from webapp.utils.ldap.forms import LDAPLoginForm
 
 
 class BaseConfig(object):

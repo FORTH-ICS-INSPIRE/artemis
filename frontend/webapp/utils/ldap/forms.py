@@ -10,6 +10,7 @@ from flask_security.utils import encrypt_password
 from flask_security.utils import get_message
 from flask_security.utils import verify_and_update_password
 from ldap3.core.exceptions import LDAPExceptionError
+from ldap3.core.exceptions import LDAPSocketOpenError
 from werkzeug.local import LocalProxy
 from wtforms import BooleanField
 from wtforms import PasswordField
@@ -50,6 +51,10 @@ class LDAPLoginForm(Form, NextFormMixin):
             return False
 
         try:
+            admin_user = _datastore.get_user(1)
+            if self.email.data == admin_user.username:
+                return self._try_local_auth()
+
             # first we try authenticating against ldap
             user_dn, ldap_data = _datastore.query_ldap_user(self.email.data)
 
@@ -72,14 +77,17 @@ class LDAPLoginForm(Form, NextFormMixin):
                     active=True,
                 )
                 # need to somehow decide what role they are
-                ldap_role = ldap_data[config_value("LDAP_ROLE")].value
-                role = _datastore.find_or_create_role(ldap_role)
+                # ldap_role = ldap_data[config_value("LDAP_ROLE")].value
+                role = _datastore.find_or_create_role("admin")
                 _datastore.add_role_to_user(self.user, role)
                 _datastore.commit()
-        except LDAPExceptionError:
-            # current_app.artemis_logger.exception("")
-            self.email.errors.append("LDAP Auth failed")
+        except LDAPSocketOpenError:
+            self.email.errors.append("LDAP Server offline")
             return self._try_local_auth()
+        except LDAPExceptionError:
+            current_app.artemis_logger.exception("")
+            self.email.errors.append("LDAP Auth failed")
+            return False
 
         return True
 

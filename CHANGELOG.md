@@ -1,6 +1,26 @@
 # Changelog
 
-## [UNRELEASED] (Atlas) - YYYY-MM-DD
+## [RELEASE_VERSION] (NAME) - YYYY-MM-DD
+### Added
+- Support for dormant flags in hijacks
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+
+## [1.1.1] (Atlas) - YYYY-MM-DD
 ### Added
 - Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration
 - More tests for checking withdrawn hijacks

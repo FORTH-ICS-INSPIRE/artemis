@@ -138,28 +138,41 @@ function fetchDistinctValues(type, query) {
         })
         .then(response => response.json())
         .then(data => {
-                var list_of_values = [];
+                var list_of_values_html = [];
+                var css_row = ['<div class="row">', '</div>'];
                 $('.tooltip').tooltip('hide');
+
+                if(data['data']['view_data'][0][type] == -1){ // Remove -1
+                    data['data']['view_data'].shift();
+                }
+
+                for (var i = 0; i < data['data']['view_data'].length; i++) {
+                    if(list_of_values_html.length == 0){
+                        list_of_values_html.push(css_row[0]);
+                    }else if(i % 6 == 0){
+                        list_of_values_html.push(css_row[1]);
+                        list_of_values_html.push("</br>");
+                        list_of_values_html.push(css_row[0]);
+                    }
+                    if(type == 'origin_as' || type == 'peer_asn' || type == 'hijack_as'){
+                        list_of_values_html.push('<div class="col-lg-2"><cc_as><input class="form-control" style="text-align:center;" type="text" value="');
+                        list_of_values_html.push(data['data']['view_data'][i][type]);
+                        list_of_values_html.push('" readonly></div></cc_as>');
+                    }else if(type == 'service'){
+                        list_of_values_html.push('<div class="col-lg-2"><service><input class="form-control" style="text-align:center;" type="text" value="');
+                        list_of_values_html.push(data['data']['view_data'][i][type]);
+                        list_of_values_html.push('" readonly></service></div>');
+                    }else{
+                        list_of_values_html.push('<div class="col-lg-2"><input class="form-control" style="text-align:center;" type="text" value="');
+                        list_of_values_html.push(data['data']['view_data'][i][type]);
+                        list_of_values_html.push('" readonly></div>');
+                    }
+                }
+                $('#distinct_values_text').html(list_of_values_html.join(''));
                 if(type == 'origin_as' || type == 'peer_asn' || type == 'hijack_as'){
-                    for(var elem in data['data']['view_data']){
-                        list_of_values.push('<cc_as>' + data['data']['view_data'][elem][type] + '</cc_as>');
-                    }
-                    if(list_of_values[0] == "<cc_as>-1</cc_as>"){
-                        list_of_values.shift();
-                    }
-                    $('#distinct_values_text').html(list_of_values.join(', '));
                     asn_map_to_name();
                 }else if(type == 'service'){
-                    for(var elem in data['data']['view_data']){
-                        list_of_values.push(format_service(data['data']['view_data'][elem][type]));
-                    }
-                    $('#distinct_values_text').html(list_of_values.join(', '));
                     service_to_name();
-                }else{
-                    for(var elem in data['data']['view_data']){
-                        list_of_values.push(data['data']['view_data'][elem][type]);
-                    }
-                    $('#distinct_values_text').text(list_of_values.join(', '));
                 }
                 $('#distinct_values_text').show();
             }
@@ -222,4 +235,3 @@ function fetchConfigStatsLive(ws, cb_func) {
         configStatsCalled = true;
     }
 }
-

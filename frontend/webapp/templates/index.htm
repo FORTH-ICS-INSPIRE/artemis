@@ -142,7 +142,8 @@
                         }
                     ],
                     'offset': 0,
-                    'limit': 0
+                    'limit': 0,
+                    'and': 'where: { _and: [{ active : {_eq: true } }] }'
                 };
 
             var filter_parameters = {
@@ -324,7 +325,7 @@
                     $('#distinct_values_text').hide();
                     datatable_parameters['and'] = 'where: { _and: [' + filters.join() + ', { active : {_eq: true } }] }';
                 }else{
-                    datatable_parameters['and'] = null;
+                    datatable_parameters['and'] = 'where: { _and: [{ active : {_eq: true } }] }';
                 }
             }
 

@@ -19,7 +19,7 @@
 - Updated/optimized db query for removing withdrawn peers (newer announcement)
 - Support for different user/pass on rabbitmq
 - Solved bug with randomized config hashing
-- Unneeded migration trigger with old containers on new DBs
+- Fixed expected behavior when trying to run old containers on new DBs
 
 ### Deprecated
 - Backup files

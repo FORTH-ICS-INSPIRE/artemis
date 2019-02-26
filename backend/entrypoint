@@ -21,8 +21,11 @@ if [ $version -eq $DATABASE_VERSION ]; then
     echo "[+] Running on intended database version ($DATABASE_VERSION).. No migration required"
     start_backend
 elif [ $version -gt $DATABASE_VERSION ]; then
-    echo "[!] Running on a newer ($version) than intended ($DATABASE_VERSION) database version.. No migration required but keep an eye out for problems"
-    start_backend
+    echo "[!] Trying to run on a newer ($version) than intended ($DATABASE_VERSION) database version. Please do the following steps:"
+    echo "[!] git pull origin master"
+    echo "[!] docker-compose pull"
+    echo "[!] start ARTEMIS normally"
+    exit -1
 else
     echo "[!] Older ($version) than intended ($DATABASE_VERSION) Database version found.. Trying to migrate database automatically"
     python -u migrate/migrate.py

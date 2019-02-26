@@ -2,7 +2,6 @@
 
 ## [UNRELEASED] (Atlas) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
 - Tooltip support for peers seen BGP Announcement/Withdrawal on hijack view.
 - Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration
 - More tests for checking withdrawn hijacks
@@ -19,6 +18,8 @@
 ### Fixed
 - Updated/optimized db query for removing withdrawn peers (newer announcement)
 - Support for different user/pass on rabbitmq
+- Solved bug with randomized config hashing
+- Unneeded migration trigger with old containers on new DBs
 
 ### Deprecated
 - Backup files

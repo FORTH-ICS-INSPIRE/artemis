@@ -14,6 +14,13 @@ function getData(ASN){
 
 function asn_map_to_name(){
     $("cc_as").mouseover(function() {
+        // For some browsers, `attr` is undefined; for others,
+        // `attr` is false.  Check for both.
+        var where = $(this).attr('where');
+        var align_of_tooltip = "top";
+        if (typeof where !== typeof undefined && where !== false) {
+            align_of_tooltip = where;
+        }
         $(this).attr('mouse_hovered', 'true');
         if($(this).is("[data-toggle]")){
             return;
@@ -34,7 +41,7 @@ function asn_map_to_name(){
                 $(this).prop('title', html);
                 $(this).attr('data-toggle', "tooltip");
                 $(this).attr('data-html', "true");
-                $(this).attr('data-placement', "top");
+                $(this).attr('data-placement', align_of_tooltip);
                 $(this).tooltip('show');
 
             }else{
@@ -70,7 +77,7 @@ function asn_map_to_name(){
                         $(this).prop('title', html);
                         $(this).attr('data-toggle', "tooltip");
                         $(this).attr('data-html', "true");
-                        $(this).attr('data-placement', "top");
+                        $(this).attr('data-placement', align_of_tooltip);
                         if($(this).attr("mouse_hovered") === 'true'){
                             $(this).tooltip('show');
                         }else{
@@ -92,7 +99,7 @@ function asn_map_to_name(){
                     $(this).prop('title', html);
                     $(this).attr('data-toggle', "tooltip");
                     $(this).attr('data-html', "true");
-                    $(this).attr('data-placement', "top");
+                    $(this).attr('data-placement', align_of_tooltip);
                     $(this).tooltip('show');
                 }
             }

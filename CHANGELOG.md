@@ -22,6 +22,8 @@
 
 ## [1.1.1] (Atlas) - YYYY-MM-DD
 ### Added
+- TBD (Added a new feature)
+- Tooltip support for peers seen BGP Announcement/Withdrawal on hijack view.
 - Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration
 - More tests for checking withdrawn hijacks
 - Coverage tests for frontend actions
@@ -29,6 +31,8 @@
 - Policy dimension on hijacks (route leak detection based on no-export)
 - Support for auto-cleaning unneeded BGP updates
 - Automated DB backups
+- View hijack by key
+- Enable sorting for columns: # Peers Seen/# ASes Infected
 
 ### Changed
 - Testing refactoring

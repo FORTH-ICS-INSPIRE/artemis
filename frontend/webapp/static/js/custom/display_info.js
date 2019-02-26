@@ -156,23 +156,33 @@ function service_to_name(){
 	}
 
 	$("service").mouseover(function() {
-		var text = $(this).text();
+		if($(this).children().length > 0){
+            var Monitor_str = $(this).children(":first").val();
+        }else{
+            var Monitor_str = $(this).text();
+        }
+
 		var collector_info = "Unknown";
-		if(text.includes('->')){
-			var list_ = text.split('-> ');
-			var collector_name = list_[list_.length - 1];
-			if(collector_name in services_map){
-				if(collector_name.includes('route-views')){
-					collector_info = "Name: " + collector_name + "</br>"
-					collector_info += "MFG: " + services_map[collector_name].MFG + "</br>"
-					collector_info += "BGP_proto: " + services_map[collector_name].BGP_proto + "</br>"
-					collector_info += "Location: " + services_map[collector_name].location + "</br>"
-				}else{
-					collector_info = "Name: " + collector_name + "</br>";
-					collector_info += "Information: " + services_map[collector_name].info;
-				}
+		var list_;
+		if(Monitor_str.includes('->')){
+			list_ = Monitor_str.split('-> ');
+		}else if(Monitor_str.includes('|')){
+			list_ = Monitor_str.split('|');
+		}
+
+		var collector_name = list_[list_.length - 1];
+		if(collector_name in services_map){
+			if(collector_name.includes('route-views')){
+				collector_info = "Name: " + collector_name + "</br>"
+				collector_info += "MFG: " + services_map[collector_name].MFG + "</br>"
+				collector_info += "BGP_proto: " + services_map[collector_name].BGP_proto + "</br>"
+				collector_info += "Location: " + services_map[collector_name].location + "</br>"
+			}else{
+				collector_info = "Name: " + collector_name + "</br>";
+				collector_info += "Information: " + services_map[collector_name].info;
 			}
 		}
+
 		var value = '<p class="tooltip-custom-margin">' + collector_info + '</p>';
         $(this).prop('title', value);
         $(this).attr('data-toggle', "tooltip");

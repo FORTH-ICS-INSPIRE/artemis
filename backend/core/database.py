@@ -655,7 +655,7 @@ class Database:
                         comment = config["comment"]
                         del config["comment"]
 
-                    config_hash = hashlib.shake_128(pickle.dumps(config)).hexdigest(16)
+                    config_hash = hashlib.shake_128(pickle.dumps(raw_config)).hexdigest(16)
                     self._save_config(config_hash, config, raw_config, comment)
             except Exception:
                 log.exception("{}".format(config))
@@ -679,7 +679,7 @@ class Database:
                         if "comment" in config:
                             comment = config["comment"]
                             del config["comment"]
-                        config_hash = hashlib.shake_128(pickle.dumps(config)).hexdigest(
+                        config_hash = hashlib.shake_128(pickle.dumps(raw_config)).hexdigest(
                             16
                         )
                         latest_config_in_db_hash = (

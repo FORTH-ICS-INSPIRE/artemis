@@ -2,7 +2,6 @@ import copy
 import hashlib
 import logging.config
 import os
-import pickle
 from ipaddress import ip_network as str2ip
 
 import yaml
@@ -26,11 +25,13 @@ def get_logger(path="/etc/artemis/logging.yaml"):
 
 
 def key_generator(msg):
-    msg["key"] = hashlib.shake_128(
-        pickle.dumps(
-            [msg["prefix"], msg["path"], msg["type"], msg["timestamp"], msg["peer_asn"]]
-        )
-    ).hexdigest(16)
+    msg["key"] = get_hash(
+        [msg["prefix"], msg["path"], msg["type"], msg["timestamp"], msg["peer_asn"]]
+    )
+
+
+def get_hash(obj):
+    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
 
 
 def decompose_path(path):

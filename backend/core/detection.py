@@ -1,8 +1,6 @@
-import hashlib
 import ipaddress
 import json
 import logging
-import pickle
 import re
 import signal
 import time
@@ -15,6 +13,7 @@ from typing import Tuple
 
 import radix
 import redis
+import yaml
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -22,6 +21,7 @@ from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import exception_handler
+from utils import get_hash
 from utils import get_logger
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
@@ -742,7 +742,7 @@ class Detection:
             try:
                 result = self.redis.get(redis_hijack_key)
                 if result:
-                    result = pickle.loads(result)
+                    result = yaml.load(result)
                     result["time_started"] = min(
                         result["time_started"], hijack_value["time_started"]
                     )
@@ -755,20 +755,18 @@ class Detection:
                     result["monitor_keys"] = hijack_value["monitor_keys"]
                 else:
                     hijack_value["time_detected"] = time.time()
-                    hijack_value["key"] = hashlib.shake_128(
-                        pickle.dumps(
-                            [
-                                monitor_event["prefix"],
-                                hijacker,
-                                hij_type,
-                                hijack_value["time_detected"],
-                            ]
-                        )
-                    ).hexdigest(16)
+                    hijack_value["key"] = get_hash(
+                        [
+                            monitor_event["prefix"],
+                            hijacker,
+                            hij_type,
+                            hijack_value["time_detected"],
+                        ]
+                    )
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
                     mail_log.info("{}".format(result))
-                redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+                redis_pipeline.set(redis_hijack_key, yaml.dump(result))
             except Exception:
                 log.exception("exception")
             finally:
@@ -782,7 +780,7 @@ class Detection:
                 result,
                 exchange=self.hijack_exchange,
                 routing_key="update",
-                serializer="pickle",
+                serializer="yaml",
                 priority=0,
             )
 
@@ -790,7 +788,7 @@ class Detection:
                 result,
                 exchange=self.hijack_hashing,
                 routing_key=redis_hijack_key,
-                serializer="pickle",
+                serializer="yaml",
                 priority=0,
             )
             hij_log.info("{}".format(result))

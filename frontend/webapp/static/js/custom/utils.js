@@ -1,4 +1,4 @@
-function format_hijacks_datatable(data){
+function format_hijacks_datatable(data){ // eslint-disable-line no-unused-vars
     if('code' in data){ // its an error
         return {};
     }
@@ -8,7 +8,7 @@ function format_hijacks_datatable(data){
     return data;
 }
 
-function format_datatable(data){
+function format_datatable(data){ // eslint-disable-line no-unused-vars
     if('code' in data){ // its an error
         return {};
     }
@@ -52,7 +52,7 @@ function format_hijack_entry(data){
     return data;
 }
 
-function format_bgp_updates_datatable(data){
+function format_bgp_updates_datatable(data){ // eslint-disable-line no-unused-vars
     if('code' in data){ // its an error
         return {};
     }
@@ -181,13 +181,13 @@ function format_communities(n) {
     }), "[" + t.slice(0, -2) + "]"
 }
 
-function transform_unix_timestamp_to_client_local_time(n) {
+function transform_unix_timestamp_to_client_local_time(n) { // eslint-disable-line no-unused-vars
     if (0 == n) return "Never";
     var t = moment.unix(n);
     return moment(t).local().format("DD-MM-YYYY HH:mm:ss")
 }
 
-function isValidDate(n) {
+function isValidDate(n) { // eslint-disable-line no-unused-vars
     return n instanceof Date && !isNaN(n)
 }
 
@@ -202,11 +202,11 @@ function hijack_key_create_link(hijack_key){
     return '';
 }
 
-function display_hijack_key(n) {
+function display_hijack_key(n) { // eslint-disable-line no-unused-vars
     return null != n && "0" != n ? n : ""
 }
 
-function display_timezone(){
+function display_timezone(){ // eslint-disable-line no-unused-vars
     var offset = new Date().getTimezoneOffset();
     if(offset<0)
         return "GMT+" + (offset/-60) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';

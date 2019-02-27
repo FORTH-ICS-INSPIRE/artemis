@@ -200,7 +200,7 @@
                     html_.push('">');
                     var module_name = data['view_processes'][key].name.charAt(0).toUpperCase() + data['view_processes'][key].name.slice(1);
                     if(module_name == "Database"){
-                        module_name += " v.<text id=\"database_version\"></text>";
+                        module_name += ' v.<version id="database_version"></version>';
                     }
                     html_.push(module_name);
                     html_.push('</div><div class="col-lg-8">');
@@ -221,6 +221,7 @@
                     $('#modules_states').append(html_.join(''));
                 }
                 displayHelpTextStats();
+                fetchDBVersion();
             }
 
             $('#hijacks_table tfoot th').each(function() {
@@ -504,7 +505,6 @@
                         render_table(ws);
                         fetchDbStatsLive(ws, render_db_stats);
                         fetchProcStatesLive(ws, render_modules_state);
-                        fetchDBVersion();
                         $('#hijacks_table').on( 'draw.dt', function () {
                             asn_map_to_name();
                         });

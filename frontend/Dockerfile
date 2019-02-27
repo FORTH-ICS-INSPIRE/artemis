@@ -20,7 +20,7 @@ COPY . ./
 RUN rm /root/webapp/static/js/custom/*
 COPY --from=builder /root/prod/ /root/webapp/static/js/custom/
 
-RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
+RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite postgresql-client
 RUN pip install --upgrade 'pip<19.0'
 RUN pip --no-cache-dir install -r requirements.txt
 

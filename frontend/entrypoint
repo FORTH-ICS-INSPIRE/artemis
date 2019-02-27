@@ -4,4 +4,5 @@
 ./wait-for postgrest:3000 -t 60
 ./wait-for graphql:8080 -t 60
 ./wait-for backend:9001 -t 60
+export QUERIED_DATABASE_VERSION=$(PGPASSWORD=$DATABASE_PASSWORD psql -U $DATABASE_USER -d $DATABASE_NAME -h $DATABASE_HOST -c "select version from db_details;" -tA)
 gunicorn --workers=4 --bind 0.0.0.0:8000 init:app

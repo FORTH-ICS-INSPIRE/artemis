@@ -63,6 +63,10 @@ services:
             FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
             JS_VERSION: ${JS_VERSION}
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
+            DATABASE_NAME: ${DB_NAME}
+            DATABASE_USER: ${DB_USER}
+            DATABASE_HOST: ${POSTGRES_HOST}
+            DATABASE_PASSWORD: ${DB_PASS}
         volumes:
             # uncomment to run from source code  (only if you build from source)
             # - ./frontend/:/root/

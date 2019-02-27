@@ -79,6 +79,12 @@ def setup():
         app.config["VERSION"] = "Fail"
         app.artemis_logger.debug("failed to get version")
 
+    try:
+        app.config["DATABASE_VERSION"] = os.getenv("QUERIED_DATABASE_VERSION")
+    except BaseException:
+        app.config["DATABASE_VERSION"] = "Fail"
+        app.artemis_logger.debug("failed to get version")
+
     modules = Modules_state()
 
     try:
@@ -161,7 +167,10 @@ def inject_user():
 
 @app.context_processor
 def inject_version():
-    return dict(version=app.config["VERSION"])
+    return dict(
+        artemis_version=app.config["VERSION"],
+        database_version=app.config["DATABASE_VERSION"],
+    )
 
 
 @babel.timezoneselector

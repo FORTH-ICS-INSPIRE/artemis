@@ -13,6 +13,7 @@
 - Automated DB backups
 - View hijack by key
 - Enable sorting for columns: # Peers Seen/# ASes Infected
+- Display DB version next to system version (UI-footer)
 
 ### Changed
 - Testing refactoring

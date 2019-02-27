@@ -176,3 +176,5 @@ BEFORE UPDATE ON process_states
 FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 
 CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;
+
+CREATE OR REPLACE VIEW view_db_details AS SELECT version, upgraded_on FROM db_details;

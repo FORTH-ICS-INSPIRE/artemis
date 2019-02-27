@@ -57,7 +57,7 @@
         "10": {
             "id": "10",
             "db_version": "10",
-            "description": "Added dormant flag field into hijacks table",
+            "description": "Added the view_db_details view",
             "file": "migration_10.sql"
         }
     }

@@ -22,7 +22,6 @@
 
 ## [1.1.1] (Atlas) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
 - Tooltip support for peers seen BGP Announcement/Withdrawal on hijack view.
 - Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration
 - More tests for checking withdrawn hijacks
@@ -33,6 +32,7 @@
 - Automated DB backups
 - View hijack by key
 - Enable sorting for columns: # Peers Seen/# ASes Infected
+- Added DB version on overview page
 
 ### Changed
 - Testing refactoring
@@ -41,6 +41,8 @@
 ### Fixed
 - Updated/optimized db query for removing withdrawn peers (newer announcement)
 - Support for different user/pass on rabbitmq
+- Solved bug with randomized config hashing
+- Fixed expected behavior when trying to run old containers on new DBs
 
 ### Deprecated
 - Backup files

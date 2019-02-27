@@ -53,6 +53,12 @@
             "db_version": "9",
             "description": "Expanded hijacks type field from 5 to 7 characters to support policy dimension and migrated hijacks",
             "file": "migration_9.sql"
+        },
+        "10": {
+            "id": "10",
+            "db_version": "10",
+            "description": "Added the view_db_details view",
+            "file": "migration_10.sql"
         }
     }
 }

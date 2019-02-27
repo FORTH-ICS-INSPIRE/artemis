@@ -12,7 +12,7 @@ function getData(ASN){
   return Promise.all([getName(ASN), getCountry(ASN)]);
 }
 
-function asn_map_to_name(){
+function asn_map_to_name(){ // eslint-disable-line no-unused-vars
     $("cc_as").mouseover(function() {
         // For some browsers, `attr` is undefined; for others,
         // `attr` is false.  Check for both.
@@ -31,7 +31,6 @@ function asn_map_to_name(){
                 var ASN_str = $(this).text();
             }
             var ASN_int = parseInt(ASN_str);
-            var result = null;
 
             if(ASN_str in cachedData){
                 var html = '<p class="tooltip-custom-margin">ASN: ' + ASN_str + ' (ASN-DOT: ' + cachedData[ASN_str][2] + ')</br>';

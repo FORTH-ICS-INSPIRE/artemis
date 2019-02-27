@@ -11,7 +11,7 @@ function waitForConnection(ws, message) {
 }
 
 var dbstatsCalled = false;
-function fetchDbStatsLive(ws, cb_func) {
+function fetchDbStatsLive(ws, cb_func) { // eslint-disable-line no-unused-vars
     if(dbstatsCalled) {
         waitForConnection(ws, JSON.stringify({id: "1", type: "stop"}));
     }
@@ -35,15 +35,15 @@ function fetchDbStatsLive(ws, cb_func) {
         });
         dbstatsCalled=true;
     }
-
 }
 
+
 var datatableCalled = false;
-function stopDatatableLive(ws){
+function stopDatatableLive(ws){ // eslint-disable-line no-unused-vars
     waitForConnection(ws, JSON.stringify({id: "2", type: "stop"}));
 }
 
-function startDatatableLive(ws, query){
+function startDatatableLive(ws, query){ // eslint-disable-line no-unused-vars
     waitForConnection(ws, JSON.stringify({
         id: "2",
         type: "start",
@@ -56,7 +56,7 @@ function startDatatableLive(ws, query){
     }));
 }
 
-function fetchDatatableLive(ws, cb_func, query) {
+function fetchDatatableLive(ws, cb_func, query) { // eslint-disable-line no-unused-vars
     if(datatableCalled) {
         waitForConnection(ws, JSON.stringify({id: "2", type: "stop"}));
     }
@@ -71,7 +71,6 @@ function fetchDatatableLive(ws, cb_func, query) {
             query: "subscription getLiveTable " + query
         }
     }));
-
     if(!datatableCalled) {
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
@@ -88,7 +87,7 @@ function fetchDatatableLive(ws, cb_func, query) {
     }
 }
 
-function fetchDatatable(cb_func, query) {
+function fetchDatatable(cb_func, query) { // eslint-disable-line no-unused-vars
     fetch("/jwt/auth", {
         method: "GET",
         credentials: 'include'
@@ -119,7 +118,7 @@ function fetchDatatable(cb_func, query) {
     .catch(error => console.error(error));
 }
 
-function fetchDistinctValues(type, query) {
+function fetchDistinctValues(type, query) { // eslint-disable-line no-unused-vars
     fetch("/jwt/auth", {
         method: "GET",
         credentials: 'include'
@@ -183,7 +182,7 @@ function fetchDistinctValues(type, query) {
 }
 
 var processStateCalled = false;
-function fetchProcStatesLive(ws, cb_func) {
+function fetchProcStatesLive(ws, cb_func) { // eslint-disable-line no-unused-vars
     if(processStateCalled) {
         waitForConnection(ws, JSON.stringify({id: "3", type: "stop"}));
     }
@@ -210,7 +209,7 @@ function fetchProcStatesLive(ws, cb_func) {
 }
 
 var configStatsCalled = false;
-function fetchConfigStatsLive(ws, cb_func) {
+function fetchConfigStatsLive(ws, cb_func) { // eslint-disable-line no-unused-vars
     if(configStatsCalled) {
         waitForConnection(ws, JSON.stringify({id: "5", type: "stop"}));
     }
@@ -234,4 +233,31 @@ function fetchConfigStatsLive(ws, cb_func) {
         });
         configStatsCalled = true;
     }
+}
+
+function fetchDBVersion() { // eslint-disable-line no-unused-vars
+    fetch("/jwt/auth", {
+        method: "GET",
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        fetch("/api/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization":"Bearer " + data['access_token']
+            },
+            body: JSON.stringify({
+                query: "query getDBstats { view_data: view_db_details { version, upgraded_on } }"
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+                $('#database_version').text(data['data']['view_data'][0].version)
+            }
+        )
+        .catch(error => console.error(error));
+    })
+    .catch(error => console.error(error));
 }

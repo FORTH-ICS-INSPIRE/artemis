@@ -742,7 +742,7 @@ class Detection:
             try:
                 result = self.redis.get(redis_hijack_key)
                 if result:
-                    result = yaml.load(result)
+                    result = yaml.safe_load(result)
                     result["time_started"] = min(
                         result["time_started"], hijack_value["time_started"]
                     )

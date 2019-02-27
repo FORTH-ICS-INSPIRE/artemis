@@ -77,8 +77,16 @@ class LDAPLoginForm(Form, NextFormMixin):
                     active=True,
                 )
                 # need to somehow decide what role they are
-                # ldap_role = ldap_data[config_value("LDAP_ROLE")].value
-                role = _datastore.find_or_create_role("admin")
+                groups = config_value("LDAP_ADMIN_GROUPS")
+                if any(
+                    [
+                        group in ldap_data[config_value("LDAP_ADMIN_GROUPS_FIELDNAME")]
+                        for group in groups
+                    ]
+                ):
+                    role = _datastore.find_role("admin")
+                else:
+                    role = _datastore.find_role("user")
                 _datastore.add_role_to_user(self.user, role)
                 _datastore.commit()
         except LDAPSocketOpenError:

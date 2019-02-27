@@ -71,7 +71,6 @@ function fetchDatatableLive(ws, cb_func, query) {
             query: "subscription getLiveTable " + query
         }
     }));
-
     if(!datatableCalled) {
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
@@ -234,4 +233,31 @@ function fetchConfigStatsLive(ws, cb_func) {
         });
         configStatsCalled = true;
     }
+}
+
+function fetchDBVersion() {
+    fetch("/jwt/auth", {
+        method: "GET",
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        fetch("/api/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization":"Bearer " + data['access_token']
+            },
+            body: JSON.stringify({
+                query: "query getDBstats { view_data: view_db_details { version, upgraded_on } }"
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+                $('#database_version').text(data['data']['view_data'][0].version)
+            }
+        )
+        .catch(error => console.error(error));
+    })
+    .catch(error => console.error(error));
 }

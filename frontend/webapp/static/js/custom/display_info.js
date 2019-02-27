@@ -83,8 +83,8 @@ mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'Hijack events that
 mapHelpText_hijack_status['field_hijack_status_outdated'] = 'Hijack events that match a configuration that is now deprecated</br>(marked by the user).';
 
 
-function displayHelpTextTable(){
-	$('th[helpText]').each(function( index ) {
+function displayHelpTextTable(){ // eslint-disable-line no-unused-vars
+	$('th[helpText]').each(function() {
 		var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
@@ -93,8 +93,8 @@ function displayHelpTextTable(){
 	});
 }
 
-function displayHelpTextB(){
-	$('b[helpText]').each(function( index ) {
+function displayHelpTextB(){ // eslint-disable-line no-unused-vars
+	$('b[helpText]').each(function() {
 		var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
@@ -103,8 +103,8 @@ function displayHelpTextB(){
 	});
 }
 
-function displayHelpTextButton(){
-	$('button[helpText]').each(function( index ) {
+function displayHelpTextButton(){ // eslint-disable-line no-unused-vars
+	$('button[helpText]').each(function() {
 		if($(this).attr( "helpText" ) in mapHelpText_hijack_status){
 			var value = '<p class="tooltip-custom-margin">' + mapHelpText_hijack_status[$(this).attr( "helpText" )]  + '</p>'
 		}else{
@@ -117,8 +117,8 @@ function displayHelpTextButton(){
 	});
 }
 
-function displayHelpTextStats(){
-	$('div[helpText]').each(function( index ) {
+function displayHelpTextStats(){ // eslint-disable-line no-unused-vars
+	$('div[helpText]').each(function() {
 		var value = '<p class="tooltip-custom-margin">' + mapHelpText_stats[$(this).attr( "helpText" )]  + '</p>'
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
@@ -127,8 +127,8 @@ function displayHelpTextStats(){
 	});
 }
 
-function displayHelpMoreBGPupdate(){
-	$('td[helpText]').each(function( index ) {
+function displayHelpMoreBGPupdate(){ // eslint-disable-line no-unused-vars
+	$('td[helpText]').each(function() {
         var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
         $(this).prop('title', value);
         $(this).attr('data-toggle', "tooltip");
@@ -147,7 +147,7 @@ function get_services_mapping(){
         ).catch(err => console.log(err));
 }
 
-function service_to_name(){
+function service_to_name(){ // eslint-disable-line no-unused-vars
 	if(services_map == null){
 		get_services_mapping();
 	}

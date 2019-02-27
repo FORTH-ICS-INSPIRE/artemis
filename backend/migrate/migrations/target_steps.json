@@ -59,6 +59,12 @@
             "db_version": "10",
             "description": "Added the view_db_details view",
             "file": "migration_10.sql"
+        },
+        "11": {
+            "id": "11",
+            "db_version": "11",
+            "description": "Added dormant flag field into hijacks table",
+            "file": "migration_11.sql"
         }
     }
 }

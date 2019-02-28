@@ -801,10 +801,11 @@ class Database:
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
+                    # store the origin, neighbor combination for this hijack BGP update
                     origin = None
                     neighbor = None
                     as_path = entry[0]
-                    if len(as_path) > 0:
+                    if as_path:
                         origin = as_path[-1]
                     if len(as_path) > 1:
                         neighbor = as_path[-2]

@@ -773,7 +773,7 @@ class Detection:
                 # store the origin, neighbor combination for this hijack BGP update
                 origin = None
                 neighbor = None
-                if len(monitor_event["path"]) > 0:
+                if monitor_event["path"]:
                     origin = monitor_event["path"][-1]
                 if len(monitor_event["path"]) > 1:
                     neighbor = monitor_event["path"][-2]

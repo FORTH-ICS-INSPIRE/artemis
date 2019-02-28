@@ -655,7 +655,9 @@ class Database:
                         comment = config["comment"]
                         del config["comment"]
 
-                    config_hash = hashlib.shake_128(pickle.dumps(raw_config)).hexdigest(16)
+                    config_hash = hashlib.shake_128(pickle.dumps(raw_config)).hexdigest(
+                        16
+                    )
                     self._save_config(config_hash, config, raw_config, comment)
             except Exception:
                 log.exception("{}".format(config))
@@ -679,9 +681,9 @@ class Database:
                         if "comment" in config:
                             comment = config["comment"]
                             del config["comment"]
-                        config_hash = hashlib.shake_128(pickle.dumps(raw_config)).hexdigest(
-                            16
-                        )
+                        config_hash = hashlib.shake_128(
+                            pickle.dumps(raw_config)
+                        ).hexdigest(16)
                         latest_config_in_db_hash = (
                             self._retrieve_most_recent_config_hash()
                         )
@@ -1057,7 +1059,7 @@ class Database:
                                 )
                                 with get_wo_cursor(self.wo_conn) as db_cur:
                                     db_cur.execute(
-                                        "UPDATE hijacks SET active=false, dormant=False, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, "
+                                        "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, "
                                         "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
                                         (timestamp, entry[1], timestamp, entry[2]),
                                     )
@@ -1195,7 +1197,7 @@ class Database:
                             self.insert_hijacks_entries[key]["time_detected"]
                         ),  # time_detected
                         False,  # under_mitigation
-                        True,   # active
+                        True,  # active
                         False,  # resolved
                         False,  # ignored
                         False,  # withdrawn

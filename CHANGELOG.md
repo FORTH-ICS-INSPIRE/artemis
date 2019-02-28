@@ -3,6 +3,7 @@
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
 - Support for dormant flags in hijacks
+- Storing hijack update (origin, neighbor) combinations in redis
 
 ### Changed
 - TBD (Changed existing functionality)

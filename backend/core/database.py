@@ -786,6 +786,35 @@ class Database:
                     expire = int(time.time() - entry[1].timestamp())
                     redis_pipeline.set(entry[0], "1", ex=expire)
                 redis_pipeline.execute()
+
+                query = (
+                    "SELECT bgp_updates.as_path, hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
+                    "hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
+                    "WHERE bgp_updates.type = 'A' "
+                    "AND hijacks.active = true "
+                    "AND bgp_updates.handled = true"
+                )
+
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+
+                redis_pipeline = self.redis.pipeline()
+                for entry in entries:
+                    origin = None
+                    neighbor = None
+                    as_path = entry[0]
+                    if len(as_path) > 0:
+                        origin = as_path[-1]
+                    if len(as_path) > 1:
+                        neighbor = as_path[-2]
+                    redis_hijack_key = redis_key(entry[1], entry[2], entry[3])
+                    redis_pipeline.sadd(
+                        "hij_orig_neighb_{}".format(redis_hijack_key),
+                        "{}_{}".format(origin, neighbor),
+                    )
+                redis_pipeline.execute()
+
             except Exception:
                 log.exception("exception")
 

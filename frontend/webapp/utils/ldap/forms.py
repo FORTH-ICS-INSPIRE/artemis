@@ -53,6 +53,7 @@ class LDAPLoginForm(Form, NextFormMixin):
         try:
             admin_user = _datastore.get_user(1)
             if self.email.data == admin_user.username:
+                current_app.artemis_logger.info("Super-user login")
                 return self._try_local_auth()
 
             # first we try authenticating against ldap
@@ -90,6 +91,7 @@ class LDAPLoginForm(Form, NextFormMixin):
                 _datastore.add_role_to_user(self.user, role)
                 _datastore.commit()
         except LDAPSocketOpenError:
+            current_app.artemis_logger.info("LDAP offline.. Trying local auth")
             self.email.errors.append("LDAP Server offline")
             return self._try_local_auth()
         except LDAPExceptionError:
@@ -100,7 +102,6 @@ class LDAPLoginForm(Form, NextFormMixin):
         return True
 
     def _try_local_auth(self):
-        current_app.artemis_logger.info("LDAP failed.. trying local auth")
         self.user = _datastore.get_user(self.email.data)
 
         if not self.user:

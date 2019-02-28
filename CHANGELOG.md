@@ -2,7 +2,7 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- Support for dormant flags in hijacks
 
 ### Changed
 - TBD (Changed existing functionality)

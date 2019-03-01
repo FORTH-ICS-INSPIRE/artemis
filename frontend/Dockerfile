@@ -12,7 +12,10 @@ COPY ./minify-js.sh /root/
 RUN mkdir /root/prod/
 RUN ./minify-js.sh
 
-FROM jfloff/alpine-python:3.6
+FROM python:3.6.7
+
+RUN apt-get update && \
+apt-get -y install build-essential python-dev libssl-dev libffi-dev python-openssl libsqlite3-dev sqlite
 
 WORKDIR /root
 
@@ -20,27 +23,28 @@ COPY . ./
 RUN rm /root/webapp/static/js/custom/*
 COPY --from=builder /root/prod/ /root/webapp/static/js/custom/
 
-RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite curl
-RUN pip install --upgrade 'pip<19.0'
-RUN pip --no-cache-dir install -r requirements.txt
-
-RUN mkdir /root/src
+RUN mkdir -p /root/src
 
 WORKDIR /root/src
 
-RUN curl -LO http://pyyaml.org/download/libyaml/yaml-0.2.1.tar.gz && \
+RUN wget http://pyyaml.org/download/libyaml/yaml-0.2.1.tar.gz && \
     tar xzf yaml-0.2.1.tar.gz
 WORKDIR /root/src/yaml-0.2.1
 RUN ./configure && make && make install
 
 WORKDIR /root/src/
 
-RUN curl -O https://pyyaml.org/download/pyyaml/PyYAML-3.13.tar.gz && \
+RUN wget https://pyyaml.org/download/pyyaml/PyYAML-3.13.tar.gz && \
     tar xzf PyYAML-3.13.tar.gz
 WORKDIR /root/src/PyYAML-3.13
 RUN python setup.py --with-libyaml install
 
 WORKDIR /root
+
+RUN pip install --upgrade 'pip<19.0'
+RUN pip --no-cache-dir install -r requirements.txt
+
+RUN apt-get clean
 
 RUN mkdir -p /etc/artemis/
 RUN mkdir -p /var/log/artemis/

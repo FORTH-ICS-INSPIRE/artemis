@@ -146,11 +146,12 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.execute()
 
 
-def translate_rfc2622(input_prefix):
+def translate_rfc2622(input_prefix, just_match=False):
     """
 
     :param input_prefix: (str) input IPv4/IPv6 prefix that should be translated according to RFC2622
-    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes
+    :param just_match: (bool) check only if the prefix has matched instead of translating
+    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes, if not just_match, otherwise True or False
     """
 
     def valid_prefix(input_prefix):
@@ -177,6 +178,8 @@ def translate_rfc2622(input_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen + 1
             max_length = matched_prefix_ip.max_prefixlen
+            if just_match:
+                return True
             return list(
                 map(
                     str,
@@ -195,6 +198,8 @@ def translate_rfc2622(input_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen
             max_length = matched_prefix_ip.max_prefixlen
+            if just_match:
+                return True
             return list(
                 map(
                     str,
@@ -218,6 +223,8 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError("invalid-n-small", input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError("invalid-n-large", input_prefix)
+            if just_match:
+                return True
             return list(
                 map(
                     str,
@@ -240,11 +247,17 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError("invalid-n-small", input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError("invalid-n-large", input_prefix)
+            if just_match:
+                return True
             return list(
                 map(
                     str,
                     calculate_more_specifics(matched_prefix_ip, min_length, max_length),
                 )
             )
+
+    # nothing has matched
+    if just_match:
+        return False
 
     return [input_prefix]

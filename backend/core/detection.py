@@ -26,6 +26,8 @@ from utils import get_logger
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import redis_key
+from utils import flatten
+from utils import translate_rfc2622
 
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
@@ -313,6 +315,11 @@ class Detection:
             """
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
+                rule_translated_prefix_set = set()
+                for i, prefix in enumerate(rule["prefixes"]):
+                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
+                    rule_translated_prefix_set.update(set(this_translated_prefix_list))
+                rule["prefixes"] = list(rule_translated_prefix_set)
                 for prefix in rule["prefixes"]:
                     node = self.prefix_tree.search_exact(prefix)
                     if not node:

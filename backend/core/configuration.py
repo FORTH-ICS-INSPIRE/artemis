@@ -23,6 +23,7 @@ from utils import get_logger
 from utils import RABBITMQ_URI
 from utils import translate_rfc2622
 from yaml import load as yload
+from yaml import CLoader as Loader
 
 log = get_logger()
 
@@ -257,7 +258,7 @@ class Configuration:
             """
             try:
                 if yaml:
-                    data = yload(raw)
+                    data = yload(raw, Loader=Loader)
                 else:
                     data = raw
                 data = self.check(data)

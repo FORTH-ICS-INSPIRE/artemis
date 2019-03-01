@@ -146,26 +146,30 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.execute()
 
 
+def valid_prefix(input_prefix):
+    try:
+        str2ip(input_prefix)
+    except Exception:
+        return False
+    return True
+
+
+def calculate_more_specifics(prefix, min_length, max_length):
+    prefix_list = []
+    for prefix_length in range(min_length, max_length + 1):
+        prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
+    return prefix_list
+
+
 def translate_rfc2622(input_prefix, just_match=False):
     """
-
-    :param input_prefix: (str) input IPv4/IPv6 prefix that should be translated according to RFC2622
-    :param just_match: (bool) check only if the prefix has matched instead of translating
-    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes, if not just_match, otherwise True or False
+    :param input_prefix: (str) input IPv4/IPv6 prefix that
+    should be translated according to RFC2622
+    :param just_match: (bool) check only if the prefix
+    has matched instead of translating
+    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes,
+    if not just_match, otherwise True or False
     """
-
-    def valid_prefix(input_prefix):
-        try:
-            str2ip(input_prefix)
-        except Exception:
-            return False
-        return True
-
-    def calculate_more_specifics(prefix, min_length, max_length):
-        prefix_list = []
-        for prefix_length in range(min_length, max_length + 1):
-            prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
-        return prefix_list
 
     # ^- is the exclusive more specifics operator; it stands for the more
     #    specifics of the address prefix excluding the address prefix

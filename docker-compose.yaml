@@ -124,6 +124,7 @@ services:
             POSTGRES_PASSWORD: ${DB_PASS}
             DB_BACKUP: ${DB_BACKUP}
             DB_AUTOCLEAN: ${DB_AUTOCLEAN}
+            DB_HIJACK_DORMANT: ${DB_HIJACK_DORMANT}
         volumes:
             - ./postgres-data-current:/var/lib/postgresql/data
             - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh

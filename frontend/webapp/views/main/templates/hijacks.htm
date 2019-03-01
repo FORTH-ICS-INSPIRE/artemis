@@ -108,6 +108,7 @@
             <div class="col-lg-8">
                 <p> Select Status:
                     <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm" onclick="filter_by_status('active');">Ongoing</button> /
+                    <button type="button" id="status_dormant_button" helpText="field_hijack_status_dormant" class="btn btn-outline-secondary btn-sm" onclick="filter_by_status('dormant');">Dormant</button> /
                     <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm" onclick="filter_by_status('resolved');">Resolved</button> /
                     <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm" onclick="filter_by_status('ignored');">Ignored</button> /
                     <button type="button" id="status_under_mitigation_button" helpText="field_hijack_under_mitigation" class="btn btn-outline-primary btn-sm" onclick="filter_by_status('under_mitigation');">Under Mitigation</button> /
@@ -215,6 +216,7 @@
 
             var filter_status_map = {
                 'active' : "danger",
+                'dormant': "secondary",
                 'resolved' : "success",
                 'ignored' : "warning",
                 'under_mitigation' : "primary",
@@ -298,7 +300,7 @@
                     $("#status_" + status + "_button").removeClass("btn-outline-" + filter_status_map[status]);
                     $("#status_" + status + "_button").addClass("btn-" + filter_status_map[status]);
                     filter_parameters['status'] = status;
-                    var status_list = ['active', 'resolved', 'ignored', 'under_mitigation', 'withdrawn', 'outdated'];
+                    var status_list = ['active', 'dormant', 'resolved', 'ignored', 'under_mitigation', 'withdrawn', 'outdated'];
                     var filtered_status_list = status_list.filter(function(e) { return e !== status })
                     for (i in filtered_status_list){
                         status_ = filtered_status_list[i]
@@ -497,7 +499,7 @@
                         }else{
                             query.push(")");
                         }
-                        query.push(" { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated time_last } }");
+                        query.push(" { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active dormant under_mitigation outdated time_last } }");
                         if(refresh_state_live){
                             fetchDatatableLive(ws, callback, query.join(''));
                         }else{

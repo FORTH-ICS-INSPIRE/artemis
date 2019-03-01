@@ -159,6 +159,9 @@ function format_hijack_status(data){
     if(data['withdrawn'] == true){
         html_ += '<span class="badge badge-pill badge-info">Withdrawn</span>';
     }
+    if(data['dormant'] == true){
+        html_ += '<span class="badge badge-pill badge-secondary">Dormant</span>';
+    }
     return html_;
 }
 

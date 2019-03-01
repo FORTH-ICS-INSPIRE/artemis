@@ -1,6 +1,25 @@
 # Changelog
 
-## [UNRELEASED] (Atlas) - YYYY-MM-DD
+## [UNRELEASED] (NAME) - YYYY-MM-DD
+### Added
+- Support for dormant flags in hijacks
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [1.1.1] (Atlas) - 2019-02-28
 ### Added
 - Tooltip support for peers seen BGP Announcement/Withdrawal on hijack view.
 - Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration

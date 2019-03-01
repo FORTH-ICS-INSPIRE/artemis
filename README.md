@@ -69,7 +69,7 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
   * sub-prefix, any type (0/1/-), any data plane manipulation
   * squatting attacks, type 0 (others are N/A), any data plane manipulation
   * policy violations (route leaks) due to long paths towards no-export prefixes
-* Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn and outdated).
+* Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn, outdated and dormant).
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
 * Comprehensive web-based User Interface (UI).
 * Configuration file editable by the operator (directly or via the UI),

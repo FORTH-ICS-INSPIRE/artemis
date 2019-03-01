@@ -798,7 +798,7 @@ class Database:
 
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
-                        "UPDATE hijacks SET active=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
+                        "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
                         (datetime.datetime.now(), raw["key"]),
                     )
 
@@ -829,7 +829,7 @@ class Database:
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
-                        "UPDATE hijacks SET active=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;",
+                        "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;",
                         (raw["key"],),
                     )
             except Exception:
@@ -908,10 +908,10 @@ class Database:
                 if not raw["keys"]:
                     query = None
                 elif raw["action"] == "mark_resolved":
-                    query = "UPDATE hijacks SET resolved=true, active=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
+                    query = "UPDATE hijacks SET resolved=true, active=false, dormant=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
                     resolve_action = True
                 elif raw["action"] == "mark_ignored":
-                    query = "UPDATE hijacks SET ignored=true, active=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
+                    query = "UPDATE hijacks SET ignored=true, active=false, dormant=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
                     ignore_action = True
                 elif raw["action"] == "mark_seen":
                     query = "UPDATE hijacks SET seen=true WHERE key=%s;"
@@ -1055,7 +1055,7 @@ class Database:
                                 )
                                 with get_wo_cursor(self.wo_conn) as db_cur:
                                     db_cur.execute(
-                                        "UPDATE hijacks SET active=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, "
+                                        "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, "
                                         "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
                                         (timestamp, entry[1], timestamp, entry[2]),
                                     )
@@ -1065,7 +1065,7 @@ class Database:
                                 # add withdrawal to hijack
                                 with get_wo_cursor(self.wo_conn) as db_cur:
                                     db_cur.execute(
-                                        "UPDATE hijacks SET peers_withdrawn=%s, time_last=%s WHERE key=%s;",
+                                        "UPDATE hijacks SET peers_withdrawn=%s, time_last=%s, dormant=false WHERE key=%s;",
                                         (entry[1], timestamp, entry[2]),
                                     )
 
@@ -1163,9 +1163,9 @@ class Database:
                 query = (
                     "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                    "active, resolved, ignored, withdrawn, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) "
+                    "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) "
                     "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
-                    ", time_started=excluded.time_started, time_last=excluded.time_last, peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf"
+                    ", time_started=excluded.time_started, time_last=excluded.time_last, peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false"
                 )
 
                 values = []
@@ -1197,6 +1197,7 @@ class Database:
                         False,  # resolved
                         False,  # ignored
                         False,  # withdrawn
+                        False,  # dormant
                         # configured_prefix
                         self.insert_hijacks_entries[key]["configured_prefix"],
                         datetime.datetime.fromtimestamp(
@@ -1261,7 +1262,7 @@ class Database:
             if not self.outdate_hijacks:
                 return
             try:
-                query = "UPDATE hijacks SET active=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
+                query = "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     psycopg2.extras.execute_values(
                         db_cur, query, list(self.outdate_hijacks), page_size=1000

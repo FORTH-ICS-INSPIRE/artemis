@@ -17,12 +17,14 @@ mapHelpText_stats['field_stats_Ignored_Hijacks'] = 'The number of ignored hijack
 mapHelpText_stats['field_stats_Withdrawn_Hijacks'] = 'The number of withdrawn hijack events.';
 mapHelpText_stats['field_stats_Acknowledged_Hijacks'] = 'The number of acknowledged hijack events (confirmed as true positives).';
 mapHelpText_stats['field_stats_Outdated_Hijacks'] = 'The number of hijack events that are currently outdated (matching deprecated configurations, but benign now).';
+mapHelpText_stats['field_stats_Dormant_Hijacks'] = 'The number of dormant hijack events (ongoing, but not updated within the last X hours).';
 
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
 
-mapHelpText_system['field_hijack_status'] = `The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved|outdated).</br>
+mapHelpText_system['field_hijack_status'] = `The status of a hijack event (possible values: ongoing|dormant|withdrawn|under mitigation|ignored|resolved|outdated).</br>
 <ul><li>Ongoing: the hijack has not been ignored, resolved or withdrawn.</li>
+<li>Dormant: the hijack is ongoing, but not updated within the last X hours.</li>
 <li>Withdrawn: all monitors that saw hijack updates for a certain hijacked prefix have seen the respective withdrawals.</li>
 <li>Ignored: the event is ignored (by the user).</li>
 <li>Resolved: the event is resolved (by the user).</li>
@@ -81,6 +83,7 @@ mapHelpText_hijack_status['field_hijack_status_withdrawn'] = 'Withdrawn hijack e
 mapHelpText_hijack_status['field_hijack_status_ignored'] = 'Ignored hijack events</br>(marked by the user).';
 mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'Hijack events that are currently under mitigation</br>(triggered by the user).';
 mapHelpText_hijack_status['field_hijack_status_outdated'] = 'Hijack events that match a configuration that is now deprecated</br>(marked by the user).';
+mapHelpText_hijack_status['field_hijack_status_dormant'] = 'Dormant hijack events</br>(ongoing, but not updated within the last X hours).';
 
 
 function displayHelpTextTable(){ // eslint-disable-line no-unused-vars

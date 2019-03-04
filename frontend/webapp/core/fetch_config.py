@@ -31,8 +31,6 @@ class Configuration:
             # Check if postgrest is up and if a valid config exists
             if not isinstance(self.raw_json, list) or not self.raw_json:
                 return False
-            if "config_data" in self.raw_json[0]:
-                self.raw_json_config = self.raw_json[0]["config_data"]
             if "raw_config" in self.raw_json[0]:
                 self.raw_config = self.raw_json[0]["raw_config"]
             if "time_modified" in self.raw_json[0]:
@@ -40,7 +38,7 @@ class Configuration:
             if "comment" in self.raw_json[0]:
                 self.config_comment = self.raw_json[0]["comment"]
 
-            self.config_yaml = yload(json.dumps(self.raw_json_config))
+            self.config_yaml = yload(self.raw_config)
         except BaseException:
             log.exception("exception")
             return False
@@ -63,6 +61,9 @@ class Configuration:
                     prefixes_list.append(prefix)
         return prefixes_list
 
+    def get_rules_list(self):
+        return self.config_yaml["rules"]
+
     def get_raw_response(self):
         return self.raw_json
 
@@ -77,9 +78,6 @@ class Configuration:
 
     def get_config_comment(self):
         return self.config_comment
-
-    def get_raw_json_config(self):
-        return self.raw_json_config
 
 
 def fetch_all_config_timestamps():

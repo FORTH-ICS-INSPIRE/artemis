@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (11, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (12, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -136,7 +136,6 @@ SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 
 CREATE TABLE IF NOT EXISTS configs (
     key VARCHAR ( 32 ) NOT NULL,
-    config_data  json,
     raw_config  text,
     comment text,
     time_modified TIMESTAMP NOT NULL

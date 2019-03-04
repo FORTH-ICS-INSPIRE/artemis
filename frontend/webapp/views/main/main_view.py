@@ -88,11 +88,11 @@ def display_hijack():
 def display_visualizations():
     app.config["configuration"].get_newest_config()
     prefixes_list = app.config["configuration"].get_prefixes_list()
-    json_config = app.config["configuration"].get_raw_json_config()
+    rules_list = app.config["configuration"].get_rules_list()
     return render_template(
         "viz.htm",
         prefixes=prefixes_list,
-        config=json_config,
+        rules=rules_list,
         js_version=app.config["JS_VERSION"],
     )
 

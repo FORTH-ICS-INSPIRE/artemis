@@ -621,7 +621,7 @@ class Database:
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
                 rule_translated_prefix_set = set()
-                for i, prefix in enumerate(rule["prefixes"]):
+                for prefix in rule["prefixes"]:
                     this_translated_prefix_list = flatten(translate_rfc2622(prefix))
                     rule_translated_prefix_set.update(set(this_translated_prefix_list))
                 rule["prefixes"] = list(rule_translated_prefix_set)

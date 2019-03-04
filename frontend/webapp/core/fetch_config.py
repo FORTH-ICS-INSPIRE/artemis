@@ -51,11 +51,6 @@ class Configuration:
         prefixes_list = []
         for rule in self.config_yaml["rules"]:
             rule["prefixes"] = flatten(rule["prefixes"])
-            rule_translated_prefix_set = set()
-            for i, prefix in enumerate(rule["prefixes"]):
-                this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                rule_translated_prefix_set.update(set(this_translated_prefix_list))
-            rule["prefixes"] = list(rule_translated_prefix_set)
             for prefix in rule["prefixes"]:
                 if prefix not in prefixes_list:
                     prefixes_list.append(prefix)

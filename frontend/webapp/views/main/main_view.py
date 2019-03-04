@@ -35,15 +35,10 @@ def display_hijacks():
             hijack_keys = hijack_keys.split(",")
         else:
             hijack_keys = [hijack_keys]
-        return render_template("hijacks.htm", hijack_keys=hijack_keys, prefixes=None)
+        return render_template("hijacks.htm", hijack_keys=hijack_keys)
     else:
-        app.config["configuration"].get_newest_config()
-        prefixes_list = app.config["configuration"].get_prefixes_list()
         return render_template(
-            "hijacks.htm",
-            hijack_keys=None,
-            prefixes=prefixes_list,
-            js_version=app.config["JS_VERSION"],
+            "hijacks.htm", hijack_keys=None, js_version=app.config["JS_VERSION"]
         )
 
 
@@ -78,21 +73,6 @@ def display_hijack():
         data=json.dumps(hijack_data),
         mitigate=_mitigation_flag,
         configured=_configured,
-        js_version=app.config["JS_VERSION"],
-    )
-
-
-@main.route("/visualizations/", methods=["GET"])
-@login_required
-@roles_accepted("admin", "user")
-def display_visualizations():
-    app.config["configuration"].get_newest_config()
-    prefixes_list = app.config["configuration"].get_prefixes_list()
-    json_config = app.config["configuration"].get_raw_json_config()
-    return render_template(
-        "viz.htm",
-        prefixes=prefixes_list,
-        config=json_config,
         js_version=app.config["JS_VERSION"],
     )
 

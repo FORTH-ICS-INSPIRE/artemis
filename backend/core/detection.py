@@ -769,6 +769,18 @@ class Detection:
                     result = hijack_value
                     mail_log.info("{}".format(result))
                 redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+
+                # store the origin, neighbor combination for this hijack BGP update
+                origin = None
+                neighbor = None
+                if monitor_event["path"]:
+                    origin = monitor_event["path"][-1]
+                if len(monitor_event["path"]) > 1:
+                    neighbor = monitor_event["path"][-2]
+                redis_pipeline.sadd(
+                    "hij_orig_neighb_{}".format(redis_hijack_key),
+                    "{}_{}".format(origin, neighbor),
+                )
             except Exception:
                 log.exception("exception")
             finally:

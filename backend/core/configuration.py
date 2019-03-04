@@ -21,6 +21,7 @@ from utils import ArtemisError
 from utils import flatten
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import redis_key
 from utils import translate_rfc2622
 from yaml import load as yload
 
@@ -120,6 +121,13 @@ class Configuration:
                 delivery_mode=1,
             )
             self.config_exchange.declare()
+            self.hijack_exchange = Exchange(
+                "hijack-update",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
 
             # QUEUES
             self.config_modify_queue = Queue(
@@ -133,6 +141,15 @@ class Configuration:
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
+            )
+            self.hijack_ignored_rule_queue = Queue(
+                "conf-hijack-ignored",
+                exchange=self.hijack_exchange,
+                routing_key="ignored-rule",
+                durable=False,
+                auto_delete=True,
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
             )
 
             log.info("started")
@@ -151,6 +168,12 @@ class Configuration:
                 Consumer(
                     queues=[self.config_request_queue],
                     on_message=self.handle_config_request,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
+                Consumer(
+                    queues=[self.hijack_ignored_rule_queue],
+                    on_message=self.handle_hijack_ignore_rule_request,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -248,6 +271,25 @@ class Configuration:
                 retry=True,
                 priority=4,
             )
+
+        def handle_hijack_ignore_rule_request(self, message):
+            """
+            {
+                    "key": ...,
+                    "prefix": ...,
+                    "type": ..._,
+                    "hijack_as": ...,
+            }
+            """
+            raw = message.payload
+            log.debug("payload: {}".format(raw))
+            try:
+                redis_hijack_key = redis_key(
+                    raw["prefix"], raw["hijack_as"], raw["type"]
+                )
+                # TODO: make rule dict!!!
+            except Exception:
+                log.exception("{}".format(raw))
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

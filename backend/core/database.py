@@ -16,6 +16,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from utils import flatten
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
@@ -24,7 +25,6 @@ from utils import RABBITMQ_URI
 from utils import redis_key
 from utils import SUPERVISOR_HOST
 from utils import SUPERVISOR_PORT
-from utils import flatten
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -1317,19 +1317,13 @@ class Database:
             try:
                 log.debug("Config Store..")
                 query = (
-                    "INSERT INTO configs (key, config_data, raw_config, time_modified, comment)"
-                    "VALUES (%s, %s, %s, %s, %s);"
+                    "INSERT INTO configs (key, raw_config, time_modified, comment)"
+                    "VALUES (%s, %s, %s, %s);"
                 )
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
                         query,
-                        (
-                            config_hash,
-                            json.dumps(yaml_config),
-                            raw_config,
-                            datetime.datetime.now(),
-                            comment,
-                        ),
+                        (config_hash, raw_config, datetime.datetime.now(), comment),
                     )
             except Exception:
                 log.exception("failed to save config in db")

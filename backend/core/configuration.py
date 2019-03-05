@@ -25,7 +25,7 @@ from utils import get_logger
 from utils import RABBITMQ_URI
 from utils import redis_key
 from utils import translate_rfc2622
-import utils.conf_lib as clib
+import ruamel.yaml
 from yaml import load as yload
 
 log = get_logger()
@@ -321,7 +321,7 @@ class Configuration:
                 # learned rule prefix
                 rule_prefix = {
                     raw["prefix"]: "LEARNED_H_{}_P_{}".format(
-                        raw["key"], raw["prefix"].replace("/", "_")
+                        raw["key"], raw["prefix"].replace("/", "_").replace('.', "_")
                     )
                 }
 
@@ -336,7 +336,7 @@ class Configuration:
                     assert raw["hijack_as"] in orig_to_neighb
                     learned_rule = {
                         "prefixes": [rule_prefix[raw["prefix"]]],
-                        "origin_asns": rule_asns[raw["hijack_as"]],
+                        "origin_asns": [rule_asns[raw["hijack_as"]]],
                         "neighbors": [
                             rule_asns[asn] for asn in orig_to_neighb[raw["hijack_as"]]
                         ],
@@ -374,6 +374,68 @@ class Configuration:
             return (rule_prefix, rule_asns, rules)
 
 
+        def translate_learn_rule_dicts_to_yaml_file(self, rule_prefix, rule_asns, rules):
+            """
+            Translates the dicts from translate_learn_rule_msg_to_dicts function into yaml configuration,
+            preserving the order and comments of the current file
+            :param rule_prefix: <str>
+            :param rule_asns: <list><int>
+            :param rules: <list><dict>
+            :return:
+            """
+            try:
+                with open(self.file, "r") as f:
+                    raw = f.read()
+                yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
+
+                # append prefix
+                for prefix in rule_prefix:
+                    prefix_anchor = rule_prefix[prefix]
+                    if prefix_anchor not in yaml_conf["prefixes"]:
+                        yaml_conf["prefixes"][prefix_anchor] = ruamel.yaml.comments.CommentedSeq()
+                        yaml_conf["prefixes"][prefix_anchor].append(prefix)
+                        yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(prefix_anchor, always_dump=True)
+
+                # append asns
+                for asn in rule_asns:
+                    asn_anchor = rule_asns[asn]
+                    if asn_anchor not in yaml_conf["asns"]:
+                        yaml_conf["asns"][asn_anchor] = ruamel.yaml.comments.CommentedSeq()
+                        yaml_conf["asns"][asn_anchor].append(asn)
+                        yaml_conf["asns"][asn_anchor].yaml_set_anchor(asn_anchor, always_dump=True)
+
+                # append rules
+                for rule in rules:
+                    rule_map = ruamel.yaml.comments.CommentedMap()
+
+                    # append prefix
+                    rule_map["prefixes"] = ruamel.yaml.comments.CommentedSeq()
+                    for prefix in rule["prefixes"]:
+                        rule_map["prefixes"].append(yaml_conf["prefixes"][prefix])
+
+                    # append origin asns
+                    rule_map["origin_asns"] = ruamel.yaml.comments.CommentedSeq()
+                    for origin_asn in rule["origin_asns"]:
+                        log.info(origin_asn)
+                        rule_map["origin_asns"].append(yaml_conf["asns"][origin_asn])
+
+                    # append neighbors
+                    rule_map["neighbors"] = ruamel.yaml.comments.CommentedSeq()
+                    for neighbor in rule["neighbors"]:
+                        rule_map["neighbors"].append(yaml_conf["asns"][neighbor])
+
+                    # append mitigation action
+                    rule_map["mitigation"] = rule["mitigation"]
+
+                    yaml_conf["rules"].append(rule_map)
+
+                # generate new configuration
+                with open(self.file, "w") as f:
+                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+            except Exception:
+                log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
+
+
         def handle_hijack_learn_rule_request(self, message):
             """
             Receives a "learn-rule" message, translates this to associated ARTEMIS-compatibe dictionaries,
@@ -389,6 +451,7 @@ class Configuration:
             raw = message.payload
             log.debug("payload: {}".format(raw))
             (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(raw)
+            self.translate_learn_rule_dicts_to_yaml_file(rule_prefix, rule_asns, rules)
 
 
         def parse(

@@ -380,7 +380,10 @@ class Configuration:
             :return: (<str>, <bool>)
             """
             if not rule_prefix or not rule_asns or not rules:
-                return ("problem with rule installation", False)
+                return (
+                    "problem with rule installation; rule probably already exists",
+                    False,
+                )
             extra_yaml_conf_to_show = ruamel.yaml.comments.CommentedMap()
             try:
                 with open(self.file, "r") as f:
@@ -477,7 +480,10 @@ class Configuration:
 
             except Exception:
                 log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
-                return None
+                return (
+                    "problem with rule installation; exception during yaml processing",
+                    False,
+                )
             return (
                 ruamel.yaml.dump(
                     extra_yaml_conf_to_show, Dumper=ruamel.yaml.RoundTripDumper

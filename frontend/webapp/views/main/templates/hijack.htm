@@ -174,8 +174,7 @@
                                 <button id="ignored_button" type="button" class="btn btn-warning">Ignore</button>
                             </div>
                             <div class="col-lg-4">
-                                <button id="learn_rule_button" type="button" class="btn btn-info">Learn Rule</button>
-                                <div id="learn_rule_alert_box"></div>
+                                <button id="learn_rule_button" type="button" class="btn btn-info" data-toggle="modal" data-target="#learnRuleModal">Learn Rule</button>
                             </div>
                         </div>
                     </div>
@@ -264,6 +263,24 @@
                 <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
             </div>
         </div>
+         <div class="modal" id="learnRuleModal" tabindex="-1" role="dialog" aria-labelledby="learnRuleModalLabel" aria-hidden="true">
+             <div class="modal-dialog modal-lg" role="document">
+                 <div class="modal-content">
+                     <div class="modal-header">
+                         <h5 class="modal-title" id="learnRuleModalLabel">Learn new rule</h5>
+                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                             <span aria-hidden="true">&times;</span>
+                         </button>
+                     </div>
+                     <div class="modal-body">
+                         N/A
+                     </div>
+                     <div class="modal-footer">
+                         <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
+                     </div>
+                 </div>
+             </div>
+         </div>
 
 
 {% endblock %}
@@ -773,11 +790,11 @@
                 });
             });
 
-            $( "#learn_rule_button" ).on('click', function (event, state) {
-                    submit_learn_rule(initial_data['key'], initial_data['prefix'], initial_data['type'], initial_data['hijack_as'])
+            $('#learnRuleModal').on('show.bs.modal', function (event) {
+                    submit_learn_rule($(this), initial_data['key'], initial_data['prefix'], initial_data['type'], initial_data['hijack_as'])
             });
 
-            function submit_learn_rule(hijack_key, prefix, type_, hijack_as){
+            function submit_learn_rule(modal, hijack_key, prefix, type_, hijack_as){
                 $.ajax({
                     type: "POST",
                     url: "{{ url_for('actions.learn_hijack_rule') }}",
@@ -797,7 +814,7 @@
                             message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
                             message += result["response"] + '</div>'
                         }
-                        $("#learn_rule_alert_box").html(message)
+                        modal.find('.modal-body').html(message)
                     },
                     dataType: "json"
                 });

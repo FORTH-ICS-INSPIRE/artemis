@@ -14,6 +14,7 @@ from flask_security.utils import verify_password
 from webapp.core.actions import Comment_hijack
 from webapp.core.actions import Hijacks_multiple_action
 from webapp.core.actions import Ignore_hijack
+from webapp.core.actions import Learn_hijack_rule
 from webapp.core.actions import Mitigate_hijack
 from webapp.core.actions import Resolve_hijack
 from webapp.core.actions import Seen_hijack
@@ -73,6 +74,24 @@ def ignore_hijack():
 
     except BaseException:
         app.artemis_logger.debug("ignore_hijack failed")
+
+    return jsonify({"status": "success"})
+
+
+@actions.route("/hijacks/learn_hijack_rule/", methods=["POST"])
+@roles_required("admin")
+def learn_hijack_rule():
+    hijack_key = request.values.get("hijack_key")
+    prefix = request.values.get("prefix")
+    type_ = request.values.get("type_")
+    hijack_as = int(request.values.get("hijack_as"))
+
+    try:
+        _learn_hijack_rule = Learn_hijack_rule(hijack_key, prefix, type_, hijack_as)
+        _learn_hijack_rule.learn_rule()
+
+    except BaseException:
+        app.artemis_logger.debug("learn_hijack_rule failed")
 
     return jsonify({"status": "success"})
 

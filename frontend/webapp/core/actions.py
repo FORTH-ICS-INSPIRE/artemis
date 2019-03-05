@@ -111,6 +111,40 @@ class Ignore_hijack:
             )
 
 
+class Learn_hijack_rule:
+    def __init__(self, hijack_key, prefix, type_, hijack_as):
+        self.connection = None
+        self.hijack_key = hijack_key
+        self.prefix = prefix
+        self.type_ = type_
+        self.hijack_as = hijack_as
+        self.init_conn()
+        self.hijack_exchange = Exchange(
+            "hijack-update", type="direct", durable=False, delivery_mode=1
+        )
+
+    def init_conn(self):
+        try:
+            self.connection = Connection(RABBITMQ_URI)
+        except BaseException:
+            log.exception("Learn_hijack_rule failed to connect to rabbitmq.")
+
+    def learn_rule(self):
+        log.debug("sending learn rule message")
+        with Producer(self.connection) as producer:
+            producer.publish(
+                {
+                    "key": self.hijack_key,
+                    "prefix": self.prefix,
+                    "type": self.type_,
+                    "hijack_as": self.hijack_as,
+                },
+                exchange=self.hijack_exchange,
+                routing_key="learn-rule",
+                priority=2,
+            )
+
+
 class Comment_hijack:
     def __init__(self):
         self.connection = None

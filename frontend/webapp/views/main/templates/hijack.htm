@@ -178,6 +178,9 @@
                             <div class="col-lg-4">
                                 <button id="ignored_button" type="button" class="btn btn-warning">Ignore</button>
                             </div>
+                            <div class="col-lg-4">
+                                <button id="learn_rule_button" type="button" class="btn btn-info">Learn Rule</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -716,6 +719,9 @@
                 }else if(data['under_mitigation'] == true || data['withdrawn'] == true || data['outdated'] == true){
                     $("#mitigation_button").prop("disabled", true);
                 }
+                if(data['active'] == false){
+                    $("#learn_rule_button").prop("disabled", true);
+                }
                 if(data['seen'] == true){
                     $('#hijack_acknowledged_button').removeClass('btn-primary').addClass('btn-danger');
                     $('#hijack_acknowledged_button').html('Mark Hijack as <b>not acknowledged</b>');
@@ -758,6 +764,23 @@
                 $.ajax({
                     type: 'POST',
                     url: "{{ url_for('actions.ignore_hijack') }}",
+                    data: {
+                        "hijack_key" : initial_data['key'],
+                        "hijack_as": initial_data['hijack_as'],
+                        "type_": initial_data['type'],
+                        "prefix": initial_data['prefix']
+                    },
+                    success: function(result){
+                        retrieve_hijack(fetch_hijack_parameter);
+                    },
+                    dataType: 'json'
+                });
+            });
+
+            $( "#learn_rule_button" ).click(function() {
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ url_for('actions.learn_hijack_rule') }}",
                     data: {
                         "hijack_key" : initial_data['key'],
                         "hijack_as": initial_data['hijack_as'],

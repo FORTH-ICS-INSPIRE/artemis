@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 import signal
 import time
 from io import StringIO
@@ -12,6 +13,7 @@ from typing import Text
 from typing import TextIO
 from typing import Union
 
+import redis
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -112,6 +114,9 @@ class Configuration:
                 raw = f.read()
                 self.data, _flag, _error = self.parse(raw, yaml=True)
 
+            # redis
+            self.redis = redis.Redis(host="localhost", port=6379)
+
             # EXCHANGES
             self.config_exchange = Exchange(
                 "config",
@@ -142,10 +147,10 @@ class Configuration:
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
-            self.hijack_ignored_rule_queue = Queue(
-                "conf-hijack-ignored",
+            self.hijack_learn_rule_queue = Queue(
+                "conf-hijack-learn-rule",
                 exchange=self.hijack_exchange,
-                routing_key="ignored-rule",
+                routing_key="learn-rule",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
@@ -172,8 +177,8 @@ class Configuration:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.hijack_ignored_rule_queue],
-                    on_message=self.handle_hijack_ignore_rule_request,
+                    queues=[self.hijack_learn_rule_queue],
+                    on_message=self.handle_hijack_learn_rule_request,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -272,7 +277,7 @@ class Configuration:
                 priority=4,
             )
 
-        def handle_hijack_ignore_rule_request(self, message):
+        def handle_hijack_learn_rule_request(self, message):
             """
             {
                     "key": ...,
@@ -283,13 +288,84 @@ class Configuration:
             """
             raw = message.payload
             log.debug("payload: {}".format(raw))
+            rule_prefix = {}
+            rule_asns = {}
+            rules = []
             try:
                 redis_hijack_key = redis_key(
                     raw["prefix"], raw["hijack_as"], raw["type"]
                 )
-                # TODO: make rule dict!!!
+                hij_orig_neighb_set = "hij_orig_neighb_{}".format(redis_hijack_key)
+                orig_to_neighb = {}
+                neighb_to_origs = {}
+                asns = set()
+                if self.redis.exists(hij_orig_neighb_set):
+                    for element in self.redis.sscan_iter(hij_orig_neighb_set):
+                        (origin, neighbor) = list(map(int, element.decode().split("_")))
+                        if origin is not None:
+                            asns.add(origin)
+                            if origin not in orig_to_neighb:
+                                orig_to_neighb[origin] = set()
+                            if neighbor is not None:
+                                asns.add(neighbor)
+                                orig_to_neighb[origin].add(neighbor)
+                                if neighbor not in neighb_to_origs:
+                                    neighb_to_origs[neighbor] = set()
+                                neighb_to_origs[neighbor].add(origin)
+
+                # learned rule prefix
+                rule_prefix = {
+                    raw["prefix"]: "LEARNED_H_{}_P_{}".format(
+                        raw["key"], raw["prefix"].replace("/", "_")
+                    )
+                }
+
+                # learned rule asns
+                rule_asns = {}
+                for asn in asns:
+                    rule_asns[asn] = "LEARNED_H_{}_AS_{}".format(raw["key"], asn)
+
+                # learned rule(s)
+                if re.match(r"^[E|S]\|0.*", raw["type"]):
+                    assert len(orig_to_neighb) == 1
+                    assert raw["hijack_as"] in orig_to_neighb
+                    learned_rule = {
+                        "prefixes": [rule_prefix[raw["prefix"]]],
+                        "origin_asns": rule_asns[raw["hijack_as"]],
+                        "neighbors": [
+                            rule_asns[asn] for asn in orig_to_neighb[raw["hijack_as"]]
+                        ],
+                        "mitigation": "manual",
+                    }
+                    rules.append(learned_rule)
+                elif re.match(r"^[E|S]\|1.*", raw["type"]):
+                    assert len(neighb_to_origs) == 1
+                    assert raw["hijack_as"] in neighb_to_origs
+                    learned_rule = {
+                        "prefixes": [rule_prefix[raw["prefix"]]],
+                        "origin_asns": [
+                            rule_asns[asn] for asn in neighb_to_origs[raw["hijack_as"]]
+                        ],
+                        "neighbors": [rule_asns[raw["hijack_as"]]],
+                        "mitigation": "manual",
+                    }
+                    rules.append(learned_rule)
+                elif re.match(r"^[E|S]\|-.*", raw["type"]) or re.match(
+                    r"^Q\|0.*", raw["type"]
+                ):
+                    for origin in orig_to_neighb:
+                        learned_rule = {
+                            "prefixes": [rule_prefix[raw["prefix"]]],
+                            "origin_asns": [rule_asns[origin]],
+                            "neighbors": [
+                                rule_asns[asn] for asn in orig_to_neighb[origin]
+                            ],
+                            "mitigation": "manual",
+                        }
+                        rules.append(learned_rule)
             except Exception:
                 log.exception("{}".format(raw))
+            return (rule_prefix, rule_asns, rules)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

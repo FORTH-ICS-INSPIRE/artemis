@@ -18,11 +18,6 @@
         <div class="row">
             <div class="col-lg-12">
                 <h1 class="page-header">Viewing Hijack <small id="hijack_status"></small></h1>
-                {% if mitigate == True and configured != True %}
-                <div class="alert alert-warning">
-                    <strong>Warning!</strong> The prefix that is related to this hijack does not exist in the current configuration file.
-                </div>
-                {% endif %}
             </div>
             <div class="col-lg-9">
                 <div class="panel panel-default">
@@ -171,7 +166,7 @@
                                 <button id="resolved_button" type="button" class="btn btn-success">Resolve</button>
                             </div>
                             <div class="col-lg-4">
-                                {% if mitigate == True and configured == True %}
+                                {% if mitigate == True %}
                                 <button id="mitigation_button" type="button" class="btn btn-danger">Mitigate</button>
                                 {% endif %}
                             </div>

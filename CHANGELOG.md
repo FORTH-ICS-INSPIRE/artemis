@@ -7,16 +7,18 @@
 - Learn rule action/button for ongoing hijacks in frontend
 - Translate learn rule request in ARTEMIS-compatible dicts in backend
 - Translate learn rule ARTEMIS-compatible dicts into yaml conf in backend
-- Updare yaml conf with learned rule
+- Update yaml conf with learned rule
+- Configured/matched prefix field and search in frontend hijack and update tables
 
 ### Changed
 - TBD (Changed existing functionality)
 
 ### Fixed
-- TBD (bug-fix)
+- Correct RFC2622 translation when needed in frontend and backend
 
 ### Removed
-- TBD (removed a feature)
+- Configured prefix graph visualization (needs redesign)
+- Config data field from configs DB table
 
 ### Deprecated
 - TBD (soon-to-be removed feature)

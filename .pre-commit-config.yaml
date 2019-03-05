@@ -21,6 +21,5 @@
     - id: end-of-file-fixer
     - id: flake8
       exclude: .git, __pycache__, postgres-*
-      args: ['--ignore=E203,W503','--max-line-length=88']
     - id: requirements-txt-fixer
     - id: trailing-whitespace

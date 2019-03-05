@@ -387,38 +387,64 @@ class Configuration:
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
             :param rules: <list><dict>
-            :return:
+            :return: <str>
             """
+            extra_yaml_conf_to_show = ruamel.yaml.comments.CommentedMap()
             try:
                 with open(self.file, "r") as f:
                     raw = f.read()
                 yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
 
                 # append prefix
+                extra_yaml_conf_to_show[
+                    "prefixes"
+                ] = ruamel.yaml.comments.CommentedMap()
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
                     if prefix_anchor not in yaml_conf["prefixes"]:
                         yaml_conf["prefixes"][
                             prefix_anchor
                         ] = ruamel.yaml.comments.CommentedSeq()
+                        extra_yaml_conf_to_show["prefixes"][
+                            prefix_anchor
+                        ] = ruamel.yaml.comments.CommentedSeq()
                         yaml_conf["prefixes"][prefix_anchor].append(prefix)
+                        extra_yaml_conf_to_show["prefixes"][prefix_anchor].append(
+                            prefix
+                        )
                         yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
                             prefix_anchor, always_dump=True
                         )
+                        extra_yaml_conf_to_show["prefixes"][
+                            prefix_anchor
+                        ].yaml_set_anchor(prefix_anchor, always_dump=True)
+                    else:
+                        return "rule already exists"
 
                 # append asns
+                extra_yaml_conf_to_show["asns"] = ruamel.yaml.comments.CommentedMap()
                 for asn in rule_asns:
                     asn_anchor = rule_asns[asn]
                     if asn_anchor not in yaml_conf["asns"]:
                         yaml_conf["asns"][
                             asn_anchor
                         ] = ruamel.yaml.comments.CommentedSeq()
+                        extra_yaml_conf_to_show["asns"][
+                            asn_anchor
+                        ] = ruamel.yaml.comments.CommentedSeq()
                         yaml_conf["asns"][asn_anchor].append(asn)
+                        extra_yaml_conf_to_show["asns"][asn_anchor].append(asn)
                         yaml_conf["asns"][asn_anchor].yaml_set_anchor(
                             asn_anchor, always_dump=True
                         )
+                        extra_yaml_conf_to_show["asns"][asn_anchor].yaml_set_anchor(
+                            asn_anchor, always_dump=True
+                        )
+                    else:
+                        return "rule already exists"
 
                 # append rules
+                extra_yaml_conf_to_show["rules"] = ruamel.yaml.comments.CommentedSeq()
                 for rule in rules:
                     rule_map = ruamel.yaml.comments.CommentedMap()
 
@@ -430,7 +456,6 @@ class Configuration:
                     # append origin asns
                     rule_map["origin_asns"] = ruamel.yaml.comments.CommentedSeq()
                     for origin_asn in rule["origin_asns"]:
-                        log.info(origin_asn)
                         rule_map["origin_asns"].append(yaml_conf["asns"][origin_asn])
 
                     # append neighbors
@@ -442,12 +467,18 @@ class Configuration:
                     rule_map["mitigation"] = rule["mitigation"]
 
                     yaml_conf["rules"].append(rule_map)
+                    extra_yaml_conf_to_show["rules"].append(rule_map)
 
                 # generate new configuration
                 with open(self.file, "w") as f:
                     ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+
             except Exception:
                 log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
+                return None
+            return ruamel.yaml.dump(
+                extra_yaml_conf_to_show, Dumper=ruamel.yaml.RoundTripDumper
+            )
 
         def handle_hijack_learn_rule_request(self, message):
             """
@@ -467,7 +498,10 @@ class Configuration:
             (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
                 raw
             )
-            self.translate_learn_rule_dicts_to_yaml_file(rule_prefix, rule_asns, rules)
+            extra_yaml_conf_to_show = self.translate_learn_rule_dicts_to_yaml_file(
+                rule_prefix, rule_asns, rules
+            )
+            log.info(extra_yaml_conf_to_show)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

@@ -14,6 +14,7 @@ from typing import TextIO
 from typing import Union
 
 import redis
+import ruamel.yaml
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -25,7 +26,6 @@ from utils import get_logger
 from utils import RABBITMQ_URI
 from utils import redis_key
 from utils import translate_rfc2622
-import ruamel.yaml
 from yaml import load as yload
 
 log = get_logger()
@@ -187,8 +187,10 @@ class Configuration:
 
         def handle_config_modify(self, message: Dict) -> NoReturn:
             """
-            Consumer for Config-Modify messages that parses and checks if new configuration is correct.
-            Replies back to the sender if the configuration is accepted or rejected and notifies all Subscribers if new configuration is used.
+            Consumer for Config-Modify messages that parses and checks
+            if new configuration is correct.
+            Replies back to the sender if the configuration is accepted
+            or rejected and notifies all Subscribers if new configuration is used.
             """
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             raw_ = message.payload
@@ -265,7 +267,8 @@ class Configuration:
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """
-            Handles all config requests from other Services by replying back with the current configuration.
+            Handles all config requests from other Services
+            by replying back with the current configuration.
             """
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             self.producer.publish(
@@ -278,17 +281,18 @@ class Configuration:
                 priority=4,
             )
 
-
         def translate_learn_rule_msg_to_dicts(self, raw):
             """
-            Translates a learn rule message payload (raw) into ARTEMIS-compatible dictionaries
+            Translates a learn rule message payload (raw)
+            into ARTEMIS-compatible dictionaries
             :param raw:
                 "key": <str>,
                 "prefix": <str>,
                 "type": <str>,
                 "hijack_as": <int>,
             }
-            :return: (<str>rule_prefix, <list><int>rule_asns, <list><dict>rules)
+            :return: (<str>rule_prefix, <list><int>rule_asns,
+            <list><dict>rules)
             """
             # initialize dictionaries and lists
             rule_prefix = {}
@@ -321,7 +325,7 @@ class Configuration:
                 # learned rule prefix
                 rule_prefix = {
                     raw["prefix"]: "LEARNED_H_{}_P_{}".format(
-                        raw["key"], raw["prefix"].replace("/", "_").replace('.', "_")
+                        raw["key"], raw["prefix"].replace("/", "_").replace(".", "_")
                     )
                 }
 
@@ -373,10 +377,12 @@ class Configuration:
 
             return (rule_prefix, rule_asns, rules)
 
-
-        def translate_learn_rule_dicts_to_yaml_file(self, rule_prefix, rule_asns, rules):
+        def translate_learn_rule_dicts_to_yaml_file(
+            self, rule_prefix, rule_asns, rules
+        ):
             """
-            Translates the dicts from translate_learn_rule_msg_to_dicts function into yaml configuration,
+            Translates the dicts from translate_learn_rule_msg_to_dicts
+            function into yaml configuration,
             preserving the order and comments of the current file
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
@@ -392,17 +398,25 @@ class Configuration:
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
                     if prefix_anchor not in yaml_conf["prefixes"]:
-                        yaml_conf["prefixes"][prefix_anchor] = ruamel.yaml.comments.CommentedSeq()
+                        yaml_conf["prefixes"][
+                            prefix_anchor
+                        ] = ruamel.yaml.comments.CommentedSeq()
                         yaml_conf["prefixes"][prefix_anchor].append(prefix)
-                        yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(prefix_anchor, always_dump=True)
+                        yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
+                            prefix_anchor, always_dump=True
+                        )
 
                 # append asns
                 for asn in rule_asns:
                     asn_anchor = rule_asns[asn]
                     if asn_anchor not in yaml_conf["asns"]:
-                        yaml_conf["asns"][asn_anchor] = ruamel.yaml.comments.CommentedSeq()
+                        yaml_conf["asns"][
+                            asn_anchor
+                        ] = ruamel.yaml.comments.CommentedSeq()
                         yaml_conf["asns"][asn_anchor].append(asn)
-                        yaml_conf["asns"][asn_anchor].yaml_set_anchor(asn_anchor, always_dump=True)
+                        yaml_conf["asns"][asn_anchor].yaml_set_anchor(
+                            asn_anchor, always_dump=True
+                        )
 
                 # append rules
                 for rule in rules:
@@ -435,10 +449,10 @@ class Configuration:
             except Exception:
                 log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
 
-
         def handle_hijack_learn_rule_request(self, message):
             """
-            Receives a "learn-rule" message, translates this to associated ARTEMIS-compatibe dictionaries,
+            Receives a "learn-rule" message, translates this
+            to associated ARTEMIS-compatibe dictionaries,
             and adds the prefix, asns and rule(s) to the configuration
             :param message: {
                 "key": <str>,
@@ -450,15 +464,17 @@ class Configuration:
             """
             raw = message.payload
             log.debug("payload: {}".format(raw))
-            (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(raw)
+            (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
+                raw
+            )
             self.translate_learn_rule_dicts_to_yaml_file(rule_prefix, rule_asns, rules)
-
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False
         ) -> Dict:
             """
-            Parser for the configuration file or string. The format can either be a File, StringIO or String
+            Parser for the configuration file or string.
+            The format can either be a File, StringIO or String
             """
             try:
                 if yaml:
@@ -479,8 +495,10 @@ class Configuration:
 
         def check(self, data: Text) -> Dict:
             """
-            Checks if all sections and fields are defined correctly in the parsed configuration.
-            Raises custom exceptions in case a field or section is misdefined.
+            Checks if all sections and fields are defined correctly
+            in the parsed configuration.
+            Raises custom exceptions in case a field or section
+            is misdefined.
             """
             for section in data:
                 if section not in self.sections:

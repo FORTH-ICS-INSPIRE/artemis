@@ -112,16 +112,9 @@ class Ignore_hijack:
 
 
 class Learn_hijack_rule:
-    def __init__(self, hijack_key, prefix, type_, hijack_as):
+    def __init__(self):
         self.connection = None
-        self.hijack_key = hijack_key
-        self.prefix = prefix
-        self.type_ = type_
-        self.hijack_as = hijack_as
         self.init_conn()
-        self.hijack_exchange = Exchange(
-            "hijack-update", type="direct", durable=False, delivery_mode=1
-        )
 
     def init_conn(self):
         try:
@@ -129,20 +122,49 @@ class Learn_hijack_rule:
         except BaseException:
             log.exception("Learn_hijack_rule failed to connect to rabbitmq.")
 
-    def learn_rule(self):
-        log.debug("sending learn rule message")
+    def on_response(self, message):
+        if message.properties["correlation_id"] == self.correlation_id:
+            self.response = message.payload
+
+    def send(self, hijack_key, prefix, type_, hijack_as):
+        log.debug("sending")
+        self.response = None
+        self.correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
         with Producer(self.connection) as producer:
             producer.publish(
                 {
-                    "key": self.hijack_key,
-                    "prefix": self.prefix,
-                    "type": self.type_,
-                    "hijack_as": self.hijack_as,
+                    "key": hijack_key,
+                    "prefix": prefix,
+                    "type": type_,
+                    "hijack_as": hijack_as,
                 },
-                exchange=self.hijack_exchange,
-                routing_key="learn-rule",
-                priority=2,
+                exchange="",
+                routing_key="conf-hijack-learn-rule-queue",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=self.correlation_id,
+                priority=4,
             )
+        with Consumer(
+            self.connection,
+            on_message=self.on_response,
+            queues=[callback_queue],
+            no_ack=True,
+        ):
+            while self.response is None:
+                self.connection.drain_events()
+        if self.response["success"]:
+            return self.response["extra_yaml_conf"], True
+        return self.response["extra_yaml_conf"], False
 
 
 class Comment_hijack:

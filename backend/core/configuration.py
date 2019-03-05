@@ -127,13 +127,6 @@ class Configuration:
                 delivery_mode=1,
             )
             self.config_exchange.declare()
-            self.hijack_exchange = Exchange(
-                "hijack-update",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
-            )
 
             # QUEUES
             self.config_modify_queue = Queue(
@@ -149,13 +142,10 @@ class Configuration:
                 consumer_arguments={"x-priority": 4},
             )
             self.hijack_learn_rule_queue = Queue(
-                "conf-hijack-learn-rule",
-                exchange=self.hijack_exchange,
-                routing_key="learn-rule",
+                "conf-hijack-learn-rule-queue",
                 durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
             )
 
             log.info("started")
@@ -374,7 +364,7 @@ class Configuration:
                         rules.append(learned_rule)
             except Exception:
                 log.exception("{}".format(raw))
-
+                return (None, None, None)
             return (rule_prefix, rule_asns, rules)
 
         def translate_learn_rule_dicts_to_yaml_file(
@@ -387,8 +377,10 @@ class Configuration:
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
             :param rules: <list><dict>
-            :return: <str>
+            :return: (<str>, <bool>)
             """
+            if not rule_prefix or not rule_asns or not rules:
+                return ("problem with rule installation", False)
             extra_yaml_conf_to_show = ruamel.yaml.comments.CommentedMap()
             try:
                 with open(self.file, "r") as f:
@@ -419,7 +411,7 @@ class Configuration:
                             prefix_anchor
                         ].yaml_set_anchor(prefix_anchor, always_dump=True)
                     else:
-                        return "rule already exists"
+                        return ("rule already exists", False)
 
                 # append asns
                 extra_yaml_conf_to_show["asns"] = ruamel.yaml.comments.CommentedMap()
@@ -441,33 +433,43 @@ class Configuration:
                             asn_anchor, always_dump=True
                         )
                     else:
-                        return "rule already exists"
+                        return ("rule already exists", False)
 
                 # append rules
                 extra_yaml_conf_to_show["rules"] = ruamel.yaml.comments.CommentedSeq()
                 for rule in rules:
                     rule_map = ruamel.yaml.comments.CommentedMap()
+                    extra_rule_map = ruamel.yaml.comments.CommentedMap()
 
                     # append prefix
                     rule_map["prefixes"] = ruamel.yaml.comments.CommentedSeq()
+                    extra_rule_map["prefixes"] = ruamel.yaml.comments.CommentedSeq()
                     for prefix in rule["prefixes"]:
                         rule_map["prefixes"].append(yaml_conf["prefixes"][prefix])
+                        extra_rule_map["prefixes"].append(yaml_conf["prefixes"][prefix])
 
                     # append origin asns
                     rule_map["origin_asns"] = ruamel.yaml.comments.CommentedSeq()
+                    extra_rule_map["origin_asns"] = ruamel.yaml.comments.CommentedSeq()
                     for origin_asn in rule["origin_asns"]:
                         rule_map["origin_asns"].append(yaml_conf["asns"][origin_asn])
+                        extra_rule_map["origin_asns"].append(
+                            yaml_conf["asns"][origin_asn]
+                        )
 
                     # append neighbors
                     rule_map["neighbors"] = ruamel.yaml.comments.CommentedSeq()
+                    extra_rule_map["neighbors"] = ruamel.yaml.comments.CommentedSeq()
                     for neighbor in rule["neighbors"]:
                         rule_map["neighbors"].append(yaml_conf["asns"][neighbor])
+                        extra_rule_map["neighbors"].append(yaml_conf["asns"][neighbor])
 
                     # append mitigation action
                     rule_map["mitigation"] = rule["mitigation"]
+                    extra_rule_map["mitigation"] = rule["mitigation"]
 
                     yaml_conf["rules"].append(rule_map)
-                    extra_yaml_conf_to_show["rules"].append(rule_map)
+                    extra_yaml_conf_to_show["rules"].append(extra_rule_map)
 
                 # generate new configuration
                 with open(self.file, "w") as f:
@@ -476,8 +478,11 @@ class Configuration:
             except Exception:
                 log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
                 return None
-            return ruamel.yaml.dump(
-                extra_yaml_conf_to_show, Dumper=ruamel.yaml.RoundTripDumper
+            return (
+                ruamel.yaml.dump(
+                    extra_yaml_conf_to_show, Dumper=ruamel.yaml.RoundTripDumper
+                ),
+                True,
             )
 
         def handle_hijack_learn_rule_request(self, message):
@@ -498,10 +503,24 @@ class Configuration:
             (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
                 raw
             )
-            extra_yaml_conf_to_show = self.translate_learn_rule_dicts_to_yaml_file(
+            (
+                extra_yaml_conf_to_show,
+                extra_rule_ok,
+            ) = self.translate_learn_rule_dicts_to_yaml_file(
                 rule_prefix, rule_asns, rules
             )
-            log.info(extra_yaml_conf_to_show)
+
+            # reply back to the sender with the extra yaml configuration
+            # message.
+            self.producer.publish(
+                {"success": extra_rule_ok, "extra_yaml_conf": extra_yaml_conf_to_show},
+                exchange="",
+                routing_key=message.properties["reply_to"],
+                correlation_id=message.properties["correlation_id"],
+                serializer="json",
+                retry=True,
+                priority=4,
+            )
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

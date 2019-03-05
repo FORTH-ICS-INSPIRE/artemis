@@ -86,14 +86,12 @@ def learn_hijack_rule():
     type_ = request.values.get("type_")
     hijack_as = int(request.values.get("hijack_as"))
 
-    try:
-        _learn_hijack_rule = Learn_hijack_rule(hijack_key, prefix, type_, hijack_as)
-        _learn_hijack_rule.learn_rule()
+    _learn_hijack_rule = Learn_hijack_rule()
+    response, success = _learn_hijack_rule.send(hijack_key, prefix, type_, hijack_as)
 
-    except BaseException:
-        app.artemis_logger.debug("learn_hijack_rule failed")
-
-    return jsonify({"status": "success"})
+    if success:
+        return jsonify({"status": "success", "response": response})
+    return jsonify({"status": "fail", "response": response})
 
 
 @actions.route("/submit_comment/", methods=["POST"])

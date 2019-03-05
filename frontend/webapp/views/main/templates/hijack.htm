@@ -175,6 +175,7 @@
                             </div>
                             <div class="col-lg-4">
                                 <button id="learn_rule_button" type="button" class="btn btn-info">Learn Rule</button>
+                                <div id="learn_rule_alert_box"></div>
                             </div>
                         </div>
                     </div>
@@ -772,22 +773,35 @@
                 });
             });
 
-            $( "#learn_rule_button" ).click(function() {
+            $( "#learn_rule_button" ).on('click', function (event, state) {
+                    submit_learn_rule(initial_data['key'], initial_data['prefix'], initial_data['type'], initial_data['hijack_as'])
+            });
+
+            function submit_learn_rule(hijack_key, prefix, type_, hijack_as){
                 $.ajax({
-                    type: 'POST',
+                    type: "POST",
                     url: "{{ url_for('actions.learn_hijack_rule') }}",
                     data: {
-                        "hijack_key" : initial_data['key'],
-                        "hijack_as": initial_data['hijack_as'],
-                        "type_": initial_data['type'],
-                        "prefix": initial_data['prefix']
+                        "hijack_key" : hijack_key,
+                        "prefix": prefix,
+                        "type_": type_,
+                        "hijack_as": hijack_as
                     },
                     success: function(result){
-                        retrieve_hijack(fetch_hijack_parameter);
+                        if(result["status"] == "fail"){
+                            var message = '<div class="alert alert-danger alert-dismissible">'
+                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                            message += result["response"] + '</div>'
+                        }else{
+                            var message = '<div class="alert alert-success alert-dismissible">'
+                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                            message += result["response"] + '</div>'
+                        }
+                        $("#learn_rule_alert_box").html(message)
                     },
-                    dataType: 'json'
+                    dataType: "json"
                 });
-            });
+            }
 
             $('#comment_action').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
@@ -801,7 +815,6 @@
                     submit_new_comment(new_comment)
                 }
             });
-
 
             function submit_new_comment(new_comment){
                 $.ajax({

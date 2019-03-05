@@ -468,7 +468,7 @@ class Database:
                 except Exception:
                     log.exception("{}".format(msg_))
             # reset timer each time we hit the same BGP update
-            self.redis.expire(msg_["key"], 60 * 60)
+            self.redis.expire(msg_["key"], 2 * 60 * 60)
 
         def handle_withdraw_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))

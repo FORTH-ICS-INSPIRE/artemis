@@ -136,23 +136,45 @@ class Tester:
 
         # compare expected message with received one. exit on
         # mismatch.
-        for key in set(event.keys()).intersection(expected.keys()):
-            if "time" in key:
-                expected[key] += self.time_now
-            assert event[key] == expected[key] or (
-                isinstance(event[key], (list, set))
-                and set(event[key]) == set(expected[key])
-            ), (
-                'Test "{}" - Batch #{} - Type {}: Unexpected'
-                ' value for key "{}". Received: {}, Expected: {}'.format(
+        if isinstance(expected, dict):
+            for key in set(event.keys()).intersection(expected.keys()):
+                if "time" in key:
+                    expected[key] += self.time_now
+                assert event[key] == expected[key] or (
+                    isinstance(event[key], (list, set))
+                    and set(event[key]) == set(expected[key])
+                ), (
+                    'Test "{}" - Batch #{} - Type {}: Unexpected'
+                    ' value for key "{}". Received: {}, Expected: {}'.format(
+                        self.curr_test,
+                        self.curr_idx,
+                        message.delivery_info["routing_key"],
+                        key,
+                        event[key],
+                        expected[key],
+                    )
+                )
+        elif isinstance(expected, list):
+            correct = [True] * len(expected)
+            for idx, expected_item in enumerate(expected):
+                for key in set(event.keys()).intersection(expected_item.keys()):
+                    if "time" in key:
+                        expected_item[key] += self.time_now
+                    if event[key] != expected_item[key] or (
+                        isinstance(event[key], (list, set))
+                        and set(event[key]) != set(expected_item[key])
+                    ):
+                        correct[idx] = False
+                        break
+            if not any(correct):
+                assert 'Test "{}" - Batch #{} - Type {}: Unexpected'
+                " value for complex scenario. Event: {}, Expected List: {}".format(
                     self.curr_test,
                     self.curr_idx,
                     message.delivery_info["routing_key"],
-                    key,
-                    event[key],
-                    expected[key],
+                    event,
+                    expected,
                 )
-            )
 
         self.expected_messages -= 1
         if self.expected_messages <= 0:
@@ -164,7 +186,13 @@ class Tester:
         Publish next custom BGP update on the bgp-updates exchange.
         """
         with conn.Producer() as producer:
-            self.expected_messages = len(self.messages[self.curr_idx]) - 1
+            self.expected_messages = 0
+            for key in self.messages[self.curr_idx]:
+                if key != "send":
+                    if isinstance(self.messages[self.curr_idx][key], dict):
+                        self.expected_messages += 1
+                    else:
+                        self.expected_messages += len(self.messages[self.curr_idx][key])
 
             # offset to account for "real-time" tests
             for key in self.messages[self.curr_idx]["send"]:

@@ -25,6 +25,7 @@ from utils import get_logger
 from utils import RABBITMQ_URI
 from utils import redis_key
 from utils import translate_rfc2622
+import utils.conf_lib as clib
 from yaml import load as yload
 
 log = get_logger()
@@ -277,21 +278,25 @@ class Configuration:
                 priority=4,
             )
 
-        def handle_hijack_learn_rule_request(self, message):
+
+        def translate_learn_rule_msg_to_dicts(self, raw):
             """
-            {
-                    "key": ...,
-                    "prefix": ...,
-                    "type": ..._,
-                    "hijack_as": ...,
+            Translates a learn rule message payload (raw) into ARTEMIS-compatible dictionaries
+            :param raw:
+                "key": <str>,
+                "prefix": <str>,
+                "type": <str>,
+                "hijack_as": <int>,
             }
+            :return: (<str>rule_prefix, <list><int>rule_asns, <list><dict>rules)
             """
-            raw = message.payload
-            log.debug("payload: {}".format(raw))
+            # initialize dictionaries and lists
             rule_prefix = {}
             rule_asns = {}
             rules = []
+
             try:
+                # retrieve (origin, neighbor) combinations from redis
                 redis_hijack_key = redis_key(
                     raw["prefix"], raw["hijack_as"], raw["type"]
                 )
@@ -365,7 +370,26 @@ class Configuration:
                         rules.append(learned_rule)
             except Exception:
                 log.exception("{}".format(raw))
+
             return (rule_prefix, rule_asns, rules)
+
+
+        def handle_hijack_learn_rule_request(self, message):
+            """
+            Receives a "learn-rule" message, translates this to associated ARTEMIS-compatibe dictionaries,
+            and adds the prefix, asns and rule(s) to the configuration
+            :param message: {
+                "key": <str>,
+                "prefix": <str>,
+                "type": <str>,
+                "hijack_as": <int>,
+            }
+            :return: -
+            """
+            raw = message.payload
+            log.debug("payload: {}".format(raw))
+            (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(raw)
+
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

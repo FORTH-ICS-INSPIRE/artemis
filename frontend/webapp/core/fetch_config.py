@@ -1,10 +1,8 @@
-import json
 import logging
 
 import requests
 from webapp.utils import API_URL_FLASK
 from webapp.utils import flatten
-from webapp.utils import translate_rfc2622
 from yaml import load as yload
 
 log = logging.getLogger("webapp_logger")
@@ -15,7 +13,6 @@ API_PATH = "http://" + API_URL_FLASK
 class Configuration:
     def __init__(self):
         self.raw_json = None
-        self.raw_json_config = None
         self.raw_config = None
         self.config_yaml = None
         self.config_comment = None

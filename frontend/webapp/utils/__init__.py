@@ -3,10 +3,20 @@ import os
 # import re
 # from ipaddress import ip_network as str2ip
 
-RABBITMQ_URI = os.getenv("RABBITMQ_URI", "amqp://guest:guest@rabbitmq//")
-API_URL_FLASK = os.getenv("POSTGREST_FLASK_HOST", "postgrest:3000")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+API_HOST = os.getenv("API_HOST", "postgrest")
+API_PORT = os.getenv("API_PORT", 3000)
 SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
 SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
+
+RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+)
+SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
+API_URI = "http://{}:{}".format(API_HOST, API_PORT)
 
 
 def flatten(items, seqtypes=(list, tuple)):

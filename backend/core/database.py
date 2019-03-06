@@ -1,7 +1,6 @@
 import datetime
 import hashlib
 import json
-import os
 import pickle
 import signal
 import time
@@ -17,14 +16,16 @@ from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import flatten
+from utils import get_db_conn
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
 from utils import redis_key
-from utils import SUPERVISOR_HOST
-from utils import SUPERVISOR_PORT
+from utils import REDIS_PORT
+from utils import SUPERVISOR_URI
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -39,34 +40,12 @@ class Database:
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-    def connectDb(self):
-        _db_conn = None
-        time_sleep_connection_retry = 5
-        while not _db_conn:
-            try:
-                _db_name = os.getenv("DATABASE_NAME", "artemis_db")
-                _user = os.getenv("DATABASE_USER", "artemis_user")
-                _host = os.getenv("DATABASE_HOST", "postgres")
-                _password = os.getenv("DATABASE_PASSWORD", "Art3m1s")
-
-                _db_conn = psycopg2.connect(
-                    dbname=_db_name, user=_user, host=_host, password=_password
-                )
-
-            except Exception:
-                log.exception("exception")
-                time.sleep(time_sleep_connection_retry)
-            finally:
-                log.debug("PostgreSQL DB created/connected..")
-
-        return _db_conn
-
     def run(self):
         # read-only connection
-        ro_conn = self.connectDb()
+        ro_conn = get_db_conn()
         ro_conn.set_session(autocommit=True, readonly=True)
         # write-only connection
-        wo_conn = self.connectDb()
+        wo_conn = get_db_conn()
         try:
             with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection, ro_conn, wo_conn)
@@ -102,9 +81,7 @@ class Database:
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute("TRUNCATE table process_states")
 
-                server = ServerProxy(
-                    "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
-                )
+                server = ServerProxy(SUPERVISOR_URI)
                 query = (
                     "INSERT INTO process_states (name, running) "
                     "VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running"
@@ -122,7 +99,7 @@ class Database:
                 log.exception("exception")
 
             # redis db
-            self.redis = redis.Redis(host="localhost", port=6379)
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             self.bootstrap_redis()
 
             # EXCHANGES

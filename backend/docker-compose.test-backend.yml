@@ -19,6 +19,8 @@ services:
             DATABASE_PASS: ${DB_PASS}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
     backend:

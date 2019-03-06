@@ -25,6 +25,8 @@ services:
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             GUI_ENABLED: ${GUI_ENABLED}
         volumes:

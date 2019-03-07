@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging.config
 import logging.handlers
 import os
@@ -127,6 +128,11 @@ class SMTPSHandler(SMTPHandler):
             raise
         except Exception:
             self.handleError(record)
+
+
+def dump_json(json_obj, filename):
+    with open(filename, "w") as f:
+        json.dump(json_obj, f)
 
 
 def redis_key(prefix, hijack_as, _type):

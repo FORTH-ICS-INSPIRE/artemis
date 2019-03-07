@@ -7,7 +7,7 @@
 - Configured/matched prefix field and search in frontend hijack and update tables
 
 ### Changed
-- TBD (Changed existing functionality)
+- Using prefix lists in json file format as monitoring taps input
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend

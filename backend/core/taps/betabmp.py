@@ -8,6 +8,7 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 from utils import get_logger
 from utils import key_generator
+from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
@@ -17,15 +18,18 @@ from utils import RABBITMQ_URI
 log = get_logger()
 
 
-def run_bgpstream_beta_bmp(prefixes=[]):
+def run_bgpstream_beta_bmp(prefixes_file=None):
     """
     Retrieve all elements related to a list of prefixes
     https://bgpstream.caida.org/docs/api/pybgpstream/_pybgpstream.html
 
-    :param prefix: <str> input prefix
+    :param prefixes_file: <str> input prefix json
 
     :return: -
     """
+
+    prefixes = load_json(prefixes_file)
+    assert prefixes is not None
 
     # create a new bgpstream instance
     stream = _pybgpstream.BGPStream()
@@ -128,19 +132,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Beta BMP Live Monitor")
     parser.add_argument(
         "-p",
-        "--prefix",
+        "--prefixes",
         type=str,
-        dest="prefix",
+        dest="prefixes_file",
         default=None,
-        help="Prefix to be monitored",
+        help="Prefix(es) to be monitored (json file with prefix list)",
     )
 
     args = parser.parse_args()
 
-    prefixes = args.prefix.split(",")
-
     try:
-        run_bgpstream_beta_bmp(prefixes)
+        run_bgpstream_beta_bmp(args.prefixes_file)
     except Exception:
         log.exception("exception")
     except KeyboardInterrupt:

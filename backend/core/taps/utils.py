@@ -1,5 +1,6 @@
 import copy
 import hashlib
+import json
 import logging.config
 import os
 import pickle
@@ -23,6 +24,16 @@ def get_logger(path="/etc/artemis/logging.yaml"):
         log = logging
         log.info("Loaded default configuration")
     return log
+
+
+def load_json(filename):
+    json_obj = None
+    try:
+        with open(filename, "r") as f:
+            json_obj = json.load(f)
+    except Exception:
+        return None
+    return json_obj
 
 
 def key_generator(msg):

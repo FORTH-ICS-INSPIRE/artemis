@@ -8,6 +8,7 @@ from socketIO_client import BaseNamespace
 from socketIO_client import SocketIO
 from utils import get_logger
 from utils import key_generator
+from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
@@ -16,9 +17,10 @@ log = get_logger()
 
 
 class ExaBGP:
-    def __init__(self, prefixes, host):
+    def __init__(self, prefixes_file, host):
         self.host = host
-        self.prefixes = prefixes
+        self.prefixes = load_json(prefixes_file)
+        assert self.prefixes is not None
         self.sio = None
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
@@ -79,11 +81,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ExaBGP Monitor Client")
     parser.add_argument(
         "-p",
-        "--prefix",
+        "--prefixes",
         type=str,
-        dest="prefix",
+        dest="prefixes_file",
         default=None,
-        help="Prefix to be monitored",
+        help="Prefix(es) to be monitored (json file with prefix list)",
     )
     parser.add_argument(
         "-r",
@@ -96,10 +98,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    prefixes = args.prefix.split(",")
-    exa = ExaBGP(prefixes, args.host)
-    print("Starting ExaBGP on {} for {}".format(args.host, prefixes))
+    print("Starting ExaBGP on {} for {}".format(args.host, args.prefixes_file))
     try:
+        exa = ExaBGP(args.prefixes_file, args.host)
         exa.start()
     except BaseException:
         log.exception("exception")

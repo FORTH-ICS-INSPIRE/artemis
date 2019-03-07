@@ -45,10 +45,11 @@ def create_connect_db():
             _db_name = os.getenv("DATABASE_NAME", "artemis_db")
             _user = os.getenv("DATABASE_USER", "artemis_user")
             _host = os.getenv("DATABASE_HOST", "postgres")
-            _password = os.getenv("DATABASE_PASSWORD", "Art3m1s")
+            _port = os.getenv("DATABASE_PORT", 5432)
+            _password = os.getenv("DATABASE_PASS", "Art3m1s")
 
             _db_conn = psycopg2.connect(
-                dbname=_db_name, user=_user, host=_host, password=_password
+                dbname=_db_name, user=_user, host=_host, port=_port, password=_password
             )
         except Exception:
             print("Exception couldn't connect to db.\nRetrying in 5 seconds...")

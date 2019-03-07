@@ -11,16 +11,22 @@ services:
         expose:
             - ${SUPERVISOR_PORT}
         environment:
-            RABBITMQ_URI: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+            RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+            RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
-            POSTGRES_HOST: ${POSTGRES_HOST}
-            DATABASE_NAME: ${DB_NAME}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
             DATABASE_USER: ${DB_USER}
-            DATABASE_HOST: ${POSTGRES_HOST}
-            DATABASE_PASSWORD: ${DB_PASS}
+            DATABASE_PASS: ${DB_PASS}
+            DATABASE_HOST: ${DB_HOST}
+            DATABASE_PORT: ${DB_PORT}
+            DATABASE_NAME: ${DB_NAME}
             DATABASE_VERSION: ${DB_VERSION}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             GUI_ENABLED: ${GUI_ENABLED}
         volumes:
@@ -45,18 +51,22 @@ services:
         networks:
             - artemis
         expose:
-            - ${FLASK_PORT}
+            - ${WEBAPP_PORT}
         environment:
-            RABBITMQ_URI: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
             RABBITMQ_HOST: ${RABBITMQ_HOST}
-            POSTGRES_HOST: ${POSTGRES_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            DATABASE_HOST: ${DB_HOST}
+            DATABASE_PORT: ${DB_PORT}
+            API_HOST: ${API_HOST}
+            API_PORT: ${API_PORT}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
-            MACHINE_IP: ${MACHINE_IP}
-            FLASK_PORT: ${FLASK_PORT}
+            BIND_IP: ${BIND_IP}
+            WEBAPP_PORT: ${WEBAPP_PORT}
             USER_ROOT_USERNAME: ${ADMIN_USER}
             USER_ROOT_PASSWORD: ${ADMIN_PASS}
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            POSTGREST_FLASK_HOST: ${POSTGREST_HOST}:${POSTGREST_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             JWT_SECRET_KEY: ${JWT_SECRET_KEY}
@@ -81,8 +91,8 @@ services:
         networks:
             - artemis
         expose:
-            - 80
-            - 443
+            - 80 # HTTP
+            - 443 # HTTPS
         ports:
             - "80:80"
             - "443:443"
@@ -102,9 +112,8 @@ services:
         networks:
             - artemis
         expose:
-            - 5671
-            - 5672
-            - 15672
+            - ${RABBITMQ_PORT}
+            # - 15672 management port
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
@@ -117,7 +126,7 @@ services:
         networks:
             - artemis
         expose:
-            - 5432
+            - ${DB_PORT}
         environment:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
@@ -143,12 +152,12 @@ services:
         networks:
             - artemis
         expose:
-            - 3000
+            - ${API_PORT}
         environment:
             PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
-    pg_amqp_bridge:
+    pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg_amqp_bridge
         depends_on:
@@ -165,7 +174,7 @@ services:
             # - RUST_BACKTRACE=1
         volumes:
             - ./backend/wait-for:/root/wait-for
-        command: ["/root/wait-for", "rabbitmq:5672", "-t", "60", "--", "pg-amqp-bridge"]
+        command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
     graphql:
         image: hasura/graphql-engine:v1.0.0-alpha31
         container_name: graphql
@@ -175,7 +184,7 @@ services:
         networks:
             - artemis
         expose:
-            - 8080
+            - ${HASURA_PORT}
         environment:
             HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}

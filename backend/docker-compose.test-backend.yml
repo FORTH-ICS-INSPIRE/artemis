@@ -8,13 +8,19 @@ services:
         networks:
             - artemis
         environment:
-            RABBITMQ_URI: amqp://${RABBITMQ_HOST}//
-            POSTGRES_HOST: ${POSTGRES_HOST}
+            RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+            RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
             DATABASE_NAME: ${DB_NAME}
             DATABASE_USER: ${DB_USER}
-            DATABASE_HOST: ${POSTGRES_HOST}
-            DATABASE_PASSWORD: ${DB_PASS}
-            BACKEND_HOST: ${SUPERVISOR_HOST}
+            DATABASE_HOST: ${DB_HOST}
+            DATABASE_PORT: ${DB_PORT}
+            DATABASE_PASS: ${DB_PASS}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
     backend:
@@ -28,16 +34,21 @@ services:
         networks:
             - artemis
         expose:
-            - 9001
-            - 6379
+            - ${SUPERVISOR_PORT}
+            - ${REDIS_PORT}
         environment:
-            RABBITMQ_URI: amqp://${RABBITMQ_HOST}//
-            POSTGRES_HOST: ${POSTGRES_HOST}
-            DATABASE_NAME: ${DB_NAME}
+            RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+            RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
             DATABASE_USER: ${DB_USER}
-            DATABASE_HOST: ${POSTGRES_HOST}
-            DATABASE_PASSWORD: ${DB_PASS}
+            DATABASE_PASS: ${DB_PASS}
+            DATABASE_HOST: ${DB_HOST}
+            DATABASE_PORT: ${DB_PORT}
+            DATABASE_NAME: ${DB_NAME}
             DATABASE_VERSION: ${DB_VERSION}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
             GUI_ENABLED: "false"
@@ -62,8 +73,7 @@ services:
         networks:
             - artemis
         expose:
-            - 5671
-            - 5672
+            - ${RABBITMQ_PORT}
         volumes:
             - ./testing/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
     postgres:
@@ -73,7 +83,7 @@ services:
         networks:
             - artemis
         expose:
-            - 5432
+            - ${DB_PORT}
         environment:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
@@ -82,7 +92,7 @@ services:
             - ./testing/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./testing/db/data/:/docker-entrypoint-initdb.d/data/
             - ./testing/db/libs/:/docker-entrypoint-initdb.d/libs/
-    pg_amqp_bridge:
+    pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg_amqp_bridge
         depends_on:
@@ -97,7 +107,7 @@ services:
             - BRIDGE_CHANNELS=events:amq.direct
         volumes:
             - ./wait-for:/root/wait-for
-        command: ["/root/wait-for", "rabbitmq:5672", "-t", "60", "--", "pg-amqp-bridge"]
+        command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
 
 networks:
     artemis:

@@ -1,7 +1,7 @@
 #!/bin/bash
-./wait-for rabbitmq:5672 -t 0
-./wait-for postgres:5432 -t 0
-./wait-for postgrest:3000 -t 0
-./wait-for graphql:8080 -t 0
-./wait-for backend:9001 -t 0
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+./wait-for ${DATABASE_HOST}:${DATABASE_PORT} -t 0
+./wait-for ${SUPERVISOR_HOST}:${SUPERVISOR_PORT} -t 0
+./wait-for ${API_HOST}:${API_PORT} -t 0
+./wait-for ${HASURA_HOST}:${HASURA_PORT} -t 0
 PATH="/usr/local/lib/pyenv/versions/${PYTHON_VERSION}/bin/:${PATH}" gunicorn --workers=4 --bind 0.0.0.0:8000 init:app

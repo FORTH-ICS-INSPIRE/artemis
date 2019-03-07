@@ -27,11 +27,11 @@ def create_connect_db():
     _db_conn = None
     while not _db_conn:
         try:
-            _db_name = os.getenv("DATABASE_NAME", "artemis_db")
-            _user = os.getenv("DATABASE_USER", "artemis_user")
-            _host = os.getenv("DATABASE_HOST", "postgres")
-            _port = os.getenv("DATABASE_PORT", 5432)
-            _password = os.getenv("DATABASE_PASSWORD", "Art3m1s")
+            _db_name = os.getenv("DB_NAME", "artemis_db")
+            _user = os.getenv("DB_USER", "artemis_user")
+            _host = os.getenv("DB_HOST", "postgres")
+            _port = os.getenv("DB_PORT", 5432)
+            _password = os.getenv("DB_PASSWORD", "Art3m1s")
 
             _db_conn = psycopg2.connect(
                 dbname=_db_name, user=_user, host=_host, port=_port, password=_password

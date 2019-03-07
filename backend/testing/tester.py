@@ -29,11 +29,11 @@ class Tester:
         db_conn = None
         while not db_conn:
             try:
-                _db_name = os.getenv("DATABASE_NAME", "artemis_db")
-                _user = os.getenv("DATABASE_USER", "artemis_user")
-                _host = os.getenv("DATABASE_HOST", "postgres")
-                _port = os.getenv("DATABASE_PORT", 5432)
-                _password = os.getenv("DATABASE_PASS", "Art3m1s")
+                _db_name = os.getenv("DB_NAME", "artemis_db")
+                _user = os.getenv("DB_USER", "artemis_user")
+                _host = os.getenv("DB_HOST", "postgres")
+                _port = os.getenv("DB_PORT", 5432)
+                _password = os.getenv("DB_PASS", "Art3m1s")
 
                 db_conn = psycopg2.connect(
                     dbname=_db_name,

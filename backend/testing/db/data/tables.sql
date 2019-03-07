@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (11, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (12, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -140,7 +140,6 @@ for each row execute procedure rabbitmq.on_row_change("hijack-update");
 
 CREATE TABLE IF NOT EXISTS configs (
     key VARCHAR ( 32 ) NOT NULL,
-    config_data  json,
     raw_config  text,
     comment text,
     time_modified TIMESTAMP NOT NULL

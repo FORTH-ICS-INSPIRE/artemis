@@ -52,7 +52,10 @@ mapHelpText_system['field_bgp_update_type'] = "<ul><li>A → route announcement<
 mapHelpText_system['field_bgp_update_more'] = "Further information related to the BGP update.";
 mapHelpText_system['field_peer_as'] = "The monitor AS that peers with the route collector service reporting the BGP update.";
 mapHelpText_system['field_bgp_timestamp'] = "The time when the BGP update was generated, as set by the BGP monitor or route collector.";
-mapHelpText_system['field_prefix'] = "The IPv4/IPv6 prefix related to the BGP update or hijack.";
+mapHelpText_system['field_prefix'] = "The IPv4/IPv6 prefix related to the BGP update.";
+mapHelpText_system['field_hijacked_prefix'] = "The IPv4/IPv6 prefix that was hijacked.";
+mapHelpText_system['field_matched_prefix'] = "The configured IPv4/IPv6 prefix that matched the hijacked prefix.";
+
 mapHelpText_system['field_as_path'] = "The AS-level path of the update.";
 mapHelpText_system['field_origin_as'] = "The AS that originated the BGP update.";
 mapHelpText_system['field_bgp_handle'] = "Whether the BGP update has been handled by the detection module or not.";

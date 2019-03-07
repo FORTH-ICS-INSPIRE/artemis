@@ -75,7 +75,7 @@ services:
         expose:
             - ${RABBITMQ_PORT}
         volumes:
-            - ./testing/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
+            - ./testing/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres

@@ -86,6 +86,7 @@ class Database:
         def __init__(self, connection, ro_conn, wo_conn):
             self.connection = connection
             self.prefix_tree = None
+            self.monitored_prefixes = set()
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
@@ -636,9 +637,29 @@ class Database:
                         "neighbors": rule["neighbors"],
                     }
                     node.data["confs"].append(conf_obj)
+            # calculate the monitored_prefixes
+            self.monitored_prefixes = set()
+            for prefix in self.prefix_tree.prefixes():
+                monitored_prefix = self.find_worst_prefix_match(prefix)
+                if monitored_prefix:
+                    self.monitored_prefixes.add(monitored_prefix)
+            try:
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        "UPDATE stats SET monitored_prefixes=%s;",
+                        (len(self.monitored_prefixes),),
+                    )
+            except Exception:
+                log.exception("exception")
 
         def find_best_prefix_match(self, prefix):
             prefix_node = self.prefix_tree.search_best(prefix)
+            if prefix_node:
+                return prefix_node.prefix
+            return None
+
+        def find_worst_prefix_match(self, prefix):
+            prefix_node = self.prefix_tree.search_worst(prefix)
             if prefix_node:
                 return prefix_node.prefix
             return None

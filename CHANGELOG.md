@@ -5,6 +5,7 @@
 - Support for dormant flags in hijacks
 - Storing hijack update (origin, neighbor) combinations in redis
 - Configured/matched prefix field and search in frontend hijack and update tables
+- Stats table initialized with monitored_prefixes counts
 
 ### Changed
 - TBD (Changed existing functionality)

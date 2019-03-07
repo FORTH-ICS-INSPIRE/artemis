@@ -92,7 +92,7 @@ services:
             - ./testing/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./testing/db/data/:/docker-entrypoint-initdb.d/data/
             - ./testing/db/libs/:/docker-entrypoint-initdb.d/libs/
-    pg_amqp_bridge:
+    pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg_amqp_bridge
         depends_on:

@@ -5,9 +5,10 @@
 - Support for dormant flags in hijacks
 - Storing hijack update (origin, neighbor) combinations in redis
 - Configured/matched prefix field and search in frontend hijack and update tables
+- Kubernetes support
 
 ### Changed
-- TBD (Changed existing functionality)
+- Refactored environment variables
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend

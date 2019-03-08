@@ -23,6 +23,8 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+        # volumes:
+        #     - ./testing:/root/
     backend:
         build:
             context: .
@@ -66,6 +68,8 @@ services:
             PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
             SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
             SEMAPHORE: ${SEMAPHORE}
+        # volumes:
+        #     - ./:/root/
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq

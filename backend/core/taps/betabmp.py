@@ -52,6 +52,7 @@ def run_bgpstream_beta_bmp(prefixes=[]):
         )
         exchange.declare()
         producer = Producer(connection)
+        validator = mformat_validator()
         while True:
             # get next record
             try:
@@ -105,7 +106,7 @@ def run_bgpstream_beta_bmp(prefixes=[]):
                                 "prefix": this_prefix,
                                 "peer_asn": peer_asn,
                             }
-                            if mformat_validator(msg):
+                            if validator.validate(msg):
                                 msgs = normalize_msg_path(msg)
                                 for msg in msgs:
                                     key_generator(msg)

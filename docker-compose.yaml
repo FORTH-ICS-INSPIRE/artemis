@@ -29,6 +29,7 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             GUI_ENABLED: ${GUI_ENABLED}
+            HISTORIC: ${HISTORIC}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/

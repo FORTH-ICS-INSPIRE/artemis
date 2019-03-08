@@ -56,6 +56,8 @@ services:
         expose:
             - ${WEBAPP_PORT}
         environment:
+            RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+            RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             DB_HOST: ${DB_HOST}

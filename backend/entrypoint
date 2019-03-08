@@ -1,9 +1,9 @@
 #!/bin/bash
 make
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
-./wait-for ${DATABASE_HOST}:${DATABASE_PORT} -t 0
+./wait-for ${DB_HOST}:${DB_PORT} -t 0
 
-version=$(PGPASSWORD=$DATABASE_PASS psql postgres://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME} -c "select version from db_details;" -tA)
+version=$(PGPASSWORD=$DB_PASS psql postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME} -c "select version from db_details;" -tA)
 
 start_backend() {
     echo "[+] Starting Backend"
@@ -16,17 +16,17 @@ start_backend() {
     supervisord -n
 }
 
-if [ $version -eq $DATABASE_VERSION ]; then
-    echo "[+] Running on intended database version ($DATABASE_VERSION).. No migration required"
+if [ $version -eq $DB_VERSION ]; then
+    echo "[+] Running on intended database version ($DB_VERSION).. No migration required"
     start_backend
-elif [ $version -gt $DATABASE_VERSION ]; then
-    echo "[!] Trying to run on a newer ($version) than intended ($DATABASE_VERSION) database version. Please do the following steps:"
+elif [ $version -gt $DB_VERSION ]; then
+    echo "[!] Trying to run on a newer ($version) than intended ($DB_VERSION) database version. Please do the following steps:"
     echo "[!] git pull origin master"
     echo "[!] docker-compose pull"
     echo "[!] start ARTEMIS normally"
     exit -1
 else
-    echo "[!] Older ($version) than intended ($DATABASE_VERSION) Database version found.. Trying to migrate database automatically"
+    echo "[!] Older ($version) than intended ($DB_VERSION) Database version found.. Trying to migrate database automatically"
     python -u migrate/migrate.py
     if [ "$?" -eq 0 ]; then
         echo "[+] Migration sucessful.."

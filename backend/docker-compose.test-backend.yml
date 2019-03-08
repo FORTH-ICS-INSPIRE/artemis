@@ -12,11 +12,11 @@ services:
             RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DATABASE_NAME: ${DB_NAME}
-            DATABASE_USER: ${DB_USER}
-            DATABASE_HOST: ${DB_HOST}
-            DATABASE_PORT: ${DB_PORT}
-            DATABASE_PASS: ${DB_PASS}
+            DB_NAME: ${DB_NAME}
+            DB_USER: ${DB_USER}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_PASS: ${DB_PASS}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             HASURA_HOST: ${HASURA_HOST}
@@ -41,12 +41,12 @@ services:
             RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DATABASE_USER: ${DB_USER}
-            DATABASE_PASS: ${DB_PASS}
-            DATABASE_HOST: ${DB_HOST}
-            DATABASE_PORT: ${DB_PORT}
-            DATABASE_NAME: ${DB_NAME}
-            DATABASE_VERSION: ${DB_VERSION}
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            DB_VERSION: ${DB_VERSION}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
@@ -75,7 +75,7 @@ services:
         expose:
             - ${RABBITMQ_PORT}
         volumes:
-            - ./testing/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
+            - ./testing/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
@@ -94,7 +94,7 @@ services:
             - ./testing/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
-        container_name: pg_amqp_bridge
+        container_name: pg-amqp-bridge
         depends_on:
             - postgres
             - backend

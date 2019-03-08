@@ -1,6 +1,6 @@
 #!/bin/bash
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
-./wait-for ${DATABASE_HOST}:${DATABASE_PORT} -t 0
+./wait-for ${DB_HOST}:${DB_PORT} -t 0
 ./wait-for ${SUPERVISOR_HOST}:${SUPERVISOR_PORT} -t 0
 ./wait-for ${API_HOST}:${API_PORT} -t 0
 ./wait-for ${HASURA_HOST}:${HASURA_PORT} -t 0

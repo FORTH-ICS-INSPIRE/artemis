@@ -8,7 +8,7 @@ import psycopg2
 
 def get_target_version():
     print("Getting target version...")
-    target_version = os.getenv("DATABASE_VERSION", None)
+    target_version = os.getenv("DB_VERSION", None)
     print("-> Target version is: {}".format(target_version))
     return target_version
 
@@ -42,11 +42,11 @@ def create_connect_db():
     while _db_conn is None:
         time.sleep(time_sleep_connection_retry)
         try:
-            _db_name = os.getenv("DATABASE_NAME", "artemis_db")
-            _user = os.getenv("DATABASE_USER", "artemis_user")
-            _host = os.getenv("DATABASE_HOST", "postgres")
-            _port = os.getenv("DATABASE_PORT", 5432)
-            _password = os.getenv("DATABASE_PASS", "Art3m1s")
+            _db_name = os.getenv("DB_NAME", "artemis_db")
+            _user = os.getenv("DB_USER", "artemis_user")
+            _host = os.getenv("DB_HOST", "postgres")
+            _port = os.getenv("DB_PORT", 5432)
+            _password = os.getenv("DB_PASS", "Art3m1s")
 
             _db_conn = psycopg2.connect(
                 dbname=_db_name, user=_user, host=_host, port=_port, password=_password

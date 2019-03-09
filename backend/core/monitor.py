@@ -194,22 +194,19 @@ class Monitor:
                     self.monitors.get("riperis", []), self.prefixes
                 )
             )
-            for ris_monitor in self.monitors.get("riperis", []):
-                for prefix in self.prefixes:
-                    p = Popen(
-                        [
-                            "/usr/local/bin/python3",
-                            "taps/ripe_ris.py",
-                            "--prefix",
-                            prefix,
-                            "--host",
-                            ris_monitor,
-                        ],
-                        shell=False,
-                    )
-                    self.process_ids.append(
-                        ("RIPEris {} {}".format(ris_monitor, prefix), p)
-                    )
+            rrcs = ",".join(self.monitors.get("riperis", []))
+            p = Popen(
+                [
+                    "/usr/local/bin/python3",
+                    "taps/ripe_ris.py",
+                    "--prefix",
+                    ",".join(self.prefixes),
+                    "--hosts",
+                    rrcs,
+                ],
+                shell=False,
+            )
+            self.process_ids.append(("RIPEris {} {}".format(rrcs, self.prefixes), p))
 
         @exception_handler(log)
         def init_exabgp_instances(self):

@@ -39,6 +39,12 @@ def normalize_ripe_ris(msg, prefix_tree):
             msg["timestamp"] = float(msg["timestamp"])
         if "type" in msg:
             del msg["type"]
+        if "raw" in msg:
+            del msg["raw"]
+        if "origin" in msg:
+            del msg["origin"]
+        if "id" in msg:
+            del msg["id"]
         if "announcements" in msg and "withdrawals" in msg:
             # need 2 separate messages
             # one for announcements
@@ -116,7 +122,7 @@ def parse_ripe_ris(connection, prefixes, hosts):
                 parsed = json.loads(data)
                 msg = parsed["data"]
                 # also check if ris host is in the configuration
-                if msg["type"] == "UPDATE":
+                if msg["type"] == "UPDATE" and (not hosts or msg["host"] in hosts):
                     norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
                     for norm_ris_msg in norm_ris_msgs:
                         if validator.validate(norm_ris_msg):
@@ -157,7 +163,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     prefix = args.prefix.split(",")
-    hosts = args.hosts.split(",")
+    hosts = args.hosts
+    if hosts:
+        hosts = set(hosts.split(","))
 
     try:
         with Connection(RABBITMQ_URI) as connection:

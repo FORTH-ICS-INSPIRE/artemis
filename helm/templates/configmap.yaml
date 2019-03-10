@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+data:
+  guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
+  systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
+  historic: {{ .Values.historic | default "false" | quote }}
+  redisHost: {{ .Values.redisHost | default "backend" | quote }}
+  redisPort: {{ .Values.redisPort | default "6379" | quote }}
+  supervisorHost: {{ .Values.supervisorHost | default "backend" | quote }}
+  supervisorPort: {{ .Values.supervisorPort | default "9001" | quote }}
+  apiHost: {{ .Values.apiHost | default "postgrest" | quote }}
+  apiPort: {{ .Values.apiPort | default "3000" | quote }}
+  dbHost: {{ .Values.dbHost | default "postgres" | quote }}
+  dbPort: {{ .Values.dbPort | default "5432" | quote }}
+  dbVersion: {{ .Values.dbVersion | default "12" | quote }}
+  dbName: {{ .Values.dbName | default "artemis_db" | quote }}
+  dbUser: {{ .Values.dbUser | default "artemis_user" | quote }}
+  dbPass: {{ .Values.dbPass | default "Art3m1s" | quote }}
+  dbSchema: {{ .Values.dbSchema | default "public" | quote }}
+  dbAutoClean: {{ .Values.dbAutoClean | default "false" | quote }}
+  dbBackup: {{ .Values.dbBackup | default "true" | quote }}
+  dbHijackDormant: {{ .Values.dbHijacjDormant | default "false" | quote }}
+  bindIp: {{ .Values.bindIp | default "0.0.0.0" | quote }}
+  webappHost: {{ .Values.webappHost | default "frontend" | quote }}
+  webappPort: {{ .Values.webappPort | default "8000" | quote }}
+  adminUser: {{ .Values.adminUser | default "admin" | quote }}
+  adminPass: {{ .Values.adminPass | default "admin123" | quote }}
+  adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
+  jsVersion: {{ .Values.jsVersion | default "0.1.2" | quote }}
+  rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" | quote }}
+  rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
+  rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}
+  rabbitmqPass: {{ .Values.apiPort | default "guest" | quote }}
+  hasuraHost: {{ .Values.apiPort | default "graphql" | quote }}
+  hasuraPort: {{ .Values.apiPort | default "8080" | quote }}
+  hasuraGui: {{ .Values.apiPort | default "false" | quote }}

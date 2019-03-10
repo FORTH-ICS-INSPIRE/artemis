@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c --volumes hostPath -f docker-compose.yaml -o helm
+    kompose.version: 1.18.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: nginx
+  name: nginx
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: nginx
+    spec:
+      containers:
+      - image: nginx:1.15-alpine
+        name: nginx
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/nginx/nginx.conf
+          name: nginx-hostpath0
+        - mountPath: /etc/nginx/certs/
+          name: nginx-hostpath1
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /home/dimitris/github/artemis/frontend/webapp/configs/nginx.conf
+        name: nginx-hostpath0
+      - hostPath:
+          path: /home/dimitris/github/artemis/frontend/webapp/configs/certs
+        name: nginx-hostpath1
+status: {}

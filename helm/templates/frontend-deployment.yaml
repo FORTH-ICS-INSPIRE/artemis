@@ -1,0 +1,84 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c --volumes hostPath -f docker-compose.yaml -o helm
+    kompose.service.type: headless
+    kompose.version: 1.18.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: frontend
+  name: frontend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: frontend
+    spec:
+      containers:
+      - env:
+        - name: API_HOST
+          value: postgrest
+        - name: API_PORT
+          value: "3000"
+        - name: BIND_IP
+          value: 0.0.0.0
+        - name: DB_HOST
+          value: postgres
+        - name: DB_PORT
+          value: "5432"
+        - name: FLASK_SECRET_KEY
+          value: 76f8bae45e807865955344c1a58882d38c8ceb4f855f58091642b7d48290af97
+        - name: HASURA_HOST
+          value: graphql
+        - name: HASURA_PORT
+          value: "8080"
+        - name: JS_VERSION
+          value: 0.1.2
+        - name: JWT_SECRET_KEY
+          value: 44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f
+        - name: RABBITMQ_HOST
+          value: rabbitmq
+        - name: RABBITMQ_PASS
+          value: guest
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: RABBITMQ_USER
+          value: guest
+        - name: SECURITY_PASSWORD_SALT
+          value: 06a4b397fc7045eac527c2aec3ff46cee5ce30016c760f238c26e79902fe67b6
+        - name: SUPERVISOR_HOST
+          value: backend
+        - name: SUPERVISOR_PORT
+          value: "9001"
+        - name: SYSTEM_VERSION
+          value: latest
+        - name: USER_ROOT_EMAIL
+          value: admin@admin
+        - name: USER_ROOT_PASSWORD
+          value: admin123
+        - name: USER_ROOT_USERNAME
+          value: admin
+        - name: WEBAPP_PORT
+          value: "8000"
+        image: inspiregroup/artemis-frontend:latest
+        name: frontend
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/artemis/
+          name: frontend-hostpath0
+        - mountPath: /etc/webapp/db/
+          name: frontend-hostpath1
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /home/dimitris/github/artemis/frontend/webapp/configs
+        name: frontend-hostpath0
+      - hostPath:
+          path: /home/dimitris/github/artemis/frontend/db
+        name: frontend-hostpath1
+status: {}

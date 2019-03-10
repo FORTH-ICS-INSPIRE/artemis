@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c --volumes hostPath -f docker-compose.yaml -o helm
+    kompose.service.type: headless
+    kompose.version: 1.18.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: postgres
+  name: postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: postgres
+    spec:
+      containers:
+      - command:
+        - ./postgres-entrypoint.sh
+        env:
+        - name: DB_AUTOCLEAN
+          value: "false"
+        - name: DB_BACKUP
+          value: "true"
+        - name: DB_HIJACK_DORMANT
+          value: "false"
+        - name: POSTGRES_DB
+          value: artemis_db
+        - name: POSTGRES_PASSWORD
+          value: Art3m1s
+        - name: POSTGRES_USER
+          value: artemis_user
+        image: timescale/timescaledb:1.1.0-pg10
+        name: postgres
+        resources: {}
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-hostpath0
+        - mountPath: /postgres-entrypoint.sh
+          name: postgres-hostpath1
+        - mountPath: /tmp/
+          name: postgres-hostpath2
+        - mountPath: /docker-entrypoint-initdb.d/zinit.sql
+          name: postgres-hostpath3
+        - mountPath: /docker-entrypoint-initdb.d/data/
+          name: postgres-hostpath4
+        - mountPath: /docker-entrypoint-initdb.d/libs/
+          name: postgres-hostpath5
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /home/dimitris/github/artemis/postgres-data-current
+        name: postgres-hostpath0
+      - hostPath:
+          path: /home/dimitris/github/artemis/other/postgres-entrypoint.sh
+        name: postgres-hostpath1
+      - hostPath:
+          path: /home/dimitris/github/artemis/postgres-data-backup
+        name: postgres-hostpath2
+      - hostPath:
+          path: /home/dimitris/github/artemis/other/db/init.sql
+        name: postgres-hostpath3
+      - hostPath:
+          path: /home/dimitris/github/artemis/other/db/data
+        name: postgres-hostpath4
+      - hostPath:
+          path: /home/dimitris/github/artemis/other/db/libs
+        name: postgres-hostpath5
+status: {}

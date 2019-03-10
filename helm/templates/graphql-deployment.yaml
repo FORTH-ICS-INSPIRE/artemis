@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c --volumes hostPath -f docker-compose.yaml -o helm
+    kompose.service.type: headless
+    kompose.version: 1.18.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: graphql
+  name: graphql
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: graphql
+    spec:
+      containers:
+      - args:
+        - graphql-engine
+        - serve
+        env:
+        - name: HASURA_GRAPHQL_ACCESS_KEY
+          value: '@rt3m1s.'
+        - name: HASURA_GRAPHQL_DATABASE_URL
+          value: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
+        - name: HASURA_GRAPHQL_ENABLE_CONSOLE
+          value: "false"
+        - name: HASURA_GRAPHQL_JWT_SECRET
+          value: '{"type":"HS256", "key":"44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f"}'
+        image: hasura/graphql-engine:v1.0.0-alpha31
+        name: graphql
+        resources: {}
+      restartPolicy: Always
+status: {}

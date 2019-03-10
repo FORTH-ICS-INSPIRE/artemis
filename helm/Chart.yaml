@@ -1,0 +1,7 @@
+name: helm
+description: A generated Helm Chart for helm from Skippbox Kompose
+version: 0.0.1
+keywords:
+  - helm
+sources:
+home:

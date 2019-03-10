@@ -1,0 +1,135 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c --volumes hostPath -f docker-compose.yaml -o helm
+    kompose.service.type: headless
+    kompose.version: 1.18.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: backend
+  name: backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: backend
+    spec:
+      containers:
+      - env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbHost
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbName
+        - name: DB_PASS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbPass
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbPort
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUser
+        - name: DB_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbVersion
+        - name: GUI_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: guiEnabled
+        - name: HASURA_GRAPHQL_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: hasuraSecret
+        - name: HASURA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: graphqlHost
+        - name: HASURA_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: graphqlPort
+        - name: HISTORIC
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: historic
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqHost
+        - name: RABBITMQ_PASS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPass
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPort
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqUser
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: redisHost
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: redisPort
+        - name: SUPERVISOR_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorHost
+        - name: SUPERVISOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorPort
+        image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
+        name: backend
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/artemis/
+          name: backend-hostpath0
+        - mountPath: /etc/supervisor/conf.d/
+          name: backend-hostpath1
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /home/dimitris/github/artemis/backend/configs
+        name: backend-hostpath0
+      - hostPath:
+          path: /home/dimitris/github/artemis/backend/supervisor.d
+        name: backend-hostpath1
+status: {}

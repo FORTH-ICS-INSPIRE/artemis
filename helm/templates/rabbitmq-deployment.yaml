@@ -1,0 +1,39 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -c --volumes hostPath -f docker-compose.yaml -o helm
+    kompose.service.type: headless
+    kompose.version: 1.18.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: rabbitmq
+  name: rabbitmq
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: rabbitmq
+    spec:
+      containers:
+      - env:
+        - name: RABBITMQ_DEFAULT_PASS
+          value: guest
+        - name: RABBITMQ_DEFAULT_USER
+          value: guest
+        image: rabbitmq:3.7.8-management-alpine
+        name: rabbitmq
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/rabbitmq/enabled_plugins
+          name: rabbitmq-hostpath0
+      restartPolicy: Always
+      volumes:
+      - hostPath:
+          path: /home/dimitris/github/artemis/other/rabbitmq/enabled-plugins
+        name: rabbitmq-hostpath0
+status: {}

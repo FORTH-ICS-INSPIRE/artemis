@@ -112,7 +112,7 @@ def parse_ripe_ris(connection, prefixes, hosts):
     ris_suffix = os.getenv("RIS_ID", "my_as")
 
     events = requests.get(
-        "https://ris-live.ripe.net/v1/stream/?format=json&client={}".format(ris_suffix),
+        "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(ris_suffix),
         stream=True,
     )
     validator = mformat_validator()

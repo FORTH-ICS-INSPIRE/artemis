@@ -22,18 +22,25 @@ spec:
       containers:
       - env:
         - name: RABBITMQ_DEFAULT_PASS
-          value: guest
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqUser
         - name: RABBITMQ_DEFAULT_USER
-          value: guest
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPass
         image: rabbitmq:3.7.8-management-alpine
         name: rabbitmq
         resources: {}
         volumeMounts:
         - mountPath: /etc/rabbitmq/enabled_plugins
-          name: rabbitmq-hostpath0
+          name: rabbitmq-configmap0
+          subPath: enabled_plugins
       restartPolicy: Always
       volumes:
-      - hostPath:
-          path: /home/dimitris/github/artemis/other/rabbitmq/enabled-plugins
-        name: rabbitmq-hostpath0
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+        name: rabbitmq-configmap0
 status: {}

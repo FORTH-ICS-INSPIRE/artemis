@@ -21,11 +21,17 @@ spec:
       containers:
       - env:
         - name: PGRST_DB_ANON_ROLE
-          value: artemis_user
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUser
         - name: PGRST_DB_SCHEMA
           value: public
         - name: PGRST_DB_URI
-          value: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUri
         image: postgrest/postgrest:v5.2.0
         name: postgrest
         resources: {}

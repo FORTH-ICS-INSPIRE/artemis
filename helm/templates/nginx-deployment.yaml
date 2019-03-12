@@ -27,15 +27,21 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/nginx/nginx.conf
-          name: nginx-hostpath0
+          name: nginx-configmap0
+          subPath: nginx.conf
         - mountPath: /etc/nginx/certs/
-          name: nginx-hostpath1
+          name: nginx-secret0
       restartPolicy: Always
       volumes:
-      - hostPath:
-          path: /home/dimitris/github/artemis/frontend/webapp/configs/nginx.conf
-        name: nginx-hostpath0
-      - hostPath:
-          path: /home/dimitris/github/artemis/frontend/webapp/configs/certs
-        name: nginx-hostpath1
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+        name: nginx-configmap0
+      - secret:
+          secretName: {{ .Release.Name }}-secret-volumes
+          items:
+          - key: cert.pem
+            path: cert.pem
+          - key: key.pem
+            path: key.pem
+        name: nginx-secret0
 status: {}

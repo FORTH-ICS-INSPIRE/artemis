@@ -65,12 +65,12 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: graphqlHost
+              key: hasuraHost
         - name: HASURA_PORT
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: graphqlPort
+              key: hasuraPort
         - name: HISTORIC
           valueFrom:
             configMapKeyRef:
@@ -121,15 +121,23 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/
-          name: backend-hostpath0
+          name: backend-configmap0
         - mountPath: /etc/supervisor/conf.d/
-          name: backend-hostpath1
+          name: backend-configmap1
       restartPolicy: Always
       volumes:
-      - hostPath:
-          path: /home/dimitris/github/artemis/backend/configs
-        name: backend-hostpath0
-      - hostPath:
-          path: /home/dimitris/github/artemis/backend/supervisor.d
-        name: backend-hostpath1
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: config.yaml
+            path: config.yaml
+          - key: logging.yaml
+            path: logging.yaml
+        name: backend-configmap0
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: services.conf
+            path: services.conf
+        name: backend-configmap1
 status: {}

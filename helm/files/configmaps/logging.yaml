@@ -1,0 +1,89 @@
+version: 1
+disable_existing_loggers: True
+formatters:
+    simple:
+        format: '%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
+        stream: ext://sys.stdout
+
+    info_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: INFO
+        formatter: simple
+        filename: /var/log/artemis/info.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+
+    error_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: ERROR
+        formatter: simple
+        filename: /var/log/artemis/error.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+
+    # for email
+    # smtps_handler:
+    #     class: utils.SMTPSHandler
+    #     level: INFO
+    #     formatter: simple
+    #     mailhost:
+    #     - smtp.server.com
+    #     - port
+    #     fromaddr: from
+    #     toaddrs: to
+    #     subject: subject
+    #     credentials:
+    #     - username
+    #     - password
+    #     secure: True
+
+    null_handler:
+        class: logging.NullHandler
+
+    taps_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: simple
+        filename: /var/log/artemis/taps.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+
+    # syslog_handler:
+    #     class: logging.handlers.SysLogHandler
+    #     level: DEBUG
+    #     formatter: simple
+    #     address: [localhost, /dev/log]
+
+loggers:
+    artemis_logger:
+        level: INFO
+        handlers: [console, info_file_handler, error_file_handler]
+        propagate: no
+    mail_logger:
+        level: CRITICAL
+        handlers: [null_handler]
+        propagate: no
+    hijack_logger:
+        level: CRITICAL
+        handlers: [null_handler]
+        propagate: no
+    taps_logger:
+        level: INFO
+        handlers: [taps_file_handler]
+        propagate: no
+    webapp_logger:
+        level: INFO
+        handlers: [console, info_file_handler, error_file_handler]
+        propagate: no
+root:
+    level: INFO
+    handlers: []

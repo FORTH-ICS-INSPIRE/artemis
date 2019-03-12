@@ -22,27 +22,35 @@ spec:
       containers:
       - args:
         - /root/wait-for
-        - rabbitmq:5672
+        - {{ .Values.rabbitmqHost }}:{{ .Values.rabbitmqPort }}
         - -t
         - "0"
         - --
         - pg-amqp-bridge
         env:
         - name: AMQP_URI
-          value: amqp://guest:guest@rabbitmq:5672//
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUri
         - name: BRIDGE_CHANNELS
           value: events:amq.direct
         - name: POSTGRESQL_URI
-          value: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUri
         image: subzerocloud/pg-amqp-bridge:0.0.6
         name: pg-amqp-bridge
         resources: {}
         volumeMounts:
         - mountPath: /root/wait-for
-          name: pg-amqp-bridge-hostpath0
+          name: pg-amqp-bridge-configmap0
+          subPath: wait-for
       restartPolicy: Always
       volumes:
-      - hostPath:
-          path: /home/dimitris/github/artemis/backend/wait-for
-        name: pg-amqp-bridge-hostpath0
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          defaultMode: 0777
+        name: pg-amqp-bridge-configmap0
 status: {}

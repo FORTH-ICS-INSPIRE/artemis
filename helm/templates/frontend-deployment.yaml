@@ -22,63 +22,133 @@ spec:
       containers:
       - env:
         - name: API_HOST
-          value: postgrest
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: apiHost
         - name: API_PORT
-          value: "3000"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: apiPort
         - name: BIND_IP
-          value: 0.0.0.0
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: bindIp
         - name: DB_HOST
-          value: postgres
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbHost
         - name: DB_PORT
-          value: "5432"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbPort
         - name: FLASK_SECRET_KEY
-          value: 76f8bae45e807865955344c1a58882d38c8ceb4f855f58091642b7d48290af97
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: flaskSecret
         - name: HASURA_HOST
-          value: graphql
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraHost
         - name: HASURA_PORT
-          value: "8080"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraPort
         - name: JS_VERSION
-          value: 0.1.2
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: jsVersion
         - name: JWT_SECRET_KEY
-          value: 44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: jwtSecret
         - name: RABBITMQ_HOST
-          value: rabbitmq
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqHost
         - name: RABBITMQ_PASS
-          value: guest
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPass
         - name: RABBITMQ_PORT
-          value: "5672"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPort
         - name: RABBITMQ_USER
-          value: guest
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqUser
         - name: SECURITY_PASSWORD_SALT
-          value: 06a4b397fc7045eac527c2aec3ff46cee5ce30016c760f238c26e79902fe67b6
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: passwordSalt
         - name: SUPERVISOR_HOST
-          value: backend
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorHost
         - name: SUPERVISOR_PORT
-          value: "9001"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorPort
         - name: SYSTEM_VERSION
-          value: latest
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: systemVersion
         - name: USER_ROOT_EMAIL
-          value: admin@admin
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: adminEmail
         - name: USER_ROOT_PASSWORD
-          value: admin123
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: adminPass
         - name: USER_ROOT_USERNAME
-          value: admin
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: adminUser
         - name: WEBAPP_PORT
-          value: "8000"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: webappPort
         image: inspiregroup/artemis-frontend:latest
         name: frontend
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/
-          name: frontend-hostpath0
+          name: frontend-configmap0
         - mountPath: /etc/webapp/db/
-          name: frontend-hostpath1
+          name: frontend-emptydir0
       restartPolicy: Always
       volumes:
-      - hostPath:
-          path: /home/dimitris/github/artemis/frontend/webapp/configs
-        name: frontend-hostpath0
-      - hostPath:
-          path: /home/dimitris/github/artemis/frontend/db
-        name: frontend-hostpath1
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: webapp.cfg
+            path: webapp.cfg
+          - key: logging.yaml
+            path: logging.yaml
+        name: frontend-configmap0
+      - emptyDir: {}
+        name: frontend-emptydir0
 status: {}

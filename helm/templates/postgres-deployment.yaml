@@ -24,51 +24,78 @@ spec:
         - ./postgres-entrypoint.sh
         env:
         - name: DB_AUTOCLEAN
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbAutoClean
         - name: DB_BACKUP
-          value: "true"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbBackup
         - name: DB_HIJACK_DORMANT
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbHijackDormant
         - name: POSTGRES_DB
-          value: artemis_db
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbName
         - name: POSTGRES_PASSWORD
-          value: Art3m1s
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbPass
         - name: POSTGRES_USER
-          value: artemis_user
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUser
         image: timescale/timescaledb:1.1.0-pg10
         name: postgres
         resources: {}
         volumeMounts:
-        - mountPath: /var/lib/postgresql/data
-          name: postgres-hostpath0
         - mountPath: /postgres-entrypoint.sh
-          name: postgres-hostpath1
-        - mountPath: /tmp/
-          name: postgres-hostpath2
+          name: postgres-configmap0
+          subPath: postgres-entrypoint.sh
         - mountPath: /docker-entrypoint-initdb.d/zinit.sql
-          name: postgres-hostpath3
+          name: postgres-configmap1
+          subPath: init.sql
         - mountPath: /docker-entrypoint-initdb.d/data/
-          name: postgres-hostpath4
-        - mountPath: /docker-entrypoint-initdb.d/libs/
-          name: postgres-hostpath5
+          name: postgres-configmap2
+        - mountPath: /docker-entrypoint-initdb.d/libs/rabbitmq/
+          name: postgres-configmap3
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-emptydir0
+        - mountPath: /tmp/
+          name: postgres-emptydir1
       restartPolicy: Always
       volumes:
-      - hostPath:
-          path: /home/dimitris/github/artemis/postgres-data-current
-        name: postgres-hostpath0
-      - hostPath:
-          path: /home/dimitris/github/artemis/other/postgres-entrypoint.sh
-        name: postgres-hostpath1
-      - hostPath:
-          path: /home/dimitris/github/artemis/postgres-data-backup
-        name: postgres-hostpath2
-      - hostPath:
-          path: /home/dimitris/github/artemis/other/db/init.sql
-        name: postgres-hostpath3
-      - hostPath:
-          path: /home/dimitris/github/artemis/other/db/data
-        name: postgres-hostpath4
-      - hostPath:
-          path: /home/dimitris/github/artemis/other/db/libs
-        name: postgres-hostpath5
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          defaultMode: 0777
+        name: postgres-configmap0
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+        name: postgres-configmap1
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: restore.sql
+            path: restore.sql
+          - key: tables.sql
+            path: tables.sql
+        name: postgres-configmap2
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: schema.sql
+            path: schema.sql
+        name: postgres-configmap3
+      - emptyDir: {}
+        name: postgres-emptydir0
+      - emptyDir: {}
+        name: postgres-emptydir1
 status: {}

@@ -1,0 +1,76 @@
+#
+# ARTEMIS Configuration File (default config, please change in your deployment)
+#
+# Defining a named variable:
+#     named_variable: &named_variable
+#         value_of_variable
+# Use named variable:
+#     *named_variable
+# - denotes an entry
+#
+# Start of Prefix Definitions (IPv4 and IPv6 are supported)
+prefixes:
+    super_prefix: &super_prefix
+        - 139.91.0.0/16
+    sub_prefix_1: &sub_prefix_1
+        139.91.250.0/24
+    sub_prefix_2: &sub_prefix_2
+        139.91.2.0/24
+# End of Prefix Definitions
+#
+# Start of Monitor Definitions
+monitors:
+    riperis: [''] # by default this uses all available monitors
+    bgpstreamlive:
+        - routeviews
+        - ris
+    betabmp:
+        - betabmp
+    # exabgp:
+    #     - ip: exabgp
+    #       port: 5000
+    # bgpstreamhist:
+    #     - <csv_dir_with_formatted_BGP_updates>
+# End of Monitor Definitions
+#
+# Start of ASN Definitions
+asns:
+    my_asn: &my_asn
+        8522
+    primary_upstream: &primary_upstream
+        5408
+    backup_upstream_1: &backup_upstream_1
+        56910
+    backup_upstream_2: &backup_upstream_2
+        12361
+# End of ASN Definitions
+#
+# Start of Rule Definitions
+rules:
+- prefixes:
+    - *super_prefix
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *primary_upstream
+    - *backup_upstream_1
+    - *backup_upstream_2
+  mitigation:
+      manual
+- prefixes:
+    - *sub_prefix_1
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *backup_upstream_1
+  mitigation:
+    manual
+- prefixes:
+    - *sub_prefix_2
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *backup_upstream_2
+  mitigation:
+    manual
+# End of Rule Definitions

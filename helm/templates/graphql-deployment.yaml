@@ -24,13 +24,25 @@ spec:
         - serve
         env:
         - name: HASURA_GRAPHQL_ACCESS_KEY
-          value: '@rt3m1s.'
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: hasuraSecret
         - name: HASURA_GRAPHQL_DATABASE_URL
-          value: postgres://artemis_user:Art3m1s@postgres:5432/artemis_db
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUri
         - name: HASURA_GRAPHQL_ENABLE_CONSOLE
-          value: "false"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraGui
         - name: HASURA_GRAPHQL_JWT_SECRET
-          value: '{"type":"HS256", "key":"44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f"}'
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraJwt
         image: hasura/graphql-engine:v1.0.0-alpha31
         name: graphql
         resources: {}

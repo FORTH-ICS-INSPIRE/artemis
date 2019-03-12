@@ -22,6 +22,7 @@ data:
   dbAutoClean: {{ .Values.dbAutoClean | default "false" | quote }}
   dbBackup: {{ .Values.dbBackup | default "true" | quote }}
   dbHijackDormant: {{ .Values.dbHijacjDormant | default "false" | quote }}
+  dbUri: postgres://{{ .Values.dbUser | default "artemis_user" }}:{{ .Values.dbPass | default "Art3m1s" }}@{{ .Values.dbHost | default "postgres"}}:{{ .Values.dbPort | default 5432 }}/{{ .Values.dbName | default "artemis_db" }}
   bindIp: {{ .Values.bindIp | default "0.0.0.0" | quote }}
   webappHost: {{ .Values.webappHost | default "frontend" | quote }}
   webappPort: {{ .Values.webappPort | default "8000" | quote }}
@@ -33,6 +34,8 @@ data:
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}
   rabbitmqPass: {{ .Values.apiPort | default "guest" | quote }}
-  hasuraHost: {{ .Values.apiPort | default "graphql" | quote }}
-  hasuraPort: {{ .Values.apiPort | default "8080" | quote }}
-  hasuraGui: {{ .Values.apiPort | default "false" | quote }}
+  rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Values.rabbitmqHost | default "rabbitmq"}}:{{ .Values.rabbitmqPort | default 5672 }}
+  hasuraHost: {{ .Values.hasuraHost | default "graphql" | quote }}
+  hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
+  hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}
+  hasuraJwt: '{"type":"HS256", "key": {{ .Values.jwtSecret | quote }} }'

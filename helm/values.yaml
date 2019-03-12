@@ -25,7 +25,7 @@ dbPort: 5432
 dbVersion: 12
 dbName: artemis_db
 dbUser: artemis_user
-dbPass: Art3n1s
+dbPass: Art3m1s
 dbSchema: public
 dbAutoClean: false
 dbBackup: true

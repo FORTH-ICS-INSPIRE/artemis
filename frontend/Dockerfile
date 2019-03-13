@@ -12,7 +12,7 @@ COPY ./minify-js.sh /root/
 RUN mkdir /root/prod/
 RUN ./minify-js.sh
 
-FROM jfloff/alpine-python:3.6
+FROM mavromat/alpine-python:3.6
 
 WORKDIR /root
 

@@ -1,1 +1,1 @@
-../../../other/rabbitmq/enabled-plugins
+[rabbitmq_management,rabbitmq_consistent_hash_exchange].

@@ -126,7 +126,7 @@ class Learn_hijack_rule:
         if message.properties["correlation_id"] == self.correlation_id:
             self.response = message.payload
 
-    def send(self, hijack_key, prefix, type_, hijack_as):
+    def send(self, hijack_key, prefix, type_, hijack_as, action):
         log.debug("sending")
         self.response = None
         self.correlation_id = uuid()
@@ -145,6 +145,7 @@ class Learn_hijack_rule:
                     "prefix": prefix,
                     "type": type_,
                     "hijack_as": hijack_as,
+                    "action": action,
                 },
                 exchange="",
                 routing_key="conf-hijack-learn-rule-queue",
@@ -163,8 +164,8 @@ class Learn_hijack_rule:
             while self.response is None:
                 self.connection.drain_events()
         if self.response["success"]:
-            return self.response["extra_yaml_conf"], True
-        return self.response["extra_yaml_conf"], False
+            return self.response["new_yaml_conf"], True
+        return self.response["new_yaml_conf"], False
 
 
 class Comment_hijack:

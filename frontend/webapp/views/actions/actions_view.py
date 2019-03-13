@@ -85,9 +85,12 @@ def learn_hijack_rule():
     prefix = request.values.get("prefix")
     type_ = request.values.get("type_")
     hijack_as = int(request.values.get("hijack_as"))
+    action = request.values.get("action")
 
     _learn_hijack_rule = Learn_hijack_rule()
-    response, success = _learn_hijack_rule.send(hijack_key, prefix, type_, hijack_as)
+    response, success = _learn_hijack_rule.send(
+        hijack_key, prefix, type_, hijack_as, action
+    )
 
     if success:
         return jsonify({"status": "success", "response": response})

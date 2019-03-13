@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/merge.css') }}">
     <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
 {% endblock %}
@@ -173,6 +174,8 @@
                             <div class="col-lg-4">
                                 <button id="ignored_button" type="button" class="btn btn-warning">Ignore</button>
                             </div>
+                        </div>
+                        <div class="row mt-2">
                             <div class="col-lg-4">
                                 <button id="learn_rule_button" type="button" class="btn btn-info" data-toggle="modal" data-target="#learnRuleModal">Learn Rule</button>
                             </div>
@@ -263,25 +266,36 @@
                 <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
             </div>
         </div>
-         <div class="modal" id="learnRuleModal" tabindex="-1" role="dialog" aria-labelledby="learnRuleModalLabel" aria-hidden="true">
-             <div class="modal-dialog modal-lg" role="document">
+        {% if current_user.has_roles('admin') %}
+        <div class="modal" id="learnRuleModal" tabindex="-1" role="dialog" aria-labelledby="learnRuleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
                  <div class="modal-content">
-                     <div class="modal-header">
-                         <h5 class="modal-title" id="learnRuleModalLabel">Learn new rule</h5>
-                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="learnRuleModalLabel">Learn new rule</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                              <span aria-hidden="true">&times;</span>
-                         </button>
-                     </div>
-                     <div class="modal-body">
-                         N/A
-                     </div>
-                     <div class="modal-footer">
-                         <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
-                     </div>
-                 </div>
-             </div>
-         </div>
-
+                        </button>
+                    </div>
+                    <div class="modal-body" id="modal-body-new-rule-config">
+                        <div id="modal_display_config_comparison">
+                            <div class="row">
+                                <div class="col-lg-6" style="text-align: center;"> Old configuration </div>
+                                <div class="col-lg-6" style="text-align: center;"> New configuration </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <div id="view_config_learn_diffs"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="learnRuleModalApprove" data-dismiss="modal">Approve new configuration</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
 {% endblock %}
 
@@ -362,6 +376,8 @@
             var initial_data = {{ data | safe }};
             var fetch_hijack_parameter = "eq." + initial_data['key'];
             var prefix;
+            var diff_editor = null, new_config = null, old_config = null;
+            var target = document.getElementById("view_config_learn_diffs");
 
             $('#bgp_updates tfoot th').each(function() {
                 var title = $(this).text();
@@ -606,6 +622,32 @@
                     }
                 });
 
+                const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                        credentials: 'include',
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                    }
+                });
+
+
                 editor = CodeMirror.fromTextArea(document.getElementById("code_comment_box"), {
                     lineNumbers: true,
                     indentUnit: 4,
@@ -791,33 +833,84 @@
             });
 
             $('#learnRuleModal').on('show.bs.modal', function (event) {
-                    submit_learn_rule($(this), initial_data['key'], initial_data['prefix'], initial_data['type'], initial_data['hijack_as'])
+                submit_learn_rule($(this), initial_data['key'], initial_data['prefix'], initial_data['type'], initial_data['hijack_as'], 'show');
             });
 
-            function submit_learn_rule(modal, hijack_key, prefix, type_, hijack_as){
-                $.ajax({
-                    type: "POST",
-                    url: "{{ url_for('actions.learn_hijack_rule') }}",
-                    data: {
-                        "hijack_key" : hijack_key,
-                        "prefix": prefix,
-                        "type_": type_,
-                        "hijack_as": hijack_as
-                    },
-                    success: function(result){
-                        if(result["status"] == "fail"){
-                            var message = '<div class="alert alert-danger alert-dismissible">'
-                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-                            message += result["response"] + '</div>'
-                        }else{
-                            var message = '<div class="alert alert-success alert-dismissible">'
-                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-                            message += result["response"] + '</div>'
-                        }
-                        modal.find('.modal-body').html(message)
-                    },
-                    dataType: "json"
+            $("#learnRuleModalApprove").click(function() {
+                submit_learn_rule($(this), initial_data['key'], initial_data['prefix'], initial_data['type'], initial_data['hijack_as'], 'approve');
+            });
+
+            async function submit_learn_rule(modal, hijack_key, prefix, type_, hijack_as, action){
+                if(action == 'show'){
+                    var latest_config = await fetchLatestConfig();
+                    old_config = latest_config.raw_config;
+
+                    $.ajax({
+                        type: "POST",
+                        url: "{{ url_for('actions.learn_hijack_rule') }}",
+                        data: {
+                            "hijack_key" : hijack_key,
+                            "prefix": prefix,
+                            "type_": type_,
+                            "hijack_as": hijack_as,
+                            "action": action,
+                        },
+                        success: function(result){
+                            if(result["status"] == "fail"){
+                                var message = [];
+                                message.push('<div class="alert alert-danger alert-dismissible">');
+                                message.push('<a href="#" class="close" data-dismiss="alert"');
+                                message.push(' aria-label="close">&times;</a>');
+                                message.push(result["response"]);
+                                message.push('</div>');
+                                modal.find('.modal-body').html(message.join(''));
+                                $('#learnRuleModalApprove').hide();
+                            }else{
+                                new_config = result["response"];
+                                render_config_diffs();
+                            }
+                        },
+                        dataType: "json"
+                    });
+
+                }else if(action == 'approve'){
+                    $.ajax({
+                        type: "POST",
+                        url: "{{ url_for('actions.learn_hijack_rule') }}",
+                        data: {
+                            "hijack_key" : hijack_key,
+                            "prefix": prefix,
+                            "type_": type_,
+                            "hijack_as": hijack_as,
+                            "action": action,
+                        },
+                        success: function(result){
+                            if(result["status"] == "success"){
+                                $("#learn_rule_button").prop("disabled", true);
+                            }
+                        },
+                        dataType: "json"
+                    });
+                }else{
+                    return;
+                }
+            }
+
+            function render_config_diffs(){
+                $('#view_config_learn_diffs').html('');
+                diff_editor = CodeMirror.MergeView(target, {
+                    value: old_config,
+                    orig: new_config,
+                    lineNumbers: true,
+                    mode: "yaml",
+                    highlightDifferences: true,
+                    connect: "align",
+                    collapseIdentical: false
                 });
+            }
+
+            function toggleDifferences() {
+                diff_editor.setShowDifferences(highlight = !highlight);
             }
 
             $('#comment_action').on('click', function (event, state) {
@@ -861,8 +954,6 @@
                 });
             }
 
-
-
             $('#hijack_acknowledged_button').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
                     submit_seen(true);
@@ -870,7 +961,6 @@
                     submit_seen(false);
                 }
             });
-
 
             function submit_seen(state){
                 $.ajax({
@@ -903,6 +993,7 @@
 
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-graphql.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/prod-utils.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
@@ -910,8 +1001,14 @@
         <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
         <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/textile/textile.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/merge/merge.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/yaml/yaml.min.js"></script>
+
+
         <script src="{{ url_for('static', filename='js/custom/prod-display_info.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/prod-ripestat.js') }}{{ js_version }}"></script>
 

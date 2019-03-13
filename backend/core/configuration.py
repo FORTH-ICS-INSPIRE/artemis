@@ -392,7 +392,6 @@ class Configuration:
                 with open(self.file, "r") as f:
                     raw = f.read()
                 yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
-
                 # append prefix
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
@@ -472,12 +471,15 @@ class Configuration:
             (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
                 raw
             )
-            (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_file(
+            (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
                 rule_prefix, rule_asns, rules
             )
-            yaml_conf_str = ruamel.yaml.dump(
-                yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
-            )
+            if ok:
+                yaml_conf_str = ruamel.yaml.dump(
+                    yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
+                )
+            else:
+                yaml_conf_str = yaml_conf
 
             if raw["action"] in ["show", "approve"]:
                 # reply back to the sender with the extra yaml configuration
@@ -491,7 +493,7 @@ class Configuration:
                     retry=True,
                     priority=4,
                 )
-            if raw["action"] == "approve":
+            if raw["action"] == "approve" and ok:
                 # store the new configuration to file
                 with open(self.file, "w") as f:
                     ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)

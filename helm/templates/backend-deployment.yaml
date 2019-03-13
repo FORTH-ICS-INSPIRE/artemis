@@ -8,6 +8,7 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: backend
+    app: {{ .Release.Name }}
   name: backend
 spec:
   replicas: 1
@@ -19,6 +20,19 @@ spec:
       labels:
         io.kompose.service: backend
     spec:
+      initContainers:
+      - name: populate-pvc
+        image: busybox
+        volumeMounts:
+        - mountPath: /configmaps
+          name: backend-configmap
+        - mountPath: /pvc
+          name: backend-pvc
+          subPath: configs
+        command: ['sh', '-c', 'cp -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: DB_HOST
@@ -120,24 +134,21 @@ spec:
         name: backend
         resources: {}
         volumeMounts:
-        - mountPath: /etc/artemis/
-          name: backend-configmap0
-        - mountPath: /etc/supervisor/conf.d/
-          name: backend-configmap1
+        - mountPath: /etc/artemis/logging.yaml
+          name: backend-pvc
+          subPath: configs/logging.yaml
+        - mountPath: /etc/artemis/config.yaml
+          name: backend-pvc
+          subPath: configs/config.yaml
+        - mountPath: /etc/supervisor/conf.d/services.conf
+          name: backend-pvc
+          subPath: configs/services.conf
       restartPolicy: Always
       volumes:
       - configMap:
           name: {{ .Release.Name }}-volumes
-          items:
-          - key: config.yaml
-            path: config.yaml
-          - key: logging.yaml
-            path: logging.yaml
-        name: backend-configmap0
-      - configMap:
-          name: {{ .Release.Name }}-volumes
-          items:
-          - key: services.conf
-            path: services.conf
-        name: backend-configmap1
+        name: backend-configmap
+      - persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-pvc
+        name: backend-pvc
 status: {}

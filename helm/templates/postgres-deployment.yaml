@@ -8,6 +8,7 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: postgres
+    app: {{ .Release.Name }}
   name: postgres
 spec:
   replicas: 1
@@ -67,10 +68,12 @@ spec:
           name: postgres-configmap2
         - mountPath: /docker-entrypoint-initdb.d/libs/rabbitmq/
           name: postgres-configmap3
-        - mountPath: /var/lib/postgresql/data
-          name: postgres-emptydir0
+        - mountPath: /var/lib/postgresql/data/
+          name: postgres-emptydir
+          # subPath: postgres-data
         - mountPath: /tmp/
-          name: postgres-emptydir1
+          name: postgres-pvc
+          subPath: postgres-backup
       restartPolicy: Always
       volumes:
       - configMap:
@@ -95,7 +98,8 @@ spec:
             path: schema.sql
         name: postgres-configmap3
       - emptyDir: {}
-        name: postgres-emptydir0
-      - emptyDir: {}
-        name: postgres-emptydir1
+        name: postgres-emptydir
+      - persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-pvc
+        name: postgres-pvc
 status: {}

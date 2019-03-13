@@ -8,6 +8,7 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: postgrest
+    app: {{ .Release.Name }}
   name: postgrest
 spec:
   replicas: 1
@@ -18,6 +19,10 @@ spec:
       labels:
         io.kompose.service: postgrest
     spec:
+      initContainers:
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: PGRST_DB_ANON_ROLE

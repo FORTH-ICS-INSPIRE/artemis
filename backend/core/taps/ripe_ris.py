@@ -119,7 +119,7 @@ def parse_ripe_ris(connection, prefix, host):
     }
 
     ws.send(json.dumps({"type": "ris_subscribe", "data": params}))
-
+    validator = mformat_validator()
     for data in ws:
         try:
             parsed = json.loads(data)
@@ -127,7 +127,7 @@ def parse_ripe_ris(connection, prefix, host):
             producer = Producer(connection)
             norm_ris_msgs = normalize_ripe_ris(msg, conf_prefix)
             for norm_ris_msg in norm_ris_msgs:
-                if mformat_validator(norm_ris_msg):
+                if validator.validate(norm_ris_msg):
                     norm_path_msgs = normalize_msg_path(norm_ris_msg)
                     for norm_path_msg in norm_path_msgs:
                         key_generator(norm_path_msg)

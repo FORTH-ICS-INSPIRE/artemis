@@ -29,20 +29,27 @@ class Tester:
         db_conn = None
         while not db_conn:
             try:
-                _db_name = os.getenv("DATABASE_NAME", "artemis_db")
-                _user = os.getenv("DATABASE_USER", "artemis_user")
-                _host = os.getenv("DATABASE_HOST", "postgres")
-                _password = os.getenv("DATABASE_PASSWORD", "Art3m1s")
+                _db_name = os.getenv("DB_NAME", "artemis_db")
+                _user = os.getenv("DB_USER", "artemis_user")
+                _host = os.getenv("DB_HOST", "postgres")
+                _port = os.getenv("DB_PORT", 5432)
+                _password = os.getenv("DB_PASS", "Art3m1s")
 
                 db_conn = psycopg2.connect(
-                    dbname=_db_name, user=_user, host=_host, password=_password
+                    dbname=_db_name,
+                    user=_user,
+                    host=_host,
+                    port=_port,
+                    password=_password,
                 )
             except BaseException:
                 time.sleep(1)
         return db_conn
 
     def initRedis(self):
-        redis_ = redis.Redis(host=os.getenv("BACKEND_HOST", "backend"), port=6379)
+        redis_ = redis.Redis(
+            host=os.getenv("REDIS_HOST", "backend"), port=os.getenv("REDIS_PORT", 6739)
+        )
         self.redis = redis_
 
     def initSupervisor(self):
@@ -136,12 +143,17 @@ class Tester:
 
         # compare expected message with received one. exit on
         # mismatch.
-        for key in set(event.keys()).intersection(expected.keys()):
+        if isinstance(expected, list) and expected:
+            expected_item = expected.pop(0)
+        else:
+            expected_item = expected
+
+        for key in set(event.keys()).intersection(expected_item.keys()):
             if "time" in key:
-                expected[key] += self.time_now
-            assert event[key] == expected[key] or (
+                expected_item[key] += self.time_now
+            assert event[key] == expected_item[key] or (
                 isinstance(event[key], (list, set))
-                and set(event[key]) == set(expected[key])
+                and set(event[key]) == set(expected_item[key])
             ), (
                 'Test "{}" - Batch #{} - Type {}: Unexpected'
                 ' value for key "{}". Received: {}, Expected: {}'.format(
@@ -150,7 +162,7 @@ class Tester:
                     message.delivery_info["routing_key"],
                     key,
                     event[key],
-                    expected[key],
+                    expected_item[key],
                 )
             )
 
@@ -164,7 +176,13 @@ class Tester:
         Publish next custom BGP update on the bgp-updates exchange.
         """
         with conn.Producer() as producer:
-            self.expected_messages = len(self.messages[self.curr_idx]) - 1
+            self.expected_messages = 0
+            for key in self.messages[self.curr_idx]:
+                if key != "send":
+                    if isinstance(self.messages[self.curr_idx][key], dict):
+                        self.expected_messages += 1
+                    else:
+                        self.expected_messages += len(self.messages[self.curr_idx][key])
 
             # offset to account for "real-time" tests
             for key in self.messages[self.curr_idx]["send"]:
@@ -225,8 +243,13 @@ class Tester:
         Loads a test file that includes crafted bgp updates as
         input and expected messages as output.
         """
-
-        RABBITMQ_URI = os.getenv("RABBITMQ_URI")
+        RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+        RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+        RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+        RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+        RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+            RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+        )
 
         # exchanges
         self.update_exchange = Exchange(

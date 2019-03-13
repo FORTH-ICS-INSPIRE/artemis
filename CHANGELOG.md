@@ -9,9 +9,11 @@
 - Translate learn rule ARTEMIS-compatible dicts into yaml conf in backend
 - Update yaml conf with learned rule
 - Configured/matched prefix field and search in frontend hijack and update tables
+- Kubernetes support
+- Reject old updates from taps and have a "HISTORIC" variable to enable/disable
 
 ### Changed
-- TBD (Changed existing functionality)
+- Refactored environment variables
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend

@@ -30,7 +30,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: dbUri
+              key: rabbitmqUri
         - name: BRIDGE_CHANNELS
           value: events:amq.direct
         - name: POSTGRESQL_URI

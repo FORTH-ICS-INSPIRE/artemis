@@ -36,7 +36,7 @@ data:
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}
   rabbitmqPass: {{ .Values.rabbitmqPass | default "guest" | quote }}
-  rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Values.rabbitmqHost | default "rabbitmq"}}:{{ .Values.rabbitmqPort | default 5672 }}
+  rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Values.rabbitmqHost | default "rabbitmq"}}:{{ .Values.rabbitmqPort | default 5672 }}//
   hasuraHost: {{ .Values.hasuraHost | default "graphql" | quote }}
   hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
   hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}

@@ -8,6 +8,7 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: pg-amqp-bridge
+    app: {{ .Release.Name }}
   name: pg-amqp-bridge
 spec:
   replicas: 1
@@ -19,15 +20,12 @@ spec:
       labels:
         io.kompose.service: pg-amqp-bridge
     spec:
+      initContainers:
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for rabbitmq; sleep 10; done;']
       containers:
-      - args:
-        - /root/wait-for
-        - {{ .Values.rabbitmqHost }}:{{ .Values.rabbitmqPort }}
-        - -t
-        - "0"
-        - --
-        - pg-amqp-bridge
-        env:
+      - env:
         - name: AMQP_URI
           valueFrom:
             configMapKeyRef:
@@ -43,14 +41,5 @@ spec:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         name: pg-amqp-bridge
         resources: {}
-        volumeMounts:
-        - mountPath: /root/wait-for
-          name: pg-amqp-bridge-configmap0
-          subPath: wait-for
       restartPolicy: Always
-      volumes:
-      - configMap:
-          name: {{ .Release.Name }}-volumes
-          defaultMode: 0777
-        name: pg-amqp-bridge-configmap0
 status: {}

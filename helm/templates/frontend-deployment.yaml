@@ -8,6 +8,7 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: frontend
+    app: {{ .Release.Name }}
   name: frontend
 spec:
   replicas: 1
@@ -19,6 +20,10 @@ spec:
       labels:
         io.kompose.service: frontend
     spec:
+      initContainers:
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: API_HOST
@@ -131,14 +136,14 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: webappPort
-        image: inspiregroup/artemis-frontend:latest
+        image: inspiregroup/artemis-frontend:{{ .Values.systemVersion }}
         name: frontend
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/
-          name: frontend-configmap0
+          name: frontend-configmap
         - mountPath: /etc/webapp/db/
-          name: frontend-emptydir0
+          name: frontend-emptydir
       restartPolicy: Always
       volumes:
       - configMap:
@@ -148,7 +153,7 @@ spec:
             path: webapp.cfg
           - key: logging.yaml
             path: logging.yaml
-        name: frontend-configmap0
+        name: frontend-configmap
       - emptyDir: {}
-        name: frontend-emptydir0
+        name: frontend-emptydir
 status: {}

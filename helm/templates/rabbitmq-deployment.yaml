@@ -8,6 +8,7 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: rabbitmq
+    app: {{ .Release.Name }}
   name: rabbitmq
 spec:
   replicas: 1
@@ -31,7 +32,7 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: rabbitmqPass
-        image: rabbitmq:3.7.8-management-alpine
+        image: rabbitmq:3.7.13-alpine
         name: rabbitmq
         resources: {}
         volumeMounts:

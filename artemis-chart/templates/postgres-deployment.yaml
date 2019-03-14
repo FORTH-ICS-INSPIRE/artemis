@@ -19,6 +19,8 @@ spec:
       creationTimestamp: null
       labels:
         io.kompose.service: postgres
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
       - command:

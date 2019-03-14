@@ -18,6 +18,8 @@ spec:
       creationTimestamp: null
       labels:
         io.kompose.service: graphql
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-service

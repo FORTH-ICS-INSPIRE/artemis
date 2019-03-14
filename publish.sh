@@ -28,6 +28,8 @@ echo ">> Checking out $GITHUB_PAGES_BRANCH branch from $GITHUB_PAGES_REPO"
 cd /tmp/helm/publish
 git clone -b "$GITHUB_PAGES_BRANCH" "https://$GITHUB_USER:$GITHUB_TOKEN@github.com/$GITHUB_PAGES_REPO.git" .
 
+echo '>> Merging master...'
+git merge master
 echo '>> Building chart...'
 chart=artemis-chart
 echo ">>> helm lint $chart"

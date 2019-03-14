@@ -26,8 +26,6 @@ helm init -c
 
 echo ">> Checking out $GITHUB_PAGES_BRANCH branch from $GITHUB_PAGES_REPO"
 cd /tmp/helm/publish
-mkdir -p "$HOME/.ssh"
-ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts"
 git clone -b "$GITHUB_PAGES_BRANCH" "https://$GITHUB_USER:$GITHUB_TOKEN@github.com/$GITHUB_PAGES_REPO.git" .
 
 echo '>> Building chart...'

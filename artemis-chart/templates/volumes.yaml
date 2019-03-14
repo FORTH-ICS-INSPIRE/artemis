@@ -15,4 +15,5 @@ metadata:
     app: {{ .Release.Name }}
 type: Opaque
 data:
-  {{- (.Files.Glob "files/secrets/*").AsSecrets | nindent 2 }}
+  cert.pem: {{ required "A valid .Values.certificate entry required!" .Values.certificate | b64enc }}
+  key.pem: {{ required "A valid .Values.privKey entry required!" .Values.privKey | b64enc }}

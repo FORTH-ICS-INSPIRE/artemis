@@ -1,7 +1,4 @@
 #!/bin/sh
-set -e
-set -o pipefail
-
 WORKING_DIRECTORY="$PWD"
 
 [ -z "$GITHUB_PAGES_REPO" ] && GITHUB_PAGES_REPO=forth-ics-inspire/artemis

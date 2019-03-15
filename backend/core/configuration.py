@@ -481,6 +481,11 @@ class Configuration:
             else:
                 yaml_conf_str = yaml_conf
 
+            if raw["action"] == "approve" and ok:
+                # store the new configuration to file
+                with open(self.file, "w") as f:
+                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+
             if raw["action"] in ["show", "approve"]:
                 # reply back to the sender with the extra yaml configuration
                 # message.
@@ -493,10 +498,6 @@ class Configuration:
                     retry=True,
                     priority=4,
                 )
-            if raw["action"] == "approve" and ok:
-                # store the new configuration to file
-                with open(self.file, "w") as f:
-                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

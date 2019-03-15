@@ -172,12 +172,7 @@
                                 {% endif %}
                             </div>
                             <div class="col-lg-4">
-                                <button id="ignored_button" type="button" class="btn btn-warning">Ignore</button>
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-lg-4">
-                                <button id="learn_rule_button" type="button" class="btn btn-info" data-toggle="modal" data-target="#learnRuleModal">Learn Rule</button>
+                                <button id="ignored_button" type="button" class="btn btn-warning" data-toggle="modal" data-target="#learnRuleModal">Ignore</button>
                             </div>
                         </div>
                     </div>
@@ -271,7 +266,7 @@
             <div class="modal-dialog modal-lg" role="document">
                  <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="learnRuleModalLabel">Learn new rule</h5>
+                        <h5 class="modal-title" id="learnRuleModalLabel">Configuration diff (Learn new rule)</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                              <span aria-hidden="true">&times;</span>
                         </button>
@@ -290,8 +285,16 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="learnRuleModalApprove" data-dismiss="modal">Approve new configuration</button>
+                        <button type="button" class="btn btn-primary" id="learnRuleModalApprove" data-dismiss="modal">Add rule</button>
+                        <button type="button" class="btn btn-secondary" id="learnRuleModalNoChange" data-dismiss="modal">Proceed with no change</button>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal" id="learnRuleModalLabelStatus" tabindex="-1" role="dialog" aria-labelledby="learnRuleModalLabelStatus" aria-hidden="true">
+            <div class="modal-dialog modal-sm" role="document">
+                <div class="modal-content">
+                    <div class="modal-body" id="modal-body-new-rule-config-status"></div>
                 </div>
             </div>
         </div>
@@ -815,7 +818,7 @@
                 });
             });
 
-            $( "#ignored_button" ).click(function() {
+            $( "#learnRuleModalNoChange" ).click(function() {
                 $.ajax({
                     type: 'POST',
                     url: "{{ url_for('actions.ignore_hijack') }}",
@@ -858,9 +861,7 @@
                         success: function(result){
                             if(result["status"] == "fail"){
                                 var message = [];
-                                message.push('<div class="alert alert-danger alert-dismissible">');
-                                message.push('<a href="#" class="close" data-dismiss="alert"');
-                                message.push(' aria-label="close">&times;</a>');
+                                message.push('<div class="alert alert-danger">');
                                 message.push(result["response"]);
                                 message.push('</div>');
                                 modal.find('.modal-body').html(message.join(''));
@@ -885,9 +886,31 @@
                             "action": action,
                         },
                         success: function(result){
+                            var message = [];
                             if(result["status"] == "success"){
-                                $("#learn_rule_button").prop("disabled", true);
+                                $("#ignored_button").prop("disabled", true);
+                                $.ajax({
+                                    type: 'POST',
+                                    url: "{{ url_for('actions.ignore_hijack') }}",
+                                    data: {
+                                        "hijack_key" : initial_data['key'],
+                                        "hijack_as": initial_data['hijack_as'],
+                                        "type_": initial_data['type'],
+                                        "prefix": initial_data['prefix']
+                                    },
+                                    success: function(result){
+                                        retrieve_hijack(fetch_hijack_parameter);
+                                    },
+                                    dataType: 'json'
+                                });
+                                message.push('<div class="alert alert-success"> The rule was successfully installed!</div>');
+                            }else{
+                                message.push('<div class="alert alert-danger">');
+                                message.push(result["response"]);
+                                message.push('</div>');
                             }
+                            $('#learnRuleModalLabelStatus').find('.modal-body').html(message.join(''));
+                            $('#learnRuleModalLabelStatus').modal('show');
                         },
                         dataType: "json"
                     });

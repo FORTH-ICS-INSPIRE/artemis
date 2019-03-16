@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import time
 from copy import deepcopy
 
 import radix
@@ -111,35 +112,51 @@ def parse_ripe_ris(connection, prefixes, hosts):
 
     ris_suffix = os.getenv("RIS_ID", "my_as")
 
-    events = requests.get(
-        "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(ris_suffix),
-        stream=True,
-    )
     validator = mformat_validator()
     with Producer(connection) as producer:
-        for data in events.iter_lines():
+        while True:
             try:
-                parsed = json.loads(data)
-                msg = parsed["data"]
-                # also check if ris host is in the configuration
-                if msg["type"] == "UPDATE" and (not hosts or msg["host"] in hosts):
-                    norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
-                    for norm_ris_msg in norm_ris_msgs:
-                        if validator.validate(norm_ris_msg):
-                            norm_path_msgs = normalize_msg_path(norm_ris_msg)
-                            for norm_path_msg in norm_path_msgs:
-                                key_generator(norm_path_msg)
-                                log.debug(norm_path_msg)
-                                producer.publish(
-                                    norm_path_msg,
-                                    exchange=exchange,
-                                    routing_key="update",
-                                    serializer="json",
-                                )
-                        else:
-                            log.warning("Invalid format message: {}".format(msg))
+                events = requests.get(
+                    "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(
+                        ris_suffix
+                    ),
+                    stream=True,
+                )
+                # http://docs.python-requests.org/en/latest/user/advanced/#streaming-requests
+                iterator = events.iter_lines()
+                next(iterator)
+                for data in iterator:
+                    try:
+                        parsed = json.loads(data)
+                        msg = parsed["data"]
+                        # also check if ris host is in the configuration
+                        if (
+                            "type" in msg
+                            and msg["type"] == "UPDATE"
+                            and (not hosts or msg["host"] in hosts)
+                        ):
+                            norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
+                            for norm_ris_msg in norm_ris_msgs:
+                                if validator.validate(norm_ris_msg):
+                                    norm_path_msgs = normalize_msg_path(norm_ris_msg)
+                                    for norm_path_msg in norm_path_msgs:
+                                        key_generator(norm_path_msg)
+                                        log.debug(norm_path_msg)
+                                        producer.publish(
+                                            norm_path_msg,
+                                            exchange=exchange,
+                                            routing_key="update",
+                                            serializer="json",
+                                        )
+                                else:
+                                    log.warning(
+                                        "Invalid format message: {}".format(msg)
+                                    )
+                    except Exception:
+                        log.exception("exception")
             except Exception:
-                log.exception("exception")
+                log.exception("server closed connection")
+                time.sleep(5)
 
 
 if __name__ == "__main__":

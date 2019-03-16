@@ -80,8 +80,8 @@ spec:
               key: rabbitmqHost
         - name: RABBITMQ_PASS
           valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
               key: rabbitmqPass
         - name: RABBITMQ_PORT
           valueFrom:
@@ -120,8 +120,8 @@ spec:
               key: adminEmail
         - name: USER_ROOT_PASSWORD
           valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
               key: adminPass
         - name: USER_ROOT_USERNAME
           valueFrom:

@@ -26,8 +26,8 @@ spec:
               key: rabbitmqUser
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
               key: rabbitmqPass
         image: rabbitmq:3.7.13-alpine
         name: rabbitmq

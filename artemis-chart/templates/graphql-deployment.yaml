@@ -42,8 +42,8 @@ spec:
               key: hasuraGui
         - name: HASURA_GRAPHQL_JWT_SECRET
           valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
               key: hasuraJwt
         image: hasura/graphql-engine:v1.0.0-alpha31
         name: graphql

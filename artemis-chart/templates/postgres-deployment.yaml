@@ -43,8 +43,8 @@ spec:
               key: dbName
         - name: POSTGRES_PASSWORD
           valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
               key: dbPass
         - name: POSTGRES_USER
           valueFrom:

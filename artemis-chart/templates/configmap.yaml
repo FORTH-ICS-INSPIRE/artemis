@@ -19,7 +19,6 @@ data:
   dbVersion: {{ .Values.dbVersion | default "12" | quote }}
   dbName: {{ .Values.dbName | default "artemis_db" | quote }}
   dbUser: {{ .Values.dbUser | default "artemis_user" | quote }}
-  dbPass: {{ .Values.dbPass | default "Art3m1s" | quote }}
   dbSchema: {{ .Values.dbSchema | default "public" | quote }}
   dbAutoClean: {{ .Values.dbAutoClean | default "false" | quote }}
   dbBackup: {{ .Values.dbBackup | default "true" | quote }}
@@ -29,15 +28,12 @@ data:
   webappHost: {{ .Values.webappHost | default "frontend" | quote }}
   webappPort: {{ .Values.webappPort | default "8000" | quote }}
   adminUser: {{ .Values.adminUser | default "admin" | quote }}
-  adminPass: {{ .Values.adminPass | default "admin123" | quote }}
   adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
   jsVersion: {{ .Values.jsVersion | default "0.1.2" | quote }}
   rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" | quote }}
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}
-  rabbitmqPass: {{ .Values.rabbitmqPass | default "guest" | quote }}
   rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Values.rabbitmqHost | default "rabbitmq"}}:{{ .Values.rabbitmqPort | default 5672 }}//
   hasuraHost: {{ .Values.hasuraHost | default "graphql" | quote }}
   hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
   hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}
-  hasuraJwt: '{"type":"HS256", "key": {{ .Values.jwtSecret | quote }} }'

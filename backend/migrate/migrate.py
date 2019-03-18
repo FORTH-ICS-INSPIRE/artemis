@@ -72,7 +72,13 @@ def migrate_sql_file(next_db_version, db_cur, db_conn):
 
 def migrate_python_file(filename):
     file_ = "/root/migrate/migrations/scripts/" + filename
-    result = subprocess.check_output(["python", file_], shell=False)
+    result = ""
+    try:
+        result = subprocess.check_output(["/usr/local/bin/python", file_], shell=False)
+    except Exception:
+        print("subprocess failed: {}".format(result))
+        exit(-1)
+
     if "success" not in result.decode("utf-8"):
         print(
             "The execution of python migration file '{0}' returned the following error:\n {1}".format(

@@ -2,7 +2,7 @@ import hashlib
 import os
 import time
 
-import psycopg2
+import psycopg2.extras
 import yaml
 
 
@@ -52,28 +52,30 @@ def update_hijack_keys(cur, map_old_new_keys):
     values_ = []
     for old_key_ in map_old_new_keys:
         new_key_ = map_old_new_keys[old_key_]
-        values_.append((old_key_, new_key_))
+        values_.append((new_key_, old_key_))
 
-    query = "UPDATE hijacks SET key=%s WHERE key=%s"
+    query = "UPDATE hijacks SET key=data.new FROM (VALUES %s) AS data (new, old) WHERE key=data.old"
+
     try:
-        cur.executemany(query, values_)
+        psycopg2.extras.execute_values(cur, query, values_, page_size=1000)
     except Exception:
-        print("error on value update")
+        print("error on hijack key update")
         exit(-1)
 
 
 def update_bgp_updates(cur, map_old_new_keys):
+    values_ = []
     for old_key_ in map_old_new_keys:
         new_key_ = map_old_new_keys[old_key_]
+        values_.append((old_key_, new_key_))
 
-        query = (
-            "UPDATE bgp_updates SET hijack_key = array_replace(hijack_key, '"
-            + old_key_
-            + "', '"
-            + new_key_
-            + "')"
-        )
-        cur.execute(query)
+    query = "UPDATE bgp_updates SET hijack_key = array_replace(hijack_key, data.old, data.new) FROM (VALUES %s) AS data (old, new) WHERE data.old = ANY(hijack_key)"
+
+    try:
+        psycopg2.extras.execute_values(cur, query, values_, page_size=1000)
+    except Exception:
+        print("error on bgp_updates key update")
+        exit(-1)
 
 
 def main():
@@ -81,6 +83,7 @@ def main():
     cur = db_conn.cursor()
     map_old_new_keys = calculate_new_keys(cur)
     update_hijack_keys(cur, map_old_new_keys)
+    update_bgp_updates(cur, map_old_new_keys)
     print("success")
 
 

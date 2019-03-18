@@ -3,15 +3,20 @@
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
 - Support for dormant flags in hijacks
+- Storing hijack update (origin, neighbor) combinations in redis
+- Configured/matched prefix field and search in frontend hijack and update tables
+- Kubernetes support
+- Reject old updates from taps and have a "HISTORIC" variable to enable/disable
 
 ### Changed
-- TBD (Changed existing functionality)
+- Refactored environment variables
 
 ### Fixed
-- TBD (bug-fix)
+- Correct RFC2622 translation when needed in frontend and backend
 
 ### Removed
-- TBD (removed a feature)
+- Configured prefix graph visualization (needs redesign)
+- Config data field from configs DB table
 
 ### Deprecated
 - TBD (soon-to-be removed feature)

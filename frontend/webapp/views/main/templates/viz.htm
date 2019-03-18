@@ -80,10 +80,10 @@
         <script src="{{ url_for('static', filename='js/d3-graphviz.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/prod-ripestat.js') }}{{ js_version }}"></script>
         <script>
-            var json_config = '{{ config|tojson }}';
-            var config_data = JSON.parse(json_config);
             var cachedData = {};
             var timeoutObj = null;
+            var json_rules = '{{ rules|tojson }}';
+            var rules = JSON.parse(json_rules);
 
             <!--synchronous name extraction from ripestat-->
             function syncGetName(ASN){
@@ -141,7 +141,7 @@
             }
 
             <!--draw per-prefix graph-->
-            function draw_prefix_graph(selected_prefix, config_data) {
+            function draw_prefix_graph(selected_prefix, rules) {
                 var digraph = 'digraph {';
                 digraph += 'rankdir="LR";';
                 digraph += 'concentrate=true;';
@@ -156,8 +156,8 @@
                 var edge = null;
 
                 <!--calculate nodes and edges-->
-                for (var rule_idx=0; rule_idx<config_data.rules.length; rule_idx++){
-                    var rule = config_data.rules[rule_idx];
+                for (var rule_idx=0; rule_idx<rules.length; rule_idx++){
+                    var rule = rules[rule_idx];
                     for (var prefix_idx=0; prefix_idx<rule.prefixes.length; prefix_idx++){
                         var current_prefix = rule.prefixes[prefix_idx];
                         if (current_prefix == selected_prefix){
@@ -234,7 +234,7 @@
             }
 
             <!--periodic call of graph rendering until all info is available-->
-            function periodic_graph_render(selected_prefix, config_data) {
+            function periodic_graph_render(selected_prefix, rules) {
                 var all_resolved = true;
                 for (asn in cachedData) {
                     if (typeof cachedData[asn] == 'undefined' || cachedData[asn] == null){
@@ -243,9 +243,9 @@
                         break;
                     }
                 }
-                draw_prefix_graph(selected_prefix, config_data);
+                draw_prefix_graph(selected_prefix, rules);
                 if (all_resolved == false) {
-                    timeoutObj = setTimeout(function() {periodic_graph_render(selected_prefix, config_data)}, 5000);
+                    timeoutObj = setTimeout(function() {periodic_graph_render(selected_prefix, rules)}, 5000);
                 }
             }
             $(document).ready(function(){
@@ -258,8 +258,8 @@
                     if(option != "None"){
                         selected_prefix = option;
                     }
-                    draw_prefix_graph(selected_prefix, config_data);
-                    periodic_graph_render(selected_prefix, config_data);
+                    draw_prefix_graph(selected_prefix, rules);
+                    periodic_graph_render(selected_prefix, rules);
                 });
                 $("#navbar_visualizations").addClass("active");
             });

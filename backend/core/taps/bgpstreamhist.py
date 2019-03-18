@@ -25,7 +25,7 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
         )
         exchange.declare()
         producer = Producer(connection)
-
+        validator = mformat_validator()
         for csv_file in glob.glob("{}/*.csv".format(input_dir)):
             try:
                 with open(csv_file, "r") as f:
@@ -67,7 +67,7 @@ def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
                                             "prefix": this_prefix,
                                             "peer_asn": peer_asn,
                                         }
-                                        if mformat_validator(msg):
+                                        if validator.validate(msg):
                                             msgs = normalize_msg_path(msg)
                                             for msg in msgs:
                                                 key_generator(msg)

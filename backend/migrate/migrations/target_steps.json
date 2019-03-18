@@ -65,6 +65,12 @@
             "db_version": "11",
             "description": "Added dormant flag field into hijacks table",
             "file": "migration_11.sql"
+        },
+        "12": {
+            "id": "12",
+            "db_version": "12",
+            "description": "Dropped unneeded config_data column from configs table",
+            "file": "migration_12.sql"
         }
     }
 }

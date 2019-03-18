@@ -2,11 +2,20 @@ import copy
 import hashlib
 import logging.config
 import os
+from datetime import datetime
+from datetime import timedelta
 from ipaddress import ip_network as str2ip
 
 import yaml
 
-RABBITMQ_URI = os.getenv("RABBITMQ_URI", "amqp://guest:guest@rabbitmq//")
+HISTORIC = os.getenv("HISTORIC", "false")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+)
 
 
 def get_logger(path="/etc/artemis/logging.yaml"):
@@ -22,6 +31,9 @@ def get_logger(path="/etc/artemis/logging.yaml"):
         log = logging
         log.info("Loaded default configuration")
     return log
+
+
+log = get_logger()
 
 
 def key_generator(msg):
@@ -99,7 +111,7 @@ def normalize_msg_path(msg):
     return msgs
 
 
-def mformat_validator(msg):
+class mformat_validator:
 
     mformat_fields = [
         "service",
@@ -115,83 +127,89 @@ def mformat_validator(msg):
 
     optional_fields_init = {"communities": []}
 
-    def valid_dict(msg):
-        if not isinstance(msg, dict):
+    def validate(self, msg):
+        self.msg = msg
+        if not self.valid_dict():
+            return False
+
+        self.add_optional_fields()
+
+        for func in self.valid_generator():
+            if not func():
+                return False
+
+        return True
+
+    def valid_dict(self):
+        if not isinstance(self.msg, dict):
             return False
         return True
 
-    def add_optional_fields(msg):
-        for field in optional_fields_init:
-            if field not in msg:
-                msg[field] = optional_fields_init[field]
+    def add_optional_fields(self):
+        for field in self.optional_fields_init:
+            if field not in self.msg:
+                self.msg[field] = self.optional_fields_init[field]
 
-    def valid_fields(msg):
-        if any(field not in msg for field in mformat_fields):
+    def valid_fields(self):
+        if any(field not in self.msg for field in self.mformat_fields):
             return False
         return True
 
-    def valid_prefix(msg):
+    def valid_prefix(self):
         try:
-            str2ip(msg["prefix"])
+            str2ip(self.msg["prefix"])
         except BaseException:
             return False
         return True
 
-    def valid_service(msg):
-        if not isinstance(msg["service"], str):
+    def valid_service(self):
+        if not isinstance(self.msg["service"], str):
             return False
         return True
 
-    def valid_type(msg):
-        if msg["type"] not in type_values:
+    def valid_type(self):
+        if self.msg["type"] not in self.type_values:
             return False
         return True
 
-    def valid_path(msg):
-        if msg["type"] == "A" and not isinstance(msg["path"], list):
+    def valid_path(self):
+        if self.msg["type"] == "A" and not isinstance(self.msg["path"], list):
             return False
         return True
 
-    def valid_communities(msg):
-        if not isinstance(msg["communities"], list):
+    def valid_communities(self):
+        if not isinstance(self.msg["communities"], list):
             return False
-        for comm in msg["communities"]:
+        for comm in self.msg["communities"]:
             if not isinstance(comm, dict):
                 return False
-            if community_keys - set(comm.keys()):
+            if self.community_keys - set(comm.keys()):
                 return False
         return True
 
-    def valid_timestamp(msg):
-        if not isinstance(msg["timestamp"], float):
+    def valid_timestamp(self):
+        if not isinstance(self.msg["timestamp"], float):
+            return False
+        if HISTORIC == "false" and datetime.utcfromtimestamp(
+            self.msg["timestamp"]
+        ) < datetime.utcnow() - timedelta(hours=1, minutes=30):
             return False
         return True
 
-    def valid_peer_asn(msg):
-        if not isinstance(msg["peer_asn"], int):
+    def valid_peer_asn(self):
+        if not isinstance(self.msg["peer_asn"], int):
             return False
         return True
 
-    def valid_generator(msg):
-        yield valid_fields
-        yield valid_prefix
-        yield valid_service
-        yield valid_type
-        yield valid_path
-        yield valid_communities
-        yield valid_timestamp
-        yield valid_peer_asn
-
-    if not valid_dict(msg):
-        return False
-
-    add_optional_fields(msg)
-
-    for func in valid_generator(msg):
-        if not func(msg):
-            return False
-
-    return True
+    def valid_generator(self):
+        yield self.valid_fields
+        yield self.valid_prefix
+        yield self.valid_service
+        yield self.valid_type
+        yield self.valid_path
+        yield self.valid_communities
+        yield self.valid_timestamp
+        yield self.valid_peer_asn
 
 
 def is_subnet_of(a, b):

@@ -3,19 +3,32 @@ import logging.config
 import logging.handlers
 import os
 import re
+import time
 from contextlib import contextmanager
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
 
+import psycopg2
 import yaml
 
-RABBITMQ_URI = os.getenv("RABBITMQ_URI", "amqp://guest:guest@rabbitmq//")
 SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
 SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
-DB_NAME = os.getenv("DATABASE_NAME", "artemis_db")
-DB_USER = os.getenv("DATABASE_USER", "artemis_user")
-DB_HOST = os.getenv("DATABASE_HOST", "postgres")
-DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "Art3m1s")
+DB_NAME = os.getenv("DB_NAME", "artemis_db")
+DB_USER = os.getenv("DB_USER", "artemis_user")
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_PORT = os.getenv("DB_PORT", 5432)
+DB_PASS = os.getenv("DB_PASS", "Art3m1s")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+
+RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+)
+SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
 
 
 def get_logger(path="/etc/artemis/logging.yaml"):
@@ -55,6 +68,26 @@ def get_wo_cursor(conn):
             raise
         else:
             conn.commit()
+
+
+def get_db_conn():
+    conn = None
+    time_sleep_connection_retry = 5
+    while not conn:
+        try:
+            conn = psycopg2.connect(
+                dbname=DB_NAME,
+                user=DB_USER,
+                host=DB_HOST,
+                port=DB_PORT,
+                password=DB_PASS,
+            )
+        except Exception:
+            log.exception("exception")
+            time.sleep(time_sleep_connection_retry)
+        finally:
+            log.debug("PostgreSQL DB created/connected..")
+    return conn
 
 
 def flatten(items, seqtypes=(list, tuple)):
@@ -146,28 +179,34 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.delete("{}token".format(ephemeral_key))
     redis_pipeline.delete(ephemeral_key)
     redis_pipeline.srem("persistent-keys", persistent_key)
+    redis_pipeline.delete("hij_orig_neighb_{}".format(ephemeral_key))
     redis_pipeline.execute()
 
 
-def translate_rfc2622(input_prefix):
+def valid_prefix(input_prefix):
+    try:
+        str2ip(input_prefix)
+    except Exception:
+        return False
+    return True
+
+
+def calculate_more_specifics(prefix, min_length, max_length):
+    prefix_list = []
+    for prefix_length in range(min_length, max_length + 1):
+        prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
+    return prefix_list
+
+
+def translate_rfc2622(input_prefix, just_match=False):
     """
-
-    :param input_prefix: (str) input IPv4/IPv6 prefix that should be translated according to RFC2622
-    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes
+    :param input_prefix: (str) input IPv4/IPv6 prefix that
+    should be translated according to RFC2622
+    :param just_match: (bool) check only if the prefix
+    has matched instead of translating
+    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes,
+    if not just_match, otherwise True or False
     """
-
-    def valid_prefix(input_prefix):
-        try:
-            str2ip(input_prefix)
-        except Exception:
-            return False
-        return True
-
-    def calculate_more_specifics(prefix, min_length, max_length):
-        prefix_list = []
-        for prefix_length in range(min_length, max_length + 1):
-            prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
-        return prefix_list
 
     # ^- is the exclusive more specifics operator; it stands for the more
     #    specifics of the address prefix excluding the address prefix
@@ -180,6 +219,8 @@ def translate_rfc2622(input_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen + 1
             max_length = matched_prefix_ip.max_prefixlen
+            if just_match:
+                return True
             return list(
                 map(
                     str,
@@ -198,6 +239,8 @@ def translate_rfc2622(input_prefix):
             matched_prefix_ip = str2ip(matched_prefix)
             min_length = matched_prefix_ip.prefixlen
             max_length = matched_prefix_ip.max_prefixlen
+            if just_match:
+                return True
             return list(
                 map(
                     str,
@@ -221,6 +264,8 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError("invalid-n-small", input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError("invalid-n-large", input_prefix)
+            if just_match:
+                return True
             return list(
                 map(
                     str,
@@ -243,11 +288,17 @@ def translate_rfc2622(input_prefix):
                 raise ArtemisError("invalid-n-small", input_prefix)
             if max_length > matched_prefix_ip.max_prefixlen:
                 raise ArtemisError("invalid-n-large", input_prefix)
+            if just_match:
+                return True
             return list(
                 map(
                     str,
                     calculate_more_specifics(matched_prefix_ip, min_length, max_length),
                 )
             )
+
+    # nothing has matched
+    if just_match:
+        return False
 
     return [input_prefix]

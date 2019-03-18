@@ -76,7 +76,7 @@
             "id": "13",
             "db_version": "13",
             "description": "Update hijacks keys",
-            "file": "migration_13.py"
+            "file": ["migration_13.py", "migration_13.sql"]
         }
     }
 }

@@ -58,8 +58,8 @@ def create_connect_db():
     return _db_conn
 
 
-def migrate_sql_file(next_db_version, db_cur, db_conn):
-    migration_command = read_migration_sql_file(next_db_version["file"])
+def migrate_sql_file(filename, db_cur, db_conn):
+    migration_command = read_migration_sql_file(filename)
     print(" - - - - - \n\n {0} \n\n - - - - - ".format(migration_command))
     try:
         db_cur.execute(migration_command)
@@ -74,6 +74,7 @@ def migrate_python_file(filename):
     file_ = "/root/migrate/migrations/scripts/" + filename
     result = ""
     try:
+        print("Executing -> {}".format(file_))
         result = subprocess.check_output(["/usr/local/bin/python", file_], shell=False)
     except Exception:
         print("subprocess failed: {}".format(result))
@@ -95,15 +96,15 @@ def migrate(next_db_version, db_cur, db_conn):
     if isinstance(next_db_version["file"], list):
         for file in next_db_version["file"]:
             if ".sql" in file:
-                migrate_sql_file(next_db_version, db_cur, db_conn)
+                migrate_sql_file(file, db_cur, db_conn)
             elif ".py" in file:
-                migrate_python_file(next_db_version["file"])
+                migrate_python_file(file)
             else:
                 print("The file type of '{}' is currently not supported".format(file))
                 exit(-1)
     else:
         if ".sql" in next_db_version["file"]:
-            migrate_sql_file(next_db_version, db_cur, db_conn)
+            migrate_sql_file(next_db_version["file"], db_cur, db_conn)
         elif ".py" in next_db_version["file"]:
             migrate_python_file(next_db_version["file"])
         else:

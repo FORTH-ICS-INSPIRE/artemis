@@ -38,7 +38,13 @@ log = get_logger()
 
 def key_generator(msg):
     msg["key"] = get_hash(
-        [msg["prefix"], msg["path"], msg["type"], msg["timestamp"], msg["peer_asn"]]
+        [
+            msg["prefix"],
+            msg["path"],
+            msg["type"],
+            "{0:.6f}".format(msg["timestamp"]),
+            msg["peer_asn"],
+        ]
     )
 
 

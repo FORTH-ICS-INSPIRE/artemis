@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import time
 from codecs import open as c_open
 
@@ -57,12 +58,8 @@ def create_connect_db():
     return _db_conn
 
 
-def migrate(next_db_version, db_cur, db_conn):
-    print("Executing migration {}...".format(next_db_version["db_version"]))
-    print("{0}".format(next_db_version["description"]))
-
+def migrate_sql_file(next_db_version, db_cur, db_conn):
     migration_command = read_migration_sql_file(next_db_version["file"])
-
     print(" - - - - - \n\n {0} \n\n - - - - - ".format(migration_command))
     try:
         db_cur.execute(migration_command)
@@ -71,6 +68,45 @@ def migrate(next_db_version, db_cur, db_conn):
         db_conn.rollback()
         print("Failed to execute command. \n {}".format(e))
         exit(-1)
+
+
+def migrate_python_file(filename):
+    file_ = "/root/migrate/migrations/scripts/" + filename
+    result = subprocess.check_output(["python", file_], shell=False)
+    if "success" not in result.decode("utf-8"):
+        print(
+            "The execution of python migration file '{0}' returned the following error:\n {1}".format(
+                file_, result
+            )
+        )
+        exit(-1)
+
+
+def migrate(next_db_version, db_cur, db_conn):
+    print("Executing migration {}...".format(next_db_version["db_version"]))
+    print("{0}".format(next_db_version["description"]))
+
+    if isinstance(next_db_version["file"], list):
+        for file in next_db_version["file"]:
+            if ".sql" in file:
+                migrate_sql_file(next_db_version, db_cur, db_conn)
+            elif ".py" in file:
+                migrate_python_file(next_db_version["file"])
+            else:
+                print("The file type of '{}' is currently not supported".format(file))
+                exit(-1)
+    else:
+        if ".sql" in next_db_version["file"]:
+            migrate_sql_file(next_db_version, db_cur, db_conn)
+        elif ".py" in next_db_version["file"]:
+            migrate_python_file(next_db_version["file"])
+        else:
+            print(
+                "The file type of '{}' is currently not supported".format(
+                    next_db_version["file"]
+                )
+            )
+            exit(-1)
     return True
 
 

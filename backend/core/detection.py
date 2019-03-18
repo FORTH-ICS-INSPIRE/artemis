@@ -767,7 +767,7 @@ class Detection:
                             monitor_event["prefix"],
                             hijacker,
                             hij_type,
-                            hijack_value["time_detected"],
+                            "{0:.6f}".format(hijack_value["time_detected"]),
                         ]
                     )
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])

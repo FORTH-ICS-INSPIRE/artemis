@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: pg-amqp-bridge
+    app: {{ .Release.Name }}
+  name: pg-amqp-bridge
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: pg-amqp-bridge
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      initContainers:
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for rabbitmq; sleep 10; done;']
+      containers:
+      - env:
+        - name: AMQP_URI
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqUri
+        - name: BRIDGE_CHANNELS
+          value: events:amq.direct
+        - name: POSTGRESQL_URI
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUri
+        image: subzerocloud/pg-amqp-bridge:0.0.6
+        name: pg-amqp-bridge
+        resources: {}
+      restartPolicy: Always
+status: {}

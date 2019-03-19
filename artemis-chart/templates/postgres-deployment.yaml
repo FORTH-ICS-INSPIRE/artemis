@@ -1,0 +1,102 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: postgres
+    app: {{ .Release.Name }}
+  name: postgres
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: postgres
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - command:
+        - ./postgres-entrypoint.sh
+        env:
+        - name: DB_AUTOCLEAN
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbAutoClean
+        - name: DB_BACKUP
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbBackup
+        - name: DB_HIJACK_DORMANT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbHijackDormant
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbName
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: dbPass
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUser
+        image: timescale/timescaledb:1.1.0-pg10
+        name: postgres
+        resources: {}
+        volumeMounts:
+        - mountPath: /postgres-entrypoint.sh
+          name: postgres-configmap0
+          subPath: postgres-entrypoint.sh
+        - mountPath: /docker-entrypoint-initdb.d/zinit.sql
+          name: postgres-configmap1
+          subPath: init.sql
+        - mountPath: /docker-entrypoint-initdb.d/data/
+          name: postgres-configmap2
+        - mountPath: /docker-entrypoint-initdb.d/libs/rabbitmq/
+          name: postgres-configmap3
+        - mountPath: /var/lib/postgresql/data/
+          name: postgres-emptydir
+          # subPath: postgres-data
+        - mountPath: /tmp/
+          name: postgres-pvc
+          subPath: postgres-backup
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          defaultMode: 0777
+        name: postgres-configmap0
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+        name: postgres-configmap1
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: restore.sql
+            path: restore.sql
+          - key: tables.sql
+            path: tables.sql
+        name: postgres-configmap2
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: schema.sql
+            path: schema.sql
+        name: postgres-configmap3
+      - emptyDir: {}
+        name: postgres-emptydir
+      - persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-pvc
+        name: postgres-pvc
+status: {}

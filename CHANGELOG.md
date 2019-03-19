@@ -24,7 +24,7 @@
 - TBD (soon-to-be removed feature)
 
 ### Security
-- TBD (addressing vulnerability)
+- Using yaml dump and safe_load instead of pickling/unpickling
 
 ## [1.1.1] (Atlas) - 2019-02-28
 ### Added

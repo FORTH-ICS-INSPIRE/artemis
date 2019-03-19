@@ -7,6 +7,7 @@
 - Configured/matched prefix field and search in frontend hijack and update tables
 - Kubernetes support
 - Reject old updates from taps and have a "HISTORIC" variable to enable/disable
+- Initial support for LDAP authentication
 
 ### Changed
 - Refactored environment variables

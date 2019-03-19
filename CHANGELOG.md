@@ -1,7 +1,34 @@
 # Changelog
 
-## [UNRELEASED] (Atlas) - YYYY-MM-DD
+## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
+- Support for dormant flags in hijacks
+- Storing hijack update (origin, neighbor) combinations in redis
+- Configured/matched prefix field and search in frontend hijack and update tables
+- Kubernetes support
+- Reject old updates from taps and have a "HISTORIC" variable to enable/disable
+- Initial support for LDAP authentication
+
+### Changed
+- Refactored environment variables
+- Use of RIPE RIS firehose stream instead of the websocket clientui8
+
+### Fixed
+- Correct RFC2622 translation when needed in frontend and backend
+
+### Removed
+- Configured prefix graph visualization (needs redesign)
+- Config data field from configs DB table
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [1.1.1] (Atlas) - 2019-02-28
+### Added
+- Tooltip support for peers seen BGP Announcement/Withdrawal on hijack view.
 - Support for rfc2622 ^+, ^-, ^n and ^n-m prefix operators in configuration
 - More tests for checking withdrawn hijacks
 - Coverage tests for frontend actions
@@ -9,7 +36,9 @@
 - Policy dimension on hijacks (route leak detection based on no-export)
 - Support for auto-cleaning unneeded BGP updates
 - Automated DB backups
-- Initial support for LDAP authentication
+- View hijack by key
+- Enable sorting for columns: # Peers Seen/# ASes Infected
+- Added DB version on overview page
 
 ### Changed
 - Testing refactoring
@@ -18,6 +47,8 @@
 ### Fixed
 - Updated/optimized db query for removing withdrawn peers (newer announcement)
 - Support for different user/pass on rabbitmq
+- Solved bug with randomized config hashing
+- Fixed expected behavior when trying to run old containers on new DBs
 
 ### Deprecated
 - Backup files

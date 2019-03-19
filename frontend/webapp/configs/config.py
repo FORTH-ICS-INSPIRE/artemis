@@ -61,8 +61,8 @@ class BaseConfig(object):
     # OTHER
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
 
-    WEBAPP_HOST = os.getenv("MACHINE_IP")
-    WEBAPP_PORT = int(os.getenv("FLASK_PORT", "8000"))
+    WEBAPP_HOST = os.getenv("BIND_IP")
+    WEBAPP_PORT = int(os.getenv("WEBAPP_PORT", "8000"))
     JS_VERSION = "?=" + os.getenv("JS_VERSION", "0.0.0.1")
     POSTS_PER_PAGE = 25
     SESSION_COOKIE_SECURE = True

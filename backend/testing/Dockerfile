@@ -1,4 +1,4 @@
-FROM jfloff/alpine-python:3.6
+FROM mavromat/alpine-python:3.6
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 

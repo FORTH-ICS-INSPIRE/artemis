@@ -282,14 +282,10 @@ class Configuration:
                     raise ArtemisError("invalid-section", section)
 
             data["prefixes"] = {k: flatten(v) for k, v in data["prefixes"].items()}
-            for prefix_group in data["prefixes"]:
-                full_translated_prefix_set = set()
-                for prefix in data["prefixes"][prefix_group]:
-                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                    full_translated_prefix_set.update(set(this_translated_prefix_list))
-                data["prefixes"][prefix_group] = list(full_translated_prefix_set)
             for prefix_group, prefixes in data["prefixes"].items():
                 for prefix in prefixes:
+                    if translate_rfc2622(prefix, just_match=True):
+                        continue
                     try:
                         str2ip(prefix)
                     except Exception:
@@ -302,12 +298,9 @@ class Configuration:
                             "unsupported field found {} in {}".format(field, rule)
                         )
                 rule["prefixes"] = flatten(rule["prefixes"])
-                rule_translated_prefix_set = set()
-                for i, prefix in enumerate(rule["prefixes"]):
-                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                    rule_translated_prefix_set.update(set(this_translated_prefix_list))
-                rule["prefixes"] = list(rule_translated_prefix_set)
                 for prefix in rule["prefixes"]:
+                    if translate_rfc2622(prefix, just_match=True):
+                        continue
                     try:
                         str2ip(prefix)
                     except Exception:

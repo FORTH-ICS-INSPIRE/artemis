@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (9, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (12, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
     ignored BOOLEAN,
     withdrawn BOOLEAN,
     outdated BOOLEAN DEFAULT FALSE,
+    dormant BOOLEAN DEFAULT FALSE,
     configured_prefix  inet,
     timestamp_of_config TIMESTAMP,
     comment text,
@@ -113,6 +114,15 @@ CREATE TABLE IF NOT EXISTS hijacks (
         ) or (
             active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=true
         )
+    ),
+    CONSTRAINT dormant_active CHECK (
+        (
+            active=true and dormant=false
+        ) or (
+            active=true and dormant=true
+        ) or (
+            active=false and dormant=false
+        )
     )
 );
 
@@ -130,7 +140,6 @@ for each row execute procedure rabbitmq.on_row_change("hijack-update");
 
 CREATE TABLE IF NOT EXISTS configs (
     key VARCHAR ( 32 ) NOT NULL,
-    config_data  json,
     raw_config  text,
     comment text,
     time_modified TIMESTAMP NOT NULL
@@ -138,7 +147,7 @@ CREATE TABLE IF NOT EXISTS configs (
 
 CREATE OR REPLACE VIEW view_configs AS SELECT raw_config, comment, time_modified FROM configs;
 
-CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, ignored, configured_prefix, comment, seen, withdrawn, peers_withdrawn, peers_seen, outdated FROM hijacks;
+CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, dormant, ignored, configured_prefix, comment, seen, withdrawn, peers_withdrawn, peers_seen, outdated FROM hijacks;
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 
@@ -166,3 +175,5 @@ BEFORE UPDATE ON process_states
 FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 
 CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;
+
+CREATE OR REPLACE VIEW view_db_details AS SELECT version, upgraded_on FROM db_details;

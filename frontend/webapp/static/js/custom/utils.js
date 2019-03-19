@@ -1,4 +1,4 @@
-function format_hijacks_datatable(data){
+function format_hijacks_datatable(data){ // eslint-disable-line no-unused-vars
     if('code' in data){ // its an error
         return {};
     }
@@ -8,7 +8,7 @@ function format_hijacks_datatable(data){
     return data;
 }
 
-function format_datatable(data){
+function format_datatable(data){ // eslint-disable-line no-unused-vars
     if('code' in data){ // its an error
         return {};
     }
@@ -52,7 +52,7 @@ function format_hijack_entry(data){
     return data;
 }
 
-function format_bgp_updates_datatable(data){
+function format_bgp_updates_datatable(data){ // eslint-disable-line no-unused-vars
     if('code' in data){ // its an error
         return {};
     }
@@ -159,6 +159,9 @@ function format_hijack_status(data){
     if(data['withdrawn'] == true){
         html_ += '<span class="badge badge-pill badge-info">Withdrawn</span>';
     }
+    if(data['dormant'] == true){
+        html_ += '<span class="badge badge-pill badge-secondary">Dormant</span>';
+    }
     return html_;
 }
 
@@ -181,13 +184,13 @@ function format_communities(n) {
     }), "[" + t.slice(0, -2) + "]"
 }
 
-function transform_unix_timestamp_to_client_local_time(n) {
+function transform_unix_timestamp_to_client_local_time(n) { // eslint-disable-line no-unused-vars
     if (0 == n) return "Never";
     var t = moment.unix(n);
     return moment(t).local().format("DD-MM-YYYY HH:mm:ss")
 }
 
-function isValidDate(n) {
+function isValidDate(n) { // eslint-disable-line no-unused-vars
     return n instanceof Date && !isNaN(n)
 }
 
@@ -202,14 +205,31 @@ function hijack_key_create_link(hijack_key){
     return '';
 }
 
-function display_hijack_key(n) {
+function display_hijack_key(n) { // eslint-disable-line no-unused-vars
     return null != n && "0" != n ? n : ""
 }
 
-function display_timezone(){
+function display_timezone(){ // eslint-disable-line no-unused-vars
     var offset = new Date().getTimezoneOffset();
     if(offset<0)
         return "GMT+" + (offset/-60) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
     else
         return "GMT-" + (offset/60) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
+}
+
+function input_filter_prefix(value, dom){
+    var match_value = null;
+    var regex_match = /((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))(\/([0-9]|[1-2][0-9]|3[0-2]))?\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?\s*$))/;
+    if(regex_match.exec(value)){
+        match_value = value.replace(/^\s+|\s+$/g, '');
+        if($(dom).children("input").hasClass("is-invalid")){
+            $(dom).children("input").removeClass("is-invalid");
+            $(dom).children("div").hide();
+        }
+    }else{
+        $(dom).children("input").addClass("is-invalid");
+        $(dom).children("div").text('Not a valid v4/v6 prefix');
+        $(dom).children("div").show();
+    }
+    return match_value;
 }

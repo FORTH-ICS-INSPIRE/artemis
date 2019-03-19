@@ -17,12 +17,14 @@ mapHelpText_stats['field_stats_Ignored_Hijacks'] = 'The number of ignored hijack
 mapHelpText_stats['field_stats_Withdrawn_Hijacks'] = 'The number of withdrawn hijack events.';
 mapHelpText_stats['field_stats_Acknowledged_Hijacks'] = 'The number of acknowledged hijack events (confirmed as true positives).';
 mapHelpText_stats['field_stats_Outdated_Hijacks'] = 'The number of hijack events that are currently outdated (matching deprecated configurations, but benign now).';
+mapHelpText_stats['field_stats_Dormant_Hijacks'] = 'The number of dormant hijack events (ongoing, but not updated within the last X hours).';
 
 var mapHelpText_system = {};
 mapHelpText_system['field_time_detected'] = 'The time when a hijack event was </br> first detected by the system.';
 
-mapHelpText_system['field_hijack_status'] = `The status of a hijack event (possible values: ongoing|withdrawn|under mitigation|ignored|resolved|outdated).</br>
+mapHelpText_system['field_hijack_status'] = `The status of a hijack event (possible values: ongoing|dormant|withdrawn|under mitigation|ignored|resolved|outdated).</br>
 <ul><li>Ongoing: the hijack has not been ignored, resolved or withdrawn.</li>
+<li>Dormant: the hijack is ongoing, but not updated within the last X hours.</li>
 <li>Withdrawn: all monitors that saw hijack updates for a certain hijacked prefix have seen the respective withdrawals.</li>
 <li>Ignored: the event is ignored (by the user).</li>
 <li>Resolved: the event is resolved (by the user).</li>
@@ -50,7 +52,10 @@ mapHelpText_system['field_bgp_update_type'] = "<ul><li>A → route announcement<
 mapHelpText_system['field_bgp_update_more'] = "Further information related to the BGP update.";
 mapHelpText_system['field_peer_as'] = "The monitor AS that peers with the route collector service reporting the BGP update.";
 mapHelpText_system['field_bgp_timestamp'] = "The time when the BGP update was generated, as set by the BGP monitor or route collector.";
-mapHelpText_system['field_prefix'] = "The IPv4/IPv6 prefix related to the BGP update or hijack.";
+mapHelpText_system['field_prefix'] = "The IPv4/IPv6 prefix related to the BGP update.";
+mapHelpText_system['field_hijacked_prefix'] = "The IPv4/IPv6 prefix that was hijacked.";
+mapHelpText_system['field_matched_prefix'] = "The configured IPv4/IPv6 prefix that matched the hijacked prefix.";
+
 mapHelpText_system['field_as_path'] = "The AS-level path of the update.";
 mapHelpText_system['field_origin_as'] = "The AS that originated the BGP update.";
 mapHelpText_system['field_bgp_handle'] = "Whether the BGP update has been handled by the detection module or not.";
@@ -81,10 +86,11 @@ mapHelpText_hijack_status['field_hijack_status_withdrawn'] = 'Withdrawn hijack e
 mapHelpText_hijack_status['field_hijack_status_ignored'] = 'Ignored hijack events</br>(marked by the user).';
 mapHelpText_hijack_status['field_hijack_under_mitigation'] = 'Hijack events that are currently under mitigation</br>(triggered by the user).';
 mapHelpText_hijack_status['field_hijack_status_outdated'] = 'Hijack events that match a configuration that is now deprecated</br>(marked by the user).';
+mapHelpText_hijack_status['field_hijack_status_dormant'] = 'Dormant hijack events</br>(ongoing, but not updated within the last X hours).';
 
 
-function displayHelpTextTable(){
-	$('th[helpText]').each(function( index ) {
+function displayHelpTextTable(){ // eslint-disable-line no-unused-vars
+	$('th[helpText]').each(function() {
 		var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
@@ -93,8 +99,8 @@ function displayHelpTextTable(){
 	});
 }
 
-function displayHelpTextB(){
-	$('b[helpText]').each(function( index ) {
+function displayHelpTextB(){ // eslint-disable-line no-unused-vars
+	$('b[helpText]').each(function() {
 		var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
@@ -103,8 +109,8 @@ function displayHelpTextB(){
 	});
 }
 
-function displayHelpTextButton(){
-	$('button[helpText]').each(function( index ) {
+function displayHelpTextButton(){ // eslint-disable-line no-unused-vars
+	$('button[helpText]').each(function() {
 		if($(this).attr( "helpText" ) in mapHelpText_hijack_status){
 			var value = '<p class="tooltip-custom-margin">' + mapHelpText_hijack_status[$(this).attr( "helpText" )]  + '</p>'
 		}else{
@@ -117,8 +123,8 @@ function displayHelpTextButton(){
 	});
 }
 
-function displayHelpTextStats(){
-	$('div[helpText]').each(function( index ) {
+function displayHelpTextStats(){ // eslint-disable-line no-unused-vars
+	$('div[helpText]').each(function() {
 		var value = '<p class="tooltip-custom-margin">' + mapHelpText_stats[$(this).attr( "helpText" )]  + '</p>'
 		$(this).prop('title', value);
 		$(this).attr('data-toggle', "tooltip");
@@ -127,8 +133,8 @@ function displayHelpTextStats(){
 	});
 }
 
-function displayHelpMoreBGPupdate(){
-	$('td[helpText]').each(function( index ) {
+function displayHelpMoreBGPupdate(){ // eslint-disable-line no-unused-vars
+	$('td[helpText]').each(function() {
         var value = '<p class="tooltip-custom-margin">' + mapHelpText_system[$(this).attr( "helpText" )]  + '</p>'
         $(this).prop('title', value);
         $(this).attr('data-toggle', "tooltip");
@@ -147,29 +153,39 @@ function get_services_mapping(){
         ).catch(err => console.log(err));
 }
 
-function service_to_name(){
+function service_to_name(){ // eslint-disable-line no-unused-vars
 	if(services_map == null){
 		get_services_mapping();
 	}
 
 	$("service").mouseover(function() {
-		var text = $(this).text();
+		if($(this).children().length > 0){
+            var Monitor_str = $(this).children(":first").val();
+        }else{
+            var Monitor_str = $(this).text();
+        }
+
 		var collector_info = "Unknown";
-		if(text.includes('->')){
-			var list_ = text.split('-> ');
-			var collector_name = list_[list_.length - 1];
-			if(collector_name in services_map){
-				if(collector_name.includes('route-views')){
-					collector_info = "Name: " + collector_name + "</br>"
-					collector_info += "MFG: " + services_map[collector_name].MFG + "</br>"
-					collector_info += "BGP_proto: " + services_map[collector_name].BGP_proto + "</br>"
-					collector_info += "Location: " + services_map[collector_name].location + "</br>"
-				}else{
-					collector_info = "Name: " + collector_name + "</br>";
-					collector_info += "Information: " + services_map[collector_name].info;
-				}
+		var list_;
+		if(Monitor_str.includes('->')){
+			list_ = Monitor_str.split('-> ');
+		}else if(Monitor_str.includes('|')){
+			list_ = Monitor_str.split('|');
+		}
+
+		var collector_name = list_[list_.length - 1];
+		if(collector_name in services_map){
+			if(collector_name.includes('route-views')){
+				collector_info = "Name: " + collector_name + "</br>"
+				collector_info += "MFG: " + services_map[collector_name].MFG + "</br>"
+				collector_info += "BGP_proto: " + services_map[collector_name].BGP_proto + "</br>"
+				collector_info += "Location: " + services_map[collector_name].location + "</br>"
+			}else{
+				collector_info = "Name: " + collector_name + "</br>";
+				collector_info += "Information: " + services_map[collector_name].info;
 			}
 		}
+
 		var value = '<p class="tooltip-custom-margin">' + collector_info + '</p>';
         $(this).prop('title', value);
         $(this).attr('data-toggle', "tooltip");

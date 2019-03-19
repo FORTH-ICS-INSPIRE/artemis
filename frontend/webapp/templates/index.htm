@@ -40,7 +40,7 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Ongoing Hijacks
+                            <i class="fa fa-bell fa-fw"></i> Ongoing, Non-Dormant Hijacks
                         </div>
                         <div class="panel-body">
                             <div class="row">
@@ -49,8 +49,8 @@
                                         <thead>
                                             <th helpText="field_time_last_update">Last Update</th>
                                             <th helpText="field_time_detected">Time Detected</th>
-                                            <th helpText="field_hijack_status">Status</th>
-                                            <th helpText="field_prefix">Prefix</th>
+                                            <th helpText="field_hijacked_prefix">Hijacked Prefix</th>
+                                            <th helpText="field_matched_prefix">Matched Prefix</th>
                                             <th helpText="field_hijack_type">Type</th>
                                             <th helpText="field_hijacker_as">Hijacker AS</th>
                                             <th helpText="field_peers_seen"># Peers Seen</th>
@@ -58,6 +58,20 @@
                                             <th helpText="field_hijack_ack">Ack</th>
                                             <th helpText="field_hijack_more">More</th>
                                         </thead>
+                                        <tfoot>
+                                            <tr>
+                                                <th>Last Update</th>
+                                                <th>Time Detected</th>
+                                                <th>Hijacked Prefix</th>
+                                                <th>Matched Prefix</th>
+                                                <th>Type</th>
+                                                <th>Hijack AS</th>
+                                                <th># Peers Seen</th>
+                                                <th># ASes Infected</th>
+                                                <th>Ack</th>
+                                                <th>More</th>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -120,15 +134,47 @@
             };
             var hijack_redirect = "{{ url_for('main.display_hijack') }}";
 
+            var datatable_parameters = {
+                    'order': [
+                        {
+                            'column': 0,
+                            'dir': "desc"
+                        }
+                    ],
+                    'offset': 0,
+                    'limit': 0,
+                    'and': 'where: { _and: [{ active : {_eq: true } }, { dormant : {_eq: false} }] }'
+                };
+
+            var filter_parameters = {
+                'configured_prefix': null,
+                'time': null,
+                'prefix': null,
+                'hijack_as': null,
+                'type': null
+            };
+
+            var exlude_columns_from_search = ['Last Update', 'Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Ack', 'Mark', 'More'];
+
+            var custom_message_for_search = {};
+
+            var search_table_map = {
+                2: "prefix",
+                3: "configured_prefix",
+                4: "type",
+                5: "hijack_as"
+            };
+
             var columns = [
                 { data: 'time_last' },
                 { data: 'time_detected' },
-                null,
                 { data: 'prefix' },
+                { data: 'configured_prefix' },
                 { data: 'type' },
                 { data: 'hijack_as' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }];
+
             function render_db_stats(data) {
                 if($('#db_stats_list li').length == 0){
                     for (var key in data) {
@@ -149,31 +195,146 @@
                 $('#modules_states li').not('li:first').remove();
                 data['view_processes'].sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
                 for (var key in data['view_processes']) {
-                    var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-4" helpText="field_'
-                    html_ += data['view_processes'][key].name.split('_')[0] +'">'
-                    html_ += data['view_processes'][key].name.charAt(0).toUpperCase() + data['view_processes'][key].name.slice(1) + '</div><div class="col-lg-8">'
-                    html_ += '<div class="row"><div class="col-lg-4">'
-                    if(data['view_processes'][key].running){
-                        html_ += '<b style="color:#008000">On</b></div>'
-                        var seconds_elapsed = elapsed_seconds(data['view_processes'][key].timestamp);
-                        html_ += '<div class="col-lg-8"><time_passed elapsed="' + seconds_elapsed + '">'
-                        html_ +=  calculate_time_passed(seconds_elapsed)
-                        html_ += '</time_passed></div></div>'
-                    }else{
-                        html_ += '<b style="color:#ff0000">Off</b></div>'
-                        html_ += '<div class="col-lg-8"> </div></div>'
+                    var html_ = [];
+                    html_.push('<li class="list-group-item"><div class="row"><div class="col-lg-4" helpText="field_');
+                    html_.push(data['view_processes'][key].name.split('_')[0]);
+                    html_.push('">');
+                    var module_name = data['view_processes'][key].name.charAt(0).toUpperCase() + data['view_processes'][key].name.slice(1);
+                    if(module_name == "Database"){
+                        module_name += ' v.<version id="database_version"></version>';
                     }
-                    html_ += '</div></div></li>'
-                    $('#modules_states').append(html_);
+                    html_.push(module_name);
+                    html_.push('</div><div class="col-lg-8">');
+                    html_.push('<div class="row"><div class="col-lg-4">');
+                    if(data['view_processes'][key].running){
+                        html_.push('<b style="color:#008000">On</b></div>');
+                        var seconds_elapsed = elapsed_seconds(data['view_processes'][key].timestamp);
+                        html_.push('<div class="col-lg-8"><time_passed elapsed="');
+                        html_.push(seconds_elapsed);
+                        html_.push('">');
+                        html_.push(calculate_time_passed(seconds_elapsed));
+                        html_.push('</time_passed></div></div>');
+                    }else{
+                        html_.push('<b style="color:#ff0000">Off</b></div>');
+                        html_.push('<div class="col-lg-8"> </div></div>');
+                    }
+                    html_.push('</div></div></li>');
+                    $('#modules_states').append(html_.join(''));
                 }
                 displayHelpTextStats();
+                fetchDBVersion();
+            }
+
+            $('#hijacks_table tfoot th').each(function() {
+                var title = $(this).text();
+                if(!(exlude_columns_from_search.includes(title))){
+                    if(title in custom_message_for_search){
+                        var html_ = '<input class="form-control" id="input_' + title + '" type="text" placeholder="' + custom_message_for_search[title] + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
+                    }else{
+                        var html_ = '<input class="form-control" id="input_' + title + '"s type="text" placeholder="' + title + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
+                    }
+                }else{
+                    $(this).html('');
+                }
+            });
+
+            function inspect_input_of_search_boxes(){
+                $("#hijacks_table tfoot tr th").each(function (index, item) {
+                    if(index in search_table_map){
+                        var value = $(this).children("input").val();
+                        if(value == null || value == ''){
+                            filter_parameters[search_table_map[index]] = null;
+                            if($(this).children("input").hasClass("is-invalid")){
+                                $(this).children("input").removeClass("is-invalid");
+                                $(this).children("div").hide();
+                            }
+                        }else{
+                            if(search_table_map[index] == 'prefix' || search_table_map[index] == 'configured_prefix'){
+                                    filter_parameters[search_table_map[index]] = input_filter_prefix(value, $(this));
+                            }else if(search_table_map[index] == 'hijack_as'){
+                                var number_reg = /^\s*(\d+)\s*$/;
+                                var match = number_reg.exec(value);
+                                var hijack_as = null;
+                                if(match != null){
+                                    hijack_as = parseInt(match[1]);
+                                }else{
+                                    hijack_as = -1;
+                                }
+                                if(0 < hijack_as && hijack_as < 4199999999){
+                                    filter_parameters[search_table_map[index]] = hijack_as;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not an ASN');
+                                    $(this).children("div").show();
+                                }
+                            }else if(search_table_map[index] == 'type'){
+                                var type_regex = /^\s*(([S|E|Q]\|[0|1|-]\|-\|[L-])|([S|E|Q]\|[0|1|-]\|-)|((S\|0)|(S\|1)|(E\|0)|(E\|1)|(Q\|0))|([S|E|Q|0|1|L]))\s*$/;
+                                if(type_regex.exec(value)){
+                                    match_value = value.replace(/^\s+|\s+$/g, '');
+                                    filter_parameters[search_table_map[index]] = match_value;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)|(-|L), or valid subset');
+                                    $(this).children("div").show();
+                                }
+                            }else{
+                                filter_parameters[search_table_map[index]] = value;
+                            }
+                        }
+                    }
+                });
+            }
+
+            function construct_filter_hijacks_query(){
+                var filters = [];
+                inspect_input_of_search_boxes();
+
+                if(filter_parameters['configured_prefix'] != null){
+                    filters.push('{ configured_prefix: {_eq: "' + filter_parameters['configured_prefix'] + '"} }');
+                }
+
+                if(filter_parameters['prefix'] != null){
+                    filters.push('{ prefix: {_eq: "' + filter_parameters['prefix'] + '"} }');
+                }
+
+                if(filter_parameters['hijack_as'] != null){
+                    filters.push('{ hijack_as: {_eq: "' + filter_parameters['hijack_as'] + '"} }');
+                }
+
+                if(filter_parameters['type'] != null){
+                    filters.push('{ type: {_like: "%' + filter_parameters['type'] + '%"} }');
+                }
+
+                if(filters.length > 0){
+                    $("#distinct_values_selection").val('select');
+                    $('#distinct_values_text').val("");
+                    $('#distinct_values_text').hide();
+                    datatable_parameters['and'] = 'where: { _and: [' + filters.join() + ', { active : {_eq: true } }, { dormant : {_eq: false} } ] }';
+                }else{
+                    datatable_parameters['and'] = 'where: { _and: [{ active : {_eq: true } }, { dormant : {_eq: false} }] }';
+                }
             }
 
             function render_table(ws){
+                construct_filter_hijacks_query();
+
                 table = $('#hijacks_table').DataTable( {
                     "processing": false,
                     "serverSide": true,
                     "searching": false,
+                    "select": false,
                     "pagingType": "numbers",
                     "ajax": (data, callback, settings) => {
                         var sort;
@@ -182,21 +343,54 @@
                         }else{
                             sort = 'asc';
                         }
-                        var query = "{ datatable: view_hijacks_aggregate( where: { active: {_eq: true} }) { aggregate { totalCount: count } } view_data: view_hijacks(limit: " + data.length
-                        query += ", offset: " + data.start + ", order_by: {" + columns[data.order[0].column].data + ": " + sort;
-                        query += "}, where: { active: {_eq: true} }) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active under_mitigation outdated time_last } }"
-                    fetchDatatableLive(ws, callback, query);
+                        datatable_parameters['offset'] = data.start;
+                        datatable_parameters['limit'] = data.length;
+                        query = [];
+                        query.push("{ datatable: view_hijacks_aggregate");
+                        if(datatable_parameters['and'] != null){
+                            query.push("(");
+                            query.push(datatable_parameters['and']);
+                            query.push(") { aggregate { totalCount: count } }");
+                        }else{
+                            query.push(" { aggregate { totalCount: count } }");
+                        }
+                        query.push(" view_data: view_hijacks(limit: ");
+                        query.push(datatable_parameters['limit']);
+                        query.push(", offset: ");
+                        query.push(datatable_parameters['offset']);
+                        query.push(", order_by: {");
+                        query.push(columns[data.order[0].column].data);
+                        query.push(": ");
+                        query.push(sort);
+                        query.push("} ");
+                        if(datatable_parameters['and'] != null){
+                            query.push(datatable_parameters['and']);
+                            query.push(")");
+                        }else{
+                            query.push(")");
+                        }
+                        query.push(" { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active dormant under_mitigation outdated time_last configured_prefix } }");
+                        fetchDatatableLive(ws, callback, query.join(''));
+                    },
+                    initComplete: function() {
+                        var api = this.api();
+                        api.columns().every(function() {
+                            var that = this;
+                            var column_index = that[0][0]
+                            $('input', this.footer()).on('keydown', function(ev) {
+                                if (ev.keyCode == 13) { //only on enter keypress (code 13)
+                                    construct_filter_hijacks_query();
+                                    that.draw()
+                                }
+                            });
+                        });
                     },
                     "order": [[ 0, "desc" ]],
                     "columns": [
                         { data: 'time_last', "width": "150px" },
                         { data: 'time_detected', "width": "150px" },
-                        {
-                            data: function( row, type, val, meta ) {
-                                return format_hijack_status(row)
-                            }
-                        },
                         { data: 'prefix' },
+                        { data: 'configured_prefix' },
                         { data: 'type', "width": "14px" },
                         { data: 'hijack_as' },
                         { data: 'num_peers_seen', "width": "30px" },
@@ -206,7 +400,7 @@
                     ],
                     "columnDefs": [
                         {
-                            "targets": [2,3,4,5,6,7,8,9],
+                            "targets": [2,3,4,5,8,9],
                             "orderable": false
                         },
                         {

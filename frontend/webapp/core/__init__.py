@@ -243,14 +243,7 @@ def pending():
 @roles_accepted("admin", "user")
 def overview():
     app.artemis_logger.debug("url: /")
-    app.config["configuration"].get_newest_config()
-    newest_config = app.config["configuration"].get_raw_config()
-    return render_template(
-        "index.htm",
-        config=newest_config,
-        config_timestamp=app.config["configuration"].get_config_last_modified(),
-        js_version=app.config["JS_VERSION"],
-    )
+    return render_template("index.htm", js_version=app.config["JS_VERSION"])
 
 
 @app.login_manager.unauthorized_handler

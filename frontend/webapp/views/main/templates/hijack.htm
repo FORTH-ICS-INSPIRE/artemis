@@ -18,11 +18,6 @@
         <div class="row">
             <div class="col-lg-12">
                 <h1 class="page-header">Viewing Hijack <small id="hijack_status"></small></h1>
-                {% if mitigate == True and configured != True %}
-                <div class="alert alert-warning">
-                    <strong>Warning!</strong> The prefix that is related to this hijack does not exist in the current configuration file.
-                </div>
-                {% endif %}
             </div>
             <div class="col-lg-9">
                 <div class="panel panel-default">
@@ -143,7 +138,7 @@
                                         <p><b>Display Peers:</b></p>
                                     </div>
                                     <div class="col-lg-6">
-                                        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#seenHijackUpdate" aria-expanded="false" aria-controls="seenHijackUpdate">Seen Hijack BGP Update</button>
+                                        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#seenHijackUpdate" aria-expanded="false" aria-controls="seenHijackUpdate">Seen Hijack BGP Announcement</button>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -171,7 +166,7 @@
                                 <button id="resolved_button" type="button" class="btn btn-success">Resolve</button>
                             </div>
                             <div class="col-lg-4">
-                                {% if mitigate == True and configured == True %}
+                                {% if mitigate == True %}
                                 <button id="mitigation_button" type="button" class="btn btn-danger">Mitigate</button>
                                 {% endif %}
                             </div>
@@ -204,7 +199,7 @@
             </div>
             <div class="col-lg-6 my-1">
                 <div class="collapse multi-collapse" id="seenHijackUpdate">
-                    Peers Seen Hijack BGP Update:
+                    Peers Seen Hijack BGP Announcement:
                     <div class="card card-body" id="seenHijackUpdate_text"></div>
                 </div>
             </div>
@@ -374,7 +369,6 @@
                                 $(this).children("input").removeClass("is-invalid");
                                 $(this).children("div").hide();
                             }
-
                         }else{
                             if(search_table_map[index] == 'prefix'){
                                 var match_value = null;
@@ -555,9 +549,6 @@
                             "width": "14px"
                         }
                     ],
-                    "rowReorder": {
-                        "selector": 'td:nth-child(2)'
-                    },
                     "columnDefs": [
                         {
                             "targets": [7,8],
@@ -677,8 +668,41 @@
                 $( "#info_last_update" ).val( transform_date_to_local( data['time_last'] )  );
                 $( "#code_comment_box").html( data['comment'] );
 
-                $( "#seenHijackUpdate_text").html( data['peers_seen'].join() );
-                $( "#seenHijackWithdraw_text").html( data['peers_withdrawn'].join() );
+                var peers_seen = data['peers_seen'].sort(function(a,b){ return a - b;});
+                var css_row = ['<div class="row">', '</div>'];
+                var peers_html = [];
+                for (var i = 0; i < peers_seen.length; i++) {
+                    if(peers_html.length == 0){
+                        peers_html.push(css_row[0]);
+                    }else if(i % 4 == 0){
+                        peers_html.push(css_row[1]);
+                        peers_html.push("</br>");
+                        peers_html.push(css_row[0]);
+                    }
+                    peers_html.push('<div class="col-lg-3"><cc_as><input asn="true" class="form-control" style="text-align:center;" type="text" value="');
+                    peers_html.push(peers_seen[i]);
+                    peers_html.push('" readonly></div></cc_as>');
+                }
+                peers_html.push(css_row[1]);
+                $( "#seenHijackUpdate_text").html( peers_html.join('') );
+
+                peers_html = [];
+                var peers_withdrawn = data['peers_withdrawn'].sort(function(a,b){ return a - b;});
+                for (var i = 0; i < peers_withdrawn.length; i++) {
+                    if(peers_html.length == 0){
+                        peers_html.push(css_row[0]);
+                    }else if(i % 4 == 0){
+                        peers_html.push(css_row[1]);
+                        peers_html.push("</br>");
+                        peers_html.push(css_row[0]);
+                    }
+                    peers_html.push('<div class="col-lg-3"><cc_as><input asn="true" class="form-control" style="text-align:center;" type="text" value="');
+                    peers_html.push(peers_withdrawn[i]);
+                    peers_html.push('" readonly></div></cc_as>');
+                }
+                peers_html.push(css_row[1]);
+
+                $( "#seenHijackWithdraw_text").html( peers_html.join('') );
 
                 if(data['resolved'] == true || data['ignored'] == true){
                     $("#resolved_button").prop("disabled", true);

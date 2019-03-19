@@ -53,6 +53,24 @@
             "db_version": "9",
             "description": "Expanded hijacks type field from 5 to 7 characters to support policy dimension and migrated hijacks",
             "file": "migration_9.sql"
+        },
+        "10": {
+            "id": "10",
+            "db_version": "10",
+            "description": "Added the view_db_details view",
+            "file": "migration_10.sql"
+        },
+        "11": {
+            "id": "11",
+            "db_version": "11",
+            "description": "Added dormant flag field into hijacks table",
+            "file": "migration_11.sql"
+        },
+        "12": {
+            "id": "12",
+            "db_version": "12",
+            "description": "Dropped unneeded config_data column from configs table",
+            "file": "migration_12.sql"
         }
     }
 }

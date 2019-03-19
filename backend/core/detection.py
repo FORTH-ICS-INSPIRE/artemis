@@ -22,10 +22,12 @@ from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import exception_handler
+from utils import flatten
 from utils import get_logger
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import redis_key
+from utils import translate_rfc2622
 
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
@@ -313,6 +315,11 @@ class Detection:
             """
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
+                rule_translated_prefix_set = set()
+                for prefix in rule["prefixes"]:
+                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
+                    rule_translated_prefix_set.update(set(this_translated_prefix_list))
+                rule["prefixes"] = list(rule_translated_prefix_set)
                 for prefix in rule["prefixes"]:
                     node = self.prefix_tree.search_exact(prefix)
                     if not node:
@@ -769,6 +776,18 @@ class Detection:
                     result = hijack_value
                     mail_log.info("{}".format(result))
                 redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+
+                # store the origin, neighbor combination for this hijack BGP update
+                origin = None
+                neighbor = None
+                if monitor_event["path"]:
+                    origin = monitor_event["path"][-1]
+                if len(monitor_event["path"]) > 1:
+                    neighbor = monitor_event["path"][-2]
+                redis_pipeline.sadd(
+                    "hij_orig_neighb_{}".format(redis_hijack_key),
+                    "{}_{}".format(origin, neighbor),
+                )
             except Exception:
                 log.exception("exception")
             finally:

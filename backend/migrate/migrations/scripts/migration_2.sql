@@ -13,7 +13,7 @@ ALTER TABLE hijacks
 
 
 ALTER TABLE hijacks DROP CONSTRAINT possible_states;
-ALTER TABLE hijacks add CONSTRAINT possible_states CHECK (
+ALTER TABLE hijacks ADD CONSTRAINT possible_states CHECK (
     (
         active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false
     ) or (

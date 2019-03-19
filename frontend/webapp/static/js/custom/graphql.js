@@ -291,3 +291,31 @@ function fetchLatestConfig() { // eslint-disable-line no-unused-vars
         .catch(error => console.error(error));
     });
 }
+
+
+var fetchHijackByKeyCalled = false;
+function fetchHijackByKeyLive(ws, hijack_key, trigger) { // eslint-disable-line no-unused-vars
+    if(fetchHijackByKeyCalled) {
+        waitForConnection(ws, JSON.stringify({id: "6", type: "stop"}));
+    }
+    waitForConnection(ws, JSON.stringify({
+        id: "6",
+        type: "start",
+        payload: {
+            variables: {},
+            extensions: {},
+            operationName: "getHijackByKey",
+            query: "subscription getHijackByKey { view_hijacks(where: {key: {_eq:\"" + hijack_key + "\"}}, limit: 1) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active dormant under_mitigation outdated time_last configured_prefix peers_seen peers_withdrawn } }"
+        }
+    }));
+
+    if(!fetchHijackByKeyCalled) {
+        ws.addEventListener('message', (event) => {
+            data = JSON.parse(event.data);
+            if(data.type === 'data' && data.id === "6") {
+                trigger(data.payload.data.view_hijacks[0]);
+            }
+        });
+        fetchHijackByKeyCalled = true;
+    }
+}

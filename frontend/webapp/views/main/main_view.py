@@ -1,6 +1,4 @@
 # from webapp.core import app
-import json
-
 from flask import Blueprint
 from flask import current_app as app
 from flask import render_template
@@ -8,7 +6,7 @@ from flask import request
 from flask_security.decorators import login_required
 from flask_security.decorators import roles_accepted
 from webapp.core.fetch_config import fetch_all_config_timestamps
-from webapp.core.fetch_hijack import get_hijack_by_key
+from webapp.core.fetch_hijack import check_if_hijack_exists
 from webapp.core.modules import Modules_state
 
 main = Blueprint("main", __name__, template_folder="templates")
@@ -51,9 +49,9 @@ def display_hijack():
     mitigation_status_request = Modules_state()
     _mitigation_flag = False
 
-    hijack_data = get_hijack_by_key(_key)
+    exist = check_if_hijack_exists(_key)
 
-    if hijack_data is None:
+    if not exist:
         app.artemis_logger.debug("Hijack with id found: {}".format(_key))
         return render_template("404.htm")
 
@@ -62,7 +60,7 @@ def display_hijack():
 
     return render_template(
         "hijack.htm",
-        data=json.dumps(hijack_data),
+        hijack_key=_key,
         mitigate=_mitigation_flag,
         js_version=app.config["JS_VERSION"],
     )

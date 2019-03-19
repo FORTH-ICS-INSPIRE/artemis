@@ -24,7 +24,9 @@ from utils import ArtemisError
 from utils import flatten
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
 from utils import redis_key
+from utils import REDIS_PORT
 from utils import translate_rfc2622
 from yaml import load as yload
 
@@ -115,8 +117,7 @@ class Configuration:
                 raw = f.read()
                 self.data, _flag, _error = self.parse(raw, yaml=True)
 
-            # redis
-            self.redis = redis.Redis(host="localhost", port=6379)
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 
             # EXCHANGES
             self.config_exchange = Exchange(

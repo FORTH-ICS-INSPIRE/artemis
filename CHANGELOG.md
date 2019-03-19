@@ -9,6 +9,7 @@
 - Policy dimension on hijacks (route leak detection based on no-export)
 - Support for auto-cleaning unneeded BGP updates
 - Automated DB backups
+- Initial support for LDAP authentication
 
 ### Changed
 - Testing refactoring

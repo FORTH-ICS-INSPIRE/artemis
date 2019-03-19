@@ -2,7 +2,6 @@ import hashlib
 import logging.config
 import logging.handlers
 import os
-import pickle
 import re
 import time
 from contextlib import contextmanager
@@ -166,7 +165,11 @@ def redis_key(prefix, hijack_as, _type):
     assert isinstance(prefix, str)
     assert isinstance(hijack_as, int)
     assert isinstance(_type, str)
-    return hashlib.shake_128(pickle.dumps([prefix, hijack_as, _type])).hexdigest(16)
+    return get_hash([prefix, hijack_as, _type])
+
+
+def get_hash(obj):
+    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
 
 
 def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):

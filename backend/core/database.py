@@ -1,7 +1,5 @@
 import datetime
-import hashlib
 import json
-import pickle
 import signal
 import time
 from xmlrpc.client import ServerProxy
@@ -9,6 +7,7 @@ from xmlrpc.client import ServerProxy
 import psycopg2.extras
 import radix
 import redis
+import yaml
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -17,6 +16,7 @@ from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import flatten
 from utils import get_db_conn
+from utils import get_hash
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
@@ -27,6 +27,8 @@ from utils import redis_key
 from utils import REDIS_PORT
 from utils import SUPERVISOR_URI
 from utils import translate_rfc2622
+
+# import os
 
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
@@ -295,7 +297,7 @@ class Database:
                     on_message=self.handle_hijack_update,
                     prefetch_count=100,
                     no_ack=True,
-                    accept=["pickle"],
+                    accept=["yaml"],
                 ),
                 Consumer(
                     queues=[self.withdraw_queue],
@@ -639,9 +641,7 @@ class Database:
                         comment = config["comment"]
                         del config["comment"]
 
-                    config_hash = hashlib.shake_128(pickle.dumps(raw_config)).hexdigest(
-                        16
-                    )
+                    config_hash = get_hash(raw_config)
                     self._save_config(config_hash, config, raw_config, comment)
             except Exception:
                 log.exception("{}".format(config))
@@ -665,9 +665,7 @@ class Database:
                         if "comment" in config:
                             comment = config["comment"]
                             del config["comment"]
-                        config_hash = hashlib.shake_128(
-                            pickle.dumps(raw_config)
-                        ).hexdigest(16)
+                        config_hash = get_hash(raw_config)
                         latest_config_in_db_hash = (
                             self._retrieve_most_recent_config_hash()
                         )
@@ -752,7 +750,7 @@ class Database:
                         "timestamp_of_config": entry[10].timestamp(),
                     }
                     redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
-                    redis_pipeline.set(redis_hijack_key, pickle.dumps(result))
+                    redis_pipeline.set(redis_hijack_key, yaml.dump(result))
                     redis_pipeline.sadd("persistent-keys", entry[4])
                 redis_pipeline.execute()
 

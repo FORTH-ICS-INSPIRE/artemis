@@ -2,13 +2,13 @@ import difflib
 import hashlib
 import json
 import os
-import pickle
 import socket
 import time
 from xmlrpc.client import ServerProxy
 
 import psycopg2
 import redis
+import yaml
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
@@ -79,7 +79,11 @@ class Tester:
         assert isinstance(prefix, str)
         assert isinstance(hijack_as, int)
         assert isinstance(_type, str)
-        return hashlib.shake_128(pickle.dumps([prefix, hijack_as, _type])).hexdigest(16)
+        return Tester.get_hash([prefix, hijack_as, _type])
+
+    @staticmethod
+    def get_hash(obj):
+        return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
 
     @staticmethod
     def waitExchange(exchange, channel):
@@ -346,7 +350,7 @@ class Tester:
                     connection.Consumer(
                         self.hijack_queue,
                         callbacks=[self.validate_message],
-                        accept=["pickle"],
+                        accept=["yaml"],
                     ),
                     connection.Consumer(
                         self.update_queue, callbacks=[self.validate_message]

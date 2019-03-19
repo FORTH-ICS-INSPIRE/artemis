@@ -10,6 +10,7 @@
 
 ### Changed
 - Refactored environment variables
+- Use of RIPE RIS firehose stream instead of the websocket clientui8
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend

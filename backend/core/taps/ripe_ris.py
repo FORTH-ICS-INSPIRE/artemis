@@ -1,15 +1,15 @@
 import argparse
 import json
 import os
+import time
 from copy import deepcopy
-from ipaddress import ip_network as str2ip
 
-import websocket
+import radix
+import requests
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
 from utils import get_logger
-from utils import is_subnet_of
 from utils import key_generator
 from utils import mformat_validator
 from utils import normalize_msg_path
@@ -20,7 +20,7 @@ update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
 
 
-def normalize_ripe_ris(msg, conf_prefix):
+def normalize_ripe_ris(msg, prefix_tree):
     msgs = []
     if isinstance(msg, dict):
         msg["key"] = None  # initial placeholder before passing the validator
@@ -40,6 +40,12 @@ def normalize_ripe_ris(msg, conf_prefix):
             msg["timestamp"] = float(msg["timestamp"])
         if "type" in msg:
             del msg["type"]
+        if "raw" in msg:
+            del msg["raw"]
+        if "origin" in msg:
+            del msg["origin"]
+        if "id" in msg:
+            del msg["id"]
         if "announcements" in msg and "withdrawals" in msg:
             # need 2 separate messages
             # one for announcements
@@ -51,7 +57,7 @@ def normalize_ripe_ris(msg, conf_prefix):
                     prefixes.extend(element["prefixes"])
             for prefix in prefixes:
                 try:
-                    if is_subnet_of(str2ip(prefix), conf_prefix):
+                    if prefix_tree.search_best(prefix):
                         new_msg = deepcopy(msg_ann)
                         new_msg["prefix"] = prefix
                         del new_msg["announcements"]
@@ -66,7 +72,7 @@ def normalize_ripe_ris(msg, conf_prefix):
             prefixes = msg_wit["withdrawals"]
             for prefix in prefixes:
                 try:
-                    if is_subnet_of(str2ip(prefix), conf_prefix):
+                    if prefix_tree.search_best(prefix):
                         new_msg = deepcopy(msg_wit)
                         new_msg["prefix"] = prefix
                         del new_msg["withdrawals"]
@@ -86,7 +92,7 @@ def normalize_ripe_ris(msg, conf_prefix):
                             prefixes.append(element)
                     for prefix in prefixes:
                         try:
-                            if is_subnet_of(str2ip(prefix), conf_prefix):
+                            if prefix_tree.search_best(prefix):
                                 new_msg = deepcopy(msg)
                                 new_msg["prefix"] = prefix
                                 del new_msg[update_type]
@@ -96,52 +102,61 @@ def normalize_ripe_ris(msg, conf_prefix):
     return msgs
 
 
-def parse_ripe_ris(connection, prefix, host):
+def parse_ripe_ris(connection, prefixes, hosts):
     exchange = Exchange("bgp-update", channel=connection, type="direct", durable=False)
     exchange.declare()
 
-    conf_prefix = None
-    try:
-        conf_prefix = str2ip(prefix)
-    except Exception:
-        log.exception("exception")
+    prefix_tree = radix.Radix()
+    for prefix in prefixes:
+        prefix_tree.add(prefix)
 
     ris_suffix = os.getenv("RIS_ID", "my_as")
-    ws = websocket.WebSocket()
-    ws.connect("wss://ris-live.ripe.net/v1/ws/?client=artemis-as{}".format(ris_suffix))
-    params = {
-        "host": host,
-        "type": "UPDATE",
-        "prefix": prefix,
-        "moreSpecific": True,
-        "lessSpecific": False,
-        "socketOptions": {"includeRaw": False},
-    }
 
-    ws.send(json.dumps({"type": "ris_subscribe", "data": params}))
     validator = mformat_validator()
-    for data in ws:
-        try:
-            parsed = json.loads(data)
-            msg = parsed["data"]
-            producer = Producer(connection)
-            norm_ris_msgs = normalize_ripe_ris(msg, conf_prefix)
-            for norm_ris_msg in norm_ris_msgs:
-                if validator.validate(norm_ris_msg):
-                    norm_path_msgs = normalize_msg_path(norm_ris_msg)
-                    for norm_path_msg in norm_path_msgs:
-                        key_generator(norm_path_msg)
-                        log.debug(norm_path_msg)
-                        producer.publish(
-                            norm_path_msg,
-                            exchange=exchange,
-                            routing_key="update",
-                            serializer="json",
-                        )
-                else:
-                    log.warning("Invalid format message: {}".format(msg))
-        except Exception:
-            log.exception("exception")
+    with Producer(connection) as producer:
+        while True:
+            try:
+                events = requests.get(
+                    "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(
+                        ris_suffix
+                    ),
+                    stream=True,
+                )
+                # http://docs.python-requests.org/en/latest/user/advanced/#streaming-requests
+                iterator = events.iter_lines()
+                next(iterator)
+                for data in iterator:
+                    try:
+                        parsed = json.loads(data)
+                        msg = parsed["data"]
+                        # also check if ris host is in the configuration
+                        if (
+                            "type" in msg
+                            and msg["type"] == "UPDATE"
+                            and (not hosts or msg["host"] in hosts)
+                        ):
+                            norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
+                            for norm_ris_msg in norm_ris_msgs:
+                                if validator.validate(norm_ris_msg):
+                                    norm_path_msgs = normalize_msg_path(norm_ris_msg)
+                                    for norm_path_msg in norm_path_msgs:
+                                        key_generator(norm_path_msg)
+                                        log.debug(norm_path_msg)
+                                        producer.publish(
+                                            norm_path_msg,
+                                            exchange=exchange,
+                                            routing_key="update",
+                                            serializer="json",
+                                        )
+                                else:
+                                    log.warning(
+                                        "Invalid format message: {}".format(msg)
+                                    )
+                    except Exception:
+                        log.exception("exception")
+            except Exception:
+                log.exception("server closed connection")
+                time.sleep(5)
 
 
 if __name__ == "__main__":
@@ -156,20 +171,22 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-r",
-        "--host",
+        "--hosts",
         type=str,
-        dest="host",
+        dest="hosts",
         default=None,
         help="Directory with csvs to read",
     )
 
     args = parser.parse_args()
-    prefix = args.prefix
-    host = args.host
+    prefix = args.prefix.split(",")
+    hosts = args.hosts
+    if hosts:
+        hosts = set(hosts.split(","))
 
     try:
         with Connection(RABBITMQ_URI) as connection:
-            parse_ripe_ris(connection, prefix, host)
+            parse_ripe_ris(connection, prefix, hosts)
     except Exception:
         log.exception("exception")
     except KeyboardInterrupt:

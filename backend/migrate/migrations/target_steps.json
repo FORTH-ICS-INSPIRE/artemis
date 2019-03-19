@@ -71,12 +71,6 @@
             "db_version": "12",
             "description": "Dropped unneeded config_data column from configs table",
             "file": "migration_12.sql"
-        },
-        "13": {
-            "id": "13",
-            "db_version": "13",
-            "description": "Update hijacks keys",
-            "file": ["migration_13.py", "migration_13.sql"]
         }
     }
 }

@@ -9,6 +9,8 @@ from webapp.data.models import Role
 from webapp.data.models import User
 from webapp.templates.forms import ExtendedLoginForm
 from webapp.templates.forms import ExtendedRegisterForm
+from webapp.utils.ldap.datastore import LDAPUserDatastore
+from webapp.utils.ldap.forms import LDAPLoginForm
 
 
 class BaseConfig(object):
@@ -75,13 +77,24 @@ def configure_app(app):
     app.artemis_logger = logging.getLogger("webapp_logger")
 
     # Configure Security
-    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-    app.security = Security(
-        app,
-        user_datastore,
-        register_form=ExtendedRegisterForm,
-        login_form=ExtendedLoginForm,
-    )
+    if app.config["AUTH_METHOD"] == "ldap":
+        app.artemis_logger.info("LDAP login enabled")
+        user_datastore = LDAPUserDatastore(db, User, Role)
+        app.security = Security(
+            app,
+            user_datastore,
+            register_form=ExtendedRegisterForm,
+            login_form=LDAPLoginForm,
+        )
+    else:
+        app.artemis_logger.info("SQLite login enabled")
+        user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+        app.security = Security(
+            app,
+            user_datastore,
+            register_form=ExtendedRegisterForm,
+            login_form=ExtendedLoginForm,
+        )
 
     # Configure Compressing
     Compress(app)

@@ -2,14 +2,7 @@
 guiEnabled: true
 systemVersion: latest
 historic: false
-# headless services
-services:
-    - backend
-    - postgrest
-    - postgres
-    - frontend
-    - rabbitmq
-    - graphql
+replicaCount: 1
 # redis
 redisHost: backend
 redisPort: 6379
@@ -47,3 +40,28 @@ rabbitmqPass: guest
 hasuraHost: graphql
 hasuraPort: 8080
 hasuraGui: false
+# services
+svc:
+  backend:
+    ports:
+    - 6379
+    - 9001
+  postgrest:
+    ports:
+    - 3000
+  postgres:
+    ports:
+    - 5432
+  frontend:
+    ports:
+    - 8000
+  rabbitmq:
+    ports:
+    - 5672
+  graphql:
+    ports:
+    - 8080
+  nginx:
+    ports:
+    - 80
+    - 443

@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import time
 from codecs import open as c_open
 
@@ -57,12 +58,8 @@ def create_connect_db():
     return _db_conn
 
 
-def migrate(next_db_version, db_cur, db_conn):
-    print("Executing migration {}...".format(next_db_version["db_version"]))
-    print("{0}".format(next_db_version["description"]))
-
-    migration_command = read_migration_sql_file(next_db_version["file"])
-
+def migrate_sql_file(filename, db_cur, db_conn):
+    migration_command = read_migration_sql_file(filename)
     print(" - - - - - \n\n {0} \n\n - - - - - ".format(migration_command))
     try:
         db_cur.execute(migration_command)
@@ -71,6 +68,63 @@ def migrate(next_db_version, db_cur, db_conn):
         db_conn.rollback()
         print("Failed to execute command. \n {}".format(e))
         exit(-1)
+
+
+def migrate_python_file(filename):
+    file_ = "/root/migrate/migrations/scripts/" + filename
+    result = ""
+    try:
+        print("Executing -> {}".format(file_))
+        result = subprocess.check_output(["/usr/local/bin/python", file_], shell=False)
+    except Exception:
+        print("subprocess failed: {}".format(result))
+        exit(-1)
+
+    if "success" not in result.decode("utf-8"):
+        print(
+            "The execution of python migration file '{0}' returned the following error:\n {1}".format(
+                file_, result
+            )
+        )
+        exit(-1)
+
+
+def migrate_bash_file(filename):
+    file_ = "/root/migrate/migrations/scripts/" + filename
+    result = ""
+    try:
+        print("Executing -> {}".format(file_))
+        subprocess.run(["/bin/chmod", "+x", file_], shell=False)
+        result = subprocess.check_output(["/bin/bash", file_], shell=False)
+    except Exception:
+        print("subprocess failed: {}".format(result))
+        exit(-1)
+
+    if "success" not in result.decode("utf-8"):
+        print(
+            "The execution of bash migration file '{0}' returned the following error:\n {1}".format(
+                file_, result
+            )
+        )
+        exit(-1)
+
+
+def migrate(next_db_version, db_cur, db_conn):
+    print("Executing migration {}...".format(next_db_version["db_version"]))
+    print("{0}".format(next_db_version["description"]))
+
+    if not isinstance(next_db_version["file"], list):
+        next_db_version["file"] = [next_db_version["file"]]
+    for filename in next_db_version["file"]:
+        if ".sql" in filename:
+            migrate_sql_file(filename, db_cur, db_conn)
+        elif ".py" in filename:
+            migrate_python_file(filename)
+        elif ".sh" in filename:
+            migrate_bash_file(filename)
+        else:
+            print("The file type of '{}' is currently not supported".format(filename))
+            exit(-1)
     return True
 
 

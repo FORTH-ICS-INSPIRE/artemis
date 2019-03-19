@@ -1,17 +1,12 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose convert -c --volumes hostPath -f docker-compose.yaml -o helm
-    kompose.service.type: headless
-    kompose.version: 1.18.0 (HEAD)
-  creationTimestamp: null
   labels:
     io.kompose.service: backend
     app: {{ .Release.Name }}
   name: backend
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
@@ -49,8 +44,8 @@ spec:
               key: dbName
         - name: DB_PASS
           valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
               key: dbPass
         - name: DB_PORT
           valueFrom:
@@ -99,8 +94,8 @@ spec:
               key: rabbitmqHost
         - name: RABBITMQ_PASS
           valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
               key: rabbitmqPass
         - name: RABBITMQ_PORT
           valueFrom:

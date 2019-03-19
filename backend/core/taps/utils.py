@@ -2,7 +2,6 @@ import copy
 import hashlib
 import logging.config
 import os
-import pickle
 from datetime import datetime
 from datetime import timedelta
 from ipaddress import ip_network as str2ip
@@ -38,11 +37,19 @@ log = get_logger()
 
 
 def key_generator(msg):
-    msg["key"] = hashlib.shake_128(
-        pickle.dumps(
-            [msg["prefix"], msg["path"], msg["type"], msg["timestamp"], msg["peer_asn"]]
-        )
-    ).hexdigest(16)
+    msg["key"] = get_hash(
+        [
+            msg["prefix"],
+            msg["path"],
+            msg["type"],
+            "{0:.6f}".format(msg["timestamp"]),
+            msg["peer_asn"],
+        ]
+    )
+
+
+def get_hash(obj):
+    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
 
 
 def decompose_path(path):
@@ -209,19 +216,3 @@ class mformat_validator:
         yield self.valid_communities
         yield self.valid_timestamp
         yield self.valid_peer_asn
-
-
-def is_subnet_of(a, b):
-    """
-    :param a: ipaddress.ip_network object
-    :param b: ipaddress.ip_network object
-    :return: whether a is a subnet of b
-    """
-    try:
-        return (
-            a.version == b.version
-            and b.network_address <= a.network_address
-            and b.broadcast_address >= a.broadcast_address
-        )
-    except AttributeError:
-        return False

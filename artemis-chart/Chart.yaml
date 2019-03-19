@@ -1,0 +1,14 @@
+name: artemis-chart
+description: ARTEMIS helm chart for deploying on kubernetes.
+version: 0.0.1
+keywords:
+  - helm
+  - artemis
+  - bgp
+  - hijack
+home: https://github.com/FORTH-ICS-INSPIRE/artemis
+maintainers:
+  - name: Dimitrios Mavrommatis
+    email: jim.mavrommatis@gmail.com
+    url: https://slowr.github.io
+appVersion: latest

@@ -41,8 +41,6 @@ services:
             - ./backend/supervisor.d/:/etc/supervisor/conf.d/
             # uncomment after Step 2 of README
             #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
-        labels:
-            kompose.service.type: headless
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
@@ -86,8 +84,6 @@ services:
             # uncomment after Step 2 of README
             # - ./local_configs/frontend/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
-        labels:
-            kompose.service.type: headless
     nginx:
         image: nginx:1.15-alpine
         container_name: nginx
@@ -126,8 +122,6 @@ services:
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
-        labels:
-            kompose.service.type: headless
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
@@ -151,8 +145,6 @@ services:
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         entrypoint: ["./postgres-entrypoint.sh"]
-        labels:
-            kompose.service.type: headless
     postgrest:
         image: postgrest/postgrest:v5.2.0
         container_name: postgrest
@@ -168,8 +160,6 @@ services:
             PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
-        labels:
-            kompose.service.type: headless
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
@@ -188,8 +178,6 @@ services:
         volumes:
             - ./backend/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
-        labels:
-            kompose.service.type: headless
     graphql:
         image: hasura/graphql-engine:v1.0.0-alpha31
         container_name: graphql
@@ -208,8 +196,6 @@ services:
         command:
             - graphql-engine
             - serve
-        labels:
-            kompose.service.type: headless
 
 networks:
     artemis:

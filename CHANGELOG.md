@@ -5,11 +5,13 @@
 - Support for dormant flags in hijacks
 - Storing hijack update (origin, neighbor) combinations in redis
 - Configured/matched prefix field and search in frontend hijack and update tables
-- Kubernetes support
+- Initial kubernetes/helm (helm-charts) support
 - Reject old updates from taps and have a "HISTORIC" variable to enable/disable
+- Initial support for LDAP authentication
 
 ### Changed
 - Refactored environment variables
+- Use of RIPE RIS firehose stream instead of the websocket clientui8
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend

@@ -18,6 +18,7 @@ gunicorn==19.9.0
 ipaddress==1.0.22
 kombu==4.2.2.post1
 PyYAML==5.1
+ldap3==2.5.2
 requests==2.21.0
 SQLAlchemy==1.2.16
 WTForms==2.2.1

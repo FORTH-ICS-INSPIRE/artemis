@@ -179,14 +179,24 @@
                 if($('#db_stats_list li').length == 0){
                     for (var key in data) {
                         var html_ = '<li class="list-group-item"><div class="row"><div class="col-lg-7" helpText="field_stats_' + key + '" id="db_stat_legend_' + key + '">';
-                        html_ += key.replace(/_/g, " ") + '</div><div class="col-lg-5" id="db_stat_value_' + key + '"><b>' + data[key]["aggregate"]["count"] + '</b></div></div></li>';
+                        if("aggregate" in data[key]){
+                            html_ += key.replace(/_/g, " ") + '</div><div class="col-lg-5" id="db_stat_value_' + key + '"><b>' + data[key]["aggregate"]["count"] + '</b></div></div></li>';
+                        }
+                        else if(key == "Total_Monitored_Prefixes"){
+                            html_ += key.replace(/_/g, " ") + '</div><div class="col-lg-5" id="db_stat_value_' + key + '"><b>' + data[key][0]["monitored_prefixes"] + '</b></div></div></li>';
+                        }
                         $('#db_stats_list').append(html_);
                     }
                     displayHelpTextStats();
                 }else{
                     for(var key in data){
                         $('#db_stat_value_' + key).css("font-weight", "bold");
-                        $('#db_stat_value_' + key).text(data[key]["aggregate"]["count"]);
+                        if("aggregate" in data[key]){
+                            $('#db_stat_value_' + key).text(data[key]["aggregate"]["count"]);
+                        }
+                        else if(key == "Total_Monitored_Prefixes"){
+                            $('#db_stat_value_' + key).text(data[key][0]["monitored_prefixes"]);
+                        }
                     }
                 }
             }

@@ -7,6 +7,7 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import session
+from flask import url_for
 from flask_security.decorators import login_required
 from flask_security.decorators import roles_required
 from flask_security.utils import hash_password
@@ -137,7 +138,7 @@ def approve_user():
 
         app.security.datastore.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/create_admin", methods=["POST"])
@@ -157,7 +158,7 @@ def create_admin():
 
         app.security.datastore.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/remove_admin", methods=["POST"])
@@ -170,7 +171,7 @@ def remove_admin():
         user = app.security.datastore.find_user(id=form.select_field.data)
         # Protect admin (user id == 1)
         if user.id == 1:
-            return redirect("admin/user_management")
+            return redirect(url_for("admin.user_management"))
 
         admin_role = app.security.datastore.find_role("admin")
         app.security.datastore.remove_role_from_user(user, admin_role)
@@ -180,7 +181,7 @@ def remove_admin():
 
         app.security.datastore.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/delete_user", methods=["POST"])
@@ -193,7 +194,7 @@ def delete_user():
         db.session.query(User).filter(User.id == form.select_field.data).delete()
         db.session.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/new/password", methods=["POST"])

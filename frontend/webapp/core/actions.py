@@ -111,6 +111,63 @@ class Ignore_hijack:
             )
 
 
+class Learn_hijack_rule:
+    def __init__(self):
+        self.connection = None
+        self.init_conn()
+
+    def init_conn(self):
+        try:
+            self.connection = Connection(RABBITMQ_URI)
+        except BaseException:
+            log.exception("Learn_hijack_rule failed to connect to rabbitmq.")
+
+    def on_response(self, message):
+        if message.properties["correlation_id"] == self.correlation_id:
+            self.response = message.payload
+
+    def send(self, hijack_key, prefix, type_, hijack_as, action):
+        log.debug("sending")
+        self.response = None
+        self.correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with Producer(self.connection) as producer:
+            producer.publish(
+                {
+                    "key": hijack_key,
+                    "prefix": prefix,
+                    "type": type_,
+                    "hijack_as": hijack_as,
+                    "action": action,
+                },
+                exchange="",
+                routing_key="conf-hijack-learn-rule-queue",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=self.correlation_id,
+                priority=4,
+            )
+        with Consumer(
+            self.connection,
+            on_message=self.on_response,
+            queues=[callback_queue],
+            no_ack=True,
+        ):
+            while self.response is None:
+                self.connection.drain_events()
+        if self.response["success"]:
+            return self.response["new_yaml_conf"], True
+        return self.response["new_yaml_conf"], False
+
+
 class Comment_hijack:
     def __init__(self):
         self.connection = None

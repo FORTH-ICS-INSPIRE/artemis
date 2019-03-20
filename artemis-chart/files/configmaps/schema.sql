@@ -1,0 +1,1 @@
+../../../other/db/libs/rabbitmq/schema.sql

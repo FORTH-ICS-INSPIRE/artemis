@@ -1,0 +1,151 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: backend
+    app: {{ .Release.Name }}
+  name: backend
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: backend
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      initContainers:
+      - name: populate-pvc
+        image: busybox
+        volumeMounts:
+        - mountPath: /configmaps
+          name: backend-configmap
+        - mountPath: /pvc
+          name: backend-pvc
+          subPath: configs
+        command: ['sh', '-c', 'cp -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
+      containers:
+      - env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbHost
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbName
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: dbPass
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbPort
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbUser
+        - name: DB_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbVersion
+        - name: GUI_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: guiEnabled
+        - name: HASURA_GRAPHQL_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: hasuraSecret
+        - name: HASURA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraHost
+        - name: HASURA_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraPort
+        - name: HISTORIC
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: historic
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqHost
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: rabbitmqPass
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPort
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqUser
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: redisHost
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: redisPort
+        - name: SUPERVISOR_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorHost
+        - name: SUPERVISOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorPort
+        image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
+        name: backend
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/artemis/logging.yaml
+          name: backend-pvc
+          subPath: configs/logging.yaml
+        - mountPath: /etc/artemis/config.yaml
+          name: backend-pvc
+          subPath: configs/config.yaml
+        - mountPath: /etc/supervisor/conf.d/services.conf
+          name: backend-pvc
+          subPath: configs/services.conf
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+        name: backend-configmap
+      - persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-pvc
+        name: backend-pvc
+status: {}

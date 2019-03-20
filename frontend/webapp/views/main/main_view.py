@@ -52,7 +52,7 @@ def display_hijack():
     exist = check_if_hijack_exists(_key)
 
     if not exist:
-        app.artemis_logger.debug("Hijack with id found: {}".format(_key))
+        app.artemis_logger.debug("Hijack with id not found: {}".format(_key))
         return render_template("404.htm")
 
     if mitigation_status_request.is_up_or_running("mitigation"):

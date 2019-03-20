@@ -168,7 +168,7 @@
                             </div>
                             <div class="col-lg-4">
                                 {% if mitigate == True %}
-                                <button id="mitigation_button" type="button" class="btn btn-danger" disabled="true>Mitigate</button>
+                                <button id="mitigation_button" type="button" class="btn btn-danger" disabled="true">Mitigate</button>
                                 {% endif %}
                             </div>
                             <div class="col-lg-4">
@@ -746,12 +746,20 @@
 
                 $( "#seenHijackWithdraw_text").html( peers_html.join('') );
 
-                if(hijack_obj['resolved'] == true || hijack_obj['ignored'] == true){
+                if(hijack_obj['active'] == true){
+                    $("#resolved_button").removeAttr('disabled');
+                    $("#ignored_button").removeAttr('disabled');
+                    if($("#mitigation_button").length != 0 && hijack_obj['under_mitigation'] == false) {
+                        $("#mitigation_button").removeAttr('disabled');
+                    }
+                }else if(hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true){
+                    $("#ignored_button").removeAttr('disabled');
+                    $("#resolved_button").removeAttr('disabled');
+
+                }else if(hijack_obj['resolved'] == true || hijack_obj['ignored'] == true){
                     $("#resolved_button").prop("disabled", true);
                     $("#mitigation_button").prop("disabled", true);
                     $("#ignored_button").prop("disabled", true);
-                }else if(hijack_obj['under_mitigation'] == true || hijack_obj['withdrawn'] == true || hijack_obj['outdated'] == true){
-                    $("#mitigation_button").prop("disabled", true);
                 }else{
                     $("#resolved_button").removeAttr('disabled');
                     $("#mitigation_button").removeAttr('disabled');
@@ -806,7 +814,7 @@
                     "prefix": hijack_obj['prefix']
                 }
                 var url_ignore = "{{ url_for('actions.ignore_hijack') }}";
-                var result = postIgnoreButton(url_ignore, obj_ignore);
+                var result = postFetch_json(url_ignore, obj_ignore);
             });
 
             $('#learnRuleModal').on('show.bs.modal', function (event) {
@@ -831,7 +839,7 @@
                     };
 
                     var url = "{{ url_for('actions.learn_hijack_rule') }}";
-                    var result = await postLearnConfig(url, obj);
+                    var result = await postFetch_json(url, obj);
 
                     if(result["status"] == "fail"){
                         var message = [];
@@ -855,7 +863,7 @@
                     };
 
                     var url = "{{ url_for('actions.learn_hijack_rule') }}";
-                    var result = await postLearnConfig(url, obj);
+                    var result = await postFetch_json(url, obj);
 
                     var message = [];
                     if(result["status"] == "success"){
@@ -868,7 +876,7 @@
                             "prefix": hijack_obj['prefix']
                         }
                         var url_ignore = "{{ url_for('actions.ignore_hijack') }}";
-                        var result = await postIgnoreButton(url_ignore, obj_ignore);
+                        var result = await postFetch_json(url_ignore, obj_ignore);
 
                         message.push('<div class="alert alert-success"> The rule was successfully installed!</div>');
                     }else{

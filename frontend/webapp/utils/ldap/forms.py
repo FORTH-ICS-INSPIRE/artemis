@@ -66,8 +66,8 @@ class LDAPLoginForm(Form, NextFormMixin):
             ldap_email = ldap_data[config_value("LDAP_EMAIL_FIELDNAME")].value
             password = encrypt_password(self.password.data)
 
-            if _datastore.find_user(email=ldap_email):
-                self.user = _datastore.get_user(ldap_email)
+            self.user = _datastore.find_user(email=ldap_email)
+            if self.user:
                 # note that this is being stored per user login
                 self.user.password = password
             else:
@@ -102,7 +102,7 @@ class LDAPLoginForm(Form, NextFormMixin):
         return True
 
     def _try_local_auth(self):
-        self.user = _datastore.get_user(self.email.data)
+        self.user = _datastore.find_user(email=self.email.data)
 
         if not self.user:
             self.email.errors.append(get_message("USER_DOES_NOT_EXIST")[0])

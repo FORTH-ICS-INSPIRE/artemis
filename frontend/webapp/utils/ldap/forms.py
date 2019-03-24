@@ -77,19 +77,23 @@ class LDAPLoginForm(Form, NextFormMixin):
                     password=password,
                     active=True,
                 )
-                # need to somehow decide what role they are
-                groups = config_value("LDAP_ADMIN_GROUPS")
-                if any(
-                    [
-                        group in ldap_data[config_value("LDAP_ADMIN_GROUPS_FIELDNAME")]
-                        for group in groups
-                    ]
-                ):
-                    role = _datastore.find_role("admin")
-                else:
-                    role = _datastore.find_role("user")
-                _datastore.add_role_to_user(self.user, role)
-                _datastore.commit()
+
+            # need to somehow decide what role they are
+            groups = config_value("LDAP_ADMIN_GROUPS")
+            if any(
+                [
+                    group in ldap_data[config_value("LDAP_ADMIN_GROUPS_FIELDNAME")]
+                    for group in groups
+                ]
+            ):
+                add_role = _datastore.find_role("admin")
+                remove_role = _datastore.find_role("user")
+            else:
+                add_role = _datastore.find_role("user")
+                remove_role = _datastore.find_role("admin")
+            _datastore.add_role_to_user(self.user, add_role)
+            _datastore.remove_role_from_user(self.user, remove_role)
+            _datastore.commit()
         except LDAPSocketOpenError:
             current_app.artemis_logger.info("LDAP offline.. Trying local auth")
             self.email.errors.append("LDAP Server offline")

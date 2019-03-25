@@ -10,6 +10,7 @@ from flask_security.utils import encrypt_password
 from flask_security.utils import get_message
 from flask_security.utils import verify_and_update_password
 from ldap3.core.exceptions import LDAPExceptionError
+from ldap3.core.exceptions import LDAPKeyError
 from ldap3.core.exceptions import LDAPSocketOpenError
 from werkzeug.local import LocalProxy
 from wtforms import BooleanField
@@ -80,11 +81,11 @@ class LDAPLoginForm(Form, NextFormMixin):
 
             # need to somehow decide what role they are
             groups = config_value("LDAP_ADMIN_GROUPS")
-            if any(
-                [
-                    group in ldap_data[config_value("LDAP_ADMIN_GROUPS_FIELDNAME")]
-                    for group in groups
-                ]
+            field = ldap_data[config_value("LDAP_ADMIN_GROUPS_FIELDNAME")]
+            if (
+                isinstance(field, str) and any([group == field for group in groups])
+            ) or (
+                isinstance(field, list) and any([group in field for group in groups])
             ):
                 add_role = _datastore.find_role("admin")
                 remove_role = _datastore.find_role("user")
@@ -94,6 +95,17 @@ class LDAPLoginForm(Form, NextFormMixin):
             _datastore.add_role_to_user(self.user, add_role)
             _datastore.remove_role_from_user(self.user, remove_role)
             _datastore.commit()
+        except LDAPKeyError:
+            current_app.artemis_logger.exception("")
+            self.email.errors.append("LDAP Key failure")
+            if self.user:
+                add_role = _datastore.find_role("user")
+                remove_role = _datastore.find_role("admin")
+                _datastore.add_role_to_user(self.user, add_role)
+                _datastore.remove_role_from_user(self.user, remove_role)
+                _datastore.commit()
+                return True
+            return False
         except LDAPSocketOpenError:
             current_app.artemis_logger.info("LDAP offline.. Trying local auth")
             self.email.errors.append("LDAP Server offline")
@@ -106,7 +118,7 @@ class LDAPLoginForm(Form, NextFormMixin):
         return True
 
     def _try_local_auth(self):
-        self.user = _datastore.find_user(email=self.email.data)
+        self.user = _datastore.find_user(username=self.email.data)
 
         if not self.user:
             self.email.errors.append(get_message("USER_DOES_NOT_EXIST")[0])

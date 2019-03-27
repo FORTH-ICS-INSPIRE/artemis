@@ -21,6 +21,7 @@
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
+- UI support for multiple instances of a module
 
 ### Removed
 - Configured prefix graph visualization (needs redesign)

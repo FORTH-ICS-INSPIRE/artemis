@@ -233,3 +233,51 @@ function input_filter_prefix(value, dom){
     }
     return match_value;
 }
+
+function aggregate_status_of_modules(data, name_to_aggregate, index){ // eslint-disable-line no-unused-vars
+    var status = {
+        "on": 0,
+        "total": 0
+    }
+
+    while(data[index].name.includes(name_to_aggregate)){
+        if(data[index].running){
+            status['on']++;
+        }
+        status['total']++;
+        index++;
+    }
+
+    if(status['on'] == 0){
+        return [status['on'], status['total'], "off"];
+    }else if(status['on'] == status['total']){
+        return [status['on'], status['total'], "on"];
+    }else{
+        return [status['on'], status['total'], "semi"];
+    }
+}
+
+function aggregate_status_of_modules_no_index(data, name_to_aggregate){ // eslint-disable-line no-unused-vars
+    var status = {
+        "on": 0,
+        "total": 0
+    }
+
+    for (var index = 0; index < data.length; index++){
+        while(index < data.length && data[index].name.includes(name_to_aggregate)){
+            if(data[index].running){
+                status['on']++;
+            }
+            status['total']++;
+            index++;
+        }
+    }
+
+    if(status['on'] == 0){
+        return "off";
+    }else if(status['on'] == status['total']){
+        return status['on'] + "/" + status['total'] + " On";
+    }else{
+        return status['on'] + "/" + status['total'];
+    }
+}

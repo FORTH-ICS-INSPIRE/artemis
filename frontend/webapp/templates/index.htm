@@ -208,8 +208,9 @@
                 for (var key in data['view_processes']) {
 
                     if(data['view_processes'][key].name.includes('_')){
+                        var find_first = parseInt(data['view_processes'][key].name.split('_')[1]);
 
-                        if(data['view_processes'][key].name.includes('_00')){
+                        if(find_first == 0){
                             var name = data['view_processes'][key].name.split('_')[0];
                             $('#modules_states').append( // Append the parent multiple module
                                 create_module_render_li(
@@ -288,7 +289,7 @@
                     html_code.push(obj.raw_name);
                     html_code.push('">');
                 }else{
-                    html_code.push('style="display:none" ');
+                    html_code.push('style="display:none;background-color:rgba(0,0,0,.05);" ');
                     html_code.push('parent="');
                     html_code.push(obj.parent_name);
                     html_code.push('" class="list-group-item"><div class="row"><div class="col-lg-4">');
@@ -298,7 +299,12 @@
                 html_code.push('</div><div class="col-lg-8">');
                 html_code.push('<div class="row"><div class="col-lg-4">');
                 if(obj.running == true){
-                    html_code.push('<b style="color:#008000">On</b></div>');
+                    if("parent_name" in obj){
+                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On </div>');
+                    }else{
+                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">1/1</span></button></div>');
+                    }
+
                     var seconds_elapsed = elapsed_seconds(obj.timestamp);
                     html_code.push('<div class="col-lg-8"><time_passed elapsed="');
                     html_code.push(seconds_elapsed);
@@ -306,15 +312,18 @@
                     html_code.push(calculate_time_passed(seconds_elapsed));
                     html_code.push('</time_passed></div></div>');
                 }else if(obj.running == "multiple"){
-
-                    if(obj.multiple_status == "on"){
-                        html_code.push('<b style="color:#008000">All On</b></div>');
-                    }else if(obj.multiple_status == "off"){
-                        html_code.push('<b style="color:#ff0000">All Off</b></div>');
+                    if(obj.multiple_status[2] == "on"){
+                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">');
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push('</span></button></div>');
+                    }else if(obj.multiple_status[2] == "off"){
+                        html_code.push('<button type="button" class="btn btn-danger btn-sm"> On <span class="badge badge-light">');
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push('</span></button></div>');
                     }else{
-                        html_code.push('<b style="color:#ff8c00"> ');
-                        html_code.push(obj.multiple_status);
-                        html_code.push(' On</b></div>');
+                        html_code.push('<button type="button" class="btn btn-warning btn-sm"> On <span class="badge badge-light">');
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push('</span></button></div>');
                     }
                     html_code.push('<div class="col-lg-8"><a id="view_multiple_');
                     html_code.push(obj.raw_name);
@@ -322,34 +331,17 @@
                     html_code.push(obj.raw_name);
                     html_code.push('\')">View instances</a></div></div>');
                 }else{
-                    html_code.push('<b style="color:#ff0000">Off</b></div>');
+
+                    if("parent_name" in obj){
+                        html_code.push('<button type="button" class="btn btn-danger btn-sm"> Off </div>');
+                    }else{
+                        html_code.push('<button type="button" class="btn btn-danger btn-sm"> On <span class="badge badge-light">0/1</span></button></div>');
+                    }
+
                     html_code.push('<div class="col-lg-8"> </div></div>');
                 }
                 html_code.push('</div></div></li>');
                 return html_code.join('');
-            }
-
-            function aggregate_status_of_modules(data, name_to_aggregate, key){
-                var status = {
-                    "on": 0,
-                    "total": 0
-                }
-
-                while(data[key].name.includes(name_to_aggregate)){
-                    if(data[key].running){
-                        status['on']++;
-                    }
-                    status['total']++;
-                    key++;
-                }
-
-                if(status['on'] == 0){
-                    return "off";
-                }else if(status['on'] == status['total']){
-                    return "on";
-                }else{
-                    return status['on'] + "/" + status['total'];
-                }
             }
 
             function multipleView(name){

@@ -17,6 +17,7 @@
 ### Changed
 - Refactored environment variables
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
+- Use of function for_url in flask redirect
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend

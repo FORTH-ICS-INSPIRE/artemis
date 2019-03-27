@@ -239,7 +239,6 @@ function aggregate_status_of_modules(data, name_to_aggregate, index){ // eslint-
         "on": 0,
         "total": 0
     }
-
     while(data[index].name.includes(name_to_aggregate)){
         if(data[index].running){
             status['on']++;
@@ -247,7 +246,6 @@ function aggregate_status_of_modules(data, name_to_aggregate, index){ // eslint-
         status['total']++;
         index++;
     }
-
     if(status['on'] == 0){
         return [status['on'], status['total'], "off"];
     }else if(status['on'] == status['total']){
@@ -262,7 +260,6 @@ function aggregate_status_of_modules_no_index(data, name_to_aggregate){ // eslin
         "on": 0,
         "total": 0
     }
-
     for (var index = 0; index < data.length; index++){
         while(index < data.length && data[index].name.includes(name_to_aggregate)){
             if(data[index].running){
@@ -272,7 +269,6 @@ function aggregate_status_of_modules_no_index(data, name_to_aggregate){ // eslin
             index++;
         }
     }
-
     if(status['on'] == 0){
         return "off";
     }else if(status['on'] == status['total']){

@@ -1,7 +1,8 @@
 version: '3'
 services:
     backend:
-        image: inspiregroup/artemis-backend:${SYSTEM_VERSION}
+        build: backend
+        #image: inspiregroup/artemis-backend:${SYSTEM_VERSION}
         container_name: backend
         depends_on:
             - rabbitmq
@@ -32,7 +33,7 @@ services:
             HISTORIC: ${HISTORIC}
         volumes:
             # uncomment to run from source code (only if you build from source)
-            # - ./backend/:/root/
+            - ./backend/:/root/
             # comment after Step 2 of README
             - ./backend/configs/:/etc/artemis/
             # uncomment after Step 2 of README
@@ -42,7 +43,8 @@ services:
             # uncomment after Step 2 of README
             #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
-        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
+        build: frontend
+        #image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
         depends_on:
             - rabbitmq
@@ -78,7 +80,7 @@ services:
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
         volumes:
             # uncomment to run from source code  (only if you build from source)
-            # - ./frontend/:/root/
+            - ./frontend/:/root/
             # comment after Step 2 of README
             - ./frontend/webapp/configs/:/etc/artemis/
             # uncomment after Step 2 of README

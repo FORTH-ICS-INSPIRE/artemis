@@ -81,7 +81,8 @@ class LDAPLoginForm(Form, NextFormMixin):
 
             # need to somehow decide what role they are
             groups = config_value("LDAP_ADMIN_GROUPS")
-            field = ldap_data[config_value("LDAP_ADMIN_GROUPS_FIELDNAME")]
+            field = ldap_data[config_value("LDAP_ADMIN_GROUPS_FIELDNAME")].values
+
             if (
                 isinstance(field, str) and any([group == field for group in groups])
             ) or (

@@ -316,7 +316,7 @@ class Configuration:
                 # learned rule prefix
                 rule_prefix = {
                     raw["prefix"]: "LEARNED_H_{}_P_{}".format(
-                        raw["key"], raw["prefix"].replace("/", "_").replace(".", "_")
+                        raw["key"], raw["prefix"].replace("/", "_").replace(".", "_").replace(":", "_")
                     )
                 }
 

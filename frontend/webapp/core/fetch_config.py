@@ -1,9 +1,9 @@
 import logging
 
 import requests
+import yaml
 from webapp.utils import API_URI
 from webapp.utils import flatten
-from yaml import load as yload
 
 log = logging.getLogger("webapp_logger")
 
@@ -33,7 +33,7 @@ class Configuration:
             if "comment" in self.raw_json[0]:
                 self.config_comment = self.raw_json[0]["comment"]
 
-            self.config_yaml = yload(self.raw_config)
+            self.config_yaml = yaml.safe_load(self.raw_config)
         except BaseException:
             log.exception("exception")
             return False

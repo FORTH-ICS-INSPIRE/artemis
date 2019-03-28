@@ -10,6 +10,7 @@
 - Update yaml conf with learned rule
 - Configured/matched prefix field and search in frontend hijack and update tables
 - Monitored prefixes count in stats table (overview)
+- Configured prefixes count in stats table (overview)
 - Initial kubernetes/helm (helm-charts) support
 - Reject old updates from taps and have a "HISTORIC" variable to enable/disable
 - Initial support for LDAP authentication

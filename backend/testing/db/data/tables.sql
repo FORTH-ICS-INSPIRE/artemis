@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (13, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (14, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -146,10 +146,11 @@ CREATE TABLE IF NOT EXISTS configs (
 );
 
 CREATE TABLE IF NOT EXISTS stats (
-    monitored_prefixes BIGINT DEFAULT 0
+    monitored_prefixes BIGINT DEFAULT 0,
+    configured_prefixes BIGINT DEFAULT 0
 );
 
-INSERT INTO stats (monitored_prefixes) VALUES (0);
+INSERT INTO stats (monitored_prefixes, configured_prefixes) VALUES (0, 0);
 
 CREATE OR REPLACE VIEW view_configs AS SELECT raw_config, comment, time_modified FROM configs;
 
@@ -157,7 +158,7 @@ CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 
-CREATE OR REPLACE VIEW view_stats AS SELECT monitored_prefixes FROM stats;
+CREATE OR REPLACE VIEW view_stats AS SELECT monitored_prefixes, configured_prefixes FROM stats;
 
 CREATE OR REPLACE FUNCTION inet_search (inet)
 RETURNS SETOF bgp_updates AS $$

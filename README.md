@@ -3,6 +3,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Coverage Status](https://coveralls.io/repos/github/FORTH-ICS-INSPIRE/artemis/badge.svg?branch=master)](https://coveralls.io/github/FORTH-ICS-INSPIRE/artemis?branch=master)
 [![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
+[![Mailing list](https://img.shields.io/badge/mail-ARTEMIS-green.svg)](http://lists.ics.forth.gr/mailman/listinfo/artemis)
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)
 [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/LICENSE)
 
@@ -233,10 +234,7 @@ Please check [this file](CONTRIBUTING.md).
 ## Development Team and Contact
 We follow a custom Agile approach for our development.
 
-If you need to contact us about a bug, an issue or a question you have; you can reach us over at our [Discord Community Server](https://discord.gg/8UerJvh). Otherwise, you can contact the ARTEMIS developers via e-mail as follows:
-* Dimitrios Mavrommatis (backend): mavromat_at_ics_dot_forth_dot_gr
-* Petros Gigis (frontend): gkigkis_at_ics_dot_forth_dot_gr
-* Vasileios Kotronis (coordinator): vkotronis_at_ics_dot_forth_dot_gr
+If you need to contact us about a bug, an issue or a question you have; you can reach us over at our [Discord Community Server](https://discord.gg/8UerJvh). Otherwise, you can contact the ARTEMIS developers via e-mail using the [ARTEMIS mailing list](http://lists.ics.forth.gr/mailman/listinfo/artemis).
 
 ## Versioning
 Please check [this file](CHANGELOG.md).

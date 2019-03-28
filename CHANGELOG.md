@@ -17,11 +17,12 @@
 ### Changed
 - Refactored environment variables
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
-- Use of function for_url in flask redirect
+- Use of function url_for in flask redirect
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
 - When learning ignore rule, escape special character ":" (IPv6)
+- Problematic start of RIS and exaBGP monitors, even if not configured
 - BGP update redis bootstraping from DB
 - UI support for multiple instances of a module in overview and system page
 

@@ -204,36 +204,161 @@
             function render_modules_state(data) {
                 $('#modules_states li').not('li:first').remove();
                 data['view_processes'].sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
+
                 for (var key in data['view_processes']) {
-                    var html_ = [];
-                    html_.push('<li class="list-group-item"><div class="row"><div class="col-lg-4" helpText="field_');
-                    html_.push(data['view_processes'][key].name.split('_')[0]);
-                    html_.push('">');
-                    var module_name = data['view_processes'][key].name.charAt(0).toUpperCase() + data['view_processes'][key].name.slice(1);
-                    if(module_name == "Database"){
-                        module_name += ' v.<version id="database_version"></version>';
-                    }
-                    html_.push(module_name);
-                    html_.push('</div><div class="col-lg-8">');
-                    html_.push('<div class="row"><div class="col-lg-4">');
-                    if(data['view_processes'][key].running){
-                        html_.push('<b style="color:#008000">On</b></div>');
-                        var seconds_elapsed = elapsed_seconds(data['view_processes'][key].timestamp);
-                        html_.push('<div class="col-lg-8"><time_passed elapsed="');
-                        html_.push(seconds_elapsed);
-                        html_.push('">');
-                        html_.push(calculate_time_passed(seconds_elapsed));
-                        html_.push('</time_passed></div></div>');
+
+                    if(data['view_processes'][key].name.includes('_')){
+                        var find_first = parseInt(data['view_processes'][key].name.split('_')[1]);
+
+                        if(find_first == 0){
+                            var name = data['view_processes'][key].name.split('_')[0];
+                            $('#modules_states').append( // Append the parent multiple module
+                                create_module_render_li(
+                                    {
+                                        "raw_name": name,
+                                        "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                        "running": "multiple",
+                                        "timestamp": null,
+                                        "display": true,
+                                        "multiple_status": aggregate_status_of_modules(data['view_processes'], name, key) // Extra field for status aggregation
+                                    }
+                                )
+                            );
+
+                            name = (data['view_processes'][key].name.split('_')).join(' ');
+                            $('#modules_states').append(
+                                create_module_render_li(
+                                    {
+                                        "raw_name": name,
+                                        "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                        "parent_name": data['view_processes'][key].name.split('_')[0],
+                                        "running": data['view_processes'][key].running,
+                                        "timestamp": data['view_processes'][key].timestamp,
+                                        "display": false
+                                    }
+                                )
+                            );
+
+                        }else{
+                            var name = (data['view_processes'][key].name.split('_')).join(' ');
+                            $('#modules_states').append(
+                                create_module_render_li(
+                                    {
+                                        "raw_name": name,
+                                        "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                        "parent_name": data['view_processes'][key].name.split('_')[0],
+                                        "running": data['view_processes'][key].running,
+                                        "timestamp": data['view_processes'][key].timestamp,
+                                        "display": false
+                                    }
+                                )
+                            );
+                        }
+
                     }else{
-                        html_.push('<b style="color:#ff0000">Off</b></div>');
-                        html_.push('<div class="col-lg-8"> </div></div>');
+                        var name = data['view_processes'][key].name;
+                        $('#modules_states').append(
+                            create_module_render_li(
+                                {
+                                    "raw_name": name,
+                                    "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                    "running": data['view_processes'][key].running,
+                                    "timestamp": data['view_processes'][key].timestamp,
+                                    "display": true
+                                }
+                            )
+                        );
                     }
-                    html_.push('</div></div></li>');
-                    $('#modules_states').append(html_.join(''));
                 }
+
                 displayHelpTextStats();
                 fetchDBVersion();
             }
+
+            function create_module_render_li(obj){
+                var html_code = [];
+                if(obj.name_edited == "Database"){
+                    obj.name_edited += ' v.<version id="database_version"></version>';
+                }
+
+                html_code.push('<li ');
+
+                if(obj.display == true){
+                    html_code.push('style="display:block" ');
+                    html_code.push(' class="list-group-item"><div class="row"><div class="col-lg-4" helpText="field_');
+                    html_code.push(obj.raw_name);
+                    html_code.push('">');
+                }else{
+                    html_code.push('style="display:none;background-color:rgba(0,0,0,.05);" ');
+                    html_code.push('parent="');
+                    html_code.push(obj.parent_name);
+                    html_code.push('" class="list-group-item"><div class="row"><div class="col-lg-4">');
+                }
+
+                html_code.push(obj.name_edited);
+                html_code.push('</div><div class="col-lg-8">');
+                html_code.push('<div class="row"><div class="col-lg-4">');
+                if(obj.running == true){
+                    if("parent_name" in obj){
+                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On </div>');
+                    }else{
+                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">1/1</span></button></div>');
+                    }
+
+                    var seconds_elapsed = elapsed_seconds(obj.timestamp);
+                    html_code.push('<div class="col-lg-8"><time_passed elapsed="');
+                    html_code.push(seconds_elapsed);
+                    html_code.push('">');
+                    html_code.push(calculate_time_passed(seconds_elapsed));
+                    html_code.push('</time_passed></div></div>');
+                }else if(obj.running == "multiple"){
+                    if(obj.multiple_status[2] == "on"){
+                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">');
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push('</span></button></div>');
+                    }else if(obj.multiple_status[2] == "off"){
+                        html_code.push('<button type="button" class="btn btn-danger btn-sm"> On <span class="badge badge-light">');
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push('</span></button></div>');
+                    }else{
+                        html_code.push('<button type="button" class="btn btn-warning btn-sm"> On <span class="badge badge-light">');
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push('</span></button></div>');
+                    }
+                    html_code.push('<div class="col-lg-8"><a id="view_multiple_');
+                    html_code.push(obj.raw_name);
+                    html_code.push('" href="#" onclick="multipleView(\'');
+                    html_code.push(obj.raw_name);
+                    html_code.push('\')">View instances</a></div></div>');
+                }else{
+
+                    if("parent_name" in obj){
+                        html_code.push('<button type="button" class="btn btn-danger btn-sm"> Off </div>');
+                    }else{
+                        html_code.push('<button type="button" class="btn btn-danger btn-sm"> On <span class="badge badge-light">0/1</span></button></div>');
+                    }
+
+                    html_code.push('<div class="col-lg-8"> </div></div>');
+                }
+                html_code.push('</div></div></li>');
+                return html_code.join('');
+            }
+
+            function multipleView(name){
+                if($('#view_multiple_' + name).text() == "View instances"){
+                    $('#view_multiple_' + name).text("Hide instances");
+                    $('li[parent="' + name + '"]').each(function() {
+                        $(this).css("display", "block");
+                    });
+
+                }else{
+                    $('#view_multiple_' + name).text("View instances");
+                    $('li[parent="' + name + '"]').each(function() {
+                        $(this).css("display", "none");
+                    });
+                }
+            }
+
 
             $('#hijacks_table tfoot th').each(function() {
                 var title = $(this).text();

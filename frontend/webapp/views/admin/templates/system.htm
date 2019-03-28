@@ -27,10 +27,17 @@
                             <i class="fa fa-bell fa-fw"></i> Monitor Module
                         </div>
                         <div class="panel-body">
-                            <label class="switch">
-                                <input data-toggle="toggle" id="monitor_switch" name="monitor_switch" type="checkbox">
-                                <span class="slider round"></span>
-                            </label>
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_monitor_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="monitor_switch" name="monitor_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -43,10 +50,17 @@
                             <i class="fa fa-bell fa-fw"></i> Detection Module
                         </div>
                         <div class="panel-body">
-                            <label class="switch">
-                                <input data-toggle="toggle" id="detection_switch" name="detection_switch" type="checkbox">
-                                <span class="slider round"></span>
-                            </label>
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_detection_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="detection_switch" name="detection_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -59,10 +73,17 @@
                             <i class="fa fa-bell fa-fw"></i> Mitigation Module
                         </div>
                         <div class="panel-body">
-                            <label class="switch">
-                                <input data-toggle="toggle" id="mitigation_switch" name="mitigation_switch" type="checkbox">
-                                <span class="slider round"></span>
-                            </label>
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_mitigation_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="mitigation_switch" name="mitigation_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -120,6 +141,7 @@
             var comment_editor = null;
             var valid_conf;
             var valid_comment;
+            var modules_list = ['monitor', 'detection', 'mitigation'];
 
             $('#config_action').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
@@ -182,21 +204,37 @@
             }
 
             function render_module_state(data) {
-                data = data["view_processes"]
+                var data = data["view_processes"];
+                var clean_data = [];
                 var agg_data = {};
                 for (var elem in data) {
                     var group = data[elem]['name'].split('_')[0];
+                    if(modules_list.includes(group) == false){
+                        continue;
+                    }
+                    clean_data.push(data[elem]);
                     if(group in agg_data){
                         agg_data[group] = agg_data[group] && data[elem]["running"];
                     }else{
                         agg_data[group] = data[elem]["running"];
                     }
                 }
+                clean_data.sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
+
                 for (var group in agg_data) {
                     if(agg_data[group]) {
                         $("#"+group+"_switch").prop("checked", true)
                     } else {
                         $("#"+group+"_switch").prop("checked", false)
+                    }
+                    var result = aggregate_status_of_modules_no_index(clean_data, group);
+
+                    if(result[2] == "on"){
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-success"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
+                    }else if(result[2] == "off"){
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-danger"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
+                    }else{
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-warning"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
                     }
                 }
             }

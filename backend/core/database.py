@@ -744,6 +744,8 @@ class Database:
 
         def bootstrap_redis(self):
             try:
+
+                # bootstrap ongoing hijack events
                 query = (
                     "SELECT time_started, time_last, peers_seen, "
                     "asns_inf, key, prefix, hijack_as, type, time_detected, "
@@ -775,9 +777,11 @@ class Database:
                     redis_pipeline.sadd("persistent-keys", entry[4])
                 redis_pipeline.execute()
 
+                # bootstrap BGP updates
                 query = (
-                    "SELECT DISTINCT key, timestamp FROM bgp_updates "
-                    "WHERE timestamp > NOW() - interval '1 hours'"
+                    "SELECT key, timestamp FROM bgp_updates "
+                    "WHERE timestamp > NOW() - interval '2 hours' "
+                    "ORDER BY timestamp ASC"
                 )
 
                 with get_ro_cursor(self.ro_conn) as db_cur:
@@ -786,10 +790,13 @@ class Database:
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
-                    expire = int(time.time() - entry[1].timestamp())
+                    expire = max(
+                        int(entry[1].timestamp()) + 2 * 60 * 60 - int(time.time()), 60
+                    )
                     redis_pipeline.set(entry[0], "1", ex=expire)
                 redis_pipeline.execute()
 
+                # bootstrap (origin, neighbor) AS-links of ongoing hijacks
                 query = (
                     "SELECT bgp_updates.as_path, hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
                     "hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "

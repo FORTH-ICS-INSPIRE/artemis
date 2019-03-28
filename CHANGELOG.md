@@ -22,6 +22,7 @@
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
 - When learning ignore rule, escape special character ":" (IPv6)
+- BGP update redis bootstraping from DB
 
 ### Removed
 - Configured prefix graph visualization (needs redesign)

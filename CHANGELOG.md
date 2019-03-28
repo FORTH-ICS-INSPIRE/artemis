@@ -22,6 +22,7 @@
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
 - When learning ignore rule, escape special character ":" (IPv6)
+- UI support for multiple instances of a module in overview and system page
 
 ### Removed
 - Configured prefix graph visualization (needs redesign)

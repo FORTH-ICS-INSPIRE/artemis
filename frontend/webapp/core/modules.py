@@ -1,4 +1,3 @@
-import _thread
 import logging
 import time
 from xmlrpc.client import ServerProxy
@@ -47,15 +46,12 @@ class Modules_state:
                 if action == "start":
                     modules = self.is_any_up_or_running(module, up=False)
                     for mod in modules:
-                        _thread.start_new_thread(
-                            self.server.supervisor.startProcess, (mod,)
-                        )
+                        self.server.supervisor.startProcess(mod)
+
                 elif action == "stop":
                     modules = self.is_any_up_or_running(module)
                     for mod in modules:
-                        _thread.start_new_thread(
-                            self.server.supervisor.stopProcess, (mod,)
-                        )
+                        self.server.supervisor.stopProcess(mod)
         except Exception:
             log.exception("exception")
 

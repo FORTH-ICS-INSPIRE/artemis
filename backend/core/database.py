@@ -68,6 +68,7 @@ class Database:
             self.connection = connection
             self.prefix_tree = None
             self.monitored_prefixes = set()
+            self.configured_prefixes = set()
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
@@ -616,17 +617,19 @@ class Database:
                         "neighbors": rule["neighbors"],
                     }
                     node.data["confs"].append(conf_obj)
-            # calculate the monitored_prefixes
+            # calculate the monitored and configured prefixes
             self.monitored_prefixes = set()
+            self.configured_prefixes = set()
             for prefix in self.prefix_tree.prefixes():
+                self.configured_prefixes.add(prefix)
                 monitored_prefix = self.find_worst_prefix_match(prefix)
                 if monitored_prefix:
                     self.monitored_prefixes.add(monitored_prefix)
             try:
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
-                        "UPDATE stats SET monitored_prefixes=%s;",
-                        (len(self.monitored_prefixes),),
+                        "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
+                        (len(self.monitored_prefixes), len(self.configured_prefixes)),
                     )
             except Exception:
                 log.exception("exception")

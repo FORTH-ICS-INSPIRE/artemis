@@ -185,6 +185,9 @@
                         else if(key == "Total_Monitored_Prefixes"){
                             html_ += key.replace(/_/g, " ") + '</div><div class="col-lg-5" id="db_stat_value_' + key + '"><b>' + data[key][0]["monitored_prefixes"] + '</b></div></div></li>';
                         }
+                        else if(key == "Total_Configured_Prefixes"){
+                            html_ += key.replace(/_/g, " ") + '</div><div class="col-lg-5" id="db_stat_value_' + key + '"><b>' + data[key][0]["configured_prefixes"] + '</b></div></div></li>';
+                        }
                         $('#db_stats_list').append(html_);
                     }
                     displayHelpTextStats();
@@ -196,6 +199,9 @@
                         }
                         else if(key == "Total_Monitored_Prefixes"){
                             $('#db_stat_value_' + key).text(data[key][0]["monitored_prefixes"]);
+                        }
+                        else if(key == "Total_Configured_Prefixes"){
+                            $('#db_stat_value_' + key).text(data[key][0]["configured_prefixes"]);
                         }
                     }
                 }

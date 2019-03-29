@@ -330,10 +330,12 @@ class Tester:
             Helper.ignore_hijack(connection, "c", "139.5.237.0/24", "S|0|-", 136334)
             Helper.comment(connection, "d", "test")
             Helper.ack_hijack(connection, "e", "true")
-            Helper.multiple_action(connection, ["f", "g"], "mark_seen")
-            Helper.multiple_action(connection, ["f", "g"], "mark_not_seen")
-            Helper.multiple_action(connection, ["h"], "mark_resolved")
-            Helper.multiple_action(connection, ["i"], "mark_ignored")
+            Helper.multiple_action(connection, ["f", "g"], "hijack_action_acknowledge")
+            Helper.multiple_action(
+                connection, ["f", "g"], "hijack_action_acknowledge_not"
+            )
+            Helper.multiple_action(connection, ["h"], "hijack_action_resolve")
+            Helper.multiple_action(connection, ["i"], "hijack_action_ignore")
 
             for testfile in os.listdir("testfiles/"):
                 self.clear()

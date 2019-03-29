@@ -14,11 +14,8 @@ from flask_security.utils import hash_password
 from flask_security.utils import verify_password
 from webapp.core.actions import Comment_hijack
 from webapp.core.actions import Hijacks_multiple_action
-from webapp.core.actions import Ignore_hijack
 from webapp.core.actions import Learn_hijack_rule
-from webapp.core.actions import Mitigate_hijack
-from webapp.core.actions import Resolve_hijack
-from webapp.core.actions import Seen_hijack
+from webapp.core.actions import rmq_hijack_action
 from webapp.core.modules import Modules_state
 from webapp.data.models import db
 from webapp.data.models import User
@@ -31,61 +28,90 @@ from webapp.templates.forms import RemoveAdminForm
 actions = Blueprint("actions", __name__, template_folder="templates")
 
 
-@actions.route("/hijacks/resolve/", methods=["POST"])
+@actions.route("/hijacks/action/", methods=["POST"])
 @roles_required("admin")
-def resolve_hijack():
-    # log info
-    hijack_key = request.values.get("hijack_key")
-    prefix = request.values.get("prefix")
-    type_ = request.values.get("type_")
-    hijack_as = int(request.values.get("hijack_as"))
-    app.artemis_logger.debug("url: /hijacks/resolve/{}".format(hijack_key))
-    resolve_hijack_ = Resolve_hijack(hijack_key, prefix, type_, hijack_as)
-    resolve_hijack_.resolve()
-    return jsonify({"status": "success"})
-
-
-@actions.route("/hijacks/mitigate/", methods=["POST"])
-@roles_required("admin")
-def mitigate_hijack():
-    # log info
-    hijack_key = request.values.get("hijack_key")
-    prefix = request.values.get("prefix")
-
+def hijack_action():
+    data = json.loads(request.data.decode("utf-8"))
+    app.artemis_logger.info(data)
     try:
-        _mitigate_hijack = Mitigate_hijack(hijack_key, prefix)
-        _mitigate_hijack.mitigate()
+        action = data["action"]
+
+        if action == "mitigate":
+            obj = {
+                "action": action,
+                "routing_key": "mitigate",
+                "exchange": "mitigation",
+                "priority": 2,
+                "payload": {"hijack_key": data["hijack_key"], "prefix": data["prefix"]},
+            }
+
+        elif action == "resolve":
+            obj = {
+                "action": action,
+                "routing_key": "resolved",
+                "exchange": "hijack-update",
+                "priority": 2,
+                "payload": {
+                    "key": data["hijack_key"],
+                    "prefix": data["prefix"],
+                    "type": data["hijack_type"],
+                    "hijack_as": int(data["hijack_as"]),
+                },
+            }
+
+        elif action == "ignore":
+            obj = {
+                "action": action,
+                "routing_key": "ignored",
+                "exchange": "hijack-update",
+                "priority": 2,
+                "payload": {
+                    "key": data["hijack_key"],
+                    "prefix": data["prefix"],
+                    "type": data["hijack_type"],
+                    "hijack_as": int(data["hijack_as"]),
+                },
+            }
+
+        elif action == "delete":
+            obj = {
+                "action": action,
+                "routing_key": "deleted",
+                "exchange": "hijack-update",
+                "priority": 2,
+                "payload": {
+                    "key": data["hijack_key"],
+                    "prefix": data["prefix"],
+                    "type": data["hijack_type"],
+                    "hijack_as": int(data["hijack_as"]),
+                },
+            }
+
+        elif action == "seen":
+            obj = {
+                "action": action,
+                "routing_key": "seen",
+                "exchange": "hijack-update",
+                "priority": 2,
+                "payload": {"key": data["hijack_key"], "state": data["state"]},
+            }
+
+        else:
+            raise BaseException("unknown action requested")
+
+        rmq_hijack_action(obj)
+
     except BaseException:
-        app.artemis_logger.debug("mitigate_hijack failed")
-
-    return jsonify({"status": "success"})
-
-
-@actions.route("/hijacks/ignore/", methods=["POST"])
-@roles_required("admin")
-def ignore_hijack():
-
-    data_ = json.loads(request.data.decode("utf-8"))
-
-    hijack_key = data_["hijack_key"]
-    prefix = data_["prefix"]
-    type_ = data_["type_"]
-    hijack_as = int(data_["hijack_as"])
-
-    try:
-        _ignore_hijack = Ignore_hijack(hijack_key, prefix, type_, hijack_as)
-        _ignore_hijack.ignore()
-
-    except BaseException:
-        app.artemis_logger.debug("ignore_hijack failed")
-
+        app.artemis_logger.exception(
+            "hijack_action - '{}' failed".format(data["action"])
+        )
+        return jsonify({"status": "fail"})
     return jsonify({"status": "success"})
 
 
 @actions.route("/hijacks/learn_hijack_rule/", methods=["POST"])
 @roles_required("admin")
 def learn_hijack_rule():
-
     data_ = json.loads(request.data.decode("utf-8"))
 
     hijack_key = data_["hijack_key"]
@@ -107,8 +133,11 @@ def learn_hijack_rule():
 @actions.route("/submit_comment/", methods=["POST"])
 @roles_required("admin")
 def submit_new_comment():
-    new_comment = request.values.get("new_comment")
-    hijack_key = request.values.get("hijack_key")
+    data_ = json.loads(request.data.decode("utf-8"))
+
+    new_comment = data_["new_comment"]
+    hijack_key = data_["hijack_key"]
+
     app.artemis_logger.debug(
         "hijack_key: {0} new_comment: {1}".format(hijack_key, new_comment)
     )
@@ -253,25 +282,13 @@ def monitor_state():
         )
 
 
-@actions.route("/submit_hijack_seen", methods=["POST"])
-@roles_required("admin")
-def submit_hijack_seen():
-    hijack_key = request.values.get("hijack_key")
-    state = request.values.get("state")
-
-    seen_ = Seen_hijack()
-    success = seen_.send(hijack_key, state)
-
-    if success:
-        return jsonify({"status": "success"})
-    return jsonify({"status": "fail"})
-
-
-@actions.route("/hijacks_actions", methods=["POST"])
+@actions.route("/multiple_hijack_actions", methods=["POST"])
 @roles_required("admin")
 def submit_hijacks_actions():
-    hijack_keys = json.loads(request.values.get("hijack_keys"))
-    action = request.values.get("action")
+    data_ = json.loads(request.data.decode("utf-8"))
+    app.artemis_logger.info(data_)
+    hijack_keys = data_["hijack_keys"]
+    action = data_["action"]
 
     multiple_action_ = Hijacks_multiple_action()
     success = multiple_action_.send(hijack_keys, action)

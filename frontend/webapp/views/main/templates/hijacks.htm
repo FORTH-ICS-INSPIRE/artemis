@@ -165,6 +165,29 @@
                 </div>
             </div>
         </div>
+        {% if current_user.has_roles('admin') %}
+        <div class="modal fade" id="deleteHijacksModal" tabindex="-1" role="dialog" aria-labelledby="deleteHijacksModal" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteHijacksModalLabel">Delete Hijack(s)</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the selected hijack(s)? </p></br>
+
+                        This action will also delete all BGP messages related to this(these) hijack(s) and cannot be undone.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" onclick="action_delete_hijacks();" data-dismiss="modal">Delete</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
 {% endblock %}
 
@@ -500,6 +523,7 @@
                     },
                     initComplete: function() {
                         var api = this.api();
+
                         api.columns().every(function() {
                             var that = this;
                             var column_index = that[0][0]
@@ -515,34 +539,29 @@
                         var display_multiple_actions = '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
                         display_multiple_actions += '<input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>';
                         display_multiple_actions += '</label></span>  <select class="form-control form-control-sm-auto" id="action_selection">';
-                        display_multiple_actions += '<option value="mark_resolved">Mark as Resolved</option>';
-                        display_multiple_actions += '<option value="mark_ignored">Mark as Ignored</option>';
-                        display_multiple_actions += '<option value="mark_seen">Mark as Acknowledged</option>';
-                        display_multiple_actions += '<option value="mark_not_seen">Mark as Not Acknowledged</option></select>';
+                        display_multiple_actions += '<option value="hijack_action_resolve">Mark as Resolved</option>';
+                        display_multiple_actions += '<option value="hijack_action_ignore">Mark as Ignored</option>';
+                        display_multiple_actions += '<option value="hijack_action_acknowledge">Mark as Acknowledged</option>';
+                        display_multiple_actions += '<option value="hijack_action_acknowledge_not">Mark as Not Acknowledged</option>';
+                        display_multiple_actions += '<option value="hijack_action_delete">Delete Hijack</option></select>';
                         display_multiple_actions += '  <button id="apply_selected" type="button" disabled class="btn btn-primary btn-sm">Apply</button>';
                         display_multiple_actions += '  <button id="clear_all_selected" type="button" disabled class="btn btn-danger btn-sm">Clear</button>';
 
                         $(tool_elems).eq(1).html( display_multiple_actions + '<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
 
                         $('#apply_selected').click(function() {
-                            $.ajax({
-                                type: 'POST',
-                                url: "{{ url_for('actions.submit_hijacks_actions') }}",
-                                data: {
-                                    "hijack_keys" : JSON.stringify(selected_hijacks),
-                                    "action": $("#action_selection option:selected").val()
-                                },
-                                success: function(result){
-                                    table.draw(false);
-                                },
-                                dataType: 'json'
-                            });
-                            selected_hijacks = [];
-                            $('#selected_hijacks_num').html(selected_hijacks.length);
-                            table.draw(false);
-                            $('#clear_all_selected').prop('disabled', true);
-                            $('#apply_selected').prop('disabled', true);
+                            let action = $("#action_selection option:selected").val();
 
+                            if($("#action_selection option:selected").val() == "hijack_action_delete"){
+                                $("#deleteHijacksModal").modal("show");
+                                return;
+                            }
+                            let url = "{{ url_for('actions.submit_hijacks_actions') }}";
+                            let obj = {
+                                "hijack_keys" : selected_hijacks,
+                                "action": action
+                            };
+                            action_multiple_call(url, obj);
                         } );
 
                         $('#clear_all_selected').click(function() {
@@ -660,15 +679,36 @@
                     table.draw();
                     }
                 );
-                {% if current_user.has_roles('admin') %}
-
-
-                {% endif %}
 
                 $('#timezone').html(display_timezone());
                 displayHelpTextButton();
                 $("#navbar_hijacks").addClass("active");
             });
+
+            {% if current_user.has_roles('admin') %}
+
+                function action_delete_hijacks(){
+                    let url = "{{ url_for('actions.submit_hijacks_actions') }}";
+                    let obj = {
+                        "hijack_keys" : selected_hijacks,
+                        "action": "mark_delete_hijack"
+                    };
+                    var result = action_multiple_call(url, obj);
+                }
+
+                async function action_multiple_call(url, obj){
+                    var result = postFetch_json(url, obj);
+                    if(result['status'] == "success"){
+                        selected_hijacks = [];
+                        $('#selected_hijacks_num').html(selected_hijacks.length);
+                        table.draw(false);
+                        $('#clear_all_selected').prop('disabled', true);
+                        $('#apply_selected').prop('disabled', true);
+                    }
+                }
+
+            {% endif %}
+
 
             $("#live_update_button").on('change', function() {
                 if ($(this).is(':checked')) {
@@ -698,6 +738,8 @@
                 fetchDistinctValues(distinct_on, query);
             });
 
+
+
             function downloadTable_update_link(){
                 var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
                 if(downloadTable_parameters != null){
@@ -723,5 +765,6 @@
         <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/prod-display_info.js') }}{{ js_version }}"></script>
         <script src="{{ url_for('static', filename='js/custom/prod-ripestat.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-actions.js') }}{{ js_version }}"></script>
     {% endblock %}
 {% endblock %}

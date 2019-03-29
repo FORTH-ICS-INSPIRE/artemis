@@ -131,10 +131,12 @@ function format_orig_path(orig_path) {
 }
 
 function transform_date_to_local(date){
-    var date_ = moment.utc(date)
-    if(date_._isValid){
-        var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
-        return local;
+    if(date != null){
+        var date_ = moment.utc(date)
+        if(date_._isValid){
+            var local = date_.local().format('YYYY-MM-DD HH:mm:ss');
+            return local;
+        }
     }
     return "Never";
 }

@@ -100,9 +100,6 @@ tr.shown td.details-control {
     display: none;
 }
 
-.hijack-seen-button {
-    display: none;
-}
 
 .selected {
     background-color: #ffc10766!important;
@@ -141,4 +138,8 @@ tr.shown td.details-control {
     border-radius: .2rem;
     width: auto;
     display: inline-block;
+}
+
+.badge-acknowledged {
+    margin-top: 4px;
 }

@@ -146,9 +146,23 @@ CREATE TABLE IF NOT EXISTS configs (
 );
 
 CREATE TABLE IF NOT EXISTS stats (
-    monitored_prefixes BIGINT DEFAULT 0,
-    configured_prefixes BIGINT DEFAULT 0
+    monitored_prefixes BIGINT NOT NULL DEFAULT 0,
+    configured_prefixes BIGINT NOT NULL DEFAULT 0
 );
+
+CREATE UNIQUE INDEX stats_one_row
+ON stats((monitored_prefixes IS NOT NULL));
+
+CREATE FUNCTION stats_no_delete ()
+RETURNS trigger
+LANGUAGE plpgsql AS $f$
+BEGIN
+   RAISE EXCEPTION 'You may not delete the stats!';
+END; $f$;
+
+CREATE TRIGGER stats_no_delete
+BEFORE DELETE ON stats
+FOR EACH ROW EXECUTE PROCEDURE stats_no_delete();
 
 INSERT INTO stats (monitored_prefixes, configured_prefixes) VALUES (0, 0);
 

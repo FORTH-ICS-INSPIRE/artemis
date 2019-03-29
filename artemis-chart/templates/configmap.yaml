@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+  labels:
+    app: {{ .Release.Name }}
+data:
+  guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
+  systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
+  historic: {{ .Values.historic | default "false" | quote }}
+  redisHost: {{ .Values.redisHost | default "backend" | quote }}
+  redisPort: {{ .Values.redisPort | default "6379" | quote }}
+  supervisorHost: {{ .Values.supervisorHost | default "backend" | quote }}
+  supervisorPort: {{ .Values.supervisorPort | default "9001" | quote }}
+  apiHost: {{ .Values.apiHost | default "postgrest" | quote }}
+  apiPort: {{ .Values.apiPort | default "3000" | quote }}
+  dbHost: {{ .Values.dbHost | default "postgres" | quote }}
+  dbPort: {{ .Values.dbPort | default "5432" | quote }}
+  dbVersion: {{ .Values.dbVersion | default "12" | quote }}
+  dbName: {{ .Values.dbName | default "artemis_db" | quote }}
+  dbUser: {{ .Values.dbUser | default "artemis_user" | quote }}
+  dbSchema: {{ .Values.dbSchema | default "public" | quote }}
+  dbAutoClean: {{ .Values.dbAutoClean | default "false" | quote }}
+  dbBackup: {{ .Values.dbBackup | default "true" | quote }}
+  dbHijackDormant: {{ .Values.dbHijackDormant | default "false" | quote }}
+  dbUri: postgres://{{ .Values.dbUser | default "artemis_user" }}:{{ .Values.dbPass | default "Art3m1s" }}@{{ .Values.dbHost | default "postgres"}}:{{ .Values.dbPort | default 5432 }}/{{ .Values.dbName | default "artemis_db" }}
+  bindIp: {{ .Values.bindIp | default "0.0.0.0" | quote }}
+  webappHost: {{ .Values.webappHost | default "frontend" | quote }}
+  webappPort: {{ .Values.webappPort | default "8000" | quote }}
+  adminUser: {{ .Values.adminUser | default "admin" | quote }}
+  adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
+  jsVersion: {{ .Values.jsVersion | default "0.1.2" | quote }}
+  rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" | quote }}
+  rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
+  rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}
+  rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Values.rabbitmqHost | default "rabbitmq"}}:{{ .Values.rabbitmqPort | default 5672 }}//
+  hasuraHost: {{ .Values.hasuraHost | default "graphql" | quote }}
+  hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
+  hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}

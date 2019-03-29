@@ -1,4 +1,4 @@
-var db_stats_query = "{ Total_BGP_Updates: view_bgpupdates_aggregate { aggregate { count } } Total_Unhandled_Updates: view_bgpupdates_aggregate(where: {handled: {_eq: false}}) { aggregate { count } } Total_Hijacks: view_hijacks_aggregate { aggregate { count } } Resolved_Hijacks: view_hijacks_aggregate(where: {resolved: {_eq: true}}) { aggregate { count } } Mitigation_Hijacks: view_hijacks_aggregate(where: {under_mitigation: {_eq: true}}) { aggregate { count } } Ongoing_Hijacks: view_hijacks_aggregate(where: {active: {_eq: true}}) { aggregate { count } } Dormant_Hijacks: view_hijacks_aggregate(where: {dormant: {_eq: true}}) { aggregate { count } } Ignored_Hijacks: view_hijacks_aggregate(where: {ignored: {_eq: true}}) { aggregate { count } } Withdrawn_Hijacks: view_hijacks_aggregate(where: {withdrawn: {_eq: true}}) { aggregate { count } } Acknowledged_Hijacks: view_hijacks_aggregate(where: {seen: {_eq: true}}) { aggregate { count } } Outdated_Hijacks: view_hijacks_aggregate(where: {outdated: {_eq: true}}) { aggregate { count } } }";
+var db_stats_query = "{ Total_Configured_Prefixes: view_stats { configured_prefixes } Total_Monitored_Prefixes: view_stats { monitored_prefixes } Total_BGP_Updates: view_bgpupdates_aggregate { aggregate { count } } Total_Unhandled_Updates: view_bgpupdates_aggregate(where: {handled: {_eq: false}}) { aggregate { count } } Total_Hijacks: view_hijacks_aggregate { aggregate { count } } Resolved_Hijacks: view_hijacks_aggregate(where: {resolved: {_eq: true}}) { aggregate { count } } Mitigation_Hijacks: view_hijacks_aggregate(where: {under_mitigation: {_eq: true}}) { aggregate { count } } Ongoing_Hijacks: view_hijacks_aggregate(where: {active: {_eq: true}}) { aggregate { count } } Dormant_Hijacks: view_hijacks_aggregate(where: {dormant: {_eq: true}}) { aggregate { count } } Ignored_Hijacks: view_hijacks_aggregate(where: {ignored: {_eq: true}}) { aggregate { count } } Withdrawn_Hijacks: view_hijacks_aggregate(where: {withdrawn: {_eq: true}}) { aggregate { count } } Acknowledged_Hijacks: view_hijacks_aggregate(where: {seen: {_eq: true}}) { aggregate { count } } Outdated_Hijacks: view_hijacks_aggregate(where: {outdated: {_eq: true}}) { aggregate { count } } }";
 var proc_stats_query = "{ view_processes { name running timestamp } }";
 var config_stats_query = "{ view_configs(limit: 1, order_by: {time_modified: desc}) { raw_config comment time_modified } }";
 
@@ -260,4 +260,62 @@ function fetchDBVersion() { // eslint-disable-line no-unused-vars
         .catch(error => console.error(error));
     })
     .catch(error => console.error(error));
+}
+
+
+function fetchLatestConfig() { // eslint-disable-line no-unused-vars
+    return new Promise(config => {
+        fetch("/jwt/auth", {
+            method: "GET",
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            fetch("/api/graphql", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization":"Bearer " + data['access_token']
+                },
+                body: JSON.stringify({
+                    query: "query getLatestConfig { view_data: view_configs( order_by: {time_modified: desc}, limit: 1 ) { raw_config, comment, time_modified } }"
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                    config(data['data']['view_data'][0]);
+                }
+            )
+            .catch(error => console.error(error));
+        })
+        .catch(error => console.error(error));
+    });
+}
+
+
+var fetchHijackByKeyCalled = false;
+function fetchHijackByKeyLive(ws, hijack_key, trigger) { // eslint-disable-line no-unused-vars
+    if(fetchHijackByKeyCalled) {
+        waitForConnection(ws, JSON.stringify({id: "6", type: "stop"}));
+    }
+    waitForConnection(ws, JSON.stringify({
+        id: "6",
+        type: "start",
+        payload: {
+            variables: {},
+            extensions: {},
+            operationName: "getHijackByKey",
+            query: "subscription getHijackByKey { view_hijacks(where: {key: {_eq:\"" + hijack_key + "\"}}, limit: 1) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active dormant under_mitigation outdated time_last configured_prefix peers_seen peers_withdrawn } }"
+        }
+    }));
+
+    if(!fetchHijackByKeyCalled) {
+        ws.addEventListener('message', (event) => {
+            data = JSON.parse(event.data);
+            if(data.type === 'data' && data.id === "6") {
+                trigger(data.payload.data.view_hijacks[0]);
+            }
+        });
+        fetchHijackByKeyCalled = true;
+    }
 }

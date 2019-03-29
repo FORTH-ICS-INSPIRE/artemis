@@ -4,6 +4,7 @@ kombu==4.2.2.post1
 netaddr==0.7.19
 psycopg2-binary==2.7.7
 py-radix==0.10.0
+PyYAML==5.1
 redis==3.1.0
 ruamel.yaml==0.15.87
 socketIO-client==0.7.2

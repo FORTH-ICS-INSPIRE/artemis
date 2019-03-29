@@ -1,0 +1,156 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: frontend
+    app: {{ .Release.Name }}
+  name: frontend
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: frontend
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      initContainers:
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+      containers:
+      - env:
+        - name: API_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: apiHost
+        - name: API_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: apiPort
+        - name: BIND_IP
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: bindIp
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbHost
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: dbPort
+        - name: FLASK_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: flaskSecret
+        - name: HASURA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraHost
+        - name: HASURA_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hasuraPort
+        - name: JS_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: jsVersion
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: jwtSecret
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqHost
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: rabbitmqPass
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPort
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqUser
+        - name: SECURITY_PASSWORD_SALT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: passwordSalt
+        - name: SUPERVISOR_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorHost
+        - name: SUPERVISOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: supervisorPort
+        - name: SYSTEM_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: systemVersion
+        - name: USER_ROOT_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: adminEmail
+        - name: USER_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: adminPass
+        - name: USER_ROOT_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: adminUser
+        - name: WEBAPP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: webappPort
+        image: inspiregroup/artemis-frontend:{{ .Values.systemVersion }}
+        name: frontend
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/artemis/
+          name: frontend-configmap
+        - mountPath: /etc/webapp/db/
+          name: frontend-emptydir
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+          - key: webapp.cfg
+            path: webapp.cfg
+          - key: logging.yaml
+            path: logging.yaml
+        name: frontend-configmap
+      - emptyDir: {}
+        name: frontend-emptydir
+status: {}

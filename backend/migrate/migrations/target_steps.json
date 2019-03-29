@@ -71,6 +71,18 @@
             "db_version": "12",
             "description": "Dropped unneeded config_data column from configs table",
             "file": "migration_12.sql"
+        },
+        "13": {
+            "id": "13",
+            "db_version": "13",
+            "description": "Added stats table initialized with monitored_prefixes column",
+            "file": "migration_13.sql"
+        },
+        "14": {
+            "id": "14",
+            "db_version": "14",
+            "description": "Added configured_prefixes column in stats table and re-initialized stats table",
+            "file": "migration_14.sql"
         }
     }
 }

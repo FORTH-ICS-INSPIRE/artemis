@@ -2,13 +2,13 @@ import difflib
 import hashlib
 import json
 import os
-import pickle
 import socket
 import time
 from xmlrpc.client import ServerProxy
 
 import psycopg2
 import redis
+import yaml
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
@@ -29,20 +29,27 @@ class Tester:
         db_conn = None
         while not db_conn:
             try:
-                _db_name = os.getenv("DATABASE_NAME", "artemis_db")
-                _user = os.getenv("DATABASE_USER", "artemis_user")
-                _host = os.getenv("DATABASE_HOST", "postgres")
-                _password = os.getenv("DATABASE_PASSWORD", "Art3m1s")
+                _db_name = os.getenv("DB_NAME", "artemis_db")
+                _user = os.getenv("DB_USER", "artemis_user")
+                _host = os.getenv("DB_HOST", "postgres")
+                _port = os.getenv("DB_PORT", 5432)
+                _password = os.getenv("DB_PASS", "Art3m1s")
 
                 db_conn = psycopg2.connect(
-                    dbname=_db_name, user=_user, host=_host, password=_password
+                    dbname=_db_name,
+                    user=_user,
+                    host=_host,
+                    port=_port,
+                    password=_password,
                 )
             except BaseException:
                 time.sleep(1)
         return db_conn
 
     def initRedis(self):
-        redis_ = redis.Redis(host=os.getenv("BACKEND_HOST", "backend"), port=6379)
+        redis_ = redis.Redis(
+            host=os.getenv("REDIS_HOST", "backend"), port=os.getenv("REDIS_PORT", 6739)
+        )
         self.redis = redis_
 
     def initSupervisor(self):
@@ -72,7 +79,11 @@ class Tester:
         assert isinstance(prefix, str)
         assert isinstance(hijack_as, int)
         assert isinstance(_type, str)
-        return hashlib.shake_128(pickle.dumps([prefix, hijack_as, _type])).hexdigest(16)
+        return Tester.get_hash([prefix, hijack_as, _type])
+
+    @staticmethod
+    def get_hash(obj):
+        return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
 
     @staticmethod
     def waitExchange(exchange, channel):
@@ -236,8 +247,13 @@ class Tester:
         Loads a test file that includes crafted bgp updates as
         input and expected messages as output.
         """
-
-        RABBITMQ_URI = os.getenv("RABBITMQ_URI")
+        RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+        RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+        RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+        RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+        RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+            RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+        )
 
         # exchanges
         self.update_exchange = Exchange(
@@ -334,7 +350,7 @@ class Tester:
                     connection.Consumer(
                         self.hijack_queue,
                         callbacks=[self.validate_message],
-                        accept=["pickle"],
+                        accept=["yaml"],
                     ),
                     connection.Consumer(
                         self.update_queue, callbacks=[self.validate_message]

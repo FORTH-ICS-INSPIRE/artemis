@@ -70,6 +70,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
         )
         exchange.declare()
         producer = Producer(connection)
+        validator = mformat_validator()
         while True:
             # get next record
             try:
@@ -123,7 +124,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                                 "prefix": this_prefix,
                                 "peer_asn": peer_asn,
                             }
-                            if mformat_validator(msg):
+                            if validator.validate(msg):
                                 msgs = normalize_msg_path(msg)
                                 for msg in msgs:
                                     key_generator(msg)

@@ -4,13 +4,29 @@
 ### Added
 - Support for dormant flags in hijacks
 - Storing hijack update (origin, neighbor) combinations in redis
+- Learn rule action/button for ongoing hijacks in frontend
+- Translate learn rule request in ARTEMIS-compatible dicts in backend
+- Translate learn rule ARTEMIS-compatible dicts into yaml conf in backend
+- Update yaml conf with learned rule
 - Configured/matched prefix field and search in frontend hijack and update tables
+- Monitored prefixes count in stats table (overview)
+- Configured prefixes count in stats table (overview)
+- Initial kubernetes/helm (helm-charts) support
+- Reject old updates from taps and have a "HISTORIC" variable to enable/disable
+- Initial support for LDAP authentication
 
 ### Changed
-- Using prefix lists in json file format as monitoring taps input
+- Using prefix lists in json file format as monitoring taps input to avoid problematic ultra long arguments
+- Refactored environment variables
+- Use of RIPE RIS firehose stream instead of the websocket clientui8
+- Use of function url_for in flask redirect
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
+- When learning ignore rule, escape special character ":" (IPv6)
+- Problematic start of RIS and exaBGP monitors, even if not configured
+- BGP update redis bootstraping from DB
+- UI support for multiple instances of a module in overview and system page
 
 ### Removed
 - Configured prefix graph visualization (needs redesign)
@@ -20,7 +36,7 @@
 - TBD (soon-to-be removed feature)
 
 ### Security
-- TBD (addressing vulnerability)
+- Using yaml dump and safe_load instead of pickling/unpickling
 
 ## [1.1.1] (Atlas) - 2019-02-28
 ### Added

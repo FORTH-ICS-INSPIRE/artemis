@@ -33,6 +33,7 @@ class ExaBGP:
                 "bgp-update", channel=connection, type="direct", durable=False
             )
             self.exchange.declare()
+            validator = mformat_validator()
 
             try:
                 self.sio = SocketIO("http://" + self.host, namespace=BaseNamespace)
@@ -47,7 +48,7 @@ class ExaBGP:
                         "prefix": bgp_message["prefix"],
                         "peer_asn": int(bgp_message["peer_asn"]),
                     }
-                    if mformat_validator(msg):
+                    if validator.validate(msg):
                         with Producer(connection) as producer:
                             msgs = normalize_msg_path(msg)
                             for msg in msgs:

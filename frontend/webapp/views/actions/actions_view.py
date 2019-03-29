@@ -7,6 +7,7 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import session
+from flask import url_for
 from flask_security.decorators import login_required
 from flask_security.decorators import roles_required
 from flask_security.utils import hash_password
@@ -14,6 +15,7 @@ from flask_security.utils import verify_password
 from webapp.core.actions import Comment_hijack
 from webapp.core.actions import Hijacks_multiple_action
 from webapp.core.actions import Ignore_hijack
+from webapp.core.actions import Learn_hijack_rule
 from webapp.core.actions import Mitigate_hijack
 from webapp.core.actions import Resolve_hijack
 from webapp.core.actions import Seen_hijack
@@ -62,10 +64,13 @@ def mitigate_hijack():
 @actions.route("/hijacks/ignore/", methods=["POST"])
 @roles_required("admin")
 def ignore_hijack():
-    hijack_key = request.values.get("hijack_key")
-    prefix = request.values.get("prefix")
-    type_ = request.values.get("type_")
-    hijack_as = int(request.values.get("hijack_as"))
+
+    data_ = json.loads(request.data.decode("utf-8"))
+
+    hijack_key = data_["hijack_key"]
+    prefix = data_["prefix"]
+    type_ = data_["type_"]
+    hijack_as = int(data_["hijack_as"])
 
     try:
         _ignore_hijack = Ignore_hijack(hijack_key, prefix, type_, hijack_as)
@@ -75,6 +80,28 @@ def ignore_hijack():
         app.artemis_logger.debug("ignore_hijack failed")
 
     return jsonify({"status": "success"})
+
+
+@actions.route("/hijacks/learn_hijack_rule/", methods=["POST"])
+@roles_required("admin")
+def learn_hijack_rule():
+
+    data_ = json.loads(request.data.decode("utf-8"))
+
+    hijack_key = data_["hijack_key"]
+    prefix = data_["prefix"]
+    type_ = data_["type_"]
+    hijack_as = int(data_["hijack_as"])
+    action = data_["action"]
+
+    _learn_hijack_rule = Learn_hijack_rule()
+    response, success = _learn_hijack_rule.send(
+        hijack_key, prefix, type_, hijack_as, action
+    )
+
+    if success:
+        return jsonify({"status": "success", "response": response})
+    return jsonify({"status": "fail", "response": response})
 
 
 @actions.route("/submit_comment/", methods=["POST"])
@@ -111,7 +138,7 @@ def approve_user():
 
         app.security.datastore.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/create_admin", methods=["POST"])
@@ -131,7 +158,7 @@ def create_admin():
 
         app.security.datastore.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/remove_admin", methods=["POST"])
@@ -144,7 +171,7 @@ def remove_admin():
         user = app.security.datastore.find_user(id=form.select_field.data)
         # Protect admin (user id == 1)
         if user.id == 1:
-            return redirect("admin/user_management")
+            return redirect(url_for("admin.user_management"))
 
         admin_role = app.security.datastore.find_role("admin")
         app.security.datastore.remove_role_from_user(user, admin_role)
@@ -154,7 +181,7 @@ def remove_admin():
 
         app.security.datastore.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/delete_user", methods=["POST"])
@@ -167,7 +194,7 @@ def delete_user():
         db.session.query(User).filter(User.id == form.select_field.data).delete()
         db.session.commit()
 
-    return redirect("admin/user_management")
+    return redirect(url_for("admin.user_management"))
 
 
 @actions.route("/new/password", methods=["POST"])

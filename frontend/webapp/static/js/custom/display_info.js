@@ -7,6 +7,8 @@ mapHelpText_stats['field_monitor'] = 'ARTEMIS module responsible for real-time m
 mapHelpText_stats['field_observer'] = 'ARTEMIS module responsible for observing async changes in the configuration file, triggering the reloading of ARTEMIS modules.';
 mapHelpText_stats['field_database'] = 'ARTEMIS module responsible for providing access to the Postgres DB used in the core of ARTEMIS for persistent storage of configuration, BGP update and BGP prefix hijack event data.';
 
+mapHelpText_stats['field_stats_Total_Configured_Prefixes'] = 'The total number of IPv4/IPv6 prefixes that are configured (as appearing in ARTEMIS rules).';
+mapHelpText_stats['field_stats_Total_Monitored_Prefixes'] = 'The total number of IPv4/IPv6 prefixes that are actually monitored (super-prefixes include sub-prefixes).';
 mapHelpText_stats['field_stats_Total_BGP_Updates'] = 'The total number of BGP updates seen on the monitors.';
 mapHelpText_stats['field_stats_Total_Unhandled_Updates'] = 'The total number of BGP updates not processed by the detection (either because they are in the queue, or because the detection was not running when they were fed to the monitors).';
 mapHelpText_stats['field_stats_Total_Hijacks'] = 'The total number of hijack events stored in the system.';

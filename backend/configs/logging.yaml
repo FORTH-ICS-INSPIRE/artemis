@@ -31,18 +31,22 @@ handlers:
 
     # for email
     # smtps_handler:
-    #     class: utils.SMTPSHandler
+    #     # utils.TLSSMTPHandler for TLS
+    #     # utils.SSLSMTPHandler for SSL
+    #     class: utils.TLSSMTPHandler
     #     level: INFO
     #     formatter: simple
     #     mailhost:
     #     - smtp.server.com
-    #     - port
-    #     fromaddr: from
-    #     toaddrs: to
-    #     subject: subject
+    #     - 25
+    #     fromaddr: from@email.com
+    #     toaddrs:
+    #     - to1@email.com
+    #     - to2@email.com
+    #     subject: "Subject Title"
     #     credentials:
     #     - username
-    #     - password
+    #     - pass
     #     secure: True
 
     null_handler:

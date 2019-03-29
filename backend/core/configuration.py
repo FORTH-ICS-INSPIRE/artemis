@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 import signal
 import time
 from io import StringIO
@@ -12,6 +13,8 @@ from typing import Text
 from typing import TextIO
 from typing import Union
 
+import redis
+import ruamel.yaml
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -21,6 +24,9 @@ from utils import ArtemisError
 from utils import flatten
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import redis_key
+from utils import REDIS_PORT
 from utils import translate_rfc2622
 from yaml import load as yload
 
@@ -111,6 +117,8 @@ class Configuration:
                 raw = f.read()
                 self.data, _flag, _error = self.parse(raw, yaml=True)
 
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+
             # EXCHANGES
             self.config_exchange = Exchange(
                 "config",
@@ -130,6 +138,12 @@ class Configuration:
             )
             self.config_request_queue = Queue(
                 "config-request-queue",
+                durable=False,
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
+            )
+            self.hijack_learn_rule_queue = Queue(
+                "conf-hijack-learn-rule-queue",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
@@ -154,12 +168,20 @@ class Configuration:
                     prefetch_count=1,
                     no_ack=True,
                 ),
+                Consumer(
+                    queues=[self.hijack_learn_rule_queue],
+                    on_message=self.handle_hijack_learn_rule_request,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
             ]
 
         def handle_config_modify(self, message: Dict) -> NoReturn:
             """
-            Consumer for Config-Modify messages that parses and checks if new configuration is correct.
-            Replies back to the sender if the configuration is accepted or rejected and notifies all Subscribers if new configuration is used.
+            Consumer for Config-Modify messages that parses and checks
+            if new configuration is correct.
+            Replies back to the sender if the configuration is accepted
+            or rejected and notifies all Subscribers if new configuration is used.
             """
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             raw_ = message.payload
@@ -236,7 +258,8 @@ class Configuration:
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """
-            Handles all config requests from other Services by replying back with the current configuration.
+            Handles all config requests from other Services
+            by replying back with the current configuration.
             """
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             self.producer.publish(
@@ -249,11 +272,240 @@ class Configuration:
                 priority=4,
             )
 
+        def translate_learn_rule_msg_to_dicts(self, raw):
+            """
+            Translates a learn rule message payload (raw)
+            into ARTEMIS-compatible dictionaries
+            :param raw:
+                "key": <str>,
+                "prefix": <str>,
+                "type": <str>,
+                "hijack_as": <int>,
+            }
+            :return: (<str>rule_prefix, <list><int>rule_asns,
+            <list><dict>rules)
+            """
+            # initialize dictionaries and lists
+            rule_prefix = {}
+            rule_asns = {}
+            rules = []
+
+            try:
+                # retrieve (origin, neighbor) combinations from redis
+                redis_hijack_key = redis_key(
+                    raw["prefix"], raw["hijack_as"], raw["type"]
+                )
+                hij_orig_neighb_set = "hij_orig_neighb_{}".format(redis_hijack_key)
+                orig_to_neighb = {}
+                neighb_to_origs = {}
+                asns = set()
+                if self.redis.exists(hij_orig_neighb_set):
+                    for element in self.redis.sscan_iter(hij_orig_neighb_set):
+                        (origin, neighbor) = list(map(int, element.decode().split("_")))
+                        if origin is not None:
+                            asns.add(origin)
+                            if origin not in orig_to_neighb:
+                                orig_to_neighb[origin] = set()
+                            if neighbor is not None:
+                                asns.add(neighbor)
+                                orig_to_neighb[origin].add(neighbor)
+                                if neighbor not in neighb_to_origs:
+                                    neighb_to_origs[neighbor] = set()
+                                neighb_to_origs[neighbor].add(origin)
+
+                # learned rule prefix
+                rule_prefix = {
+                    raw["prefix"]: "LEARNED_H_{}_P_{}".format(
+                        raw["key"], raw["prefix"].replace("/", "_").replace(".", "_").replace(":", "_")
+                    )
+                }
+
+                # learned rule asns
+                rule_asns = {}
+                for asn in sorted(list(asns)):
+                    rule_asns[asn] = "LEARNED_H_{}_AS_{}".format(raw["key"], asn)
+
+                # learned rule(s)
+                if re.match(r"^[E|S]\|0.*", raw["type"]):
+                    assert len(orig_to_neighb) == 1
+                    assert raw["hijack_as"] in orig_to_neighb
+                    learned_rule = {
+                        "prefixes": [rule_prefix[raw["prefix"]]],
+                        "origin_asns": [rule_asns[raw["hijack_as"]]],
+                        "neighbors": [
+                            rule_asns[asn]
+                            for asn in sorted(orig_to_neighb[raw["hijack_as"]])
+                        ],
+                        "mitigation": "manual",
+                    }
+                    rules.append(learned_rule)
+                elif re.match(r"^[E|S]\|1.*", raw["type"]):
+                    assert len(neighb_to_origs) == 1
+                    assert raw["hijack_as"] in neighb_to_origs
+                    learned_rule = {
+                        "prefixes": [rule_prefix[raw["prefix"]]],
+                        "origin_asns": [
+                            rule_asns[asn]
+                            for asn in sorted(neighb_to_origs[raw["hijack_as"]])
+                        ],
+                        "neighbors": [rule_asns[raw["hijack_as"]]],
+                        "mitigation": "manual",
+                    }
+                    rules.append(learned_rule)
+                elif re.match(r"^[E|S]\|-.*", raw["type"]) or re.match(
+                    r"^Q\|0.*", raw["type"]
+                ):
+                    for origin in sorted(orig_to_neighb):
+                        learned_rule = {
+                            "prefixes": [rule_prefix[raw["prefix"]]],
+                            "origin_asns": [rule_asns[origin]],
+                            "neighbors": [
+                                rule_asns[asn] for asn in sorted(orig_to_neighb[origin])
+                            ],
+                            "mitigation": "manual",
+                        }
+                        rules.append(learned_rule)
+            except Exception:
+                log.exception("{}".format(raw))
+                return (None, None, None)
+
+            return (rule_prefix, rule_asns, rules)
+
+        def translate_learn_rule_dicts_to_yaml_conf(
+            self, rule_prefix, rule_asns, rules
+        ):
+            """
+            Translates the dicts from translate_learn_rule_msg_to_dicts
+            function into yaml configuration,
+            preserving the order and comments of the current file
+            :param rule_prefix: <str>
+            :param rule_asns: <list><int>
+            :param rules: <list><dict>
+            :return: (<dict>, <bool>)
+            """
+            if not rule_prefix or not rule_asns or not rules:
+                return (
+                    "problem with rule installation; rule probably already exists",
+                    False,
+                )
+            yaml_conf = None
+            try:
+                with open(self.file, "r") as f:
+                    raw = f.read()
+                yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
+                # append prefix
+                for prefix in rule_prefix:
+                    prefix_anchor = rule_prefix[prefix]
+                    if prefix_anchor not in yaml_conf["prefixes"]:
+                        yaml_conf["prefixes"][
+                            prefix_anchor
+                        ] = ruamel.yaml.comments.CommentedSeq()
+                        yaml_conf["prefixes"][prefix_anchor].append(prefix)
+                        yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
+                            prefix_anchor, always_dump=True
+                        )
+                    else:
+                        return ("rule already exists", False)
+
+                # append asns
+                for asn in sorted(rule_asns):
+                    asn_anchor = rule_asns[asn]
+                    if asn_anchor not in yaml_conf["asns"]:
+                        yaml_conf["asns"][
+                            asn_anchor
+                        ] = ruamel.yaml.comments.CommentedSeq()
+                        yaml_conf["asns"][asn_anchor].append(asn)
+                        yaml_conf["asns"][asn_anchor].yaml_set_anchor(
+                            asn_anchor, always_dump=True
+                        )
+                    else:
+                        return ("rule already exists", False)
+
+                # append rules
+                for rule in rules:
+                    rule_map = ruamel.yaml.comments.CommentedMap()
+
+                    # append prefix
+                    rule_map["prefixes"] = ruamel.yaml.comments.CommentedSeq()
+                    for prefix in rule["prefixes"]:
+                        rule_map["prefixes"].append(yaml_conf["prefixes"][prefix])
+
+                    # append origin asns
+                    rule_map["origin_asns"] = ruamel.yaml.comments.CommentedSeq()
+                    for origin_asn in rule["origin_asns"]:
+                        rule_map["origin_asns"].append(yaml_conf["asns"][origin_asn])
+
+                    # append neighbors
+                    rule_map["neighbors"] = ruamel.yaml.comments.CommentedSeq()
+                    for neighbor in rule["neighbors"]:
+                        rule_map["neighbors"].append(yaml_conf["asns"][neighbor])
+
+                    # append mitigation action
+                    rule_map["mitigation"] = rule["mitigation"]
+
+                    yaml_conf["rules"].append(rule_map)
+
+            except Exception:
+                log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
+                return (
+                    "problem with rule installation; exception during yaml processing",
+                    False,
+                )
+            return (yaml_conf, True)
+
+        def handle_hijack_learn_rule_request(self, message):
+            """
+            Receives a "learn-rule" message, translates this
+            to associated ARTEMIS-compatibe dictionaries,
+            and adds the prefix, asns and rule(s) to the configuration
+            :param message: {
+                "key": <str>,
+                "prefix": <str>,
+                "type": <str>,
+                "hijack_as": <int>,
+                "action": <str> show|approve
+            }
+            :return: -
+            """
+            raw = message.payload
+            log.debug("payload: {}".format(raw))
+            (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
+                raw
+            )
+            (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
+                rule_prefix, rule_asns, rules
+            )
+            if ok:
+                yaml_conf_str = ruamel.yaml.dump(
+                    yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
+                )
+            else:
+                yaml_conf_str = yaml_conf
+
+            if raw["action"] == "approve" and ok:
+                # store the new configuration to file
+                with open(self.file, "w") as f:
+                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+
+            if raw["action"] in ["show", "approve"]:
+                # reply back to the sender with the extra yaml configuration
+                # message.
+                self.producer.publish(
+                    {"success": ok, "new_yaml_conf": yaml_conf_str},
+                    exchange="",
+                    routing_key=message.properties["reply_to"],
+                    correlation_id=message.properties["correlation_id"],
+                    serializer="json",
+                    retry=True,
+                    priority=4,
+                )
+
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False
         ) -> Dict:
             """
-            Parser for the configuration file or string. The format can either be a File, StringIO or String
+            Parser for the configuration file or string.
+            The format can either be a File, StringIO or String
             """
             try:
                 if yaml:
@@ -274,8 +526,10 @@ class Configuration:
 
         def check(self, data: Text) -> Dict:
             """
-            Checks if all sections and fields are defined correctly in the parsed configuration.
-            Raises custom exceptions in case a field or section is misdefined.
+            Checks if all sections and fields are defined correctly
+            in the parsed configuration.
+            Raises custom exceptions in case a field or section
+            is misdefined.
             """
             for section in data:
                 if section not in self.sections:

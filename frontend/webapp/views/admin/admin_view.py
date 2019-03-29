@@ -3,7 +3,6 @@ import json
 from flask import Blueprint
 from flask import current_app as app
 from flask import jsonify
-from flask import redirect
 from flask import render_template
 from flask import request
 from flask_security.decorators import roles_required
@@ -18,15 +17,11 @@ from webapp.templates.forms import RemoveAdminForm
 admin = Blueprint("admin", __name__, template_folder="templates")
 
 
+@admin.route("", methods=["GET", "POST"])
 @admin.route("/", methods=["GET", "POST"])
-@roles_required("admin")
-def default():
-    return redirect("admin/system")
-
-
 @admin.route("/system", methods=["GET", "POST"])
 @roles_required("admin")
-def index():
+def system():
     return render_template("system.htm", js_version=app.config["JS_VERSION"])
 
 

@@ -3,21 +3,107 @@ import json
 import logging.config
 import logging.handlers
 import os
-import pickle
 import re
+import time
 from contextlib import contextmanager
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
 
+import psycopg2
 import yaml
 
-RABBITMQ_URI = os.getenv("RABBITMQ_URI", "amqp://guest:guest@rabbitmq//")
 SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
 SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
-DB_NAME = os.getenv("DATABASE_NAME", "artemis_db")
-DB_USER = os.getenv("DATABASE_USER", "artemis_user")
-DB_HOST = os.getenv("DATABASE_HOST", "postgres")
-DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "Art3m1s")
+DB_NAME = os.getenv("DB_NAME", "artemis_db")
+DB_USER = os.getenv("DB_USER", "artemis_user")
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_PORT = os.getenv("DB_PORT", 5432)
+DB_PASS = os.getenv("DB_PASS", "Art3m1s")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+
+RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+)
+SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
+
+
+class TLSSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.starttls()  # for tls add this line
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
+
+
+class SSLSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
 
 
 def get_logger(path="/etc/artemis/logging.yaml"):
@@ -59,6 +145,26 @@ def get_wo_cursor(conn):
             conn.commit()
 
 
+def get_db_conn():
+    conn = None
+    time_sleep_connection_retry = 5
+    while not conn:
+        try:
+            conn = psycopg2.connect(
+                dbname=DB_NAME,
+                user=DB_USER,
+                host=DB_HOST,
+                port=DB_PORT,
+                password=DB_PASS,
+            )
+        except Exception:
+            log.exception("exception")
+            time.sleep(time_sleep_connection_retry)
+        finally:
+            log.debug("PostgreSQL DB created/connected..")
+    return conn
+
+
 def flatten(items, seqtypes=(list, tuple)):
     res = []
     if not isinstance(items, seqtypes):
@@ -96,40 +202,6 @@ def exception_handler(log):
     return function_wrapper
 
 
-class SMTPSHandler(SMTPHandler):
-    def emit(self, record):
-        """
-        Overwrite the logging.handlers.SMTPHandler.emit function with SMTP_SSL.
-        Emit a record.
-        Format the record and send it to the specified addressees.
-        """
-        try:
-            import smtplib
-            from email.utils import formatdate
-
-            port = self.mailport
-            if not port:
-                port = smtplib.SMTP_PORT
-            smtp = smtplib.SMTP_SSL(self.mailhost, port)
-            msg = self.format(record)
-            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
-                self.fromaddr,
-                ", ".join(self.toaddrs),
-                self.getSubject(record),
-                formatdate(),
-                msg,
-            )
-            if self.username:
-                smtp.ehlo()
-                smtp.login(self.username, self.password)
-            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
-            smtp.quit()
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except Exception:
-            self.handleError(record)
-
-
 def dump_json(json_obj, filename):
     with open(filename, "w") as f:
         json.dump(json_obj, f)
@@ -139,7 +211,11 @@ def redis_key(prefix, hijack_as, _type):
     assert isinstance(prefix, str)
     assert isinstance(hijack_as, int)
     assert isinstance(_type, str)
-    return hashlib.shake_128(pickle.dumps([prefix, hijack_as, _type])).hexdigest(16)
+    return get_hash([prefix, hijack_as, _type])
+
+
+def get_hash(obj):
+    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
 
 
 def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):

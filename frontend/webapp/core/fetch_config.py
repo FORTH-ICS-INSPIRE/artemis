@@ -1,13 +1,11 @@
 import logging
 
 import requests
-from webapp.utils import API_URL_FLASK
+import yaml
+from webapp.utils import API_URI
 from webapp.utils import flatten
-from yaml import load as yload
 
 log = logging.getLogger("webapp_logger")
-
-API_PATH = "http://" + API_URL_FLASK
 
 
 class Configuration:
@@ -21,7 +19,7 @@ class Configuration:
     def get_newest_config(self):
         try:
             log.debug("send request for newest config: {}".format(self.raw_json))
-            url_ = API_PATH + "/configs?order=time_modified.desc&limit=1"
+            url_ = API_URI + "/configs?order=time_modified.desc&limit=1"
             response = requests.get(url=url_)
             self.raw_json = response.json()
             log.debug("received config json: {}".format(self.raw_json))
@@ -35,7 +33,7 @@ class Configuration:
             if "comment" in self.raw_json[0]:
                 self.config_comment = self.raw_json[0]["comment"]
 
-            self.config_yaml = yload(self.raw_config)
+            self.config_yaml = yaml.safe_load(self.raw_config)
         except BaseException:
             log.exception("exception")
             return False
@@ -75,7 +73,7 @@ class Configuration:
 def fetch_all_config_timestamps():
     try:
         log.debug("send request to fetch all config timestamps")
-        url_ = API_PATH + "/view_configs"
+        url_ = API_URI + "/view_configs"
         response = requests.get(url=url_)
         raw_json = response.json()
         if raw_json:

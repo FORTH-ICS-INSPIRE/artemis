@@ -9,6 +9,8 @@ from webapp.data.models import Role
 from webapp.data.models import User
 from webapp.templates.forms import ExtendedLoginForm
 from webapp.templates.forms import ExtendedRegisterForm
+from webapp.utils.ldap.datastore import LDAPUserDatastore
+from webapp.utils.ldap.forms import LDAPLoginForm
 
 
 class BaseConfig(object):
@@ -59,8 +61,8 @@ class BaseConfig(object):
     # OTHER
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
 
-    WEBAPP_HOST = os.getenv("MACHINE_IP")
-    WEBAPP_PORT = int(os.getenv("FLASK_PORT", "8000"))
+    WEBAPP_HOST = os.getenv("BIND_IP")
+    WEBAPP_PORT = int(os.getenv("WEBAPP_PORT", "8000"))
     JS_VERSION = "?=" + os.getenv("JS_VERSION", "0.0.0.1")
     POSTS_PER_PAGE = 25
     SESSION_COOKIE_SECURE = True
@@ -75,13 +77,24 @@ def configure_app(app):
     app.artemis_logger = logging.getLogger("webapp_logger")
 
     # Configure Security
-    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-    app.security = Security(
-        app,
-        user_datastore,
-        register_form=ExtendedRegisterForm,
-        login_form=ExtendedLoginForm,
-    )
+    if app.config["AUTH_METHOD"] == "ldap":
+        app.artemis_logger.info("LDAP login enabled")
+        user_datastore = LDAPUserDatastore(db, User, Role)
+        app.security = Security(
+            app,
+            user_datastore,
+            register_form=ExtendedRegisterForm,
+            login_form=LDAPLoginForm,
+        )
+    else:
+        app.artemis_logger.info("SQLite login enabled")
+        user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+        app.security = Security(
+            app,
+            user_datastore,
+            register_form=ExtendedRegisterForm,
+            login_form=ExtendedLoginForm,
+        )
 
     # Configure Compressing
     Compress(app)

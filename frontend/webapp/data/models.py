@@ -30,11 +30,13 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255))
     valid = db.Column(db.Boolean(), default=False)
     active = db.Column(db.Boolean())
-    last_login_at = db.Column(db.DateTime(timezone=False))
+    last_login_at = db.Column(
+        db.DateTime(timezone=False), default=db.func.current_timestamp()
+    )
     current_login_at = db.Column(db.DateTime(timezone=False))
     last_login_ip = db.Column(db.String(255))
     current_login_ip = db.Column(db.String(255))
-    login_count = db.Column(db.BigInteger)
+    login_count = db.Column(db.BigInteger, default=0)
     roles = db.relationship(
         "Role", secondary=roles_users, backref=db.backref("users", lazy="dynamic")
     )

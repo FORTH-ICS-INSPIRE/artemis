@@ -195,53 +195,50 @@ class Monitor:
 
         @exception_handler(log)
         def init_ris_instances(self):
-            log.debug(
-                "starting {} for {}".format(
-                    self.monitors.get("riperis", []), self.prefix_file
+            if "riperis" in self.monitors:
+                log.debug(
+                    "starting {} for {}".format(self.monitors["riperis"], self.prefix_file)
                 )
-            )
-            for ris_monitor in self.monitors.get("riperis", []):
-                for prefix in self.prefixes:
-                    p = Popen(
-                        [
-                            "/usr/local/bin/python3",
-                            "taps/ripe_ris.py",
-                            "--prefix",
-                            prefix,
-                            "--host",
-                            ris_monitor,
-                        ],
-                        shell=False,
-                    )
-                    self.process_ids.append(
-                        ("RIPEris {} {}".format(ris_monitor, prefix), p)
-                    )
-
-        @exception_handler(log)
-        def init_exabgp_instances(self):
-            log.debug(
-                "starting {} for {}".format(
-                    self.monitors.get("exabgp", []), self.prefix_file
-                )
-            )
-            for exabgp_monitor in self.monitors.get("exabgp", []):
-                exabgp_monitor_str = "{}:{}".format(
-                    exabgp_monitor["ip"], exabgp_monitor["port"]
-                )
+                rrcs = ",".join(self.monitors["riperis"])
                 p = Popen(
                     [
                         "/usr/local/bin/python3",
-                        "taps/exabgp_client.py",
+                        "taps/ripe_ris.py",
                         "--prefixes",
                         self.prefix_file,
-                        "--host",
-                        exabgp_monitor_str,
+                        "--hosts",
+                        rrcs,
                     ],
                     shell=False,
                 )
                 self.process_ids.append(
-                    ("ExaBGP {} {}".format(exabgp_monitor_str, self.prefix_file), p)
+                    ("RIPEris {} {}".format(rrcs, self.prefix_file), p)
                 )
+
+        @exception_handler(log)
+        def init_exabgp_instances(self):
+            if "exabgp" in self.monitors:
+                log.debug(
+                    "starting {} for {}".format(self.monitors["exabgp"], self.prefix_file)
+                )
+                for exabgp_monitor in self.monitors["exabgp"]:
+                    exabgp_monitor_str = "{}:{}".format(
+                        exabgp_monitor["ip"], exabgp_monitor["port"]
+                    )
+                    p = Popen(
+                        [
+                            "/usr/local/bin/python3",
+                            "taps/exabgp_client.py",
+                            "--prefixes",
+                            self.prefix_file,
+                            "--host",
+                            exabgp_monitor_str,
+                        ],
+                        shell=False,
+                    )
+                    self.process_ids.append(
+                        ("ExaBGP {} {}".format(exabgp_monitor_str, self.prefix_file), p)
+                    )
 
         @exception_handler(log)
         def init_bgpstreamhist_instance(self):

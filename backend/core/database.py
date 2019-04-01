@@ -198,19 +198,19 @@ class Database:
                 max_priority=1,
                 consumer_arguments={"x-priority": 1},
             )
-            self.hijack_resolved_queue = Queue(
+            self.hijack_resolve_queue = Queue(
                 "db-hijack-resolve",
                 exchange=self.hijack_exchange,
-                routing_key="resolved",
+                routing_key="resolve",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
                 consumer_arguments={"x-priority": 2},
             )
-            self.hijack_ignored_queue = Queue(
+            self.hijack_ignore_queue = Queue(
                 "db-hijack-ignored",
                 exchange=self.hijack_exchange,
-                routing_key="ignored",
+                routing_key="ignore",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
@@ -278,7 +278,7 @@ class Database:
             self.hijack_delete_queue = Queue(
                 "db-hijack-delete",
                 exchange=self.hijack_exchange,
-                routing_key="deleted",
+                routing_key="delete",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
@@ -329,8 +329,8 @@ class Database:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.hijack_resolved_queue],
-                    on_message=self.handle_resolved_hijack,
+                    queues=[self.hijack_resolve_queue],
+                    on_message=self.handle_resolve_hijack,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -341,7 +341,7 @@ class Database:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.hijack_ignored_queue],
+                    queues=[self.hijack_ignore_queue],
                     on_message=self.handle_hijack_ignore_request,
                     prefetch_count=1,
                     no_ack=True,
@@ -838,7 +838,7 @@ class Database:
             except Exception:
                 log.exception("exception")
 
-        def handle_resolved_hijack(self, message):
+        def handle_resolve_hijack(self, message):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -865,7 +865,6 @@ class Database:
                 redis_hijack_key = redis_key(
                     raw["prefix"], raw["hijack_as"], raw["type"]
                 )
-                # if ongoing, force rekeying and delete persistent too
                 if self.redis.sismember("persistent-keys", raw["key"]):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
 

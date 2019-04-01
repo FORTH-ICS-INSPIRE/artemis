@@ -32,7 +32,7 @@ actions = Blueprint("actions", __name__, template_folder="templates")
 @roles_required("admin")
 def hijack_action():
     data = json.loads(request.data.decode("utf-8"))
-    app.artemis_logger.info(data)
+
     try:
         action = data["action"]
 
@@ -48,7 +48,7 @@ def hijack_action():
         elif action == "resolve":
             obj = {
                 "action": action,
-                "routing_key": "resolved",
+                "routing_key": "resolve",
                 "exchange": "hijack-update",
                 "priority": 2,
                 "payload": {
@@ -62,7 +62,7 @@ def hijack_action():
         elif action == "ignore":
             obj = {
                 "action": action,
-                "routing_key": "ignored",
+                "routing_key": "ignore",
                 "exchange": "hijack-update",
                 "priority": 2,
                 "payload": {
@@ -76,7 +76,7 @@ def hijack_action():
         elif action == "delete":
             obj = {
                 "action": action,
-                "routing_key": "deleted",
+                "routing_key": "delete",
                 "exchange": "hijack-update",
                 "priority": 2,
                 "payload": {
@@ -286,7 +286,6 @@ def monitor_state():
 @roles_required("admin")
 def submit_hijacks_actions():
     data_ = json.loads(request.data.decode("utf-8"))
-    app.artemis_logger.info(data_)
     hijack_keys = data_["hijack_keys"]
     action = data_["action"]
 

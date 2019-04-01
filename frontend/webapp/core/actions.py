@@ -13,7 +13,15 @@ log = logging.getLogger("webapp_logger")
 
 
 def rmq_hijack_action(obj):
-    log.info(
+    required_fields = ["payload", "action", "exchange", "routing_key", "priority"]
+
+    if any(field not in obj for field in required_fields):
+        log.error(
+            "obj passed in function 'rmq_hijack_action' does not include all required fields"
+        )
+        return
+
+    log.debug(
         "Send '{0}' hijack message with key: {1}".format(
             obj["action"], obj["payload"]["key"]
         )
@@ -38,7 +46,7 @@ class Learn_hijack_rule:
 
     def send(self, hijack_key, prefix, type_, hijack_as, action):
         log.debug(
-            "Send 'learn_new_rule - {0}' hijack message with key: {}".format(
+            "Send 'learn_new_rule - {0}' hijack message with key: {1}".format(
                 action, hijack_key
             )
         )

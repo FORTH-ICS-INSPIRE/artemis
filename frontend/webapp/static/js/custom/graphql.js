@@ -262,6 +262,35 @@ function fetchDBVersion() { // eslint-disable-line no-unused-vars
     .catch(error => console.error(error));
 }
 
+function fetchLatestConfig() { // eslint-disable-line no-unused-vars
+    return new Promise(config => {
+        fetch("/jwt/auth", {
+            method: "GET",
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            fetch("/api/graphql", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization":"Bearer " + data['access_token']
+                },
+                body: JSON.stringify({
+                    query: "query getLatestConfig { view_data: view_configs( order_by: {time_modified: desc}, limit: 1 ) { raw_config, comment, time_modified } }"
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                    config(data['data']['view_data'][0]);
+                }
+            )
+            .catch(error => console.error(error));
+        })
+        .catch(error => console.error(error));
+    });
+}
+
 var fetchHijackByKeyCalled = false;
 function fetchHijackByKeyLive(ws, hijack_key, trigger) { // eslint-disable-line no-unused-vars
     if(fetchHijackByKeyCalled) {

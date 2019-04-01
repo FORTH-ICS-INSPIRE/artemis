@@ -319,23 +319,38 @@ class Tester:
                 res = db_cur.fetchall()[0]
                 db_con.commit()
                 time.sleep(1)
-            db_cur.close()
-            db_con.close()
 
             Tester.config_request_rpc(connection)
 
             # call all helper functions
-            Helper.resolve(connection, "a", "139.5.46.0/24", "S|0|-", 133720)
-            Helper.mitigate(connection, "b", "139.5.236.0/24")
-            Helper.ignore_hijack(connection, "c", "139.5.237.0/24", "S|0|-", 136334)
-            Helper.comment(connection, "d", "test")
-            Helper.ack_hijack(connection, "e", "true")
-            Helper.multiple_action(connection, ["f", "g"], "hijack_action_acknowledge")
-            Helper.multiple_action(
-                connection, ["f", "g"], "hijack_action_acknowledge_not"
+            Helper.hijack_resolve(
+                db_con, connection, "a", "139.5.46.0/24", "S|0|-", 133720
             )
-            Helper.multiple_action(connection, ["h"], "hijack_action_resolve")
-            Helper.multiple_action(connection, ["i"], "hijack_action_ignore")
+            Helper.hijack_mitigate(db_con, connection, "b", "139.5.236.0/24")
+            Helper.hijack_ignore(
+                db_con, connection, "c", "139.5.237.0/24", "S|0|-", 136334
+            )
+            Helper.hijack_comment(db_con, connection, "d", "test")
+            Helper.hijack_ack(db_con, connection, "e", "true")
+            Helper.hijack_multiple_action(
+                db_con, connection, ["f", "g"], "hijack_action_acknowledge"
+            )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["f", "g"], "hijack_action_acknowledge_not"
+            )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["h"], "hijack_action_resolve"
+            )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["i"], "hijack_action_ignore"
+            )
+
+            Helper.hijack_delete(
+                db_con, connection, "j", "139.5.237.0/24", "S|0|-", 136334
+            )
+
+            db_cur.close()
+            db_con.close()
 
             for testfile in os.listdir("testfiles/"):
                 self.clear()
@@ -404,7 +419,7 @@ class Tester:
 
 class Helper:
     @staticmethod
-    def resolve(connection, hijack_key, prefix, type_, hijack_as):
+    def hijack_resolve(db_con, connection, hijack_key, prefix, type_, hijack_as):
         hijack_exchange = Exchange(
             "hijack-update", type="direct", durable=False, delivery_mode=1
         )
@@ -417,12 +432,16 @@ class Helper:
                     "hijack_as": hijack_as,
                 },
                 exchange=hijack_exchange,
-                routing_key="resolved",
+                routing_key="resolve",
                 priority=2,
             )
+        result = hijack_action_test_result(db_con, hijack_key, "resolved")
+        assert (
+            result is True
+        ), 'Action "hijack_resolve" for hijack id #{0} failed'.format(hijack_key)
 
     @staticmethod
-    def mitigate(connection, hijack_key, prefix):
+    def hijack_mitigate(db_con, connection, hijack_key, prefix):
         mitigation_exchange = Exchange(
             "mitigation", type="direct", durable=False, delivery_mode=1
         )
@@ -433,9 +452,13 @@ class Helper:
                 routing_key="mitigate",
                 priority=2,
             )
+        result = hijack_action_test_result(db_con, hijack_key, "under_mitigation")
+        assert (
+            result is True
+        ), 'Action "hijack_mitigate" for hijack id #{0} failed'.format(hijack_key)
 
     @staticmethod
-    def ignore_hijack(connection, hijack_key, prefix, type_, hijack_as):
+    def hijack_ignore(db_con, connection, hijack_key, prefix, type_, hijack_as):
         hijack_exchange = Exchange(
             "hijack-update", type="direct", durable=False, delivery_mode=1
         )
@@ -448,12 +471,16 @@ class Helper:
                     "hijack_as": hijack_as,
                 },
                 exchange=hijack_exchange,
-                routing_key="ignored",
+                routing_key="ignore",
                 priority=2,
             )
+        result = hijack_action_test_result(db_con, hijack_key, "ignored")
+        assert (
+            result is True
+        ), 'Action "hijack_ignore" for hijack id #{0} failed'.format(hijack_key)
 
     @staticmethod
-    def comment(connection, hijack_key, comment):
+    def hijack_comment(db_con, connection, hijack_key, comment):
         correlation_id = uuid()
         callback_queue = Queue(
             uuid(),
@@ -479,9 +506,13 @@ class Helper:
             if callback_queue.get():
                 break
             time.sleep(0.1)
+        result = hijack_action_test_result(db_con, hijack_key, "comment", comment)
+        assert (
+            result is True
+        ), 'Action "hijack_comment" for hijack id #{0} failed'.format(hijack_key)
 
     @staticmethod
-    def change_conf(connection, new_config, old_config, comment):
+    def change_conf(db_con, connection, new_config, old_config, comment):
         changes = "".join(difflib.unified_diff(new_config, old_config))
         if changes:
             correlation_id = uuid()
@@ -511,35 +542,45 @@ class Helper:
                 time.sleep(0.1)
 
     @staticmethod
-    def ack_hijack(connection, hijack_key, state):
-        correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            channel=connection.default_channel,
-            durable=False,
-            exclusive=True,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
+    def hijack_ack(db_con, connection, hijack_key, state):
+        hijack_exchange = Exchange(
+            "hijack-update", type="direct", durable=False, delivery_mode=1
         )
         with connection.Producer() as producer:
             producer.publish(
                 {"key": hijack_key, "state": state},
-                exchange="",
-                routing_key="db-hijack-seen",
-                retry=True,
-                declare=[callback_queue],
-                reply_to=callback_queue.name,
-                correlation_id=correlation_id,
-                priority=4,
+                exchange=hijack_exchange,
+                routing_key="seen",
+                priority=2,
             )
-        while True:
-            if callback_queue.get():
-                break
-            time.sleep(0.1)
+        assert (
+            hijack_action_test_result(db_con, hijack_key, "seen", state) is True
+        ), 'Action "hijack_ack" for hijack id #{0} failed'.format(hijack_key)
 
     @staticmethod
-    def multiple_action(connection, hijack_keys, action):
+    def hijack_delete(db_con, connection, hijack_key, prefix, type_, hijack_as):
+        hijack_exchange = Exchange(
+            "hijack-update", type="direct", durable=False, delivery_mode=1
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {
+                    "key": hijack_key,
+                    "prefix": prefix,
+                    "type": type_,
+                    "hijack_as": hijack_as,
+                },
+                exchange=hijack_exchange,
+                routing_key="delete",
+                priority=2,
+            )
+        result = hijack_action_test_result(db_con, hijack_key, "delete")
+        assert (
+            result is True
+        ), 'Action "hijack_delete" for hijack id #{0} failed'.format(hijack_key)
+
+    @staticmethod
+    def hijack_multiple_action(db_con, connection, hijack_keys, action):
         correlation_id = uuid()
         callback_queue = Queue(
             uuid(),
@@ -565,6 +606,37 @@ class Helper:
             if callback_queue.get():
                 break
             time.sleep(0.1)
+
+
+def hijack_action_test_result(db_con, hijack_key, action, extra=None):
+    db_cur = db_con.cursor()
+
+    if action == "comment":
+        query = "SELECT COUNT(1) FROM hijacks WHERE key='{1}' and {0}='{2}';".format(
+            action, hijack_key, extra
+        )
+    elif action == "seen":
+        query = "SELECT COUNT(1) FROM hijacks WHERE key='{1}' and {0}={2};".format(
+            action, hijack_key, extra
+        )
+    elif action == "delete":
+        query = "SELECT COUNT(1) FROM hijacks WHERE key='{}';".format(hijack_key)
+    else:
+        query = "SELECT COUNT(1) FROM hijacks WHERE key='{1}' and {0}=true".format(
+            action, hijack_key
+        )
+    max_tries = 0
+    while max_tries < 20:
+        db_cur.execute(query)
+        res = db_cur.fetchone()
+        db_con.commit()
+        if (res[0] == 1) or (res[0] == 0 and action == "delete"):
+            return True
+
+        time.sleep(0.5)
+        max_tries += 1
+
+    return False
 
 
 if __name__ == "__main__":

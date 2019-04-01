@@ -930,8 +930,6 @@
 
                         var message = [];
                         if(result["status"] == "success"){
-                            $("#ignored_button").prop("disabled", true);
-
                             let obj = {
                                 "hijack_key" : hijack_obj['key'],
                                 "hijack_as": hijack_obj['hijack_as'],
@@ -941,7 +939,6 @@
                             }
                             let url = "{{ url_for('actions.hijack_action') }}";
                             let result = await postFetch_json(url, obj);
-
                             message.push('<div class="alert alert-success"> The rule was successfully installed!</div>');
                         }else{
                             message.push('<div class="alert alert-danger">');

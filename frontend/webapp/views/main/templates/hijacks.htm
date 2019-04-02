@@ -691,7 +691,7 @@
                     let url = "{{ url_for('actions.submit_hijacks_actions') }}";
                     let obj = {
                         "hijack_keys" : selected_hijacks,
-                        "action": "mark_delete_hijack"
+                        "action": "hijack_action_delete"
                     };
                     var result = action_multiple_call(url, obj);
                 }

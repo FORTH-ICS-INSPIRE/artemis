@@ -61,7 +61,7 @@ class Learn_hijack_rule:
             consumer_arguments={"x-priority": 4},
         )
         with Connection(RABBITMQ_URI) as connection:
-            with Producer(self.connection) as producer:
+            with Producer(connection) as producer:
                 producer.publish(
                     {
                         "key": hijack_key,

@@ -14,6 +14,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.utils.compat import nested
+from psycopg2 import sql
 
 
 class Tester:
@@ -326,7 +327,7 @@ class Tester:
             Helper.hijack_resolve(
                 db_con, connection, "a", "139.5.46.0/24", "S|0|-", 133720
             )
-            Helper.hijack_mitigate(db_con, connection, "b", "139.5.236.0/24")
+            Helper.hijack_mitigate(db_con, connection, "b", "10.91.236.0/24")
             Helper.hijack_ignore(
                 db_con, connection, "c", "139.5.237.0/24", "S|0|-", 136334
             )
@@ -512,7 +513,7 @@ class Helper:
         ), 'Action "hijack_comment" for hijack id #{0} failed'.format(hijack_key)
 
     @staticmethod
-    def change_conf(db_con, connection, new_config, old_config, comment):
+    def change_conf(connection, new_config, old_config, comment):
         changes = "".join(difflib.unified_diff(new_config, old_config))
         if changes:
             correlation_id = uuid()
@@ -610,30 +611,35 @@ class Helper:
 
 def hijack_action_test_result(db_con, hijack_key, action, extra=None):
     db_cur = db_con.cursor()
-
+    query = None
+    query_arguments = None
     if action == "comment":
-        query = "SELECT COUNT(1) FROM hijacks WHERE key='{1}' and {0}='{2}';".format(
-            action, hijack_key, extra
+        query = sql.SQL("SELECT COUNT(1) FROM hijacks WHERE key=%s and {}=%s;").format(
+            sql.Identifier(action)
         )
+        query_arguments = (hijack_key, extra)
     elif action == "seen":
-        query = "SELECT COUNT(1) FROM hijacks WHERE key='{1}' and {0}={2};".format(
-            action, hijack_key, extra
+        query = sql.SQL("SELECT COUNT(1) FROM hijacks WHERE key=%s and {}=%s;").format(
+            sql.Identifier(action)
         )
+        query_arguments = (hijack_key, extra)
     elif action == "delete":
-        query = "SELECT COUNT(1) FROM hijacks WHERE key='{}';".format(hijack_key)
+        query = sql.SQL("SELECT COUNT(1) FROM hijacks WHERE key=%s;")
+        query_arguments = hijack_key
     else:
-        query = "SELECT COUNT(1) FROM hijacks WHERE key='{1}' and {0}=true".format(
-            action, hijack_key
-        )
+        query = sql.SQL(
+            "SELECT COUNT(1) FROM hijacks WHERE key=%s and {}=true;"
+        ).format(sql.Identifier(action))
+        query_arguments = hijack_key
     max_tries = 0
     while max_tries < 20:
-        db_cur.execute(query)
+        db_cur.execute(query, query_arguments)
         res = db_cur.fetchone()
         db_con.commit()
         if (res[0] == 1) or (res[0] == 0 and action == "delete"):
             return True
 
-        time.sleep(0.5)
+        time.sleep(1)
         max_tries += 1
 
     return False

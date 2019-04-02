@@ -13,14 +13,18 @@
 - Initial kubernetes/helm (helm-charts) support
 - Reject old updates from taps and have a "HISTORIC" variable to enable/disable
 - Initial support for LDAP authentication
+- Delete hijack functionality
 
 ### Changed
 - Refactored environment variables
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
 - Use of function for_url in flask redirect
+- In hijack view changed the actions functionality
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
+- Fixed bug with hijack view times
+- Fixed bug with hijack view action buttons
 
 ### Removed
 - Configured prefix graph visualization (needs redesign)

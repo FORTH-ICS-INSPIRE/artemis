@@ -42,7 +42,7 @@ def hijack_action():
                 "routing_key": "mitigate",
                 "exchange": "mitigation",
                 "priority": 2,
-                "payload": {"hijack_key": data["hijack_key"], "prefix": data["prefix"]},
+                "payload": {"key": data["hijack_key"], "prefix": data["prefix"]},
             }
 
         elif action == "resolve":

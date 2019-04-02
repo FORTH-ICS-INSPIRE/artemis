@@ -771,21 +771,14 @@
                 if(hijack_obj['active'] == true){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
                     $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
-
-                    if($("#mitigation_button").length != 0 && hijack_obj['under_mitigation'] == false) {
-                        $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
-                    }
-
+                    {% if mitigate == True %}
+                        if(hijack_obj['under_mitigation'] == false) {
+                            $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
+                        }
+                    {% endif %}
                 }else if(hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
                     $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
-
-                }else if(hijack_obj['resolved'] == true || hijack_obj['ignored'] == true){
-                    // No option to add
-                }else{
-                    $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
-                    $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
-                    $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
                 }
 
                 if(hijack_obj['seen'] == true){

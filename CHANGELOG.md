@@ -10,6 +10,7 @@
 - Update yaml conf with learned rule
 - Configured/matched prefix field and search in frontend hijack and update tables
 - Monitored prefixes count in stats table (overview)
+- Configured prefixes count in stats table (overview)
 - Initial kubernetes/helm (helm-charts) support
 - Reject old updates from taps and have a "HISTORIC" variable to enable/disable
 - Initial support for LDAP authentication
@@ -18,11 +19,15 @@
 ### Changed
 - Refactored environment variables
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
-- Use of function for_url in flask redirect
+- Use of function url_for in flask redirect
 - In hijack view changed the actions functionality
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
+- When learning ignore rule, escape special character ":" (IPv6)
+- Problematic start of RIS and exaBGP monitors, even if not configured
+- BGP update redis bootstraping from DB
+- UI support for multiple instances of a module in overview and system page
 - Fixed bug with hijack view times
 - Fixed bug with hijack view action buttons
 

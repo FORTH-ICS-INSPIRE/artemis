@@ -31,6 +31,80 @@ RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
 SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
 
 
+class TLSSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.starttls()  # for tls add this line
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
+
+
+class SSLSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
+
+
 def get_logger(path="/etc/artemis/logging.yaml"):
     if os.path.exists(path):
         with open(path, "r") as f:
@@ -125,40 +199,6 @@ def exception_handler(log):
         return wrapper
 
     return function_wrapper
-
-
-class SMTPSHandler(SMTPHandler):
-    def emit(self, record):
-        """
-        Overwrite the logging.handlers.SMTPHandler.emit function with SMTP_SSL.
-        Emit a record.
-        Format the record and send it to the specified addressees.
-        """
-        try:
-            import smtplib
-            from email.utils import formatdate
-
-            port = self.mailport
-            if not port:
-                port = smtplib.SMTP_PORT
-            smtp = smtplib.SMTP_SSL(self.mailhost, port)
-            msg = self.format(record)
-            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
-                self.fromaddr,
-                ", ".join(self.toaddrs),
-                self.getSubject(record),
-                formatdate(),
-                msg,
-            )
-            if self.username:
-                smtp.ehlo()
-                smtp.login(self.username, self.password)
-            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
-            smtp.quit()
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except Exception:
-            self.handleError(record)
 
 
 def redis_key(prefix, hijack_as, _type):

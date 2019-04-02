@@ -68,6 +68,7 @@ class Database:
             self.connection = connection
             self.prefix_tree = None
             self.monitored_prefixes = set()
+            self.configured_prefixes = set()
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
@@ -632,17 +633,19 @@ class Database:
                         "neighbors": rule["neighbors"],
                     }
                     node.data["confs"].append(conf_obj)
-            # calculate the monitored_prefixes
+            # calculate the monitored and configured prefixes
             self.monitored_prefixes = set()
+            self.configured_prefixes = set()
             for prefix in self.prefix_tree.prefixes():
+                self.configured_prefixes.add(prefix)
                 monitored_prefix = self.find_worst_prefix_match(prefix)
                 if monitored_prefix:
                     self.monitored_prefixes.add(monitored_prefix)
             try:
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
-                        "UPDATE stats SET monitored_prefixes=%s;",
-                        (len(self.monitored_prefixes),),
+                        "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
+                        (len(self.monitored_prefixes), len(self.configured_prefixes)),
                     )
             except Exception:
                 log.exception("exception")
@@ -760,6 +763,8 @@ class Database:
 
         def bootstrap_redis(self):
             try:
+
+                # bootstrap ongoing hijack events
                 query = (
                     "SELECT time_started, time_last, peers_seen, "
                     "asns_inf, key, prefix, hijack_as, type, time_detected, "
@@ -791,9 +796,11 @@ class Database:
                     redis_pipeline.sadd("persistent-keys", entry[4])
                 redis_pipeline.execute()
 
+                # bootstrap BGP updates
                 query = (
-                    "SELECT DISTINCT key, timestamp FROM bgp_updates "
-                    "WHERE timestamp > NOW() - interval '1 hours'"
+                    "SELECT key, timestamp FROM bgp_updates "
+                    "WHERE timestamp > NOW() - interval '2 hours' "
+                    "ORDER BY timestamp ASC"
                 )
 
                 with get_ro_cursor(self.ro_conn) as db_cur:
@@ -802,10 +809,13 @@ class Database:
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
-                    expire = int(time.time() - entry[1].timestamp())
+                    expire = max(
+                        int(entry[1].timestamp()) + 2 * 60 * 60 - int(time.time()), 60
+                    )
                     redis_pipeline.set(entry[0], "1", ex=expire)
                 redis_pipeline.execute()
 
+                # bootstrap (origin, neighbor) AS-links of ongoing hijacks
                 query = (
                     "SELECT bgp_updates.as_path, hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
                     "hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "

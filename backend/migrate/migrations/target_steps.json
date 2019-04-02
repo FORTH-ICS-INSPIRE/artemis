@@ -77,6 +77,12 @@
             "db_version": "13",
             "description": "Added stats table initialized with monitored_prefixes column",
             "file": "migration_13.sql"
+        },
+        "14": {
+            "id": "14",
+            "db_version": "14",
+            "description": "Added configured_prefixes column in stats table and re-initialized stats table",
+            "file": "migration_14.sql"
         }
     }
 }

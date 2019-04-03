@@ -262,7 +262,6 @@ function fetchDBVersion() { // eslint-disable-line no-unused-vars
     .catch(error => console.error(error));
 }
 
-
 function fetchLatestConfig() { // eslint-disable-line no-unused-vars
     return new Promise(config => {
         fetch("/jwt/auth", {
@@ -292,27 +291,26 @@ function fetchLatestConfig() { // eslint-disable-line no-unused-vars
     });
 }
 
-
 var fetchHijackByKeyCalled = false;
 function fetchHijackByKeyLive(ws, hijack_key, trigger) { // eslint-disable-line no-unused-vars
     if(fetchHijackByKeyCalled) {
-        waitForConnection(ws, JSON.stringify({id: "6", type: "stop"}));
+        waitForConnection(ws, JSON.stringify({id: "4", type: "stop"}));
     }
     waitForConnection(ws, JSON.stringify({
-        id: "6",
+        id: "4",
         type: "start",
         payload: {
             variables: {},
             extensions: {},
             operationName: "getHijackByKey",
-            query: "subscription getHijackByKey { view_hijacks(where: {key: {_eq:\"" + hijack_key + "\"}}, limit: 1) { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active dormant under_mitigation outdated time_last configured_prefix peers_seen peers_withdrawn } }"
+            query: "subscription getHijackByKey { view_hijacks(where: {key: {_eq:\"" + hijack_key + "\"}}, limit: 1) { key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, time_started, time_ended, time_last, mitigation_started, time_detected, timestamp_of_config, under_mitigation, resolved, active, dormant, ignored, configured_prefix, comment, seen, withdrawn, peers_withdrawn, peers_seen, outdated } }"
         }
     }));
 
     if(!fetchHijackByKeyCalled) {
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
-            if(data.type === 'data' && data.id === "6") {
+            if(data.type === 'data' && data.id === "4") {
                 trigger(data.payload.data.view_hijacks[0]);
             }
         });

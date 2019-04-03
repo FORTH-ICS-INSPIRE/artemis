@@ -199,19 +199,19 @@ class Database:
                 max_priority=1,
                 consumer_arguments={"x-priority": 1},
             )
-            self.hijack_resolved_queue = Queue(
+            self.hijack_resolve_queue = Queue(
                 "db-hijack-resolve",
                 exchange=self.hijack_exchange,
-                routing_key="resolved",
+                routing_key="resolve",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
                 consumer_arguments={"x-priority": 2},
             )
-            self.hijack_ignored_queue = Queue(
+            self.hijack_ignore_queue = Queue(
                 "db-hijack-ignored",
                 exchange=self.hijack_exchange,
-                routing_key="ignored",
+                routing_key="ignore",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
@@ -262,18 +262,28 @@ class Database:
             )
             self.hijack_seen_queue = Queue(
                 "db-hijack-seen",
+                exchange=self.hijack_exchange,
+                routing_key="seen",
                 durable=False,
                 auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
             )
-
             self.hijack_multiple_action_queue = Queue(
                 "db-hijack-multiple-action",
                 durable=False,
                 auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
+            )
+            self.hijack_delete_queue = Queue(
+                "db-hijack-delete",
+                exchange=self.hijack_exchange,
+                routing_key="delete",
+                durable=False,
+                auto_delete=True,
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
             )
 
             self.config_request_rpc()
@@ -320,8 +330,8 @@ class Database:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.hijack_resolved_queue],
-                    on_message=self.handle_resolved_hijack,
+                    queues=[self.hijack_resolve_queue],
+                    on_message=self.handle_resolve_hijack,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -332,7 +342,7 @@ class Database:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.hijack_ignored_queue],
+                    queues=[self.hijack_ignore_queue],
                     on_message=self.handle_hijack_ignore_request,
                     prefetch_count=1,
                     no_ack=True,
@@ -364,6 +374,12 @@ class Database:
                 Consumer(
                     queues=[self.hijack_outdate_queue],
                     on_message=self.handle_hijack_outdate,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
+                Consumer(
+                    queues=[self.hijack_delete_queue],
+                    on_message=self.handle_delete_hijack,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -832,7 +848,7 @@ class Database:
             except Exception:
                 log.exception("exception")
 
-        def handle_resolved_hijack(self, message):
+        def handle_resolve_hijack(self, message):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -847,6 +863,30 @@ class Database:
                     db_cur.execute(
                         "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
                         (datetime.datetime.now(), raw["key"]),
+                    )
+
+            except Exception:
+                log.exception("{}".format(raw))
+
+        def handle_delete_hijack(self, message):
+            raw = message.payload
+            log.debug("payload: {}".format(raw))
+            try:
+                redis_hijack_key = redis_key(
+                    raw["prefix"], raw["hijack_as"], raw["type"]
+                )
+                if self.redis.sismember("persistent-keys", raw["key"]):
+                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
+                    db_cur.execute(
+                        "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1;",
+                        (raw["key"],),
+                    )
+                    db_cur.execute(
+                        "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s);",
+                        (raw["key"],),
                     )
 
             except Exception:
@@ -922,26 +962,7 @@ class Database:
                         "UPDATE hijacks SET seen=%s WHERE key=%s;",
                         (raw["state"], raw["key"]),
                     )
-
-                self.producer.publish(
-                    {"status": "accepted"},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    serializer="json",
-                    retry=True,
-                    priority=4,
-                )
             except Exception:
-                self.producer.publish(
-                    {"status": "rejected"},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    serializer="json",
-                    retry=True,
-                    priority=4,
-                )
                 log.exception("{}".format(raw))
 
         def handle_hijack_multiple_action(self, message):
@@ -951,21 +972,34 @@ class Database:
             seen_action = False
             ignore_action = False
             resolve_action = False
+            delete_action = False
             try:
                 if not raw["keys"]:
                     query = None
-                elif raw["action"] == "mark_resolved":
+                elif raw["action"] == "hijack_action_resolve":
                     query = "UPDATE hijacks SET resolved=true, active=false, dormant=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
                     resolve_action = True
-                elif raw["action"] == "mark_ignored":
+                elif raw["action"] == "hijack_action_ignore":
                     query = "UPDATE hijacks SET ignored=true, active=false, dormant=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
                     ignore_action = True
-                elif raw["action"] == "mark_seen":
+                elif raw["action"] == "hijack_action_acknowledge":
                     query = "UPDATE hijacks SET seen=true WHERE key=%s;"
                     seen_action = True
-                elif raw["action"] == "mark_not_seen":
+                elif raw["action"] == "hijack_action_acknowledge_not":
                     query = "UPDATE hijacks SET seen=false WHERE key=%s;"
                     seen_action = True
+                elif raw["action"] == "hijack_action_delete":
+                    query = []
+                    query.append("DELETE FROM hijacks WHERE key=%s;")
+                    query.append(
+                        "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1;"
+                    )
+                    query.append(
+                        "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s);"
+                    )
+                    delete_action = True
+                else:
+                    raise BaseException("unreachable code reached")
 
             except Exception:
                 log.exception("None action: {}".format(raw))
@@ -1021,6 +1055,14 @@ class Database:
                                     db_cur.execute(
                                         query, (datetime.datetime.now(), hijack_key)
                                     )
+                            elif delete_action:
+                                if self.redis.sismember("persistent-keys", hijack_key):
+                                    purge_redis_eph_pers_keys(
+                                        self.redis, redis_hijack_key, hijack_key
+                                    )
+                                for query_ in query:
+                                    with get_wo_cursor(self.wo_conn) as db_cur:
+                                        db_cur.execute(query_, (hijack_key,))
                             else:
                                 raise BaseException("unreachable code reached")
 

@@ -24,6 +24,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Hijack Information
+                        <span id="hijack_acknowledged_badge" class="badge badge-acknowledged float-right"></button>
                     </div>
                     <div class="panel-body">
                         <div class="row">
@@ -135,16 +136,16 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-lg-6">
-                                        <p><b>Display Peers:</b></p>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#seenHijackUpdate" aria-expanded="false" aria-controls="seenHijackUpdate">Seen Hijack BGP Announcement</button>
+                                    <div class="col-lg-6 mt-4">
+                                        <p><b>Display Peers Seen Hijack:</b></p>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-lg-6 offset-lg-6">
-                                          <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#seenHijackWithdraw" aria-expanded="false" aria-controls="seenHijackWithdraw">Seen Hijack BGP Withdrawal</button>
+                                    <div class="col-lg-4">
+                                        <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#seenHijackUpdate" aria-expanded="false" aria-controls="seenHijackUpdate">BGP Announcement</button>
+                                    </div>
+                                    <div class="col-lg-4">
+                                          <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#seenHijackWithdraw" aria-expanded="false" aria-controls="seenHijackWithdraw">BGP Withdrawal</button>
                                     </div>
                                 </div>
                             </div>
@@ -152,35 +153,25 @@
                     </div>
                 </div>
             </div>
-            {% if current_user.has_roles('admin') %}
             <div class="col-lg-3">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <i class="fa fa-bell fa-fw"></i> Actions
-                        {% if current_user.has_roles('admin') %}
-                        <button type="button" id="hijack_acknowledged_button" class="btn btn-primary btn-sm float-right hijack-seen-button">Mark Hijack as <b>acknowledged</b></button>
-                        {% endif %}
-                    </div>
-                    <div class="panel-body">
-                        <div class="row">
-                            <div class="col-lg-4 ">
-                                <button id="resolved_button" type="button" class="btn btn-success" disabled="true">Resolve</button>
-                            </div>
-                            <div class="col-lg-4">
-                                {% if mitigate == True %}
-                                <button id="mitigation_button" type="button" class="btn btn-danger" disabled="true">Mitigate</button>
-                                {% endif %}
-                            </div>
-                            <div class="col-lg-4">
-                                <button id="ignored_button" type="button" class="btn btn-warning" disabled="true">Ignore</button>
+                {% if current_user.has_roles('admin') %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Hijack Actions
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-7 offset-lg-1">
+                                    <select class="form-control form-control-sm-auto" id="hijack_action_selection">
+                                    </select>
+                                </div>
+                                <div class="col-lg-4">
+                                    <button id="hijack_apply_action" type="button" class="btn btn-primary btn-sm">Apply</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 {% endif %}
-            {% if current_user.has_roles('user') %}
-            <div class="col-lg-3">
-            {% endif %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <i class="fa fa-bell fa-fw"></i> Comments
@@ -198,13 +189,13 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 my-1">
+            <div class="col-lg-6 my-1 mb-4">
                 <div class="collapse multi-collapse" id="seenHijackUpdate">
                     Peers Seen Hijack BGP Announcement:
                     <div class="card card-body" id="seenHijackUpdate_text"></div>
                 </div>
             </div>
-            <div class="col-lg-6 my-1">
+            <div class="col-lg-6 my-1 mb-4">
                 <div class="collapse multi-collapse" id="seenHijackWithdraw">
                     Peers Seen Hijack BGP Withdrawal:
                     <div class="card card-body" id="seenHijackWithdraw_text">
@@ -295,6 +286,27 @@
             <div class="modal-dialog modal-sm" role="document">
                 <div class="modal-content">
                     <div class="modal-body" id="modal-body-new-rule-config-status"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="deleteHijacksModal" tabindex="-1" role="dialog" aria-labelledby="deleteHijacksModal" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteHijacksModalLabel">Delete Hijack</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the selected hijack? </p></br>
+
+                        This action will also delete all BGP messages related to this hijack and cannot be undone.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" onclick="action_delete_hijack();" data-dismiss="modal">Delete</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -630,12 +642,13 @@
                     })))
                     .catch(error => console.error(error));
                 });
+
                 ws.addEventListener('message', function conn_ack(event) {
                     data = JSON.parse(event.data);
                     if(data.type === 'connection_ack') {
                         ws.removeEventListener('message', conn_ack);
+                        fetchHijackByKeyLive(ws, hijack_obj['key'], update_hijack_details);
                     }
-                    fetchHijackByKeyLive(ws, hijack_obj['key'], update_hijack_details);
                 });
 
 
@@ -645,9 +658,9 @@
                     readOnly: true
                 });
                 {% if current_user.has_roles('admin') %}
-                    editor.setSize("100%", 182);
+                    editor.setSize("100%", 192);
                 {% else %}
-                    editor.setSize("100%", 316);
+                    editor.setSize("100%", 326);
                 {% endif %}
 
                 setInterval( function () {
@@ -691,6 +704,15 @@
             }
 
             function update_hijack_details(data){
+                // Nothing to display, redirect to hijacks page
+                if(data == null){
+                    window.location.href = "{{ url_for('main.display_hijacks') }}";
+                }
+
+                if ($('#hijack_action_selection option').length != 0) {
+                    $('#hijack_action_selection').empty();
+                }
+
                 hijack_obj = data;
                 $( "#hijack_status" ).html( format_hijack_status(hijack_obj)) ;
                 prefix = hijack_obj['prefix'];
@@ -701,7 +723,6 @@
                 $( "#info_num_peers_seen" ).val( hijack_obj['num_peers_seen'] );
                 $( "#info_num_asns_inf" ).val( hijack_obj['num_asns_inf'] );
                 $( "#info_time_started" ).val( transform_date_to_local( hijack_obj['time_started'] ) );
-                $( "#info_time_last" ).val( transform_date_to_local( hijack_obj['time_last'] ) );
                 $( "#info_time_ended" ).val( transform_date_to_local( hijack_obj['time_ended'] ) );
                 $( "#info_time_detected" ).val( transform_date_to_local( hijack_obj['time_detected'] ) );
                 $( "#info_mitigation_started" ).val( transform_date_to_local( hijack_obj['mitigation_started'] ) );
@@ -742,240 +763,245 @@
                     peers_html.push(peers_withdrawn[i]);
                     peers_html.push('" readonly></div></cc_as>');
                 }
+
                 peers_html.push(css_row[1]);
 
                 $( "#seenHijackWithdraw_text").html( peers_html.join('') );
 
                 if(hijack_obj['active'] == true){
-                    $("#resolved_button").removeAttr('disabled');
-                    $("#ignored_button").removeAttr('disabled');
-                    if($("#mitigation_button").length != 0 && hijack_obj['under_mitigation'] == false) {
-                        $("#mitigation_button").removeAttr('disabled');
-                    }
-                }else if(hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true){
-                    $("#ignored_button").removeAttr('disabled');
-                    $("#resolved_button").removeAttr('disabled');
-
-                }else if(hijack_obj['resolved'] == true || hijack_obj['ignored'] == true){
-                    $("#resolved_button").prop("disabled", true);
-                    $("#mitigation_button").prop("disabled", true);
-                    $("#ignored_button").prop("disabled", true);
-                }else{
-                    $("#resolved_button").removeAttr('disabled');
-                    $("#mitigation_button").removeAttr('disabled');
-                    $("#ignored_button").removeAttr('disabled');
+                    $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
+                    $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
+                    {% if mitigate == True %}
+                        if(hijack_obj['under_mitigation'] == false) {
+                            $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
+                        }
+                    {% endif %}
+                }else if((hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true) && (hijack_obj['resolved'] == false && hijack_obj['ignored'] == false)){
+                    $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
+                    $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
                 }
 
                 if(hijack_obj['seen'] == true){
-                    $('#hijack_acknowledged_button').removeClass('btn-primary').addClass('btn-danger');
-                    $('#hijack_acknowledged_button').html('Mark Hijack as <b>not acknowledged</b>');
+                    $('#hijack_acknowledged_badge').removeClass('badge-danger').addClass('badge-primary');
+                    $('#hijack_acknowledged_badge').html('Acknowledged');
+                    $("#hijack_action_selection").append(new Option("Mark as not Acknowledged", "hijack_action_acknowledge_not"));
+                }else{
+                    $('#hijack_acknowledged_badge').removeClass('badge-primary').addClass('badge-danger');
+                    $('#hijack_acknowledged_badge').html('Not Acknowledged');
+                    $("#hijack_action_selection").append(new Option("Mark as Acknowledged", "hijack_action_acknowledge"));
                 }
-                $('#hijack_acknowledged_button').show();
+
+                $('#hijack_acknowledged_badge').show();
+                $("#hijack_action_selection").append(new Option("Delete Hijack", "hijack_action_delete"));
                 asn_map_to_name();
             }
 
             {% if current_user.has_roles('admin') %}
-            $( "#resolved_button" ).click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: "{{ url_for('actions.resolve_hijack') }}",
-                    data: {
-                        "hijack_key" : hijack_obj['key'],
-                        "hijack_as": hijack_obj['hijack_as'],
-                        "type_": hijack_obj['type'],
-                        "prefix": hijack_obj['prefix']
-                    },
-                    dataType: 'json'
-                });
-            });
 
-            $( "#mitigation_button" ).click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: "{{ url_for('actions.mitigate_hijack') }}",
-                    data: { "hijack_key" : hijack_obj['key'], "prefix" : hijack_obj['prefix'] },
-                    dataType: 'json'
-                });
-            });
+                $('#hijack_apply_action').click(function() {
+                    let action = $("#hijack_action_selection option:selected").val();
+                    let url = "{{ url_for('actions.hijack_action') }}";
+                    var obj = null;
 
-            $( "#ignored_button" ).click(function() {
-                if( hijack_obj['active'] == true ){
-                    $("#learnRuleModal").modal("show");
-                }else{
-                    $("#learnRuleModalNoChange").trigger("click");
-                }
-            });
+                    if(action == "hijack_action_delete"){
+                        $("#deleteHijacksModal").modal("show");
+                        return;
 
-            $( "#learnRuleModalNoChange" ).click(function() {
-                var obj_ignore = {
-                    "hijack_key" : hijack_obj['key'],
-                    "hijack_as": hijack_obj['hijack_as'],
-                    "type_": hijack_obj['type'],
-                    "prefix": hijack_obj['prefix']
-                }
-                var url_ignore = "{{ url_for('actions.ignore_hijack') }}";
-                var result = postFetch_json(url_ignore, obj_ignore);
-            });
+                    }else if(action == "hijack_action_resolve"){
+                        obj = {
+                            "hijack_key" : hijack_obj['key'],
+                            "hijack_as": hijack_obj['hijack_as'],
+                            "hijack_type": hijack_obj['type'],
+                            "prefix": hijack_obj['prefix'],
+                            "action": "resolve"
+                        }
 
-            $('#learnRuleModal').on('show.bs.modal', function (event) {
-                submit_learn_rule($(this), 'show');
-            });
+                    }else if(action == "hijack_action_mitigate"){
+                        obj = {
+                            "hijack_key" : hijack_obj['key'],
+                            "prefix": hijack_obj['prefix'],
+                            "action": "mitigate"
+                        }
 
-            $("#learnRuleModalApprove").click(function() {
-                submit_learn_rule($(this), 'approve');
-            });
+                    }else if(action == "hijack_action_ignore"){
+                        if( hijack_obj['active'] == true ){
+                            $("#learnRuleModal").modal("show");
+                        }else{
+                            $("#learnRuleModalNoChange").trigger("click");
+                        }
 
-            async function submit_learn_rule(modal, action){
-                if(action == 'show'){
-                    var latest_config = await fetchLatestConfig();
-                    old_config = latest_config.raw_config;
+                    }else if(action == "hijack_action_acknowledge"){
+                        obj = {
+                            "hijack_key" : hijack_obj['key'],
+                            "state": true,
+                            "action": "seen"
+                        }
 
-                    obj = {
-                        "hijack_key" : hijack_obj['key'],
-                        "hijack_as": hijack_obj['hijack_as'],
-                        "type_": hijack_obj['type'],
-                        "prefix": hijack_obj['prefix'],
-                        "action": action
-                    };
-
-                    var url = "{{ url_for('actions.learn_hijack_rule') }}";
-                    var result = await postFetch_json(url, obj);
-
-                    if(result["status"] == "fail"){
-                        var message = [];
-                        message.push('<div class="alert alert-danger">');
-                        message.push(result["response"]);
-                        message.push('</div>');
-                        modal.find('.modal-body').html(message.join(''));
-                        $('#learnRuleModalApprove').hide();
-                    }else{
-                        new_config = result["response"];
-                        render_config_diffs();
+                    }else if(action == "hijack_action_acknowledge_not"){
+                        obj = {
+                            "hijack_key" : hijack_obj['key'],
+                            "state": false,
+                            "action": "seen"
+                        }
                     }
+                    if(obj){
+                        postFetch_json(url, obj);
+                    }
+                } );
 
-                }else if(action == 'approve'){
-                    obj = {
+                function action_delete_hijack(){
+                    let url = "{{ url_for('actions.hijack_action') }}";
+                    let obj = {
                         "hijack_key" : hijack_obj['key'],
                         "hijack_as": hijack_obj['hijack_as'],
-                        "type_": hijack_obj['type'],
+                        "hijack_type": hijack_obj['type'],
                         "prefix": hijack_obj['prefix'],
-                        "action": action
+                        "action": "delete"
                     };
+                    postFetch_json(url, obj);
+                }
 
-                    var url = "{{ url_for('actions.learn_hijack_rule') }}";
-                    var result = await postFetch_json(url, obj);
+                $( "#learnRuleModalNoChange" ).click(function() {
+                    var obj = {
+                        "hijack_key" : hijack_obj['key'],
+                        "hijack_as": hijack_obj['hijack_as'],
+                        "hijack_type": hijack_obj['type'],
+                        "prefix": hijack_obj['prefix'],
+                        "action": "ignore"
+                    }
+                    var url = "{{ url_for('actions.hijack_action') }}";
+                    var result = postFetch_json(url, obj);
+                });
 
-                    var message = [];
-                    if(result["status"] == "success"){
-                        $("#ignored_button").prop("disabled", true);
+                $('#learnRuleModal').on('show.bs.modal', function (event) {
+                    submit_learn_rule($(this), 'show');
+                });
 
-                        var obj_ignore = {
+                $("#learnRuleModalApprove").click(function() {
+                    submit_learn_rule($(this), 'approve');
+                });
+
+                async function submit_learn_rule(modal, action){
+                    if(action == 'show'){
+                        var latest_config = await fetchLatestConfig();
+                        old_config = latest_config.raw_config;
+
+                        obj = {
                             "hijack_key" : hijack_obj['key'],
                             "hijack_as": hijack_obj['hijack_as'],
                             "type_": hijack_obj['type'],
-                            "prefix": hijack_obj['prefix']
-                        }
-                        var url_ignore = "{{ url_for('actions.ignore_hijack') }}";
-                        var result = await postFetch_json(url_ignore, obj_ignore);
+                            "prefix": hijack_obj['prefix'],
+                            "action": action
+                        };
 
-                        message.push('<div class="alert alert-success"> The rule was successfully installed!</div>');
-                    }else{
-                        message.push('<div class="alert alert-danger">');
-                        message.push(result["response"]);
-                        message.push('</div>');
-                    }
-                    $('#learnRuleModalLabelStatus').find('.modal-body').html(message.join(''));
-                    $('#learnRuleModalLabelStatus').modal('show');
-                }else{
-                    return;
-                }
-            }
+                        var url = "{{ url_for('actions.learn_hijack_rule') }}";
+                        var result = await postFetch_json(url, obj);
 
-            function render_config_diffs(){
-                $('#view_config_learn_diffs').html('');
-                diff_editor = CodeMirror.MergeView(target, {
-                    value: old_config,
-                    orig: new_config,
-                    lineNumbers: true,
-                    mode: "yaml",
-                    highlightDifferences: true,
-                    connect: "align",
-                    collapseIdentical: false
-                });
-            }
-
-            function toggleDifferences() {
-                diff_editor.setShowDifferences(highlight = !highlight);
-            }
-
-            $('#comment_action').on('click', function (event, state) {
-                if($(this).hasClass("btn-primary")){
-                    $('#comment_action').removeClass('btn-primary').addClass('btn-danger')
-                    $('#comment_action').html('Save');
-                    editor.options.readOnly = false;
-                }else if($(this).hasClass("btn-danger")){
-                    var new_comment = {"new_comment": editor.getValue(), "hijack_key" : hijack_obj['key']};
-                    $('#comment_action').removeClass('btn-danger').addClass('btn-warning')
-                    $('#comment_action').html('Pending');
-                    submit_new_comment(new_comment)
-                }
-            });
-
-            function submit_new_comment(new_comment){
-                $.ajax({
-                    type: "POST",
-                    url: "{{ url_for('actions.submit_new_comment') }}",
-                    data: new_comment,
-                    success: function(result){
                         if(result["status"] == "fail"){
-                            var message = '<div class="alert alert-danger alert-dismissible">'
-                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-                            message += result["response"] + '</div>'
-                            $('#comment_action').removeClass('btn-warning').addClass('btn-danger')
-                            $('#comment_action').html('Save');
-
+                            var message = [];
+                            message.push('<div class="alert alert-danger">');
+                            message.push(result["response"]);
+                            message.push('</div>');
+                            modal.find('.modal-body').html(message.join(''));
+                            $('#learnRuleModalApprove').hide();
                         }else{
-                            var message = '<div class="alert alert-success alert-dismissible">'
-                            message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-                            message += result["response"] + '</div>'
-                            $('#comment_action').removeClass('btn-warning').addClass('btn-primary')
-                            $('#comment_action').html('Edit');
-                            editor.setValue(result["data"])
-                            editor.options.readOnly = true;
+                            new_config = result["response"];
+                            render_config_diffs();
                         }
-                        $("#comment_alert_box").html(message)
-                    },
-                    dataType: "json"
-                });
-            }
 
-            $('#hijack_acknowledged_button').on('click', function (event, state) {
-                if($(this).hasClass("btn-primary")){
-                    submit_seen(true);
-                }else if($(this).hasClass("btn-danger")){
-                    submit_seen(false);
-                }
-            });
+                    }else if(action == 'approve'){
+                        obj = {
+                            "hijack_key" : hijack_obj['key'],
+                            "hijack_as": hijack_obj['hijack_as'],
+                            "type_": hijack_obj['type'],
+                            "prefix": hijack_obj['prefix'],
+                            "action": action
+                        };
 
-            function submit_seen(state){
-                $.ajax({
-                    type: "POST",
-                    url: "{{ url_for('actions.submit_hijack_seen') }}",
-                    data: { "hijack_key" : hijack_obj['key'], "state" : state },
-                    success: function(result){
+                        var url = "{{ url_for('actions.learn_hijack_rule') }}";
+                        var result = await postFetch_json(url, obj);
+
+                        var message = [];
                         if(result["status"] == "success"){
-                            if(state == true){
-                                $('#hijack_acknowledged_button').removeClass('btn-primary').addClass('btn-danger');
-                                $('#hijack_acknowledged_button').html('Mark Hijack as <b>not acknowledged</b>');
-                            }else{
-                                $('#hijack_acknowledged_button').removeClass('btn-danger').addClass('btn-primary');
-                                $('#hijack_acknowledged_button').html('Mark Hijack as <b>acknowledged</b>');
+                            let obj = {
+                                "hijack_key" : hijack_obj['key'],
+                                "hijack_as": hijack_obj['hijack_as'],
+                                "hijack_type": hijack_obj['type'],
+                                "prefix": hijack_obj['prefix'],
+                                "action": "ignore"
                             }
+                            let url = "{{ url_for('actions.hijack_action') }}";
+                            let result = await postFetch_json(url, obj);
+                            message.push('<div class="alert alert-success"> The rule was successfully installed!</div>');
+                        }else{
+                            message.push('<div class="alert alert-danger">');
+                            message.push(result["response"]);
+                            message.push('</div>');
                         }
-                    },
-                    dataType: "json"
+                        $('#learnRuleModalLabelStatus').find('.modal-body').html(message.join(''));
+                        $('#learnRuleModalLabelStatus').modal('show');
+                    }else{
+                        return;
+                    }
+                }
+
+                function render_config_diffs(){
+                    $('#view_config_learn_diffs').html('');
+                    diff_editor = CodeMirror.MergeView(target, {
+                        value: old_config,
+                        orig: new_config,
+                        lineNumbers: true,
+                        mode: "yaml",
+                        highlightDifferences: true,
+                        connect: "align",
+                        collapseIdentical: false
+                    });
+                }
+
+                function toggleDifferences() {
+                    diff_editor.setShowDifferences(highlight = !highlight);
+                }
+
+                $('#comment_action').on('click', function (event, state) {
+                    if($(this).hasClass("btn-primary")){
+                        $('#comment_action').removeClass('btn-primary').addClass('btn-danger')
+                        $('#comment_action').html('Save');
+                        editor.options.readOnly = false;
+                    }else if($(this).hasClass("btn-danger")){
+                        var new_comment = editor.getValue();
+                        $('#comment_action').removeClass('btn-danger').addClass('btn-warning')
+                        $('#comment_action').html('Pending');
+                        submit_new_comment(new_comment)
+                    }
                 });
-            }
+
+                async function submit_new_comment(new_comment){
+                    obj = {
+                        "new_comment" : new_comment,
+                        "hijack_key" : hijack_obj['key']
+                    };
+
+                    var url = "{{ url_for('actions.submit_new_comment') }}";
+                    var result = await postFetch_json(url, obj);
+
+                    if(result["status"] == "fail"){
+                        var message = '<div class="alert alert-danger alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += result["response"] + '</div>'
+                        $('#comment_action').removeClass('btn-warning').addClass('btn-danger')
+                        $('#comment_action').html('Save');
+
+                    }else{
+                        var message = '<div class="alert alert-success alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += result["response"] + '</div>'
+                        $('#comment_action').removeClass('btn-warning').addClass('btn-primary')
+                        $('#comment_action').html('Edit');
+                        editor.setValue(result["data"])
+                        editor.options.readOnly = true;
+                    }
+                    $("#comment_alert_box").html(message)
+                }
             {% endif %}
 
             function downloadTable_update_link(){

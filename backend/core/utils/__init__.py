@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging.config
 import logging.handlers
 import os
@@ -199,6 +200,11 @@ def exception_handler(log):
         return wrapper
 
     return function_wrapper
+
+
+def dump_json(json_obj, filename):
+    with open(filename, "w") as f:
+        json.dump(json_obj, f)
 
 
 def redis_key(prefix, hijack_as, _type):

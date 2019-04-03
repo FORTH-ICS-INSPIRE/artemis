@@ -17,6 +17,7 @@
 - Delete hijack functionality
 
 ### Changed
+- Using prefix lists in json file format as monitoring taps input to avoid problematic ultra long arguments
 - Refactored environment variables
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
 - Use of function url_for in flask redirect

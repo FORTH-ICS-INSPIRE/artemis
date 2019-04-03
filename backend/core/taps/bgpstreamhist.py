@@ -10,6 +10,7 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 from utils import get_logger
 from utils import key_generator
+from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
@@ -17,7 +18,10 @@ from utils import RABBITMQ_URI
 log = get_logger()
 
 
-def parse_bgpstreamhist_csvs(prefixes=[], input_dir=None):
+def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None):
+
+    prefixes = load_json(prefixes_file)
+    assert prefixes is not None
 
     with Connection(RABBITMQ_URI) as connection:
         exchange = Exchange(
@@ -94,11 +98,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="BGPStream Historical Monitor")
     parser.add_argument(
         "-p",
-        "--prefix",
+        "--prefixes",
         type=str,
-        dest="prefix",
+        dest="prefixes_file",
         default=None,
-        help="Prefix to be monitored",
+        help="Prefix(es) to be monitored (json file with prefix list)",
     )
     parser.add_argument(
         "-d",
@@ -112,10 +116,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     dir_ = args.dir.rstrip("/")
 
-    prefixes = args.prefix.split(",")
-
     try:
-        parse_bgpstreamhist_csvs(prefixes, dir_)
+        parse_bgpstreamhist_csvs(args.prefixes_file, dir_)
     except Exception:
         log.exception("exception")
     except KeyboardInterrupt:

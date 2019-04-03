@@ -11,6 +11,7 @@ from kombu import Exchange
 from kombu import Producer
 from utils import get_logger
 from utils import key_generator
+from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
@@ -102,10 +103,12 @@ def normalize_ripe_ris(msg, prefix_tree):
     return msgs
 
 
-def parse_ripe_ris(connection, prefixes, hosts):
+def parse_ripe_ris(connection, prefixes_file, hosts):
     exchange = Exchange("bgp-update", channel=connection, type="direct", durable=False)
     exchange.declare()
 
+    prefixes = load_json(prefixes_file)
+    assert prefixes is not None
     prefix_tree = radix.Radix()
     for prefix in prefixes:
         prefix_tree.add(prefix)
@@ -163,11 +166,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="RIPE RIS Monitor")
     parser.add_argument(
         "-p",
-        "--prefix",
+        "--prefixes",
         type=str,
-        dest="prefix",
+        dest="prefixes_file",
         default=None,
-        help="Prefix to be monitored",
+        help="Prefix(es) to be monitored (json file with prefix list)",
     )
     parser.add_argument(
         "-r",
@@ -179,14 +182,13 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    prefix = args.prefix.split(",")
     hosts = args.hosts
     if hosts:
         hosts = set(hosts.split(","))
 
     try:
         with Connection(RABBITMQ_URI) as connection:
-            parse_ripe_ris(connection, prefix, hosts)
+            parse_ripe_ris(connection, args.prefixes_file, hosts)
     except Exception:
         log.exception("exception")
     except KeyboardInterrupt:

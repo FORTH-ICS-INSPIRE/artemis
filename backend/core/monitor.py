@@ -1,3 +1,4 @@
+import os
 import signal
 from subprocess import Popen
 
@@ -8,6 +9,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from utils import dump_json
 from utils import exception_handler
 from utils import flatten
 from utils import get_logger
@@ -51,6 +53,7 @@ class Monitor:
             self.process_ids = []
             self.rules = None
             self.prefixes = set()
+            self.prefix_file = "/root/monitor_prefixes.json"
             self.monitors = None
             self.flag = True
 
@@ -122,6 +125,7 @@ class Monitor:
             # only keep super prefixes for monitors
             for prefix in self.prefix_tree.prefixes():
                 self.prefixes.add(self.prefix_tree.search_worst(prefix).prefix)
+            dump_json(list(self.prefixes), self.prefix_file)
 
             self.init_ris_instances()
             self.init_exabgp_instances()
@@ -139,6 +143,8 @@ class Monitor:
                 self.flag = False
                 self.rules = None
                 self.monitors = None
+                if os.path.isfile(self.prefix_file):
+                    os.remove(self.prefix_file)
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
@@ -191,29 +197,29 @@ class Monitor:
         def init_ris_instances(self):
             if "riperis" in self.monitors:
                 log.debug(
-                    "starting {} for {}".format(self.monitors["riperis"], self.prefixes)
+                    "starting {} for {}".format(self.monitors["riperis"], self.prefix_file)
                 )
                 rrcs = ",".join(self.monitors["riperis"])
                 p = Popen(
                     [
                         "/usr/local/bin/python3",
                         "taps/ripe_ris.py",
-                        "--prefix",
-                        ",".join(self.prefixes),
+                        "--prefixes",
+                        self.prefix_file,
                         "--hosts",
                         rrcs,
                     ],
                     shell=False,
                 )
                 self.process_ids.append(
-                    ("RIPEris {} {}".format(rrcs, self.prefixes), p)
+                    ("RIPEris {} {}".format(rrcs, self.prefix_file), p)
                 )
 
         @exception_handler(log)
         def init_exabgp_instances(self):
             if "exabgp" in self.monitors:
                 log.debug(
-                    "starting {} for {}".format(self.monitors["exabgp"], self.prefixes)
+                    "starting {} for {}".format(self.monitors["exabgp"], self.prefix_file)
                 )
                 for exabgp_monitor in self.monitors["exabgp"]:
                     exabgp_monitor_str = "{}:{}".format(
@@ -223,15 +229,15 @@ class Monitor:
                         [
                             "/usr/local/bin/python3",
                             "taps/exabgp_client.py",
-                            "--prefix",
-                            ",".join(self.prefixes),
+                            "--prefixes",
+                            self.prefix_file,
                             "--host",
                             exabgp_monitor_str,
                         ],
                         shell=False,
                     )
                     self.process_ids.append(
-                        ("ExaBGP {} {}".format(exabgp_monitor_str, self.prefixes), p)
+                        ("ExaBGP {} {}".format(exabgp_monitor_str, self.prefix_file), p)
                     )
 
         @exception_handler(log)
@@ -239,7 +245,7 @@ class Monitor:
             if "bgpstreamhist" in self.monitors:
                 log.debug(
                     "starting {} for {}".format(
-                        self.monitors["bgpstreamhist"], self.prefixes
+                        self.monitors["bgpstreamhist"], self.prefix_file
                     )
                 )
                 bgpstreamhist_dir = self.monitors["bgpstreamhist"]
@@ -247,15 +253,20 @@ class Monitor:
                     [
                         "/usr/local/bin/python3",
                         "taps/bgpstreamhist.py",
-                        "--prefix",
-                        ",".join(self.prefixes),
+                        "--prefixes",
+                        self.prefix_file,
                         "--dir",
                         bgpstreamhist_dir,
                     ],
                     shell=False,
                 )
                 self.process_ids.append(
-                    ("BGPStreamHist {} {}".format(bgpstreamhist_dir, self.prefixes), p)
+                    (
+                        "BGPStreamHist {} {}".format(
+                            bgpstreamhist_dir, self.prefix_file
+                        ),
+                        p,
+                    )
                 )
 
         @exception_handler(log)
@@ -263,7 +274,7 @@ class Monitor:
             if "bgpstreamlive" in self.monitors:
                 log.debug(
                     "starting {} for {}".format(
-                        self.monitors["bgpstreamlive"], self.prefixes
+                        self.monitors["bgpstreamlive"], self.prefix_file
                     )
                 )
                 bgpstream_projects = ",".join(self.monitors["bgpstreamlive"])
@@ -271,33 +282,40 @@ class Monitor:
                     [
                         "/usr/local/bin/python3",
                         "taps/bgpstreamlive.py",
-                        "--prefix",
-                        ",".join(self.prefixes),
+                        "--prefixes",
+                        self.prefix_file,
                         "--mon_projects",
                         bgpstream_projects,
                     ],
                     shell=False,
                 )
                 self.process_ids.append(
-                    ("BGPStreamLive {} {}".format(bgpstream_projects, self.prefixes), p)
+                    (
+                        "BGPStreamLive {} {}".format(
+                            bgpstream_projects, self.prefix_file
+                        ),
+                        p,
+                    )
                 )
 
         @exception_handler(log)
         def init_betabmp_instance(self):
             if "betabmp" in self.monitors:
                 log.debug(
-                    "starting {} for {}".format(self.monitors["betabmp"], self.prefixes)
+                    "starting {} for {}".format(
+                        self.monitors["betabmp"], self.prefix_file
+                    )
                 )
                 p = Popen(
                     [
                         "/usr/local/bin/python3",
                         "taps/betabmp.py",
-                        "--prefix",
-                        ",".join(self.prefixes),
+                        "--prefixes",
+                        self.prefix_file,
                     ],
                     shell=False,
                 )
-                self.process_ids.append(("Beta BMP {}".format(self.prefixes), p))
+                self.process_ids.append(("Beta BMP {}".format(self.prefix_file), p))
 
 
 def run():

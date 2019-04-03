@@ -1,5 +1,6 @@
 import copy
 import hashlib
+import json
 import logging.config
 import os
 from datetime import datetime
@@ -32,8 +33,16 @@ def get_logger(path="/etc/artemis/logging.yaml"):
         log.info("Loaded default configuration")
     return log
 
-
 log = get_logger()
+
+def load_json(filename):
+    json_obj = None
+    try:
+        with open(filename, "r") as f:
+            json_obj = json.load(f)
+    except Exception:
+        return None
+    return json_obj
 
 
 def key_generator(msg):

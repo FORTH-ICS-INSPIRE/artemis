@@ -15,6 +15,8 @@
 - Reject old updates from taps and have a "HISTORIC" variable to enable/disable
 - Initial support for LDAP authentication
 - Delete hijack functionality
+- Abuse contact details for each ASN (Extracted from RIPEStat)
+- Functionality to copy ASN details on clickboard
 
 ### Changed
 - Using prefix lists in json file format as monitoring taps input to avoid problematic ultra long arguments

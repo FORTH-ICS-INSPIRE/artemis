@@ -697,7 +697,7 @@
                 }
 
                 async function action_multiple_call(url, obj){
-                    var result = postFetch_json(url, obj);
+                    var result = await postFetch_json(url, obj);
                     if(result['status'] == "success"){
                         selected_hijacks = [];
                         $('#selected_hijacks_num').html(selected_hijacks.length);

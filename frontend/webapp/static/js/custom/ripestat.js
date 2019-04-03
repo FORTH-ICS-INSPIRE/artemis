@@ -72,7 +72,6 @@ function asn_map_to_name(){ // eslint-disable-line no-unused-vars
                         }
 
                         var abuse_html = [];
-                        var abuse_text = [];
                         if(abuse.data.authorities.length > 0){
                             let authorities = [];
                             for(var authority in abuse.data.authorities){
@@ -80,100 +79,53 @@ function asn_map_to_name(){ // eslint-disable-line no-unused-vars
                             }
                             if(authorities != ""){
                                 abuse_html.push('Authorities: ');
-                                abuse_text.push('Authorities: ');
-
                                 abuse_html.push(authorities.join());
-                                abuse_text.push(authorities.join());
-
                                 abuse_html.push('</br>');
-                                abuse_text.push('\n');
                             }
                         }
 
                         if(abuse.data.anti_abuse_contacts.abuse_c.length > 0){
                             let anti_abuse_contacts_abuse_c_html = [];
-                            let anti_abuse_contacts_abuse_c_text = [];
                             for(var item in abuse.data.anti_abuse_contacts.abuse_c){
                                 let abuse_c_html = [];
-                                let abuse_c_text = [];
                                 abuse_c_html.push('Description: ');
-                                abuse_c_text.push('Description: ');
-
                                 abuse_c_html.push(abuse.data.anti_abuse_contacts.abuse_c[item].description);
-                                abuse_c_text.push(abuse.data.anti_abuse_contacts.abuse_c[item].description);
-
                                 abuse_c_html.push('</br>Key: ');
-                                abuse_c_text.push('\nKey: ');
-
                                 abuse_c_html.push(abuse.data.anti_abuse_contacts.abuse_c[item].key);
-                                abuse_c_text.push(abuse.data.anti_abuse_contacts.abuse_c[item].key);
-
                                 abuse_c_html.push('</br>Email: ');
-                                abuse_c_text.push('\nEmail: ');
-
                                 abuse_c_html.push(abuse.data.anti_abuse_contacts.abuse_c[item].email);
-                                abuse_c_text.push(abuse.data.anti_abuse_contacts.abuse_c[item].email);
-
                                 abuse_c_html.push('</br>');
-                                abuse_c_text.push('\n');
-
                                 anti_abuse_contacts_abuse_c_html.push(abuse_c_html.join(''));
-                                anti_abuse_contacts_abuse_c_text.push(abuse_c_text.join(''))
                             }
                             if(anti_abuse_contacts_abuse_c_html.length > 0){
                                 for(var entry in anti_abuse_contacts_abuse_c_html){
                                     abuse_html.push(anti_abuse_contacts_abuse_c_html[entry]);
-                                    abuse_text.push(anti_abuse_contacts_abuse_c_text[entry])
-
                                     abuse_html.push('</br>');
-                                    abuse_text.push('\n');
                                 }
                             }
                         }
                         data_['abuse_html'] = abuse_html.join('');
-                        data_['abuse_text'] = abuse_text.join('');
+                        data_['abuse_text'] = data_['abuse_html'].replace(/<\/br>/g, '\n');
 
                         var html = [];
-                        var text_formatted = [];
+                        var inner_html = [];
                         html.push('<p class="tooltip-custom-margin">ASN: ');
-                        text_formatted.push('ASN: ');
+                        inner_html.push('ASN: ');
 
-                        html.push(ASN_str);
-                        text_formatted.push(ASN_str);
+                        inner_html.push(ASN_str);
+                        inner_html.push(' (ASN-DOT: ');
+                        inner_html.push(data_['asn_dot']);
+                        inner_html.push(')</br>');
+                        inner_html.push('Name: ');
+                        inner_html.push(data_['name']);
+                        inner_html.push('<br>Type: ');
+                        inner_html.push(data_['type']);
+                        inner_html.push('</br>Countries operating: ');
+                        inner_html.push(data_['countries']);
+                        inner_html.push('<br></br>Abuse Contact Details: </br>');
+                        inner_html.push(data_['abuse_html']);
 
-                        html.push(' (ASN-DOT: ');
-                        text_formatted.push(' (ASN-DOT: ');
-
-                        html.push(data_['asn_dot']);
-                        text_formatted.push(data_['asn_dot']);
-
-                        html.push('</br>');
-                        text_formatted.push('\n');
-
-                        html.push('Name: ');
-                        text_formatted.push('Name: ');
-
-                        html.push(data_['name']);
-                        text_formatted.push(data_['name']);
-
-                        html.push('<br>Type: ');
-                        text_formatted.push('\nType: ');
-
-                        html.push(data_['type']);
-                        text_formatted.push(data_['type']);
-
-                        html.push('</br>Countries operating: ');
-                        text_formatted.push('\nCountries operating: ');
-
-                        html.push(data_['countries']);
-                        text_formatted.push(data_['countries']);
-
-                        html.push('<br></br>Abuse Contact Details: </br>');
-                        text_formatted.push('\n\nAbuse Contact Details: \n');
-
-                        html.push(data_['abuse_html']);
-                        text_formatted.push(data_['abuse_text']);
-
+                        html.push(inner_html.join(''));
                         html.push('<small>(Click on AS number to copy on clickboard)</small>');
                         html.push('</p>');
 
@@ -181,7 +133,7 @@ function asn_map_to_name(){ // eslint-disable-line no-unused-vars
 
                         var join_html = html.join('');
                         cachedData[ASN_str]['html'] = join_html;
-                        var join_text = text_formatted.join('');
+                        var join_text = inner_html.join('').replace(/<\/br>|<br>/g, '\n');
                         cachedData[ASN_str]['text_copy'] = join_text;
 
                         $(this).prop('title', join_html);

@@ -776,7 +776,7 @@
                             $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
                         }
                     {% endif %}
-                }else if(hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true){
+                }else if((hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true) && (hijack_obj['resolved'] == false && hijack_obj['ignored'] == false)){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
                     $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
                 }

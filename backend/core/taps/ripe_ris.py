@@ -132,6 +132,8 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                     try:
                         parsed = json.loads(data)
                         msg = parsed["data"]
+                        if "type" in msg and msg["type"] == "ris_error":
+                            log.error(msg)
                         # also check if ris host is in the configuration
                         if (
                             "type" in msg
@@ -157,6 +159,9 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                     )
                     except Exception:
                         log.exception("exception")
+                log.warning(
+                    "RIPE RIS iterator ran out of data and the connection will be retried"
+                )
             except Exception:
                 log.exception("server closed connection")
                 time.sleep(5)

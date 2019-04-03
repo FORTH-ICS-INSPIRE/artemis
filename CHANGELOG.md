@@ -4,10 +4,10 @@
 ### Added
 - Support for dormant flags in hijacks
 - Storing hijack update (origin, neighbor) combinations in redis
-- Learn rule action/button for ongoing hijacks in frontend
 - Translate learn rule request in ARTEMIS-compatible dicts in backend
 - Translate learn rule ARTEMIS-compatible dicts into yaml conf in backend
 - Update yaml conf with learned rule
+- Learn rule action for ongoing hijacks in frontend after ignore action
 - Configured/matched prefix field and search in frontend hijack and update tables
 - Monitored prefixes count in stats table (overview)
 - Configured prefixes count in stats table (overview)
@@ -29,8 +29,8 @@
 - Problematic start of RIS and exaBGP monitors, even if not configured
 - BGP update redis bootstraping from DB
 - UI support for multiple instances of a module in overview and system page
-- Fixed bug with hijack view times
-- Fixed bug with hijack view action buttons
+- Bug with hijack view times
+- Bug with hijack view action buttons
 
 ### Removed
 - Configured prefix graph visualization (needs redesign)

@@ -1086,6 +1086,16 @@
                 $("#download_table_button").attr("href", url);
             }
 
+            function format ( d ) {
+                var html_ = '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">';
+                for(item in fields_to_display){
+                    html_ += '<tr><td helpText="' + fields_to_display[item][2] +'"><b>' + fields_to_display[item][1] + ':</b></td>';
+                    html_ += '<td>' + d[fields_to_display[item][0]] + '</td></tr>';
+                }
+                html_ += '</table>';
+                return html_;
+            }
+
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.7.0/clipboard-polyfill.js"></script>

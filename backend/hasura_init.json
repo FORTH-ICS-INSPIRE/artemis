@@ -1,6 +1,10 @@
 {
   "type": "replace_metadata",
   "args": {
+    "functions": [
+      "search_bgpupdates_as_path",
+      "search_bgpupdates_by_hijack_key"
+    ],
     "tables": [
       {
         "table": "view_db_details",

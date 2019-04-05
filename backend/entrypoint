@@ -10,7 +10,7 @@ start_backend() {
     if [ "$GUI_ENABLED" = "true" ]; then
         ./wait-for ${HASURA_HOST}:${HASURA_PORT} -t 0
         json_hasura=$(cat hasura_init.json | tr '\n' ' ')
-        result=curl -s "http://${HASURA_HOST}:${HASURA_PORT}/v1/query" -H "Content-Type: application/json" -H "X-Hasura-Access-Key: ${HASURA_GRAPHQL_ACCESS_KEY}" --data "$json_hasura"
+        result=$(curl -s "http://${HASURA_HOST}:${HASURA_PORT}/v1/query" -H "Content-Type: application/json" -H "X-Hasura-Access-Key: ${HASURA_GRAPHQL_ACCESS_KEY}" --data "$json_hasura")
         if [[ $result = *error* ]]; then
             echo "[!] initialization of Hasura failed: $result"
             exit -1

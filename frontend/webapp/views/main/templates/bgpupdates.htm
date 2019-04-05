@@ -160,7 +160,29 @@
         {{super()}}
         <script>
             var table;
-            var query = "";
+            var hasura_fetch = ["prefix","origin_as","peer_asn","as_path","service","type","communities","timestamp","hijack_key","handled","matched_prefix","orig_path"];
+            var hasura = {
+                "subscription": {
+                    "count" : {
+                        "query": "datatable: view_bgpupdates_aggregate { aggregate { count }",
+                    },
+                    "view_data": {
+                        "query": "view_data: view_bgpupdates(limit: 10, offset: 0, order_by: {timestamp: desc_nulls_first}) {" + hasura_fetch.join(' ') + "} }",
+                    },
+                },
+                "query": {
+                    "query": "count_data: view_bgpupdates_aggregate { aggregate { count } } view_data: view_bgpupdates(limit: 10, offset: 10, order_by: {timestamp: desc_nulls_first}) { " + hasura_fetch.join(' ') + " }"
+                },
+                "data" : {
+                    "view_data": [],
+                    "count": 0
+                },
+                "extra": {
+                    "table_callback": null,
+                    "type": "bgp_updates"
+                }
+            };
+
             var ws = null;
             var refresh_state_live = true;
             var count_open_details = 0;
@@ -437,6 +459,9 @@
                     "searching": false,
                     "pagingType": "numbers",
                     "ajax": (data, callback, settings) => {
+                        let count_query = [];
+                        let data_query = [];
+
                         var sort;
                         if(data.order[0].dir == 'desc'){
                             sort = 'desc_nulls_first';
@@ -445,25 +470,44 @@
                         }
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
-                        query = "{ datatable: view_bgpupdates_aggregate"
+
+                        count_query.push(" count_data: view_bgpupdates_aggregate");
                         if(datatable_parameters['and'] != null){
-                            query += "(" + datatable_parameters['and'] + ") { aggregate { totalCount: count } }";
+                            count_query.push("(");
+                            count_query.push(datatable_parameters['and']);
+                            count_query.push(") { aggregate { count } } ");
                         }else{
-                            query += " { aggregate { totalCount: count } }";
+                            count_query.push(" { aggregate { count } } ");
                         }
-                        query += " view_data: view_bgpupdates(limit: " + datatable_parameters['limit'] + ", offset: " + datatable_parameters['offset']
-                        query += ", order_by: {" + columns[data.order[0].column].data + ": " + sort + " } "
+
+                        data_query.push("view_data: view_bgpupdates(limit: ");
+                        data_query.push(datatable_parameters['limit']);
+                        data_query.push(", offset: ");
+                        data_query.push(datatable_parameters['offset']);
+                        data_query.push(", order_by: {");
+                        data_query.push(columns[data.order[0].column].data);
+                        data_query.push(": ");
+                        data_query.push(sort);
+                        data_query.push(" } ");
+
                         if(datatable_parameters['and'] != null){
-                            query += datatable_parameters['and'] +  ")";
-                        }else{
-                            query += ")";
+                            data_query.push(datatable_parameters['and']);
                         }
-                        query += " { prefix origin_as peer_asn as_path service type communities timestamp hijack_key handled matched_prefix orig_path } }"
+                        data_query.push(") { ");
+                        data_query.push(hasura_fetch.join(' '));
+                        data_query.push(" }");
+
                         count_open_details = 0;
+
+                        hasura['subscription']['count']['query'] = "{" + count_query.join('') + "}";
+                        hasura['subscription']['view_data']['query'] = "{" + data_query.join('') + "}";
+                        hasura['query']['query'] = "{" + count_query.join('') + " " + data_query.join('') + "}";
+                        hasura['extra']['table_callback'] = callback;
+
                         if(refresh_state_live){
-                            fetchDatatableLive(ws, callback, query);
+                            fetchDatatableLive(ws);
                         }else{
-                            fetchDatatable(callback, query);
+                            fetchDatatable();
                         }
                     },
                     initComplete: function() {
@@ -551,7 +595,7 @@
                                 count_open_details -= 1;
                                 row.child.hide();
                                 if(count_open_details == 0 && refresh_state_live == true){
-                                    startDatatableLive(ws, query);
+                                    startDatatableLive(ws);
                                 }
                                 tr.removeClass('shown');
                             }else { // Enable More
@@ -607,7 +651,7 @@
             $("#live_update_button").on('change', function() {
                 if ($(this).is(':checked')) {
                     refresh_state_live = true;
-                    startDatatableLive(ws, query);
+                    startDatatableLive(ws);
                 }else {
                     stopDatatableLive(ws);
                     refresh_state_live = false;

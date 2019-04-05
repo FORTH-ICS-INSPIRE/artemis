@@ -1,26 +1,15 @@
-function format_hijacks_datatable(data){ // eslint-disable-line no-unused-vars
-    if('code' in data){ // its an error
-        return {};
-    }
-    for(entry in data){
-        data[entry] = format_hijack_entry(data[entry]);
-    }
-    return data;
-}
-
-function format_datatable(data){ // eslint-disable-line no-unused-vars
-    if('code' in data){ // its an error
-        return {};
-    }
+function format_datatable(data, type){ // eslint-disable-line no-unused-vars
     if(data.length > 0){
-        if('hijack_as' in data[0]){
+        if(hasura['extra']['type'] == "hijacks"){
             for(entry in data){
                 data[entry] = format_hijack_entry(data[entry]);
             }
-        }else if('service' in data[0]){
+        }else if(hasura['extra']['type'] == "bgp_updates"){
             for(entry in data){
                 data[entry] = format_bgp_update(data[entry]);
             }
+        }else{
+            console.error("Illegal data type. It should be 'hijacks' or 'bgp_updates'.");
         }
     }
     return data;
@@ -48,17 +37,6 @@ function format_hijack_entry(data){
     }
     data['status'] = format_hijack_status(data);
     data['mark_key'] = '<input class="form-check-input" type="checkbox" value="" id="mark_' + data['key'] + '">';
-
-    return data;
-}
-
-function format_bgp_updates_datatable(data){ // eslint-disable-line no-unused-vars
-    if('code' in data){ // its an error
-        return {};
-    }
-    for(entry in data){
-        data[entry] = format_bgp_update(data[entry]);
-    }
     return data;
 }
 
@@ -104,9 +82,9 @@ function format_bgp_update(data){
 
 function format_handled_seen(data){
     if(data){
-        return '<img src="' + static_urls['handled.png'] + '" />'
+        return '<img src="' + static_urls['handled.png'] + '" />';
     }else{
-        return '<img src="' + static_urls['unhadled.png'] + '" />'
+        return '<img src="' + static_urls['unhadled.png'] + '" />';
     }
 }
 

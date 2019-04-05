@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (14, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (15, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -172,7 +172,21 @@ CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 
-CREATE OR REPLACE VIEW view_stats AS SELECT monitored_prefixes, configured_prefixes FROM stats;
+CREATE OR REPLACE VIEW view_index_all_stats
+AS
+SELECT stats.monitored_prefixes, stats.configured_prefixes,
+    (SELECT count(*) Total_Hijacks FROM hijacks WHERE key is not NULL),
+    (SELECT count(*) Ignored_Hijacks FROM hijacks WHERE ignored = true),
+    (SELECT count(*) Resolved_Hijacks FROM hijacks WHERE resolved = true),
+    (SELECT count(*) Withdrawn_Hijacks FROM hijacks WHERE withdrawn = true),
+    (SELECT count(*) Mitigation_Hijacks FROM hijacks WHERE under_mitigation = true),
+    (SELECT count(*) Ongoing_Hijacks FROM hijacks WHERE active = true),
+    (SELECT count(*) Dormant_Hijacks FROM hijacks WHERE dormant = true),
+    (SELECT count(*) Acknowledged_Hijacks FROM hijacks WHERE seen = true),
+    (SELECT count(*) Outdated_Hijacks FROM hijacks WHERE outdated = true),
+    (SELECT count(*) Total_BGP_Updates FROM bgp_updates WHERE key is not NULL),
+    (SELECT count(*) Total_Unhandled_Updates FROM bgp_updates WHERE handled = false)
+FROM stats;
 
 CREATE OR REPLACE FUNCTION inet_search (inet)
 RETURNS SETOF bgp_updates AS $$

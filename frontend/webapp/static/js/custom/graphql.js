@@ -1,4 +1,4 @@
-var db_stats_query = "{ Total_Configured_Prefixes: view_stats { configured_prefixes } Total_Monitored_Prefixes: view_stats { monitored_prefixes } Total_BGP_Updates: view_bgpupdates_aggregate { aggregate { count } } Total_Unhandled_Updates: view_bgpupdates_aggregate(where: {handled: {_eq: false}}) { aggregate { count } } Total_Hijacks: view_hijacks_aggregate { aggregate { count } } Resolved_Hijacks: view_hijacks_aggregate(where: {resolved: {_eq: true}}) { aggregate { count } } Mitigation_Hijacks: view_hijacks_aggregate(where: {under_mitigation: {_eq: true}}) { aggregate { count } } Ongoing_Hijacks: view_hijacks_aggregate(where: {active: {_eq: true}}) { aggregate { count } } Dormant_Hijacks: view_hijacks_aggregate(where: {dormant: {_eq: true}}) { aggregate { count } } Ignored_Hijacks: view_hijacks_aggregate(where: {ignored: {_eq: true}}) { aggregate { count } } Withdrawn_Hijacks: view_hijacks_aggregate(where: {withdrawn: {_eq: true}}) { aggregate { count } } Acknowledged_Hijacks: view_hijacks_aggregate(where: {seen: {_eq: true}}) { aggregate { count } } Outdated_Hijacks: view_hijacks_aggregate(where: {outdated: {_eq: true}}) { aggregate { count } } }";
+
 var proc_stats_query = "{ view_processes { name running timestamp } }";
 var config_stats_query = "{ view_configs(limit: 1, order_by: {time_modified: desc}) { raw_config comment time_modified } }";
 
@@ -11,7 +11,7 @@ function waitForConnection(ws, message) {
 }
 
 var dbstatsCalled = false;
-function fetchDbStatsLive(ws, cb_func) { // eslint-disable-line no-unused-vars
+function fetchDbStatsLive(ws) { // eslint-disable-line no-unused-vars
     if(dbstatsCalled) {
         waitForConnection(ws, JSON.stringify({id: "1", type: "stop"}));
     }
@@ -21,8 +21,8 @@ function fetchDbStatsLive(ws, cb_func) { // eslint-disable-line no-unused-vars
         payload: {
             variables: {},
             extensions: {},
-            operationName: "getLiveStats",
-            query: "subscription getLiveStats " + db_stats_query
+            operationName: "getIndexAllStats",
+            query: "subscription getIndexAllStats " + hasura['subscription']['stats']['query']
         }
     }));
 
@@ -30,7 +30,8 @@ function fetchDbStatsLive(ws, cb_func) { // eslint-disable-line no-unused-vars
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
             if(data.type === 'data' && data.id === "1") {
-                cb_func(data.payload.data);
+                hasura['data']['stats'] = data.payload.data.view_index_all_stats[0];
+                hasura['extra']['stats_callback']();
             }
         });
         dbstatsCalled=true;
@@ -41,53 +42,116 @@ function fetchDbStatsLive(ws, cb_func) { // eslint-disable-line no-unused-vars
 var datatableCalled = false;
 function stopDatatableLive(ws){ // eslint-disable-line no-unused-vars
     waitForConnection(ws, JSON.stringify({id: "2", type: "stop"}));
+    waitForConnection(ws, JSON.stringify({id: "3", type: "stop"}));
 }
 
-function startDatatableLive(ws, query){ // eslint-disable-line no-unused-vars
+function startDatatableLive(ws){ // eslint-disable-line no-unused-vars
     waitForConnection(ws, JSON.stringify({
         id: "2",
         type: "start",
         payload: {
             variables: {},
             extensions: {},
-            operationName: "getLiveTable",
-            query: "subscription getLiveTable " + query
+            operationName: "getLiveTableData",
+            query: "subscription getLiveTableData " + hasura['subscription']['view_data']['query']
+        }
+    }));
+
+    waitForConnection(ws, JSON.stringify({
+        id: "3",
+        type: "start",
+        payload: {
+            variables: {},
+            extensions: {},
+            operationName: "getLiveTableCount",
+            query: "subscription getLiveTableCount " + hasura['subscription']['count']['query']
         }
     }));
 }
 
-function fetchDatatableLive(ws, cb_func, query) { // eslint-disable-line no-unused-vars
+async function fetchDatatableLive(ws) { // eslint-disable-line no-unused-vars
     if(datatableCalled) {
         waitForConnection(ws, JSON.stringify({id: "2", type: "stop"}));
+        waitForConnection(ws, JSON.stringify({id: "3", type: "stop"}));
     }
-
     waitForConnection(ws, JSON.stringify({
         id: "2",
         type: "start",
         payload: {
             variables: {},
             extensions: {},
-            operationName: "getLiveTable",
-            query: "subscription getLiveTable " + query
+            operationName: "getLiveTableData",
+            query: "subscription getLiveTableData " + hasura['subscription']['view_data']['query']
+        }
+    }));
+
+    waitForConnection(ws, JSON.stringify({
+        id: "3",
+        type: "start",
+        payload: {
+            variables: {},
+            extensions: {},
+            operationName: "getLiveTableCount",
+            query: "subscription getLiveTableCount " + hasura['subscription']['count']['query']
         }
     }));
     if(!datatableCalled) {
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
-            if(data.type === 'data' && data.id === "2") {
-                cb_func({
-                    recordsTotal: data.payload.data.datatable.aggregate.totalCount,
-                    recordsFiltered: data.payload.data.datatable.aggregate.totalCount,
-                    data: format_datatable(data.payload.data.view_data)
-                });
-                $('.tooltip').tooltip('hide');
+            if(data.type === 'data' && (data.id === "2" || data.id === "3")){
+                if(data.id === "2") {
+                    hasura['data']['view_data'] = format_datatable(data.payload.data.view_data);
+
+                }else if(data.id === "3") {
+                    hasura['data']['count'] = data.payload.data.count_data.aggregate.count;
+                }
+                DatatableLiveCallRender();
             }
         });
         datatableCalled = true;
     }
 }
 
-function fetchDatatable(cb_func, query) { // eslint-disable-line no-unused-vars
+function DatatableLiveCallRender(){
+    hasura['extra']['table_callback']({
+        recordsTotal: hasura['data']['count'],
+        recordsFiltered: hasura['data']['count'],
+        data: hasura['data']['view_data']
+    });
+    $('.tooltip').tooltip('hide');
+}
+
+function fetchByQuery(input_query) { // eslint-disable-line no-unused-vars
+    return new Promise(result => {
+        fetch("/jwt/auth", {
+            method: "GET",
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            fetch("/api/graphql", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization":"Bearer " + data['access_token']
+                },
+                body: JSON.stringify({
+                    query: "query " + input_query
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                    return result(data);
+                }
+            )
+            .catch(error => console.error(error));
+        })
+        .catch(error => console.error(error));
+    });
+}
+
+
+function fetchDatatable() { // eslint-disable-line no-unused-vars
     fetch("/jwt/auth", {
         method: "GET",
         credentials: 'include'
@@ -101,16 +165,14 @@ function fetchDatatable(cb_func, query) { // eslint-disable-line no-unused-vars
                 "Authorization":"Bearer " + data['access_token']
             },
             body: JSON.stringify({
-                query: "query getTable " + query
+                query: "query getTable " + hasura['query']['query']
             })
         })
         .then(response => response.json())
         .then(data => {
-                cb_func({
-                    recordsTotal: data.data.datatable.aggregate.totalCount,
-                    recordsFiltered: data.data.datatable.aggregate.totalCount,
-                    data: format_datatable(data.data.view_data)
-                });
+                hasura['data']['view_data'] = format_datatable(data.data.view_data);
+                hasura['data']['count'] = data.data.count_data.aggregate.count;
+                DatatableLiveCallRender();
             }
         )
         .catch(error => console.error(error));
@@ -184,10 +246,10 @@ function fetchDistinctValues(type, query) { // eslint-disable-line no-unused-var
 var processStateCalled = false;
 function fetchProcStatesLive(ws, cb_func) { // eslint-disable-line no-unused-vars
     if(processStateCalled) {
-        waitForConnection(ws, JSON.stringify({id: "3", type: "stop"}));
+        waitForConnection(ws, JSON.stringify({id: "4", type: "stop"}));
     }
     waitForConnection(ws, JSON.stringify({
-        id: "3",
+        id: "4",
         type: "start",
         payload: {
             variables: {},
@@ -200,7 +262,7 @@ function fetchProcStatesLive(ws, cb_func) { // eslint-disable-line no-unused-var
     if(!processStateCalled) {
         ws.addEventListener('message', (event) => {
             data = JSON.parse(event.data);
-            if(data.type === 'data' && data.id === "3") {
+            if(data.type === 'data' && data.id === "4") {
                 cb_func(data.payload.data);
             }
         });

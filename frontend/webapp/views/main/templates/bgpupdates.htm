@@ -179,7 +179,8 @@
                 },
                 "extra": {
                     "table_callback": null,
-                    "type": "bgp_updates"
+                    "type": "bgp_updates",
+                    "table_name": "view_bgpupdates"
                 }
             };
 
@@ -235,15 +236,16 @@
                 'matched_prefix': null,
                 'time': null,
                 'prefix': null,
+                'as_path': null,
                 'origin_as': null,
                 'peer_asn': null,
                 'service': null,
                 'type': null
             };
 
-            var exlude_columns_from_search = ['Timestamp', 'AS Path', 'Hijack', 'Status', 'More'];
+            var exlude_columns_from_search = ['Timestamp', 'Hijack', 'Status', 'More'];
             var custom_message_for_search = {
-                "Type": "A|W"
+                "Type": "A|W",
             };
 
             var search_table_map = {
@@ -329,7 +331,7 @@
             function inspect_input_of_search_boxes(){
                 $("#bgp_updates tfoot tr th").each(function (index, item) {
                     if(index in search_table_map){
-                        var value = $(this).children("input").val();
+                        var value = $(this).children("input").val().trim();
                         if(value == null || value == ''){
                             filter_parameters[search_table_map[index]] = null;
                             if($(this).children("input").hasClass("is-invalid")){
@@ -382,6 +384,20 @@
                                 if(match != null){
                                     filter_parameters[search_table_map[index]] = match[1];
                                 }
+                            }else if(search_table_map[index] == 'as_path'){
+                                var as_path_reg = /^\s*[(\d+)\s(\d+)]*$/;
+                                var match = as_path_reg.exec(value);
+                                if(match != null){
+                                    filter_parameters[search_table_map[index]] = match[0].replace(/\s+/g, ',');
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('AS Path should include only integers');
+                                    $(this).children("div").show();
+                                }
                             }else{
                                 filter_parameters[search_table_map[index]] = value;
                             }
@@ -393,6 +409,7 @@
             function construct_filter_bgp_update_query(){
                 var filters = [];
                 var download_filters = [];
+                var as_path = null;
                 inspect_input_of_search_boxes();
 
                 if(filter_parameters['time'] != null){
@@ -417,7 +434,8 @@
                 }
 
                 if(filter_parameters['as_path'] != null){
-                    filters.push('{ as_path: {_in: [' + filter_parameters['as_path'] + ']} }');
+                    hasura['extra']['table_name'] = "search_bgpupdates_as_path";
+                    as_path = "{as_paths: \"{" + filter_parameters['as_path'] + '}\"}';
                     download_filters.push('as_path.cs.{' + filter_parameters['as_path'] + "}");
                 }
 
@@ -441,11 +459,18 @@
                     $("#distinct_values_selection").val('select');
                     $('#distinct_values_text').val("");
                     $('#distinct_values_text').hide();
-                    datatable_parameters['and'] = 'where: { _and: [' + filters.join() + '] }';
+                    if(as_path  == null){
+                        datatable_parameters['and'] = ' where: { _and: [' + filters.join() + '] }';
+                        hasura['extra']['table_name'] = "view_bgpupdates";
+                    }else{
+                        datatable_parameters['and'] = 'args: ' + as_path + ' , where: { _and: [' + filters.join() + '] }';
+                        hasura['extra']['table_name'] = "search_bgpupdates_as_path";
+                    }
                     downloadTable_parameters = '(' + download_filters.join() + ')';
                 }else{
                     datatable_parameters['and'] = null;
                     downloadTable_parameters = null;
+                    hasura['extra']['table_name'] = "view_bgpupdates";
                 }
                 downloadTable_update_link();
             }
@@ -471,7 +496,10 @@
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
 
-                        count_query.push(" count_data: view_bgpupdates_aggregate");
+                        count_query.push(" count_data: ");
+                        count_query.push(hasura['extra']['table_name']);
+                        count_query.push("_aggregate");
+
                         if(datatable_parameters['and'] != null){
                             count_query.push("(");
                             count_query.push(datatable_parameters['and']);
@@ -480,7 +508,9 @@
                             count_query.push(" { aggregate { count } } ");
                         }
 
-                        data_query.push("view_data: view_bgpupdates(limit: ");
+                        data_query.push("view_data: ");
+                        data_query.push(hasura['extra']['table_name']);
+                        data_query.push("(limit: ");
                         data_query.push(datatable_parameters['limit']);
                         data_query.push(", offset: ");
                         data_query.push(datatable_parameters['offset']);

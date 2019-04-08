@@ -25,7 +25,7 @@
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
 - Use of function url_for in flask redirect
 - In hijack view changed the actions functionality
-- Update hasura (1.0.0alpha31 -> 1.0.0alpha41)
+- Update hasura (1.0.0alpha31 -> 1.0.0alpha42)
 - Hijack view now uses hasura graphql to fetch BGP Updates
 
 ### Fixed

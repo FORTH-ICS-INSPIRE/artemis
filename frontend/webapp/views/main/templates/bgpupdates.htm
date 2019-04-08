@@ -385,7 +385,7 @@
                                     filter_parameters[search_table_map[index]] = match[1];
                                 }
                             }else if(search_table_map[index] == 'as_path'){
-                                var as_path_reg = /^\s*[(\d+)\s(\d+)]*$/;
+                                var as_path_reg = /^\s*[(\d+)\s]*$/;
                                 var match = as_path_reg.exec(value);
                                 if(match != null){
                                     filter_parameters[search_table_map[index]] = match[0].replace(/\s+/g, ',');
@@ -435,7 +435,7 @@
 
                 if(filter_parameters['as_path'] != null){
                     hasura['extra']['table_name'] = "search_bgpupdates_as_path";
-                    as_path = "{as_paths: \"{" + filter_parameters['as_path'] + '}\"}';
+                    as_path = "as_paths: \"{" + filter_parameters['as_path'] + '\"}';
                     download_filters.push('as_path.cs.{' + filter_parameters['as_path'] + "}");
                 }
 
@@ -455,7 +455,7 @@
                     download_filters.push('type.eq.' + filter_parameters['type']);
                 }
 
-                if(filters.length > 0){
+                if(filters.length > 0 || as_path != null){
                     $("#distinct_values_selection").val('select');
                     $('#distinct_values_text').val("");
                     $('#distinct_values_text').hide();
@@ -463,7 +463,7 @@
                         datatable_parameters['and'] = ' where: { _and: [' + filters.join() + '] }';
                         hasura['extra']['table_name'] = "view_bgpupdates";
                     }else{
-                        datatable_parameters['and'] = 'args: ' + as_path + ' , where: { _and: [' + filters.join() + '] }';
+                        datatable_parameters['and'] = 'args: {' + as_path + '} , where: { _and: [' + filters.join() + '] }';
                         hasura['extra']['table_name'] = "search_bgpupdates_as_path";
                     }
                     downloadTable_parameters = '(' + download_filters.join() + ')';
@@ -633,7 +633,7 @@
                                     stopDatatableLive(ws);
                                 }
                                 count_open_details += 1;
-                                row.child( format(row.data())).show();
+                                row.child( format_bgp_update_expand(row.data())).show();
                                 tr.addClass('shown');
                                 displayHelpMoreBGPupdate();
                                 asn_map_to_name();
@@ -668,7 +668,7 @@
                 $("#navbar_bgpupdates").addClass("active");
             });
 
-            function format ( d ) {
+            function format_bgp_update_expand ( d ) {
                 var html_ = '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">';
                 for(item in fields_to_display){
                     html_ += '<tr><td helpText="' + fields_to_display[item][2] +'"><b>' + fields_to_display[item][1] + ':</b></td>';

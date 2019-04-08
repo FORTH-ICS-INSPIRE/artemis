@@ -3,7 +3,8 @@
   "args": {
     "functions": [
       "search_bgpupdates_as_path",
-      "search_bgpupdates_by_hijack_key"
+      "search_bgpupdates_by_hijack_key",
+      "search_bgpupdates_by_as_path_and_hijack_key"
     ],
     "tables": [
       {

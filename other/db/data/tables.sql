@@ -226,3 +226,11 @@ RETURNS SETOF view_bgpupdates AS $$
     WHERE
         key = ANY(view_bgpupdates.hijack_key)
 $$ LANGUAGE sql STABLE;
+
+CREATE FUNCTION search_bgpupdates_by_as_path_and_hijack_key(key text, as_paths BIGINT[])
+    RETURNS SETOF view_bgpupdates AS $$
+    SELECT *
+    FROM view_bgpupdates
+    WHERE
+        key = ANY(view_bgpupdates.hijack_key) and as_paths <@ view_bgpupdates.as_path
+$$ LANGUAGE sql STABLE;

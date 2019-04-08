@@ -423,7 +423,7 @@
                 6: "type"
             };
             var prefix;
-            var diff_editor = null, new_config = null, old_config = null;
+            var diff_editor = null, new_config = null, old_config = null, editor = null;
             var target = document.getElementById("view_config_learn_diffs");
 
             $('#bgp_updates tfoot th').each(function() {
@@ -578,7 +578,7 @@
                     $('#distinct_values_text').hide();
                     if(as_path  == null){
                         datatable_parameters['and'] = 'args: {key: \"' + hijack_obj['key'] + '\"} where: { _and: [' + filters.join() + '] }';
-                        hasura['extra']['table_name'] = "view_bgpupdates";
+                        hasura['extra']['table_name'] = "search_bgpupdates_by_hijack_key";
                     }else{
                         datatable_parameters['and'] = 'args: {' + as_path + ', key: \"' + hijack_obj['key'] + '\"}, where: { _and: [' + filters.join() + '] }';
                         hasura['extra']['table_name'] = "search_bgpupdates_by_as_path_and_hijack_key";
@@ -758,19 +758,6 @@
                     }
                 });
 
-
-                editor = CodeMirror.fromTextArea(document.getElementById("code_comment_box"), {
-                    lineNumbers: true,
-                    indentUnit: 4,
-                    readOnly: true
-                });
-                {% if current_user.has_roles('admin') %}
-                    editor.setSize("100%", 192);
-                {% else %}
-                    editor.setSize("100%", 326);
-                {% endif %}
-
-
                 $('#timezone').html(display_timezone());
                 displayHelpTextB();
                 displayHelpTextTable();
@@ -780,6 +767,24 @@
                 });
                 $("#navbar_hijack").addClass("active");
             });
+
+            function update_comment_box(comment){
+                if(editor == null){
+                    $("#code_comment_box").html(comment);
+                    editor = CodeMirror.fromTextArea(document.getElementById("code_comment_box"), {
+                        lineNumbers: true,
+                        indentUnit: 4,
+                        readOnly: true
+                    });
+                    {% if current_user.has_roles('admin') %}
+                        editor.setSize("100%", 192);
+                    {% else %}
+                        editor.setSize("100%", 326);
+                    {% endif %}
+                }else{
+                    editor.setValue(comment);
+                }
+            }
 
             function update_hijack_details(data){
                 // Nothing to display, redirect to hijacks page
@@ -807,7 +812,7 @@
                 $( "#info_matched_prefix" ).val( hijack_obj['configured_prefix'] );
                 $( "#info_config_timestamp" ).val( transform_date_to_local( hijack_obj['timestamp_of_config'] )  );
                 $( "#info_last_update" ).val( transform_date_to_local( hijack_obj['time_last'] )  );
-                $( "#code_comment_box").html( hijack_obj['comment'] );
+                update_comment_box(hijack_obj['comment']);
 
                 var peers_seen = hijack_obj['peers_seen'].sort(function(a,b){ return a - b;});
                 var css_row = ['<div class="row">', '</div>'];

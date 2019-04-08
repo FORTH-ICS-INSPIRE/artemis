@@ -435,7 +435,7 @@
 
                 if(filter_parameters['as_path'] != null){
                     hasura['extra']['table_name'] = "search_bgpupdates_as_path";
-                    as_path = "as_paths: \"{" + filter_parameters['as_path'] + '\"}';
+                    as_path = "as_paths: \"{" + filter_parameters['as_path'] + '}\"';
                     download_filters.push('as_path.cs.{' + filter_parameters['as_path'] + "}");
                 }
 

@@ -463,7 +463,7 @@
                         datatable_parameters['and'] = ' where: { _and: [' + filters.join() + '] }';
                         hasura['extra']['table_name'] = "view_bgpupdates";
                     }else{
-                        datatable_parameters['and'] = 'args: {' + as_path + '} , where: { _and: [' + filters.join() + '] }';
+                        datatable_parameters['and'] = 'args: {' + as_path + '}, where: { _and: [' + filters.join() + '] }';
                         hasura['extra']['table_name'] = "search_bgpupdates_as_path";
                     }
                     downloadTable_parameters = '(' + download_filters.join() + ')';
@@ -696,13 +696,24 @@
                     return;
                 }
 
-                var query = "{ view_data: view_bgpupdates(distinct_on: [" + distinct_on + "] ";
-                if(datatable_parameters['and'] != null){
-                    query += datatable_parameters['and'] +  ")";
+                var query = [];
+                if(filter_parameters['as_path'] != null){
+                    query.push("{ view_data: search_bgpupdates_as_path(distinct_on: [");
                 }else{
-                    query += ")";
+                    query.push("{ view_data: view_bgpupdates(distinct_on: [");
                 }
-                query += " { " + distinct_on + " } }";
+                query.push(distinct_on);
+                query.push("] ");
+                if(datatable_parameters['and'] != null){
+                    query.push(datatable_parameters['and']);
+                    query.push(")");
+                }else{
+                    query.push(")");
+                }
+                query.push(" { ");
+                query.push(distinct_on);
+                query.push(" } }");
+
                 fetchDistinctValues(distinct_on, query);
             });
 

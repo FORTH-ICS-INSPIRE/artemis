@@ -83,6 +83,12 @@
             "db_version": "14",
             "description": "Added configured_prefixes column in stats table and re-initialized stats table",
             "file": "migration_14.sql"
+        },
+        "15": {
+            "id": "15",
+            "db_version": "15",
+            "description": "Drop view_stats and create view view_index_all_stats",
+            "file": "migration_15.sql"
         }
     }
 }

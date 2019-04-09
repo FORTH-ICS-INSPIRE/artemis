@@ -198,7 +198,30 @@
         <script>
             var table;
             var ws = null;
-            var query = "";
+
+            var hasura_fetch = ["time_detected","prefix","type","hijack_as","num_peers_seen","num_asns_inf","key","seen","withdrawn","resolved","ignored","active","dormant","under_mitigation","outdated","time_last","configured_prefix"];
+            var hasura = {
+                "subscription": {
+                    "count" : {
+                        "query": "datatable: view_hijacks_aggregate { aggregate { count }",
+                    },
+                    "view_data": {
+                        "query": "view_data: view_hijacks(limit: 10, offset: 0, order_by: {timestamp: desc_nulls_first}) {" + hasura_fetch.join(' ') + "} }",
+                    },
+                },
+                "query": {
+                    "query": "count_data: view_hijacks_aggregate { aggregate { count } } view_data: view_hijacks(limit: 10, offset: 10, order_by: {timestamp: desc_nulls_first}) { " + hasura_fetch.join(' ') + " }"
+                },
+                "data" : {
+                    "view_data": [],
+                    "count": 0
+                },
+                "extra": {
+                    "table_callback": null,
+                    "type": "hijacks"
+                }
+            };
+
             {% if current_user.has_roles('admin') %}
             var selected_hijacks = [];
             {% endif %}
@@ -482,6 +505,9 @@
                     "select": false,
                     "pagingType": "numbers",
                     "ajax": (data, callback, settings) => {
+                        let count_query = [];
+                        let data_query = [];
+
                         var sort;
                         if(data.order[0].dir == 'desc'){
                             sort = 'desc_nulls_first';
@@ -490,35 +516,44 @@
                         }
                         datatable_parameters['offset'] = data.start;
                         datatable_parameters['limit'] = data.length;
-                        query = [];
-                        query.push("{ datatable: view_hijacks_aggregate");
+
+                        count_query.push(" count_data: view_hijacks_aggregate");
                         if(datatable_parameters['and'] != null){
-                            query.push("(");
-                            query.push(datatable_parameters['and']);
-                            query.push(") { aggregate { totalCount: count } }");
+                            count_query.push("(");
+                            count_query.push(datatable_parameters['and']);
+                            count_query.push(") { aggregate { count } } ");
                         }else{
-                            query.push(" { aggregate { totalCount: count } }");
+                            count_query.push(" { aggregate { count } } ");
                         }
-                        query.push(" view_data: view_hijacks(limit: ");
-                        query.push(datatable_parameters['limit']);
-                        query.push(", offset: ");
-                        query.push(datatable_parameters['offset']);
-                        query.push(", order_by: {");
-                        query.push(columns[data.order[0].column].data);
-                        query.push(": ");
-                        query.push(sort);
-                        query.push("} ");
+
+                        data_query.push("view_data: view_hijacks(limit: ");
+                        data_query.push(datatable_parameters['limit']);
+                        data_query.push(", offset: ");
+                        data_query.push(datatable_parameters['offset']);
+                        data_query.push(", order_by: {");
+                        data_query.push(columns[data.order[0].column].data);
+                        data_query.push(": ");
+                        data_query.push(sort);
+                        data_query.push(" } ");
+
                         if(datatable_parameters['and'] != null){
-                            query.push(datatable_parameters['and']);
-                            query.push(")");
-                        }else{
-                            query.push(")");
+                            data_query.push(datatable_parameters['and']);
                         }
-                        query.push(" { time_detected prefix type hijack_as num_peers_seen num_asns_inf key seen withdrawn resolved ignored active dormant under_mitigation outdated time_last configured_prefix } }");
+                        data_query.push(") { ");
+                        data_query.push(hasura_fetch.join(' '));
+                        data_query.push(" }");
+
+                        count_open_details = 0;
+
+                        hasura['subscription']['count']['query'] = "{" + count_query.join('') + "}";
+                        hasura['subscription']['view_data']['query'] = "{" + data_query.join('') + "}";
+                        hasura['query']['query'] = "{" + count_query.join('') + " " + data_query.join('') + "}";
+                        hasura['extra']['table_callback'] = callback;
+
                         if(refresh_state_live){
-                            fetchDatatableLive(ws, callback, query.join(''));
+                            fetchDatatableLive(ws);
                         }else{
-                            fetchDatatable(callback, query.join(''));
+                            fetchDatatable();
                         }
                     },
                     initComplete: function() {
@@ -713,7 +748,7 @@
             $("#live_update_button").on('change', function() {
                 if ($(this).is(':checked')) {
                     refresh_state_live = true;
-                    startDatatableLive(ws, query);
+                    startDatatableLive(ws);
                 }else {
                     stopDatatableLive(ws);
                     refresh_state_live = false;

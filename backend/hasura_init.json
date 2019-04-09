@@ -1,0 +1,197 @@
+{
+  "type": "replace_metadata",
+  "args": {
+    "functions": [
+      "search_bgpupdates_as_path",
+      "search_bgpupdates_by_hijack_key",
+      "search_bgpupdates_by_as_path_and_hijack_key"
+    ],
+    "tables": [
+      {
+        "table": "view_db_details",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "version",
+                "upgraded_on"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
+      },
+      {
+        "table": "view_processes",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "name",
+                "running",
+                "timestamp"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
+      },
+      {
+        "table": "view_bgpupdates",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "prefix",
+                "origin_as",
+                "peer_asn",
+                "as_path",
+                "service",
+                "type",
+                "communities",
+                "timestamp",
+                "hijack_key",
+                "handled",
+                "matched_prefix",
+                "orig_path"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
+      },
+      {
+        "table": "view_configs",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "raw_config",
+                "comment",
+                "time_modified"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
+      },
+      {
+        "table": "view_hijacks",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "active",
+                "dormant",
+                "comment",
+                "configured_prefix",
+                "hijack_as",
+                "ignored",
+                "key",
+                "mitigation_started",
+                "num_asns_inf",
+                "num_peers_seen",
+                "peers_seen",
+                "peers_withdrawn",
+                "prefix",
+                "resolved",
+                "seen",
+                "time_detected",
+                "time_ended",
+                "time_last",
+                "time_started",
+                "timestamp_of_config",
+                "type",
+                "under_mitigation",
+                "withdrawn",
+                "outdated"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
+      },
+      {
+        "table": "view_index_all_stats",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "monitored_prefixes",
+                "configured_prefixes",
+                "total_hijacks",
+                "ignored_hijacks",
+                "resolved_hijacks",
+                "withdrawn_hijacks",
+                "mitigation_hijacks",
+                "ongoing_hijacks",
+                "dormant_hijacks",
+                "acknowledged_hijacks",
+                "outdated_hijacks",
+                "total_bgp_updates",
+                "total_unhandled_updates"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
+      }
+    ],
+    "query_templates": [],
+    "remote_schemas": []
+  }
+}

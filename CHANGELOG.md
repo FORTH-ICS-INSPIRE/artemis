@@ -17,6 +17,8 @@
 - Delete hijack functionality
 - Abuse contact details for each ASN (Extracted from RIPEStat)
 - Functionality to copy ASN details on clickboard
+- Support to filter BGP Updates based on their AS Path
+- Display distinct values of BGP Updates for the following fields: "Origin AS", "Peer AS" and "service" in hijack view
 
 ### Changed
 - Using prefix lists in json file format as monitoring taps input to avoid problematic ultra long arguments
@@ -24,6 +26,8 @@
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
 - Use of function url_for in flask redirect
 - In hijack view changed the actions functionality
+- Update hasura (1.0.0alpha31 -> 1.0.0alpha42)
+- Hijack view now uses hasura graphql to fetch BGP Updates
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend

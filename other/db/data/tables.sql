@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (14, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (15, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -168,7 +168,21 @@ CREATE OR REPLACE VIEW view_hijacks AS SELECT key, type, prefix, hijack_as, num_
 
 CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as_path, service, type, communities, timestamp, hijack_key, handled, matched_prefix, orig_path FROM bgp_updates;
 
-CREATE OR REPLACE VIEW view_stats AS SELECT monitored_prefixes, configured_prefixes FROM stats;
+CREATE OR REPLACE VIEW view_index_all_stats
+AS
+SELECT stats.monitored_prefixes, stats.configured_prefixes,
+    (SELECT count(*) total_hijacks FROM hijacks WHERE key is not NULL),
+    (SELECT count(*) ignored_hijacks FROM hijacks WHERE ignored = true),
+    (SELECT count(*) resolved_hijacks FROM hijacks WHERE resolved = true),
+    (SELECT count(*) withdrawn_hijacks FROM hijacks WHERE withdrawn = true),
+    (SELECT count(*) mitigation_hijacks FROM hijacks WHERE under_mitigation = true),
+    (SELECT count(*) ongoing_hijacks FROM hijacks WHERE active = true),
+    (SELECT count(*) dormant_hijacks FROM hijacks WHERE dormant = true),
+    (SELECT count(*) acknowledged_hijacks FROM hijacks WHERE seen = true),
+    (SELECT count(*) outdated_hijacks FROM hijacks WHERE outdated = true),
+    (SELECT count(*) total_bgp_updates FROM bgp_updates WHERE key is not NULL),
+    (SELECT count(*) total_unhandled_updates FROM bgp_updates WHERE handled = false)
+FROM stats;
 
 CREATE OR REPLACE FUNCTION inet_search (inet)
 RETURNS SETOF bgp_updates AS $$
@@ -196,3 +210,27 @@ FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;
 
 CREATE OR REPLACE VIEW view_db_details AS SELECT version, upgraded_on FROM db_details;
+
+CREATE FUNCTION search_bgpupdates_as_path(as_paths BIGINT[])
+RETURNS SETOF view_bgpupdates AS $$
+    SELECT *
+    FROM view_bgpupdates
+    WHERE
+        as_paths <@ view_bgpupdates.as_path
+$$ LANGUAGE sql STABLE;
+
+CREATE FUNCTION search_bgpupdates_by_hijack_key(key text)
+RETURNS SETOF view_bgpupdates AS $$
+    SELECT *
+    FROM view_bgpupdates
+    WHERE
+        key = ANY(view_bgpupdates.hijack_key)
+$$ LANGUAGE sql STABLE;
+
+CREATE FUNCTION search_bgpupdates_by_as_path_and_hijack_key(key text, as_paths BIGINT[])
+    RETURNS SETOF view_bgpupdates AS $$
+    SELECT *
+    FROM view_bgpupdates
+    WHERE
+        key = ANY(view_bgpupdates.hijack_key) and as_paths <@ view_bgpupdates.as_path
+$$ LANGUAGE sql STABLE;

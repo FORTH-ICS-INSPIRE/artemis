@@ -18,6 +18,7 @@
 - Abuse contact details for each ASN (Extracted from RIPEStat)
 - Functionality to copy ASN details on clickboard
 - Support to filter BGP Updates based on their AS Path
+- Display distinct values of BGP Updates for the following fields: "Origin AS", "Peer AS" and "service" in hijack view
 
 ### Changed
 - Using prefix lists in json file format as monitoring taps input to avoid problematic ultra long arguments

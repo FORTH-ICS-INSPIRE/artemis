@@ -258,6 +258,40 @@
                 <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
             </div>
         </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        View distinct values
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-lg-4">
+                                                <select class="form-control" id="distinct_values_selection">
+                                                    <option value="select">Select</option>
+                                                    <option value="origin_as">Origin AS</option>
+                                                    <option value="peer_asn">Peer AS</option>
+                                                    <option value="service">Service</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-1">
+                            <div class="col-lg-10 offset-lg-1">
+                                <div class="card card-body card-body-hide" id="distinct_values_text"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         {% if current_user.has_roles('admin') %}
         <div class="modal" id="learnRuleModal" tabindex="-1" role="dialog" aria-labelledby="learnRuleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
@@ -577,7 +611,7 @@
                     $('#distinct_values_text').val("");
                     $('#distinct_values_text').hide();
                     if(as_path  == null){
-                        datatable_parameters['and'] = 'args: {key: \"' + hijack_obj['key'] + '\"} where: { _and: [' + filters.join() + '] }';
+                        datatable_parameters['and'] = 'args: {key: \"' + hijack_obj['key'] + '\"}, where: { _and: [' + filters.join() + '] }';
                         hasura['extra']['table_name'] = "search_bgpupdates_by_hijack_key";
                     }else{
                         datatable_parameters['and'] = 'args: {' + as_path + ', key: \"' + hijack_obj['key'] + '\"}, where: { _and: [' + filters.join() + '] }';
@@ -1095,6 +1129,35 @@
                     stopDatatableLive(ws);
                     refresh_state_live = false;
                 }
+            });
+
+            $("#distinct_values_selection").on('change', function() {
+                var distinct_on = $(this).val();
+
+                if(distinct_on == "select"){
+                    $('#distinct_values_text').hide();
+                    return;
+                }
+
+                var query = [];
+                if(filter_parameters['as_path'] != null){
+                    query.push("{ view_data: search_bgpupdates_by_as_path_and_hijack_key(distinct_on: [");
+                }else{
+                    query.push("{ view_data: search_bgpupdates_by_hijack_key(distinct_on: [");
+                }
+                query.push(distinct_on);
+                query.push("] ");
+                if(datatable_parameters['and'] != null){
+                    query.push(datatable_parameters['and']);
+                    query.push(")");
+                }else{
+                    query.push(")");
+                }
+                query.push(" { ");
+                query.push(distinct_on);
+                query.push(" } }");
+
+                fetchDistinctValues(distinct_on, query);
             });
 
             function downloadTable_update_link(){

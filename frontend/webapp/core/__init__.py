@@ -25,18 +25,18 @@ from webapp.core.modules import Modules_state
 from webapp.core.proxy_api import proxy_api_downloadTable
 from webapp.core.proxy_api import proxy_api_post
 from webapp.data.models import db
+from webapp.render.views.actions_view import actions
+from webapp.render.views.admin_view import admin
+from webapp.render.views.main_view import main
 from webapp.utils.path import get_app_base_path
-from webapp.views.actions.actions_view import actions
-from webapp.views.admin.admin_view import admin
-from webapp.views.main.main_view import main
 
 app = Flask(
     __name__,
     instance_path=get_app_base_path(),
     instance_relative_config=True,
-    template_folder="../templates",
+    template_folder="../render/templates",
     static_url_path="",
-    static_folder="../static",
+    static_folder="../render/static",
 )
 
 with app.app_context():
@@ -139,19 +139,24 @@ def setup():
 @app.errorhandler(404)
 def page_not_found(error):
     app.artemis_logger.debug("Page Not Found Error: {}".format(error))
-    return render_template("404.htm")
+    return render_template("/errors/404.htm")
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
     app.artemis_logger.error("Server Error: {}".format(error))
-    return render_template("500.htm")
+    return render_template("/errors/500.htm")
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     app.artemis_logger.exception("Unhandled Exception: {}".format(error))
-    return render_template("500.htm")
+    return render_template("/errors/500.htm")
+
+
+@app.login_manager.unauthorized_handler
+def unauth_handler():
+    return render_template("/errors/401.htm")
 
 
 @app.context_processor
@@ -235,7 +240,7 @@ def index():
 @login_required
 @roles_accepted("pending")
 def pending():
-    return render_template("pending.htm")
+    return render_template("/main/pending.htm")
 
 
 @app.route("/overview", methods=["GET", "POST"])
@@ -243,12 +248,7 @@ def pending():
 @roles_accepted("admin", "user")
 def overview():
     app.artemis_logger.debug("url: /")
-    return render_template("index.htm", js_version=app.config["JS_VERSION"])
-
-
-@app.login_manager.unauthorized_handler
-def unauth_handler():
-    return render_template("401.htm")
+    return render_template("/main/overview.htm", js_version=app.config["JS_VERSION"])
 
 
 @login_required

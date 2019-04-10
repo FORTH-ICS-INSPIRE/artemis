@@ -1,5 +1,24 @@
 # Changelog
 
+## [UNRELEASED] (NAME) - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
 ## [1.2.0] (Athena) - 2019-04-10
 ### Added
 - Support for dormant flags in hijacks

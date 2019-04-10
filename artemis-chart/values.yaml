@@ -15,7 +15,7 @@ apiPort: 3000
 # database
 dbHost: postgres
 dbPort: 5432
-dbVersion: 12
+dbVersion: 15
 dbName: artemis_db
 dbUser: artemis_user
 dbPass: Art3m1s
@@ -30,7 +30,7 @@ webappPort: 8000
 adminUser: admin
 adminPass: admin123
 adminEmail: admin@admin
-jsVersion: 0.1.2
+jsVersion: 1.0.0
 # rabbitmq
 rabbitmqHost: rabbitmq
 rabbitmqPort: 5672

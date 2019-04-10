@@ -16,7 +16,7 @@ data:
   apiPort: {{ .Values.apiPort | default "3000" | quote }}
   dbHost: {{ .Values.dbHost | default "postgres" | quote }}
   dbPort: {{ .Values.dbPort | default "5432" | quote }}
-  dbVersion: {{ .Values.dbVersion | default "12" | quote }}
+  dbVersion: {{ .Values.dbVersion | default "15" | quote }}
   dbName: {{ .Values.dbName | default "artemis_db" | quote }}
   dbUser: {{ .Values.dbUser | default "artemis_user" | quote }}
   dbSchema: {{ .Values.dbSchema | default "public" | quote }}
@@ -29,7 +29,7 @@ data:
   webappPort: {{ .Values.webappPort | default "8000" | quote }}
   adminUser: {{ .Values.adminUser | default "admin" | quote }}
   adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
-  jsVersion: {{ .Values.jsVersion | default "0.1.2" | quote }}
+  jsVersion: {{ .Values.jsVersion | default "1.0.0" | quote }}
   rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" | quote }}
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}

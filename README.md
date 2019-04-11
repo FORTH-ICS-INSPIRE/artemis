@@ -254,6 +254,7 @@ to their homepages and licenses.
 
 ## Acknowledgements and Funding Sources
 This work is supported by the following funding sources on the European side (FORTH):
+* **European Research Council (ERC) grant agreement no. 790575 ([PHILOS Project](https://cordis.europa.eu/project/rcn/215015/en))**
 * **European Research Council (ERC) grant agreement no. 338402 ([NetVolution Project](http://netvolution.eu/))**
 * **[RIPE NCC Community Projects Fund](https://www.ripe.net/publications/news/announcements/ripe-community-projects-fund-2017-recipients-announced)**
 

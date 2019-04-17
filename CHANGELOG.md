@@ -5,7 +5,7 @@
 - TBD (Added a new feature)
 
 ### Changed
-- TBD (Changed existing functionality)
+- Refactoring frontend (views, templates and static files are organized inside the folder render)
 
 ### Fixed
 - TBD (bug-fix)
@@ -17,7 +17,7 @@
 - TBD (soon-to-be removed feature)
 
 ### Security
-- TBD (addressing vulnerability)
+- Bumped SQLAlchemy from 1.2.16 to 1.3.3 in /frontend
 
 ## [1.2.0] (Athena) - 2019-04-10
 ### Added

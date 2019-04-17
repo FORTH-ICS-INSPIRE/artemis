@@ -2,6 +2,25 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [1.2.0] (Athena) - 2019-04-10
+### Added
 - Support for dormant flags in hijacks
 - Storing hijack update (origin, neighbor) combinations in redis
 - Translate learn rule request in ARTEMIS-compatible dicts in backend
@@ -41,9 +60,6 @@
 ### Removed
 - Configured prefix graph visualization (needs redesign)
 - Config data field from configs DB table
-
-### Deprecated
-- TBD (soon-to-be removed feature)
 
 ### Security
 - Using yaml dump and safe_load instead of pickling/unpickling

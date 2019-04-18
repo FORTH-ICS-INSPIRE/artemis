@@ -7,8 +7,8 @@ from flask_security import SQLAlchemyUserDatastore
 from webapp.data.models import db
 from webapp.data.models import Role
 from webapp.data.models import User
-from webapp.templates.forms import ExtendedLoginForm
-from webapp.templates.forms import ExtendedRegisterForm
+from webapp.render.forms import ExtendedLoginForm
+from webapp.render.forms import ExtendedRegisterForm
 from webapp.utils.ldap.datastore import LDAPUserDatastore
 from webapp.utils.ldap.forms import LDAPLoginForm
 

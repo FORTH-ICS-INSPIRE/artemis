@@ -1,0 +1,806 @@
+{% extends "base/layout.htm" %}
+
+{% block title %}
+    {{super()}} - Hijacks
+{% endblock %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12 page-header">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1>Hijacks</h1>
+                    </div>
+                    <div class="col-lg-2 offset-lg-3">
+                        <h2>Live Update:</h2>
+                    </div>
+                    <div class="col-lg-1">
+                        <label class="switch">
+                            <input data-toggle="toggle" id="live_update_button" name="live_update_switch" type="checkbox" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="row">
+                    <div class="col-lg-3">
+                        <div id="timewindow_buttons">
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_all" class="btn btn-outline-primary btn-sm">All</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_1h" class="btn btn-outline-secondary btn-sm">Past 1h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_24h" class="btn btn-outline-secondary btn-sm">Past 24h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_48h" class="btn btn-outline-secondary btn-sm">Past 48h</button>
+                            <button type="button" helpText="field_time_window_custom" id="select_timewindow_other" class="btn btn-outline-secondary btn-sm">Custom</button>
+                        </div>
+                        <div id="custom_time" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-10">
+                                    <div class="panel panel-default">
+                                        <div class="panel-body">
+                                            <input class="form-control" type="text" name="datetimes"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 offset-lg-4">
+                        <div class="form-group row">
+                            <div class="col-sm-10">
+                                <input class="form-control" placeholder="Type hijack key..." id="hijack-key-input">
+                            </div>
+                            <div class="col-sm-1">
+                                <button type="button" class="btn btn-secondary" id="view-hijack-by-key-button">View</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <table class="table table-striped table-bordered" style="width:100%" id="hijacks">
+                    <thead>
+                        <th helpText="field_time_last_update">Last Update</th>
+                        <th helpText="field_time_detected">Time Detected</th>
+                        <th helpText="field_hijack_status">Status</th>
+                        <th helpText="field_hijacked_prefix">Hijacked Prefix</th>
+                        <th helpText="field_matched_prefix">Matched Prefix</th>
+                        <th helpText="field_hijack_type">Type</th>
+                        <th helpText="field_hijacker_as">Hijacker AS</th>
+                        <th helpText="field_peers_seen"># Peers Seen</th>
+                        <th helpText="field_ases_infected"># ASes Infected</th>
+                        <th helpText="field_hijack_ack">Ack</th>
+                        <th helpText="field_hijack_more">More</th>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>Last Update</th>
+                            <th>Time Detected</th>
+                            <th>Status</th>
+                            <th>Hijacked Prefix</th>
+                            <th>Matched Prefix</th>
+                            <th>Type</th>
+                            <th>Hijack AS</th>
+                            <th># Peers Seen</th>
+                            <th># ASes Infected</th>
+                            <th>Ack</th>
+                            <th>More</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-lg-8">
+                <p> Select Status:
+                    <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm" onclick="filter_by_status('active');">Ongoing</button> /
+                    <button type="button" id="status_dormant_button" helpText="field_hijack_status_dormant" class="btn btn-outline-secondary btn-sm" onclick="filter_by_status('dormant');">Dormant</button> /
+                    <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm" onclick="filter_by_status('resolved');">Resolved</button> /
+                    <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm" onclick="filter_by_status('ignored');">Ignored</button> /
+                    <button type="button" id="status_under_mitigation_button" helpText="field_hijack_under_mitigation" class="btn btn-outline-primary btn-sm" onclick="filter_by_status('under_mitigation');">Under Mitigation</button> /
+                    <button type="button" id="status_withdrawn_button" helpText="field_hijack_status_withdrawn" class="btn btn-outline-info btn-sm" onclick="filter_by_status('withdrawn');">Withdrawn</button> /
+                    <button type="button" id="status_outdated_button" helpText="field_hijack_status_outdated" class="btn btn-outline-dark btn-sm" onclick="filter_by_status('outdated');">Outdated</button>
+                </p>
+            </div>
+            <div class="col-lg-4">
+                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1>Additional actions</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        View distinct values
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-lg-4">
+                                                <select class="form-control" id="distinct_values_selection">
+                                                    <option value="select">Select</option>
+                                                    <option value="prefix">Hijacked Prefix</option>
+                                                    <option value="configured_prefix">Matched Prefix</option>
+                                                    <option value="hijack_as">Hijack AS</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-1">
+                            <div class="col-lg-10 offset-lg-1">
+                                <div class="card card-body card-body-hide" id="distinct_values_text"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if current_user.has_roles('admin') %}
+        <div class="modal fade" id="deleteHijacksModal" tabindex="-1" role="dialog" aria-labelledby="deleteHijacksModal" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteHijacksModalLabel">Delete Hijack(s)</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the selected hijack(s)? </p></br>
+
+                        This action will also delete all BGP messages related to this(these) hijack(s) and cannot be undone.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" onclick="action_delete_hijacks();" data-dismiss="modal">Delete</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            var table;
+            var ws = null;
+
+            var hasura_fetch = ["time_detected","prefix","type","hijack_as","num_peers_seen","num_asns_inf","key","seen","withdrawn","resolved","ignored","active","dormant","under_mitigation","outdated","time_last","configured_prefix"];
+            var hasura = {
+                "subscription": {
+                    "count" : {
+                        "query": "datatable: view_hijacks_aggregate { aggregate { count }",
+                    },
+                    "view_data": {
+                        "query": "view_data: view_hijacks(limit: 10, offset: 0, order_by: {timestamp: desc_nulls_first}) {" + hasura_fetch.join(' ') + "} }",
+                    },
+                },
+                "query": {
+                    "query": "count_data: view_hijacks_aggregate { aggregate { count } } view_data: view_hijacks(limit: 10, offset: 10, order_by: {timestamp: desc_nulls_first}) { " + hasura_fetch.join(' ') + " }"
+                },
+                "data" : {
+                    "view_data": [],
+                    "count": 0
+                },
+                "extra": {
+                    "table_callback": null,
+                    "type": "hijacks"
+                }
+            };
+
+            {% if current_user.has_roles('admin') %}
+            var selected_hijacks = [];
+            {% endif %}
+            var static_urls = {
+                "handled.png": "{{ url_for('static', filename='images/handled.png') }}",
+                "unhadled.png": "{{ url_for('static', filename='images/unhadled.png') }}",
+            };
+            var hijack_redirect = "{{ url_for('main.display_hijack') }}";
+            var refresh_state_live = true;
+            var datatable_parameters = {
+                    'order': [
+                        {
+                            'column': 0,
+                            'dir': "desc"
+                        }
+                    ],
+                    'offset': 0,
+                    'limit': 0
+                };
+            var downloadTable_parameters = null;
+            var selected_status = null;
+
+            var columns = [
+                { data: 'time_last' },
+                { data: 'time_detected' },
+                { data: 'status'},
+                { data: 'prefix' },
+                { data: 'configured_prefix' },
+                { data: 'type' },
+                { data: 'hijacker_as' },
+                { data: 'num_peers_seen' },
+                { data: 'num_asns_inf' }
+            ];
+
+            var filter_parameters = {
+                'configured_prefix': null,
+                'time': null,
+                'prefix': null,
+                'hijack_as': null,
+                'type': null
+            };
+
+            var filter_status_map = {
+                'active' : "danger",
+                'dormant': "secondary",
+                'resolved' : "success",
+                'ignored' : "warning",
+                'under_mitigation' : "primary",
+                'withdrawn' : "info",
+                'outdated' : "dark"
+            }
+
+            var exlude_columns_from_search = ['Last Update', 'Time Detected', 'Status', '# Peers Seen', '# ASes Infected', 'Ack', 'Mark', 'More'];
+
+            var custom_message_for_search = {};
+
+            var search_table_map = {
+                3: "prefix",
+                4: "configured_prefix",
+                5: "type",
+                6: "hijack_as"
+            };
+
+            var custom_time = [
+                {
+                    "id": "#select_timewindow_all",
+                },
+                {
+                    "id": "#select_timewindow_1h",
+                },
+                {
+                    "id": "#select_timewindow_24h",
+                },
+                {
+                    "id": "#select_timewindow_48h",
+                },
+                {
+                    "id": "#select_timewindow_other",
+                },
+            ];
+
+            function display_time_selection(custom_time_data){
+                for(item in custom_time_data){
+                    $(custom_time_data[item]["id"]).on('click', function(event) {
+                        $('#timewindow_buttons').children().each(function () { $(this).attr('class', 'btn btn-outline-secondary btn-sm'); });
+                        $(this).attr('class', 'btn btn-outline-primary btn-sm');
+                        if($('#custom_time').is(":visible")){
+                            $('#custom_time').hide();
+                        }
+                        if(event.target.id == 'select_timewindow_all'){
+                            filter_parameters['time'] = null;
+                        }else if(event.target.id == 'select_timewindow_other'){
+                            $('#custom_time').show();
+                        }else{
+                            var hours_back = 0;
+                            if(event.target.id == 'select_timewindow_1h'){
+                                hours_back = 1;
+                            }else if(event.target.id == 'select_timewindow_24h'){
+                                hours_back = 24;
+                            }else if(event.target.id == 'select_timewindow_48h'){
+                                hours_back = 48;
+                            }
+                            var start_date = new Date();
+                            start_date.setHours(start_date.getHours() - hours_back);
+                            var end_date = new Date();
+                            filter_parameters['time'] = {
+                                'start_time': start_date.toISOString(),
+                                'end_time': end_date.toISOString()
+                            };
+                        }
+                        construct_filter_hijacks_query();
+                        table.draw();
+                    });
+                }
+            }
+
+            function filter_by_status(status){
+                // no status selected
+                if(selected_status == status){
+                    selected_status = status;
+                    $("#status_" + selected_status + "_button").removeClass("btn-" + filter_status_map[status]);
+                    $("#status_" + selected_status + "_button").addClass("btn-outline-" + filter_status_map[status]);
+                    filter_parameters['status'] = null;
+                    selected_status = null;
+                }else{
+                    selected_status = status;
+                    $("#status_" + status + "_button").removeClass("btn-outline-" + filter_status_map[status]);
+                    $("#status_" + status + "_button").addClass("btn-" + filter_status_map[status]);
+                    filter_parameters['status'] = status;
+                    var status_list = ['active', 'dormant', 'resolved', 'ignored', 'under_mitigation', 'withdrawn', 'outdated'];
+                    var filtered_status_list = status_list.filter(function(e) { return e !== status })
+                    for (i in filtered_status_list){
+                        status_ = filtered_status_list[i]
+                        $("#status_" + status_ + "_button").removeClass("btn-" + filter_status_map[status_]);
+                        $("#status_" + status_ + "_button").addClass("btn-outline-" + filter_status_map[status_]);
+                    }
+                }
+                construct_filter_hijacks_query();
+                table.draw();
+            }
+
+            $('#hijacks tfoot th').each(function() {
+                var title = $(this).text();
+                if(!(exlude_columns_from_search.includes(title))){
+                    if(title in custom_message_for_search){
+                        var html_ = '<input class="form-control" id="input_' + title + '" type="text" placeholder="' + custom_message_for_search[title] + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
+                    }else{
+                        var html_ = '<input class="form-control" id="input_' + title + '"s type="text" placeholder="' + title + '" />';
+                        html_ += '<div class="invalid-feedback"></div>';
+                        $(this).html(html_);
+                    }
+                }else{
+                    $(this).html('');
+                }
+            });
+
+            function inspect_input_of_search_boxes(){
+                $("#hijacks tfoot tr th").each(function (index, item) {
+                    if(index in search_table_map){
+                        var value = $(this).children("input").val();
+                        if(value == null || value == ''){
+                            filter_parameters[search_table_map[index]] = null;
+                            if($(this).children("input").hasClass("is-invalid")){
+                                $(this).children("input").removeClass("is-invalid");
+                                $(this).children("div").hide();
+                            }
+                        }else{
+                            if(search_table_map[index] == 'prefix' || search_table_map[index] == 'configured_prefix'){
+                                filter_parameters[search_table_map[index]] = input_filter_prefix(value, $(this));
+                            }else if(search_table_map[index] == 'hijack_as'){
+                                var number_reg = /^\s*(\d+)\s*$/;
+                                var match = number_reg.exec(value);
+                                var hijack_as = null;
+                                if(match != null){
+                                    hijack_as = parseInt(match[1]);
+                                }else{
+                                    hijack_as = -1;
+                                }
+                                if(0 < hijack_as && hijack_as < 4199999999){
+                                    filter_parameters[search_table_map[index]] = hijack_as;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not an ASN');
+                                    $(this).children("div").show();
+                                }
+                            }else if(search_table_map[index] == 'type'){
+                                var type_regex = /^\s*(([S|E|Q]\|[0|1|-]\|-\|[L-])|([S|E|Q]\|[0|1|-]\|-)|((S\|0)|(S\|1)|(E\|0)|(E\|1)|(Q\|0))|([S|E|Q|0|1|L]))\s*$/;
+                                if(type_regex.exec(value)){
+                                    match_value = value.replace(/^\s+|\s+$/g, '');
+                                    filter_parameters[search_table_map[index]] = match_value;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)|(-|L), or valid subset');
+                                    $(this).children("div").show();
+                                }
+                            }else{
+                                filter_parameters[search_table_map[index]] = value;
+                            }
+                        }
+                    }
+                });
+            }
+
+            function construct_filter_hijacks_query(){
+                var filters = [];
+                var download_filters = [];
+                inspect_input_of_search_boxes();
+
+                {% if hijack_keys %}
+                    var keys = {{ hijack_keys | safe }};
+                    var keys_str = "";
+                    for(key in keys){
+                        keys_str += '"' + keys[key] + '",' ;
+                    }
+                    filters.push('{ key: {_in: [' + keys_str + ']} }');
+                {% endif %}
+
+                if(filter_parameters['time'] != null){
+                    filters.push('{ time_detected: {_gte: "' + filter_parameters['time']['start_time'] + '"} }');
+                    filters.push('{ time_detected: {_lte: "' + filter_parameters['time']['end_time'] + '"} }');
+                    download_filters.push('time_detected.gte.' + filter_parameters['time']['start_time'] + ',time_detected.lte.' + filter_parameters['time']['end_time']);
+                }
+
+                if(filter_parameters['configured_prefix'] != null){
+                    filters.push('{ configured_prefix: {_eq: "' + filter_parameters['configured_prefix'] + '"} }');
+                    download_filters.push('configured_prefix.eq.' + filter_parameters['configured_prefix']);
+                }
+
+                if(filter_parameters['prefix'] != null){
+                    filters.push('{ prefix: {_eq: "' + filter_parameters['prefix'] + '"} }');
+                    download_filters.push('prefix.eq.' + filter_parameters['prefix']);
+                }
+
+                if(filter_parameters['hijack_as'] != null){
+                    filters.push('{ hijack_as: {_eq: "' + filter_parameters['hijack_as'] + '"} }');
+                    download_filters.push('hijack_as.eq.' + filter_parameters['hijack_as']);
+                }
+
+                if(filter_parameters['type'] != null){
+                    filters.push('{ type: {_like: "%' + filter_parameters['type'] + '%"} }');
+                    download_filters.push('type.like.*' + filter_parameters['type'] + '*');
+                }
+
+                if(filter_parameters['status'] != null){
+                    filters.push('{' + filter_parameters['status'] + ': {_eq: true } }');
+                    download_filters.push(filter_parameters['status'] + ".eq.true");
+                }
+
+
+                if(filters.length > 0){
+                    $("#distinct_values_selection").val('select');
+                    $('#distinct_values_text').val("");
+                    $('#distinct_values_text').hide();
+                    datatable_parameters['and'] = 'where: { _and: [' + filters.join() + '] }';
+                    downloadTable_parameters = '(' + download_filters.join() + ')';
+                }else{
+                    datatable_parameters['and'] = null;
+                    downloadTable_parameters = null;
+                }
+                downloadTable_update_link();
+            }
+
+
+            function render_table(ws){
+               construct_filter_hijacks_query();
+
+                table = $('#hijacks').DataTable( {
+                    "processing": false,
+                    "serverSide": true,
+                    "searching": false,
+                    "select": false,
+                    "pagingType": "numbers",
+                    "ajax": (data, callback, settings) => {
+                        let count_query = [];
+                        let data_query = [];
+
+                        var sort;
+                        if(data.order[0].dir == 'desc'){
+                            sort = 'desc_nulls_first';
+                        }else{
+                            sort = 'asc';
+                        }
+                        datatable_parameters['offset'] = data.start;
+                        datatable_parameters['limit'] = data.length;
+
+                        count_query.push(" count_data: view_hijacks_aggregate");
+                        if(datatable_parameters['and'] != null){
+                            count_query.push("(");
+                            count_query.push(datatable_parameters['and']);
+                            count_query.push(") { aggregate { count } } ");
+                        }else{
+                            count_query.push(" { aggregate { count } } ");
+                        }
+
+                        data_query.push("view_data: view_hijacks(limit: ");
+                        data_query.push(datatable_parameters['limit']);
+                        data_query.push(", offset: ");
+                        data_query.push(datatable_parameters['offset']);
+                        data_query.push(", order_by: {");
+                        data_query.push(columns[data.order[0].column].data);
+                        data_query.push(": ");
+                        data_query.push(sort);
+                        data_query.push(" } ");
+
+                        if(datatable_parameters['and'] != null){
+                            data_query.push(datatable_parameters['and']);
+                        }
+                        data_query.push(") { ");
+                        data_query.push(hasura_fetch.join(' '));
+                        data_query.push(" }");
+
+                        count_open_details = 0;
+
+                        hasura['subscription']['count']['query'] = "{" + count_query.join('') + "}";
+                        hasura['subscription']['view_data']['query'] = "{" + data_query.join('') + "}";
+                        hasura['query']['query'] = "{" + count_query.join('') + " " + data_query.join('') + "}";
+                        hasura['extra']['table_callback'] = callback;
+
+                        if(refresh_state_live){
+                            fetchDatatableLive(ws);
+                        }else{
+                            fetchDatatable();
+                        }
+                    },
+                    initComplete: function() {
+                        var api = this.api();
+
+                        api.columns().every(function() {
+                            var that = this;
+                            var column_index = that[0][0]
+                            $('input', this.footer()).on('keydown', function(ev) {
+                                if (ev.keyCode == 13) { //only on enter keypress (code 13)
+                                    construct_filter_hijacks_query();
+                                    that.draw()
+                                }
+                            });
+                        });
+                        var tool_elems = $("#hijacks_wrapper").children('div').eq(0).children('div');
+                        {% if current_user.has_roles('admin') %}
+                        var display_multiple_actions = '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
+                        display_multiple_actions += '<input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>';
+                        display_multiple_actions += '</label></span>  <select class="form-control form-control-sm-auto" id="action_selection">';
+                        display_multiple_actions += '<option value="hijack_action_resolve">Mark as Resolved</option>';
+                        display_multiple_actions += '<option value="hijack_action_ignore">Mark as Ignored</option>';
+                        display_multiple_actions += '<option value="hijack_action_acknowledge">Mark as Acknowledged</option>';
+                        display_multiple_actions += '<option value="hijack_action_acknowledge_not">Mark as Not Acknowledged</option>';
+                        display_multiple_actions += '<option value="hijack_action_delete">Delete Hijack</option></select>';
+                        display_multiple_actions += '  <button id="apply_selected" type="button" disabled class="btn btn-primary btn-sm">Apply</button>';
+                        display_multiple_actions += '  <button id="clear_all_selected" type="button" disabled class="btn btn-danger btn-sm">Clear</button>';
+
+                        $(tool_elems).eq(1).html( display_multiple_actions + '<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
+
+                        $('#apply_selected').click(function() {
+                            let action = $("#action_selection option:selected").val();
+
+                            if($("#action_selection option:selected").val() == "hijack_action_delete"){
+                                $("#deleteHijacksModal").modal("show");
+                                return;
+                            }
+                            let url = "{{ url_for('actions.submit_hijacks_actions') }}";
+                            let obj = {
+                                "hijack_keys" : selected_hijacks,
+                                "action": action
+                            };
+                            action_multiple_call(url, obj);
+                        } );
+
+                        $('#clear_all_selected').click(function() {
+                            selected_hijacks = [];
+                            $('#selected_hijacks_num').html(selected_hijacks.length);
+                            table.draw(false);
+                            $('#clear_all_selected').prop('disabled', true);
+                            $('#apply_selected').prop('disabled', true);
+                        } );
+
+                        {% else %}
+                            $(tool_elems).eq(1).html('<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
+                        {% endif %}
+                        downloadTable_update_link();
+                    },
+                    "order": [[ 0, "desc" ]],
+                    "columns": [
+                        { data: 'time_last', "width": "150px" },
+                        { data: 'time_detected', "width": "150px" },
+                        { data: 'status' },
+                        { data: 'prefix' },
+                        { data: 'configured_prefix' },
+                        { data: 'type', "width": "78px" },
+                        { data: 'hijack_as' },
+                        { data: 'num_peers_seen' },
+                        { data: 'num_asns_inf' },
+                        { data: 'seen', "width": "14px" },
+                        { data: 'hijack_link', "width": "14px" }
+                    ],
+                    {% if current_user.has_roles('admin') %}
+                    "fnRowCallback": function (nRow, aData, iDisplayIndex) {
+                        $(nRow).attr('id', aData['key']);
+                        if(selected_hijacks.indexOf(aData['key']) > -1){
+                            $(nRow).addClass('selected');
+                        }
+                    },
+                    {% endif %}
+                    "columnDefs": [
+                        {
+                            "targets": [2,3,4,5,6,9,10],
+                            "orderable": false
+                        },
+                        {
+                            "targets": [0,1,2,3,4,5,6,7,8,9,10],
+                            "className": "text-center",
+                        }
+                    ],
+                    "language": {
+                        "emptyTable": "<img src=\"{{ url_for('static', filename='images/checkmark.png') }}\" ></img></br><h3>No hijack alerts. Go grab a beer!</h3></br>"
+                    },
+                    "responsive": true
+                });
+            }
+
+            $(document).ready(function(){
+                display_time_selection(custom_time);
+
+                ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                        credentials: 'include'
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                        render_table(ws);
+                        $('#hijacks tbody').on( 'click', 'tr[id]', function () {
+                            if($(this).hasClass("selected")){
+                                selected_hijacks.splice(selected_hijacks.indexOf($(this).attr("id")), 1);
+                            }else{
+                                selected_hijacks.push($(this).attr("id"));
+                            }
+                            $('#selected_hijacks_num').html(selected_hijacks.length);
+
+                            if(selected_hijacks.length > 0){
+                                $('#apply_selected').prop('disabled', false);
+                                $('#clear_all_selected').prop('disabled', false);
+                            }else{
+                                $('#clear_all_selected').prop('disabled', true);
+                                $('#apply_selected').prop('disabled', true);
+                            }
+                            $(this).toggleClass('selected');
+                        } );
+                        $('#hijacks').on( 'draw.dt', function () {
+                            asn_map_to_name();
+                        });
+                        displayHelpTextTable();
+                    }
+                });
+
+                $('input[name="datetimes"]').daterangepicker({
+                    timePicker: true,
+                    startDate: moment().startOf('hour'),
+                    endDate: moment().startOf('hour').add(32, 'hour'),
+                    locale: {
+                        format: 'M/DD hh:mm A'
+                    }
+                },  function(start, end, label) {
+                    filter_parameters['time'] = { 'start_time': start.toISOString(), 'end_time': end.toISOString()};
+                    construct_filter_hijacks_query();
+                    table.draw();
+                    }
+                );
+
+                $('#timezone').html(display_timezone());
+                displayHelpTextButton();
+                $("#navbar_hijacks").addClass("active");
+            });
+
+            {% if current_user.has_roles('admin') %}
+
+                function action_delete_hijacks(){
+                    let url = "{{ url_for('actions.submit_hijacks_actions') }}";
+                    let obj = {
+                        "hijack_keys" : selected_hijacks,
+                        "action": "hijack_action_delete"
+                    };
+                    var result = action_multiple_call(url, obj);
+                }
+
+                async function action_multiple_call(url, obj){
+                    var result = await postFetch_json(url, obj);
+                    if(result['status'] == "success"){
+                        selected_hijacks = [];
+                        $('#selected_hijacks_num').html(selected_hijacks.length);
+                        table.draw(false);
+                        $('#clear_all_selected').prop('disabled', true);
+                        $('#apply_selected').prop('disabled', true);
+                    }
+                }
+
+            {% endif %}
+
+
+            $("#live_update_button").on('change', function() {
+                if ($(this).is(':checked')) {
+                    refresh_state_live = true;
+                    startDatatableLive(ws);
+                }else {
+                    stopDatatableLive(ws);
+                    refresh_state_live = false;
+                }
+            });
+
+            $("#distinct_values_selection").on('change', function() {
+                var distinct_on = $(this).val();
+
+                if(distinct_on == "select"){
+                    $('#distinct_values_text').hide();
+                    return;
+                }
+
+                var query = "{ view_data: view_hijacks(distinct_on: [" + distinct_on + "] ";
+                if(datatable_parameters['and'] != null){
+                    query += datatable_parameters['and'] +  ")";
+                }else{
+                    query += ")";
+                }
+                query += " { " + distinct_on + " } }";
+                fetchDistinctValues(distinct_on, query);
+            });
+
+
+
+            function downloadTable_update_link(){
+                var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
+                if(downloadTable_parameters != null){
+                    url += "&parameters=" + downloadTable_parameters;
+                }
+                $("#download_table_button").attr("href", url);
+            }
+
+            $("#view-hijack-by-key-button").click(function() {
+                window.location.href = hijack_redirect + "?key=" + $("#hijack-key-input").val();
+            });
+
+        </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.7.0/clipboard-polyfill.js"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-graphql.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-utils.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
+        <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+        <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-display_info.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-ripestat.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-actions.js') }}{{ js_version }}"></script>
+    {% endblock %}
+{% endblock %}

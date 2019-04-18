@@ -1,15 +1,16 @@
+repos:
 - repo: https://github.com/ambv/black
-  rev: stable
+  rev: 19.3b0
   hooks:
     - id: black
       language_version: python3.6
 - repo: git://github.com/asottile/reorder_python_imports
-  sha: v1.3.4
+  rev: v1.4.0
   hooks:
     - id: reorder-python-imports
       language_version: 'python3.6'
 - repo: git://github.com/pre-commit/pre-commit-hooks
-  sha: v0.9.1
+  rev: v2.1.0
   hooks:
     - id: check-added-large-files
     - id: check-ast

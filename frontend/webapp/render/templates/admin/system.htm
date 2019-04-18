@@ -1,0 +1,334 @@
+{% extends "base/layout.htm" %}
+
+{% block title %}
+    {{super()}} - System
+{% endblock %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dialog.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">System</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="col-lg-12" id="system_modules_monitor">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Monitor Module
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_monitor_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="monitor_switch" name="monitor_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="col-lg-12" id="system_modules_detection">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Detection Module
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_detection_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="detection_switch" name="detection_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="col-lg-12" id="system_modules_mitigation">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Mitigation Module
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_mitigation_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="mitigation_switch" name="mitigation_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Current Configuration
+                        <button type="button" id="config_action" class="btn btn-primary btn-sm float-right">Edit</button>
+                        <button type="button" id="config_cancel" class="btn btn-warning btn-sm float-right config-cancel-button">Cancel</button>
+                    </div>
+                    <div class="panel-body">
+                        <div id="config_alert_box"></div>
+
+                        <form><textarea id="code_yaml" name="code_yaml"></textarea></form>
+                        </br>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                </hr>
+                                <div id="conf_timestamp"></div>
+                            </div>
+                            <div class="col-lg-6">
+                                </hr>
+                                <p class="float-right"><i>Times are shown in your local time zone <b id="timezone"></b>.</i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> Comment for config
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <form><textarea id="code_config_comment_box" name="code_config_comment_box"></textarea></form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+            var editor = null;
+            var comment_editor = null;
+            var valid_conf;
+            var valid_comment;
+            var modules_list = ['monitor', 'detection', 'mitigation'];
+
+            $('#config_action').on('click', function (event, state) {
+                if($(this).hasClass("btn-primary")){
+                    $('#config_action').removeClass('btn-primary').addClass('btn-danger');
+                    $('#config_cancel').show();
+                    $('#config_action').html('Save');
+                    editor.options.readOnly = false;
+                    comment_editor.options.readOnly = false;
+                }else if($(this).hasClass("btn-danger")){
+                    var publish_config = JSON.stringify({
+                        new_config: editor.getValue(),
+                        comment: comment_editor.getValue()
+                    });
+                    $('#config_action').removeClass('btn-danger').addClass('btn-warning');
+                    $('#config_action').html('Pending');
+                    submit_new_config(publish_config);
+                }
+            });
+
+            $('#config_cancel').on('click', function (event, state) {
+                if($(this).hasClass("btn-warning")){
+                    $(this).hide();
+                    editor.setValue(valid_conf);
+                    editor.options.readOnly = true;
+                    comment_editor.setValue(valid_comment);
+                    comment_editor.options.readOnly = true;
+                    $('#config_action').removeClass('btn-danger').addClass('btn-primary');
+                    $('#config_action').html('Edit');
+                }
+            });
+
+            function submit_new_config(publish_config){
+                fetch("/admin/config",{
+                    method: "POST",
+                    body: publish_config,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data["status"] == "fail"){
+                        var message = '<div class="alert alert-danger alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += data["response"] + '</div>'
+                        $('#config_action').removeClass('btn-warning').addClass('btn-danger')
+                        $('#config_action').html('Save');
+                    } else {
+                        var message = '<div class="alert alert-success alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += data["response"] + '</div>'
+                        $('#config_cancel').hide();
+                        $('#config_action').removeClass('btn-warning').addClass('btn-primary')
+                        $('#config_action').html('Edit');
+                    }
+                    $("#config_alert_box").html(message);
+                })
+                .catch(error => console.error(error));
+            }
+
+            function render_module_state(data) {
+                var data = data["view_processes"];
+                var clean_data = [];
+                var agg_data = {};
+                for (var elem in data) {
+                    var group = data[elem]['name'].split('_')[0];
+                    if(modules_list.includes(group) == false){
+                        continue;
+                    }
+                    clean_data.push(data[elem]);
+                    if(group in agg_data){
+                        agg_data[group] = agg_data[group] && data[elem]["running"];
+                    }else{
+                        agg_data[group] = data[elem]["running"];
+                    }
+                }
+                clean_data.sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
+
+                for (var group in agg_data) {
+                    if(agg_data[group]) {
+                        $("#"+group+"_switch").prop("checked", true)
+                    } else {
+                        $("#"+group+"_switch").prop("checked", false)
+                    }
+                    var result = aggregate_status_of_modules_no_index(clean_data, group);
+
+                    if(result[2] == "on"){
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-success"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
+                    }else if(result[2] == "off"){
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-danger"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
+                    }else{
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-warning"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
+                    }
+                }
+            }
+
+            function render_configuration(data) {
+                $("#code_yaml").val(data["view_configs"][0]["raw_config"]);
+                $("#code_config_comment_box").val(data["view_configs"][0]["comment"]);
+                $("#conf_timestamp").html("Last Update: " + transform_date_to_local(data["view_configs"][0]["timestamp"]))
+                valid_conf = data["view_configs"][0]["raw_config"];
+                valid_comment = data["view_configs"][0]["comment"];
+                editor.setValue($("#code_yaml").val());
+                editor.options.readOnly = true;
+                comment_editor.setValue($("#code_config_comment_box").val());
+                comment_editor.options.readOnly = true;
+            }
+
+            function toggleModule(name) {
+                data = JSON.stringify({
+                    name: name,
+                    state: $("#"+name+"_switch").prop("checked")
+                })
+                fetch("/actions/modify_state",{
+                    method: "POST",
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .catch(error => console.error(error))
+            }
+
+            $(document).ready(() => {
+                editor = CodeMirror.fromTextArea($("#code_yaml")[0], {
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    readOnly: true
+                });
+                editor.setSize("100%", 640);
+
+                comment_editor = CodeMirror.fromTextArea($("#code_config_comment_box")[0], {
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    readOnly: true
+                });
+                comment_editor.setSize("100%", 140);
+
+                const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                ws.addEventListener('open', (event) => {
+                    fetch("/jwt/auth", {
+                        method: "GET",
+                        credentials: 'include'
+                    })
+                    .then(response => response.json())
+                    .then(data => ws.send(JSON.stringify({
+                        type:"connection_init",
+                        payload:{
+                            headers:{
+                                "Content-Type":"application/json",
+                                "Authorization":"Bearer " + data['access_token']
+                            }
+                        }
+                    })))
+                    .catch(error => console.error(error));
+                });
+                ws.addEventListener('message', function conn_ack(event) {
+                    data = JSON.parse(event.data);
+                    if(data.type === 'connection_ack') {
+                        ws.removeEventListener('message', conn_ack);
+                        fetchProcStatesLive(ws, render_module_state);
+                        fetchConfigStatsLive(ws, render_configuration);
+                    }
+                });
+                $('#timezone').html(display_timezone());
+                $("#navbar_admin").addClass("active");
+            });
+
+            $("#monitor_switch").on("click", (event) => {
+                toggleModule("monitor");
+            });
+            $("#detection_switch").on("click", (event) => {
+                toggleModule("detection");
+            });
+            $("#mitigation_switch").on("click", (event) => {
+                toggleModule("mitigation");
+            });
+
+        </script>
+        <script src="{{ url_for('static', filename='js/custom/prod-graphql.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-utils.js') }}{{ js_version }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/yaml/yaml.min.js"></script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/dialog/dialog.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/search.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/searchcursor.min.js"></script>
+    {% endblock %}
+{% endblock %}

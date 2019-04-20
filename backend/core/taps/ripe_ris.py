@@ -62,6 +62,7 @@ def normalize_ripe_ris(msg, prefix_tree):
                         new_msg = deepcopy(msg_ann)
                         new_msg["prefix"] = prefix
                         del new_msg["announcements"]
+                        del new_msg["withdrawals"]
                         msgs.append(new_msg)
                 except Exception:
                     log.exception("exception")
@@ -76,6 +77,7 @@ def normalize_ripe_ris(msg, prefix_tree):
                     if prefix_tree.search_best(prefix):
                         new_msg = deepcopy(msg_wit)
                         new_msg["prefix"] = prefix
+                        del new_msg["announcements"]
                         del new_msg["withdrawals"]
                         msgs.append(new_msg)
                 except Exception:

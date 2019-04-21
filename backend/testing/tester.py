@@ -1,7 +1,9 @@
+import datetime
 import difflib
 import hashlib
 import json
 import os
+import re
 import socket
 import time
 from xmlrpc.client import ServerProxy
@@ -156,6 +158,13 @@ class Tester:
         for key in set(event.keys()).intersection(expected_item.keys()):
             if "time" in key:
                 expected_item[key] += self.time_now
+
+                # use unix timstamp instead of datetime objects
+                if message.delivery_info["routing_key"] == "hijack-update":
+                    event[key] = datetime.datetime(
+                        *map(int, re.findall(r"\d+", event[key]))
+                    ).timestamp()
+
             assert event[key] == expected_item[key] or (
                 isinstance(event[key], (list, set))
                 and set(event[key]) == set(expected_item[key])

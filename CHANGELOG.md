@@ -2,7 +2,7 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- Slack logging package and example
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

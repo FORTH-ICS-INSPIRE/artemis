@@ -49,6 +49,14 @@ handlers:
     #     - pass
     #     secure: True
 
+    # for slack
+    # slack_handler:
+    #     class: slacker_log_handler.SlackerLogHandler
+    #     api_key: SLACK_API_TOKEN
+    #     channel: "#general"
+    #     username: "Hijack Announcer"
+    #     level: INFO
+
     null_handler:
         class: logging.NullHandler
 

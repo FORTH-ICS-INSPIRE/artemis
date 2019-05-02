@@ -81,11 +81,11 @@ loggers:
         handlers: [console, info_file_handler, error_file_handler]
         propagate: no
     mail_logger:
-        level: CRITICAL
+        level: INFO
         handlers: [null_handler]
         propagate: no
     hijack_logger:
-        level: CRITICAL
+        level: INFO
         handlers: [null_handler]
         propagate: no
     taps_logger:

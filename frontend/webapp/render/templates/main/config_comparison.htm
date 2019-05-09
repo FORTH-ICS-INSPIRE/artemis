@@ -95,29 +95,33 @@
             var cache_configs = {};
             var diff_editor;
             var comment_editor_a, comment_editor_b;
+            var url_proxy_api = "{{ url_for('proxy_api') }}";
 
             $(document).ready(function(){
-                $.ajax({
-                    type: 'POST',
-                    url: '{{ url_for('proxy_api') }}',
-                    data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + "{{ configs[0]['time_modified'] }}" }) },
-                    success: function(result){
-                        if(result.total > 0){
-                            config_a_data = {
-                                'raw_config': result.results[0]['raw_config'],
-                                'comment': result.results[0]['comment']
-                            };
-                            config_b_data = config_a_data;
-                            cache_configs[result.results[0]['time_modified']] = {
-                                    'raw_config': result.results[0]['raw_config'],
-                                    'comment': result.results[0]['comment']
-                                };
-                            render_diffs();
-                        }
-                    },
-                    dataType: 'json'
-                });
+                display_initial_configs();
+                $('#timezone').html(display_timezone());
+                $("#navbar_actions").addClass("active");
+            });
 
+            async function display_initial_configs(){
+                var obj = {
+                    "action" : "configs",
+                    "parameters" : {
+                        "time_modified": 'eq.' + "{{ configs[0]['time_modified'] }}"
+                    }
+                };
+                var result = await postFetch_json(url_proxy_api, obj);
+                if(result.total > 0){
+                    config_a_data = {
+                        'raw_config': result.results[0]['raw_config'],
+                        'comment': result.results[0]['comment']
+                    };
+                    config_b_data = config_a_data;
+                    cache_configs[result.results[0]['time_modified']] = {
+                            'raw_config': result.results[0]['raw_config'],
+                            'comment': result.results[0]['comment']
+                        };
+                }
                 $("#config_a > option").each(function() {
                     $(this).html('Timestamp: ' + transform_date_to_local_(this.value))
                 });
@@ -139,10 +143,8 @@
                 });
                 comment_editor_b.setSize("100%", 140);
 
-                $('#timezone').html(display_timezone());
-                $("#navbar_actions").addClass("active");
-            });
-
+                render_diffs();
+            }
 
             function render_diffs(){
                 diff_editor = CodeMirror.MergeView(target, {
@@ -159,6 +161,29 @@
                 comment_editor_b.setValue(config_b_data['comment']);
             }
 
+            async function fetch_config(id, which_config){
+                var obj = {
+                    "action" : "configs",
+                    "parameters" : {
+                        "time_modified": 'eq.' + id
+                    }
+                };
+                var result = await postFetch_json(url_proxy_api, obj);
+                if(result.total > 0){
+                    cache_configs[result.results[0]['time_modified']] = {
+                        'raw_config': result.results[0]['raw_config'],
+                        'comment': result.results[0]['comment']
+                    };
+                    if(which_config == "config_a"){
+                        config_a_data = cache_configs[result.results[0]['time_modified']];
+                    }else{
+                        config_b_data = cache_configs[result.results[0]['time_modified']];
+                    }
+                    $('#view_diffs').html('');
+                    render_diffs();
+                }
+            }
+
             $( "#config_a" ).on('change', function() {
                 var id = $(this).children(":selected").attr("id");
                 $(this).children(":selected").prop('selected',true);
@@ -167,23 +192,7 @@
                     $('#view_diffs').html('');
                     render_diffs();
                 }else{
-                    $.ajax({
-                        type: 'POST',
-                        url: '{{ url_for('proxy_api') }}',
-                        data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + id }) },
-                        success: function(result){
-                            if(result.total > 0){
-                                cache_configs[result.results[0]['time_modified']] = {
-                                    'raw_config': result.results[0]['raw_config'],
-                                    'comment': result.results[0]['comment']
-                                };
-                                config_a_data = cache_configs[result.results[0]['time_modified']];
-                                $('#view_diffs').html('');
-                                render_diffs();
-                            }
-                        },
-                        dataType: 'json'
-                    });
+                    fetch_config(id, "config_a");
                 }
             });
 
@@ -195,23 +204,7 @@
                     $('#view_diffs').html('');
                     render_diffs();
                 }else{
-                    $.ajax({
-                        type: 'POST',
-                        url: '{{ url_for('proxy_api') }}',
-                        data: { "action": "configs", "parameters" : JSON.stringify({ "time_modified": 'eq.' + id }) },
-                        success: function(result){
-                            if(result.total > 0){
-                                cache_configs[result.results[0]['time_modified']] = {
-                                    'raw_config': result.results[0]['raw_config'],
-                                    'comment': result.results[0]['comment']
-                                };
-                                config_b_data = cache_configs[result.results[0]['time_modified']];
-                                $('#view_diffs').html('');
-                                render_diffs();
-                            }
-                        },
-                        dataType: 'json'
-                    });
+                    fetch_config(id, "config_b");
                 }
             });
 
@@ -240,5 +233,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/dialog/dialog.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/search.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/searchcursor.min.js"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-actions.js') }}{{ js_version }}"></script>
     {% endblock %}
 {% endblock %}

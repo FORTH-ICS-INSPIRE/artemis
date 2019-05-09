@@ -6,7 +6,7 @@
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)
-- Update hasura (1.0.0alpha42 -> 1.0.0alpha44)
+- Update hasura (1.0.0alpha42 -> 1.0.0alpha45)
 
 ### Fixed
 - TBD (bug-fix)

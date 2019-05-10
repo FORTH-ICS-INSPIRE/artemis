@@ -7,7 +7,7 @@
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)
 [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/LICENSE)
 
-# ARTEMIS
+#
 
 <p align="center">
 <img src="docs/images/artemis_logo.png" style="margin-bottom: 15px;"/>

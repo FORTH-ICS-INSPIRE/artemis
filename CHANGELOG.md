@@ -3,6 +3,7 @@
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
 - Slack logging package and example
+- ARTEMIS logo
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

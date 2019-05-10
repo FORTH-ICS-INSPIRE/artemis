@@ -7,11 +7,10 @@
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)
 [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/LICENSE)
 
-# ARTEMIS
+#
 
-<p align="left">
-<img src="docs/images/inst_logos/forth_logo.png" height="92" width="300" style="margin-bottom: 15px;"/>
-<img src="docs/images/inst_logos/caida_logo.png" height="143" width="100" hspace="50"/>
+<p align="center">
+<img src="docs/images/artemis_logo.png" style="margin-bottom: 15px;"/>
 </p>
 
 Table of Contents
@@ -30,6 +29,11 @@ Table of Contents
   * [License](#license)
   * [Acknowledgements and Funding Sources](#acknowledgements-and-funding-sources)
   * [Powered By](#powered-by)
+
+<p align="left">
+<img src="docs/images/inst_logos/forth_logo.png" height="92" width="300" style="margin-bottom: 15px;"/>
+<img src="docs/images/inst_logos/caida_logo.png" height="143" width="100" hspace="50"/>
+</p>
 
 ## General
 

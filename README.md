@@ -10,7 +10,7 @@
 # ARTEMIS
 
 <p align="center">
-<img src="docs/images/artemis_logo_text.svg?sanitize=true" style="margin-bottom: 15px;"/>
+<img src="docs/images/artemis_logo_text.png" style="margin-bottom: 15px;"/>
 </p>
 
 Table of Contents

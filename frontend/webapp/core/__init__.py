@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -256,8 +257,9 @@ def overview():
 @app.route("/proxy_api", methods=["GET", "POST"])
 def proxy_api():
     if request.method == "POST":
-        parameters = request.values.get("parameters")
-        action = request.values.get("action")
+        data = json.loads(request.data.decode("utf-8"))
+        parameters = data["parameters"]
+        action = data["action"]
         return jsonify(proxy_api_post(action, parameters))
 
     download_table = request.args.get("download_table")

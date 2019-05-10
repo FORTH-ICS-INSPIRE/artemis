@@ -1,4 +1,3 @@
-import json
 import logging
 
 import requests
@@ -42,7 +41,7 @@ def proxy_api_downloadTable(action, parameters):
 def build_arguments(parameters):
     url_ = "?"
     try:
-        params_ = json.loads(parameters)
+        params_ = parameters
     except BaseException:
         log.exception("couldn't json load: {}".format(parameters))
     for parameter in params_:

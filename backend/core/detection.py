@@ -374,10 +374,6 @@ class Detection:
 
             raw = monitor_event.copy()
 
-            # register the monitor/peer ASN from whom we learned this BGP update
-            if "peer_asn" in monitor_event:
-                self.redis.sadd("peer-asns", monitor_event["peer_asn"])
-
             # mark the initial redis hijack key since it may change upon
             # outdated checks
             if "hij_key" in monitor_event:

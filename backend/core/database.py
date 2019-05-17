@@ -463,6 +463,18 @@ class Database:
                     )
                     # insert all types of BGP updates
                     self.insert_bgp_entries.append(value)
+
+                    # register the monitor/peer ASN from whom we learned this BGP update
+                    self.redis.sadd("peer-asns", msg_["peer_asn"])
+                    if self.redis.scard("peer-asns") != len(self.monitor_peers):
+                        for peer_asn in self.redis.sscan_iter("peer-asns"):
+                            self.monitor_peers.add(peer_asn)
+
+                        with get_wo_cursor(self.wo_conn) as db_cur:
+                            db_cur.execute(
+                                "UPDATE stats SET monitor_peers=%s;",
+                                (len(self.monitor_peers),),
+                            )
                 except Exception:
                     log.exception("{}".format(msg_))
             # reset timer each time we hit the same BGP update
@@ -854,8 +866,9 @@ class Database:
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
-                    self.monitor_peers.add(entry[0])
-                    redis_pipeline.sadd("peer-asns", entry[0])
+                    mon_peer = int(entry[0])
+                    self.monitor_peers.add(mon_peer)
+                    redis_pipeline.sadd("peer-asns", mon_peer)
                 redis_pipeline.execute()
 
             except Exception:

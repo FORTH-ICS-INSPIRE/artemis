@@ -4,6 +4,7 @@
 ### Added
 - Slack logging package and example
 - ARTEMIS logo
+- Monitor peers count in stats table (overview)
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

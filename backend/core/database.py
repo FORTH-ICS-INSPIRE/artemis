@@ -69,6 +69,7 @@ class Database:
             self.prefix_tree = None
             self.monitored_prefixes = set()
             self.configured_prefixes = set()
+            self.monitor_peers = set()
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
@@ -843,6 +844,18 @@ class Database:
                         "hij_orig_neighb_{}".format(redis_hijack_key),
                         "{}_{}".format(origin, neighbor),
                     )
+                redis_pipeline.execute()
+
+                # bootstrap seen monitor peers
+                query = "SELECT DISTINCT peer_asn FROM bgp_updates"
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+
+                redis_pipeline = self.redis.pipeline()
+                for entry in entries:
+                    self.monitor_peers.add(entry[0])
+                    redis_pipeline.sadd("peer-asns", entry[0])
                 redis_pipeline.execute()
 
             except Exception:

@@ -69,7 +69,7 @@ class Database:
             self.prefix_tree = None
             self.monitored_prefixes = set()
             self.configured_prefixes = set()
-            self.monitor_peers = set()
+            self.monitor_peers = 0
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
@@ -466,14 +466,12 @@ class Database:
 
                     # register the monitor/peer ASN from whom we learned this BGP update
                     self.redis.sadd("peer-asns", msg_["peer_asn"])
-                    if self.redis.scard("peer-asns") != len(self.monitor_peers):
-                        for peer_asn in self.redis.sscan_iter("peer-asns"):
-                            self.monitor_peers.add(int(peer_asn))
-
+                    if self.redis.scard("peer-asns") != self.monitor_peers:
+                        self.monitor_peers = self.redis.scard("peer-asns")
                         with get_wo_cursor(self.wo_conn) as db_cur:
                             db_cur.execute(
                                 "UPDATE stats SET monitor_peers=%s;",
-                                (len(self.monitor_peers),),
+                                (self.monitor_peers,),
                             )
                 except Exception:
                     log.exception("{}".format(msg_))
@@ -866,14 +864,13 @@ class Database:
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
-                    mon_peer = int(entry[0])
-                    self.monitor_peers.add(mon_peer)
-                    redis_pipeline.sadd("peer-asns", mon_peer)
+                    redis_pipeline.sadd("peer-asns", int(entry[0]))
                 redis_pipeline.execute()
+                self.monitor_peers = self.redis.scard("peer-asns")
 
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
-                        "UPDATE stats SET monitor_peers=%s;", (len(self.monitor_peers),)
+                        "UPDATE stats SET monitor_peers=%s;", (self.monitor_peers,)
                     )
 
             except Exception:

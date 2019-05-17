@@ -468,7 +468,7 @@ class Database:
                     self.redis.sadd("peer-asns", msg_["peer_asn"])
                     if self.redis.scard("peer-asns") != len(self.monitor_peers):
                         for peer_asn in self.redis.sscan_iter("peer-asns"):
-                            self.monitor_peers.add(peer_asn)
+                            self.monitor_peers.add(int(peer_asn))
 
                         with get_wo_cursor(self.wo_conn) as db_cur:
                             db_cur.execute(
@@ -870,6 +870,11 @@ class Database:
                     self.monitor_peers.add(mon_peer)
                     redis_pipeline.sadd("peer-asns", mon_peer)
                 redis_pipeline.execute()
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        "UPDATE stats SET monitor_peers=%s;", (len(self.monitor_peers),)
+                    )
 
             except Exception:
                 log.exception("exception")

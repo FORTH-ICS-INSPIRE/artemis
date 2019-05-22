@@ -9,6 +9,7 @@ mapHelpText_stats['field_database'] = 'ARTEMIS module responsible for providing 
 
 mapHelpText_stats['field_stats_configured_prefixes'] = 'The total number of IPv4/IPv6 prefixes that are configured (as appearing in ARTEMIS rules).';
 mapHelpText_stats['field_stats_monitored_prefixes'] = 'The total number of IPv4/IPv6 prefixes that are actually monitored (super-prefixes include sub-prefixes).';
+mapHelpText_stats['field_stats_monitor_peers'] = 'The total number of monitors (ASNs) that peer with routing collector services, as observed by the system.';
 mapHelpText_stats['field_stats_total_bgp_updates'] = 'The total number of BGP updates seen on the monitors.';
 mapHelpText_stats['field_stats_total_unhandled_updates'] = 'The total number of BGP updates not processed by the detection (either because they are in the queue, or because the detection was not running when they were fed to the monitors).';
 mapHelpText_stats['field_stats_total_hijacks'] = 'The total number of hijack events stored in the system.';

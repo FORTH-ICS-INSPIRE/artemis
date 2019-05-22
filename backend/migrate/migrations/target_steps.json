@@ -89,6 +89,12 @@
             "db_version": "15",
             "description": "Drop view_stats and create view view_index_all_stats",
             "file": "migration_15.sql"
+        },
+        "16": {
+            "id": "16",
+            "db_version": "16",
+            "description": "Added monitor_peers column in stats table and re-initialized stats table",
+            "file": "migration_16.sql"
         }
     }
 }

@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (15, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (16, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -143,7 +143,8 @@ CREATE TABLE IF NOT EXISTS configs (
 
 CREATE TABLE IF NOT EXISTS stats (
     monitored_prefixes BIGINT NOT NULL DEFAULT 0,
-    configured_prefixes BIGINT NOT NULL DEFAULT 0
+    configured_prefixes BIGINT NOT NULL DEFAULT 0,
+    monitor_peers BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE UNIQUE INDEX stats_one_row
@@ -160,7 +161,7 @@ CREATE TRIGGER stats_no_delete
 BEFORE DELETE ON stats
 FOR EACH ROW EXECUTE PROCEDURE stats_no_delete();
 
-INSERT INTO stats (monitored_prefixes, configured_prefixes) VALUES (0, 0);
+INSERT INTO stats (monitored_prefixes, configured_prefixes, monitor_peers) VALUES (0, 0, 0);
 
 CREATE OR REPLACE VIEW view_configs AS SELECT raw_config, comment, time_modified FROM configs;
 
@@ -170,7 +171,7 @@ CREATE OR REPLACE VIEW view_bgpupdates AS SELECT prefix, origin_as, peer_asn, as
 
 CREATE OR REPLACE VIEW view_index_all_stats
 AS
-SELECT stats.monitored_prefixes, stats.configured_prefixes,
+SELECT stats.monitored_prefixes, stats.configured_prefixes, stats.monitor_peers,
     (SELECT count(*) total_hijacks FROM hijacks WHERE key is not NULL),
     (SELECT count(*) ignored_hijacks FROM hijacks WHERE ignored = true),
     (SELECT count(*) resolved_hijacks FROM hijacks WHERE resolved = true),

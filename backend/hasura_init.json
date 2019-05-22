@@ -170,6 +170,7 @@
               "columns": [
                 "monitored_prefixes",
                 "configured_prefixes",
+                "monitor_peers",
                 "total_hijacks",
                 "ignored_hijacks",
                 "resolved_hijacks",

@@ -128,8 +128,36 @@
         {{super()}}
         <script>
             var table;
-            var hasura_stats = ["monitored_prefixes","configured_prefixes","total_bgp_updates","total_unhandled_updates","total_hijacks","ignored_hijacks","resolved_hijacks","withdrawn_hijacks","mitigation_hijacks","ongoing_hijacks","dormant_hijacks","acknowledged_hijacks","outdated_hijacks"];
-            var hasura_fetch = ["time_detected","prefix","type","hijack_as","num_peers_seen","num_asns_inf","key","seen","active","dormant","under_mitigation","time_last","configured_prefix"];
+            var hasura_stats = [
+                "monitored_prefixes",
+                "configured_prefixes",
+                "monitor_peers",
+                "total_bgp_updates",
+                "total_unhandled_updates",
+                "total_hijacks",
+                "ignored_hijacks",
+                "resolved_hijacks",
+                "withdrawn_hijacks",
+                "mitigation_hijacks",
+                "ongoing_hijacks",
+                "dormant_hijacks",
+                "acknowledged_hijacks",
+                "outdated_hijacks"
+            ];
+            var hasura_fetch = [
+                "time_detected",
+                "prefix",
+                "type",
+                "hijack_as",
+                "num_peers_seen",
+                "num_asns_inf",
+                "key","seen",
+                "active",
+                "dormant",
+                "under_mitigation",
+                "time_last",
+                "configured_prefix"
+            ];
             var hasura = {
 
                 "subscription": {

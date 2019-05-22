@@ -69,6 +69,7 @@ class Database:
             self.prefix_tree = None
             self.monitored_prefixes = set()
             self.configured_prefixes = set()
+            self.monitor_peers = 0
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
@@ -462,6 +463,16 @@ class Database:
                     )
                     # insert all types of BGP updates
                     self.insert_bgp_entries.append(value)
+
+                    # register the monitor/peer ASN from whom we learned this BGP update
+                    self.redis.sadd("peer-asns", msg_["peer_asn"])
+                    if self.redis.scard("peer-asns") != self.monitor_peers:
+                        self.monitor_peers = self.redis.scard("peer-asns")
+                        with get_wo_cursor(self.wo_conn) as db_cur:
+                            db_cur.execute(
+                                "UPDATE stats SET monitor_peers=%s;",
+                                (self.monitor_peers,),
+                            )
                 except Exception:
                     log.exception("{}".format(msg_))
             # reset timer each time we hit the same BGP update
@@ -844,6 +855,23 @@ class Database:
                         "{}_{}".format(origin, neighbor),
                     )
                 redis_pipeline.execute()
+
+                # bootstrap seen monitor peers
+                query = "SELECT DISTINCT peer_asn FROM bgp_updates"
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+
+                redis_pipeline = self.redis.pipeline()
+                for entry in entries:
+                    redis_pipeline.sadd("peer-asns", int(entry[0]))
+                redis_pipeline.execute()
+                self.monitor_peers = self.redis.scard("peer-asns")
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        "UPDATE stats SET monitor_peers=%s;", (self.monitor_peers,)
+                    )
 
             except Exception:
                 log.exception("exception")

@@ -4,4 +4,4 @@
 ./wait-for ${SUPERVISOR_HOST}:${SUPERVISOR_PORT} -t 0
 ./wait-for ${API_HOST}:${API_PORT} -t 0
 ./wait-for ${HASURA_HOST}:${HASURA_PORT} -t 0
-PATH="/usr/local/lib/pyenv/versions/${PYTHON_VERSION}/bin/:${PATH}" gunicorn --workers=4 --bind 0.0.0.0:8000 init:app
+PATH="/usr/local/lib/pyenv/versions/${PYTHON_VERSION}/bin/:${PATH}" gunicorn --workers=4 --bind 0.0.0.0:8000 --preload init:app

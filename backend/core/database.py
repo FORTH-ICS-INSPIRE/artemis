@@ -858,11 +858,11 @@ class Database:
 
                     # store the prefix and peer asn for this hijack BGP update
                     redis_pipeline.sadd(
-                        "hij_prefix_{}_peer_{}".format(entry[0], entry[1]),
+                        "prefix_{}_peer_{}_hijacks".format(entry[0], entry[1]),
                         redis_hijack_key,
                     )
                     redis_pipeline.sadd(
-                        "hij_prefix_peer_hijack_{}".format(redis_hijack_key),
+                        "hijack_{}_prefixes_peers".format(redis_hijack_key),
                         "{}_{}".format(entry[0], entry[1]),
                     )
                 redis_pipeline.execute()

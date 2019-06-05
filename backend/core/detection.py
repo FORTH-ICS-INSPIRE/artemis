@@ -787,13 +787,13 @@ class Detection:
 
                 # store the prefix and peer ASN for this hijack BGP update
                 redis_pipeline.sadd(
-                    "hij_prefix_{}_peer_{}".format(
+                    "prefix_{}_peer_{}_hijacks".format(
                         monitor_event["prefix"], monitor_event["peer_asn"]
                     ),
                     redis_hijack_key,
                 )
                 redis_pipeline.sadd(
-                    "hij_prefix_peer_hijack_{}".format(redis_hijack_key),
+                    "hijack_{}_prefixes_peers".format(redis_hijack_key),
                     "{}_{}".format(monitor_event["prefix"], monitor_event["peer_asn"]),
                 )
             except Exception:
@@ -851,7 +851,7 @@ class Detection:
             # log.debug('{}'.format(monitor_event['key']))
             prefix = monitor_event["prefix"]
             peer_asn = monitor_event["peer_asn"]
-            if self.redis.get("hij_prefix_{}_peer_{}".format(prefix, peer_asn)):
+            if self.redis.get("prefix_{}_peer_{}_hijacks".format(prefix, peer_asn)):
                 # generate implicit withdrawal
                 withdraw_msg = {
                     "service": "implicit-withdrawal",

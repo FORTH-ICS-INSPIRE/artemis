@@ -227,10 +227,14 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.srem("persistent-keys", persistent_key)
     redis_pipeline.delete("hij_orig_neighb_{}".format(ephemeral_key))
     for element in redis_instance.sscan_iter(
-        "hij_prefix_peer_{}".format(ephemeral_key)
+        "hij_prefix_peer_hijack_{}".format(ephemeral_key)
     ):
-        redis_pipeline.srem("hij_prefix_peer_all", element)
-    redis_pipeline.delete("hij_prefix_peer_{}".format(ephemeral_key))
+        subelems = element.split("_")
+        prefix_peer_set = "hij_prefix_{}_peer_{}".format(subelems[0], subelems[1])
+        redis_pipeline.srem(prefix_peer_set, ephemeral_key)
+        if redis_instance.scard(prefix_peer_set) <= 1:
+            redis_pipeline.delete(prefix_peer_set)
+    redis_pipeline.delete("hij_prefix_peer_hijack_{}".format(ephemeral_key))
     redis_pipeline.execute()
 
 

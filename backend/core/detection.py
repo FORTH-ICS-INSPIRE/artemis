@@ -20,6 +20,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from taps.utils import key_generator
 from utils import exception_handler
 from utils import flatten
 from utils import get_hash
@@ -468,6 +469,7 @@ class Detection:
                     )
                     self.mark_outdated(monitor_event["hij_key"], redis_hijack_key)
                 elif not is_hijack:
+                    self.gen_implicit_withdrawal(monitor_event)
                     self.mark_handled(raw)
 
             elif monitor_event["type"] == "W":
@@ -839,6 +841,34 @@ class Detection:
             self.producer.publish(
                 msg, exchange=self.hijack_exchange, routing_key="outdate", priority=1
             )
+
+        def gen_implicit_withdrawal(self, monitor_event: Dict) -> NoReturn:
+            """
+            Checks if a benign BGP update should trigger an implicit withdrawal
+            """
+            # log.debug('{}'.format(monitor_event['key']))
+            prefix = monitor_event["prefix"]
+            peer_asn = monitor_event["peer_asn"]
+            prefix_peer_asn = "{}_{}".format(prefix, peer_asn)
+            if self.redis.sismember("hij_prefix_peer_all", prefix_peer_asn):
+                # generate implicit withdrawal
+                withdraw_msg = {
+                    "service": "implicit-withdrawal",
+                    "type": "W",
+                    "prefix": prefix,
+                    "path": [],
+                    "orig_path": [],
+                    "communities": [],
+                    "timestamp": monitor_event["timestamp"],
+                    "peer_asn": peer_asn,
+                }
+                key_generator(withdraw_msg)
+                self.producer.publish(
+                    withdraw_msg,
+                    exchange=self.update_exchange,
+                    routing_key="update",
+                    serializer="json",
+                )
 
 
 def run():

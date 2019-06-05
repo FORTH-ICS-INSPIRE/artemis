@@ -782,6 +782,16 @@ class Detection:
                     "hij_orig_neighb_{}".format(redis_hijack_key),
                     "{}_{}".format(origin, neighbor),
                 )
+
+                # store the prefix and peer ASN for this hijack BGP update
+                redis_pipeline.sadd(
+                    "hij_prefix_peer_all",
+                    "{}_{}".format(monitor_event["prefix"], monitor_event["peer_asn"]),
+                )
+                redis_pipeline.sadd(
+                    "hij_prefix_peer_{}".format(redis_hijack_key),
+                    "{}_{}".format(monitor_event["prefix"], monitor_event["peer_asn"]),
+                )
             except Exception:
                 log.exception("exception")
             finally:

@@ -828,7 +828,8 @@ class Database:
 
                 # bootstrap (origin, neighbor) AS-links of ongoing hijacks
                 query = (
-                    "SELECT bgp_updates.as_path, hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
+                    "SELECT bgp_updates.prefix, bgp_updates.peer_asn, bgp_updates.as_path, "
+                    "hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
                     "hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
                     "WHERE bgp_updates.type = 'A' "
                     "AND hijacks.active = true "
@@ -844,15 +845,24 @@ class Database:
                     # store the origin, neighbor combination for this hijack BGP update
                     origin = None
                     neighbor = None
-                    as_path = entry[0]
+                    as_path = entry[2]
                     if as_path:
                         origin = as_path[-1]
                     if len(as_path) > 1:
                         neighbor = as_path[-2]
-                    redis_hijack_key = redis_key(entry[1], entry[2], entry[3])
+                    redis_hijack_key = redis_key(entry[3], entry[4], entry[5])
                     redis_pipeline.sadd(
                         "hij_orig_neighb_{}".format(redis_hijack_key),
                         "{}_{}".format(origin, neighbor),
+                    )
+
+                    # store the prefix and peer asn for this hijack BGP update
+                    redis_pipeline.sadd(
+                        "hij_prefix_peer_all", "{}_{}".format(entry[0], entry[1])
+                    )
+                    redis_pipeline.sadd(
+                        "hij_prefix_peer_{}".format(redis_hijack_key),
+                        "{}_{}".format(entry[0], entry[1]),
                     )
                 redis_pipeline.execute()
 

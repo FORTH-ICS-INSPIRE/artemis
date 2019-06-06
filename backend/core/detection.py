@@ -851,14 +851,14 @@ class Detection:
             # log.debug('{}'.format(monitor_event['key']))
             prefix = monitor_event["prefix"]
             peer_asn = monitor_event["peer_asn"]
-            if self.redis.get("prefix_{}_peer_{}_hijacks".format(prefix, peer_asn)):
+            if self.redis.exists("prefix_{}_peer_{}_hijacks".format(prefix, peer_asn)):
                 # generate implicit withdrawal
                 withdraw_msg = {
                     "service": "implicit-withdrawal",
                     "type": "W",
                     "prefix": prefix,
                     "path": [],
-                    "orig_path": [],
+                    "orig_path": {"triggering_bgp_update": monitor_event},
                     "communities": [],
                     "timestamp": monitor_event["timestamp"],
                     "peer_asn": peer_asn,

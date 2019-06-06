@@ -98,9 +98,9 @@ function format_as_path(path) {
 
 function format_orig_path(orig_path) {
     if(orig_path == "" || orig_path == null){
-        return "No aux information on BGP paths, etc."
+        return "-"
     }else{
-        return String(orig_path);
+        return JSON.stringify(orig_path);
     }
 }
 

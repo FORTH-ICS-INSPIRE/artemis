@@ -63,7 +63,7 @@ mapHelpText_system['field_as_path'] = "The AS-level path of the update.";
 mapHelpText_system['field_origin_as'] = "The AS that originated the BGP update.";
 mapHelpText_system['field_bgp_handle'] = "Whether the BGP update has been handled by the detection module or not.";
 
-mapHelpText_system['field_original_path'] = "The original path of the update. This is different from the reported AS-PATH only in the case of AS-SETs, sequences, etc. where the monitor decomposes a single update into many for ease of interpretation.";
+mapHelpText_system['field_aux_path_info'] = "Auxiliary path information on the update/withdrawal. For updates, this is different from the reported AS-PATH only in the case of AS-SETs, sequences, etc. where the monitor decomposes a single update into many for ease of interpretation. For (implicit) withdrawals, it contains the original triggering BGP update information in json format.";
 mapHelpText_system['field_bgp_communities'] = "BGP communities related to the BGP update.";
 mapHelpText_system['field_hijack_key'] = "The unique key of a hijack event.";
 

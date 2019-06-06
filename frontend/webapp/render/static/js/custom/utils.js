@@ -98,13 +98,9 @@ function format_as_path(path) {
 
 function format_orig_path(orig_path) {
     if(orig_path == "" || orig_path == null){
-        return "Same as the AS path."
+        return "No aux information on BGP paths, etc."
     }else{
-        var str_ = "";
-        for (as_item in orig_path){
-            str_ += "<cc_as>" + orig_path[as_item] + "</cc_as> ";
-        }
-        return str_;
+        return String(orig_path);
     }
 }
 

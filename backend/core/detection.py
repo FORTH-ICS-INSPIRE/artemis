@@ -27,6 +27,7 @@ from utils import get_logger
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import redis_key
+from utils import SetEncoder
 from utils import translate_rfc2622
 
 HIJACK_DIM_COMBINATIONS = [
@@ -768,7 +769,7 @@ class Detection:
                     )
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
-                    mail_log.info("{}".format(result))
+                    mail_log.info("{}".format(json.dumps(result, indent=4, cls=SetEncoder)))
                 redis_pipeline.set(redis_hijack_key, yaml.dump(result))
 
                 # store the origin, neighbor combination for this hijack BGP update
@@ -806,7 +807,7 @@ class Detection:
                 serializer="yaml",
                 priority=0,
             )
-            hij_log.info("{}".format(result))
+            hij_log.info("{}".format(json.dumps(result, indent=4, cls=SetEncoder)))
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

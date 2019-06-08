@@ -244,6 +244,13 @@ def calculate_more_specifics(prefix, min_length, max_length):
     return prefix_list
 
 
+class SetEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, set):
+            return list(o)
+        return super(SetEncoder, self).default(o)
+
+
 def translate_rfc2622(input_prefix, just_match=False):
     """
     :param input_prefix: (str) input IPv4/IPv6 prefix that

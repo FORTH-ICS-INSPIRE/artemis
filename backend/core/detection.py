@@ -769,7 +769,7 @@ class Detection:
                     )
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
-                    mail_log.info("{}".format(result))
+                    mail_log.info("{}".format(json.dumps(result, indent=4, cls=SetEncoder)))
                 redis_pipeline.set(redis_hijack_key, yaml.dump(result))
 
                 # store the origin, neighbor combination for this hijack BGP update

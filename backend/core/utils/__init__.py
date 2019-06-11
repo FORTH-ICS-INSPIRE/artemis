@@ -226,6 +226,18 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.delete(ephemeral_key)
     redis_pipeline.srem("persistent-keys", persistent_key)
     redis_pipeline.delete("hij_orig_neighb_{}".format(ephemeral_key))
+    if redis_instance.exists("hijack_{}_prefixes_peers".format(ephemeral_key)):
+        for element in redis_instance.sscan_iter(
+            "hijack_{}_prefixes_peers".format(ephemeral_key)
+        ):
+            subelems = element.decode().split("_")
+            prefix_peer_hijack_set = "prefix_{}_peer_{}_hijacks".format(
+                subelems[0], subelems[1]
+            )
+            redis_pipeline.srem(prefix_peer_hijack_set, ephemeral_key)
+            if redis_instance.scard(prefix_peer_hijack_set) <= 1:
+                redis_pipeline.delete(prefix_peer_hijack_set)
+        redis_pipeline.delete("hijack_{}_prefixes_peers".format(ephemeral_key))
     redis_pipeline.execute()
 
 

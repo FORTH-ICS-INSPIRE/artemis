@@ -27,6 +27,7 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import translate_asn_range
 from utils import translate_rfc2622
 from yaml import load as yload
 
@@ -316,7 +317,11 @@ class Configuration:
                 # learned rule prefix
                 rule_prefix = {
                     raw["prefix"]: "LEARNED_H_{}_P_{}".format(
-                        raw["key"], raw["prefix"].replace("/", "_").replace(".", "_").replace(":", "_")
+                        raw["key"],
+                        raw["prefix"]
+                        .replace("/", "_")
+                        .replace(".", "_")
+                        .replace(":", "_"),
                     )
                 }
 
@@ -568,6 +573,8 @@ class Configuration:
                 rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
                 rule["policies"] = flatten(rule.get("policies", []))
                 for asn in rule["origin_asns"] + rule["neighbors"]:
+                    if translate_asn_range(asn, just_match=True):
+                        continue
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)
 
@@ -598,6 +605,8 @@ class Configuration:
             data["asns"] = {k: flatten(v) for k, v in data["asns"].items()}
             for name, asns in data["asns"].items():
                 for asn in asns:
+                    if translate_asn_range(asn, just_match=True):
+                        continue
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)
             return data

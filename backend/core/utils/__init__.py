@@ -376,7 +376,7 @@ def translate_asn_range(asn_range, just_match=False):
     has matched instead of translating
     :return: the list of ASNs corresponding to that range
     """
-    reg_range = re.match(r"(\d+)\s*-\s*(\d+)", asn_range)
+    reg_range = re.match(r"(\d+)\s*-\s*(\d+)", str(asn_range))
     if reg_range:
         start_asn = int(reg_range.group(1))
         end_asn = int(reg_range.group(2))

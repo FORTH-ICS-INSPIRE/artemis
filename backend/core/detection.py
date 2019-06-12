@@ -29,6 +29,7 @@ from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import redis_key
 from utils import SetEncoder
+from utils import translate_asn_range
 from utils import translate_rfc2622
 
 HIJACK_DIM_COMBINATIONS = [
@@ -327,6 +328,21 @@ class Detection:
                     if not node:
                         node = self.prefix_tree.add(prefix)
                         node.data["confs"] = []
+
+                    rule_translated_origin_asn_set = set()
+                    for asn in rule["origin_asns"]:
+                        this_translated_asn_list = flatten(translate_asn_range(asn))
+                        rule_translated_origin_asn_set.update(
+                            set(this_translated_asn_list)
+                        )
+                    rule["origin_asns"] = list(rule_translated_origin_asn_set)
+                    rule_translated_neighbor_set = set()
+                    for asn in rule["neighbors"]:
+                        this_translated_asn_list = flatten(translate_asn_range(asn))
+                        rule_translated_neighbor_set.update(
+                            set(this_translated_asn_list)
+                        )
+                    rule["neighbors"] = list(rule_translated_neighbor_set)
 
                     conf_obj = {
                         "origin_asns": rule["origin_asns"],
@@ -771,7 +787,9 @@ class Detection:
                     )
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
-                    mail_log.info("{}".format(json.dumps(result, indent=4, cls=SetEncoder)))
+                    mail_log.info(
+                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder))
+                    )
                 redis_pipeline.set(redis_hijack_key, yaml.dump(result))
 
                 # store the origin, neighbor combination for this hijack BGP update

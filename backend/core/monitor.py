@@ -14,6 +14,7 @@ from utils import exception_handler
 from utils import flatten
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import translate_asn_range
 from utils import translate_rfc2622
 
 log = get_logger()

@@ -67,7 +67,7 @@
         "database_hijack_response": {
             "type": "E|1|-|-",
             "active": true,
-            "prefix": "10.0.6.0/14",
+            "prefix": "10.0.6.0/24",
             "asns_inf": [4, 3],
             "hijack_as": 2,
             "peers_seen": [4],

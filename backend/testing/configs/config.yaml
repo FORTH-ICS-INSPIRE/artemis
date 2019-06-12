@@ -108,7 +108,5 @@ rules:
   - *24_6_origin
   neighbors:
   - *24_6_neighbors
-  policies:
-  - 'no-export'
   mitigation:
       manual

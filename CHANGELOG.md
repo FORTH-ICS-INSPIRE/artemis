@@ -14,7 +14,7 @@
 - Hijack logger output is now a JSON string
 
 ### Fixed
-- TBD (bug-fix)
+- Bug with rule learning (hijack to rule dict) when empty neighbor
 
 ### Removed
 - TBD (removed a feature)

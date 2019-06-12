@@ -301,7 +301,13 @@ class Configuration:
                 asns = set()
                 if self.redis.exists(hij_orig_neighb_set):
                     for element in self.redis.sscan_iter(hij_orig_neighb_set):
-                        (origin, neighbor) = list(map(int, element.decode().split("_")))
+                        (origin_str, neighbor_str) = element.decode().split("_")
+                        origin = None
+                        if origin_str != "None":
+                            origin = int(origin_str)
+                        neighbor = None
+                        if neighbor_str != "None":
+                            neighbor = int(neighbor_str)
                         if origin is not None:
                             asns.add(origin)
                             if origin not in orig_to_neighb:
@@ -316,7 +322,11 @@ class Configuration:
                 # learned rule prefix
                 rule_prefix = {
                     raw["prefix"]: "LEARNED_H_{}_P_{}".format(
-                        raw["key"], raw["prefix"].replace("/", "_").replace(".", "_").replace(":", "_")
+                        raw["key"],
+                        raw["prefix"]
+                        .replace("/", "_")
+                        .replace(".", "_")
+                        .replace(":", "_"),
                     )
                 }
 

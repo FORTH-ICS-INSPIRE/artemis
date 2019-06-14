@@ -76,6 +76,7 @@ class Configuration:
                 "origin_asns",
                 "neighbors",
                 "mitigation",
+                "community_annotations",
             }
             self.supported_monitors = {
                 "riperis",
@@ -316,7 +317,11 @@ class Configuration:
                 # learned rule prefix
                 rule_prefix = {
                     raw["prefix"]: "LEARNED_H_{}_P_{}".format(
-                        raw["key"], raw["prefix"].replace("/", "_").replace(".", "_").replace(":", "_")
+                        raw["key"],
+                        raw["prefix"]
+                        .replace("/", "_")
+                        .replace(".", "_")
+                        .replace(":", "_"),
                     )
                 }
 
@@ -567,6 +572,23 @@ class Configuration:
                     rule["neighbors"] = [-1]
                 rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
                 rule["policies"] = flatten(rule.get("policies", []))
+                rule["community_annotations"] = rule.get("community_annotations", {})
+                for annotation in rule["community_annotations"]:
+                    for annotation_entry in rule["community_annotations"][annotation]:
+                        for key in annotation_entry:
+                            if key not in ["in", "out"]:
+                                raise ArtemisError(
+                                    "invalid-community-annotation-key", key
+                                )
+                        in_communities = flatten(annotation_entry.get("in", []))
+                        for community in in_communities:
+                            if not re.match(r"\d+\:\d+", community):
+                                raise ArtemisError("invalid-bgp-community", community)
+                        out_communities = flatten(annotation_entry.get("out", []))
+                        for community in out_communities:
+                            if not re.match(r"\d+\:\d+", community):
+                                raise ArtemisError("invalid-bgp-community", community)
+
                 for asn in rule["origin_asns"] + rule["neighbors"]:
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)

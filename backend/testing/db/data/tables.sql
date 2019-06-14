@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS hijacks (
     timestamp_of_config TIMESTAMP,
     comment text,
     seen BOOLEAN DEFAULT FALSE,
-    community_annotation text,
+    community_annotation text DEFAULT 'NA',
     PRIMARY KEY(time_detected, key),
     UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (

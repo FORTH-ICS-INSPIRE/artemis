@@ -882,6 +882,8 @@ class Detection:
             Annotates a hijack based on community checks (modifies "community_annotation"
             field in-place)
             """
+            if hijack.get("community_annotation", "NA") in [None, "", "NA"]:
+                hijack["community_annotation"] = "NA"
             bgp_update_communities = set()
             for comm_as_value in monitor_event["communities"]:
                 community = "{}:{}".format(comm_as_value[0], comm_as_value[1])
@@ -905,7 +907,7 @@ class Detection:
                                         bgp_update_communities
                                     )
                                 ):
-                                    if hijack.get("community_annotation", None) is None:
+                                    if hijack["community_annotation"] == "NA":
                                         hijack["community_annotation"] = annotation
                                     elif annotations.index(
                                         annotation

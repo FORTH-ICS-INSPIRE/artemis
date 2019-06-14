@@ -72,6 +72,7 @@ mapHelpText_system['field_config'] = "The timestamp (i.e., unique ID) of the con
 mapHelpText_system['field_time_started'] = "The timestamp of the oldest known (to the system) BGP update that is related to the hijack.";
 mapHelpText_system['field_time_detected'] = "The time when a hijack event was first detected by the system.";
 mapHelpText_system['field_time_last_update'] = "The timestamp of the newest known (to the system) BGP update that is related to the hijack.";
+mapHelpText_system['field_community_annotation'] = "The user-defined annotation of the hijack according to the communities of hijacked BGP updates.";
 
 mapHelpText_system['field_time_ended'] = `The timestamp when the hijack was ended. It can be set in the following ways:
 <ul><li>Manually, when the user presses the “resolved” button.</li>

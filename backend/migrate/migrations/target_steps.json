@@ -95,6 +95,12 @@
             "db_version": "16",
             "description": "Added monitor_peers column in stats table and re-initialized stats table",
             "file": "migration_16.sql"
+        },
+        "17": {
+            "id": "17",
+            "db_version": "17",
+            "description": "Added community_annotation column in hijacks table",
+            "file": "migration_17.sql"
         }
     }
 }

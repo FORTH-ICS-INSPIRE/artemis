@@ -882,39 +882,42 @@ class Detection:
             Annotates a hijack based on community checks (modifies "community_annotation"
             field in-place)
             """
-            if hijack.get("community_annotation", "NA") in [None, "", "NA"]:
-                hijack["community_annotation"] = "NA"
-            bgp_update_communities = set()
-            for comm_as_value in monitor_event["communities"]:
-                community = "{}:{}".format(comm_as_value[0], comm_as_value[1])
-                bgp_update_communities.add(community)
+            try:
+                if hijack.get("community_annotation", "NA") in [None, "", "NA"]:
+                    hijack["community_annotation"] = "NA"
+                bgp_update_communities = set()
+                for comm_as_value in monitor_event["communities"]:
+                    community = "{}:{}".format(comm_as_value[0], comm_as_value[1])
+                    bgp_update_communities.add(community)
 
-            prefix_node = self.prefix_tree.search_best(monitor_event["prefix"])
-            if prefix_node:
-                for item in prefix_node.data["confs"]:
-                    annotations = []
-                    for annotation_element in item.get("community_annotations", []):
-                        for annotation in annotation_element:
-                            annotations.append(annotation)
-                    for annotation_element in item.get("community_annotations", []):
-                        for annotation in annotation_element:
-                            for community_rule in annotation_element[annotation]:
-                                in_communities = set(community_rule.get("in", []))
-                                out_communities = set(community_rule.get("out", []))
-                                if (
-                                    in_communities <= bgp_update_communities
-                                    and out_communities.isdisjoint(
-                                        bgp_update_communities
-                                    )
-                                ):
-                                    if hijack["community_annotation"] == "NA":
-                                        hijack["community_annotation"] = annotation
-                                    elif annotations.index(
-                                        annotation
-                                    ) < annotations.index(
-                                        hijack["community_annotation"]
+                prefix_node = self.prefix_tree.search_best(monitor_event["prefix"])
+                if prefix_node:
+                    for item in prefix_node.data["confs"]:
+                        annotations = []
+                        for annotation_element in item.get("community_annotations", []):
+                            for annotation in annotation_element:
+                                annotations.append(annotation)
+                        for annotation_element in item.get("community_annotations", []):
+                            for annotation in annotation_element:
+                                for community_rule in annotation_element[annotation]:
+                                    in_communities = set(community_rule.get("in", []))
+                                    out_communities = set(community_rule.get("out", []))
+                                    if (
+                                        in_communities <= bgp_update_communities
+                                        and out_communities.isdisjoint(
+                                            bgp_update_communities
+                                        )
                                     ):
-                                        hijack["community_annotation"] = annotation
+                                        if hijack["community_annotation"] == "NA":
+                                            hijack["community_annotation"] = annotation
+                                        elif annotations.index(
+                                            annotation
+                                        ) < annotations.index(
+                                            hijack["community_annotation"]
+                                        ):
+                                            hijack["community_annotation"] = annotation
+            except Exception:
+                log.exception("exception")
 
 
 def run():

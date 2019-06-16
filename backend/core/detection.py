@@ -1,6 +1,7 @@
 import ipaddress
 import json
 import logging
+import os
 import re
 import signal
 import time
@@ -50,6 +51,26 @@ HIJACK_DIM_COMBINATIONS = [
 log = get_logger()
 hij_log = logging.getLogger("hijack_logger")
 mail_log = logging.getLogger("mail_logger")
+try:
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+except Exception:
+    log.exception("exception")
+    hij_log_filter = []
+
+
+class HijackLogFilter(logging.Filter):
+    def filter(self, rec):
+        if not hij_log_filter:
+            return True
+        for filter_entry in hij_log_filter:
+            for filter_entry_key in filter_entry:
+                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
+                    return True
+        return False
+
+
+mail_log.addFilter(HijackLogFilter())
+hij_log.addFilter(HijackLogFilter())
 
 
 class Detection:
@@ -775,7 +796,12 @@ class Detection:
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(
-                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder))
+                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                        extra={
+                            "community_annotation": result.get(
+                                "community_annotation", "NA"
+                            )
+                        },
                     )
                 redis_pipeline.set(redis_hijack_key, yaml.dump(result))
 
@@ -826,7 +852,12 @@ class Detection:
                 serializer="yaml",
                 priority=0,
             )
-            hij_log.info("{}".format(json.dumps(result, indent=4, cls=SetEncoder)))
+            hij_log.info(
+                "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                extra={
+                    "community_annotation": result.get("community_annotation", "NA")
+                },
+            )
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

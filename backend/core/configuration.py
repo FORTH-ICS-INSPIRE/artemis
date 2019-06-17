@@ -27,6 +27,7 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import translate_asn_range
 from utils import translate_rfc2622
 from yaml import load as yload
 
@@ -302,7 +303,13 @@ class Configuration:
                 asns = set()
                 if self.redis.exists(hij_orig_neighb_set):
                     for element in self.redis.sscan_iter(hij_orig_neighb_set):
-                        (origin, neighbor) = list(map(int, element.decode().split("_")))
+                        (origin_str, neighbor_str) = element.decode().split("_")
+                        origin = None
+                        if origin_str != "None":
+                            origin = int(origin_str)
+                        neighbor = None
+                        if neighbor_str != "None":
+                            neighbor = int(neighbor_str)
                         if origin is not None:
                             asns.add(origin)
                             if origin not in orig_to_neighb:
@@ -607,6 +614,8 @@ class Configuration:
                                     )
 
                 for asn in rule["origin_asns"] + rule["neighbors"]:
+                    if translate_asn_range(asn, just_match=True):
+                        continue
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)
 
@@ -637,6 +646,8 @@ class Configuration:
             data["asns"] = {k: flatten(v) for k, v in data["asns"].items()}
             for name, asns in data["asns"].items():
                 for asn in asns:
+                    if translate_asn_range(asn, just_match=True):
+                        continue
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)
             return data

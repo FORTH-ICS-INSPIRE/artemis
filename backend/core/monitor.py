@@ -14,6 +14,7 @@ from utils import exception_handler
 from utils import flatten
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import translate_asn_range
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -116,6 +117,22 @@ class Monitor:
                     rule["prefixes"] = list(rule_translated_prefix_set)
                     for prefix in rule["prefixes"]:
                         node = self.prefix_tree.add(prefix)
+
+                        rule_translated_origin_asn_set = set()
+                        for asn in rule["origin_asns"]:
+                            this_translated_asn_list = flatten(translate_asn_range(asn))
+                            rule_translated_origin_asn_set.update(
+                                set(this_translated_asn_list)
+                            )
+                        rule["origin_asns"] = list(rule_translated_origin_asn_set)
+                        rule_translated_neighbor_set = set()
+                        for asn in rule["neighbors"]:
+                            this_translated_asn_list = flatten(translate_asn_range(asn))
+                            rule_translated_neighbor_set.update(
+                                set(this_translated_asn_list)
+                            )
+                        rule["neighbors"] = list(rule_translated_neighbor_set)
+
                         node.data["origin_asns"] = rule["origin_asns"]
                         node.data["neighbors"] = rule["neighbors"]
                         node.data["mitigation"] = rule["mitigation"]
@@ -197,7 +214,9 @@ class Monitor:
         def init_ris_instances(self):
             if "riperis" in self.monitors:
                 log.debug(
-                    "starting {} for {}".format(self.monitors["riperis"], self.prefix_file)
+                    "starting {} for {}".format(
+                        self.monitors["riperis"], self.prefix_file
+                    )
                 )
                 rrcs = ",".join(self.monitors["riperis"])
                 p = Popen(
@@ -219,7 +238,9 @@ class Monitor:
         def init_exabgp_instances(self):
             if "exabgp" in self.monitors:
                 log.debug(
-                    "starting {} for {}".format(self.monitors["exabgp"], self.prefix_file)
+                    "starting {} for {}".format(
+                        self.monitors["exabgp"], self.prefix_file
+                    )
                 )
                 for exabgp_monitor in self.monitors["exabgp"]:
                     exabgp_monitor_str = "{}:{}".format(

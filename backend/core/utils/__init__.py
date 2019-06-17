@@ -367,3 +367,27 @@ def translate_rfc2622(input_prefix, just_match=False):
         return False
 
     return [input_prefix]
+
+
+def translate_asn_range(asn_range, just_match=False):
+    """
+    :param <str> asn_range: <start_asn>-<end_asn>
+    :param <bool> just_match: check only if the prefix
+    has matched instead of translating
+    :return: the list of ASNs corresponding to that range
+    """
+    reg_range = re.match(r"(\d+)\s*-\s*(\d+)", str(asn_range))
+    if reg_range:
+        start_asn = int(reg_range.group(1))
+        end_asn = int(reg_range.group(2))
+        if start_asn > end_asn:
+            raise ArtemisError("end-asn before start-asn", asn_range)
+        if just_match:
+            return True
+        return list(range(start_asn, end_asn + 1))
+
+    # nothing has matched
+    if just_match:
+        return False
+
+    return [asn_range]

@@ -580,17 +580,26 @@ class Configuration:
                 rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
                 rule["policies"] = flatten(rule.get("policies", []))
                 rule["community_annotations"] = rule.get("community_annotations", [])
+                if not isinstance(rule["community_annotations"], list):
+                    raise ArtemisError("invalid-outer-list-comm-annotations", "")
                 seen_community_annotations = set()
                 for annotation_entry_outer in rule["community_annotations"]:
+                    if not isinstance(annotation_entry_outer, dict):
+                        raise ArtemisError("invalid-dict-comm-annotations", "")
                     for annotation in annotation_entry_outer:
                         if annotation in seen_community_annotations:
                             raise ArtemisError(
                                 "duplicate-community-annotation", annotation
                             )
                         seen_community_annotations.add(annotation)
+                        if not isinstance(annotation_entry_outer[annotation], list):
+                            raise ArtemisError(
+                                "invalid-inner-list-comm-annotations", annotation
+                            )
                         for annotation_entry_inner in annotation_entry_outer[
                             annotation
                         ]:
+
                             for key in annotation_entry_inner:
                                 if key not in ["in", "out"]:
                                     raise ArtemisError(

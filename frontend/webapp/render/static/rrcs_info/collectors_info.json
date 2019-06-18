@@ -10,7 +10,7 @@
     "location": "U of Oregon, Eugene Oregon, USA"
   },
   "route-views3": {
-    "MFG": "Quagga",
+    "MFG": "FRR",
     "BGP_proto": "IPv4 uni/multi-cast multi-hop",
     "location": "U of Oregon, Eugene Oregon, USA"
   },
@@ -24,8 +24,13 @@
     "BGP_proto": "IPv6 multi-hop",
     "location": "U of Oregon, Eugene Oregon, USA"
   },
+  "route-views.amsix": {
+    "MFG": "FRR",
+    "BGP_proto": "IPv4/v6 uni/multi-cast non-multi-hop",
+    "location": "AMS-IX AM6 - Amsterdam IX, hosted at 31173 Services AB in Sweden"
+  },
   "route-views.chicago": {
-    "MFG": "Quagga",
+    "MFG": "FRR",
     "BGP_proto": "IPv4/v6 uni/multi-cast non-multi-hop",
     "location": "Equinix CH1 - Chicago, IL USA"
   },
@@ -35,7 +40,7 @@
     "location": "Santiago, Chile"
   },
   "route-views.eqix": {
-    "MFG": "Zebra",
+    "MFG": "FRR",
     "BGP_proto": "IPv4/v6 uni/multi-cast non-multi-hop",
     "location": "Equinix, Ashburn, VA"
   },
@@ -43,6 +48,11 @@
     "MFG": "FRR",
     "BGP_proto": "IPv4/v6 uni/multi-cast non-multi-hop",
     "location": "FL-IX, Atlanta, Georgia"
+  },
+  "route-views.fortaleza": {
+    "MFG": "FRR",
+    "BGP_proto": "IPv4/v6 uni/multi-cast non-multi-hop",
+    "location": "IX.br (PTT.br), Fortaleza, Brazil"
   },
   "route-views.isc": {
     "MFG": "Zebra",
@@ -60,12 +70,12 @@
     "location": "KIXP, Nairobi, Kenya"
   },
   "route-views.linx": {
-    "MFG": "Zebra",
+    "MFG": "FRR",
     "BGP_proto": "IPv4/v6 uni/multi-cast non-multi-hop",
     "location": "LINX, London, GB"
   },
   "route-views.napafrica": {
-    "MFG": "Quagga",
+    "MFG": "FRR",
     "BGP_proto": "IPv4/v6 uni/multi-cast non-multi-hop",
     "location": "NAPAfrica, Johannesburg, South Africa"
   },
@@ -75,9 +85,14 @@
     "location": "NWAX, Portland, Oregon"
   },
   "route-views.sfmix": {
-    "MFG": "Quagga",
+    "MFG": "FRR",
     "BGP_proto": "IPv4/6 uni/multi-cast non-multi-hop",
     "location": "San Francisco Metro IX - San Francisco, CA USA"
+  },
+  "route-views.rio": {
+    "MFG": "FRR",
+    "BGP_proto": "IPv4/6 uni/multi-cast non-multi-hop",
+    "location": "IX.br (PTT.br), Rio de Janeiro, Brazil"
   },
   "route-views.sydney": {
     "MFG": "Quagga",
@@ -182,5 +197,8 @@
   },
   "rrc23": {
     "info": "at Singapore. Collects route updates announced by the Equinix SG members from Jan 2018."
+  },
+  "rrc24": {
+    "info": "at LACNIC, Montevideo, Uruguay. Collects default free routing updates from peers from Feb 2019."
   }
 }

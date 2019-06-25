@@ -77,6 +77,7 @@ class Configuration:
                 "origin_asns",
                 "neighbors",
                 "mitigation",
+                "community_annotations",
             }
             self.supported_monitors = {
                 "riperis",
@@ -578,6 +579,49 @@ class Configuration:
                     rule["neighbors"] = [-1]
                 rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
                 rule["policies"] = flatten(rule.get("policies", []))
+                rule["community_annotations"] = rule.get("community_annotations", [])
+                if not isinstance(rule["community_annotations"], list):
+                    raise ArtemisError("invalid-outer-list-comm-annotations", "")
+                seen_community_annotations = set()
+                for annotation_entry_outer in rule["community_annotations"]:
+                    if not isinstance(annotation_entry_outer, dict):
+                        raise ArtemisError("invalid-dict-comm-annotations", "")
+                    for annotation in annotation_entry_outer:
+                        if annotation in seen_community_annotations:
+                            raise ArtemisError(
+                                "duplicate-community-annotation", annotation
+                            )
+                        seen_community_annotations.add(annotation)
+                        if not isinstance(annotation_entry_outer[annotation], list):
+                            raise ArtemisError(
+                                "invalid-inner-list-comm-annotations", annotation
+                            )
+                        for annotation_entry_inner in annotation_entry_outer[
+                            annotation
+                        ]:
+
+                            for key in annotation_entry_inner:
+                                if key not in ["in", "out"]:
+                                    raise ArtemisError(
+                                        "invalid-community-annotation-key", key
+                                    )
+                            in_communities = flatten(
+                                annotation_entry_inner.get("in", [])
+                            )
+                            for community in in_communities:
+                                if not re.match(r"\d+\:\d+", community):
+                                    raise ArtemisError(
+                                        "invalid-bgp-community", community
+                                    )
+                            out_communities = flatten(
+                                annotation_entry_inner.get("out", [])
+                            )
+                            for community in out_communities:
+                                if not re.match(r"\d+\:\d+", community):
+                                    raise ArtemisError(
+                                        "invalid-bgp-community", community
+                                    )
+
                 for asn in rule["origin_asns"] + rule["neighbors"]:
                     if translate_asn_range(asn, just_match=True):
                         continue

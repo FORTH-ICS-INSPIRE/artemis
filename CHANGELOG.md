@@ -7,6 +7,7 @@
 - Monitor peers count in stats table (overview)
 - Implicit withdrawals generated for benign BGP updates correcting hijacked peer-prefix combinations
 - Support for configured ASN ranges
+- Community-based annotation support for annotating hijacks
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

@@ -1,6 +1,7 @@
 import ipaddress
 import json
 import logging
+import os
 import re
 import signal
 import time
@@ -51,6 +52,26 @@ HIJACK_DIM_COMBINATIONS = [
 log = get_logger()
 hij_log = logging.getLogger("hijack_logger")
 mail_log = logging.getLogger("mail_logger")
+try:
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+except Exception:
+    log.exception("exception")
+    hij_log_filter = []
+
+
+class HijackLogFilter(logging.Filter):
+    def filter(self, rec):
+        if not hij_log_filter:
+            return True
+        for filter_entry in hij_log_filter:
+            for filter_entry_key in filter_entry:
+                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
+                    return True
+        return False
+
+
+mail_log.addFilter(HijackLogFilter())
+hij_log.addFilter(HijackLogFilter())
 
 
 class Detection:
@@ -348,6 +369,7 @@ class Detection:
                         "origin_asns": rule["origin_asns"],
                         "neighbors": rule["neighbors"],
                         "policies": set(rule["policies"]),
+                        "community_annotations": rule["community_annotations"],
                     }
                     node.data["confs"].append(conf_obj)
 
@@ -775,6 +797,7 @@ class Detection:
                     result["asns_inf"].update(hijack_value["asns_inf"])
                     # no update since db already knows!
                     result["monitor_keys"] = hijack_value["monitor_keys"]
+                    self.comm_annotate_hijack(monitor_event, result)
                 else:
                     hijack_value["time_detected"] = time.time()
                     hijack_value["key"] = get_hash(
@@ -787,8 +810,14 @@ class Detection:
                     )
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
+                    self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(
-                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder))
+                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                        extra={
+                            "community_annotation": result.get(
+                                "community_annotation", "NA"
+                            )
+                        },
                     )
                 redis_pipeline.set(redis_hijack_key, yaml.dump(result))
 
@@ -839,7 +868,12 @@ class Detection:
                 serializer="yaml",
                 priority=0,
             )
-            hij_log.info("{}".format(json.dumps(result, indent=4, cls=SetEncoder)))
+            hij_log.info(
+                "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                extra={
+                    "community_annotation": result.get("community_annotation", "NA")
+                },
+            )
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """
@@ -889,6 +923,48 @@ class Detection:
                     routing_key="update",
                     serializer="json",
                 )
+
+        def comm_annotate_hijack(self, monitor_event: Dict, hijack: Dict) -> NoReturn:
+            """
+            Annotates a hijack based on community checks (modifies "community_annotation"
+            field in-place)
+            """
+            try:
+                if hijack.get("community_annotation", "NA") in [None, "", "NA"]:
+                    hijack["community_annotation"] = "NA"
+                bgp_update_communities = set()
+                for comm_as_value in monitor_event["communities"]:
+                    community = "{}:{}".format(comm_as_value[0], comm_as_value[1])
+                    bgp_update_communities.add(community)
+
+                prefix_node = self.prefix_tree.search_best(monitor_event["prefix"])
+                if prefix_node:
+                    for item in prefix_node.data["confs"]:
+                        annotations = []
+                        for annotation_element in item.get("community_annotations", []):
+                            for annotation in annotation_element:
+                                annotations.append(annotation)
+                        for annotation_element in item.get("community_annotations", []):
+                            for annotation in annotation_element:
+                                for community_rule in annotation_element[annotation]:
+                                    in_communities = set(community_rule.get("in", []))
+                                    out_communities = set(community_rule.get("out", []))
+                                    if (
+                                        in_communities <= bgp_update_communities
+                                        and out_communities.isdisjoint(
+                                            bgp_update_communities
+                                        )
+                                    ):
+                                        if hijack["community_annotation"] == "NA":
+                                            hijack["community_annotation"] = annotation
+                                        elif annotations.index(
+                                            annotation
+                                        ) < annotations.index(
+                                            hijack["community_annotation"]
+                                        ):
+                                            hijack["community_annotation"] = annotation
+            except Exception:
+                log.exception("exception")
 
 
 def run():

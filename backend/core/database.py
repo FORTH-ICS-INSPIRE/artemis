@@ -592,6 +592,9 @@ class Database:
                     self.insert_hijacks_entries[key]["timestamp_of_config"] = msg_[
                         "timestamp_of_config"
                     ]
+                    self.insert_hijacks_entries[key]["community_annotation"] = msg_[
+                        "community_annotation"
+                    ]
                 else:
                     self.insert_hijacks_entries[key]["time_started"] = min(
                         self.insert_hijacks_entries[key]["time_started"],
@@ -615,6 +618,9 @@ class Database:
                     self.insert_hijacks_entries[key]["monitor_keys"].update(
                         msg_["monitor_keys"]
                     )
+                    self.insert_hijacks_entries[key]["community_annotation"] = msg_[
+                        "community_annotation"
+                    ]
             except Exception:
                 log.exception("{}".format(msg_))
 
@@ -795,7 +801,7 @@ class Database:
                 query = (
                     "SELECT time_started, time_last, peers_seen, "
                     "asns_inf, key, prefix, hijack_as, type, time_detected, "
-                    "configured_prefix, timestamp_of_config "
+                    "configured_prefix, timestamp_of_config, community_annotation "
                     "FROM hijacks WHERE active = true"
                 )
 
@@ -817,6 +823,7 @@ class Database:
                         "time_detected": entry[8].timestamp(),
                         "configured_prefix": entry[9],
                         "timestamp_of_config": entry[10].timestamp(),
+                        "community_annotation": entry[11],
                     }
                     redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
                     redis_pipeline.set(redis_hijack_key, yaml.dump(result))
@@ -1307,9 +1314,10 @@ class Database:
                 query = (
                     "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                    "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) "
+                    "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation) "
                     "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
-                    ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false"
+                    ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
+                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, community_annotation=excluded.community_annotation"
                 )
 
                 values = []
@@ -1353,6 +1361,7 @@ class Database:
                         [],  # peers_withdrawn
                         # asns_inf
                         self.insert_hijacks_entries[key]["asns_inf"],
+                        self.insert_hijacks_entries[key]["community_annotation"],
                     )
                     values.append(entry)
 

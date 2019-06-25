@@ -17,6 +17,7 @@
 
 ### Fixed
 - Bug with rule learning (hijack to rule dict) when empty neighbor
+- Minor fix in custom mitigation trigger
 
 ### Removed
 - TBD (removed a feature)

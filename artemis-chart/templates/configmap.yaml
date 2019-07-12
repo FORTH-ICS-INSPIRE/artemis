@@ -38,4 +38,4 @@ data:
   hasuraHost: {{ .Values.hasuraHost | default "graphql" | quote }}
   hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
   hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}
-  hijackLogFilter: {{ .Values.hijackLogFilter | default [] }}
+  hijackLogFilter: {{ .Values.hijackLogFilter | default "[]" | quote }}

@@ -44,5 +44,5 @@ git config user.email "$GITHUB_USER@users.noreply.github.com"
 git config user.name SemaphoreCI
 git add .
 git status
-git commit -m "Published by SemaphoreCI"
+git commit -m "Published by SemaphoreCI [skip ci]"
 git push origin "$GITHUB_PAGES_BRANCH"

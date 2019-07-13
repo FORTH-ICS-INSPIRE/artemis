@@ -15,6 +15,7 @@ services:
             RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
+            RIS_ID: ${RIS_ID}
             DB_USER: ${DB_USER}
             DB_PASS: ${DB_PASS}
             DB_HOST: ${DB_HOST}

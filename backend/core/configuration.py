@@ -536,19 +536,9 @@ class Configuration:
                 log.exception("exception")
                 return {"timestamp": time.time()}, False, str(e)
 
-        def check(self, data: Text) -> Dict:
-            """
-            Checks if all sections and fields are defined correctly
-            in the parsed configuration.
-            Raises custom exceptions in case a field or section
-            is misdefined.
-            """
-            for section in data:
-                if section not in self.sections:
-                    raise ArtemisError("invalid-section", section)
-
-            data["prefixes"] = {k: flatten(v) for k, v in data["prefixes"].items()}
-            for prefix_group, prefixes in data["prefixes"].items():
+        @staticmethod
+        def __check_prefixes(_prefixes):
+            for prefix_group, prefixes in _prefixes.items():
                 for prefix in prefixes:
                     if translate_rfc2622(prefix, just_match=True):
                         continue
@@ -557,7 +547,8 @@ class Configuration:
                     except Exception:
                         raise ArtemisError("invalid-prefix", prefix)
 
-            for rule in data["rules"]:
+        def __check_rules(self, _rules):
+            for rule in _rules:
                 for field in rule:
                     if field not in self.supported_fields:
                         log.warning(
@@ -628,37 +619,56 @@ class Configuration:
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)
 
-            if "monitors" in data:
-                for key, info in data["monitors"].items():
-                    if key not in self.supported_monitors:
-                        raise ArtemisError("invalid-monitor", key)
-                    elif key == "riperis":
-                        for unavailable in set(info).difference(self.available_ris):
-                            log.warning("unavailable monitor {}".format(unavailable))
-                    elif key == "bgpstreamlive":
-                        if not info or not set(info).issubset(
-                            self.available_bgpstreamlive
-                        ):
-                            raise ArtemisError("invalid-bgpstreamlive-project", info)
-                    elif key == "exabgp":
-                        for entry in info:
-                            if "ip" not in entry and "port" not in entry:
-                                raise ArtemisError("invalid-exabgp-info", entry)
-                            if entry["ip"] != "exabgp":
-                                try:
-                                    str2ip(entry["ip"])
-                                except Exception:
-                                    raise ArtemisError("invalid-exabgp-ip", entry["ip"])
-                            if not isinstance(entry["port"], int):
-                                raise ArtemisError("invalid-exabgp-port", entry["port"])
+        def __check_monitors(self, _monitors):
+            for key, info in _monitors.items():
+                if key not in self.supported_monitors:
+                    raise ArtemisError("invalid-monitor", key)
+                elif key == "riperis":
+                    for unavailable in set(info).difference(self.available_ris):
+                        log.warning("unavailable monitor {}".format(unavailable))
+                elif key == "bgpstreamlive":
+                    if not info or not set(info).issubset(self.available_bgpstreamlive):
+                        raise ArtemisError("invalid-bgpstreamlive-project", info)
+                elif key == "exabgp":
+                    for entry in info:
+                        if "ip" not in entry and "port" not in entry:
+                            raise ArtemisError("invalid-exabgp-info", entry)
+                        if entry["ip"] != "exabgp":
+                            try:
+                                str2ip(entry["ip"])
+                            except Exception:
+                                raise ArtemisError("invalid-exabgp-ip", entry["ip"])
+                        if not isinstance(entry["port"], int):
+                            raise ArtemisError("invalid-exabgp-port", entry["port"])
 
-            data["asns"] = {k: flatten(v) for k, v in data["asns"].items()}
-            for name, asns in data["asns"].items():
+        @staticmethod
+        def __check_asns(_asns):
+            for name, asns in _asns.items():
                 for asn in asns:
                     if translate_asn_range(asn, just_match=True):
                         continue
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)
+
+        def check(self, data: Text) -> Dict:
+            """
+            Checks if all sections and fields are defined correctly
+            in the parsed configuration.
+            Raises custom exceptions in case a field or section
+            is misdefined.
+            """
+            for section in data:
+                if section not in self.sections:
+                    raise ArtemisError("invalid-section", section)
+
+            data["prefixes"] = {k: flatten(v) for k, v in data["prefixes"].items()}
+            data["asns"] = {k: flatten(v) for k, v in data["asns"].items()}
+
+            Configuration.Worker.__check_prefixes(data["prefixes"])
+            self.__check_rules(data["rules"])
+            self.__check_monitors(data.get("monitors", {}))
+            Configuration.Worker.__check_asns(data["asns"])
+
             return data
 
         def _update_local_config_file(self) -> NoReturn:

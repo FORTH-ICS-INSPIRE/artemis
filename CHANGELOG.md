@@ -18,6 +18,8 @@
 ### Fixed
 - Bug with rule learning (hijack to rule dict) when empty neighbor
 - Minor fix in custom mitigation trigger
+- Updated configurations for k8s deployment
+- Fixed flake8 warnings
 
 ### Removed
 - TBD (removed a feature)

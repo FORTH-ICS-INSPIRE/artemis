@@ -33,7 +33,9 @@ def get_logger(path="/etc/artemis/logging.yaml"):
         log.info("Loaded default configuration")
     return log
 
+
 log = get_logger()
+
 
 def load_json(filename):
     json_obj = None

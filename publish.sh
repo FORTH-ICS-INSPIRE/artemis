@@ -33,7 +33,7 @@ git merge master -X theirs
 echo '>> Building chart...'
 chart=artemis-chart
 echo ">>> helm lint $chart"
-helm lint "$chart"
+helm lint -f other/example_values.yaml "$chart"
 echo ">>> helm package $chart"
 helm package "$chart"
 echo '>>> helm repo index'

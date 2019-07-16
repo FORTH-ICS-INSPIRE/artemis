@@ -1,13 +1,22 @@
 repos:
+- repo: local
+  hooks:
+    - id: value-verification
+      name: Check configuration files
+      language: script
+      entry: ./other/verify_script.py
+      pass_filenames: false
 - repo: https://github.com/ambv/black
   rev: 19.3b0
   hooks:
     - id: black
+      name: Apply black formatter
       language_version: python3.6
 - repo: git://github.com/asottile/reorder_python_imports
   rev: v1.4.0
   hooks:
     - id: reorder-python-imports
+      name: Reorder python imports
       language_version: 'python3.6'
 - repo: git://github.com/pre-commit/pre-commit-hooks
   rev: v2.1.0

@@ -11,8 +11,8 @@ services:
         expose:
             - ${SUPERVISOR_PORT}
         environment:
-            RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
-            RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             RIS_ID: ${RIS_ID}
@@ -56,8 +56,8 @@ services:
         expose:
             - ${WEBAPP_PORT}
         environment:
-            RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
-            RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             DB_HOST: ${DB_HOST}
@@ -120,8 +120,8 @@ services:
             - ${RABBITMQ_PORT}
             # - 15672 management port
         environment:
-            RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
@@ -173,7 +173,7 @@ services:
             - artemis
         environment:
             - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-            - AMQP_URI=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+            - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
             - BRIDGE_CHANNELS=events:amq.direct
             # - RUST_LOG=debug
             # - RUST_BACKTRACE=1
@@ -193,7 +193,7 @@ services:
         environment:
             HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_CONSOLE}
+            HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_GUI}
             HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'
         command:
             - graphql-engine

@@ -1,0 +1,37 @@
+{% extends "base/layout_container.htm" %}
+
+{% block title %}
+    {{super()}} - Pending Administrator Approval
+{% endblock %}
+
+{% block head %}
+    {{super()}}
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="container d-flex h-100">
+		    <div class="row align-self-center w-100">
+		        <div class="col-6 mx-auto">
+		            <div class="jumbotron vertical-center">
+		            	<p class="lead">
+		                    <img src="../images/pending_approval.png"></img>
+		                </p>
+		                <h1 class="display-4">Pending Approval</h1>
+		                <p class="lead">Your registration is pending approval from an administrator.</p>
+		            </div>
+		        </div>
+		    </div>
+		</div>
+
+{% endblock %}
+
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+    {% endblock %}
+{% endblock %}

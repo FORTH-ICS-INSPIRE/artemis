@@ -7,7 +7,7 @@ RUN apk add --no-cache openssl && \
     wget https://dl.google.com/closure-compiler/compiler-latest.tar.gz && \
     tar -xzvf compiler-latest.tar.gz
 
-COPY ./webapp/static/js/custom/ /root/
+COPY ./webapp/render/static/js/custom/ /root/
 COPY ./minify-js.sh /root/
 RUN mkdir /root/prod/
 RUN ./minify-js.sh
@@ -17,8 +17,8 @@ FROM mavromat/alpine-python:3.6
 WORKDIR /root
 
 COPY . ./
-RUN rm /root/webapp/static/js/custom/*
-COPY --from=builder /root/prod/ /root/webapp/static/js/custom/
+RUN rm /root/webapp/render/static/js/custom/*
+COPY --from=builder /root/prod/ /root/webapp/render/static/js/custom/
 
 RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
 RUN pip install --upgrade 'pip<19.0'

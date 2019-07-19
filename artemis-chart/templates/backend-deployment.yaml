@@ -32,6 +32,11 @@ spec:
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
+        - name: RIS_ID
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: risId
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
@@ -127,6 +132,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: supervisorPort
+        - name: HIJACK_LOG_FILTER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hijackLogFilter
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         name: backend
         resources: {}

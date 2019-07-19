@@ -2,26 +2,76 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
+- Slack logging package and example
+- ARTEMIS logo
+- Monitor peers count in stats table (overview)
+- Implicit withdrawals generated for benign BGP updates correcting hijacked peer-prefix combinations
+- Support for configured ASN ranges
+- Community-based annotation support for annotating hijacks
+- Local pre-commit hook to check versioning
+
+### Changed
+- Refactoring frontend (views, templates and static files are organized inside the folder render)
+- Update hasura (1.0.0alpha42 -> 1.0.0alpha45)
+- Replaced $.ajax with fetch
+- Hijack logger output is now a JSON string
+
+### Fixed
+- Bug with rule learning (hijack to rule dict) when empty neighbor
+- Minor fix in custom mitigation trigger
+- Updated configurations for k8s deployment
+- Fixed flake8 warnings
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- Bumped SQLAlchemy from 1.2.16 to 1.3.3 in /frontend
+
+## [1.2.0] (Athena) - 2019-04-10
+### Added
 - Support for dormant flags in hijacks
 - Storing hijack update (origin, neighbor) combinations in redis
+- Translate learn rule request in ARTEMIS-compatible dicts in backend
+- Translate learn rule ARTEMIS-compatible dicts into yaml conf in backend
+- Update yaml conf with learned rule
+- Learn rule action for ongoing hijacks in frontend after ignore action
 - Configured/matched prefix field and search in frontend hijack and update tables
+- Monitored prefixes count in stats table (overview)
+- Configured prefixes count in stats table (overview)
 - Initial kubernetes/helm (helm-charts) support
 - Reject old updates from taps and have a "HISTORIC" variable to enable/disable
 - Initial support for LDAP authentication
+- Delete hijack functionality
+- Abuse contact details for each ASN (Extracted from RIPEStat)
+- Functionality to copy ASN details on clickboard
+- Support to filter BGP Updates based on their AS Path
+- Display distinct values of BGP Updates for the following fields: "Origin AS", "Peer AS" and "service" in hijack view
 
 ### Changed
+- Using prefix lists in json file format as monitoring taps input to avoid problematic ultra long arguments
 - Refactored environment variables
 - Use of RIPE RIS firehose stream instead of the websocket clientui8
+- Use of function url_for in flask redirect
+- In hijack view changed the actions functionality
+- Update hasura (1.0.0alpha31 -> 1.0.0alpha42)
+- Hijack view now uses hasura graphql to fetch BGP Updates
 
 ### Fixed
 - Correct RFC2622 translation when needed in frontend and backend
+- When learning ignore rule, escape special character ":" (IPv6)
+- Problematic start of RIS and exaBGP monitors, even if not configured
+- BGP update redis bootstraping from DB
+- UI support for multiple instances of a module in overview and system page
+- Bug with hijack view times
+- Bug with hijack view action buttons
 
 ### Removed
 - Configured prefix graph visualization (needs redesign)
 - Config data field from configs DB table
-
-### Deprecated
-- TBD (soon-to-be removed feature)
 
 ### Security
 - Using yaml dump and safe_load instead of pickling/unpickling

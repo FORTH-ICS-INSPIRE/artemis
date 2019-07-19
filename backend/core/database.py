@@ -26,6 +26,7 @@ from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import SUPERVISOR_URI
+from utils import translate_asn_range
 from utils import translate_rfc2622
 
 # import os
@@ -67,6 +68,9 @@ class Database:
         def __init__(self, connection, ro_conn, wo_conn):
             self.connection = connection
             self.prefix_tree = None
+            self.monitored_prefixes = set()
+            self.configured_prefixes = set()
+            self.monitor_peers = 0
             self.rules = None
             self.timestamp = -1
             self.insert_bgp_entries = []
@@ -197,19 +201,19 @@ class Database:
                 max_priority=1,
                 consumer_arguments={"x-priority": 1},
             )
-            self.hijack_resolved_queue = Queue(
+            self.hijack_resolve_queue = Queue(
                 "db-hijack-resolve",
                 exchange=self.hijack_exchange,
-                routing_key="resolved",
+                routing_key="resolve",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
                 consumer_arguments={"x-priority": 2},
             )
-            self.hijack_ignored_queue = Queue(
+            self.hijack_ignore_queue = Queue(
                 "db-hijack-ignored",
                 exchange=self.hijack_exchange,
-                routing_key="ignored",
+                routing_key="ignore",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
@@ -260,18 +264,28 @@ class Database:
             )
             self.hijack_seen_queue = Queue(
                 "db-hijack-seen",
+                exchange=self.hijack_exchange,
+                routing_key="seen",
                 durable=False,
                 auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
             )
-
             self.hijack_multiple_action_queue = Queue(
                 "db-hijack-multiple-action",
                 durable=False,
                 auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
+            )
+            self.hijack_delete_queue = Queue(
+                "db-hijack-delete",
+                exchange=self.hijack_exchange,
+                routing_key="delete",
+                durable=False,
+                auto_delete=True,
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
             )
 
             self.config_request_rpc()
@@ -318,8 +332,8 @@ class Database:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.hijack_resolved_queue],
-                    on_message=self.handle_resolved_hijack,
+                    queues=[self.hijack_resolve_queue],
+                    on_message=self.handle_resolve_hijack,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -330,7 +344,7 @@ class Database:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.hijack_ignored_queue],
+                    queues=[self.hijack_ignore_queue],
                     on_message=self.handle_hijack_ignore_request,
                     prefetch_count=1,
                     no_ack=True,
@@ -362,6 +376,12 @@ class Database:
                 Consumer(
                     queues=[self.hijack_outdate_queue],
                     on_message=self.handle_hijack_outdate,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
+                Consumer(
+                    queues=[self.hijack_delete_queue],
+                    on_message=self.handle_delete_hijack,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -444,6 +464,16 @@ class Database:
                     )
                     # insert all types of BGP updates
                     self.insert_bgp_entries.append(value)
+
+                    # register the monitor/peer ASN from whom we learned this BGP update
+                    self.redis.sadd("peer-asns", msg_["peer_asn"])
+                    if self.redis.scard("peer-asns") != self.monitor_peers:
+                        self.monitor_peers = self.redis.scard("peer-asns")
+                        with get_wo_cursor(self.wo_conn) as db_cur:
+                            db_cur.execute(
+                                "UPDATE stats SET monitor_peers=%s;",
+                                (self.monitor_peers,),
+                            )
                 except Exception:
                     log.exception("{}".format(msg_))
             # reset timer each time we hit the same BGP update
@@ -562,6 +592,9 @@ class Database:
                     self.insert_hijacks_entries[key]["timestamp_of_config"] = msg_[
                         "timestamp_of_config"
                     ]
+                    self.insert_hijacks_entries[key]["community_annotation"] = msg_[
+                        "community_annotation"
+                    ]
                 else:
                     self.insert_hijacks_entries[key]["time_started"] = min(
                         self.insert_hijacks_entries[key]["time_started"],
@@ -585,6 +618,9 @@ class Database:
                     self.insert_hijacks_entries[key]["monitor_keys"].update(
                         msg_["monitor_keys"]
                     )
+                    self.insert_hijacks_entries[key]["community_annotation"] = msg_[
+                        "community_annotation"
+                    ]
             except Exception:
                 log.exception("{}".format(msg_))
 
@@ -610,14 +646,51 @@ class Database:
                         node = self.prefix_tree.add(prefix)
                         node.data["confs"] = []
 
+                    rule_translated_origin_asn_set = set()
+                    for asn in rule["origin_asns"]:
+                        this_translated_asn_list = flatten(translate_asn_range(asn))
+                        rule_translated_origin_asn_set.update(
+                            set(this_translated_asn_list)
+                        )
+                    rule["origin_asns"] = list(rule_translated_origin_asn_set)
+                    rule_translated_neighbor_set = set()
+                    for asn in rule["neighbors"]:
+                        this_translated_asn_list = flatten(translate_asn_range(asn))
+                        rule_translated_neighbor_set.update(
+                            set(this_translated_asn_list)
+                        )
+                    rule["neighbors"] = list(rule_translated_neighbor_set)
+
                     conf_obj = {
                         "origin_asns": rule["origin_asns"],
                         "neighbors": rule["neighbors"],
                     }
                     node.data["confs"].append(conf_obj)
+            # calculate the monitored and configured prefixes
+            self.monitored_prefixes = set()
+            self.configured_prefixes = set()
+            for prefix in self.prefix_tree.prefixes():
+                self.configured_prefixes.add(prefix)
+                monitored_prefix = self.find_worst_prefix_match(prefix)
+                if monitored_prefix:
+                    self.monitored_prefixes.add(monitored_prefix)
+            try:
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
+                        (len(self.monitored_prefixes), len(self.configured_prefixes)),
+                    )
+            except Exception:
+                log.exception("exception")
 
         def find_best_prefix_match(self, prefix):
             prefix_node = self.prefix_tree.search_best(prefix)
+            if prefix_node:
+                return prefix_node.prefix
+            return None
+
+        def find_worst_prefix_match(self, prefix):
+            prefix_node = self.prefix_tree.search_worst(prefix)
             if prefix_node:
                 return prefix_node.prefix
             return None
@@ -723,10 +796,12 @@ class Database:
 
         def bootstrap_redis(self):
             try:
+
+                # bootstrap ongoing hijack events
                 query = (
                     "SELECT time_started, time_last, peers_seen, "
                     "asns_inf, key, prefix, hijack_as, type, time_detected, "
-                    "configured_prefix, timestamp_of_config "
+                    "configured_prefix, timestamp_of_config, community_annotation "
                     "FROM hijacks WHERE active = true"
                 )
 
@@ -748,15 +823,18 @@ class Database:
                         "time_detected": entry[8].timestamp(),
                         "configured_prefix": entry[9],
                         "timestamp_of_config": entry[10].timestamp(),
+                        "community_annotation": entry[11],
                     }
                     redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
                     redis_pipeline.set(redis_hijack_key, yaml.dump(result))
                     redis_pipeline.sadd("persistent-keys", entry[4])
                 redis_pipeline.execute()
 
+                # bootstrap BGP updates
                 query = (
-                    "SELECT DISTINCT key, timestamp FROM bgp_updates "
-                    "WHERE timestamp > NOW() - interval '1 hours'"
+                    "SELECT key, timestamp FROM bgp_updates "
+                    "WHERE timestamp > NOW() - interval '2 hours' "
+                    "ORDER BY timestamp ASC"
                 )
 
                 with get_ro_cursor(self.ro_conn) as db_cur:
@@ -765,12 +843,16 @@ class Database:
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
-                    expire = int(time.time() - entry[1].timestamp())
+                    expire = max(
+                        int(entry[1].timestamp()) + 2 * 60 * 60 - int(time.time()), 60
+                    )
                     redis_pipeline.set(entry[0], "1", ex=expire)
                 redis_pipeline.execute()
 
+                # bootstrap (origin, neighbor) AS-links of ongoing hijacks
                 query = (
-                    "SELECT bgp_updates.as_path, hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
+                    "SELECT bgp_updates.prefix, bgp_updates.peer_asn, bgp_updates.as_path, "
+                    "hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
                     "hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
                     "WHERE bgp_updates.type = 'A' "
                     "AND hijacks.active = true "
@@ -786,22 +868,49 @@ class Database:
                     # store the origin, neighbor combination for this hijack BGP update
                     origin = None
                     neighbor = None
-                    as_path = entry[0]
+                    as_path = entry[2]
                     if as_path:
                         origin = as_path[-1]
                     if len(as_path) > 1:
                         neighbor = as_path[-2]
-                    redis_hijack_key = redis_key(entry[1], entry[2], entry[3])
+                    redis_hijack_key = redis_key(entry[3], entry[4], entry[5])
                     redis_pipeline.sadd(
                         "hij_orig_neighb_{}".format(redis_hijack_key),
                         "{}_{}".format(origin, neighbor),
                     )
+
+                    # store the prefix and peer asn for this hijack BGP update
+                    redis_pipeline.sadd(
+                        "prefix_{}_peer_{}_hijacks".format(entry[0], entry[1]),
+                        redis_hijack_key,
+                    )
+                    redis_pipeline.sadd(
+                        "hijack_{}_prefixes_peers".format(redis_hijack_key),
+                        "{}_{}".format(entry[0], entry[1]),
+                    )
                 redis_pipeline.execute()
+
+                # bootstrap seen monitor peers
+                query = "SELECT DISTINCT peer_asn FROM bgp_updates"
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+
+                redis_pipeline = self.redis.pipeline()
+                for entry in entries:
+                    redis_pipeline.sadd("peer-asns", int(entry[0]))
+                redis_pipeline.execute()
+                self.monitor_peers = self.redis.scard("peer-asns")
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute(
+                        "UPDATE stats SET monitor_peers=%s;", (self.monitor_peers,)
+                    )
 
             except Exception:
                 log.exception("exception")
 
-        def handle_resolved_hijack(self, message):
+        def handle_resolve_hijack(self, message):
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -816,6 +925,30 @@ class Database:
                     db_cur.execute(
                         "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
                         (datetime.datetime.now(), raw["key"]),
+                    )
+
+            except Exception:
+                log.exception("{}".format(raw))
+
+        def handle_delete_hijack(self, message):
+            raw = message.payload
+            log.debug("payload: {}".format(raw))
+            try:
+                redis_hijack_key = redis_key(
+                    raw["prefix"], raw["hijack_as"], raw["type"]
+                )
+                if self.redis.sismember("persistent-keys", raw["key"]):
+                    purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
+
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    db_cur.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
+                    db_cur.execute(
+                        "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1;",
+                        (raw["key"],),
+                    )
+                    db_cur.execute(
+                        "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s);",
+                        (raw["key"],),
                     )
 
             except Exception:
@@ -891,26 +1024,7 @@ class Database:
                         "UPDATE hijacks SET seen=%s WHERE key=%s;",
                         (raw["state"], raw["key"]),
                     )
-
-                self.producer.publish(
-                    {"status": "accepted"},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    serializer="json",
-                    retry=True,
-                    priority=4,
-                )
             except Exception:
-                self.producer.publish(
-                    {"status": "rejected"},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    serializer="json",
-                    retry=True,
-                    priority=4,
-                )
                 log.exception("{}".format(raw))
 
         def handle_hijack_multiple_action(self, message):
@@ -920,21 +1034,34 @@ class Database:
             seen_action = False
             ignore_action = False
             resolve_action = False
+            delete_action = False
             try:
                 if not raw["keys"]:
                     query = None
-                elif raw["action"] == "mark_resolved":
+                elif raw["action"] == "hijack_action_resolve":
                     query = "UPDATE hijacks SET resolved=true, active=false, dormant=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
                     resolve_action = True
-                elif raw["action"] == "mark_ignored":
+                elif raw["action"] == "hijack_action_ignore":
                     query = "UPDATE hijacks SET ignored=true, active=false, dormant=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
                     ignore_action = True
-                elif raw["action"] == "mark_seen":
+                elif raw["action"] == "hijack_action_acknowledge":
                     query = "UPDATE hijacks SET seen=true WHERE key=%s;"
                     seen_action = True
-                elif raw["action"] == "mark_not_seen":
+                elif raw["action"] == "hijack_action_acknowledge_not":
                     query = "UPDATE hijacks SET seen=false WHERE key=%s;"
                     seen_action = True
+                elif raw["action"] == "hijack_action_delete":
+                    query = []
+                    query.append("DELETE FROM hijacks WHERE key=%s;")
+                    query.append(
+                        "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1;"
+                    )
+                    query.append(
+                        "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s);"
+                    )
+                    delete_action = True
+                else:
+                    raise BaseException("unreachable code reached")
 
             except Exception:
                 log.exception("None action: {}".format(raw))
@@ -990,6 +1117,14 @@ class Database:
                                     db_cur.execute(
                                         query, (datetime.datetime.now(), hijack_key)
                                     )
+                            elif delete_action:
+                                if self.redis.sismember("persistent-keys", hijack_key):
+                                    purge_redis_eph_pers_keys(
+                                        self.redis, redis_hijack_key, hijack_key
+                                    )
+                                for query_ in query:
+                                    with get_wo_cursor(self.wo_conn) as db_cur:
+                                        db_cur.execute(query_, (hijack_key,))
                             else:
                                 raise BaseException("unreachable code reached")
 
@@ -1179,9 +1314,10 @@ class Database:
                 query = (
                     "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                    "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf) "
+                    "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation) "
                     "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
-                    ", time_started=excluded.time_started, time_last=excluded.time_last, peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false"
+                    ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
+                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, community_annotation=excluded.community_annotation"
                 )
 
                 values = []
@@ -1225,6 +1361,7 @@ class Database:
                         [],  # peers_withdrawn
                         # asns_inf
                         self.insert_hijacks_entries[key]["asns_inf"],
+                        self.insert_hijacks_entries[key]["community_annotation"],
                     )
                     values.append(entry)
 

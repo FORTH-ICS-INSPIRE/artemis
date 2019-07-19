@@ -9,6 +9,7 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 from utils import get_logger
 from utils import key_generator
+from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
@@ -19,17 +20,20 @@ START_TIME_OFFSET = 3600  # seconds
 log = get_logger()
 
 
-def run_bgpstream(prefixes=[], projects=[], start=0, end=0):
+def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
     """
     Retrieve all records related to a list of prefixes
     https://bgpstream.caida.org/docs/api/pybgpstream/_pybgpstream.html
 
-    :param prefix: <str> input prefix
+    :param prefixes_file: <str> input prefix json
     :param start: <int> start timestamp in UNIX epochs
     :param end: <int> end timestamp in UNIX epochs (if 0 --> "live mode")
 
     :return: -
     """
+
+    prefixes = load_json(prefixes_file)
+    assert prefixes is not None
 
     # create a new bgpstream instance and a reusable bgprecord instance
     stream = _pybgpstream.BGPStream()
@@ -143,11 +147,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="BGPStream Live Monitor")
     parser.add_argument(
         "-p",
-        "--prefix",
+        "--prefixes",
         type=str,
-        dest="prefix",
+        dest="prefixes_file",
         default=None,
-        help="Prefix to be monitored",
+        help="Prefix(es) to be monitored (json file with prefix list)",
     )
     parser.add_argument(
         "-m",
@@ -160,12 +164,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    prefixes = args.prefix.split(",")
     projects = args.mon_projects.split(",")
 
     try:
         run_bgpstream(
-            prefixes, projects, start=int(time.time()) - START_TIME_OFFSET, end=0
+            args.prefixes_file,
+            projects,
+            start=int(time.time()) - START_TIME_OFFSET,
+            end=0,
         )
     except Exception:
         log.exception("exception")

@@ -13,6 +13,8 @@ prefixes:
         - 10.0.4.0/24
     24_prefix_5: &24_prefix_5
         - 10.0.5.0/24
+    24_prefix_6: &24_prefix_6
+        - 10.0.6.0/24
     test_exc_op_23: &test_exc_op_23
         - 10.10.0.0/23^-
     test_inc_op_23: &test_inc_op_23
@@ -21,6 +23,8 @@ prefixes:
         - 10.12.0.0/16^24
     test_n_m_op_16: &test_n_m_op_16
         - 10.13.0.0/16^20-24
+    test_comms_24: &test_comms_24
+        - 10.0.20.0/24
 asns:
     8_origin: &8_origin
         1
@@ -34,8 +38,14 @@ asns:
         244
     24_5_origin: &24_5_origin
         245
+    24_6_origin: &24_6_origin
+        300- 310
+    24_6_neighbors: &24_6_neighbors
+        320 -330
     op_test_origin: &op_test_origin
         444
+    comm_test_origin: &comm_test_origin
+        555
 rules:
 - prefixes:
   - *8_prefix
@@ -96,3 +106,35 @@ rules:
       '*'
   mitigation:
       manual
+- prefixes:
+  - *24_prefix_6
+  origin_asns:
+  - *24_6_origin
+  neighbors:
+  - *24_6_neighbors
+  mitigation:
+      manual
+- prefixes:
+  - *test_comms_24
+  origin_asns:
+  - *comm_test_origin
+  neighbors:
+      '*'
+  community_annotations:
+  - critical:
+    - in:
+      - '555:1'
+      - '555:2'
+      out:
+      - '555:3'
+      - '555:4'
+    - in:
+      - '555:10'
+  - medium:
+    - in:
+      - '555:3'
+      out:
+      - '555:4'
+  - low:
+    - in:
+      - '555:4'

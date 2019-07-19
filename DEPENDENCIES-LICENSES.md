@@ -33,6 +33,7 @@
 | merge | [MIT](https://github.com/yeikos/js.merge/blob/master/LICENSE) | [GitHub](https://github.com/yeikos/js.merge) |
 | moment | [MIT](https://github.com/moment/moment/blob/develop/LICENSE) | [GitHub](https://github.com/moment/moment/) |
 | openssl-dev | [Apache 2.0](https://github.com/openssl/openssl/blob/master/LICENSE) | [GitHub](https://github.com/openssl/openssl) |
+| clipboard-polyfill | [MIT](https://github.com/lgarron/clipboard-polyfill/blob/master/LICENSE.md) | [GitHub](https://github.com/lgarron/clipboard-polyfill) |
 | pyaml | [Custom-Permissive](https://github.com/mk-fg/pretty-yaml/blob/master/COPYING) | [GitHub](https://github.com/mk-fg/pretty-yaml) |
 | pyopenssl | [Apache 2.0](https://github.com/pyca/pyopenssl/blob/master/LICENSE) | [GitHub](https://github.com/pyca/pyopenssl) |
 | python 3.6 | [PSFL](https://docs.python.org/3/license.html) | [Homepage](https://www.python.org/downloads/) |

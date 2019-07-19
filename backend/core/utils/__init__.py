@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging.config
 import logging.handlers
 import os
@@ -29,6 +30,80 @@ RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
 )
 SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
+
+
+class TLSSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.starttls()  # for tls add this line
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
+
+
+class SSLSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
 
 
 def get_logger(path="/etc/artemis/logging.yaml"):
@@ -127,38 +202,9 @@ def exception_handler(log):
     return function_wrapper
 
 
-class SMTPSHandler(SMTPHandler):
-    def emit(self, record):
-        """
-        Overwrite the logging.handlers.SMTPHandler.emit function with SMTP_SSL.
-        Emit a record.
-        Format the record and send it to the specified addressees.
-        """
-        try:
-            import smtplib
-            from email.utils import formatdate
-
-            port = self.mailport
-            if not port:
-                port = smtplib.SMTP_PORT
-            smtp = smtplib.SMTP_SSL(self.mailhost, port)
-            msg = self.format(record)
-            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
-                self.fromaddr,
-                ", ".join(self.toaddrs),
-                self.getSubject(record),
-                formatdate(),
-                msg,
-            )
-            if self.username:
-                smtp.ehlo()
-                smtp.login(self.username, self.password)
-            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
-            smtp.quit()
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except Exception:
-            self.handleError(record)
+def dump_json(json_obj, filename):
+    with open(filename, "w") as f:
+        json.dump(json_obj, f)
 
 
 def redis_key(prefix, hijack_as, _type):
@@ -180,6 +226,18 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
     redis_pipeline.delete(ephemeral_key)
     redis_pipeline.srem("persistent-keys", persistent_key)
     redis_pipeline.delete("hij_orig_neighb_{}".format(ephemeral_key))
+    if redis_instance.exists("hijack_{}_prefixes_peers".format(ephemeral_key)):
+        for element in redis_instance.sscan_iter(
+            "hijack_{}_prefixes_peers".format(ephemeral_key)
+        ):
+            subelems = element.decode().split("_")
+            prefix_peer_hijack_set = "prefix_{}_peer_{}_hijacks".format(
+                subelems[0], subelems[1]
+            )
+            redis_pipeline.srem(prefix_peer_hijack_set, ephemeral_key)
+            if redis_instance.scard(prefix_peer_hijack_set) <= 1:
+                redis_pipeline.delete(prefix_peer_hijack_set)
+        redis_pipeline.delete("hijack_{}_prefixes_peers".format(ephemeral_key))
     redis_pipeline.execute()
 
 
@@ -196,6 +254,13 @@ def calculate_more_specifics(prefix, min_length, max_length):
     for prefix_length in range(min_length, max_length + 1):
         prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
     return prefix_list
+
+
+class SetEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, set):
+            return list(o)
+        return super(SetEncoder, self).default(o)
 
 
 def translate_rfc2622(input_prefix, just_match=False):
@@ -302,3 +367,27 @@ def translate_rfc2622(input_prefix, just_match=False):
         return False
 
     return [input_prefix]
+
+
+def translate_asn_range(asn_range, just_match=False):
+    """
+    :param <str> asn_range: <start_asn>-<end_asn>
+    :param <bool> just_match: check only if the prefix
+    has matched instead of translating
+    :return: the list of ASNs corresponding to that range
+    """
+    reg_range = re.match(r"(\d+)\s*-\s*(\d+)", str(asn_range))
+    if reg_range:
+        start_asn = int(reg_range.group(1))
+        end_asn = int(reg_range.group(2))
+        if start_asn > end_asn:
+            raise ArtemisError("end-asn before start-asn", asn_range)
+        if just_match:
+            return True
+        return list(range(start_asn, end_asn + 1))
+
+    # nothing has matched
+    if just_match:
+        return False
+
+    return [asn_range]

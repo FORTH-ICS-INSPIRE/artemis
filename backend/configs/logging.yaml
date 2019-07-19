@@ -31,19 +31,31 @@ handlers:
 
     # for email
     # smtps_handler:
-    #     class: utils.SMTPSHandler
+    #     # utils.TLSSMTPHandler for TLS
+    #     # utils.SSLSMTPHandler for SSL
+    #     class: utils.TLSSMTPHandler
     #     level: INFO
     #     formatter: simple
     #     mailhost:
     #     - smtp.server.com
-    #     - port
-    #     fromaddr: from
-    #     toaddrs: to
-    #     subject: subject
+    #     - 25
+    #     fromaddr: from@email.com
+    #     toaddrs:
+    #     - to1@email.com
+    #     - to2@email.com
+    #     subject: "Subject Title"
     #     credentials:
     #     - username
-    #     - password
+    #     - pass
     #     secure: True
+
+    # for slack
+    # slack_handler:
+    #     class: slacker_log_handler.SlackerLogHandler
+    #     api_key: SLACK_API_TOKEN
+    #     channel: "#general"
+    #     username: "Hijack Announcer"
+    #     level: INFO
 
     null_handler:
         class: logging.NullHandler
@@ -69,11 +81,11 @@ loggers:
         handlers: [console, info_file_handler, error_file_handler]
         propagate: no
     mail_logger:
-        level: CRITICAL
+        level: INFO
         handlers: [null_handler]
         propagate: no
     hijack_logger:
-        level: CRITICAL
+        level: INFO
         handlers: [null_handler]
         propagate: no
     taps_logger:

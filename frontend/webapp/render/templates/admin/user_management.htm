@@ -1,0 +1,173 @@
+{% extends "base/layout.htm" %}
+
+{% block title %}
+    {{super()}} - User Management
+{% endblock %}
+
+{% block head %}
+    {{super()}}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
+{% endblock %}
+
+{% block page_content %}
+    {{super()}}
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">User Management</h1>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Approve pending users
+                    </div>
+                    <div class="panel-body">
+                        <form action="{{ url_for('actions.approve_user') }}" method="POST" name="approve_user_form">
+                            {{ users_to_approve_form.hidden_tag() }}
+                            {% from "security/_macros.html" import render_field %}
+                            <label for="pending_users_approval"><strong>Select pending user to approve:</strong></label>
+                            <div class="form-group w-50 p-3">
+                                {{ render_field(users_to_approve_form.select_field, class_="form-control") }}
+                            </div>
+                            <div class="w-25 p-3">
+                                <button type="submit" class="btn btn-primary">Approve user</button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Promote to Admin
+                    </div>
+                          <div class="panel-body">
+                        <form action="{{ url_for('actions.create_admin') }}" method="POST" name="create_admin_form">
+                            {{ users_to_make_admin_form.hidden_tag() }}
+                            {% from "security/_macros.html" import render_field %}
+                            <label for="admin_priviliges"><strong>Select user to give admin privileges:</strong></label>
+                            <div class="form-group w-50 p-3">
+                                {{ render_field(users_to_make_admin_form.select_field, class_="form-control") }}
+                            </div>
+                            <div class="w-25 p-3">
+                                <button type="submit" class="btn btn-primary">Promote to Admin</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Demote Admin
+                    </div>
+                          <div class="panel-body">
+                        <form action="{{ url_for('actions.remove_admin') }}" method="POST" name="create_admin_form">
+                            {{ users_to_remove_admin_form.hidden_tag() }}
+                            {% from "security/_macros.html" import render_field %}
+                            <label for="admin_priviliges"><strong>Select user to remove admin privileges:</strong></label>
+                            <div class="form-group w-50 p-3">
+                                {{ render_field(users_to_remove_admin_form.select_field, class_="form-control") }}
+                            </div>
+                            <div class="w-25 p-3">
+                                <button type="submit" class="btn btn-danger">Demote to User</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> Delete user
+                    </div>
+                          <div class="panel-body">
+                        <form action="{{ url_for('actions.delete_user') }}" method="POST" name="create_admin_form">
+                            {{ users_to_delete_form.hidden_tag() }}
+                            {% from "security/_macros.html" import render_field %}
+                            <label for="admin_priviliges"><strong>Select user to delete:</strong></label>
+                            <div class="form-group w-50 p-3">
+                                {{ render_field(users_to_delete_form.select_field, class_="form-control") }}
+                            </div>
+                            <div class="w-25 p-3">
+                                <button type="submit" class="btn btn-danger">Delete User</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bell fa-fw"></i> User list
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-striped" style="width:100%" id="users_list">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Username</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Role</th>
+                                    <th scope="col">Last Login</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users_list %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td><b>{{ user.username }}<b></td>
+                                    <td>{{ user.email }}</td>
+                                    <td><b>{{ user.role }}</b></td>
+                                    <td>{{ user.last_login_at }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    </hr>
+                    <p><i>Times are shown in your local time zone.</i></p>
+                </div>
+            </div>
+        </div>
+
+
+{% endblock %}
+
+{% block body %}
+    {{super()}}
+    {% block scripts %}
+        {{super()}}
+        <script>
+
+
+            $(document).ready(function() {
+                $("#users_list tr td:nth-child(5)").each(function (index) {
+                    var timestamp = $(this).html();
+                    $(this).text(transform_unix_timestamp_to_client_local_time(timestamp));
+                });
+
+                $('#users_list').DataTable({
+                    "pagingType": "numbers",
+                    "responsive": true
+                });
+                $("#navbar_admin").addClass("active");
+            });
+
+        </script>
+        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='js/custom/prod-utils.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
+        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
+        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+    {% endblock %}
+{% endblock %}

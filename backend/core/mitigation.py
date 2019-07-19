@@ -178,12 +178,16 @@ class Mitigation:
                     )
                 else:
                     log.info(
-                        "starting custom mitigation of hijack {}".format(hijack_event)
+                        "starting custom mitigation of hijack {} using '{}' script".format(
+                            hijack_event, mitigation_action
+                        )
                     )
                     hijack_event_str = json.dumps(hijack_event)
                     subprocess.Popen(
-                        " ".join([mitigation_action, "-i", hijack_event_str]),
+                        [mitigation_action, "-i", hijack_event_str],
                         shell=False,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
                     )
                 # do something
                 mit_started = {"key": hijack_event["key"], "time": time.time()}

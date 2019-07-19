@@ -8,6 +8,7 @@
 - Implicit withdrawals generated for benign BGP updates correcting hijacked peer-prefix combinations
 - Support for configured ASN ranges
 - Community-based annotation support for annotating hijacks
+- Local pre-commit hook to check versioning
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

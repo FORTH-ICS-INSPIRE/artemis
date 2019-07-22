@@ -151,8 +151,8 @@ class Configuration:
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
-            self.load_as_sets_into_conf_queue = Queue(
-                "conf-load-as-sets-into-conf-queue",
+            self.load_as_sets_queue = Queue(
+                "conf-load-as-sets-queue",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
@@ -184,8 +184,8 @@ class Configuration:
                     no_ack=True,
                 ),
                 Consumer(
-                    queues=[self.load_as_sets_into_conf_queue],
-                    on_message=self.handle_load_as_sets_into_conf,
+                    queues=[self.load_as_sets_queue],
+                    on_message=self.handle_load_as_sets,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -525,31 +525,63 @@ class Configuration:
                     priority=4,
                 )
 
-        def handle_load_as_sets_into_conf(self, message):
+        def handle_load_as_sets(self, message):
             """
             Receives a "load-as-sets" message, translates the corresponding
             as anchors into lists, and rewrites the configuration
             :param message:
             :return:
             """
-
             with open(self.file, "r") as f:
                 raw = f.read()
             yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
             load_made = False
+            error = False
             if "asns" in yaml_conf:
                 for name in yaml_conf["asns"]:
                     if translate_as_set(name, just_match=True):
                         ret_dict = translate_as_set(name, just_match=False)
                         if ret_dict["ok"]:
                             load_made = True
+                            yaml_conf["asns"][
+                                name
+                            ] = ruamel.yaml.comments.CommentedSeq()
                             for asn in ret_dict["data"]:
-                                yaml_conf["name"].append(asn)
+                                yaml_conf["asns"][name].append(asn)
+                            yaml_conf["asns"][name].yaml_set_anchor(
+                                name, always_dump=True
+                            )
                         else:
-                            raise ArtemisError(ret_dict["data"], name)
-            if load_made:
-                with open(self.file, "w") as f:
-                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+                            error = ret_dict["data"]
+                            break
+            # the as-set resolution stage failed
+            if error:
+                self.producer.publish(
+                    {"ok": False, "data": error},
+                    exchange="",
+                    routing_key=message.properties["reply_to"],
+                    correlation_id=message.properties["correlation_id"],
+                    serializer="json",
+                    retry=True,
+                    priority=4,
+                )
+            else:
+                self.producer.publish(
+                    {"ok": True, "data": None},
+                    exchange="",
+                    routing_key=message.properties["reply_to"],
+                    correlation_id=message.properties["correlation_id"],
+                    serializer="json",
+                    retry=True,
+                    priority=4,
+                )
+                # as-sets were resolved, update configuration
+                if load_made:
+                    with open(self.file, "w") as f:
+                        ruamel.yaml.dump(
+                            yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
+                        )
+                # else as-sets did not exist in this configuration, do nothing
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

@@ -435,8 +435,27 @@ def translate_as_set(as_set_id, just_match=False):
                     continue
             if as_members:
                 return {"ok": True, "data": as_members}
-            else:
-                return {"ok": False, "data": "empty-as-set-{}".format(as_set)}
+            return {"ok": False, "data": "empty-as-set-{}".format(as_set)}
         except Exception:
             return {"ok": False, "data": "error-as-set-resolution-{}".format(as_set)}
     return False
+
+
+def update_aliased_list(yaml_conf, obj, updated_obj):
+    def recurse(y, ref, new_obj):
+        if isinstance(y, dict):
+            for i, k in [(idx, key) for idx, key in enumerate(y.keys()) if key is ref]:
+                y.insert(i, new_obj, y.pop(k))
+            for k, v in y.non_merged_items():
+                if v is ref:
+                    y[k] = new_obj
+                else:
+                    recurse(v, ref, new_obj)
+        elif isinstance(y, list):
+            for idx, item in enumerate(y):
+                if item is ref:
+                    y[idx] = new_obj
+                else:
+                    recurse(item, ref, new_obj)
+
+    recurse(yaml_conf, obj, updated_obj)

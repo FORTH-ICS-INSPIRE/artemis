@@ -27,6 +27,7 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import translate_as_set
 from utils import translate_asn_range
 from utils import translate_rfc2622
 from yaml import load as yload
@@ -150,6 +151,12 @@ class Configuration:
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
+            self.load_as_sets_into_conf_queue = Queue(
+                "conf-load-as-sets-into-conf-queue",
+                durable=False,
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
+            )
 
             log.info("started")
 
@@ -173,6 +180,12 @@ class Configuration:
                 Consumer(
                     queues=[self.hijack_learn_rule_queue],
                     on_message=self.handle_hijack_learn_rule_request,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
+                Consumer(
+                    queues=[self.load_as_sets_into_conf_queue],
+                    on_message=self.handle_load_as_sets_into_conf,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -511,6 +524,32 @@ class Configuration:
                     retry=True,
                     priority=4,
                 )
+
+        def handle_load_as_sets_into_conf(self, message):
+            """
+            Receives a "load-as-sets" message, translates the corresponding
+            as anchors into lists, and rewrites the configuration
+            :param message:
+            :return:
+            """
+
+            with open(self.file, "r") as f:
+                raw = f.read()
+            yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
+            load_made = False
+            if "asns" in yaml_conf:
+                for name in yaml_conf["asns"]:
+                    if translate_as_set(name, just_match=True):
+                        ret_dict = translate_as_set(name, just_match=False)
+                        if ret_dict["ok"]:
+                            load_made = True
+                            for asn in ret_dict["data"]:
+                                yaml_conf["name"].append(asn)
+                        else:
+                            raise ArtemisError(ret_dict["data"], name)
+            if load_made:
+                with open(self.file, "w") as f:
+                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

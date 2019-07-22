@@ -416,7 +416,7 @@ def translate_as_set(as_set_id, just_match=False):
             )
             json_response = response.json()
             for obj in json_response["data"]["objects"]:
-                if obj["type"] == "as-set" and obj["latest"] == True:
+                if obj["type"] == "as-set" and obj["latest"]:
                     for attr in obj["attributes"]:
                         if attr["attribute"] == "members":
                             value = attr["value"]
@@ -437,6 +437,6 @@ def translate_as_set(as_set_id, just_match=False):
                 return {"ok": True, "data": as_members}
             else:
                 return {"ok": False, "data": "empty-as-set-{}".format(as_set)}
-        except:
+        except Exception:
             return {"ok": False, "data": "error-as-set-resolution-{}".format(as_set)}
     return False

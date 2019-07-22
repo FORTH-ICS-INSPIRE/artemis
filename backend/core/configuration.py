@@ -418,7 +418,9 @@ class Configuration:
             try:
                 with open(self.file, "r") as f:
                     raw = f.read()
-                yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
+                yaml_conf = ruamel.yaml.load(
+                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                )
                 # append prefix
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
@@ -535,7 +537,9 @@ class Configuration:
             """
             with open(self.file, "r") as f:
                 raw = f.read()
-            yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
+            yaml_conf = ruamel.yaml.load(
+                raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+            )
             load_made = False
             error = False
             if "asns" in yaml_conf:

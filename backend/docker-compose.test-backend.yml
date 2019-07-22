@@ -68,6 +68,7 @@ services:
             PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
             SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
             SEMAPHORE: ${SEMAPHORE}
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
         # volumes:
         #     - ./:/root/
     rabbitmq:

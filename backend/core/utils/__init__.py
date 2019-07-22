@@ -434,7 +434,7 @@ def translate_as_set(as_set_id, just_match=False):
                 else:
                     continue
             if as_members:
-                return {"ok": True, "data": as_members}
+                return {"ok": True, "data": sorted(list(as_members))}
             return {"ok": False, "data": "empty-as-set-{}".format(as_set)}
         except Exception:
             return {"ok": False, "data": "error-as-set-resolution-{}".format(as_set)}

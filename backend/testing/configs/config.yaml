@@ -25,6 +25,8 @@ prefixes:
         - 10.13.0.0/16^20-24
     test_comms_24: &test_comms_24
         - 10.0.20.0/24
+    test_as_set_24: &test_as_set_24
+        - 10.0.30.0/24
 asns:
     8_origin: &8_origin
         1
@@ -46,6 +48,8 @@ asns:
         444
     comm_test_origin: &comm_test_origin
         555
+    RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS: &RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS
+        [1]
 rules:
 - prefixes:
   - *8_prefix
@@ -138,3 +142,9 @@ rules:
   - low:
     - in:
       - '555:4'
+- prefixes:
+  - *test_as_set_24
+  origin_asns:
+  - 6777
+  neighbors:
+  - *RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS

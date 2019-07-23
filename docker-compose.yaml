@@ -181,7 +181,7 @@ services:
             - ./backend/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
     graphql:
-        image: hasura/graphql-engine:v1.0.0-alpha45
+        image: hasura/graphql-engine:v1.0.0-beta.3
         container_name: graphql
         restart: always
         depends_on:

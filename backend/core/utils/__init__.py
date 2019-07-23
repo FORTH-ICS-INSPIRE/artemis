@@ -412,7 +412,8 @@ def translate_as_set(as_set_id, just_match=False):
             response = requests.get(
                 "https://stat.ripe.net/data/historical-whois/data.json?resource=as-set:{}".format(
                     as_set
-                )
+                ),
+                timeout=10,
             )
             json_response = response.json()
             for obj in json_response["data"]["objects"]:
@@ -426,18 +427,31 @@ def translate_as_set(as_set_id, just_match=False):
                                 as_members.add(asn)
                             else:
                                 return {
-                                    "ok": False,
-                                    "data": "invalid-asn-{}-in-as-set-{}".format(
+                                    "success": False,
+                                    "payload": {},
+                                    "error": "invalid-asn-{}-in-as-set-{}".format(
                                         value, as_set
                                     ),
                                 }
                 else:
                     continue
             if as_members:
-                return {"ok": True, "data": sorted(list(as_members))}
-            return {"ok": False, "data": "empty-as-set-{}".format(as_set)}
+                return {
+                    "success": True,
+                    "payload": {"as_members": sorted(list(as_members))},
+                    "error": False,
+                }
+            return {
+                "success": False,
+                "payload": {},
+                "error": "empty-as-set-{}".format(as_set),
+            }
         except Exception:
-            return {"ok": False, "data": "error-as-set-resolution-{}".format(as_set)}
+            return {
+                "success": False,
+                "payload": {},
+                "error": "error-as-set-resolution-{}".format(as_set),
+            }
     return False
 
 

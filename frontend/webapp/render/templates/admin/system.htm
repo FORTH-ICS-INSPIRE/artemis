@@ -204,7 +204,7 @@
                     else{
                         var message = '<div class="alert alert-success alert-dismissible">'
                         message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-                        message += "AS-SETs loaded successfully into configuration" + '</div>'
+                        message += data["response"] + '</div>'
                         $('#config_load_as_sets').removeClass('btn-warning').addClass('btn-primary')
                     }
                     $('#config_load_as_sets').html('Load AS-SETs');

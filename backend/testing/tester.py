@@ -643,7 +643,19 @@ class Helper:
                 priority=4,
             )
         while True:
-            if callback_queue.get():
+            m = callback_queue.get()
+            if m:
+                if m.properties["correlation_id"] == correlation_id:
+                    r = m.payload
+                    if not r["success"]:
+                        with open("configs/config.yaml") as f1, open(
+                            "configs/config3.yaml"
+                        ) as f3:
+                            new_data = f3.read()
+                            old_data = f1.read()
+                        Helper.change_conf(
+                            connection, new_data, old_data, "online_as_set_test_failed"
+                        )
                 break
             time.sleep(0.1)
 

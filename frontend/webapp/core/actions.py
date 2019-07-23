@@ -228,9 +228,9 @@ class Load_as_sets:
                     while self.response is None:
                         connection.drain_events()
 
-        if self.response["ok"]:
-            return self.response["data"], True
-        return self.response["data"], False
+        if self.response["success"]:
+            return self.response["payload"]["message"], True
+        return self.response["error"], False
 
 
 class Hijacks_multiple_action:

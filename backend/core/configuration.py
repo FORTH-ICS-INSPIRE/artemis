@@ -540,52 +540,64 @@ class Configuration:
             yaml_conf = ruamel.yaml.load(
                 raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
             )
-            load_made = False
             error = False
+            done_as_set_translations = {}
             if "asns" in yaml_conf:
                 for name in yaml_conf["asns"]:
-                    if translate_as_set(name, just_match=True):
+                    as_members = []
+                    # consult cache
+                    if name in done_as_set_translations:
+                        as_members = done_as_set_translations[name]
+                    # else try to retrieve from API
+                    elif translate_as_set(name, just_match=True):
                         ret_dict = translate_as_set(name, just_match=False)
-                        if ret_dict["ok"]:
-                            load_made = True
-                            new_as_set_cseq = ruamel.yaml.comments.CommentedSeq()
-                            for asn in ret_dict["data"]:
-                                new_as_set_cseq.append(asn)
-                            new_as_set_cseq.yaml_set_anchor(name)
-                            update_aliased_list(
-                                yaml_conf, yaml_conf["asns"][name], new_as_set_cseq
-                            )
+                        if ret_dict["success"] and "as_members" in ret_dict["payload"]:
+                            as_members = ret_dict["payload"]["as_members"]
+                            done_as_set_translations[name] = as_members
                         else:
-                            error = ret_dict["data"]
+                            error = ret_dict["error"]
                             break
-            # the as-set resolution stage failed
-            if error:
-                self.producer.publish(
-                    {"ok": False, "data": error},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    serializer="json",
-                    retry=True,
-                    priority=4,
-                )
-            else:
-                self.producer.publish(
-                    {"ok": True, "data": None},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    serializer="json",
-                    retry=True,
-                    priority=4,
-                )
-                # as-sets were resolved, update configuration
-                if load_made:
-                    with open(self.file, "w") as f:
-                        ruamel.yaml.dump(
-                            yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
+                    if as_members:
+                        new_as_set_cseq = ruamel.yaml.comments.CommentedSeq()
+                        for asn in as_members:
+                            new_as_set_cseq.append(asn)
+                        new_as_set_cseq.yaml_set_anchor(name)
+                        update_aliased_list(
+                            yaml_conf, yaml_conf["asns"][name], new_as_set_cseq
                         )
-                # else as-sets did not exist in this configuration, do nothing
+
+            if error:
+                ret_json = {"success": False, "payload": {}, "error": error}
+            elif done_as_set_translations:
+                ret_json = {
+                    "success": True,
+                    "payload": {
+                        "message": "All ({}) AS-SET translations done".format(
+                            len(done_as_set_translations)
+                        )
+                    },
+                    "error": False,
+                }
+            else:
+                ret_json = {
+                    "success": True,
+                    "payload": {"message": "No AS-SET translations were needed"},
+                    "error": False,
+                }
+
+            self.producer.publish(
+                ret_json,
+                exchange="",
+                routing_key=message.properties["reply_to"],
+                correlation_id=message.properties["correlation_id"],
+                serializer="json",
+                retry=True,
+                priority=4,
+            )
+            # as-sets were resolved, update configuration
+            if (not error) and done_as_set_translations:
+                with open(self.file, "w") as f:
+                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

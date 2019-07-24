@@ -5,6 +5,7 @@ import time
 from copy import deepcopy
 
 import radix
+import redis
 import requests
 from kombu import Connection
 from kombu import Exchange
@@ -19,6 +20,9 @@ from utils import RABBITMQ_URI
 log = get_logger()
 update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
+redis_host = os.getenv("REDIS_HOST", "backend")
+redis_port = os.getenv("REDIS_PORT", 6739)
+redis = redis.Redis(host=redis_host, port=redis_port)
 
 
 def normalize_ripe_ris(msg, prefix_tree):
@@ -142,6 +146,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                             and msg["type"] == "UPDATE"
                             and (not hosts or msg["host"] in hosts)
                         ):
+                            redis.set("ripe_ris_seen_bgp_update", "1", ex=60 * 60)
                             norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
                             for norm_ris_msg in norm_ris_msgs:
                                 if validator.validate(norm_ris_msg):
@@ -159,6 +164,8 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                     log.warning(
                                         "Invalid format message: {}".format(msg)
                                     )
+                    except json.decoder.JSONDecodeError:
+                        log.exception("Message {}".format(data))
                     except Exception:
                         log.exception("exception")
                 log.warning("Iterator ran out of data; the connection will be retried")

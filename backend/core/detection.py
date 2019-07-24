@@ -114,7 +114,9 @@ class Detection:
             self.prefix_tree = None
             self.mon_num = 1
 
-            self.redis = redis.Redis(host="localhost", port=6379)
+            self.redis_host = os.getenv("REDIS_HOST", "backend")
+            self.redis_port = os.getenv("REDIS_PORT", 6739)
+            self.redis = redis.Redis(host=self.redis_host, port=self.redis_port)
 
             # EXCHANGES
             self.update_exchange = Exchange(

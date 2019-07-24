@@ -9,6 +9,7 @@
 - Support for configured ASN ranges
 - Community-based annotation support for annotating hijacks
 - Local pre-commit hook to check versioning
+- Added bgpstream historical BGP record collector (per prefix)
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

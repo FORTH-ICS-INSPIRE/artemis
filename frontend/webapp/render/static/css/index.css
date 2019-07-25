@@ -143,3 +143,7 @@ tr.shown td.details-control {
 .badge-acknowledged {
     margin-top: 4px;
 }
+
+.load-as-set-margin {
+  margin-right: 9px;
+}

@@ -352,30 +352,28 @@ class Monitor:
             def __init__(self, redis_instance):
                 threading.Thread.__init__(self)
                 self.redis_pubsub = redis_instance.pubsub()
-                self.pubsub_channel_keys = [
+                self.pubsub_pattern_keys = [
                     "ripe_ris_seen_bgp_update",
                     "betabmp_seen_bgp_update",
                     "bgpstreamlive_seen_bgp_update",
                     "exabgp_seen_bgp_update",
                 ]
-                for pubsub_channel_key in self.pubsub_channel_keys:
-                    self.redis_pubsub.psubscribe(
-                        "__keyspace@0__:{}".format(pubsub_channel_key)
-                    )
+                self.redis_pubsub.psubscribe("*")
 
             def work(self, item):
                 if "pattern" in item and "channel" in item and "data" in item:
                     monitor_needs_restarting = None
-                    for pubsub_channel_key in self.pubsub_channel_keys:
+                    log.info(item)
+                    for pubsub_pattern_key in self.pubsub_pattern_keys:
                         if (
-                            str(item["pattern"])
-                            == "__keyspace@0__:{}".format(pubsub_channel_key)
-                            and str(item["channel"])
-                            == "__keyspace@0__:{}".format(pubsub_channel_key)
-                            and str(item["data"]) == "expired"
+                            str(item["pattern"].decode())
+                            == "__keyspace@0__:{}".format(pubsub_pattern_key)
+                            and str(item["channel"].decode())
+                            == "__keyspace@0__:{}".format(pubsub_pattern_key)
+                            and str(item["data"].decode()) == "expired"
                         ):
                             match_monitor = re.match(
-                                r"^(.*)_seen_bgp_update$", str(item["channel"])
+                                r"^(.*)_seen_bgp_update$", str(item["channel"].decode())
                             )
                             if match_monitor:
                                 monitor_needs_restarting = match_monitor.group(1)
@@ -389,7 +387,7 @@ class Monitor:
             def run(self):
                 for item in self.redis_pubsub.listen():
                     if item["data"] == "KILL":
-                        self.pubsub.unsubscribe()
+                        self.redis_pubsub.unsubscribe()
                         log.info("Monitor Redis Listener: unsubscribed and finished")
                         break
                     else:

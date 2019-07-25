@@ -3,7 +3,7 @@ FROM mavromat/bgpstream-redis:v1.0
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends python3-pip cron supervisor tcl postgresql-client && \
+    apt-get -y install --no-install-recommends python3-pip supervisor tcl postgresql-client && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

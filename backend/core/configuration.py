@@ -27,8 +27,10 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import translate_as_set
 from utils import translate_asn_range
 from utils import translate_rfc2622
+from utils import update_aliased_list
 from yaml import load as yload
 
 log = get_logger()
@@ -150,6 +152,12 @@ class Configuration:
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
+            self.load_as_sets_queue = Queue(
+                "conf-load-as-sets-queue",
+                durable=False,
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
+            )
 
             log.info("started")
 
@@ -173,6 +181,12 @@ class Configuration:
                 Consumer(
                     queues=[self.hijack_learn_rule_queue],
                     on_message=self.handle_hijack_learn_rule_request,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
+                Consumer(
+                    queues=[self.load_as_sets_queue],
+                    on_message=self.handle_load_as_sets,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -404,7 +418,9 @@ class Configuration:
             try:
                 with open(self.file, "r") as f:
                     raw = f.read()
-                yaml_conf = ruamel.yaml.load(raw, Loader=ruamel.yaml.RoundTripLoader)
+                yaml_conf = ruamel.yaml.load(
+                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                )
                 # append prefix
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
@@ -511,6 +527,77 @@ class Configuration:
                     retry=True,
                     priority=4,
                 )
+
+        def handle_load_as_sets(self, message):
+            """
+            Receives a "load-as-sets" message, translates the corresponding
+            as anchors into lists, and rewrites the configuration
+            :param message:
+            :return:
+            """
+            with open(self.file, "r") as f:
+                raw = f.read()
+            yaml_conf = ruamel.yaml.load(
+                raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+            )
+            error = False
+            done_as_set_translations = {}
+            if "asns" in yaml_conf:
+                for name in yaml_conf["asns"]:
+                    as_members = []
+                    # consult cache
+                    if name in done_as_set_translations:
+                        as_members = done_as_set_translations[name]
+                    # else try to retrieve from API
+                    elif translate_as_set(name, just_match=True):
+                        ret_dict = translate_as_set(name, just_match=False)
+                        if ret_dict["success"] and "as_members" in ret_dict["payload"]:
+                            as_members = ret_dict["payload"]["as_members"]
+                            done_as_set_translations[name] = as_members
+                        else:
+                            error = ret_dict["error"]
+                            break
+                    if as_members:
+                        new_as_set_cseq = ruamel.yaml.comments.CommentedSeq()
+                        for asn in as_members:
+                            new_as_set_cseq.append(asn)
+                        new_as_set_cseq.yaml_set_anchor(name)
+                        update_aliased_list(
+                            yaml_conf, yaml_conf["asns"][name], new_as_set_cseq
+                        )
+
+            if error:
+                ret_json = {"success": False, "payload": {}, "error": error}
+            elif done_as_set_translations:
+                ret_json = {
+                    "success": True,
+                    "payload": {
+                        "message": "All ({}) AS-SET translations done".format(
+                            len(done_as_set_translations)
+                        )
+                    },
+                    "error": False,
+                }
+            else:
+                ret_json = {
+                    "success": True,
+                    "payload": {"message": "No AS-SET translations were needed"},
+                    "error": False,
+                }
+
+            self.producer.publish(
+                ret_json,
+                exchange="",
+                routing_key=message.properties["reply_to"],
+                correlation_id=message.properties["correlation_id"],
+                serializer="json",
+                retry=True,
+                priority=4,
+            )
+            # as-sets were resolved, update configuration
+            if (not error) and done_as_set_translations:
+                with open(self.file, "w") as f:
+                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False

@@ -9,6 +9,7 @@
 - Support for configured ASN ranges
 - Community-based annotation support for annotating hijacks
 - Local pre-commit hook to check versioning
+- Support for RIPE whois service-resolved AS-SETs in configuration
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)
@@ -22,6 +23,7 @@
 - Updated configurations for k8s deployment
 - Fixed flake8 warnings
 - Wrong data.sql for testing
+- Bug with single-quoted communities being interpreted as sexagesimal upon automated conf reload
 
 ### Removed
 - TBD (removed a feature)

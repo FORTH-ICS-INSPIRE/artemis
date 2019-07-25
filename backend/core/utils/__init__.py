@@ -10,6 +10,7 @@ from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
 
 import psycopg2
+import requests
 import yaml
 
 SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
@@ -30,6 +31,8 @@ RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
 )
 SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
+RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
+ASN_REGEX = r"^AS(\d+)$"
 
 
 class TLSSMTPHandler(SMTPHandler):
@@ -391,3 +394,82 @@ def translate_asn_range(asn_range, just_match=False):
         return False
 
     return [asn_range]
+
+
+def translate_as_set(as_set_id, just_match=False):
+    """
+    :param as_set_id: the ID of the AS-SET as present in the RIPE database (with a prefix in front for disambiguation)
+    :param <bool> just_match: check only if the as_set name has matched instead of translating
+    :return: the list of ASes that are present in the set
+    """
+    as_set_match = re.match(RIPE_ASSET_REGEX, as_set_id)
+    if as_set_match:
+        if just_match:
+            return True
+        try:
+            as_set = as_set_match.group(1)
+            as_members = set()
+            response = requests.get(
+                "https://stat.ripe.net/data/historical-whois/data.json?resource=as-set:{}".format(
+                    as_set
+                ),
+                timeout=10,
+            )
+            json_response = response.json()
+            for obj in json_response["data"]["objects"]:
+                if obj["type"] == "as-set" and obj["latest"]:
+                    for attr in obj["attributes"]:
+                        if attr["attribute"] == "members":
+                            value = attr["value"]
+                            asn_match = re.match(ASN_REGEX, value)
+                            if asn_match:
+                                asn = int(asn_match.group(1))
+                                as_members.add(asn)
+                            else:
+                                return {
+                                    "success": False,
+                                    "payload": {},
+                                    "error": "invalid-asn-{}-in-as-set-{}".format(
+                                        value, as_set
+                                    ),
+                                }
+                else:
+                    continue
+            if as_members:
+                return {
+                    "success": True,
+                    "payload": {"as_members": sorted(list(as_members))},
+                    "error": False,
+                }
+            return {
+                "success": False,
+                "payload": {},
+                "error": "empty-as-set-{}".format(as_set),
+            }
+        except Exception:
+            return {
+                "success": False,
+                "payload": {},
+                "error": "error-as-set-resolution-{}".format(as_set),
+            }
+    return False
+
+
+def update_aliased_list(yaml_conf, obj, updated_obj):
+    def recurse(y, ref, new_obj):
+        if isinstance(y, dict):
+            for i, k in [(idx, key) for idx, key in enumerate(y.keys()) if key is ref]:
+                y.insert(i, new_obj, y.pop(k))
+            for k, v in y.non_merged_items():
+                if v is ref:
+                    y[k] = new_obj
+                else:
+                    recurse(v, ref, new_obj)
+        elif isinstance(y, list):
+            for idx, item in enumerate(y):
+                if item is ref:
+                    y[idx] = new_obj
+                else:
+                    recurse(item, ref, new_obj)
+
+    recurse(yaml_conf, obj, updated_obj)

@@ -2,6 +2,8 @@
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
 
+pip3 --no-cache-dir install coverage git+https://github.com/coveralls-clients/coveralls-python@a9b5e3081c8697b60286b9736e956134a2796d5f
+
 version=$(PGPASSWORD=$DB_PASS psql postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME} -c "select version from db_details;" -tA)
 
 start_backend() {

@@ -6,6 +6,7 @@ from flask import jsonify
 from flask import render_template
 from flask import request
 from flask_security.decorators import roles_required
+from webapp.core.actions import Load_as_sets
 from webapp.core.actions import Submit_new_config
 from webapp.data.models import Role
 from webapp.data.models import User
@@ -43,6 +44,16 @@ def handle_new_config():
     except Exception as e:
         app.artemis_logger.exception("")
         return jsonify({"status": "fail", "response": str(e)})
+
+
+@admin.route("/load_as_sets", methods=["GET"])
+@roles_required("admin")
+def load_as_sets():
+    _load_as_sets = Load_as_sets()
+    response, success = _load_as_sets.send()
+    if success:
+        return jsonify({"status": "success", "response": response})
+    return jsonify({"status": "fail", "response": response})
 
 
 @admin.route("/user_management", methods=["GET"])

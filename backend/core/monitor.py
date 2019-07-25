@@ -1,7 +1,6 @@
 import os
 import re
 import signal
-import threading
 from subprocess import Popen
 
 import radix
@@ -60,10 +59,6 @@ class Monitor:
             self.prefix_file = "/root/monitor_prefixes.json"
             self.monitors = None
             self.flag = True
-            self.redis_host = os.getenv("REDIS_HOST", "backend")
-            self.redis_port = os.getenv("REDIS_PORT", 6739)
-            self.redis = redis.Redis(host=self.redis_host, port=self.redis_port)
-            self.redis_listener = None
 
             # EXCHANGES
             self.config_exchange = Exchange(
@@ -82,10 +77,47 @@ class Monitor:
             )
 
             self.config_request_rpc()
+
+            # setup Redis monitor listeners
+            self.setup_redis_mon_listeners()
+
             log.info("started")
 
-            self.redis_listener = self.RedisListener(self.redis)
-            self.redis_listener.start()
+        def setup_redis_mon_listeners(self):
+            def redis_event_handler(msg):
+                if "pattern" in msg and "channel" in msg and "data" in msg:
+                    monitor_to_restart = None
+                    for pubsub_mon_channel in self.redis_pubsub_mon_channels:
+                        if (
+                            str(msg["channel"].decode()) == pubsub_mon_channel
+                            and str(msg["data"].decode()) == "expired"
+                        ):
+                            match_monitor = re.match(
+                                r"^.*\:(.*)_seen_bgp_update$",
+                                str(msg["channel"].decode()),
+                            )
+                            if match_monitor:
+                                monitor_to_restart = match_monitor.group(1)
+                                log.info(
+                                    "{} needs restarting".format(monitor_to_restart)
+                                )
+                                break
+
+            self.redis_host = os.getenv("REDIS_HOST", "backend")
+            self.redis_port = os.getenv("REDIS_PORT", 6739)
+            self.redis = redis.Redis(host=self.redis_host, port=self.redis_port)
+            self.redis_pubsub = self.redis.pubsub()
+            self.redis_pubsub_mon_channels = [
+                "__keyspace@0__:ripe_ris_seen_bgp_update",
+                "__keyspace@0__:betabmp_seen_bgp_update",
+                "__keyspace@0__:bgpstreamlive_seen_bgp_update",
+                "__keyspace@0__:exabgp_client_seen_bgp_update",
+            ]
+            for pubsub_mon_channel in self.redis_pubsub_mon_channels:
+                self.redis_pubsub.psubscribe(
+                    **{pubsub_mon_channel: redis_event_handler}
+                )
+            self.redis_listener_thread = self.redis_pubsub.run_in_thread(sleep_time=1)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -347,51 +379,6 @@ class Monitor:
                     shell=False,
                 )
                 self.process_ids.append(("Beta BMP {}".format(self.prefix_file), p))
-
-        class RedisListener(threading.Thread):
-            def __init__(self, redis_instance):
-                threading.Thread.__init__(self)
-                self.redis_pubsub = redis_instance.pubsub()
-                self.pubsub_pattern_keys = [
-                    "ripe_ris_seen_bgp_update",
-                    "betabmp_seen_bgp_update",
-                    "bgpstreamlive_seen_bgp_update",
-                    "exabgp_seen_bgp_update",
-                ]
-                self.redis_pubsub.psubscribe("*")
-
-            def work(self, item):
-                if "pattern" in item and "channel" in item and "data" in item:
-                    monitor_needs_restarting = None
-                    log.info(item)
-                    for pubsub_pattern_key in self.pubsub_pattern_keys:
-                        if (
-                            str(item["pattern"].decode())
-                            == "__keyspace@0__:{}".format(pubsub_pattern_key)
-                            and str(item["channel"].decode())
-                            == "__keyspace@0__:{}".format(pubsub_pattern_key)
-                            and str(item["data"].decode()) == "expired"
-                        ):
-                            match_monitor = re.match(
-                                r"^(.*)_seen_bgp_update$", str(item["channel"].decode())
-                            )
-                            if match_monitor:
-                                monitor_needs_restarting = match_monitor.group(1)
-                                log.info(
-                                    "{} needs restarting".format(
-                                        monitor_needs_restarting
-                                    )
-                                )
-                                break
-
-            def run(self):
-                for item in self.redis_pubsub.listen():
-                    if item["data"] == "KILL":
-                        self.redis_pubsub.unsubscribe()
-                        log.info("Monitor Redis Listener: unsubscribed and finished")
-                        break
-                    else:
-                        self.work(item)
 
 
 def run():

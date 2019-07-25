@@ -19,6 +19,7 @@ log = get_logger()
 redis_host = os.getenv("REDIS_HOST", "backend")
 redis_port = os.getenv("REDIS_PORT", 6739)
 redis = redis.Redis(host=redis_host, port=redis_port)
+MON_SEEN_BGP_UPDATE_TIMEOUT = 60 * 60
 
 
 class ExaBGP:
@@ -44,7 +45,9 @@ class ExaBGP:
                 self.sio = SocketIO("http://" + self.host, namespace=BaseNamespace)
 
                 def exabgp_msg(bgp_message):
-                    redis.set("exabgp_client_seen_bgp_update", "1", ex=60 * 60)
+                    redis.set(
+                        "exabgp_seen_bgp_update", "1", ex=MON_SEEN_BGP_UPDATE_TIMEOUT
+                    )
                     msg = {
                         "type": bgp_message["type"],
                         "communities": bgp_message.get("communities", []),

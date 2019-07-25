@@ -21,6 +21,7 @@ log = get_logger()
 redis_host = os.getenv("REDIS_HOST", "backend")
 redis_port = os.getenv("REDIS_PORT", 6739)
 redis = redis.Redis(host=redis_host, port=redis_port)
+MON_SEEN_BGP_UPDATE_TIMEOUT = 60 * 60
 
 
 def run_bgpstream_beta_bmp(prefixes_file=None):
@@ -79,7 +80,9 @@ def run_bgpstream_beta_bmp(prefixes_file=None):
 
             while elem:
                 if elem.type in {"A", "W"}:
-                    redis.set("betabmp_seen_bgp_update", "1", ex=60 * 60)
+                    redis.set(
+                        "betabmp_seen_bgp_update", "1", ex=MON_SEEN_BGP_UPDATE_TIMEOUT
+                    )
                     this_prefix = str(elem.fields["prefix"])
                     service = "betabmp|{}|{}".format(
                         str(rec.project), str(rec.collector)

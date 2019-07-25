@@ -23,6 +23,7 @@ update_types = ["announcements", "withdrawals"]
 redis_host = os.getenv("REDIS_HOST", "backend")
 redis_port = os.getenv("REDIS_PORT", 6739)
 redis = redis.Redis(host=redis_host, port=redis_port)
+MON_SEEN_BGP_UPDATE_TIMEOUT = 60 * 60
 
 
 def normalize_ripe_ris(msg, prefix_tree):
@@ -146,7 +147,11 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                             and msg["type"] == "UPDATE"
                             and (not hosts or msg["host"] in hosts)
                         ):
-                            redis.set("ripe_ris_seen_bgp_update", "1", ex=60 * 60)
+                            redis.set(
+                                "ris_seen_bgp_update",
+                                "1",
+                                ex=MON_SEEN_BGP_UPDATE_TIMEOUT,
+                            )
                             norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
                             for norm_ris_msg in norm_ris_msgs:
                                 if validator.validate(norm_ris_msg):

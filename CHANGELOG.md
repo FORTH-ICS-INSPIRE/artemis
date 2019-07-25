@@ -21,6 +21,7 @@
 - Minor fix in custom mitigation trigger
 - Updated configurations for k8s deployment
 - Fixed flake8 warnings
+- Wrong data.sql for testing
 
 ### Removed
 - TBD (removed a feature)

@@ -48,8 +48,6 @@ asns:
         444
     comm_test_origin: &comm_test_origin
         555
-    RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS: &RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS
-        [1]
 rules:
 - prefixes:
   - *8_prefix
@@ -146,5 +144,3 @@ rules:
   - *test_as_set_24
   origin_asns:
   - 6777
-  neighbors:
-  - *RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS

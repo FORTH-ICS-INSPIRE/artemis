@@ -96,6 +96,7 @@
                         <i class="fa fa-bell fa-fw"></i> Current Configuration
                         <button type="button" id="config_action" class="btn btn-primary btn-sm float-right">Edit</button>
                         <button type="button" id="config_cancel" class="btn btn-warning btn-sm float-right config-cancel-button">Cancel</button>
+                        <button type="button" id="config_load_as_sets" class="btn btn-primary btn-sm float-right load-as-set-margin">Load AS-SETs</button>
                     </div>
                     <div class="panel-body">
                         <div id="config_alert_box"></div>
@@ -172,6 +173,45 @@
                     $('#config_action').html('Edit');
                 }
             });
+
+            $('#config_load_as_sets').on('click', function (event, state) {
+                if($(this).hasClass("btn-primary")){
+                    $('#config_load_as_sets').removeClass('btn-primary').addClass('btn-warning');
+                }
+                else if($(this).hasClass("btn-danger")){
+                    $('#config_load_as_sets').removeClass('btn-danger').addClass('btn-warning');
+                }
+                $('#config_load_as_sets').html('Pending');
+                load_as_sets();
+            });
+
+            function load_as_sets(){
+                fetch("/admin/load_as_sets",{
+                    method: "GET",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data["status"] == "fail"){
+                        var message = '<div class="alert alert-danger alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += data["response"] + '</div>'
+                        $('#config_load_as_sets').removeClass('btn-warning').addClass('btn-danger')
+                    }
+                    else{
+                        var message = '<div class="alert alert-success alert-dismissible">'
+                        message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        message += data["response"] + '</div>'
+                        $('#config_load_as_sets').removeClass('btn-warning').addClass('btn-primary')
+                    }
+                    $('#config_load_as_sets').html('Load AS-SETs');
+                    $("#config_alert_box").html(message);
+                })
+                .catch(error => console.error(error));
+            }
 
             function submit_new_config(publish_config){
                 fetch("/admin/config",{

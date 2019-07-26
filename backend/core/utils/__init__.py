@@ -13,6 +13,7 @@ import psycopg2
 import requests
 import yaml
 
+HISTORIC = os.getenv("HISTORIC", "false")
 SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
 SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
 DB_NAME = os.getenv("DB_NAME", "artemis_db")

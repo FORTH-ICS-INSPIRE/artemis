@@ -2,6 +2,7 @@ import argparse
 import csv
 import glob
 import json
+import time
 
 from kombu import Connection
 from kombu import Exchange
@@ -82,6 +83,7 @@ def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None):
                                                     routing_key="update",
                                                     serializer="json",
                                                 )
+                                                time.sleep(0.1)
                                         else:
                                             log.warning(
                                                 "Invalid format message: {}".format(msg)

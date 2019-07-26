@@ -16,6 +16,8 @@ from utils import exception_handler
 from utils import flatten
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import REDIS_PORT
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
@@ -60,9 +62,7 @@ class Monitor:
             self.prefix_file = "/root/monitor_prefixes.json"
             self.monitors = None
             self.flag = True
-            self.redis_host = os.getenv("REDIS_HOST", "backend")
-            self.redis_port = os.getenv("REDIS_PORT", 6739)
-            self.redis = redis.Redis(host=self.redis_host, port=self.redis_port)
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 
             # EXCHANGES
             self.config_exchange = Exchange(

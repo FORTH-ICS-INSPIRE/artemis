@@ -15,14 +15,14 @@ from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import REDIS_PORT
 
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 
 START_TIME_OFFSET = 3600  # seconds
 log = get_logger()
-redis_host = os.getenv("REDIS_HOST", "backend")
-redis_port = os.getenv("REDIS_PORT", 6739)
-redis = redis.Redis(host=redis_host, port=redis_port)
+redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 

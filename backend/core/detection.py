@@ -28,7 +28,9 @@ from utils import get_hash
 from utils import get_logger
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
 from utils import redis_key
+from utils import REDIS_PORT
 from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
@@ -114,9 +116,7 @@ class Detection:
             self.prefix_tree = None
             self.mon_num = 1
 
-            self.redis_host = os.getenv("REDIS_HOST", "backend")
-            self.redis_port = os.getenv("REDIS_PORT", 6739)
-            self.redis = redis.Redis(host=self.redis_host, port=self.redis_port)
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 
             # EXCHANGES
             self.update_exchange = Exchange(

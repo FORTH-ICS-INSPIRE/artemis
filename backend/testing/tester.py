@@ -354,10 +354,12 @@ class Tester:
             Helper.hijack_multiple_action(
                 db_con, connection, ["i"], "hijack_action_ignore"
             )
-
             Helper.hijack_delete(
                 db_con, connection, "j", "139.5.237.0/24", "S|0|-", 136334
             )
+            Helper.load_as_sets(connection)
+
+            time.sleep(5)
 
             db_cur.close()
             db_con.close()
@@ -614,6 +616,46 @@ class Helper:
             )
         while True:
             if callback_queue.get():
+                break
+            time.sleep(0.1)
+
+    @staticmethod
+    def load_as_sets(connection):
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            channel=connection.default_channel,
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with connection.Producer() as producer:
+            producer.publish(
+                {},
+                exchange="",
+                routing_key="conf-load-as-sets-queue",
+                retry=True,
+                declare=[callback_queue],
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                priority=4,
+            )
+        while True:
+            m = callback_queue.get()
+            if m:
+                if m.properties["correlation_id"] == correlation_id:
+                    r = m.payload
+                    if not r["success"]:
+                        with open("configs/config.yaml") as f1, open(
+                            "configs/config3.yaml"
+                        ) as f3:
+                            new_data = f3.read()
+                            old_data = f1.read()
+                        Helper.change_conf(
+                            connection, new_data, old_data, "online_as_set_test_failed"
+                        )
                 break
             time.sleep(0.1)
 

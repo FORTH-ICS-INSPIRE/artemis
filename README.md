@@ -19,8 +19,8 @@ Table of Contents
   * [Architecture](#architecture)
   * [Getting Started](#getting-started)
   * [Minimum Technical Requirements](#minimum-technical-requirements)
-  * [How to Install](#how-to-install)
-  * [How to Configure and Run](#how-to-configure-and-run)
+  * [How to Install and Setup](#how-to-install-and-setup)
+  * [How to Run and Configure](#how-to-run-and-configure)
   * [Demo](#demo)
   * [Contributing](#contributing)
   * [Development Team and Contact](#development-team-and-contact)
@@ -115,106 +115,33 @@ sudo ./other/ufw_setup.sh
 ```
 **NOTE: For security reasons, we highly recommend protecting your machine with such rules.**
 
-## How to Install
+## How to Install and Setup
 
-1. Make sure that your Ubuntu package sources are up-to-date:
+To download and install the required software packages, please follow steps 1 through 6 described in [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#install-packages).
 
-   ```
-   sudo apt-get update
-   ```
+To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#setup-tool).
 
-2. If not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install the latest version of the docker tool for managing containers, and [here](https://docs.docker.com/compose/install/#install-compose) to install the docker-compose tool for supporting multi-container Docker applications.
+## How to Run and Configure
 
-   In production, we have used the following versions successfully:
-   ```
-   $ docker -v
-   Docker version 18.09.0, build 4d60db4
-   $ docker-compose -v
-   docker-compose version 1.20.0, build ca8d3c6
-   ```
-
-3. If you would like to run docker without using sudo, please create a docker group, if not existing:
-
-   ```
-   sudo groupadd docker
-   ```
-   and then add the user to the docker group:
-   ```
-   sudo usermod -aG docker $USER
-   ```
-   For more instructions and potential debugging on this please consult this [webpage](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user).
-
-4. Install ntp for time synchronization:
-
-   ```
-   sudo apt-get install ntp
-   ```
-
-5. Install git for downloading ARTEMIS:
-   ```
-   sudo apt-get install git
-   ```
-   and then download ARTEMIS from github (if not already downloaded).
-
-6. The docker-compose utility is configured to pull the latest **stable** released images that are built remotely on [docker cloud](https://cloud.docker.com/). No further installation/building actions are required on your side at this point.
-
-## How to Configure and Run
-
-Please check our [wiki](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki).
-
-The basic actions that you will need to do, stated here for brevity, are the following:
-
-1. Edit environment variables in .env file (especially the security-related variables); please check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Environment-variables) for more information on the env variables.
-
-2. Decouple your configs from the default ones (that are under version control), by doing the following in your local artemis directory:
-   ```
-   mkdir -p local_configs && \
-   mkdir -p local_configs/backend && \
-   mkdir -p local_configs/frontend && \
-   cp -rn backend/configs/* local_configs/backend && \
-   cp -rn backend/supervisor.d local_configs/backend && \
-   cp -rn frontend/webapp/configs/* local_configs/frontend
-   ```
-   and then change the following source mappings in docker-compose.yaml:
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L29) (see also comments in docker-compose.yaml file)  to:
-   ```
-   - ./local_configs/backend/:/etc/artemis/
-   ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L33) (see also comments in docker-compose.yaml file) to:
-   ```
-   - ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
-   ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L68) (see also comments in docker-compose.yaml file) to:
-   ```
-   - ./local_configs/frontend/:/etc/artemis/
-   ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L89) (see also comments in docker-compose.yaml file) to:
-   ```
-   - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
-   ```
-   * [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L93) (see also comments in docker-compose.yaml file) to:
-   ```
-   - ./local_configs/frontend/certs/:/etc/nginx/certs/
-   ```
-   The local_configs directory is NOT under version control.
-
-3. Configure certificates and NGINX reverse proxy for https termination
-   ```
-   local_configs/frontend/certs
-   local_configs/frontend/nginx.conf
-   ```
-
-4. Start ARTEMIS
+1. Start ARTEMIS:
 
    ```
    docker-compose up -d
    ```
+   *Please consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#starting-artemis) if you need to activate additional services.*
 
-5. Visit UI and configure ARTEMIS
+5. Visit web UI and configure ARTEMIS:
 
    ```
    https://<ARTEMIS_HOST>
    ```
+   By visiting the system page:
+   ```
+   https://<ARTEMIS_HOST>/admin/system
+   ```
+   you can:
+   1. edit the basic configuration file of ARTEMIS that servers as the ground truth for detecting BGP hijacks (consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file))
+   2. control the monitoring, detection and mitigation modules.
 
 6. Stop ARTEMIS (optional)
 
@@ -225,6 +152,7 @@ The basic actions that you will need to do, stated here for brevity, are the fol
 **Note: We highly recommend going through the detailed wiki instructions before using ARTEMIS for the first time.**
 
 ## Demo
+
 A running demo of ARTEMIS based on the configuration of our home institute (FORTH) can be found [here](http://www.inspire.edu.gr/artemis/demo/).
 You can access the demo as a guest (non-admin) user by using the following credentials:
 * username: "guest"
@@ -233,20 +161,25 @@ You can access the demo as a guest (non-admin) user by using the following crede
 *Please do not request new accounts on the demo portal. Use the given credentials to browse ARTEMIS as a guest user.*
 
 ## Contributing
+
 Please check [this file](CONTRIBUTING.md).
 
 ## Development Team and Contact
+
 We follow a custom Agile approach for our development.
 
 If you need to contact us about a bug, an issue or a question you have; you can reach us over at our [Discord Community Server](https://discord.gg/8UerJvh). Otherwise, you can contact the ARTEMIS developers via e-mail using the [ARTEMIS mailing list](http://lists.ics.forth.gr/mailman/listinfo/artemis).
 
 ## Versioning
+
 Please check [this file](CHANGELOG.md).
 
 ## Authors and Contributors
+
 Please check [this file](AUTHORS.md).
 
 ## License
+
 The ARTEMIS software is open-sourced under the BSD-3 license.
 Please check the [license file](LICENSE).
 
@@ -254,9 +187,11 @@ Note that all external dependencies are used in a way compatible with BSD-3
 (that is, we conform to the compatibility rules of each and every dependency);
 the associated software packages and their respective licenses are documented
 in detail in [this file](DEPENDENCIES-LICENSES.md), where we provide links
-to their homepages and licenses.
+to their homepages and licenses. Please let us know in case any of the information
+contained there is out-of-date to update it.
 
 ## Acknowledgements and Funding Sources
+
 This work is supported by the following funding sources on the European side (FORTH):
 * **European Research Council (ERC) grant agreement no. 790575 ([PHILOS Project](https://cordis.europa.eu/project/rcn/215015/en))**
 * **European Research Council (ERC) grant agreement no. 338402 ([NetVolution Project](http://netvolution.eu/))**

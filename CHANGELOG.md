@@ -9,11 +9,12 @@
 - Support for configured ASN ranges
 - Community-based annotation support for annotating hijacks
 - Local pre-commit hook to check versioning
-- Added bgpstream historical BGP record collector (per prefix)
+- Bgpstream historical BGP record collector (per prefix)
+- Support for RIPE whois service-resolved AS-SETs in configuration
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)
-- Update hasura (1.0.0alpha42 -> 1.0.0-beta.3)
+- Update hasura (1.0.0alpha42 -> 1.0.0alpha45)
 - Replaced $.ajax with fetch
 - Hijack logger output is now a JSON string
 
@@ -22,6 +23,7 @@
 - Minor fix in custom mitigation trigger
 - Updated configurations for k8s deployment
 - Fixed flake8 warnings
+- Bug with single-quoted communities being interpreted as sexagesimal upon automated conf reload
 
 ### Removed
 - TBD (removed a feature)

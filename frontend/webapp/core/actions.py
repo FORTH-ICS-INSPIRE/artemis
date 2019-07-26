@@ -190,6 +190,49 @@ class Submit_new_config:
         return "No changes found on the new configuration.", False
 
 
+class Load_as_sets:
+    def on_response(self, message):
+        if message.properties["correlation_id"] == self.correlation_id:
+            self.response = message.payload
+
+    def send(self):
+        self.response = None
+        self.correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            durable=False,
+            exclusive=True,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+
+        with Connection(RABBITMQ_URI) as connection:
+            with Producer(connection) as producer:
+                producer.publish(
+                    {},
+                    exchange="",
+                    routing_key="conf-load-as-sets-queue",
+                    retry=True,
+                    declare=[callback_queue],
+                    reply_to=callback_queue.name,
+                    correlation_id=self.correlation_id,
+                    priority=4,
+                )
+                with Consumer(
+                    connection,
+                    on_message=self.on_response,
+                    queues=[callback_queue],
+                    no_ack=True,
+                ):
+                    while self.response is None:
+                        connection.drain_events()
+
+        if self.response["success"]:
+            return self.response["payload"]["message"], True
+        return self.response["error"], False
+
+
 class Hijacks_multiple_action:
     def __init__(self):
         self.hijack_exchange = Exchange(

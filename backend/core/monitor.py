@@ -1,4 +1,3 @@
-import ast
 import os
 import re
 import signal
@@ -105,38 +104,46 @@ class Monitor:
                                 monitor_to_restart = match_monitor.group(1)
                                 break
                 if monitor_to_restart and self.flag:
-                    # first, check if this monitor is currently running
-                    proc_id_to_terminate = None
-                    for proc_id in self.process_ids:
-                        name, pid = proc_id
-                        if name.startswith("[{}]".format(monitor_to_restart)):
-                            log.info("{} needs restarting".format(monitor_to_restart))
-                            # stop it
-                            proc_id_to_terminate = pid
-                            try:
-                                pid.terminate()
-                            except ProcessLookupError:
-                                log.exception("process terminate")
-                            break
-                    # start it
-                    if proc_id_to_terminate:
-                        self.process_ids.remove(proc_id_to_terminate)
-                        ast.literal_eval(
-                            "self.init_{}_instance()".format(monitor_to_restart)
-                        )
+                    try:
+                        # first, check if this monitor is currently running
+                        proc_id_to_terminate = None
+                        for proc_id in self.process_ids:
+                            name, pid = proc_id
+                            if name.startswith("[{}]".format(monitor_to_restart)):
+                                log.info(
+                                    "{} needs restarting".format(monitor_to_restart)
+                                )
+                                # stop it
+                                proc_id_to_terminate = proc_id
+                                try:
+                                    pid.terminate()
+                                except ProcessLookupError:
+                                    log.exception("process terminate")
+                                break
+                        # start it
+                        if proc_id_to_terminate:
+                            self.process_ids.remove(proc_id_to_terminate)
+                            eval("self.init_{}_instance()".format(monitor_to_restart))
+                    except Exception:
+                        log.exception("Exception")
 
-            self.redis_pubsub = self.redis.pubsub()
-            self.redis_pubsub_mon_channels = [
-                "__keyspace@0__:ris_seen_bgp_update",
-                "__keyspace@0__:betabmp_seen_bgp_update",
-                "__keyspace@0__:bgpstreamlive_seen_bgp_update",
-                "__keyspace@0__:exabgp_seen_bgp_update",
-            ]
-            for pubsub_mon_channel in self.redis_pubsub_mon_channels:
-                self.redis_pubsub.psubscribe(
-                    **{pubsub_mon_channel: redis_event_handler}
+            try:
+                self.redis_pubsub = self.redis.pubsub()
+                self.redis_pubsub_mon_channels = [
+                    "__keyspace@0__:ris_seen_bgp_update",
+                    "__keyspace@0__:betabmp_seen_bgp_update",
+                    "__keyspace@0__:bgpstreamlive_seen_bgp_update",
+                    "__keyspace@0__:exabgp_seen_bgp_update",
+                ]
+                for pubsub_mon_channel in self.redis_pubsub_mon_channels:
+                    self.redis_pubsub.psubscribe(
+                        **{pubsub_mon_channel: redis_event_handler}
+                    )
+                self.redis_listener_thread = self.redis_pubsub.run_in_thread(
+                    sleep_time=1
                 )
-            self.redis_listener_thread = self.redis_pubsub.run_in_thread(sleep_time=1)
+            except Exception:
+                log.exception("Exception")
 
         def get_consumers(self, Consumer, channel):
             return [

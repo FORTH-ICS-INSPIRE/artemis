@@ -123,7 +123,10 @@ class Monitor:
                         # start it
                         if proc_id_to_terminate:
                             self.process_ids.remove(proc_id_to_terminate)
-                            eval("self.init_{}_instance()".format(monitor_to_restart))
+                            init_mon_instance = getattr(
+                                self, "init_{}_instance".format(monitor_to_restart)
+                            )
+                            init_mon_instance()
                     except Exception:
                         log.exception("Exception")
 

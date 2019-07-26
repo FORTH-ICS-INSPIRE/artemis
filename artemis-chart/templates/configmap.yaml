@@ -39,3 +39,4 @@ data:
   hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
   hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}
   hijackLogFilter: {{ .Values.hijackLogFilter | default "[]" | quote }}
+  monTimeoutLastBgpUpdate: {{ .Values.monTimeoutLastBgpUpdate | default "3600" | quote }}

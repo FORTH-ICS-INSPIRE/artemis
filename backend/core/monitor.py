@@ -1,3 +1,4 @@
+import ast
 import os
 import re
 import signal
@@ -20,7 +21,7 @@ from utils import translate_asn_range
 from utils import translate_rfc2622
 
 log = get_logger()
-MON_SEEN_BGP_UPDATE_TIMEOUT = 60 * 60
+DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 
 class Monitor:
@@ -119,8 +120,10 @@ class Monitor:
                             break
                     # start it
                     if proc_id_to_terminate:
-                        self.process_ids.remove(proc_id)
-                        eval("self.init_{}_instance()".format(monitor_to_restart))
+                        self.process_ids.remove(proc_id_to_terminate)
+                        ast.literal_eval(
+                            "self.init_{}_instance()".format(monitor_to_restart)
+                        )
 
             self.redis_pubsub = self.redis.pubsub()
             self.redis_pubsub_mon_channels = [
@@ -292,7 +295,14 @@ class Monitor:
                     ("[ris] {} {}".format(rrcs, self.prefix_file), p)
                 )
                 self.redis.set(
-                    "ris_seen_bgp_update", "1", ex=MON_SEEN_BGP_UPDATE_TIMEOUT
+                    "ris_seen_bgp_update",
+                    "1",
+                    ex=int(
+                        os.getenv(
+                            "MON_TIMEOUT_LAST_BGP_UPDATE",
+                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                        )
+                    ),
                 )
 
         @exception_handler(log)
@@ -327,7 +337,12 @@ class Monitor:
                         )
                     )
                     self.redis.set(
-                        "exabgp_seen_bgp_update", "1", ex=MON_SEEN_BGP_UPDATE_TIMEOUT
+                        "exabgp_seen_bgp_update",
+                        "1",
+                        ex=os.getenv(
+                            "MON_TIMEOUT_LAST_BGP_UPDATE",
+                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                        ),
                     )
 
         @exception_handler(log)
@@ -388,7 +403,12 @@ class Monitor:
                     )
                 )
                 self.redis.set(
-                    "bgpstreamlive_seen_bgp_update", "1", ex=MON_SEEN_BGP_UPDATE_TIMEOUT
+                    "bgpstreamlive_seen_bgp_update",
+                    "1",
+                    ex=os.getenv(
+                        "MON_TIMEOUT_LAST_BGP_UPDATE",
+                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                    ),
                 )
 
         @exception_handler(log)
@@ -410,7 +430,12 @@ class Monitor:
                 )
                 self.process_ids.append(("[betabmp] {}".format(self.prefix_file), p))
                 self.redis.set(
-                    "betabmp_seen_bgp_update", "1", ex=MON_SEEN_BGP_UPDATE_TIMEOUT
+                    "betabmp_seen_bgp_update",
+                    "1",
+                    ex=os.getenv(
+                        "MON_TIMEOUT_LAST_BGP_UPDATE",
+                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                    ),
                 )
 
 

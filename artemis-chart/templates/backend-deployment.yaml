@@ -137,6 +137,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: hijackLogFilter
+        - name: MON_TIMEOUT_LAST_BGP_UPDATE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: monTimeoutLastBgpUpdate
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         name: backend
         resources: {}

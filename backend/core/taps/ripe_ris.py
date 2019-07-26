@@ -147,18 +147,18 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                             and msg["type"] == "UPDATE"
                             and (not hosts or msg["host"] in hosts)
                         ):
-                            redis.set(
-                                "ris_seen_bgp_update",
-                                "1",
-                                ex=int(
-                                    os.getenv(
-                                        "MON_TIMEOUT_LAST_BGP_UPDATE",
-                                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                                    )
-                                ),
-                            )
                             norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
                             for norm_ris_msg in norm_ris_msgs:
+                                redis.set(
+                                    "ris_seen_bgp_update",
+                                    "1",
+                                    ex=int(
+                                        os.getenv(
+                                            "MON_TIMEOUT_LAST_BGP_UPDATE",
+                                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                                        )
+                                    ),
+                                )
                                 if validator.validate(norm_ris_msg):
                                     norm_path_msgs = normalize_msg_path(norm_ris_msg)
                                     for norm_path_msg in norm_path_msgs:

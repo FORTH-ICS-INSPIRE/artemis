@@ -131,6 +131,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                         ris_suffix
                     ),
                     stream=True,
+                    timeout=10,
                 )
                 # http://docs.python-requests.org/en/latest/user/advanced/#streaming-requests
                 iterator = events.iter_lines()

@@ -779,7 +779,17 @@ class Detection:
             else:
                 # lock, by extracting the token (other processes that access it
                 # at the same time will be blocked)
-                self.redis.blpop("{}token".format(redis_hijack_key))
+                token = self.redis.blpop("{}token".format(redis_hijack_key), timeout=60)
+                # if timeout after 60 seconds, return without hijack alert
+                # since this means that sth has been purged in the meanwhile (e.g., due to outdated hijack
+                # in another instance; a detector cannot be stuck for a whole minute in a single hijack BGP update)
+                if not token:
+                    log.info(
+                        "Monitor event {} encountered redis token timeout and will be cleared as benign for hijack {}".format(
+                            str(monitor_event), redis_hijack_key
+                        )
+                    )
+                    return
 
             # proceed now that we have clearance
             redis_pipeline = self.redis.pipeline()

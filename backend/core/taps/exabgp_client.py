@@ -1,6 +1,8 @@
 import argparse
+import os
 import signal
 
+import redis
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
@@ -12,8 +14,12 @@ from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import REDIS_PORT
 
 log = get_logger()
+redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 
 class ExaBGP:
@@ -39,6 +45,16 @@ class ExaBGP:
                 self.sio = SocketIO("http://" + self.host, namespace=BaseNamespace)
 
                 def exabgp_msg(bgp_message):
+                    redis.set(
+                        "exabgp_seen_bgp_update",
+                        "1",
+                        ex=int(
+                            os.getenv(
+                                "MON_TIMEOUT_LAST_BGP_UPDATE",
+                                DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                            )
+                        ),
+                    )
                     msg = {
                         "type": bgp_message["type"],
                         "communities": bgp_message.get("communities", []),

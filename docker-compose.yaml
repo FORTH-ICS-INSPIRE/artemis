@@ -32,6 +32,7 @@ services:
             GUI_ENABLED: ${GUI_ENABLED}
             HISTORIC: ${HISTORIC}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/

@@ -5,6 +5,7 @@ import time
 from copy import deepcopy
 
 import radix
+import redis
 import requests
 from kombu import Connection
 from kombu import Exchange
@@ -15,10 +16,14 @@ from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import REDIS_PORT
 
 log = get_logger()
 update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
+redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 
 def normalize_ripe_ris(msg, prefix_tree):
@@ -126,6 +131,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                         ris_suffix
                     ),
                     stream=True,
+                    timeout=10,
                 )
                 # http://docs.python-requests.org/en/latest/user/advanced/#streaming-requests
                 iterator = events.iter_lines()
@@ -144,6 +150,16 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                         ):
                             norm_ris_msgs = normalize_ripe_ris(msg, prefix_tree)
                             for norm_ris_msg in norm_ris_msgs:
+                                redis.set(
+                                    "ris_seen_bgp_update",
+                                    "1",
+                                    ex=int(
+                                        os.getenv(
+                                            "MON_TIMEOUT_LAST_BGP_UPDATE",
+                                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                                        )
+                                    ),
+                                )
                                 if validator.validate(norm_ris_msg):
                                     norm_path_msgs = normalize_msg_path(norm_ris_msg)
                                     for norm_path_msg in norm_path_msgs:
@@ -159,6 +175,8 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                     log.warning(
                                         "Invalid format message: {}".format(msg)
                                     )
+                    except json.decoder.JSONDecodeError:
+                        log.exception("Message {}".format(data))
                     except Exception:
                         log.exception("exception")
                 log.warning("Iterator ran out of data; the connection will be retried")

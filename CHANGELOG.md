@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED] (NAME) - YYYY-MM-DD
+## [UNRELEASED] (Arktos) - YYYY-MM-DD
 ### Added
 - Slack logging package and example
 - ARTEMIS logo
@@ -25,6 +25,7 @@
 - Wrong data.sql for testing
 - Bug with single-quoted communities being interpreted as sexagesimal upon automated conf reload
 - Monitoring of monitors and restarting them if not seen any BGP updates within user-defined interval
+- Avoid detectors being stuck on blpop if token erased
 
 ### Removed
 - TBD (removed a feature)

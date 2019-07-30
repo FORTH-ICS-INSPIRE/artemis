@@ -22,7 +22,9 @@
 - Minor fix in custom mitigation trigger
 - Updated configurations for k8s deployment
 - Fixed flake8 warnings
+- Wrong data.sql for testing
 - Bug with single-quoted communities being interpreted as sexagesimal upon automated conf reload
+- Monitoring of monitors and restarting them if not seen any BGP updates within user-defined interval
 
 ### Removed
 - TBD (removed a feature)

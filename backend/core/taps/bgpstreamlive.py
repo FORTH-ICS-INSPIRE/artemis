@@ -1,7 +1,9 @@
 import argparse
+import os
 import time
 
 import _pybgpstream
+import redis
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
@@ -13,11 +15,15 @@ from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import REDIS_PORT
 
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 
 START_TIME_OFFSET = 3600  # seconds
 log = get_logger()
+redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 
 def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
@@ -88,6 +94,16 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
 
             while elem:
                 if elem.type in {"A", "W"}:
+                    redis.set(
+                        "bgpstreamlive_seen_bgp_update",
+                        "1",
+                        ex=int(
+                            os.getenv(
+                                "MON_TIMEOUT_LAST_BGP_UPDATE",
+                                DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                            )
+                        ),
+                    )
                     this_prefix = str(elem.fields["prefix"])
                     service = "bgpstream|{}|{}".format(
                         str(rec.project), str(rec.collector)

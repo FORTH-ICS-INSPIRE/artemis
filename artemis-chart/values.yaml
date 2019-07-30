@@ -44,6 +44,8 @@ hasuraPort: 8080
 hasuraGui: false
 # custom log filter
 hijackLogFilter: [{"community_annotation":"critical"},{"community_annotation":"NA"}]
+# timeout (sec) since last seen BGP update for monitors
+monTimeoutLastBgpUpdate: 3600
 # services
 svc:
   backend:

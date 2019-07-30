@@ -1,8 +1,10 @@
 import os
+import re
 import signal
 from subprocess import Popen
 
 import radix
+import redis
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -14,10 +16,13 @@ from utils import exception_handler
 from utils import flatten
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import REDIS_PORT
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
 log = get_logger()
+DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 
 class Monitor:
@@ -57,6 +62,7 @@ class Monitor:
             self.prefix_file = "/root/monitor_prefixes.json"
             self.monitors = None
             self.flag = True
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 
             # EXCHANGES
             self.config_exchange = Exchange(
@@ -75,7 +81,72 @@ class Monitor:
             )
 
             self.config_request_rpc()
+
+            # setup Redis monitor listeners
+            self.setup_redis_mon_listeners()
+
             log.info("started")
+
+        def setup_redis_mon_listeners(self):
+            def redis_event_handler(msg):
+                if "pattern" in msg and "channel" in msg and "data" in msg:
+                    monitor_to_restart = None
+                    for pubsub_mon_channel in self.redis_pubsub_mon_channels:
+                        if (
+                            str(msg["channel"].decode()) == pubsub_mon_channel
+                            and str(msg["data"].decode()) == "expired"
+                        ):
+                            match_monitor = re.match(
+                                r"^.*\:(.*)_seen_bgp_update$",
+                                str(msg["channel"].decode()),
+                            )
+                            if match_monitor:
+                                monitor_to_restart = match_monitor.group(1)
+                                break
+                if monitor_to_restart and self.flag:
+                    try:
+                        # first, check if this monitor is currently running
+                        proc_id_to_terminate = None
+                        for proc_id in self.process_ids:
+                            name, pid = proc_id
+                            if name.startswith("[{}]".format(monitor_to_restart)):
+                                log.info(
+                                    "{} needs restarting".format(monitor_to_restart)
+                                )
+                                # stop it
+                                proc_id_to_terminate = proc_id
+                                try:
+                                    pid.terminate()
+                                except ProcessLookupError:
+                                    log.exception("process terminate")
+                                break
+                        # start it
+                        if proc_id_to_terminate:
+                            self.process_ids.remove(proc_id_to_terminate)
+                            init_mon_instance = getattr(
+                                self, "init_{}_instance".format(monitor_to_restart)
+                            )
+                            init_mon_instance()
+                    except Exception:
+                        log.exception("Exception")
+
+            try:
+                self.redis_pubsub = self.redis.pubsub()
+                self.redis_pubsub_mon_channels = [
+                    "__keyspace@0__:ris_seen_bgp_update",
+                    "__keyspace@0__:betabmp_seen_bgp_update",
+                    "__keyspace@0__:bgpstreamlive_seen_bgp_update",
+                    "__keyspace@0__:exabgp_seen_bgp_update",
+                ]
+                for pubsub_mon_channel in self.redis_pubsub_mon_channels:
+                    self.redis_pubsub.psubscribe(
+                        **{pubsub_mon_channel: redis_event_handler}
+                    )
+                self.redis_listener_thread = self.redis_pubsub.run_in_thread(
+                    sleep_time=1
+                )
+            except Exception:
+                log.exception("Exception")
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -144,8 +215,8 @@ class Monitor:
                 self.prefixes.add(self.prefix_tree.search_worst(prefix).prefix)
             dump_json(list(self.prefixes), self.prefix_file)
 
-            self.init_ris_instances()
-            self.init_exabgp_instances()
+            self.init_ris_instance()
+            self.init_exabgp_instance()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
             self.init_betabmp_instance()
@@ -211,7 +282,7 @@ class Monitor:
                     self.start_monitors()
 
         @exception_handler(log)
-        def init_ris_instances(self):
+        def init_ris_instance(self):
             if "riperis" in self.monitors:
                 log.debug(
                     "starting {} for {}".format(
@@ -231,11 +302,21 @@ class Monitor:
                     shell=False,
                 )
                 self.process_ids.append(
-                    ("RIPEris {} {}".format(rrcs, self.prefix_file), p)
+                    ("[ris] {} {}".format(rrcs, self.prefix_file), p)
+                )
+                self.redis.set(
+                    "ris_seen_bgp_update",
+                    "1",
+                    ex=int(
+                        os.getenv(
+                            "MON_TIMEOUT_LAST_BGP_UPDATE",
+                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                        )
+                    ),
                 )
 
         @exception_handler(log)
-        def init_exabgp_instances(self):
+        def init_exabgp_instance(self):
             if "exabgp" in self.monitors:
                 log.debug(
                     "starting {} for {}".format(
@@ -258,7 +339,20 @@ class Monitor:
                         shell=False,
                     )
                     self.process_ids.append(
-                        ("ExaBGP {} {}".format(exabgp_monitor_str, self.prefix_file), p)
+                        (
+                            "[exabgp] {} {}".format(
+                                exabgp_monitor_str, self.prefix_file
+                            ),
+                            p,
+                        )
+                    )
+                    self.redis.set(
+                        "exabgp_seen_bgp_update",
+                        "1",
+                        ex=os.getenv(
+                            "MON_TIMEOUT_LAST_BGP_UPDATE",
+                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                        ),
                     )
 
         @exception_handler(log)
@@ -283,7 +377,7 @@ class Monitor:
                 )
                 self.process_ids.append(
                     (
-                        "BGPStreamHist {} {}".format(
+                        "[bgpstreamhist] {} {}".format(
                             bgpstreamhist_dir, self.prefix_file
                         ),
                         p,
@@ -312,11 +406,19 @@ class Monitor:
                 )
                 self.process_ids.append(
                     (
-                        "BGPStreamLive {} {}".format(
+                        "[bgpstreamlive] {} {}".format(
                             bgpstream_projects, self.prefix_file
                         ),
                         p,
                     )
+                )
+                self.redis.set(
+                    "bgpstreamlive_seen_bgp_update",
+                    "1",
+                    ex=os.getenv(
+                        "MON_TIMEOUT_LAST_BGP_UPDATE",
+                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                    ),
                 )
 
         @exception_handler(log)
@@ -336,7 +438,15 @@ class Monitor:
                     ],
                     shell=False,
                 )
-                self.process_ids.append(("Beta BMP {}".format(self.prefix_file), p))
+                self.process_ids.append(("[betabmp] {}".format(self.prefix_file), p))
+                self.redis.set(
+                    "betabmp_seen_bgp_update",
+                    "1",
+                    ex=os.getenv(
+                        "MON_TIMEOUT_LAST_BGP_UPDATE",
+                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                    ),
+                )
 
 
 def run():

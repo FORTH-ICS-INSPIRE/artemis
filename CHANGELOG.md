@@ -9,6 +9,7 @@
 - Support for configured ASN ranges
 - Community-based annotation support for annotating hijacks
 - Local pre-commit hook to check versioning
+- Bgpstream historical BGP record collector (per prefix)
 - Support for RIPE whois service-resolved AS-SETs in configuration
 
 ### Changed

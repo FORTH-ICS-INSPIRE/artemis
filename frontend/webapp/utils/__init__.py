@@ -9,13 +9,18 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 API_HOST = os.getenv("API_HOST", "postgrest")
 API_PORT = os.getenv("API_PORT", 3000)
-SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
+SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "backend")
 SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
+MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST", "monitor")
+MON_SUPERVISOR_PORT = os.getenv("MON_SUPERVISOR_PORT", 9001)
 
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
 )
 SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
+MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
+    MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
+)
 API_URI = "http://{}:{}".format(API_HOST, API_PORT)
 
 

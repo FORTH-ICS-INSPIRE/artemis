@@ -20,6 +20,7 @@ from utils import get_hash
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
+from utils import MON_SUPERVISOR_URI
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
@@ -87,19 +88,21 @@ class Database:
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute("TRUNCATE table process_states")
 
-                server = ServerProxy(SUPERVISOR_URI)
                 query = (
                     "INSERT INTO process_states (name, running) "
                     "VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running"
                 )
-                processes = [
-                    (x["name"], x["state"] == 20)
-                    for x in server.supervisor.getAllProcessInfo()
-                    if x["name"] != "listener"
-                ]
 
-                with get_wo_cursor(self.wo_conn) as db_cur:
-                    psycopg2.extras.execute_batch(db_cur, query, processes)
+                for ctx in {SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                    server = ServerProxy(ctx)
+                    processes = [
+                        (x["name"], x["state"] == 20)
+                        for x in server.supervisor.getAllProcessInfo()
+                        if x["name"] != "listener"
+                    ]
+
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(db_cur, query, processes)
 
             except Exception:
                 log.exception("exception")

@@ -6,6 +6,7 @@ services:
         depends_on:
             - rabbitmq
             - postgres
+            - monitor
         networks:
             - artemis
         expose:
@@ -24,6 +25,8 @@ services:
             DB_VERSION: ${DB_VERSION}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
+            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             HASURA_HOST: ${HASURA_HOST}
@@ -44,6 +47,36 @@ services:
             - ./backend/supervisor.d/:/etc/supervisor/conf.d/
             # uncomment after Step 2 of README
             #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
+    monitor:
+        image: inspiregroup/artemis-monitor:${SYSTEM_VERSION}
+        container_name: monitor
+        depends_on:
+            - rabbitmq
+        networks:
+            - artemis
+        expose:
+            - ${MON_SUPERVISOR_PORT}
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            RIS_ID: ${RIS_ID}
+            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
+            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+        volumes:
+            # uncomment to run from source code (only if you build from source)
+            # - ./monitor/:/root/
+            # comment after Step 2 of README (monitor gets config from backend, only needs logging)
+            - ./backend/configs/:/etc/artemis/
+            # uncomment after Step 2 of README
+            # - ./local_configs/backend/:/etc/artemis/
+            # comment after Step 2 of README
+            - ./monitor/supervisor.d/:/etc/supervisor/conf.d/
+            # uncomment after Step 2 of README
+            #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
@@ -52,6 +85,7 @@ services:
             - postgres
             - postgrest
             - backend
+            - monitor
         networks:
             - artemis
         expose:
@@ -75,6 +109,8 @@ services:
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}
             SUPERVISOR_HOST: ${SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
+            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             JWT_SECRET_KEY: ${JWT_SECRET_KEY}
             FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
             JS_VERSION: ${JS_VERSION}

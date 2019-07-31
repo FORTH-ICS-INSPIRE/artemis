@@ -2,8 +2,8 @@ import logging
 import time
 from xmlrpc.client import ServerProxy
 
-from webapp.utils import SUPERVISOR_HOST
-from webapp.utils import SUPERVISOR_PORT
+from webapp.utils import MON_SUPERVISOR_URI
+from webapp.utils import SUPERVISOR_URI
 
 log = logging.getLogger("webapp_logger")
 
@@ -31,52 +31,66 @@ def display_time(seconds, granularity=2):
 
 class Modules_state:
     def __init__(self):
-        self.server = ServerProxy(
-            "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
-        )
+        self.server = ServerProxy(SUPERVISOR_URI)
+        self.mon_server = ServerProxy(MON_SUPERVISOR_URI)
 
     def call(self, module, action):
         try:
             if module == "all":
                 if action == "start":
-                    self.server.supervisor.startAllProcesses()
+                    for ctx in {self.server, self.mon_server}:
+                        ctx.supervisor.startAllProcesses()
                 elif action == "stop":
-                    self.server.supervisor.stopAllProcesses()
+                    for ctx in {self.server, self.mon_server}:
+                        ctx.supervisor.stopAllProcesses()
             else:
+                log.info(module)
+                ctx = self.server
+                if module == "monitor":
+                    ctx = self.mon_server
+
                 if action == "start":
                     modules = self.is_any_up_or_running(module, up=False)
                     for mod in modules:
-                        self.server.supervisor.startProcess(mod)
+                        ctx.supervisor.startProcess(mod)
 
                 elif action == "stop":
                     modules = self.is_any_up_or_running(module)
                     for mod in modules:
-                        self.server.supervisor.stopProcess(mod)
+                        ctx.supervisor.stopProcess(mod)
         except Exception:
             log.exception("exception")
 
     def is_up_or_running(self, module):
+        ctx = self.server
+        if module == "monitor":
+            ctx = self.mon_server
+
         try:
-            state = self.server.supervisor.getProcessInfo(module)["state"]
+            state = ctx.supervisor.getProcessInfo(module)["state"]
             while state == 10:
                 time.sleep(0.5)
-                state = self.server.supervisor.getProcessInfo(module)["state"]
+                state = ctx.supervisor.getProcessInfo(module)["state"]
             return state == 20
         except Exception:
             log.exception("exception")
             return False
 
     def is_any_up_or_running(self, module, up=True):
+        ctx = self.server
+        if module == "monitor":
+            ctx = self.mon_server
+
         try:
             if up:
                 return [
                     "{}:{}".format(x["group"], x["name"])
-                    for x in self.server.supervisor.getAllProcessInfo()
+                    for x in ctx.supervisor.getAllProcessInfo()
                     if x["group"] == module and (x["state"] == 20 or x["state"] == 10)
                 ]
             return [
                 "{}:{}".format(x["group"], x["name"])
-                for x in self.server.supervisor.getAllProcessInfo()
+                for x in ctx.supervisor.getAllProcessInfo()
                 if x["group"] == module and (x["state"] != 20 and x["state"] != 10)
             ]
         except Exception:
@@ -85,15 +99,16 @@ class Modules_state:
 
     def get_response_all(self):
         ret_response = {}
-        response = self.server.supervisor.getAllProcessInfo()
-        for module in response:
-            if module["state"] == 20:
-                ret_response[module["name"]] = {
-                    "status": "up",
-                    "uptime": display_time(module["now"] - module["start"]),
-                }
-            else:
-                ret_response[module["name"]] = {"status": "down", "uptime": "N/A"}
+        for ctx in {self.server, self.mon_server}:
+            response = ctx.supervisor.getAllProcessInfo()
+            for module in response:
+                if module["state"] == 20:
+                    ret_response[module["name"]] = {
+                        "status": "up",
+                        "uptime": display_time(module["now"] - module["start"]),
+                    }
+                else:
+                    ret_response[module["name"]] = {"status": "down", "uptime": "N/A"}
         return ret_response
 
     def get_response_formatted_all(self):

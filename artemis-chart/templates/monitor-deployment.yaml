@@ -2,9 +2,9 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: backend
+    io.kompose.service: monitor
     app: {{ .Release.Name }}
-  name: backend
+  name: monitor
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -13,7 +13,7 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: backend
+        io.kompose.service: monitor
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
@@ -22,11 +22,11 @@ spec:
         image: busybox
         volumeMounts:
         - mountPath: /configmaps
-          name: backend-configmap
+          name: monitor-configmap
         - mountPath: /pvc
-          name: backend-pvc
+          name: monitor-pvc
           subPath: configs
-        command: ['sh', '-c', 'cp -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
+        command: ['sh', '-c', 'cp -u /configmaps/logging.yaml /configmaps/mon-services.conf /pvc/']
       - name: wait-for-service
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
@@ -152,25 +152,22 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: monTimeoutLastBgpUpdate
-        image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
-        name: backend
+        image: inspiregroup/artemis-monitor:{{ .Values.systemVersion }}
+        name: monitor
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/logging.yaml
-          name: backend-pvc
+          name: monitor-pvc
           subPath: configs/logging.yaml
-        - mountPath: /etc/artemis/config.yaml
-          name: backend-pvc
-          subPath: configs/config.yaml
         - mountPath: /etc/supervisor/conf.d/services.conf
-          name: backend-pvc
-          subPath: configs/services.conf
+          name: monitor-pvc
+          subPath: configs/mon-services.conf
       restartPolicy: Always
       volumes:
       - configMap:
           name: {{ .Release.Name }}-volumes
-        name: backend-configmap
+        name: monitor-configmap
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-pvc
-        name: backend-pvc
+        name: monitor-pvc
 status: {}

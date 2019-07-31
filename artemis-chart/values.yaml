@@ -9,6 +9,9 @@ redisPort: 6379
 # supervisor
 supervisorHost: backend
 supervisorPort: 9001
+# monitor supervisor
+monSupervisorHost: monitor
+monSupervisorPort: 9001
 # api
 apiHost: postgrest
 apiPort: 3000
@@ -51,6 +54,9 @@ svc:
   backend:
     ports:
     - 6379
+    - 9001
+  monitor:
+    ports:
     - 9001
   postgrest:
     ports:

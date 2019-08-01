@@ -72,8 +72,8 @@ services:
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./monitor/:/root/
-            # comment after Step 2 of README (monitor gets config from backend, only needs logging)
-            - ./backend/configs/:/etc/artemis/
+            # comment after Step 2 of README
+            - ./monitor/configs/:/etc/artemis/
             # uncomment after Step 2 of README
             # - ./local_configs/backend/:/etc/artemis/
             # comment after Step 2 of README

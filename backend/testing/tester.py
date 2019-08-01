@@ -56,10 +56,10 @@ class Tester:
         self.redis = redis_
 
     def initSupervisor(self):
-        SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "backend")
-        SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
+        BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
+        BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
         self.supervisor = ServerProxy(
-            "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
+            "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
         )
 
     def clear(self):
@@ -421,7 +421,6 @@ class Tester:
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
-        self.waitProcess("monitor", 0)  # 0 STOPPED
 
         self.supervisor.supervisor.startProcess("coveralls")
 

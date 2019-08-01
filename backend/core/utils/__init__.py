@@ -13,8 +13,8 @@ import psycopg2
 import requests
 import yaml
 
-SUPERVISOR_HOST = os.getenv("SUPERVISOR_HOST", "localhost")
-SUPERVISOR_PORT = os.getenv("SUPERVISOR_PORT", 9001)
+BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
+BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
 MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST", "monitor")
 MON_SUPERVISOR_PORT = os.getenv("MON_SUPERVISOR_PORT", 9001)
 DB_NAME = os.getenv("DB_NAME", "artemis_db")
@@ -32,7 +32,9 @@ REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
 )
-SUPERVISOR_URI = "http://{}:{}/RPC2".format(SUPERVISOR_HOST, SUPERVISOR_PORT)
+BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
+    BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
+)
 MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
 )
@@ -220,6 +222,18 @@ def redis_key(prefix, hijack_as, _type):
     assert isinstance(hijack_as, int)
     assert isinstance(_type, str)
     return get_hash([prefix, hijack_as, _type])
+
+
+def key_generator(msg):
+    msg["key"] = get_hash(
+        [
+            msg["prefix"],
+            msg["path"],
+            msg["type"],
+            "{0:.6f}".format(msg["timestamp"]),
+            msg["peer_asn"],
+        ]
+    )
 
 
 def get_hash(obj):

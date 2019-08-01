@@ -7,8 +7,8 @@ replicaCount: 1
 redisHost: backend
 redisPort: 6379
 # supervisor
-supervisorHost: backend
-supervisorPort: 9001
+backendSupervisorHost: backend
+backendSupervisorPort: 9001
 # monitor supervisor
 monSupervisorHost: monitor
 monSupervisorPort: 9001

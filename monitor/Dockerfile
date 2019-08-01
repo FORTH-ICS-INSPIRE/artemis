@@ -1,4 +1,4 @@
-FROM mavromat/bgpstream-redis:v1.0
+FROM mavromat/bgpstream-redis:v1.0-bgpstream
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
@@ -17,6 +17,6 @@ RUN make clean && make
 RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/
 
-COPY ../backend/configs/* /etc/artemis/
+COPY ./configs/* /etc/artemis/
 
 ENTRYPOINT ["./entrypoint"]

@@ -21,11 +21,11 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
-from taps.utils import key_generator
 from utils import exception_handler
 from utils import flatten
 from utils import get_hash
 from utils import get_logger
+from utils import key_generator
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST

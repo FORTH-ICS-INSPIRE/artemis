@@ -21,6 +21,9 @@ spec:
       - name: wait-for-service
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+      - name: wait-for-service
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.monSupervisorHost }} {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: API_HOST
@@ -98,16 +101,26 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secret
               key: passwordSalt
-        - name: SUPERVISOR_HOST
+        - name: BACKEND_SUPERVISOR_HOST
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: supervisorHost
-        - name: SUPERVISOR_PORT
+              key: backendSupervisorHost
+        - name: BACKEND_SUPERVISOR_PORT
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: supervisorPort
+              key: backendSupervisorPort
+        - name: MON_SUPERVISOR_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: monSupervisorHost
+        - name: MON_SUPERVISOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: monSupervisorPort
         - name: SYSTEM_VERSION
           valueFrom:
             configMapKeyRef:

@@ -10,7 +10,7 @@ services:
         networks:
             - artemis
         expose:
-            - ${SUPERVISOR_PORT}
+            - ${BACKEND_SUPERVISOR_PORT}
         environment:
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -23,8 +23,8 @@ services:
             DB_PORT: ${DB_PORT}
             DB_NAME: ${DB_NAME}
             DB_VERSION: ${DB_VERSION}
-            SUPERVISOR_HOST: ${SUPERVISOR_HOST}
-            SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
             MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             REDIS_HOST: ${REDIS_HOST}
@@ -36,6 +36,9 @@ services:
             HISTORIC: ${HISTORIC}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            # for backwards compatibility
+            SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/
@@ -107,14 +110,17 @@ services:
             USER_ROOT_USERNAME: ${ADMIN_USER}
             USER_ROOT_PASSWORD: ${ADMIN_PASS}
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            SUPERVISOR_HOST: ${SUPERVISOR_HOST}
-            SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
             MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             JWT_SECRET_KEY: ${JWT_SECRET_KEY}
             FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
             JS_VERSION: ${JS_VERSION}
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
+            # for backwards compatibility
+            SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
         volumes:
             # uncomment to run from source code  (only if you build from source)
             # - ./frontend/:/root/

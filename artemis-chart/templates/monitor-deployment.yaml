@@ -122,16 +122,16 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: redisPort
-        - name: SUPERVISOR_HOST
+        - name: BACKEND_SUPERVISOR_HOST
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: supervisorHost
-        - name: SUPERVISOR_PORT
+              key: backendSupervisorHost
+        - name: BACKEND_SUPERVISOR_PORT
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: supervisorPort
+              key: backendSupervisorPort
         - name: MON_SUPERVISOR_HOST
           valueFrom:
             configMapKeyRef:

@@ -2,8 +2,8 @@ import logging
 import time
 from xmlrpc.client import ServerProxy
 
+from webapp.utils import BACKEND_SUPERVISOR_URI
 from webapp.utils import MON_SUPERVISOR_URI
-from webapp.utils import SUPERVISOR_URI
 
 log = logging.getLogger("webapp_logger")
 
@@ -31,21 +31,21 @@ def display_time(seconds, granularity=2):
 
 class Modules_state:
     def __init__(self):
-        self.server = ServerProxy(SUPERVISOR_URI)
+        self.backend_server = ServerProxy(BACKEND_SUPERVISOR_URI)
         self.mon_server = ServerProxy(MON_SUPERVISOR_URI)
 
     def call(self, module, action):
         try:
             if module == "all":
                 if action == "start":
-                    for ctx in {self.server, self.mon_server}:
+                    for ctx in {self.backend_server, self.mon_server}:
                         ctx.supervisor.startAllProcesses()
                 elif action == "stop":
-                    for ctx in {self.server, self.mon_server}:
+                    for ctx in {self.backend_server, self.mon_server}:
                         ctx.supervisor.stopAllProcesses()
             else:
                 log.info(module)
-                ctx = self.server
+                ctx = self.backend_server
                 if module == "monitor":
                     ctx = self.mon_server
 
@@ -62,7 +62,7 @@ class Modules_state:
             log.exception("exception")
 
     def is_up_or_running(self, module):
-        ctx = self.server
+        ctx = self.backend_server
         if module == "monitor":
             ctx = self.mon_server
 
@@ -77,7 +77,7 @@ class Modules_state:
             return False
 
     def is_any_up_or_running(self, module, up=True):
-        ctx = self.server
+        ctx = self.backend_server
         if module == "monitor":
             ctx = self.mon_server
 
@@ -99,7 +99,7 @@ class Modules_state:
 
     def get_response_all(self):
         ret_response = {}
-        for ctx in {self.server, self.mon_server}:
+        for ctx in {self.backend_server, self.mon_server}:
             response = ctx.supervisor.getAllProcessInfo()
             for module in response:
                 if module["state"] == 20:

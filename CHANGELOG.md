@@ -27,6 +27,7 @@
 - Bug with single-quoted communities being interpreted as sexagesimal upon automated conf reload
 - Monitoring of monitors and restarting them if not seen any BGP updates within user-defined interval
 - Avoid detectors being stuck on blpop if token erased
+- Fix for historical replay of withdrawals plus bgpstreamhist rate-limit
 
 ### Removed
 - TBD (removed a feature)
@@ -253,21 +254,6 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 * Composition of multiple containers via docker-compose
 * Support for running multiple detector instances
 * Optional support for Kubernetes setups (single physical machine)
-
-### Changed
-- NA (Not Applicable)
-
-### Fixed
-- NA
-
-### Removed
-- NA
-
-### Deprecated
-- NA
-
-### Security
-- NA
 
 # TEMPLATE FOR NEW RELEASES
 ## [RELEASE_VERSION] (NAME) - YYYY-MM-DD

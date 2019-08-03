@@ -332,6 +332,8 @@ class Tester:
 
             Tester.config_request_rpc(connection)
 
+            time.sleep(10)
+
             # call all helper functions
             Helper.hijack_resolve(
                 db_con, connection, "a", "139.5.46.0/24", "S|0|-", 133720
@@ -359,7 +361,7 @@ class Tester:
             )
             Helper.load_as_sets(connection)
 
-            time.sleep(5)
+            time.sleep(10)
 
             db_cur.close()
             db_con.close()

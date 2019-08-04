@@ -17,7 +17,7 @@ start_backend() {
             exit -1
         fi
     fi
-    sed -i 's/bind 127.0.0.1/# bind 127.0.0.1/g' /etc/redis/redis.conf
+    sed -i 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/redis/redis.conf
     sed -i 's/notify-keyspace-events ""/notify-keyspace-events KEA/g' /etc/redis/redis.conf
     redis-server /etc/redis/redis.conf --daemonize yes --protected-mode no
     supervisord -n

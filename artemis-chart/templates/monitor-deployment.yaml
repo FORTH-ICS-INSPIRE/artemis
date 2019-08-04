@@ -153,6 +153,7 @@ spec:
               name: {{ .Release.Name }}-configmap
               key: monTimeoutLastBgpUpdate
         image: inspiregroup/artemis-monitor:{{ .Values.systemVersion }}
+        imagePullPolicy: Always
         name: monitor
         resources: {}
         volumeMounts:

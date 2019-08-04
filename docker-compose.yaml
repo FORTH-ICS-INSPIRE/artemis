@@ -27,7 +27,7 @@ services:
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
             MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
-            REDIS_HOST: ${REDIS_HOST}
+            REDIS_HOST: localhost
             REDIS_PORT: ${REDIS_PORT}
             HASURA_HOST: ${HASURA_HOST}
             HASURA_PORT: ${HASURA_PORT}

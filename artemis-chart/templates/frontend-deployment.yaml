@@ -18,10 +18,10 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
-      - name: wait-for-service
+      - name: wait-for-rmq
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
-      - name: wait-for-service
+      - name: wait-for-monsup
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.monSupervisorHost }} {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
       containers:

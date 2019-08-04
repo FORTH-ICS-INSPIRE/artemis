@@ -21,6 +21,7 @@ from utils import get_hash
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
+from utils import HISTORIC
 from utils import MON_SUPERVISOR_URI
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
@@ -1163,13 +1164,17 @@ class Database:
             return num_of_entries
 
         def _handle_bgp_withdrawals(self):
+            timestamp_thres = (
+                time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
+            )
+            timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
             query = (
                 "SELECT DISTINCT ON (hijacks.key) hijacks.peers_seen, hijacks.peers_withdrawn, "
                 "hijacks.key, hijacks.hijack_as, hijacks.type, bgp_updates.timestamp, hijacks.time_last "
                 "FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
                 "WHERE bgp_updates.prefix = %s "
                 "AND bgp_updates.type = 'A' "
-                "AND bgp_updates.timestamp >= NOW() - INTERVAL '1 WEEK' "
+                "AND bgp_updates.timestamp >= %s "
                 "AND hijacks.active = true "
                 "AND bgp_updates.peer_asn = %s "
                 "AND bgp_updates.handled = true "
@@ -1182,7 +1187,9 @@ class Database:
                     # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3:
                     # key
                     with get_ro_cursor(self.ro_conn) as db_cur:
-                        db_cur.execute(query, (withdrawal[0], withdrawal[1]))
+                        db_cur.execute(
+                            query, (withdrawal[0], timestamp_thres, withdrawal[1])
+                        )
                         entries = db_cur.fetchall()
 
                     if not entries:
@@ -1252,13 +1259,19 @@ class Database:
         def _update_bgp_updates(self):
             num_of_updates = 0
             update_bgp_entries = set()
+            timestamp_thres = (
+                time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
+            )
+            timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
             # Update the BGP entries using the hijack messages
             for hijack_key in self.insert_hijacks_entries:
                 for bgp_entry_to_update in self.insert_hijacks_entries[hijack_key][
                     "monitor_keys"
                 ]:
                     num_of_updates += 1
-                    update_bgp_entries.add((hijack_key, bgp_entry_to_update))
+                    update_bgp_entries.add(
+                        (hijack_key, bgp_entry_to_update, timestamp_thres)
+                    )
                     # exclude handle bgp updates that point to same hijack as
                     # this
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
@@ -1269,10 +1282,10 @@ class Database:
                         "UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, removed.peer_asn) FROM "
                         "(SELECT witann.key, witann.peer_asn FROM "
                         "(SELECT hij.key, wit.peer_asn, wit.timestamp AS wit_time, ann.timestamp AS ann_time FROM "
-                        "((VALUES %s) AS data (v1, v2) LEFT JOIN hijacks AS hij ON (data.v1=hij.key) "
+                        "((VALUES %s) AS data (v1, v2, v3) LEFT JOIN hijacks AS hij ON (data.v1=hij.key) "
                         "LEFT JOIN bgp_updates AS ann ON (data.v2=ann.key) "
                         "LEFT JOIN bgp_updates AS wit ON (hij.key=ANY(wit.hijack_key))) WHERE "
-                        "ann.timestamp >= NOW() - INTERVAL '1 WEEK'  AND wit.timestamp >= NOW() - INTERVAL '1 WEEK' AND "
+                        "ann.timestamp >= data.v3 AND wit.timestamp >= data.v3 AND "
                         "ann.type='A' AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type='W' "
                         "ORDER BY wit_time DESC LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) "
                         "AS removed WHERE hijacks.key=removed.key"
@@ -1281,7 +1294,7 @@ class Database:
                         psycopg2.extras.execute_values(
                             db_cur, query, list(update_bgp_entries), page_size=1000
                         )
-                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
+                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2, v3) WHERE bgp_updates.key=data.v2"
                     with get_wo_cursor(self.wo_conn) as db_cur:
                         psycopg2.extras.execute_values(
                             db_cur, query, list(update_bgp_entries), page_size=1000

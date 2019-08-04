@@ -181,6 +181,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     projects = args.mon_projects.split(",")
+    if not redis.ping():
+        raise BaseException("could not ping redis")
 
     try:
         run_bgpstream(

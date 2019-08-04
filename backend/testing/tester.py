@@ -54,6 +54,8 @@ class Tester:
             host=os.getenv("REDIS_HOST", "backend"), port=os.getenv("REDIS_PORT", 6739)
         )
         self.redis = redis_
+        if not self.redis.ping():
+            raise BaseException("could not ping redis")
 
     def initSupervisor(self):
         BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")

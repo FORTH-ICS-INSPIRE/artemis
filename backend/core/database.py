@@ -110,6 +110,8 @@ class Database:
 
             # redis db
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+            if not self.redis.ping():
+                raise BaseException("could not ping redis")
             self.bootstrap_redis()
 
             # EXCHANGES

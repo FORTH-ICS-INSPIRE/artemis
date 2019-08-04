@@ -114,6 +114,8 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    if not redis.ping():
+        raise BaseException("could not ping redis")
 
     print("Starting ExaBGP on {} for {}".format(args.host, args.prefixes_file))
     try:

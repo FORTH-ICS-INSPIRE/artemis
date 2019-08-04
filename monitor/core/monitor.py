@@ -63,6 +63,8 @@ class Monitor:
             self.monitors = None
             self.flag = True
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+            if not self.redis.ping():
+                raise BaseException("could not ping redis")
 
             # EXCHANGES
             self.config_exchange = Exchange(

@@ -157,6 +157,8 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    if not redis.ping():
+        raise BaseException("could not ping redis")
 
     try:
         run_bgpstream_beta_bmp(args.prefixes_file)

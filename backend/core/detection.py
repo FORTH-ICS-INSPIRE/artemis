@@ -117,6 +117,8 @@ class Detection:
             self.mon_num = 1
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+            if not self.redis.ping():
+                raise BaseException("could not ping redis")
 
             # EXCHANGES
             self.update_exchange = Exchange(

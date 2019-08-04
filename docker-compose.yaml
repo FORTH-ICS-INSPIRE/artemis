@@ -27,7 +27,7 @@ services:
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
             MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
-            REDIS_HOST: localhost
+            REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             HASURA_HOST: ${HASURA_HOST}
             HASURA_PORT: ${HASURA_PORT}
@@ -75,11 +75,11 @@ services:
             # comment after Step 2 of README
             - ./monitor/configs/:/etc/artemis/
             # uncomment after Step 2 of README
-            # - ./local_configs/backend/:/etc/artemis/
+            # - ./local_configs/monitor/:/etc/artemis/
             # comment after Step 2 of README
             - ./monitor/supervisor.d/:/etc/supervisor/conf.d/
             # uncomment after Step 2 of README
-            #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
+            #- ./local_configs/monitor/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend

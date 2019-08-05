@@ -1,6 +1,7 @@
 import os
 import re
 import signal
+import time
 from subprocess import Popen
 
 import radix
@@ -63,8 +64,14 @@ class Monitor:
             self.monitors = None
             self.flag = True
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-            if not self.redis.ping():
-                raise BaseException("could not ping redis")
+            while True:
+                try:
+                    if not self.redis.ping():
+                        raise BaseException("could not ping redis")
+                    break
+                except Exception:
+                    log.error("retrying redis ping in 5 seconds...")
+                    time.sleep(5)
 
             # EXCHANGES
             self.config_exchange = Exchange(

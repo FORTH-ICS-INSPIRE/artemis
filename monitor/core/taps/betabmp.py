@@ -1,5 +1,6 @@
 import argparse
 import os
+import time
 
 import _pybgpstream
 import redis
@@ -157,8 +158,14 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    if not redis.ping():
-        raise BaseException("could not ping redis")
+    while True:
+        try:
+            if not redis.ping():
+                raise BaseException("could not ping redis")
+            break
+        except Exception:
+            log.error("retrying redis ping in 5 seconds...")
+            time.sleep(5)
 
     try:
         run_bgpstream_beta_bmp(args.prefixes_file)

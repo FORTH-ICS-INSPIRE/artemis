@@ -208,8 +208,14 @@ if __name__ == "__main__":
     hosts = args.hosts
     if hosts:
         hosts = set(hosts.split(","))
-    if not redis.ping():
-        raise BaseException("could not ping redis")
+    while True:
+        try:
+            if not redis.ping():
+                raise BaseException("could not ping redis")
+            break
+        except Exception:
+            log.error("retrying redis ping in 5 seconds...")
+            time.sleep(5)
 
     try:
         with Connection(RABBITMQ_URI) as connection:

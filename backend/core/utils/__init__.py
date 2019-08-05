@@ -493,3 +493,14 @@ def update_aliased_list(yaml_conf, obj, updated_obj):
                     recurse(item, ref, new_obj)
 
     recurse(yaml_conf, obj, updated_obj)
+
+
+def ping_redis(redis_instance, timeout=5):
+    while True:
+        try:
+            if not redis_instance.ping():
+                raise BaseException("could not ping redis")
+            break
+        except Exception:
+            log.error("retrying redis ping in {} seconds...".format(timeout))
+            time.sleep(timeout)

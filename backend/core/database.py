@@ -23,6 +23,7 @@ from utils import get_ro_cursor
 from utils import get_wo_cursor
 from utils import HISTORIC
 from utils import MON_SUPERVISOR_URI
+from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
@@ -110,14 +111,7 @@ class Database:
 
             # redis db
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-            while True:
-                try:
-                    if not self.redis.ping():
-                        raise BaseException("could not ping redis")
-                    break
-                except Exception:
-                    log.error("retrying redis ping in 5 seconds...")
-                    time.sleep(5)
+            ping_redis(self.redis)
             self.bootstrap_redis()
 
             # EXCHANGES

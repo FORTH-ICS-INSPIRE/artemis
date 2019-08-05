@@ -1,7 +1,6 @@
 import os
 import re
 import signal
-import time
 from subprocess import Popen
 
 import radix
@@ -16,6 +15,7 @@ from utils import dump_json
 from utils import exception_handler
 from utils import flatten
 from utils import get_logger
+from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
@@ -64,14 +64,7 @@ class Monitor:
             self.monitors = None
             self.flag = True
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-            while True:
-                try:
-                    if not self.redis.ping():
-                        raise BaseException("could not ping redis")
-                    break
-                except Exception:
-                    log.error("retrying redis ping in 5 seconds...")
-                    time.sleep(5)
+            ping_redis(self.redis)
 
             # EXCHANGES
             self.config_exchange = Exchange(

@@ -4,6 +4,7 @@ import logging.config
 import logging.handlers
 import os
 import re
+import time
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
 
@@ -319,3 +320,14 @@ def translate_asn_range(asn_range, just_match=False):
         return False
 
     return [asn_range]
+
+
+def ping_redis(redis_instance, timeout=5):
+    while True:
+        try:
+            if not redis_instance.ping():
+                raise BaseException("could not ping redis")
+            break
+        except Exception:
+            log.error("retrying redis ping in {} seconds...".format(timeout))
+            time.sleep(timeout)

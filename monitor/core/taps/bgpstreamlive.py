@@ -14,6 +14,7 @@ from utils import key_generator
 from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
+from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
@@ -181,14 +182,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     projects = args.mon_projects.split(",")
-    while True:
-        try:
-            if not redis.ping():
-                raise BaseException("could not ping redis")
-            break
-        except Exception:
-            log.error("retrying redis ping in 5 seconds...")
-            time.sleep(5)
+    ping_redis(redis)
 
     try:
         run_bgpstream(

@@ -26,6 +26,7 @@ from utils import flatten
 from utils import get_hash
 from utils import get_logger
 from utils import key_generator
+from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
@@ -117,14 +118,7 @@ class Detection:
             self.mon_num = 1
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-            while True:
-                try:
-                    if not self.redis.ping():
-                        raise BaseException("could not ping redis")
-                    break
-                except Exception:
-                    log.error("retrying redis ping in 5 seconds...")
-                    time.sleep(5)
+            ping_redis(self.redis)
 
             # EXCHANGES
             self.update_exchange = Exchange(

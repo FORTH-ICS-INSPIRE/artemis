@@ -21,7 +21,7 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ Release.name }}-graphql-ingress
+  name: {{ .Release.Name }}-graphql-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /v1alpha1/graphql

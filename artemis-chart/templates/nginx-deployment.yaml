@@ -1,3 +1,4 @@
+{{- if not .Values.ingress.enabled -}}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -48,3 +49,4 @@ spec:
             path: key.pem
         name: nginx-secret0
 status: {}
+{{- end -}}

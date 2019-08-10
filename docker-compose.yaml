@@ -46,7 +46,7 @@ services:
             # uncomment after Step 2 of README
             # - ./local_configs/backend/:/etc/artemis/
             # comment after Step 2 of README
-            - ./backend/supervisor.d/:/etc/supervisor/conf.d/
+            - ./backend/supervisor.d/:/etc/supervisor.d/
             # uncomment after Step 2 of README
             #- ./local_configs/backend/supervisor.d/:/etc/supervisor/conf.d/
     monitor:

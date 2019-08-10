@@ -27,9 +27,12 @@ spec:
           name: backend-pvc
           subPath: configs
         command: ['sh', '-c', 'cp -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
-      - name: wait-for-service
+      - name: wait-for-rmq
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
+      - name: wait-for-monsuper
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Values.monSupervisorHost }} {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: RIS_ID
@@ -122,16 +125,26 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: redisPort
-        - name: SUPERVISOR_HOST
+        - name: BACKEND_SUPERVISOR_HOST
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: supervisorHost
-        - name: SUPERVISOR_PORT
+              key: backendSupervisorHost
+        - name: BACKEND_SUPERVISOR_PORT
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
-              key: supervisorPort
+              key: backendSupervisorPort
+        - name: MON_SUPERVISOR_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: monSupervisorHost
+        - name: MON_SUPERVISOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: monSupervisorPort
         - name: HIJACK_LOG_FILTER
           valueFrom:
             configMapKeyRef:
@@ -143,6 +156,7 @@ spec:
               name: {{ .Release.Name }}-configmap
               key: monTimeoutLastBgpUpdate
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
+        imagePullPolicy: Always
         name: backend
         resources: {}
         volumeMounts:

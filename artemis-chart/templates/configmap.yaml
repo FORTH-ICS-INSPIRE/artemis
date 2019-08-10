@@ -10,8 +10,10 @@ data:
   historic: {{ .Values.historic | default "false" | quote }}
   redisHost: {{ .Values.redisHost | default "backend" | quote }}
   redisPort: {{ .Values.redisPort | default "6379" | quote }}
-  supervisorHost: {{ .Values.supervisorHost | default "backend" | quote }}
-  supervisorPort: {{ .Values.supervisorPort | default "9001" | quote }}
+  backendSupervisorHost: {{ .Values.backendSupervisorHost | default "backend" | quote }}
+  backendSupervisorPort: {{ .Values.backendSupervisorPort | default "9001" | quote }}
+  monSupervisorHost: {{ .Values.monSupervisorHost | default "monitor" | quote }}
+  monSupervisorPort: {{ .Values.monSupervisorPort | default "9001" | quote }}
   apiHost: {{ .Values.apiHost | default "postgrest" | quote }}
   apiPort: {{ .Values.apiPort | default "3000" | quote }}
   risId: {{ .Values.risId | default "8522" | quote }}

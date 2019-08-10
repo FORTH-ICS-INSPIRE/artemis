@@ -15,6 +15,7 @@ from utils import dump_json
 from utils import exception_handler
 from utils import flatten
 from utils import get_logger
+from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
@@ -63,6 +64,7 @@ class Monitor:
             self.monitors = None
             self.flag = True
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+            ping_redis(self.redis)
 
             # EXCHANGES
             self.config_exchange = Exchange(

@@ -13,6 +13,7 @@ from utils import key_generator
 from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
+from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
@@ -114,6 +115,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    ping_redis(redis)
 
     print("Starting ExaBGP on {} for {}".format(args.host, args.prefixes_file))
     try:

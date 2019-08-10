@@ -2,6 +2,7 @@
 make
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
+./wait-for ${MON_SUPERVISOR_HOST}:${MON_SUPERVISOR_PORT} -t 0
 
 version=$(PGPASSWORD=$DB_PASS psql postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME} -c "select version from db_details;" -tA)
 
@@ -16,7 +17,7 @@ start_backend() {
             exit -1
         fi
     fi
-    sed -i 's/bind 127.0.0.1/# bind 127.0.0.1/g' /etc/redis/redis.conf
+    sed -i 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/redis/redis.conf
     sed -i 's/notify-keyspace-events ""/notify-keyspace-events KEA/g' /etc/redis/redis.conf
     redis-server /etc/redis/redis.conf --daemonize yes --protected-mode no
     supervisord -n

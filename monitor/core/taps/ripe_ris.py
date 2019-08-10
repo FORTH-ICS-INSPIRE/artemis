@@ -15,6 +15,7 @@ from utils import key_generator
 from utils import load_json
 from utils import mformat_validator
 from utils import normalize_msg_path
+from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
@@ -208,6 +209,7 @@ if __name__ == "__main__":
     hosts = args.hosts
     if hosts:
         hosts = set(hosts.split(","))
+    ping_redis(redis)
 
     try:
         with Connection(RABBITMQ_URI) as connection:

@@ -1,0 +1,46 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-backend-ingress
+  annotations:
+  {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+spec:
+  tls:
+  - hosts:
+    - {{ .Values.ingress.host | default "artemis.com" }}
+    secretName: {{ .Release.Name }}-secret-tls
+  rules:
+  - host: {{ .Values.ingress.host | default "artemis.com" }}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ .Values.webappHost }}
+          servicePort: {{ .Values.webappPort }}
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-graphql-ingress
+  annotations:
+  {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+    nginx.ingress.kubernetes.io/rewrite-target: /v1alpha1/graphql
+spec:
+  tls:
+  - hosts:
+    - {{ .Values.ingress.host | default "artemis.com" }}
+    secretName: {{ .Release.Name }}-secret-tls
+  rules:
+  - host: {{ .Values.ingress.host | default "artemis.com" }}
+    http:
+      paths:
+      - path: /api/graphql
+        backend:
+          serviceName: {{ .Values.hasuraHost }}
+          servicePort: {{ .Values.hasuraPort }}
+{{- end -}}

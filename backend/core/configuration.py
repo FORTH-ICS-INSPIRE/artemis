@@ -23,6 +23,7 @@ from kombu.mixins import ConsumerProducerMixin
 from utils import ArtemisError
 from utils import flatten
 from utils import get_logger
+from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
@@ -122,6 +123,7 @@ class Configuration:
                 self.data, _flag, _error = self.parse(raw, yaml=True)
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+            ping_redis(self.redis)
 
             # EXCHANGES
             self.config_exchange = Exchange(

@@ -21,8 +21,8 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             HASURA_HOST: ${HASURA_HOST}
             HASURA_PORT: ${HASURA_PORT}
-            SUPERVISOR_HOST: ${SUPERVISOR_HOST}
-            SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
         # volumes:
         #     - ./testing:/root/
     backend:
@@ -34,7 +34,7 @@ services:
         networks:
             - artemis
         expose:
-            - ${SUPERVISOR_PORT}
+            - ${BACKEND_SUPERVISOR_PORT}
             - ${REDIS_PORT}
         entrypoint:
             - "./entrypoint.test"
@@ -51,8 +51,10 @@ services:
             DB_VERSION: ${DB_VERSION}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
-            SUPERVISOR_HOST: ${SUPERVISOR_HOST}
-            SUPERVISOR_PORT: ${SUPERVISOR_PORT}
+            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
+            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
+            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             GUI_ENABLED: "false"
             BULK_TIMER: 0.1
             COVERALLS_REPO_TOKEN: coveralls_token_here

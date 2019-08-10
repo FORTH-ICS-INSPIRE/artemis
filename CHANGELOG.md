@@ -11,6 +11,7 @@
 - Local pre-commit hook to check versioning
 - Bgpstream historical BGP record collector (per prefix)
 - Support for RIPE whois service-resolved AS-SETs in configuration
+- In hijack page count the number of peers seen announcement and withdrawal.
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

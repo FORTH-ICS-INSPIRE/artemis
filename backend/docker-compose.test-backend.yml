@@ -74,7 +74,7 @@ services:
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
         volumes:
             - ./testing/configs/:/etc/artemis/
-            - ./testing/supervisor.d/:/etc/supervisor/conf.d/
+            - ./testing/supervisor.d/:/etc/supervisor.d/
             - ./entrypoint.test:/root/entrypoint
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine

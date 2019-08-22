@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: pg-amqp-bridge
     app: {{ .Release.Name }}
-  name: pg-amqp-bridge
+  name: {{ .Release.Name }}-pg-amqp-bridge
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:

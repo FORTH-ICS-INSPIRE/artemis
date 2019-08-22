@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: backend
     app: {{ .Release.Name }}
-  name: backend
+  name: {{ .Release.Name }}-backend
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -175,6 +175,6 @@ spec:
           name: {{ .Release.Name }}-volumes
         name: backend-configmap
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-pvc
+          claimName: {{ .Release.Name }}-backend-pvc
         name: backend-pvc
 status: {}

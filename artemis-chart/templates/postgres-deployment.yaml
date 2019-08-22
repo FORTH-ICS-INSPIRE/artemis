@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: postgres
     app: {{ .Release.Name }}
-  name: postgres
+  name: {{ .Release.Name }}-postgres
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -97,6 +97,6 @@ spec:
       - emptyDir: {}
         name: postgres-emptydir
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-pvc
+          claimName: {{ .Release.Name }}-postgres-pvc
         name: postgres-pvc
 status: {}

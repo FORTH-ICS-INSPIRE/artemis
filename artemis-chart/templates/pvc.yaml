@@ -1,12 +1,47 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-pvc
+  name: {{ .Release.Name }}-postgres-pvc
   labels:
     app: {{ .Release.Name }}
 spec:
   accessModes:
-    - ReadWriteMany
+    - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ .Values.pvc.storage }}
+  {{- if hasKey .Values.pvc "storageClassName" }}
+  storageClassName: {{ .Values.pvc.storageClassName }}
+  {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-monitor-pvc
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.storage }}
+  {{- if hasKey .Values.pvc "storageClassName" }}
+  storageClassName: {{ .Values.pvc.storageClassName }}
+  {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-backend-pvc
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.storage }}
+  {{- if hasKey .Values.pvc "storageClassName" }}
+  storageClassName: {{ .Values.pvc.storageClassName }}
+  {{- end }}

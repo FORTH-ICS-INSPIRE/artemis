@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: frontend
     app: {{ .Release.Name }}
-  name: frontend
+  name: {{ .Release.Name }}-frontend
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:

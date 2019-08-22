@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: postgrest
     app: {{ .Release.Name }}
-  name: postgrest
+  name: {{ .Release.Name }}-postgrest
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy: {}

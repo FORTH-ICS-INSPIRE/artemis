@@ -200,13 +200,13 @@
             </div>
             <div class="col-lg-6 my-1 mb-4">
                 <div class="collapse multi-collapse" id="seenHijackUpdate">
-                    Peers Seen Hijack BGP Announcement:
+                    (<b id="number_peers_seen_hijack_announcement"> </b>) Peers Seen Hijack BGP Announcement:
                     <div class="card card-body" id="seenHijackUpdate_text"></div>
                 </div>
             </div>
             <div class="col-lg-6 my-1 mb-4">
                 <div class="collapse multi-collapse" id="seenHijackWithdraw">
-                    Peers Seen Hijack BGP Withdrawal:
+                    (<b id="number_peers_seen_hijack_withdrawal"> </b>) Peers Seen Hijack BGP Withdrawal:
                     <div class="card card-body" id="seenHijackWithdraw_text">
                     </div>
                 </div>
@@ -875,6 +875,7 @@
                 }
                 peers_html.push(css_row[1]);
                 $( "#seenHijackUpdate_text").html( peers_html.join('') );
+                $( "#number_peers_seen_hijack_announcement" ).html(peers_seen.length);
 
                 peers_html = [];
                 var peers_withdrawn = hijack_obj['peers_withdrawn'].sort(function(a,b){ return a - b;});
@@ -894,6 +895,7 @@
                 peers_html.push(css_row[1]);
 
                 $( "#seenHijackWithdraw_text").html( peers_html.join('') );
+                $( "#number_peers_seen_hijack_withdrawal" ).html(peers_withdrawn.length);
 
                 if(hijack_obj['active'] == true){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));

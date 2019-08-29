@@ -927,7 +927,7 @@ class Detection:
                     "path": [],
                     "orig_path": {"triggering_bgp_update": monitor_event},
                     "communities": [],
-                    "timestamp": monitor_event["timestamp"] + 0.001,
+                    "timestamp": monitor_event["timestamp"] - 0.001,
                     "peer_asn": peer_asn,
                 }
                 key_generator(withdraw_msg)

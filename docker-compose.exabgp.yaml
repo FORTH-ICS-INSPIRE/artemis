@@ -8,6 +8,6 @@ services:
             - artemis
         volumes:
             # comment after Step 2 of README
-            - ./backend/configs/exabgp.conf:/home/config/exabgp.conf
+            - ./monitor/configs/exabgp.conf:/home/config/exabgp.conf
             # uncomment after Step 2 of README
-            # - ./local_configs/backend/exabgp.conf:/home/config/exabgp.conf
+            # - ./local_configs/monitor/exabgp.conf:/home/config/exabgp.conf

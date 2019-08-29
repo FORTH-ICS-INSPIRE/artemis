@@ -1,3 +1,4 @@
+{{- if not .Values.ingress.enabled -}}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -40,11 +41,12 @@ spec:
           name: {{ .Release.Name }}-volumes
         name: nginx-configmap0
       - secret:
-          secretName: {{ .Release.Name }}-secret-volumes
+          secretName: {{ .Release.Name }}-secret-tls
           items:
-          - key: cert.pem
+          - key: tls.crt
             path: cert.pem
-          - key: key.pem
+          - key: tls.key
             path: key.pem
         name: nginx-secret0
 status: {}
+{{- end -}}

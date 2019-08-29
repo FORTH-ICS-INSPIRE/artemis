@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging.config
 import os
+import time
 from datetime import datetime
 from datetime import timedelta
 from ipaddress import ip_network as str2ip
@@ -63,6 +64,17 @@ def key_generator(msg):
 
 def get_hash(obj):
     return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+
+
+def ping_redis(redis_instance, timeout=5):
+    while True:
+        try:
+            if not redis_instance.ping():
+                raise BaseException("could not ping redis")
+            break
+        except Exception:
+            log.error("retrying redis ping in {} seconds...".format(timeout))
+            time.sleep(timeout)
 
 
 def decompose_path(path):

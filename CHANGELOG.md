@@ -13,6 +13,7 @@
 - Support for RIPE whois service-resolved AS-SETs in configuration
 - Ingress resource for helm-chart (by default supports NGINX Ingress Controller)
 - Redis ping/pong check on connection initialization
+- In hijack page count the number of peers seen announcement and withdrawal
 
 ### Changed
 - Refactoring frontend (views, templates and static files are organized inside the folder render)

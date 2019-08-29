@@ -1176,7 +1176,7 @@ class Database:
                 "FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
                 "WHERE bgp_updates.prefix = %s "
                 "AND bgp_updates.type = 'A' "
-                "AND bgp_updates.timestamp >= %s "
+                "AND bgp_updates.timestamp > %s "
                 "AND hijacks.active = true "
                 "AND bgp_updates.peer_asn = %s "
                 "AND bgp_updates.handled = true "
@@ -1202,7 +1202,7 @@ class Database:
                         # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
                         # 6: time_last
                         update_hijack_withdrawals.add((entry[2], withdrawal[3]))
-                        if entry[5] >= withdrawal[2]:
+                        if entry[5] > withdrawal[2]:
                             continue
                         # matching withdraw with a hijack
                         if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:

@@ -163,7 +163,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                 )
                                 if validator.validate(norm_ris_msg):
                                     norm_path_msgs = normalize_msg_path(norm_ris_msg)
-                                    for norm_path_msg in norm_path_msgs[::-1]:
+                                    for norm_path_msg in norm_path_msgs:
                                         key_generator(norm_path_msg)
                                         log.debug(norm_path_msg)
                                         producer.publish(

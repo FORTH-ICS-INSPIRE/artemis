@@ -1176,7 +1176,7 @@ class Database:
                 "FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
                 "WHERE bgp_updates.prefix = %s "
                 "AND bgp_updates.type = 'A' "
-                "AND bgp_updates.timestamp > %s "
+                "AND bgp_updates.timestamp >= %s "
                 "AND hijacks.active = true "
                 "AND bgp_updates.peer_asn = %s "
                 "AND bgp_updates.handled = true "

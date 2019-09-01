@@ -33,6 +33,8 @@
 - Monitoring of monitors and restarting them if not seen any BGP updates within user-defined interval
 - Avoid detectors being stuck on blpop if token erased
 - Fix for historical replay of withdrawals plus bgpstreamhist rate-limit
+- Minor: creating implicit withdrawals 1 second after the related benign announcement
+- Minor: in handling BGP withdrawals, consider announcements that are strictly newer than the withdrawals
 
 ### Removed
 - TBD (removed a feature)

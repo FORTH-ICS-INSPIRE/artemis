@@ -66,8 +66,8 @@ spec:
         - mountPath: /docker-entrypoint-initdb.d/libs/rabbitmq/
           name: postgres-configmap3
         - mountPath: /var/lib/postgresql/data/
-          name: postgres-emptydir
-          # subPath: postgres-data
+          name: postgres-pvc
+          subPath: postgres-data
         - mountPath: /tmp/
           name: postgres-pvc
           subPath: postgres-backup
@@ -94,8 +94,6 @@ spec:
           - key: schema.sql
             path: schema.sql
         name: postgres-configmap3
-      - emptyDir: {}
-        name: postgres-emptydir
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-postgres-pvc
         name: postgres-pvc

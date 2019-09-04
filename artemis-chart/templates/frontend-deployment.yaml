@@ -154,7 +154,8 @@ spec:
         - mountPath: /etc/artemis/
           name: frontend-configmap
         - mountPath: /etc/webapp/db/
-          name: frontend-emptydir
+          name: frontend-pvc
+          subPath: webbapp-db
       restartPolicy: Always
       volumes:
       - configMap:
@@ -165,6 +166,7 @@ spec:
           - key: logging.yaml
             path: logging.yaml
         name: frontend-configmap
-      - emptyDir: {}
-        name: frontend-emptydir
+      - persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-frontend-pvc
+        name: frontend-pvc
 status: {}

@@ -45,3 +45,19 @@ spec:
   {{- if hasKey .Values.pvc "storageClassName" }}
   storageClassName: {{ .Values.pvc.storageClassName }}
   {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-frontend-pvc
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.storage }}
+  {{- if hasKey .Values.pvc "storageClassName" }}
+  storageClassName: {{ .Values.pvc.storageClassName }}
+  {{- end }}

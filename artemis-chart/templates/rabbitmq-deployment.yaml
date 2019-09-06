@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: rabbitmq
     app: {{ .Release.Name }}
-  name: rabbitmq
+  name: {{ .Release.Name }}-rabbitmq
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -41,4 +41,8 @@ spec:
       - configMap:
           name: {{ .Release.Name }}-volumes
         name: rabbitmq-configmap0
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

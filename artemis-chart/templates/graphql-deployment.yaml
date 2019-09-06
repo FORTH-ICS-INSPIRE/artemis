@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: graphql
     app: {{ .Release.Name }}
-  name: graphql
+  name: {{ .Release.Name }}-graphql
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy: {}
@@ -49,4 +49,8 @@ spec:
         name: graphql
         resources: {}
       restartPolicy: Always
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

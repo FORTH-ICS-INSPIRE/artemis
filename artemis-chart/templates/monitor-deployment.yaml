@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: monitor
     app: {{ .Release.Name }}
-  name: monitor
+  name: {{ .Release.Name }}-monitor
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -169,6 +169,10 @@ spec:
           name: {{ .Release.Name }}-volumes
         name: monitor-configmap
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-pvc
+          claimName: {{ .Release.Name }}-monitor-pvc
         name: monitor-pvc
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

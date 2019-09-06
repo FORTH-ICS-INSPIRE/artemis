@@ -13,6 +13,8 @@
 <img src="docs/images/artemis_logo.png" style="margin-bottom: 15px;"/>
 </p>
 
+![](overview.gif)
+
 Table of Contents
   * [General](#general)
   * [Features](#features)

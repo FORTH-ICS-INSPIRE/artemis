@@ -87,4 +87,7 @@ ingress:
     annotations:
 pvc:
   storage: 1Gi
-  # volumeName: artemis-volume
+  # storageClassName: rook-block
+  # accessMode: ReadWriteMany
+
+nodeSelector:

@@ -97,4 +97,8 @@ spec:
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-postgres-pvc
         name: postgres-pvc
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

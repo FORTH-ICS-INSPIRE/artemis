@@ -39,4 +39,8 @@ spec:
         name: pg-amqp-bridge
         resources: {}
       restartPolicy: Always
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

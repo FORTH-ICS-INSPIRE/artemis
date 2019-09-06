@@ -48,5 +48,9 @@ spec:
           - key: tls.key
             path: key.pem
         name: nginx-secret0
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}
 {{- end -}}

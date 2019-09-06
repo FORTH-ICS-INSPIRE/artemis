@@ -49,4 +49,8 @@ spec:
         name: graphql
         resources: {}
       restartPolicy: Always
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

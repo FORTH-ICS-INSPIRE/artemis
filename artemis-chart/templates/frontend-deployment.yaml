@@ -169,4 +169,8 @@ spec:
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-frontend-pvc
         name: frontend-pvc
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

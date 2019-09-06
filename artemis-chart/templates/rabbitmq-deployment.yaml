@@ -19,12 +19,12 @@ spec:
     spec:
       containers:
       - env:
-        - name: RABBITMQ_USER
+        - name: RABBITMQ_DEFAULT_USER
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: rabbitmqUser
-        - name: RABBITMQ_PASS
+        - name: RABBITMQ_DEFAULT_PASS
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secret

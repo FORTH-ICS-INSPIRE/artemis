@@ -2,7 +2,7 @@ FROM mavromat/alpine-python:3.6
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
-RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis
+RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis curl
 
 WORKDIR /root
 

@@ -35,12 +35,7 @@
 - Fix for historical replay of withdrawals plus bgpstreamhist rate-limit
 - Minor: creating implicit withdrawals 1 second after the related benign announcement
 - Minor: in handling BGP withdrawals, consider announcements that are strictly newer than the withdrawals
-
-### Removed
-- TBD (removed a feature)
-
-### Deprecated
-- TBD (soon-to-be removed feature)
+- Various helm (k8s) chart fixes and improvements (see #221)
 
 ### Security
 - Bumped SQLAlchemy from 1.2.16 to 1.3.3 in /frontend

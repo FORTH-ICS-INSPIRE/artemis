@@ -11,4 +11,4 @@ maintainers:
   - name: Dimitrios Mavrommatis
     email: jim.mavrommatis@gmail.com
     url: https://slowr.github.io
-appVersion: latest
+appVersion: release-1.3.0

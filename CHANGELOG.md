@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED] (Arktos) - YYYY-MM-DD
+## [1.3.0] (Arktos) - 2019-09-12
 ### Added
 - Slack logging package and example
 - ARTEMIS logo

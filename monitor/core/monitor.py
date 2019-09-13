@@ -13,13 +13,11 @@ from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import dump_json
 from utils import exception_handler
-from utils import flatten
 from utils import get_logger
 from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
-from utils import translate_asn_range
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -181,34 +179,9 @@ class Monitor:
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
                 try:
-                    rule_translated_prefix_set = set()
                     for prefix in rule["prefixes"]:
-                        this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                        rule_translated_prefix_set.update(
-                            set(this_translated_prefix_list)
-                        )
-                    rule["prefixes"] = list(rule_translated_prefix_set)
-                    for prefix in rule["prefixes"]:
-                        node = self.prefix_tree.add(prefix)
-
-                        rule_translated_origin_asn_set = set()
-                        for asn in rule["origin_asns"]:
-                            this_translated_asn_list = flatten(translate_asn_range(asn))
-                            rule_translated_origin_asn_set.update(
-                                set(this_translated_asn_list)
-                            )
-                        rule["origin_asns"] = list(rule_translated_origin_asn_set)
-                        rule_translated_neighbor_set = set()
-                        for asn in rule["neighbors"]:
-                            this_translated_asn_list = flatten(translate_asn_range(asn))
-                            rule_translated_neighbor_set.update(
-                                set(this_translated_asn_list)
-                            )
-                        rule["neighbors"] = list(rule_translated_neighbor_set)
-
-                        node.data["origin_asns"] = rule["origin_asns"]
-                        node.data["neighbors"] = rule["neighbors"]
-                        node.data["mitigation"] = rule["mitigation"]
+                        for translated_prefix in translate_rfc2622(prefix):
+                            self.prefix_tree.add(translated_prefix)
                 except Exception:
                     log.exception("Exception")
 

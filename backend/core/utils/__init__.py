@@ -273,10 +273,9 @@ def valid_prefix(input_prefix):
 
 
 def calculate_more_specifics(prefix, min_length, max_length):
-    prefix_list = []
     for prefix_length in range(min_length, max_length + 1):
-        prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
-    return prefix_list
+        for sub_prefix in prefix.subnets(new_prefix=prefix_length):
+            yield str(sub_prefix)
 
 
 class SetEncoder(json.JSONEncoder):
@@ -292,7 +291,7 @@ def translate_rfc2622(input_prefix, just_match=False):
     should be translated according to RFC2622
     :param just_match: (bool) check only if the prefix
     has matched instead of translating
-    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes,
+    :return: output_prefixes: (iterator of str) output IPv4/IPv6 prefixes,
     if not just_match, otherwise True or False
     """
 
@@ -309,12 +308,7 @@ def translate_rfc2622(input_prefix, just_match=False):
             max_length = matched_prefix_ip.max_prefixlen
             if just_match:
                 return True
-            return list(
-                map(
-                    str,
-                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
-                )
-            )
+            return calculate_more_specifics(matched_prefix_ip, min_length, max_length)
 
     # ^+ is the inclusive more specifics operator; it stands for the more
     #    specifics of the address prefix including the address prefix
@@ -329,12 +323,7 @@ def translate_rfc2622(input_prefix, just_match=False):
             max_length = matched_prefix_ip.max_prefixlen
             if just_match:
                 return True
-            return list(
-                map(
-                    str,
-                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
-                )
-            )
+            return calculate_more_specifics(matched_prefix_ip, min_length, max_length)
 
     # ^n where n is an integer, stands for all the length n specifics of
     #    the address prefix.  For example, 30.0.0.0/8^16 contains all the
@@ -378,12 +367,7 @@ def translate_rfc2622(input_prefix, just_match=False):
                 raise ArtemisError("invalid-n-large", input_prefix)
             if just_match:
                 return True
-            return list(
-                map(
-                    str,
-                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
-                )
-            )
+            return calculate_more_specifics(matched_prefix_ip, min_length, max_length)
 
     # nothing has matched
     if just_match:

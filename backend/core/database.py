@@ -4,8 +4,8 @@ import signal
 import time
 from xmlrpc.client import ServerProxy
 
+import network_finder
 import psycopg2.extras
-import radix
 import redis
 import yaml
 from kombu import Connection
@@ -639,7 +639,7 @@ class Database:
                 log.exception("{}".format(message))
 
         def build_radix_tree(self):
-            self.prefix_tree = radix.Radix()
+            self.prefix_tree = network_finder.NetworkFinder()
             for rule in self.rules:
                 try:
                     for prefix in rule["prefixes"]:
@@ -647,6 +647,8 @@ class Database:
                             node = self.prefix_tree.search_exact(translated_prefix)
                             if not node:
                                 node = self.prefix_tree.add(translated_prefix)
+                                node.data = {}
+                                node.data["prefix"] = translated_prefix
                                 node.data["confs"] = []
 
                             rule_translated_origin_asn_set = set()
@@ -695,13 +697,13 @@ class Database:
         def find_best_prefix_match(self, prefix):
             prefix_node = self.prefix_tree.search_best(prefix)
             if prefix_node:
-                return prefix_node.prefix
+                return prefix_node.data["prefix"]
             return None
 
         def find_worst_prefix_match(self, prefix):
             prefix_node = self.prefix_tree.search_worst(prefix)
             if prefix_node:
-                return prefix_node.prefix
+                return prefix_node.data["prefix"]
             return None
 
         def handle_config_notify(self, message):

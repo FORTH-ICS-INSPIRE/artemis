@@ -3,7 +3,7 @@ import re
 import signal
 from subprocess import Popen
 
-import radix
+import network_finder
 import redis
 from kombu import Connection
 from kombu import Consumer
@@ -176,7 +176,7 @@ class Monitor:
             self.process_ids.clear()
             self.prefixes.clear()
 
-            self.prefix_tree = radix.Radix()
+            self.prefix_tree = network_finder.NetworkFinder()
             for rule in self.rules:
                 try:
                     for prefix in rule["prefixes"]:

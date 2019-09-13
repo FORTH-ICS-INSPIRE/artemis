@@ -4,7 +4,7 @@ import os
 import time
 from copy import deepcopy
 
-import radix
+import network_finder
 import redis
 import requests
 from kombu import Connection
@@ -117,7 +117,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
 
     prefixes = load_json(prefixes_file)
     assert prefixes is not None
-    prefix_tree = radix.Radix()
+    prefix_tree = network_finder.NetworkFinder()
     for prefix in prefixes:
         prefix_tree.add(prefix)
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## [UNRELEASED] (NAME) - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- Support for millions of prefixes in configuration file
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
 ## [1.3.0] (Arktos) - 2019-09-12
 ### Added
 - Slack logging package and example

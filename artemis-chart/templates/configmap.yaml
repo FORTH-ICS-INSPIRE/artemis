@@ -6,7 +6,7 @@ metadata:
     app: {{ .Release.Name }}
 data:
   guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
-  systemVersion: {{ .Values.systemVersion | default "release-1.3.0" | quote }}
+  systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
   historic: {{ .Values.historic | default "false" | quote }}
   redisHost: {{ .Values.redisHost | default "backend" | quote }}
   redisPort: {{ .Values.redisPort | default "6379" | quote }}

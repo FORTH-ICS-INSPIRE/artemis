@@ -3,7 +3,7 @@ import signal
 import subprocess
 import time
 
-import network_finder
+import radix
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -155,14 +155,12 @@ class Mitigation:
                     self.init_mitigation()
 
         def init_mitigation(self):
-            self.prefix_tree = network_finder.NetworkFinder()
+            self.prefix_tree = radix.Radix()
             for rule in self.rules:
                 try:
                     for prefix in rule["prefixes"]:
                         for translated_prefix in translate_rfc2622(prefix):
                             node = self.prefix_tree.add(translated_prefix)
-                            node.data = {}
-                            node.data["prefix"] = translated_prefix
                             node.data["mitigation"] = rule["mitigation"]
                 except Exception:
                     log.exception("Exception")

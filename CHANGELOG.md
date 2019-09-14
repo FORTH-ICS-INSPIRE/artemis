@@ -5,7 +5,7 @@
 - TBD (Added a new feature)
 
 ### Changed
-- Replaced py-radix tree with network-finder
+- TBD (Changed existing functionality)
 
 ### Fixed
 - Support for millions of prefixes in configuration file

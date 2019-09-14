@@ -12,7 +12,7 @@ from typing import List
 from typing import NoReturn
 from typing import Tuple
 
-import network_finder
+import radix
 import redis
 import yaml
 from kombu import Connection
@@ -341,7 +341,7 @@ class Detection:
             """
             Updates rules everytime it receives a new configuration.
             """
-            self.prefix_tree = network_finder.NetworkFinder()
+            self.prefix_tree = radix.Radix()
             for rule in self.rules:
                 try:
                     for prefix in rule["prefixes"]:
@@ -349,8 +349,6 @@ class Detection:
                             node = self.prefix_tree.search_exact(translated_prefix)
                             if not node:
                                 node = self.prefix_tree.add(translated_prefix)
-                                node.data = {}
-                                node.data["prefix"] = translated_prefix
                                 node.data["confs"] = []
 
                             rule_translated_origin_asn_set = set()
@@ -441,7 +439,7 @@ class Detection:
                 prefix_node = self.prefix_tree.search_best(monitor_event["prefix"])
 
                 if prefix_node:
-                    monitor_event["matched_prefix"] = prefix_node.data["prefix"]
+                    monitor_event["matched_prefix"] = prefix_node.prefix
 
                     try:
                         path_hijacker = -1
@@ -623,11 +621,7 @@ class Detection:
 
         @exception_handler(log)
         def detect_prefix_squatting_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> str:
             """
             Squatting hijack detection.
@@ -640,30 +634,19 @@ class Detection:
 
         @exception_handler(log)
         def detect_prefix_subprefix_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> str:
             """
             Subprefix or exact prefix hijack detection.
             """
             mon_prefix = ipaddress.ip_network(monitor_event["prefix"])
-            if (
-                ipaddress.ip_network(prefix_node.data["prefix"]).prefixlen
-                < mon_prefix.prefixlen
-            ):
+            if prefix_node.prefixlen < mon_prefix.prefixlen:
                 return "S"
             return "E"
 
         @exception_handler(log)
         def detect_path_type_0_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             """
             Origin hijack detection.
@@ -676,11 +659,7 @@ class Detection:
 
         @exception_handler(log)
         def detect_path_type_1_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             """
             Type-1 hijack detection.
@@ -701,66 +680,42 @@ class Detection:
 
         @exception_handler(log)
         def detect_path_type_N_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for type-N detection (not supported)
             return (-1, "-")
 
         @exception_handler(log)
         def detect_path_type_U_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for type-U detection (not supported)
             return (-1, "-")
 
         @exception_handler(log)
         def detect_dplane_blackholing_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> str:
             # Placeholder for blackholing detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_dplane_imposture_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> str:
             # Placeholder for imposture detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_dplane_mitm_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> str:
             # Placeholder for mitm detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_pol_leak_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             """
             Route leak hijack detection
@@ -772,11 +727,7 @@ class Detection:
 
         @exception_handler(log)
         def detect_pol_other_hijack(
-            self,
-            monitor_event: Dict,
-            prefix_node: network_finder.NetworkFinder,
-            *args,
-            **kwargs
+            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for policy violation detection (not supported)
             return (-1, "-")

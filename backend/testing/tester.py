@@ -332,7 +332,7 @@ class Tester:
             res = (0,)
             # wait until all 6 modules are running
             while res[0] < 6:
-                print("executing query")
+                print("{}/6 modules are running. Re-executing query...")
                 db_cur.execute(query)
                 res = db_cur.fetchall()[0]
                 db_con.commit()
@@ -431,6 +431,7 @@ class Tester:
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
+        self.waitProcess("prefixtree", 0)  # 0 STOPPED
 
         self.supervisor.supervisor.startProcess("coveralls")
 

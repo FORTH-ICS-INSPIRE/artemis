@@ -642,36 +642,30 @@ class Database:
             self.prefix_tree = radix.Radix()
             for rule in self.rules:
                 try:
+                    rule_translated_origin_asn_set = set()
+                    for asn in rule["origin_asns"]:
+                        this_translated_asn_list = flatten(translate_asn_range(asn))
+                        rule_translated_origin_asn_set.update(
+                            set(this_translated_asn_list)
+                        )
+                    rule["origin_asns"] = list(rule_translated_origin_asn_set)
+                    rule_translated_neighbor_set = set()
+                    for asn in rule["neighbors"]:
+                        this_translated_asn_list = flatten(translate_asn_range(asn))
+                        rule_translated_neighbor_set.update(
+                            set(this_translated_asn_list)
+                        )
+                    rule["neighbors"] = list(rule_translated_neighbor_set)
+                    conf_obj = {
+                        "origin_asns": rule["origin_asns"],
+                        "neighbors": rule["neighbors"],
+                    }
                     for prefix in rule["prefixes"]:
                         for translated_prefix in translate_rfc2622(prefix):
                             node = self.prefix_tree.search_exact(translated_prefix)
                             if not node:
                                 node = self.prefix_tree.add(translated_prefix)
                                 node.data["confs"] = []
-
-                            rule_translated_origin_asn_set = set()
-                            for asn in rule["origin_asns"]:
-                                this_translated_asn_list = flatten(
-                                    translate_asn_range(asn)
-                                )
-                                rule_translated_origin_asn_set.update(
-                                    set(this_translated_asn_list)
-                                )
-                            rule["origin_asns"] = list(rule_translated_origin_asn_set)
-                            rule_translated_neighbor_set = set()
-                            for asn in rule["neighbors"]:
-                                this_translated_asn_list = flatten(
-                                    translate_asn_range(asn)
-                                )
-                                rule_translated_neighbor_set.update(
-                                    set(this_translated_asn_list)
-                                )
-                            rule["neighbors"] = list(rule_translated_neighbor_set)
-
-                            conf_obj = {
-                                "origin_asns": rule["origin_asns"],
-                                "neighbors": rule["neighbors"],
-                            }
                             node.data["confs"].append(conf_obj)
                 except Exception:
                     log.exception("Exception")

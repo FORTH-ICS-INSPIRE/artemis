@@ -328,14 +328,21 @@ class Tester:
             # query database for the states of the processes
             db_con = self.getDbConnection()
             db_cur = db_con.cursor()
-            query = "SELECT COUNT(*) FROM process_states WHERE running=True"
-            res = (0,)
-            # wait until all 6 modules are running
-            while res[0] < 6:
-                print("{}/6 modules are running. Re-executing query...")
+            query = "SELECT name FROM process_states WHERE running=True"
+            running_modules = set()
+            # wait until all 7 modules are running
+            while len(running_modules) < 7:
                 db_cur.execute(query)
-                res = db_cur.fetchall()[0]
+                entries = db_cur.fetchall()
+                for entry in entries:
+                    running_modules.add(entry[0])
                 db_con.commit()
+                print("Running modules: {}".format(running_modules))
+                print(
+                    "{}/7 modules are running. Re-executing query...".format(
+                        len(running_modules)
+                    )
+                )
                 time.sleep(1)
 
             Tester.config_request_rpc(connection)

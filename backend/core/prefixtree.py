@@ -66,11 +66,17 @@ class PrefixTree:
 
             # QUEUES
             self.config_queue = Queue(
-                "detection-config-notify-{}".format(uuid()),
+                "prefixtree-config-notify-{}".format(uuid()),
                 exchange=self.config_exchange,
                 routing_key="notify",
                 durable=False,
                 auto_delete=True,
+                max_priority=3,
+                consumer_arguments={"x-priority": 3},
+            )
+            self.search_prefix_node_request_queue = Queue(
+                "prefixtree-search-prefix-node-request-queue",
+                durable=False,
                 max_priority=3,
                 consumer_arguments={"x-priority": 3},
             )
@@ -87,7 +93,13 @@ class PrefixTree:
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
                     no_ack=True,
-                )
+                ),
+                Consumer(
+                    queues=[self.search_prefix_node_request_queue],
+                    on_message=self.handle_search_prefix_node_request,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
             ]
 
         def handle_config_notify(self, message: Dict) -> NoReturn:
@@ -196,32 +208,36 @@ class PrefixTree:
                 except Exception:
                     log.exception("Exception")
 
-            def handle_search_exact_rpc(self, message: Dict):
-                """
-                Callback function for the search exact request RPC.
-                """
-                log.debug("message: {}\npayload: {}".format(message, message.payload))
-                if self.correlation_id == message.properties["correlation_id"]:
-                    # raw = message.payload
-                    pass
-
-            def handle_search_best_rpc(self, message: Dict):
-                """
-                Callback function for the search exact request RPC.
-                """
-                log.debug("message: {}\npayload: {}".format(message, message.payload))
-                if self.correlation_id == message.properties["correlation_id"]:
-                    # raw = message.payload
-                    pass
-
-            def handle_search_worst_rpc(self, message: Dict):
-                """
-                Callback function for the search exact request RPC.
-                """
-                log.debug("message: {}\npayload: {}".format(message, message.payload))
-                if self.correlation_id == message.properties["correlation_id"]:
-                    # raw = message.payload
-                    pass
+        def handle_search_prefix_node_request(self, message: Dict):
+            """
+            Callback function for the search prefix node request RPC.
+            """
+            log.debug("message: {}\npayload: {}".format(message, message.payload))
+            raw = message.payload
+            try:
+                prefix = raw["prefix"]
+                option = raw["option"]
+                assert option in ["exact", "best", "worst"]
+                prefix_node_dict = {}
+                if option == "exact":
+                    prefix_node = self.prefix_tree.search_exact(prefix)
+                elif option == "best":
+                    prefix_node = self.prefix_tree.search_best(prefix)
+                else:
+                    prefix_node = self.prefix_tree.search_worst(prefix)
+                if prefix_node:
+                    prefix_node_dict = {"prefix": prefix, "data": prefix_node.data}
+                self.producer.publish(
+                    prefix_node_dict,
+                    exchange="",
+                    routing_key=message.properties["reply_to"],
+                    correlation_id=message.properties["correlation_id"],
+                    serializer="json",
+                    retry=True,
+                    priority=3,
+                )
+            except Exception:
+                log.exception("Exception")
 
 
 def run():

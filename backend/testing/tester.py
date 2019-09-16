@@ -330,8 +330,8 @@ class Tester:
             db_cur = db_con.cursor()
             query = "SELECT name FROM process_states WHERE running=True"
             running_modules = set()
-            # wait until all 7 modules are running
-            while len(running_modules) < 7:
+            # wait until all 6 modules are running
+            while len(running_modules) < 6:
                 db_cur.execute(query)
                 entries = db_cur.fetchall()
                 for entry in entries:
@@ -339,7 +339,7 @@ class Tester:
                 db_con.commit()
                 print("Running modules: {}".format(running_modules))
                 print(
-                    "{}/7 modules are running. Re-executing query...".format(
+                    "{}/6 modules are running. Re-executing query...".format(
                         len(running_modules)
                     )
                 )
@@ -438,7 +438,6 @@ class Tester:
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
-        self.waitProcess("prefixtree", 0)  # 0 STOPPED
 
         self.supervisor.supervisor.startProcess("coveralls")
 

@@ -5,7 +5,7 @@ import time
 from xmlrpc.client import ServerProxy
 
 import psycopg2.extras
-import radix
+import pytricia
 import redis
 import yaml
 from kombu import Connection
@@ -18,6 +18,7 @@ from utils import BACKEND_SUPERVISOR_URI
 from utils import flatten
 from utils import get_db_conn
 from utils import get_hash
+from utils import get_ip_version
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
@@ -29,6 +30,7 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import search_worst_prefix
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
@@ -72,7 +74,7 @@ class Database:
             self.connection = connection
             self.prefix_tree = None
             self.monitored_prefixes = set()
-            self.configured_prefixes = set()
+            self.configured_prefix_count = 0
             self.monitor_peers = 0
             self.rules = None
             self.timestamp = -1
@@ -295,8 +297,6 @@ class Database:
             )
 
             self.config_request_rpc()
-
-            log.info("started")
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -638,8 +638,13 @@ class Database:
             except Exception:
                 log.exception("{}".format(message))
 
-        def build_radix_tree(self):
-            self.prefix_tree = radix.Radix()
+        def build_prefix_tree(self):
+            log.info("Starting building database prefix tree...")
+            self.prefix_tree = {
+                "v4": pytricia.PyTricia(32),
+                "v6": pytricia.PyTricia(128),
+            }
+            raw_prefix_count = 0
             for rule in self.rules:
                 try:
                     rule_translated_origin_asn_set = set()
@@ -662,50 +667,66 @@ class Database:
                     }
                     for prefix in rule["prefixes"]:
                         for translated_prefix in translate_rfc2622(prefix):
-                            node = self.prefix_tree.search_exact(translated_prefix)
-                            if not node:
-                                node = self.prefix_tree.add(translated_prefix)
-                                node.data["confs"] = []
-                            node.data["confs"].append(conf_obj)
+                            ip_version = get_ip_version(translated_prefix)
+                            if self.prefix_tree[ip_version].has_key(translated_prefix):
+                                node = self.prefix_tree[ip_version][translated_prefix]
+                            else:
+                                node = {
+                                    "prefix": translated_prefix,
+                                    "data": {"confs": []},
+                                }
+                                self.prefix_tree[ip_version].insert(
+                                    translated_prefix, node
+                                )
+                            node["data"]["confs"].append(conf_obj)
+                            raw_prefix_count += 1
                 except Exception:
                     log.exception("Exception")
+            log.info(
+                "{} prefixes integrated in database prefix tree in total".format(
+                    raw_prefix_count
+                )
+            )
+            log.info("Finished building database prefix tree.")
+
             # calculate the monitored and configured prefixes
+            log.info("Calculating configured and monitored prefixes in database...")
             self.monitored_prefixes = set()
-            self.configured_prefixes = set()
-            for prefix in self.prefix_tree.prefixes():
-                self.configured_prefixes.add(prefix)
-                monitored_prefix = self.find_worst_prefix_match(prefix)
-                if monitored_prefix:
-                    self.monitored_prefixes.add(monitored_prefix)
+            self.configured_prefix_count = 0
+            for ip_version in self.prefix_tree:
+                for prefix in self.prefix_tree[ip_version]:
+                    self.configured_prefix_count += 1
+                    monitored_prefix = search_worst_prefix(
+                        prefix, self.prefix_tree[ip_version]
+                    )
+                    if monitored_prefix:
+                        self.monitored_prefixes.add(monitored_prefix)
             try:
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
                         "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
-                        (len(self.monitored_prefixes), len(self.configured_prefixes)),
+                        (len(self.monitored_prefixes), self.configured_prefix_count),
                     )
             except Exception:
                 log.exception("exception")
+            log.info("Calculated configured and monitored prefixes in database.")
 
         def find_best_prefix_match(self, prefix):
-            prefix_node = self.prefix_tree.search_best(prefix)
-            if prefix_node:
-                return prefix_node.prefix
-            return None
-
-        def find_worst_prefix_match(self, prefix):
-            prefix_node = self.prefix_tree.search_worst(prefix)
-            if prefix_node:
-                return prefix_node.prefix
+            ip_version = get_ip_version(prefix)
+            if prefix in self.prefix_tree[ip_version]:
+                return self.prefix_tree[ip_version].get_key(prefix)
             return None
 
         def handle_config_notify(self, message):
+            log.info("Reconfiguring database...")
+
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
             try:
                 if config["timestamp"] > self.timestamp:
                     self.timestamp = config["timestamp"]
                     self.rules = config.get("rules", [])
-                    self.build_radix_tree()
+                    self.build_prefix_tree()
                     if "timestamp" in config:
                         del config["timestamp"]
                     raw_config = ""
@@ -722,7 +743,11 @@ class Database:
             except Exception:
                 log.exception("{}".format(config))
 
+            log.info("Database initiated, configured and running.")
+
         def handle_config_request_reply(self, message):
+            log.info("Reconfiguring database...")
+
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
             try:
@@ -730,7 +755,7 @@ class Database:
                     if config["timestamp"] > self.timestamp:
                         self.timestamp = config["timestamp"]
                         self.rules = config.get("rules", [])
-                        self.build_radix_tree()
+                        self.build_prefix_tree()
                         if "timestamp" in config:
                             del config["timestamp"]
                         raw_config = ""
@@ -751,6 +776,8 @@ class Database:
                             log.debug("database config is up-to-date")
             except Exception:
                 log.exception("{}".format(config))
+
+            log.info("Database initiated, configured and running.")
 
         def handle_hijack_ongoing_request(self, message):
             timestamp = message.payload

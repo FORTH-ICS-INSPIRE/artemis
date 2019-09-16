@@ -310,3 +310,18 @@ def ping_redis(redis_instance, timeout=5):
         except Exception:
             log.error("retrying redis ping in {} seconds...".format(timeout))
             time.sleep(timeout)
+
+
+def search_worst_prefix(prefix, pyt_tree):
+    if prefix in pyt_tree:
+        worst_prefix = pyt_tree.get_key(prefix)
+        while pyt_tree.parent(worst_prefix):
+            worst_prefix = pyt_tree.parent(worst_prefix)
+        return worst_prefix
+    return None
+
+
+def get_ip_version(prefix):
+    if ":" in prefix:
+        return "v6"
+    return "v4"

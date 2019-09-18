@@ -1,5 +1,15 @@
 # Changelog
 
+## [UNRELEASED] (NAME) - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- py-radix, substituted with pytricia
+
+### Fixed
+- Support for millions of prefixes in configuration file
+
 ## [1.3.0] (Arktos) - 2019-09-12
 ### Added
 - Slack logging package and example

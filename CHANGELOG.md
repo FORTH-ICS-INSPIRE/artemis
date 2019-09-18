@@ -6,9 +6,13 @@
 
 ### Changed
 - py-radix, substituted with pytricia
+- dep-licenses updated
 
 ### Fixed
 - Support for millions of prefixes in configuration file
+
+### Removed
+- ipaddress requirement from frontend (not needed)
 
 ## [1.3.0] (Arktos) - 2019-09-12
 ### Added

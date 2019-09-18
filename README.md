@@ -102,7 +102,7 @@ in a Kubernetes environment, please contact the [ARTEMIS team](#development-team
 ## Minimum Technical Requirements
 
 * CPU: 4 cores (note that needed CPU cores depend on the number of separate processes, e.g., detectors, you spawn)
-* RAM: 4 GB (note that needed memory depends on the number of configured prefixes and load of incoming BGP updates)
+* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#memory-requirements))
 * HDD: 100 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
 * NETWORK: 1 public-facing network interface
 * OS: Ubuntu Linux 16.04+

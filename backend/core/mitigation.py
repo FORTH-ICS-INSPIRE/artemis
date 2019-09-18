@@ -3,14 +3,14 @@ import signal
 import subprocess
 import time
 
-import radix
+import pytricia
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
-from utils import flatten
+from utils import get_ip_version
 from utils import get_logger
 from utils import RABBITMQ_URI
 from utils import translate_rfc2622
@@ -83,7 +83,6 @@ class Mitigation:
             )
 
             self.config_request_rpc()
-            log.info("started")
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -156,22 +155,42 @@ class Mitigation:
                     self.init_mitigation()
 
         def init_mitigation(self):
-            self.prefix_tree = radix.Radix()
+            log.info("Initiating mitigation...")
+
+            log.info("Starting building mitigation prefix tree...")
+            self.prefix_tree = {
+                "v4": pytricia.PyTricia(32),
+                "v6": pytricia.PyTricia(128),
+            }
+            raw_prefix_count = 0
             for rule in self.rules:
-                rule_translated_prefix_set = set()
-                for prefix in rule["prefixes"]:
-                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                    rule_translated_prefix_set.update(set(this_translated_prefix_list))
-                rule["prefixes"] = list(rule_translated_prefix_set)
-                for prefix in rule["prefixes"]:
-                    node = self.prefix_tree.add(prefix)
-                    node.data["mitigation"] = rule["mitigation"]
+                try:
+                    for prefix in rule["prefixes"]:
+                        for translated_prefix in translate_rfc2622(prefix):
+                            ip_version = get_ip_version(translated_prefix)
+                            node = {
+                                "prefix": translated_prefix,
+                                "data": {"mitigation": rule["mitigation"]},
+                            }
+                            self.prefix_tree[ip_version].insert(translated_prefix, node)
+                            raw_prefix_count += 1
+                except Exception:
+                    log.exception("Exception")
+            log.info(
+                "{} prefixes integrated in mitigation prefix tree in total".format(
+                    raw_prefix_count
+                )
+            )
+            log.info("Finished building mitigation prefix tree.")
+
+            log.info("Mitigation initiated, configured and running.")
 
         def handle_mitigation_request(self, message):
             hijack_event = message.payload
-            prefix_node = self.prefix_tree.search_best(hijack_event["prefix"])
-            if prefix_node:
-                mitigation_action = prefix_node.data["mitigation"][0]
+            ip_version = get_ip_version(hijack_event["prefix"])
+            if hijack_event["prefix"] in self.prefix_tree[ip_version]:
+                prefix_node = self.prefix_tree[ip_version][hijack_event["prefix"]]
+                mitigation_action = prefix_node["data"]["mitigation"][0]
                 if mitigation_action == "manual":
                     log.info(
                         "starting manual mitigation of hijack {}".format(hijack_event)

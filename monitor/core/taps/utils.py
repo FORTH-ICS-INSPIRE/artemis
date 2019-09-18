@@ -50,6 +50,12 @@ def load_json(filename):
     return json_obj
 
 
+def get_ip_version(prefix):
+    if ":" in prefix:
+        return "v6"
+    return "v4"
+
+
 def key_generator(msg):
     msg["key"] = get_hash(
         [

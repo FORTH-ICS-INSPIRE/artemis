@@ -3,7 +3,7 @@ import re
 import signal
 from subprocess import Popen
 
-import radix
+import pytricia
 import redis
 from kombu import Connection
 from kombu import Consumer
@@ -13,13 +13,13 @@ from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import dump_json
 from utils import exception_handler
-from utils import flatten
+from utils import get_ip_version
 from utils import get_logger
 from utils import ping_redis
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
-from utils import translate_asn_range
+from utils import search_worst_prefix
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -170,6 +170,8 @@ class Monitor:
                 self.start_monitors()
 
         def start_monitors(self):
+            log.info("Initiating monitor...")
+
             for proc_id in self.process_ids:
                 try:
                     proc_id[1].terminate()
@@ -178,50 +180,49 @@ class Monitor:
             self.process_ids.clear()
             self.prefixes.clear()
 
-            self.prefix_tree = radix.Radix()
+            log.info("Starting building monitor prefix tree...")
+            self.prefix_tree = {
+                "v4": pytricia.PyTricia(32),
+                "v6": pytricia.PyTricia(128),
+            }
+            raw_prefix_count = 0
             for rule in self.rules:
                 try:
-                    rule_translated_prefix_set = set()
                     for prefix in rule["prefixes"]:
-                        this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                        rule_translated_prefix_set.update(
-                            set(this_translated_prefix_list)
-                        )
-                    rule["prefixes"] = list(rule_translated_prefix_set)
-                    for prefix in rule["prefixes"]:
-                        node = self.prefix_tree.add(prefix)
-
-                        rule_translated_origin_asn_set = set()
-                        for asn in rule["origin_asns"]:
-                            this_translated_asn_list = flatten(translate_asn_range(asn))
-                            rule_translated_origin_asn_set.update(
-                                set(this_translated_asn_list)
-                            )
-                        rule["origin_asns"] = list(rule_translated_origin_asn_set)
-                        rule_translated_neighbor_set = set()
-                        for asn in rule["neighbors"]:
-                            this_translated_asn_list = flatten(translate_asn_range(asn))
-                            rule_translated_neighbor_set.update(
-                                set(this_translated_asn_list)
-                            )
-                        rule["neighbors"] = list(rule_translated_neighbor_set)
-
-                        node.data["origin_asns"] = rule["origin_asns"]
-                        node.data["neighbors"] = rule["neighbors"]
-                        node.data["mitigation"] = rule["mitigation"]
+                        for translated_prefix in translate_rfc2622(prefix):
+                            ip_version = get_ip_version(translated_prefix)
+                            self.prefix_tree[ip_version].insert(translated_prefix, "")
+                            raw_prefix_count += 1
                 except Exception:
                     log.exception("Exception")
+            log.info(
+                "{} prefixes integrated in monitor prefix tree in total".format(
+                    raw_prefix_count
+                )
+            )
+            log.info("Finished building monitor prefix tree.")
 
             # only keep super prefixes for monitors
-            for prefix in self.prefix_tree.prefixes():
-                self.prefixes.add(self.prefix_tree.search_worst(prefix).prefix)
+            log.info("Calculating monitored prefixes for monitor to supervise...")
+            for ip_version in self.prefix_tree:
+                for prefix in self.prefix_tree[ip_version]:
+                    worst_prefix = search_worst_prefix(
+                        prefix, self.prefix_tree[ip_version]
+                    )
+                    if worst_prefix:
+                        self.prefixes.add(worst_prefix)
             dump_json(list(self.prefixes), self.prefix_file)
+            log.info("Calculated monitored prefixes for monitor to supervise.")
 
+            log.info("Initiating configured monitoring instances....")
             self.init_ris_instance()
             self.init_exabgp_instance()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
             self.init_betabmp_instance()
+            log.info("All configured monitoring instances initiated.")
+
+            log.info("Monitor initiated, configured and running.")
 
         def stop(self):
             if self.flag:

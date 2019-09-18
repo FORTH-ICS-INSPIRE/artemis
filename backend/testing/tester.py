@@ -374,6 +374,7 @@ class Tester:
             Helper.hijack_delete(
                 db_con, connection, "j", "139.5.237.0/24", "S|0|-", 136334
             )
+            Helper.hijack_mitigate(db_con, connection, "k", "2001:db8:abcd:12::0/80")
             Helper.load_as_sets(connection)
 
             time.sleep(10)

@@ -68,13 +68,13 @@
             "service": "a",
             "type": "A",
             "path": [4, 3, 2, 777],
-            "prefix": "2001:db8:abcd:0010::0/64",
+            "prefix": "2001:db8:abcd:10::/64",
             "peer_asn": 4
         },
         "detection_update_response": {
             "key": "20",
             "handled": true,
-            "matched_prefix": "2001:db8:abcd:0010::0/64",
+            "matched_prefix": "2001:db8:abcd:10::/64",
             "origin_as": 777,
             "hijack_key": []
         }

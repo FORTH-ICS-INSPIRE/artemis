@@ -28,11 +28,11 @@ prefixes:
     test_as_set_24: &test_as_set_24
         - 10.0.30.0/24
     test_ipv6_benign: &test_ipv6_benign
-        - 2001:db8:abcd:0010::0/64
+        - 2001:db8:abcd:10::/64
     test_ipv6_exact: &test_ipv6_exact
-        - 2001:db8:abcd:0011::0/64
+        - 2001:db8:abcd:11::/64
     test_ipv6_sub: &test_ipv6_sub
-        - 2001:db8:abcd:0012::0/64
+        - 2001:db8:abcd:12::/64
 asns:
     8_origin: &8_origin
         1

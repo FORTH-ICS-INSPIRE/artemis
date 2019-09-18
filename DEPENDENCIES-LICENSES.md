@@ -29,6 +29,7 @@
 | jquery | [MIT](https://tldrlegal.com/license/mit-license) | [Homepage](https://jquery.org/) |
 | js-yaml | [MIT](https://github.com/nodeca/js-yaml) | [GitHub](https://github.com/nodeca/js-yaml) |
 | kombu | [BSD-3](https://github.com/celery/kombu/blob/master/LICENSE) | [GitHub](https://github.com/celery/kombu) |
+| ldap3 | [LGPL](https://github.com/cannatag/ldap3/blob/master/LICENSE.txt) | [GitHub](https://github.com/cannatag/ldap3) |
 | libffi-dev | [MIT](https://github.com/libffi/libffi/blob/master/LICENSE) | [GitHub](https://github.com/libffi/libffi) |
 | merge | [MIT](https://github.com/yeikos/js.merge/blob/master/LICENSE) | [GitHub](https://github.com/yeikos/js.merge) |
 | moment | [MIT](https://github.com/moment/moment/blob/develop/LICENSE) | [GitHub](https://github.com/moment/moment/) |
@@ -54,14 +55,12 @@
 | build-essential | [Apache 2.0](https://github.com/chef-cookbooks/build-essential/blob/master/LICENSE) | [GitHub](https://github.com/chef-cookbooks/build-essential/blob/master/LICENSE) |
 | cron | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs//main/c/cron/cron_3.0pl1-130_copyright) | [Package](https://packages.debian.org/sid/cron) |
 | cython | [Apache 2.0](https://cython.org/) | [Homepage](https://cython.org/) |
+| ipaddress | [PSFL](https://github.com/phihag/ipaddress/blob/master/LICENSE) | [GitHub](https://github.com/phihag/ipaddress) |
 | kombu | [BSD-3](https://github.com/celery/kombu/blob/master/LICENSE) | [GitHub](https://github.com/celery/kombu) |
-| libbgpstream-2 (beta) | [BSD-2](https://github.com/CAIDA/libbgpstream/blob/master/LICENSE) | [GitHub](https://github.com/CAIDA/libbgpstream) |
-| libbz2-dev | [BSD-4](https://metadata.ftp-master.debian.org/changelogs/main/b/bzip2/bzip2_1.0.6-7_copyright) | [Package](https://packages.debian.org/jessie/libbz2-1.0) |
-| libcurl4-openssl-dev | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs//main/c/curl/curl_7.62.0-1_copyright) | [Package](https://packages.debian.org/sid/libcurl4-openssl-dev) |
-| librdkafka | [Custom-Permissive](https://github.com/edenhill/librdkafka/blob/master/LICENSES.txt) | [GitHub](https://github.com/edenhill/librdkafka) |
 | netaddr | [BSD-3](https://github.com/drkjam/netaddr/blob/rel-0.7.x/LICENSE) | [GitHub](https://github.com/drkjam/netaddr/) |
 | pamqp | [BSD-3](https://github.com/gmr/pamqp/blob/master/LICENSE) | [GitHub](https://github.com/gmr/pamqp) |
 | pid | [Apache 2.0](https://github.com/trbs/pid/blob/master/LICENSE) | [GitHub](https://github.com/trbs/pid/) |
+| pytricia | [LGPL](https://github.com/jsommers/pytricia/blob/master/COPYING) | [GitHub](https://github.com/jsommers/pytricia) |
 | psycopg2-binary | [LGPL](https://github.com/psycopg/psycopg2/blob/master/LICENSE) | [[GitHub](https://github.com/psycopg/psycopg2) |
 | py-amqp | [BSD-3](https://github.com/celery/py-amqp/blob/master/LICENSE) | [GitHub](https://github.com/celery/py-amqp) |
 | py-radix | [Custom-Permissive](https://github.com/mjschultz/py-radix/blob/master/LICENSE) | [GitHub](https://github.com/mjschultz/py-radix) |
@@ -75,6 +74,46 @@
 | redis-py | [MIT](https://github.com/andymccurdy/redis-py/blob/master/LICENSE) | [GitHub](https://github.com/andymccurdy/redis-py) |
 | ruamel.yaml | [MIT](https://bitbucket.org/ruamel/yaml/src/7ccdf8d0cb6d68b1847ca5088deffb55f0d73c98/LICENSE?at=default&fileviewer=file-view-default) | [BitBucket](https://bitbucket.org/ruamel/yaml) |
 | setproctitle | [BSD-3](https://github.com/dvarrazzo/py-setproctitle/blob/master/COPYRIGHT) | [GitHub](https://github.com/dvarrazzo/py-setproctitle) |
+| slacker-log-handler | [Apache 2.0](https://github.com/mathiasose/slacker_log_handler/blob/master/LICENSE) | [GitHub](https://github.com/mathiasose/slacker_log_handler) |
+| socketIO-client | [MIT](https://github.com/invisibleroads/socketIO-client/blob/master/LICENSE) | [GitHub](https://github.com/invisibleroads/socketIO-client) |
+| socketIO-client-nexus | [MIT](https://github.com/nexus-devs/socketIO-client-2.0.3/blob/master/LICENSE) | [GitHub](https://github.com/nexus-devs/socketIO-client-2.0.3) |
+| supervisor | [BSD-4](https://github.com/Supervisor/supervisor/blob/master/LICENSES.txt) | [GitHub](https://github.com/Supervisor/supervisor) |
+| tcl | [Custom-Permissive](https://www.tcl.tk/software/tcltk/license.html) | [Homepage](https://www.tcl.tk/) |
+| vine | [BSD-3](https://github.com/celery/vine/blob/master/LICENSE) | [GitHub](https://github.com/celery/vine) |
+| watchdog | [Apache 2.0](https://github.com/gorakhargosh/watchdog/blob/master/LICENSE) | [GitHub](https://github.com/gorakhargosh/watchdog) |
+
+## MONITOR
+
+| SW package  |  License   | Link       |
+| :---------: | :--------: | :--------: |
+| billiard | [BSD-3](https://github.com/celery/billiard/blob/master/LICENSE.txt) | [GitHub](https://github.com/celery/billiard) |
+| build-essential | [Apache 2.0](https://github.com/chef-cookbooks/build-essential/blob/master/LICENSE) | [GitHub](https://github.com/chef-cookbooks/build-essential/blob/master/LICENSE) |
+| cron | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs//main/c/cron/cron_3.0pl1-130_copyright) | [Package](https://packages.debian.org/sid/cron) |
+| cython | [Apache 2.0](https://cython.org/) | [Homepage](https://cython.org/) |
+| ipaddress | [PSFL](https://github.com/phihag/ipaddress/blob/master/LICENSE) | [GitHub](https://github.com/phihag/ipaddress) |
+| kombu | [BSD-3](https://github.com/celery/kombu/blob/master/LICENSE) | [GitHub](https://github.com/celery/kombu) |
+| libbgpstream-2 (beta) | [BSD-2](https://github.com/CAIDA/libbgpstream/blob/master/LICENSE) | [GitHub](https://github.com/CAIDA/libbgpstream) |
+| libbz2-dev | [BSD-4](https://metadata.ftp-master.debian.org/changelogs/main/b/bzip2/bzip2_1.0.6-7_copyright) | [Package](https://packages.debian.org/jessie/libbz2-1.0) |
+| libcurl4-openssl-dev | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs//main/c/curl/curl_7.62.0-1_copyright) | [Package](https://packages.debian.org/sid/libcurl4-openssl-dev) |
+| librdkafka | [Custom-Permissive](https://github.com/edenhill/librdkafka/blob/master/LICENSES.txt) | [GitHub](https://github.com/edenhill/librdkafka) |
+| netaddr | [BSD-3](https://github.com/drkjam/netaddr/blob/rel-0.7.x/LICENSE) | [GitHub](https://github.com/drkjam/netaddr/) |
+| pamqp | [BSD-3](https://github.com/gmr/pamqp/blob/master/LICENSE) | [GitHub](https://github.com/gmr/pamqp) |
+| pid | [Apache 2.0](https://github.com/trbs/pid/blob/master/LICENSE) | [GitHub](https://github.com/trbs/pid/) |
+| pytricia | [LGPL](https://github.com/jsommers/pytricia/blob/master/COPYING) | [GitHub](https://github.com/jsommers/pytricia) |
+| psycopg2-binary | [LGPL](https://github.com/psycopg/psycopg2/blob/master/LICENSE) | [[GitHub](https://github.com/psycopg/psycopg2) |
+| py-amqp | [BSD-3](https://github.com/celery/py-amqp/blob/master/LICENSE) | [GitHub](https://github.com/celery/py-amqp) |
+| py-radix | [Custom-Permissive](https://github.com/mjschultz/py-radix/blob/master/LICENSE) | [GitHub](https://github.com/mjschultz/py-radix) |
+| pyaml | [MIT](https://pyyaml.org/wiki/PyYAML) | [Homepage](https://pyyaml.org/wiki/PyYAML) |
+| pybgpstream-2 (beta) | [BSD-2](https://github.com/CAIDA/pybgpstream/blob/v2-beta/LICENSE) | [GitHub](https://github.com/caida/pybgpstream/tree/v2-beta) |
+| python 3.6 | [PSFL](https://docs.python.org/3/license.html) | [Homepage](https://www.python.org/downloads/) |
+| python-dev | [PSFL](https://metadata.ftp-master.debian.org/changelogs/main/p/python-defaults/python-defaults_2.7.15-3_copyright) | [Package](https://packages.debian.org/sid/python-dev) |
+| python3-pip | [Custom-Permissive](https://metadata.ftp-master.debian.org/changelogs/main/p/python-pip/python-pip_1.5.6-5_copyright) | [Package](https://packages.debian.org/jessie/python3-pip) |
+| pytz | [MIT](https://pythonhosted.org/pytz/) | [Homepage](https://pythonhosted.org/pytz/) |
+| redis | [BSD-3](https://redis.io/topics/license/) | [Homepage](https://redis.io/) |
+| redis-py | [MIT](https://github.com/andymccurdy/redis-py/blob/master/LICENSE) | [GitHub](https://github.com/andymccurdy/redis-py) |
+| ruamel.yaml | [MIT](https://bitbucket.org/ruamel/yaml/src/7ccdf8d0cb6d68b1847ca5088deffb55f0d73c98/LICENSE?at=default&fileviewer=file-view-default) | [BitBucket](https://bitbucket.org/ruamel/yaml) |
+| setproctitle | [BSD-3](https://github.com/dvarrazzo/py-setproctitle/blob/master/COPYRIGHT) | [GitHub](https://github.com/dvarrazzo/py-setproctitle) |
+| slacker-log-handler | [Apache 2.0](https://github.com/mathiasose/slacker_log_handler/blob/master/LICENSE) | [GitHub](https://github.com/mathiasose/slacker_log_handler) |
 | socketIO-client | [MIT](https://github.com/invisibleroads/socketIO-client/blob/master/LICENSE) | [GitHub](https://github.com/invisibleroads/socketIO-client) |
 | socketIO-client-nexus | [MIT](https://github.com/nexus-devs/socketIO-client-2.0.3/blob/master/LICENSE) | [GitHub](https://github.com/nexus-devs/socketIO-client-2.0.3) |
 | supervisor | [BSD-4](https://github.com/Supervisor/supervisor/blob/master/LICENSES.txt) | [GitHub](https://github.com/Supervisor/supervisor) |
@@ -82,6 +121,7 @@
 | vine | [BSD-3](https://github.com/celery/vine/blob/master/LICENSE) | [GitHub](https://github.com/celery/vine) |
 | wandio | [LGPL](https://github.com/alistairking/wandio/blob/master/COPYING.LESSER) | [GitHub](https://github.com/alistairking/wandio) |
 | watchdog | [Apache 2.0](https://github.com/gorakhargosh/watchdog/blob/master/LICENSE) | [GitHub](https://github.com/gorakhargosh/watchdog) |
+| websocket-client | [BSD-3](https://github.com/websocket-client/websocket-client/blob/master/LICENSE) | [GitHub](https://github.com/websocket-client/websocket-client) |
 | zlib1g-dev | [Custom-Permissive](http://changelogs.ubuntu.com/changelogs/pool/main/z/zlib/zlib_1.2.8.dfsg-2ubuntu4/copyright) | [Package](https://packages.ubuntu.com/xenial/zlib1g-dev) |
 
 ## USED CONTAINERS

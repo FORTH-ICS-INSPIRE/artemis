@@ -27,6 +27,12 @@ prefixes:
         - 10.0.20.0/24
     test_as_set_24: &test_as_set_24
         - 10.0.30.0/24
+    test_ipv6_benign: &test_ipv6_benign
+        - 2001:db8:abcd:0010::0/64
+    test_ipv6_exact: &test_ipv6_exact
+        - 2001:db8:abcd:0011::0/64
+    test_ipv6_sub: &test_ipv6_sub
+        - 2001:db8:abcd:0012::0/64
 asns:
     8_origin: &8_origin
         1
@@ -50,6 +56,10 @@ asns:
         555
     RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS: &RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS
         [1]
+    v6_origins: &v6_origins
+        - 777
+        - 888
+        - 999
 rules:
 - prefixes:
   - *8_prefix
@@ -148,3 +158,13 @@ rules:
   - 6777
   neighbors:
   - *RIPE_WHOIS_AS_SET_AS-AMS-IX-PEERS
+- prefixes:
+  - *test_ipv6_benign
+  - *test_ipv6_exact
+  - *test_ipv6_sub
+  origin_asns:
+  - *v6_origins
+  neighbors:
+    '*'
+  mitigation:
+    manual

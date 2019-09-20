@@ -2,11 +2,12 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
-- IPv6 tests
+- IPv6 tests (backend testing)
+- PR labeler (GitHub actions)
 
 ### Changed
-- py-radix, substituted with pytricia
-- dep-licenses updated
+- py-radix, substituted with pytricia tree
+- dep-licenses updated (with currently used modules)
 
 ### Fixed
 - Support for millions of prefixes in configuration file

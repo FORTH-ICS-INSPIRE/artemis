@@ -34,7 +34,4 @@ detection:
 - backend/core/detection.py
 
 mitigation:
-- backend/core/mitigatio.py
-
-docker:
-- **/docker-compose*.yaml
+- backend/core/mitigation.py

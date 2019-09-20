@@ -2,7 +2,7 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- IPv6 tests
 
 ### Changed
 - py-radix, substituted with pytricia

@@ -1,16 +1,25 @@
 #!/usr/bin/env python
-
-import psycopg2
-import psycopg2.extras
 import time
+
+import psycopg2.extras
 
 ISOLEVEL = psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
 
 LIMIT_RETRIES = 5
 
 
-class DB():
-    def __init__(self, user, password, host, port, database, reconnect=True, autocommit=False, readonly=False):
+class DB:
+    def __init__(
+        self,
+        user,
+        password,
+        host,
+        port,
+        database,
+        reconnect=True,
+        autocommit=False,
+        readonly=False,
+    ):
         self.user = user
         self.password = password
         self.host = host
@@ -26,16 +35,29 @@ class DB():
     def connect(self, retry_counter=0):
         if not self._connection:
             try:
-                self._connection = psycopg2.connect(user=self.user, password=self.password, host=self.host, port=self.port, database=self.database, connect_timeout=3,)
+                self._connection = psycopg2.connect(
+                    user=self.user,
+                    password=self.password,
+                    host=self.host,
+                    port=self.port,
+                    database=self.database,
+                    connect_timeout=3,
+                )
                 retry_counter = 0
-                self._connection.set_session(autocommit=self.autocommit, readonly=self.readonly)
+                self._connection.set_session(
+                    autocommit=self.autocommit, readonly=self.readonly
+                )
                 return self._connection
             except psycopg2.OperationalError as error:
                 if not self.reconnect or retry_counter >= LIMIT_RETRIES:
                     raise error
                 else:
                     retry_counter += 1
-                    print("got error {}. reconnecting {}".format(str(error).strip(), retry_counter))
+                    print(
+                        "got error {}. reconnecting {}".format(
+                            str(error).strip(), retry_counter
+                        )
+                    )
                     time.sleep(5)
                     self.connect(retry_counter)
             except (Exception, psycopg2.Error) as error:
@@ -57,7 +79,11 @@ class DB():
                 raise error
             else:
                 retry_counter += 1
-                print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+                print(
+                    "got error {}. retrying {}".format(
+                        str(error).strip(), retry_counter
+                    )
+                )
                 time.sleep(1)
                 self.reset()
                 self.execute(query, retry_counter)
@@ -79,7 +105,11 @@ class DB():
                 raise error
             else:
                 retry_counter += 1
-                print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+                print(
+                    "got error {}. retrying {}".format(
+                        str(error).strip(), retry_counter
+                    )
+                )
                 time.sleep(1)
                 self.reset()
                 self.execute_batch(query, vals, retry_counter)
@@ -94,14 +124,20 @@ class DB():
 
     def execute_values(self, query, vals, page_size=1000, retry_counter=0):
         try:
-            psycopg2.extras.execute_values(self._cursor, query, vals, page_size=page_size)
+            psycopg2.extras.execute_values(
+                self._cursor, query, vals, page_size=page_size
+            )
             retry_counter = 0
         except (psycopg2.DatabaseError, psycopg2.OperationalError) as error:
             if retry_counter >= LIMIT_RETRIES:
                 raise error
             else:
                 retry_counter += 1
-                print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+                print(
+                    "got error {}. retrying {}".format(
+                        str(error).strip(), retry_counter
+                    )
+                )
                 time.sleep(1)
                 self.reset()
                 self.execute_values(query, vals, page_size, retry_counter)

@@ -129,10 +129,8 @@ class DB:
             if not self.readonly:
                 self._connection.rollback()
             raise error
-        else:
-            if not self.readonly:
-                self._connection.commit()
-        return self._cursor.fetchall()
+        if not self.readonly:
+            self._connection.commit()
 
     def reset(self):
         self.close()

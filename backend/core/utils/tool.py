@@ -69,9 +69,12 @@ class DB:
             self._cursor = self._connection.cursor()
             return self._cursor
 
-    def execute(self, query, retry_counter=0):
+    def execute(self, query, vals=None, retry_counter=0):
         try:
-            self._cursor.execute(query)
+            if vals:
+                self._cursor.execute(query, vals)
+            else:
+                self._cursor.execute(query)
             retry_counter = 0
         except (psycopg2.DatabaseError, psycopg2.OperationalError) as error:
             if retry_counter >= LIMIT_RETRIES:
@@ -80,7 +83,7 @@ class DB:
             print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
             time.sleep(1)
             self.reset()
-            self.execute(query, retry_counter)
+            self.execute(query, vals, retry_counter)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
                 self._connection.rollback()
@@ -88,7 +91,8 @@ class DB:
         else:
             if not self.readonly:
                 self._connection.commit()
-        return self._cursor.fetchall()
+        if self.readonly:
+            return self._cursor.fetchall()
 
     def execute_batch(self, query, vals, retry_counter=0):
         try:
@@ -109,7 +113,8 @@ class DB:
         else:
             if not self.readonly:
                 self._connection.commit()
-        return self._cursor.fetchall()
+        if self.readonly:
+            return self._cursor.fetchall()
 
     def execute_values(self, query, vals, page_size=1000, retry_counter=0):
         try:

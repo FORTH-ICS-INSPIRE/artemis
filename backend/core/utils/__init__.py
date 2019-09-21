@@ -5,11 +5,9 @@ import logging.handlers
 import os
 import re
 import time
-from contextlib import contextmanager
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
 
-import psycopg2
 import requests
 import yaml
 
@@ -133,47 +131,6 @@ def get_logger(path="/etc/artemis/logging.yaml"):
 
 
 log = get_logger()
-
-
-@contextmanager
-def get_ro_cursor(conn):
-    with conn.cursor() as curr:
-        try:
-            yield curr
-        except Exception:
-            raise
-
-
-@contextmanager
-def get_wo_cursor(conn):
-    with conn.cursor() as curr:
-        try:
-            yield curr
-        except Exception:
-            conn.rollback()
-            raise
-        else:
-            conn.commit()
-
-
-def get_db_conn():
-    conn = None
-    time_sleep_connection_retry = 5
-    while not conn:
-        try:
-            conn = psycopg2.connect(
-                dbname=DB_NAME,
-                user=DB_USER,
-                host=DB_HOST,
-                port=DB_PORT,
-                password=DB_PASS,
-            )
-        except Exception:
-            log.exception("exception")
-            time.sleep(time_sleep_connection_retry)
-        finally:
-            log.debug("PostgreSQL DB created/connected..")
-    return conn
 
 
 def flatten(items, seqtypes=(list, tuple)):

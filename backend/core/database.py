@@ -1156,7 +1156,7 @@ class Database:
                     "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
                     "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s"
                 )
-                self.db_wo.execute_values(
+                self.wo_db.execute_values(
                     query, self.insert_bgp_entries, page_size=1000
                 )
             except Exception:

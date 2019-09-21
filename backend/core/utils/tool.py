@@ -2,10 +2,13 @@
 import time
 
 import psycopg2.extras
+from utils import get_logger
 
 ISOLEVEL = psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
 
 LIMIT_RETRIES = 5
+
+log = get_logger()
 
 
 class DB:
@@ -52,7 +55,7 @@ class DB:
                 if not self.reconnect or retry_counter >= LIMIT_RETRIES:
                     raise error
                 retry_counter += 1
-                print(
+                log.error(
                     "got error {}. reconnecting {}".format(
                         str(error).strip(), retry_counter
                     )
@@ -80,7 +83,9 @@ class DB:
             if retry_counter >= LIMIT_RETRIES:
                 raise error
             retry_counter += 1
-            print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+            log.error(
+                "got error {}. retrying {}".format(str(error).strip(), retry_counter)
+            )
             time.sleep(1)
             self.reset()
             self.execute(query, vals, retry_counter)
@@ -102,7 +107,9 @@ class DB:
             if retry_counter >= LIMIT_RETRIES:
                 raise error
             retry_counter += 1
-            print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+            log.error(
+                "got error {}. retrying {}".format(str(error).strip(), retry_counter)
+            )
             time.sleep(1)
             self.reset()
             self.execute_batch(query, vals, retry_counter)
@@ -126,7 +133,9 @@ class DB:
             if retry_counter >= LIMIT_RETRIES:
                 raise error
             retry_counter += 1
-            print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+            log.error(
+                "got error {}. retrying {}".format(str(error).strip(), retry_counter)
+            )
             time.sleep(1)
             self.reset()
             self.execute_values(query, vals, page_size, retry_counter)
@@ -147,7 +156,7 @@ class DB:
             if self._cursor:
                 self._cursor.close()
             self._connection.close()
-            print("PostgreSQL connection is closed")
+            log.info("PostgreSQL connection is closed")
         self._connection = None
         self._cursor = None
 

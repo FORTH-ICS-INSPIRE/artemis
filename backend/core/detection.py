@@ -530,10 +530,30 @@ class Detection:
                         monitor_event["hijack_as"],
                         monitor_event["hij_type"],
                     )
+                    hijack = self.redis.get(redis_hijack_key)
+                    if hijack:
+                        hijack = yaml.safe_load(hijack)
+                        hijack["end_tag"] = "outdated"
                     purge_redis_eph_pers_keys(
                         self.redis, redis_hijack_key, monitor_event["hij_key"]
                     )
                     self.mark_outdated(monitor_event["hij_key"], redis_hijack_key)
+                    mail_log.info(
+                        "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                        extra={
+                            "community_annotation": hijack.get(
+                                "community_annotation", "NA"
+                            )
+                        },
+                    )
+                    hij_log.info(
+                        "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                        extra={
+                            "community_annotation": hijack.get(
+                                "community_annotation", "NA"
+                            )
+                        },
+                    )
                 elif not is_hijack:
                     self.gen_implicit_withdrawal(monitor_event)
                     self.mark_handled(raw)
@@ -780,6 +800,7 @@ class Detection:
                 "monitor_keys": {monitor_event["key"]},
                 "configured_prefix": monitor_event["matched_prefix"],
                 "timestamp_of_config": self.timestamp,
+                "end_tag": None,
             }
 
             # identify the number of infected ases

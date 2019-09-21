@@ -1,5 +1,7 @@
 import datetime
 import json
+import logging
+import os
 import signal
 import time
 from xmlrpc.client import ServerProxy
@@ -31,6 +33,7 @@ from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import search_worst_prefix
+from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
@@ -39,6 +42,29 @@ from utils import translate_rfc2622
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
+
+hij_log = logging.getLogger("hijack_logger")
+mail_log = logging.getLogger("mail_logger")
+try:
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+except Exception:
+    log.exception("exception")
+    hij_log_filter = []
+
+
+class HijackLogFilter(logging.Filter):
+    def filter(self, rec):
+        if not hij_log_filter:
+            return True
+        for filter_entry in hij_log_filter:
+            for filter_entry_key in filter_entry:
+                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
+                    return True
+        return False
+
+
+mail_log.addFilter(HijackLogFilter())
+hij_log.addFilter(HijackLogFilter())
 
 
 class Database:
@@ -947,6 +973,10 @@ class Database:
                 redis_hijack_key = redis_key(
                     raw["prefix"], raw["hijack_as"], raw["type"]
                 )
+                hijack = self.redis.get(redis_hijack_key)
+                if hijack:
+                    hijack = yaml.safe_load(hijack)
+                    hijack["end_tag"] = "resolved"
                 # if ongoing, force rekeying and delete persistent too
                 if self.redis.sismember("persistent-keys", raw["key"]):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
@@ -956,6 +986,18 @@ class Database:
                         "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
                         (datetime.datetime.now(), raw["key"]),
                     )
+                mail_log.info(
+                    "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                    extra={
+                        "community_annotation": hijack.get("community_annotation", "NA")
+                    },
+                )
+                hij_log.info(
+                    "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                    extra={
+                        "community_annotation": hijack.get("community_annotation", "NA")
+                    },
+                )
 
             except Exception:
                 log.exception("{}".format(raw))
@@ -967,6 +1009,10 @@ class Database:
                 redis_hijack_key = redis_key(
                     raw["prefix"], raw["hijack_as"], raw["type"]
                 )
+                hijack = self.redis.get(redis_hijack_key)
+                if hijack:
+                    hijack = yaml.safe_load(hijack)
+                    hijack["end_tag"] = "deleted"
                 if self.redis.sismember("persistent-keys", raw["key"]):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
 
@@ -980,6 +1026,18 @@ class Database:
                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s);",
                         (raw["key"],),
                     )
+                mail_log.info(
+                    "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                    extra={
+                        "community_annotation": hijack.get("community_annotation", "NA")
+                    },
+                )
+                hij_log.info(
+                    "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                    extra={
+                        "community_annotation": hijack.get("community_annotation", "NA")
+                    },
+                )
 
             except Exception:
                 log.exception("{}".format(raw))
@@ -1003,6 +1061,10 @@ class Database:
                 redis_hijack_key = redis_key(
                     raw["prefix"], raw["hijack_as"], raw["type"]
                 )
+                hijack = self.redis.get(redis_hijack_key)
+                if hijack:
+                    hijack = yaml.safe_load(hijack)
+                    hijack["end_tag"] = "ignored"
                 # if ongoing, force rekeying and delete persistent too
                 if self.redis.sismember("persistent-keys", raw["key"]):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
@@ -1011,6 +1073,18 @@ class Database:
                         "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;",
                         (raw["key"],),
                     )
+                mail_log.info(
+                    "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                    extra={
+                        "community_annotation": hijack.get("community_annotation", "NA")
+                    },
+                )
+                hij_log.info(
+                    "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                    extra={
+                        "community_annotation": hijack.get("community_annotation", "NA")
+                    },
+                )
             except Exception:
                 log.exception("{}".format(raw))
 
@@ -1124,6 +1198,9 @@ class Database:
                                 entry[1],
                                 entry[2],  # prefix  # hijack_as  # type
                             )
+                            hijack = self.redis.get(redis_hijack_key)
+                            if hijack:
+                                hijack = yaml.safe_load(hijack)
                             if seen_action:
                                 with get_wo_cursor(self.wo_conn) as db_cur:
                                     db_cur.execute(query, (hijack_key,))
@@ -1134,6 +1211,8 @@ class Database:
                                     purge_redis_eph_pers_keys(
                                         self.redis, redis_hijack_key, hijack_key
                                     )
+                                if hijack:
+                                    hijack["end_tag"] = "ignored"
                                 with get_wo_cursor(self.wo_conn) as db_cur:
                                     db_cur.execute(query, (hijack_key,))
                             elif resolve_action:
@@ -1143,6 +1222,8 @@ class Database:
                                     purge_redis_eph_pers_keys(
                                         self.redis, redis_hijack_key, hijack_key
                                     )
+                                if hijack:
+                                    hijack["end_tag"] = "resolved"
                                 with get_wo_cursor(self.wo_conn) as db_cur:
                                     db_cur.execute(
                                         query, (datetime.datetime.now(), hijack_key)
@@ -1152,11 +1233,34 @@ class Database:
                                     purge_redis_eph_pers_keys(
                                         self.redis, redis_hijack_key, hijack_key
                                     )
+                                if hijack:
+                                    hijack["end_tag"] = "deleted"
                                 for query_ in query:
                                     with get_wo_cursor(self.wo_conn) as db_cur:
                                         db_cur.execute(query_, (hijack_key,))
                             else:
                                 raise BaseException("unreachable code reached")
+                            if not seen_action:
+                                mail_log.info(
+                                    "{}".format(
+                                        json.dumps(hijack, indent=4, cls=SetEncoder)
+                                    ),
+                                    extra={
+                                        "community_annotation": hijack.get(
+                                            "community_annotation", "NA"
+                                        )
+                                    },
+                                )
+                                hij_log.info(
+                                    "{}".format(
+                                        json.dumps(hijack, indent=4, cls=SetEncoder)
+                                    ),
+                                    extra={
+                                        "community_annotation": hijack.get(
+                                            "community_annotation", "NA"
+                                        )
+                                    },
+                                )
 
                     except Exception:
                         log.exception("{}".format(raw))
@@ -1237,6 +1341,10 @@ class Database:
                                 redis_hijack_key = redis_key(
                                     withdrawal[0], entry[3], entry[4]
                                 )
+                                hijack = self.redis.get(redis_hijack_key)
+                                if hijack:
+                                    hijack = yaml.safe_load(hijack)
+                                    hijack["end_tag"] = "withdrawn"
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2]
                                 )
@@ -1246,8 +1354,27 @@ class Database:
                                         "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
                                         (timestamp, entry[1], timestamp, entry[2]),
                                     )
-
                                 log.debug("withdrawn hijack {}".format(entry))
+                                mail_log.info(
+                                    "{}".format(
+                                        json.dumps(hijack, indent=4, cls=SetEncoder)
+                                    ),
+                                    extra={
+                                        "community_annotation": hijack.get(
+                                            "community_annotation", "NA"
+                                        )
+                                    },
+                                )
+                                hij_log.info(
+                                    "{}".format(
+                                        json.dumps(hijack, indent=4, cls=SetEncoder)
+                                    ),
+                                    extra={
+                                        "community_annotation": hijack.get(
+                                            "community_annotation", "NA"
+                                        )
+                                    },
+                                )
                             else:
                                 # add withdrawal to hijack
                                 with get_wo_cursor(self.wo_conn) as db_cur:

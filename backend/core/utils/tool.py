@@ -51,15 +51,14 @@ class DB:
             except psycopg2.OperationalError as error:
                 if not self.reconnect or retry_counter >= LIMIT_RETRIES:
                     raise error
-                else:
-                    retry_counter += 1
-                    print(
-                        "got error {}. reconnecting {}".format(
-                            str(error).strip(), retry_counter
-                        )
+                retry_counter += 1
+                print(
+                    "got error {}. reconnecting {}".format(
+                        str(error).strip(), retry_counter
                     )
-                    time.sleep(5)
-                    self.connect(retry_counter)
+                )
+                time.sleep(5)
+                self.connect(retry_counter)
             except (Exception, psycopg2.Error) as error:
                 raise error
 
@@ -77,16 +76,11 @@ class DB:
         except (psycopg2.DatabaseError, psycopg2.OperationalError) as error:
             if retry_counter >= LIMIT_RETRIES:
                 raise error
-            else:
-                retry_counter += 1
-                print(
-                    "got error {}. retrying {}".format(
-                        str(error).strip(), retry_counter
-                    )
-                )
-                time.sleep(1)
-                self.reset()
-                self.execute(query, retry_counter)
+            retry_counter += 1
+            print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+            time.sleep(1)
+            self.reset()
+            self.execute(query, retry_counter)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
                 self._cursor.rollback()
@@ -103,16 +97,11 @@ class DB:
         except (psycopg2.DatabaseError, psycopg2.OperationalError) as error:
             if retry_counter >= LIMIT_RETRIES:
                 raise error
-            else:
-                retry_counter += 1
-                print(
-                    "got error {}. retrying {}".format(
-                        str(error).strip(), retry_counter
-                    )
-                )
-                time.sleep(1)
-                self.reset()
-                self.execute_batch(query, vals, retry_counter)
+            retry_counter += 1
+            print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+            time.sleep(1)
+            self.reset()
+            self.execute_batch(query, vals, retry_counter)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
                 self._cursor.rollback()
@@ -131,16 +120,11 @@ class DB:
         except (psycopg2.DatabaseError, psycopg2.OperationalError) as error:
             if retry_counter >= LIMIT_RETRIES:
                 raise error
-            else:
-                retry_counter += 1
-                print(
-                    "got error {}. retrying {}".format(
-                        str(error).strip(), retry_counter
-                    )
-                )
-                time.sleep(1)
-                self.reset()
-                self.execute_values(query, vals, page_size, retry_counter)
+            retry_counter += 1
+            print("got error {}. retrying {}".format(str(error).strip(), retry_counter))
+            time.sleep(1)
+            self.reset()
+            self.execute_values(query, vals, page_size, retry_counter)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
                 self._cursor.rollback()

@@ -83,11 +83,11 @@ class DB:
             self.execute(query, retry_counter)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
-                self._cursor.rollback()
+                self._connection.rollback()
             raise error
         else:
             if not self.readonly:
-                self._cursor.commit()
+                self._connection.commit()
         return self._cursor.fetchall()
 
     def execute_batch(self, query, vals, retry_counter=0):
@@ -104,11 +104,11 @@ class DB:
             self.execute_batch(query, vals, retry_counter)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
-                self._cursor.rollback()
+                self._connection.rollback()
             raise error
         else:
             if not self.readonly:
-                self._cursor.commit()
+                self._connection.commit()
         return self._cursor.fetchall()
 
     def execute_values(self, query, vals, page_size=1000, retry_counter=0):
@@ -127,11 +127,11 @@ class DB:
             self.execute_values(query, vals, page_size, retry_counter)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
-                self._cursor.rollback()
+                self._connection.rollback()
             raise error
         else:
             if not self.readonly:
-                self._cursor.commit()
+                self._connection.commit()
         return self._cursor.fetchall()
 
     def reset(self):

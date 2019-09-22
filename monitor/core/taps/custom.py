@@ -80,12 +80,16 @@ def run():
                 while True:
                     connection.drain_events()
 
-    threads = []
+    send_threads = []
     for i in range(1):
-        threads.append(threading.Thread(target=sender, args=(chr(i + 97),)))
-    for t in threads:
+        send_threads.append(threading.Thread(target=sender, args=(chr(i + 97),)))
+    recv_thread = threading.Thread(target=receiver, args=())
+
+    for t in send_threads:
         t.start()
-    for t in threads:
+    recv_thread.start()
+
+    for t in send_threads:
         t.join()
 
 

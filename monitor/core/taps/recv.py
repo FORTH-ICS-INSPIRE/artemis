@@ -1,16 +1,11 @@
-import threading
+import sys
 
 from kombu import Connection
-from kombu import Consumer
 from kombu import Exchange
-from kombu import Producer
 from kombu import Queue
 from kombu import uuid
-from utils import RABBITMQ_URI
-
 from tqdm import tqdm
-
-import sys
+from utils import RABBITMQ_URI
 
 
 if len(sys.argv) == 4:
@@ -38,6 +33,7 @@ def bind_and_wait(connection, queue):
             if bind_queue.get():
                 break
 
+
 def receiver():
     with Connection(RABBITMQ_URI) as connection:
         exchange = Exchange(
@@ -58,7 +54,7 @@ def receiver():
             consumer_arguments={"x-priority": 1},
             channel=connection.default_channel,
         )
-        bind_and_wait(connection, queue) 
+        bind_and_wait(connection, queue)
 
 
 if __name__ == "__main__":

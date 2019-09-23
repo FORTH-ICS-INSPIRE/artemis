@@ -36,6 +36,7 @@ adminUser: admin
 adminPass: admin123
 adminEmail: admin@admin
 jsVersion: 1.0.2
+artemisWebHost: artemis.com
 # rabbitmq
 rabbitmqHost: rabbitmq
 rabbitmqPort: 5672

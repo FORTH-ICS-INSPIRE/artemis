@@ -5,6 +5,7 @@
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
 - env variable and formatter for selecting hijack log fields
+- env variable for ARTEMIS web host for backend logging
 - logging also withdrawn and outdated hijacks in mail and hijack loggers
 - extra end_tag and hijack_url in hijacks for logging
 

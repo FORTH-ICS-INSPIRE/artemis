@@ -12,7 +12,7 @@ services:
         expose:
             - ${BACKEND_SUPERVISOR_PORT}
         environment:
-            BIND_IP: ${BIND_IP}
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}

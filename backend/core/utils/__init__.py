@@ -29,30 +29,32 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
-DEFAULT_HIJACK_LOG_FIELDS = [
-    "prefix",
-    "hijack_as",
-    "type",
-    "time_started",
-    "time_last",
-    "peers_seen",
-    "monitor_keys",
-    "configured_prefix",
-    "timestamp_of_config",
-    "asns_inf",
-    "time_detected",
-    "key",
-    "community_annotation",
-    "end_tag",
-    "hijack_url",
-]
+DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
+    [
+        "prefix",
+        "hijack_as",
+        "type",
+        "time_started",
+        "time_last",
+        "peers_seen",
+        "monitor_keys",
+        "configured_prefix",
+        "timestamp_of_config",
+        "asns_inf",
+        "time_detected",
+        "key",
+        "community_annotation",
+        "end_tag",
+        "hijack_url",
+    ]
+)
 try:
     HIJACK_LOG_FIELDS = set(
         json.loads(os.getenv("HIJACK_LOG_FIELDS", DEFAULT_HIJACK_LOG_FIELDS))
     )
 except Exception:
     HIJACK_LOG_FIELDS = set(DEFAULT_HIJACK_LOG_FIELDS)
-BIND_IP = os.getenv("BIND_IP")
+ARTEMIS_WEB_HOST = os.getenv("ARTEMIS_WEB_HOST", "artemis.com")
 
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
@@ -538,7 +540,7 @@ def hijack_log_field_formatter(hijack_dict):
         # instead of storing in redis, simply add the hijack url upon logging
         if "hijack_url" in HIJACK_LOG_FIELDS and "key" in hijack_dict:
             logged_hijack_dict["hijack_url"] = "https://{}/main/hijack?key={}".format(
-                BIND_IP, hijack_dict["key"]
+                ARTEMIS_WEB_HOST, hijack_dict["key"]
             )
     except Exception:
         log.exception("exception")

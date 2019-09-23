@@ -1278,34 +1278,35 @@ class Database:
                                         (timestamp, entry[1], timestamp, entry[2]),
                                     )
                                 log.debug("withdrawn hijack {}".format(entry))
-                                mail_log.info(
-                                    "{}".format(
-                                        json.dumps(
-                                            hijack_log_field_formatter(hijack),
-                                            indent=4,
-                                            cls=SetEncoder,
-                                        )
-                                    ),
-                                    extra={
-                                        "community_annotation": hijack.get(
-                                            "community_annotation", "NA"
-                                        )
-                                    },
-                                )
-                                hij_log.info(
-                                    "{}".format(
-                                        json.dumps(
-                                            hijack_log_field_formatter(hijack),
-                                            indent=4,
-                                            cls=SetEncoder,
-                                        )
-                                    ),
-                                    extra={
-                                        "community_annotation": hijack.get(
-                                            "community_annotation", "NA"
-                                        )
-                                    },
-                                )
+                                if hijack:
+                                    mail_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                indent=4,
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
+                                    hij_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                indent=4,
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
                             else:
                                 # add withdrawal to hijack
                                 with get_wo_cursor(self.wo_conn) as db_cur:

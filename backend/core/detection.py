@@ -539,34 +539,35 @@ class Detection:
                         self.redis, redis_hijack_key, monitor_event["hij_key"]
                     )
                     self.mark_outdated(monitor_event["hij_key"], redis_hijack_key)
-                    mail_log.info(
-                        "{}".format(
-                            json.dumps(
-                                hijack_log_field_formatter(hijack),
-                                indent=4,
-                                cls=SetEncoder,
-                            )
-                        ),
-                        extra={
-                            "community_annotation": hijack.get(
-                                "community_annotation", "NA"
-                            )
-                        },
-                    )
-                    hij_log.info(
-                        "{}".format(
-                            json.dumps(
-                                hijack_log_field_formatter(hijack),
-                                indent=4,
-                                cls=SetEncoder,
-                            )
-                        ),
-                        extra={
-                            "community_annotation": hijack.get(
-                                "community_annotation", "NA"
-                            )
-                        },
-                    )
+                    if hijack:
+                        mail_log.info(
+                            "{}".format(
+                                json.dumps(
+                                    hijack_log_field_formatter(hijack),
+                                    indent=4,
+                                    cls=SetEncoder,
+                                )
+                            ),
+                            extra={
+                                "community_annotation": hijack.get(
+                                    "community_annotation", "NA"
+                                )
+                            },
+                        )
+                        hij_log.info(
+                            "{}".format(
+                                json.dumps(
+                                    hijack_log_field_formatter(hijack),
+                                    indent=4,
+                                    cls=SetEncoder,
+                                )
+                            ),
+                            extra={
+                                "community_annotation": hijack.get(
+                                    "community_annotation", "NA"
+                                )
+                            },
+                        )
                 elif not is_hijack:
                     self.gen_implicit_withdrawal(monitor_event)
                     self.mark_handled(raw)

@@ -44,6 +44,7 @@ DEFAULT_HIJACK_LOG_FIELDS = [
     "key",
     "community_annotation",
     "end_tag",
+    "hijack_url",
 ]
 try:
     HIJACK_LOG_FIELDS = set(
@@ -51,6 +52,7 @@ try:
     )
 except Exception:
     HIJACK_LOG_FIELDS = set(DEFAULT_HIJACK_LOG_FIELDS)
+BIND_IP = os.getenv("BIND_IP")
 
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
@@ -533,6 +535,11 @@ def hijack_log_field_formatter(hijack_dict):
         fields_to_log = set(hijack_dict.keys()).intersection(HIJACK_LOG_FIELDS)
         for field in fields_to_log:
             logged_hijack_dict[field] = hijack_dict[field]
+        # instead of storing in redis, simply add the hijack url upon logging
+        if "hijack_url" in HIJACK_LOG_FIELDS and "key" in hijack_dict:
+            logged_hijack_dict["hijack_url"] = "https://{}/main/hijack?key={}".format(
+                BIND_IP, hijack_dict["key"]
+            )
     except Exception:
         log.exception("exception")
         return hijack_dict

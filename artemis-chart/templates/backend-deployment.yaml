@@ -160,6 +160,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: hijackLogFields
+        - name: BIND_IP
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: bindIp
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

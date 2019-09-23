@@ -6,6 +6,7 @@
 - PR labeler (GitHub actions)
 - env variable and formatter for selecting hijack log fields
 - logging also withdrawn and outdated hijacks in mail and hijack loggers
+- extra end_tag and hijack_url in hijacks for logging
 
 ### Changed
 - py-radix, substituted with pytricia tree

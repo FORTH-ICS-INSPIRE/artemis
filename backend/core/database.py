@@ -1297,7 +1297,6 @@ class Database:
                                         "{}".format(
                                             json.dumps(
                                                 hijack_log_field_formatter(hijack),
-                                                indent=4,
                                                 cls=SetEncoder,
                                             )
                                         ),

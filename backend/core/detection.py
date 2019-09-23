@@ -557,9 +557,7 @@ class Detection:
                         hij_log.info(
                             "{}".format(
                                 json.dumps(
-                                    hijack_log_field_formatter(hijack),
-                                    indent=4,
-                                    cls=SetEncoder,
+                                    hijack_log_field_formatter(hijack), cls=SetEncoder
                                 )
                             ),
                             extra={
@@ -951,9 +949,7 @@ class Detection:
             )
             hij_log.info(
                 "{}".format(
-                    json.dumps(
-                        hijack_log_field_formatter(result), indent=4, cls=SetEncoder
-                    )
+                    json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
                 ),
                 extra={
                     "community_annotation": result.get("community_annotation", "NA")

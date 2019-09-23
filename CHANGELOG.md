@@ -11,6 +11,7 @@
 
 ### Fixed
 - Support for millions of prefixes in configuration file
+- Ensure ARTEMIS config file is not clobbered on pod restart
 
 ### Removed
 - ipaddress requirement from frontend (not needed)

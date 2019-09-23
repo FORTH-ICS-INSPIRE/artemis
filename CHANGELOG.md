@@ -4,6 +4,8 @@
 ### Added
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
+- env variable and formatter for selecting hijack log fields
+- logging also withdrawn and outdated hijacks in mail and hijack loggers
 
 ### Changed
 - py-radix, substituted with pytricia tree

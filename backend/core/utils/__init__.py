@@ -529,7 +529,11 @@ def get_ip_version(prefix):
 
 def hijack_log_field_formatter(hijack_dict):
     logged_hijack_dict = {}
-    fields_to_log = set(hijack_dict.keys()).intersection(HIJACK_LOG_FIELDS)
-    for field in fields_to_log:
-        logged_hijack_dict[field] = hijack_dict[field]
+    try:
+        fields_to_log = set(hijack_dict.keys()).intersection(HIJACK_LOG_FIELDS)
+        for field in fields_to_log:
+            logged_hijack_dict[field] = hijack_dict[field]
+    except Exception:
+        log.exception("exception")
+        return hijack_dict
     return logged_hijack_dict

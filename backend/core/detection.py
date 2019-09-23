@@ -26,6 +26,7 @@ from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
+from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -539,7 +540,13 @@ class Detection:
                     )
                     self.mark_outdated(monitor_event["hij_key"], redis_hijack_key)
                     mail_log.info(
-                        "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                        "{}".format(
+                            json.dumps(
+                                hijack_log_field_formatter(hijack),
+                                indent=4,
+                                cls=SetEncoder,
+                            )
+                        ),
                         extra={
                             "community_annotation": hijack.get(
                                 "community_annotation", "NA"
@@ -547,7 +554,13 @@ class Detection:
                         },
                     )
                     hij_log.info(
-                        "{}".format(json.dumps(hijack, indent=4, cls=SetEncoder)),
+                        "{}".format(
+                            json.dumps(
+                                hijack_log_field_formatter(hijack),
+                                indent=4,
+                                cls=SetEncoder,
+                            )
+                        ),
                         extra={
                             "community_annotation": hijack.get(
                                 "community_annotation", "NA"
@@ -873,7 +886,13 @@ class Detection:
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(
-                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                        "{}".format(
+                            json.dumps(
+                                hijack_log_field_formatter(result),
+                                indent=4,
+                                cls=SetEncoder,
+                            )
+                        ),
                         extra={
                             "community_annotation": result.get(
                                 "community_annotation", "NA"
@@ -930,7 +949,11 @@ class Detection:
                 priority=0,
             )
             hij_log.info(
-                "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                "{}".format(
+                    json.dumps(
+                        hijack_log_field_formatter(result), indent=4, cls=SetEncoder
+                    )
+                ),
                 extra={
                     "community_annotation": result.get("community_annotation", "NA")
                 },

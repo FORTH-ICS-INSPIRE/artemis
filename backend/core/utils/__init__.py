@@ -37,7 +37,6 @@ DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
         "time_started",
         "time_last",
         "peers_seen",
-        "monitor_keys",
         "configured_prefix",
         "timestamp_of_config",
         "asns_inf",

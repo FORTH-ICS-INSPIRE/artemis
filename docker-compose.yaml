@@ -38,6 +38,7 @@ services:
             SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             HISTORIC: ${HISTORIC}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/

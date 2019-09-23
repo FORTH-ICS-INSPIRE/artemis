@@ -142,11 +142,6 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: monSupervisorPort
-        - name: HIJACK_LOG_FILTER
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: hijackLogFilter
         - name: MON_TIMEOUT_LAST_BGP_UPDATE
           valueFrom:
             configMapKeyRef:

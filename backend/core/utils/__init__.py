@@ -29,6 +29,28 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+DEFAULT_HIJACK_LOG_FIELDS = [
+    "prefix",
+    "hijack_as",
+    "type",
+    "time_started",
+    "time_last",
+    "peers_seen",
+    "monitor_keys",
+    "configured_prefix",
+    "timestamp_of_config",
+    "asns_inf",
+    "time_detected",
+    "key",
+    "community_annotation",
+    "end_tag",
+]
+try:
+    HIJACK_LOG_FIELDS = set(
+        json.loads(os.getenv("HIJACK_LOG_FIELDS", DEFAULT_HIJACK_LOG_FIELDS))
+    )
+except Exception:
+    HIJACK_LOG_FIELDS = set(DEFAULT_HIJACK_LOG_FIELDS)
 
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
@@ -503,3 +525,11 @@ def get_ip_version(prefix):
     if ":" in prefix:
         return "v6"
     return "v4"
+
+
+def hijack_log_field_formatter(hijack_dict):
+    logged_hijack_dict = {}
+    fields_to_log = set(hijack_dict.keys()).intersection(HIJACK_LOG_FIELDS)
+    for field in fields_to_log:
+        logged_hijack_dict[field] = hijack_dict[field]
+    return logged_hijack_dict

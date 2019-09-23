@@ -155,6 +155,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: monTimeoutLastBgpUpdate
+        - name: HIJACK_LOG_FIELDS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hijackLogFields
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

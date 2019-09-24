@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
+from xmlrpc.client import ServerProxy
 
 import psycopg2
 import requests
@@ -133,6 +134,60 @@ def get_logger(path="/etc/artemis/logging.yaml"):
 
 
 log = get_logger()
+
+
+class ModulesState:
+    def __init__(self):
+        self.backend_server = ServerProxy(BACKEND_SUPERVISOR_URI)
+        self.mon_server = ServerProxy(MON_SUPERVISOR_URI)
+
+    def call(self, module, action):
+        try:
+            if module == "all":
+                if action == "start":
+                    for ctx in {self.backend_server, self.mon_server}:
+                        ctx.supervisor.startAllProcesses()
+                elif action == "stop":
+                    for ctx in {self.backend_server, self.mon_server}:
+                        ctx.supervisor.stopAllProcesses()
+            else:
+                ctx = self.backend_server
+                if module == "monitor":
+                    ctx = self.mon_server
+
+                if action == "start":
+                    modules = self.is_any_up_or_running(module, up=False)
+                    for mod in modules:
+                        ctx.supervisor.startProcess(mod)
+
+                elif action == "stop":
+                    modules = self.is_any_up_or_running(module)
+                    for mod in modules:
+                        ctx.supervisor.stopProcess(mod)
+
+        except Exception:
+            log.exception("exception")
+
+    def is_any_up_or_running(self, module, up=True):
+        ctx = self.backend_server
+        if module == "monitor":
+            ctx = self.mon_server
+
+        try:
+            if up:
+                return [
+                    "{}:{}".format(x["group"], x["name"])
+                    for x in ctx.supervisor.getAllProcessInfo()
+                    if x["group"] == module and (x["state"] == 20 or x["state"] == 10)
+                ]
+            return [
+                "{}:{}".format(x["group"], x["name"])
+                for x in ctx.supervisor.getAllProcessInfo()
+                if x["group"] == module and (x["state"] != 20 and x["state"] != 10)
+            ]
+        except Exception:
+            log.exception("exception")
+            return False
 
 
 @contextmanager

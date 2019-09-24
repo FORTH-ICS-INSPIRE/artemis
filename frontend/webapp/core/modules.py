@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from xmlrpc.client import ServerProxy
@@ -149,21 +150,17 @@ class Modules_state:
                 "Content-Type": "application/json; charset=utf-8",
                 "Authorization": "Bearer {}".format(access_token),
             }
-            graqphql_request_payload = {
-                "variables": {"name": name, "running": running},
-                "extensions": {},
-                "operationName": "updateIntendedProcessStates",
-                "query": intended_process_states_mutation,
-            }
-            # TODO: use or not verify=False?
-            graqphql_request = requests.post(
+            graqphql_request_payload = json.dumps(
+                {
+                    "variables": {"name": name, "running": running},
+                    "operationName": "updateIntendedProcessStates",
+                    "query": intended_process_states_mutation,
+                }
+            )
+            requests.post(
                 url=GRAPHQL_URI,
                 headers=graqphql_request_headers,
                 data=graqphql_request_payload,
-                verify=False,
             )
-
-            graqphql_request_response = graqphql_request.json()
-            log.info(graqphql_request_response)
         except Exception:
             log.exception("exception")

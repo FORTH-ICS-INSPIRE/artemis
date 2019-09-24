@@ -3,6 +3,7 @@ import time
 from xmlrpc.client import ServerProxy
 
 import requests
+from flask import jsonify
 from flask_jwt_extended import create_access_token
 from flask_security import current_user
 from webapp.utils import BACKEND_SUPERVISOR_URI
@@ -149,21 +150,17 @@ class Modules_state:
                 "Content-Type": "application/json; charset=utf-8",
                 "Authorization": "Bearer {}".format(access_token),
             }
-            graqphql_request_payload = {
-                "variables": {"name": name, "running": running},
-                "extensions": {},
-                "operationName": "updateIntendedProcessStates",
-                "query": intended_process_states_mutation,
-            }
-            # TODO: use or not verify=False?
-            graqphql_request = requests.post(
+            graqphql_request_payload = jsonify(
+                {
+                    "variables": {"name": name, "running": running},
+                    "operationName": "updateIntendedProcessStates",
+                    "query": intended_process_states_mutation,
+                }
+            )
+            requests.post(
                 url=GRAPHQL_URI,
                 headers=graqphql_request_headers,
                 data=graqphql_request_payload,
-                verify=False,
             )
-
-            graqphql_request_response = graqphql_request.json()
-            log.info(graqphql_request_response)
         except Exception:
             log.exception("exception")

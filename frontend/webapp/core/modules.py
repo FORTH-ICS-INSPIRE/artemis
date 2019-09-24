@@ -2,8 +2,13 @@ import logging
 import time
 from xmlrpc.client import ServerProxy
 
+import requests
+from flask_jwt_extended import create_access_token
+from flask_security import current_user
 from webapp.utils import BACKEND_SUPERVISOR_URI
+from webapp.utils import GRAPHQL_URI
 from webapp.utils import MON_SUPERVISOR_URI
+
 
 log = logging.getLogger("webapp_logger")
 
@@ -14,6 +19,20 @@ intervals = (
     ("M", 60),
     ("S", 1),
 )
+
+intended_process_states_mutation = """
+mutation updateIntendedProcessStates($name: String, $running: Boolean) {
+  update_view_intended_process_states(where: {name: {_eq: $name}}, _set: {running: $running}) {
+    affected_rows
+    returning {
+      name
+      running
+    }
+  }
+}
+"""
+
+user_controlled_modules = ["monitor", "detection", "mitigation"]
 
 
 def display_time(seconds, granularity=2):
@@ -53,11 +72,20 @@ class Modules_state:
                     modules = self.is_any_up_or_running(module, up=False)
                     for mod in modules:
                         ctx.supervisor.startProcess(mod)
+                        if module in user_controlled_modules:
+                            self.update_intended_process_states(
+                                name=module, running=True
+                            )
 
                 elif action == "stop":
                     modules = self.is_any_up_or_running(module)
                     for mod in modules:
                         ctx.supervisor.stopProcess(mod)
+                        if module in user_controlled_modules:
+                            self.update_intended_process_states(
+                                name=module, running=False
+                            )
+
         except Exception:
             log.exception("exception")
 
@@ -113,3 +141,29 @@ class Modules_state:
 
     def get_response_formatted_all(self):
         return self.get_response_all()
+
+    def update_intended_process_states(self, name, running=False):
+        try:
+            access_token = create_access_token(identity=current_user)
+            graqphql_request_headers = {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": "Bearer {}".format(access_token),
+            }
+            graqphql_request_payload = {
+                "variables": {"name": name, "running": running},
+                "extensions": {},
+                "operationName": "updateIntendedProcessStates",
+                "query": intended_process_states_mutation,
+            }
+            # TODO: use or not verify=False?
+            graqphql_request = requests.post(
+                url=GRAPHQL_URI,
+                headers=graqphql_request_headers,
+                data=graqphql_request_payload,
+                verify=False,
+            )
+
+            graqphql_request_response = graqphql_request.json()
+            log.info(graqphql_request_response)
+        except Exception:
+            log.exception("exception")

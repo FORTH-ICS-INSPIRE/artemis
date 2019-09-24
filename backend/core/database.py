@@ -111,6 +111,26 @@ class Database:
             except Exception:
                 log.exception("exception")
 
+            try:
+                query = (
+                    "INSERT INTO intended_process_states (name, running) "
+                    "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+                )
+
+                for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                    server = ServerProxy(ctx)
+                    processes = [
+                        (x["name"], False)
+                        for x in server.supervisor.getAllProcessInfo()
+                        if x["name"] in ["monitor", "detection", "mitigation"]
+                    ]
+
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(db_cur, query, processes)
+
+            except Exception:
+                log.exception("exception")
+
             # redis db
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)

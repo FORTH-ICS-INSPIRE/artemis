@@ -789,7 +789,8 @@ class Database:
                 try:
                     results = []
                     query = (
-                        "SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type "
+                        "SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, b.peer_asn, "
+                        "b.communities, b.timestamp, h.key, h.hijack_as, h.type "
                         "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
                         "WHERE h.active = true AND b.type='A' AND b.handled=true"
                     )
@@ -805,9 +806,12 @@ class Database:
                                 "prefix": entry[1],  # prefix
                                 "path": entry[2],  # as_path
                                 "type": entry[3],  # type
-                                "hij_key": entry[4],
-                                "hijack_as": entry[5],
-                                "hij_type": entry[6],
+                                "peer_asn": entry[4],  # peer_asn
+                                "communities": json.loads(entry[5]),  # communities
+                                "timestamp": entry[6],
+                                "hij_key": entry[7],
+                                "hijack_as": entry[8],
+                                "hij_type": entry[9],
                             }
                         )
                     if results:

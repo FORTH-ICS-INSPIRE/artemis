@@ -768,7 +768,6 @@ class Detection:
 
             if "hij_key" in monitor_event:
                 monitor_event["final_redis_hijack_key"] = redis_hijack_key
-                return
 
             hijack_value = {
                 "prefix": monitor_event["prefix"],

@@ -2,7 +2,7 @@ apiVersion: v1
 entries:
   artemis-chart:
   - appVersion: latest
-    created: 2019-09-25T19:51:06.070267856Z
+    created: 2019-09-25T20:36:57.361758103Z
     description: ARTEMIS helm chart for deploying on kubernetes.
     digest: b44bfcbe045db4ae83714b7196a50527492384e1844d6611450bc27b4649f41a
     home: https://github.com/FORTH-ICS-INSPIRE/artemis
@@ -19,4 +19,4 @@ entries:
     urls:
     - https://forth-ics-inspire.github.io/artemis/artemis-chart-0.0.1.tgz
     version: 0.0.1
-generated: 2019-09-25T19:51:06.069395867Z
+generated: 2019-09-25T20:36:57.360474103Z

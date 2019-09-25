@@ -121,9 +121,9 @@ class Database:
                 for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
                     server = ServerProxy(ctx)
                     processes = [
-                        (x["name"], False)
+                        (x["group"], False)
                         for x in server.supervisor.getAllProcessInfo()
-                        if x["name"] in ["monitor", "detection", "mitigation"]
+                        if x["group"] in ["monitor", "detection", "mitigation"]
                     ]
 
                     with get_wo_cursor(self.wo_conn) as db_cur:

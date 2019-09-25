@@ -4,6 +4,7 @@
 ### Added
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
+- Reinstating intended modules on ARTEMIS startup
 
 ### Changed
 - py-radix, substituted with pytricia tree

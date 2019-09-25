@@ -121,9 +121,9 @@ class Database:
                 for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
                     server = ServerProxy(ctx)
                     processes = [
-                        (x["name"], False)
+                        (x["group"], False)
                         for x in server.supervisor.getAllProcessInfo()
-                        if x["name"] in ["monitor", "detection", "mitigation"]
+                        if x["group"] in ["monitor", "detection", "mitigation"]
                     ]
 
                     with get_wo_cursor(self.wo_conn) as db_cur:
@@ -424,9 +424,12 @@ class Database:
                 modules_state = ModulesState()
                 for entry in entries:
                     # entry[0] --> module name, entry[1] --> intended state
-                    # start only intended modules, do not stop running ones!
+                    # start only intended modules (after making sure they are stopped
+                    # to avoid stale entries)
                     if entry[1]:
                         log.info("Setting {} to start state.".format(entry[0]))
+                        modules_state.call(entry[0], "stop")
+                        time.sleep(1)
                         modules_state.call(entry[0], "start")
             except Exception:
                 log.exception("exception")

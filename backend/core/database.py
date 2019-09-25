@@ -564,7 +564,7 @@ class Database:
                         query = (
                             "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
                             "type, communities, timestamp FROM bgp_updates "
-                            "WHERE bgp_updates.handled=false AND bgp_updates.key = %s"
+                            "WHERE bgp_updates.key = %s"
                         )
 
                         with get_ro_cursor(self.ro_conn) as db_cur:

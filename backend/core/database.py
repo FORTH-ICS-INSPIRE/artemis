@@ -424,9 +424,12 @@ class Database:
                 modules_state = ModulesState()
                 for entry in entries:
                     # entry[0] --> module name, entry[1] --> intended state
-                    # start only intended modules, do not stop running ones!
+                    # start only intended modules (after making sure they are stopped
+                    # to avoid stale entries)
                     if entry[1]:
                         log.info("Setting {} to start state.".format(entry[0]))
+                        modules_state.call(entry[0], "stop")
+                        time.sleep(1)
                         modules_state.call(entry[0], "start")
             except Exception:
                 log.exception("exception")

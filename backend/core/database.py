@@ -569,7 +569,7 @@ class Database:
 
                         with get_ro_cursor(self.ro_conn) as db_cur:
                             psycopg2.extras.execute_batch(
-                                db_cur, query, (rekey_update_keys,)
+                                db_cur, query, (rekey_update_keys,), page_size=1000
                             )
                             entries = db_cur.fetchall()
 
@@ -1309,11 +1309,11 @@ class Database:
 
             try:
                 query = (
-                    "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) "
-                    "FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
+                    "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
+                    "WHERE bgp_updates.key=%s"
                 )
                 with get_wo_cursor(self.wo_conn) as db_cur:
-                    psycopg2.extras.execute_values(
+                    psycopg2.extras.execute_batch(
                         db_cur, query, list(update_hijack_withdrawals), page_size=1000
                     )
 
@@ -1367,11 +1367,20 @@ class Database:
                         psycopg2.extras.execute_values(
                             db_cur, query, list(update_bgp_entries), page_size=1000
                         )
-                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2, v3) WHERE bgp_updates.key=data.v2"
-                    with get_wo_cursor(self.wo_conn) as db_cur:
-                        psycopg2.extras.execute_values(
-                            db_cur, query, list(update_bgp_entries), page_size=1000
+                    update_bgp_entries_no_time_thres = set()
+                    for update_bgp_entry in update_bgp_entries:
+                        update_bgp_entries_no_time_thres.add(
+                            (update_bgp_entry[0], update_bgp_entry[1])
                         )
+                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(
+                            db_cur,
+                            query,
+                            list(update_bgp_entries_no_time_thres),
+                            page_size=1000,
+                        )
+                    update_bgp_entries_no_time_thres.clear()
                 except Exception:
                     log.exception("exception")
                     return -1

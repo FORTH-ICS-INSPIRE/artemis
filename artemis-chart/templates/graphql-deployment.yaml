@@ -1,18 +1,20 @@
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: graphql
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-graphql
   name: {{ .Release.Name }}-graphql
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-graphql
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy: {}
   template:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: graphql
+        app: {{ .Release.Name }}-graphql
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
@@ -49,8 +51,8 @@ spec:
         name: graphql
         resources: {}
       restartPolicy: Always
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

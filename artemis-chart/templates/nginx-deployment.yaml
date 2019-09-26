@@ -1,12 +1,14 @@
 {{- if not .Values.ingress.enabled -}}
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: nginx
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-nginx
   name: {{ .Release.Name }}-nginx
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-nginx
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
@@ -14,7 +16,7 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: nginx
+        app: {{ .Release.Name }}-nginx
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:

@@ -1,6 +1,6 @@
 name: artemis-chart
 description: ARTEMIS helm chart for deploying on kubernetes.
-version: 0.0.1
+version: 0.0.2
 keywords:
   - helm
   - artemis

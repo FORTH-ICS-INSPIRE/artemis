@@ -1,11 +1,13 @@
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: rabbitmq
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-rabbitmq
   name: {{ .Release.Name }}-rabbitmq
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-rabbitmq
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
@@ -13,7 +15,7 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: rabbitmq
+        app: {{ .Release.Name }}-rabbitmq
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
@@ -41,8 +43,8 @@ spec:
       - configMap:
           name: {{ .Release.Name }}-volumes
         name: rabbitmq-configmap0
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

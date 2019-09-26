@@ -1,11 +1,13 @@
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: pg-amqp-bridge
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-pg-amqp-bridge
   name: {{ .Release.Name }}-pg-amqp-bridge
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-pg-amqp-bridge
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
@@ -13,7 +15,7 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: pg-amqp-bridge
+        app: {{ .Release.Name }}-pg-amqp-bridge
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
@@ -39,8 +41,8 @@ spec:
         name: pg-amqp-bridge
         resources: {}
       restartPolicy: Always
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

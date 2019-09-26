@@ -1557,7 +1557,8 @@ class Database:
                     "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation) "
                     "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
                     ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
-                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, community_annotation=excluded.community_annotation"
+                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, timestamp_of_config=excluded.timestamp_of_config, "
+                    "configured_prefix=excluded.configured_prefix, community_annotation=excluded.community_annotation"
                 )
 
                 values = []

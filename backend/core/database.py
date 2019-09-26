@@ -26,6 +26,7 @@ from utils import get_ro_cursor
 from utils import get_wo_cursor
 from utils import hijack_log_field_formatter
 from utils import HISTORIC
+from utils import ModulesState
 from utils import MON_SUPERVISOR_URI
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -130,6 +131,26 @@ class Database:
                         (x["name"], x["state"] == 20)
                         for x in server.supervisor.getAllProcessInfo()
                         if x["name"] != "listener"
+                    ]
+
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(db_cur, query, processes)
+
+            except Exception:
+                log.exception("exception")
+
+            try:
+                query = (
+                    "INSERT INTO intended_process_states (name, running) "
+                    "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+                )
+
+                for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                    server = ServerProxy(ctx)
+                    processes = [
+                        (x["group"], False)
+                        for x in server.supervisor.getAllProcessInfo()
+                        if x["group"] in ["monitor", "detection", "mitigation"]
                     ]
 
                     with get_wo_cursor(self.wo_conn) as db_cur:
@@ -419,6 +440,26 @@ class Database:
                     no_ack=True,
                 ),
             ]
+
+        def set_modules_to_intended_state(self):
+            try:
+                query = "SELECT name, running FROM intended_process_states"
+
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+                modules_state = ModulesState()
+                for entry in entries:
+                    # entry[0] --> module name, entry[1] --> intended state
+                    # start only intended modules (after making sure they are stopped
+                    # to avoid stale entries)
+                    if entry[1]:
+                        log.info("Setting {} to start state.".format(entry[0]))
+                        modules_state.call(entry[0], "stop")
+                        time.sleep(1)
+                        modules_state.call(entry[0], "start")
+            except Exception:
+                log.exception("exception")
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
@@ -745,7 +786,7 @@ class Database:
             return None
 
         def handle_config_notify(self, message):
-            log.info("Reconfiguring database...")
+            log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
@@ -773,7 +814,7 @@ class Database:
             log.info("Database initiated, configured and running.")
 
         def handle_config_request_reply(self, message):
-            log.info("Reconfiguring database...")
+            log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
@@ -803,6 +844,7 @@ class Database:
                             log.debug("database config is up-to-date")
             except Exception:
                 log.exception("{}".format(config))
+            self.set_modules_to_intended_state()
 
             log.info("Database initiated, configured and running.")
 

@@ -4,10 +4,11 @@
 ### Added
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
-- env variable and formatter for selecting hijack log fields
-- env variable for ARTEMIS web host for backend logging
-- logging also withdrawn and outdated hijacks in mail and hijack loggers
-- extra end_tag and hijack_url in hijacks for logging
+- Env variable and formatter for selecting hijack log fields
+- Env variable for ARTEMIS web host for backend logging
+- Logging also withdrawn and outdated hijacks in mail and hijack loggers
+- Extra end_tag and hijack_url in hijacks for logging
+- Reinstating intended modules on ARTEMIS startup
 
 ### Changed
 - py-radix, substituted with pytricia tree
@@ -15,6 +16,7 @@
 
 ### Fixed
 - Support for millions of prefixes in configuration file
+- Ensure ARTEMIS config file is not clobbered on pod restart
 
 ### Removed
 - ipaddress requirement from frontend (not needed)

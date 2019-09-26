@@ -859,10 +859,7 @@ class Detection:
                             "{0:.6f}".format(hijack_value["time_detected"]),
                         ]
                     )
-                    # add only if not "hij_key" is present; if it is, do not
-                    # add to force rekeying!
-                    if "hij_key" not in monitor_event:
-                        redis_pipeline.sadd("persistent-keys", hijack_value["key"])
+                    redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(

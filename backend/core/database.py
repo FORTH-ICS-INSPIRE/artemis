@@ -862,7 +862,7 @@ class Database:
                         "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, "
                         "h.type, h.time_detected "
                         "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
-                        "WHERE h.active = true AND b.type='A' AND b.handled=true"
+                        "WHERE h.active = true AND b.handled=true"
                     )
 
                     with get_ro_cursor(self.ro_conn) as db_cur:

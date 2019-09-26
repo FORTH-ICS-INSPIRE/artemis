@@ -1313,14 +1313,59 @@ class Database:
                     log.exception("exception")
 
             try:
+                update_hijack_withdrawals_dict = {}
+                for update_hijack_withdrawal in update_hijack_withdrawals:
+                    hijack_key = update_hijack_withdrawal[0]
+                    withdrawal_key = update_hijack_withdrawal[1]
+                    if withdrawal_key not in update_hijack_withdrawals_dict:
+                        update_hijack_withdrawals_dict[withdrawal_key] = set()
+                    update_hijack_withdrawals_dict[withdrawal_key].add(hijack_key)
+                update_hijack_withdrawals_parallel = set()
+                update_hijack_withdrawals_serial = set()
+                for withdrawal_key in update_hijack_withdrawals_dict:
+                    if len(update_hijack_withdrawals_dict[withdrawal_key]) == 1:
+                        for hijack_key in update_hijack_withdrawals_dict[
+                            withdrawal_key
+                        ]:
+                            update_hijack_withdrawals_parallel.add(
+                                (hijack_key, withdrawal_key)
+                            )
+                    else:
+                        for hijack_key in update_hijack_withdrawals_dict[
+                            withdrawal_key
+                        ]:
+                            update_hijack_withdrawals_serial.add(
+                                (hijack_key, withdrawal_key)
+                            )
+
+                # execute parallel execute values query
+                query = (
+                    "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) "
+                    "FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
+                )
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_values(
+                        db_cur,
+                        query,
+                        list(update_hijack_withdrawals_parallel),
+                        page_size=1000,
+                    )
+
+                # execute serial execute_batch query
                 query = (
                     "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
                     "WHERE bgp_updates.key=%s"
                 )
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     psycopg2.extras.execute_batch(
-                        db_cur, query, list(update_hijack_withdrawals), page_size=1000
+                        db_cur,
+                        query,
+                        list(update_hijack_withdrawals_serial),
+                        page_size=1000,
                     )
+                update_hijack_withdrawals_parallel.clear()
+                update_hijack_withdrawals_serial.clear()
+                update_hijack_withdrawals_dict.clear()
 
                 query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
                 with get_wo_cursor(self.wo_conn) as db_cur:
@@ -1372,20 +1417,54 @@ class Database:
                         psycopg2.extras.execute_values(
                             db_cur, query, list(update_bgp_entries), page_size=1000
                         )
-                    update_bgp_entries_no_time_thres = set()
+                    update_bgp_entries_dict = {}
                     for update_bgp_entry in update_bgp_entries:
-                        update_bgp_entries_no_time_thres.add(
-                            (update_bgp_entry[0], update_bgp_entry[1])
+                        hijack_key = update_bgp_entry[0]
+                        bgp_entry_to_update = update_bgp_entry[1]
+                        if bgp_entry_to_update not in update_bgp_entries_dict:
+                            update_bgp_entries_dict[bgp_entry_to_update] = set()
+                        update_bgp_entries_dict[bgp_entry_to_update].add(hijack_key)
+                    update_bgp_entries_parallel = set()
+                    update_bgp_entries_serial = set()
+                    for bgp_entry_to_update in update_bgp_entries_dict:
+                        if len(update_bgp_entries_dict[bgp_entry_to_update]) == 1:
+                            for hijack_key in update_bgp_entries_dict[
+                                bgp_entry_to_update
+                            ]:
+                                update_bgp_entries_parallel.add(
+                                    (hijack_key, bgp_entry_to_update)
+                                )
+                        else:
+                            for hijack_key in update_bgp_entries_dict[
+                                bgp_entry_to_update
+                            ]:
+                                update_bgp_entries_serial.add(
+                                    (hijack_key, bgp_entry_to_update)
+                                )
+
+                    # execute parallel execute values query
+                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_values(
+                            db_cur,
+                            query,
+                            list(update_bgp_entries_parallel),
+                            page_size=1000,
                         )
+
+                    # execute serial execute_batch query
                     query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
                     with get_wo_cursor(self.wo_conn) as db_cur:
                         psycopg2.extras.execute_batch(
                             db_cur,
                             query,
-                            list(update_bgp_entries_no_time_thres),
+                            list(update_bgp_entries_serial),
                             page_size=1000,
                         )
-                    update_bgp_entries_no_time_thres.clear()
+                    update_bgp_entries_parallel.clear()
+                    update_bgp_entries_serial.clear()
+                    update_bgp_entries_dict.clear()
+
                 except Exception:
                     log.exception("exception")
                     return -1

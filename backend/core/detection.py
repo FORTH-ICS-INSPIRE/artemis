@@ -845,6 +845,14 @@ class Detection:
                 "timestamp_of_config": self.timestamp,
                 "end_tag": None,
             }
+            outdated_parent = None
+
+            if (
+                "hij_key" in monitor_event
+                and monitor_event["initial_redis_hijack_key"]
+                != monitor_event["final_redis_hijack_key"]
+            ):
+                outdated_parent = monitor_event["hij_key"]
 
             # identify the number of infected ases
             hijack_value["asns_inf"] = set()
@@ -915,20 +923,22 @@ class Detection:
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
-                    mail_log.info(
-                        "{}".format(
-                            json.dumps(
-                                hijack_log_field_formatter(result),
-                                indent=4,
-                                cls=SetEncoder,
-                            )
-                        ),
-                        extra={
-                            "community_annotation": result.get(
-                                "community_annotation", "NA"
-                            )
-                        },
-                    )
+                    # log in mail only if it is a truly new ongoing hijack
+                    if not outdated_parent:
+                        mail_log.info(
+                            "{}".format(
+                                json.dumps(
+                                    hijack_log_field_formatter(result),
+                                    indent=4,
+                                    cls=SetEncoder,
+                                )
+                            ),
+                            extra={
+                                "community_annotation": result.get(
+                                    "community_annotation", "NA"
+                                )
+                            },
+                        )
                 redis_pipeline.set(redis_hijack_key, yaml.dump(result))
 
                 # store the origin, neighbor combination for this hijack BGP update
@@ -978,14 +988,16 @@ class Detection:
                 serializer="yaml",
                 priority=0,
             )
-            hij_log.info(
-                "{}".format(
-                    json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
-                ),
-                extra={
-                    "community_annotation": result.get("community_annotation", "NA")
-                },
-            )
+            # log in hijack log only if it is a truly new ongoing hijack
+            if not outdated_parent:
+                hij_log.info(
+                    "{}".format(
+                        json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
+                    ),
+                    extra={
+                        "community_annotation": result.get("community_annotation", "NA")
+                    },
+                )
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

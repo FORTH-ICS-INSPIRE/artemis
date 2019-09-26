@@ -26,6 +26,7 @@ from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
+from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -530,10 +531,41 @@ class Detection:
                         monitor_event["hijack_as"],
                         monitor_event["hij_type"],
                     )
+                    hijack = self.redis.get(redis_hijack_key)
+                    if hijack:
+                        hijack = yaml.safe_load(hijack)
+                        hijack["end_tag"] = "outdated"
                     purge_redis_eph_pers_keys(
                         self.redis, redis_hijack_key, monitor_event["hij_key"]
                     )
                     self.mark_outdated(monitor_event["hij_key"], redis_hijack_key)
+                    if hijack:
+                        mail_log.info(
+                            "{}".format(
+                                json.dumps(
+                                    hijack_log_field_formatter(hijack),
+                                    indent=4,
+                                    cls=SetEncoder,
+                                )
+                            ),
+                            extra={
+                                "community_annotation": hijack.get(
+                                    "community_annotation", "NA"
+                                )
+                            },
+                        )
+                        hij_log.info(
+                            "{}".format(
+                                json.dumps(
+                                    hijack_log_field_formatter(hijack), cls=SetEncoder
+                                )
+                            ),
+                            extra={
+                                "community_annotation": hijack.get(
+                                    "community_annotation", "NA"
+                                )
+                            },
+                        )
                 elif not is_hijack:
                     self.gen_implicit_withdrawal(monitor_event)
                     self.mark_handled(raw)
@@ -780,6 +812,7 @@ class Detection:
                 "monitor_keys": {monitor_event["key"]},
                 "configured_prefix": monitor_event["matched_prefix"],
                 "timestamp_of_config": self.timestamp,
+                "end_tag": None,
             }
 
             # identify the number of infected ases
@@ -852,7 +885,13 @@ class Detection:
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(
-                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                        "{}".format(
+                            json.dumps(
+                                hijack_log_field_formatter(result),
+                                indent=4,
+                                cls=SetEncoder,
+                            )
+                        ),
                         extra={
                             "community_annotation": result.get(
                                 "community_annotation", "NA"
@@ -909,7 +948,9 @@ class Detection:
                 priority=0,
             )
             hij_log.info(
-                "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                "{}".format(
+                    json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
+                ),
                 extra={
                     "community_annotation": result.get("community_annotation", "NA")
                 },

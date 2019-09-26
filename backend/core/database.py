@@ -859,8 +859,7 @@ class Database:
                     results = []
                     query = (
                         "SELECT b.key, b.prefix, b.origin_as, b.as_path, b.type, b.peer_asn, "
-                        "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, "
-                        "h.type, h.time_detected "
+                        "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, h.type "
                         "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
                         "WHERE h.active = true AND b.handled=true"
                     )
@@ -885,7 +884,6 @@ class Database:
                                 "hij_key": entry[10],
                                 "hijack_as": entry[11],
                                 "hij_type": entry[12],
-                                "hij_time_detected": entry[13].timestamp(),
                             }
                         )
 

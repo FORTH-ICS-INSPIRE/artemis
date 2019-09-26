@@ -28,7 +28,7 @@ spec:
         - mountPath: /pvc
           name: backend-pvc
           subPath: configs
-        command: ['sh', '-c', 'cp -n -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
+        command: ['sh', '-c', 'false | cp -i /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/ 2> /dev/null']
       - name: wait-for-rmq
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']

@@ -26,6 +26,7 @@ from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
+from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -791,6 +792,7 @@ class Detection:
                 "monitor_keys": {monitor_event["key"]},
                 "configured_prefix": monitor_event["matched_prefix"],
                 "timestamp_of_config": self.timestamp,
+                "end_tag": None,
             }
 
             # identify the number of infected ases
@@ -868,7 +870,13 @@ class Detection:
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(
-                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                        "{}".format(
+                            json.dumps(
+                                hijack_log_field_formatter(result),
+                                indent=4,
+                                cls=SetEncoder,
+                            )
+                        ),
                         extra={
                             "community_annotation": result.get(
                                 "community_annotation", "NA"
@@ -925,7 +933,9 @@ class Detection:
                 priority=0,
             )
             hij_log.info(
-                "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                "{}".format(
+                    json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
+                ),
                 extra={
                     "community_annotation": result.get("community_annotation", "NA")
                 },

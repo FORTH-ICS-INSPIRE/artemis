@@ -42,3 +42,5 @@ data:
   hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}
   hijackLogFilter: {{ .Values.hijackLogFilter | default "[]" | quote }}
   monTimeoutLastBgpUpdate: {{ .Values.monTimeoutLastBgpUpdate | default "3600" | quote }}
+  hijackLogFields: {{ .Values.hijackLogFields | default "[]" | quote }}
+  artemisWebHost: {{ .Values.ingress.host | default "artemis.com" }}

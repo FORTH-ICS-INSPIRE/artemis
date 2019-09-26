@@ -12,6 +12,7 @@ services:
         expose:
             - ${BACKEND_SUPERVISOR_PORT}
         environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -38,6 +39,7 @@ services:
             SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             HISTORIC: ${HISTORIC}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/

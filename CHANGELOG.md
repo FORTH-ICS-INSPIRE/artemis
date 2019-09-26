@@ -4,6 +4,10 @@
 ### Added
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
+- Env variable and formatter for selecting hijack log fields
+- Env variable for ARTEMIS web host for backend logging
+- Logging also withdrawn and outdated hijacks in mail and hijack loggers
+- Extra end_tag and hijack_url in hijacks for logging
 - Reinstating intended modules on ARTEMIS startup
 
 ### Changed

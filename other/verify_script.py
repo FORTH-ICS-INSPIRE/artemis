@@ -132,6 +132,7 @@ class TestStringMethods(unittest.TestCase):
                 "flasksecretkey",
                 "securitypasswordsalt",
                 "hasurasecretkey",
+                "artemiswebhost",
             }
         )
         k8s_vals = {k.lower() for k in k8s_vals}

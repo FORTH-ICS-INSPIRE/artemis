@@ -850,7 +850,12 @@ class Detection:
                     result["monitor_keys"] = hijack_value["monitor_keys"]
                     self.comm_annotate_hijack(monitor_event, result)
                 else:
-                    hijack_value["time_detected"] = time.time()
+                    if "hij_time_detected" not in monitor_event:
+                        hijack_value["time_detected"] = time.time()
+                    else:
+                        hijack_value["time_detected"] = monitor_event[
+                            "hij_time_detected"
+                        ]
                     hijack_value["key"] = get_hash(
                         [
                             monitor_event["prefix"],

@@ -9,6 +9,7 @@
 ### Changed
 - py-radix, substituted with pytricia tree
 - dep-licenses updated (with currently used modules)
+- fixed bug with outdated hijacks that remain hijacks
 
 ### Fixed
 - Support for millions of prefixes in configuration file

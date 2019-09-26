@@ -831,8 +831,9 @@ class Database:
                 try:
                     results = []
                     query = (
-                        "SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, b.peer_asn, "
-                        "b.communities, b.timestamp, b.matched_prefix, h.key, h.hijack_as, h.type "
+                        "SELECT b.key, b.prefix, b.origin_as, b.as_path, b.type, b.peer_asn, "
+                        "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, "
+                        "h.type, h.time_detected "
                         "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
                         "WHERE h.active = true AND b.type='A' AND b.handled=true"
                     )
@@ -846,17 +847,21 @@ class Database:
                             {
                                 "key": entry[0],  # key
                                 "prefix": entry[1],  # prefix
-                                "path": entry[2],  # as_path
-                                "type": entry[3],  # type
-                                "peer_asn": entry[4],  # peer_asn
-                                "communities": entry[5],  # communities
-                                "timestamp": entry[6].timestamp(),
-                                "matched_prefix": entry[7],
-                                "hij_key": entry[8],
-                                "hijack_as": entry[9],
-                                "hij_type": entry[10],
+                                "origin_as": entry[2],  # origin ASN
+                                "path": entry[3],  # as_path
+                                "type": entry[4],  # type
+                                "peer_asn": entry[5],  # peer_asn
+                                "communities": entry[6],  # communities
+                                "timestamp": entry[7].timestamp(),  # timestamp
+                                "service": entry[8],  # service
+                                "matched_prefix": entry[9],  # configured prefix
+                                "hij_key": entry[10],
+                                "hijack_as": entry[11],
+                                "hij_type": entry[12],
+                                "hij_time_detected": entry[13].timestamp(),
                             }
                         )
+
                     if results:
                         for result_bucket in [
                             results[i : i + 10] for i in range(0, len(results), 10)

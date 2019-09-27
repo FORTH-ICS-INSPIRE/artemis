@@ -26,10 +26,11 @@ def create_monitor_defs(yaml_conf, monitors):
     yaml_conf["monitors"]["bgpstreamlive"] = monitors["bgpstreamlive"]
     yaml_conf["monitors"]["betabmp"] = monitors["betabmp"]
     yaml_conf["monitors"]["exabgp"] = ruamel.yaml.comments.CommentedSeq()
-    exabgp_map = ruamel.yaml.comments.CommentedMap()
-    exabgp_map["ip"] = monitors["exabgp"]["ip"]
-    exabgp_map["port"] = monitors["exabgp"]["port"]
-    yaml_conf["monitors"]["exabgp"].append(exabgp_map)
+    for dict_elem in monitors["exabgp"]:
+        exabgp_map = ruamel.yaml.comments.CommentedMap()
+        exabgp_map["ip"] = dict_elem["ip"]
+        exabgp_map["port"] = dict_elem["port"]
+        yaml_conf["monitors"]["exabgp"].append(exabgp_map)
 
 
 def create_asn_defs(yaml_conf, asns):
@@ -57,7 +58,9 @@ def create_asn_defs(yaml_conf, asns):
             yaml_conf["asns"][asn_group].append(asn)
 
 
-def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols, mitigation_script_path):
+def create_rule_defs(
+    yaml_conf, prefixes, asns, prefix_pols, mitigation_script_path="manual"
+):
     """
     Create grouped rule definitions for the ARTEMIS conf file
     """
@@ -105,7 +108,9 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols, mitigation_script_p
         yaml_conf["rules"].append(pol_dict)
 
 
-def generate_config_yml(prefixes, monitors, asns, prefix_pols, mitigation_script_path, yml_file=None):
+def generate_config_yml(
+    prefixes, monitors, asns, prefix_pols, mitigation_script_path, yml_file=None
+):
     """
     Write the config.yaml file content
     """

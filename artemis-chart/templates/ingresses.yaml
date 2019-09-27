@@ -2,16 +2,21 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}-backend-ingress
+  name: {{ .Release.Name }}-frontend-ingress
   annotations:
   {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- range $key, $value := .Values.ingress.frontend.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
 spec:
+  {{- if .Values.ingress.tlsEnabled }}
   tls:
   - hosts:
     - {{ .Values.ingress.host | default "artemis.com" }}
     secretName: {{ .Release.Name }}-secret-tls
+  {{- end }}
   rules:
   - host: {{ .Values.ingress.host | default "artemis.com" }}
     http:
@@ -29,12 +34,17 @@ metadata:
   {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
-    nginx.ingress.kubernetes.io/rewrite-target: /v1alpha1/graphql
+  {{- range $key, $value := .Values.ingress.graphql.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+
 spec:
+  {{- if .Values.ingress.tlsEnabled }}
   tls:
   - hosts:
     - {{ .Values.ingress.host | default "artemis.com" }}
     secretName: {{ .Release.Name }}-secret-tls
+  {{- end }}
   rules:
   - host: {{ .Values.ingress.host | default "artemis.com" }}
     http:

@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
+from xmlrpc.client import ServerProxy
 
 import psycopg2
 import requests
@@ -29,6 +30,31 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
+    [
+        "prefix",
+        "hijack_as",
+        "type",
+        "time_started",
+        "time_last",
+        "peers_seen",
+        "configured_prefix",
+        "timestamp_of_config",
+        "asns_inf",
+        "time_detected",
+        "key",
+        "community_annotation",
+        "end_tag",
+        "hijack_url",
+    ]
+)
+try:
+    HIJACK_LOG_FIELDS = set(
+        json.loads(os.getenv("HIJACK_LOG_FIELDS", DEFAULT_HIJACK_LOG_FIELDS))
+    )
+except Exception:
+    HIJACK_LOG_FIELDS = set(DEFAULT_HIJACK_LOG_FIELDS)
+ARTEMIS_WEB_HOST = os.getenv("ARTEMIS_WEB_HOST", "artemis.com")
 
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
@@ -133,6 +159,60 @@ def get_logger(path="/etc/artemis/logging.yaml"):
 
 
 log = get_logger()
+
+
+class ModulesState:
+    def __init__(self):
+        self.backend_server = ServerProxy(BACKEND_SUPERVISOR_URI)
+        self.mon_server = ServerProxy(MON_SUPERVISOR_URI)
+
+    def call(self, module, action):
+        try:
+            if module == "all":
+                if action == "start":
+                    for ctx in {self.backend_server, self.mon_server}:
+                        ctx.supervisor.startAllProcesses()
+                elif action == "stop":
+                    for ctx in {self.backend_server, self.mon_server}:
+                        ctx.supervisor.stopAllProcesses()
+            else:
+                ctx = self.backend_server
+                if module == "monitor":
+                    ctx = self.mon_server
+
+                if action == "start":
+                    modules = self.is_any_up_or_running(module, up=False)
+                    for mod in modules:
+                        ctx.supervisor.startProcess(mod)
+
+                elif action == "stop":
+                    modules = self.is_any_up_or_running(module)
+                    for mod in modules:
+                        ctx.supervisor.stopProcess(mod)
+
+        except Exception:
+            log.exception("exception")
+
+    def is_any_up_or_running(self, module, up=True):
+        ctx = self.backend_server
+        if module == "monitor":
+            ctx = self.mon_server
+
+        try:
+            if up:
+                return [
+                    "{}:{}".format(x["group"], x["name"])
+                    for x in ctx.supervisor.getAllProcessInfo()
+                    if x["group"] == module and (x["state"] == 20 or x["state"] == 10)
+                ]
+            return [
+                "{}:{}".format(x["group"], x["name"])
+                for x in ctx.supervisor.getAllProcessInfo()
+                if x["group"] == module and (x["state"] != 20 and x["state"] != 10)
+            ]
+        except Exception:
+            log.exception("exception")
+            return False
 
 
 @contextmanager
@@ -273,10 +353,9 @@ def valid_prefix(input_prefix):
 
 
 def calculate_more_specifics(prefix, min_length, max_length):
-    prefix_list = []
     for prefix_length in range(min_length, max_length + 1):
-        prefix_list.extend(prefix.subnets(new_prefix=prefix_length))
-    return prefix_list
+        for sub_prefix in prefix.subnets(new_prefix=prefix_length):
+            yield str(sub_prefix)
 
 
 class SetEncoder(json.JSONEncoder):
@@ -292,7 +371,7 @@ def translate_rfc2622(input_prefix, just_match=False):
     should be translated according to RFC2622
     :param just_match: (bool) check only if the prefix
     has matched instead of translating
-    :return: output_prefixes: (list of str) output IPv4/IPv6 prefixes,
+    :return: output_prefixes: (iterator of str) output IPv4/IPv6 prefixes,
     if not just_match, otherwise True or False
     """
 
@@ -309,12 +388,7 @@ def translate_rfc2622(input_prefix, just_match=False):
             max_length = matched_prefix_ip.max_prefixlen
             if just_match:
                 return True
-            return list(
-                map(
-                    str,
-                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
-                )
-            )
+            return calculate_more_specifics(matched_prefix_ip, min_length, max_length)
 
     # ^+ is the inclusive more specifics operator; it stands for the more
     #    specifics of the address prefix including the address prefix
@@ -329,12 +403,7 @@ def translate_rfc2622(input_prefix, just_match=False):
             max_length = matched_prefix_ip.max_prefixlen
             if just_match:
                 return True
-            return list(
-                map(
-                    str,
-                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
-                )
-            )
+            return calculate_more_specifics(matched_prefix_ip, min_length, max_length)
 
     # ^n where n is an integer, stands for all the length n specifics of
     #    the address prefix.  For example, 30.0.0.0/8^16 contains all the
@@ -378,12 +447,7 @@ def translate_rfc2622(input_prefix, just_match=False):
                 raise ArtemisError("invalid-n-large", input_prefix)
             if just_match:
                 return True
-            return list(
-                map(
-                    str,
-                    calculate_more_specifics(matched_prefix_ip, min_length, max_length),
-                )
-            )
+            return calculate_more_specifics(matched_prefix_ip, min_length, max_length)
 
     # nothing has matched
     if just_match:
@@ -504,3 +568,35 @@ def ping_redis(redis_instance, timeout=5):
         except Exception:
             log.error("retrying redis ping in {} seconds...".format(timeout))
             time.sleep(timeout)
+
+
+def search_worst_prefix(prefix, pyt_tree):
+    if prefix in pyt_tree:
+        worst_prefix = pyt_tree.get_key(prefix)
+        while pyt_tree.parent(worst_prefix):
+            worst_prefix = pyt_tree.parent(worst_prefix)
+        return worst_prefix
+    return None
+
+
+def get_ip_version(prefix):
+    if ":" in prefix:
+        return "v6"
+    return "v4"
+
+
+def hijack_log_field_formatter(hijack_dict):
+    logged_hijack_dict = {}
+    try:
+        fields_to_log = set(hijack_dict.keys()).intersection(HIJACK_LOG_FIELDS)
+        for field in fields_to_log:
+            logged_hijack_dict[field] = hijack_dict[field]
+        # instead of storing in redis, simply add the hijack url upon logging
+        if "hijack_url" in HIJACK_LOG_FIELDS and "key" in hijack_dict:
+            logged_hijack_dict["hijack_url"] = "https://{}/main/hijack?key={}".format(
+                ARTEMIS_WEB_HOST, hijack_dict["key"]
+            )
+    except Exception:
+        log.exception("exception")
+        return hijack_dict
+    return logged_hijack_dict

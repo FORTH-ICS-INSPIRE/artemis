@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: backend
     app: {{ .Release.Name }}
-  name: backend
+  name: {{ .Release.Name }}-backend
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -26,7 +26,7 @@ spec:
         - mountPath: /pvc
           name: backend-pvc
           subPath: configs
-        command: ['sh', '-c', 'cp -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
+        command: ['sh', '-c', 'cp -n -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
       - name: wait-for-rmq
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
@@ -155,6 +155,16 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: monTimeoutLastBgpUpdate
+        - name: HIJACK_LOG_FIELDS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: hijackLogFields
+        - name: ARTEMIS_WEB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: artemisWebHost
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend
@@ -175,6 +185,10 @@ spec:
           name: {{ .Release.Name }}-volumes
         name: backend-configmap
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-pvc
+          claimName: {{ .Release.Name }}-backend-pvc
         name: backend-pvc
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

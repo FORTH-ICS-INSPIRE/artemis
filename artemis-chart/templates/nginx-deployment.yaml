@@ -5,7 +5,7 @@ metadata:
   labels:
     io.kompose.service: nginx
     app: {{ .Release.Name }}
-  name: nginx
+  name: {{ .Release.Name }}-nginx
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -48,5 +48,9 @@ spec:
           - key: tls.key
             path: key.pem
         name: nginx-secret0
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}
 {{- end -}}

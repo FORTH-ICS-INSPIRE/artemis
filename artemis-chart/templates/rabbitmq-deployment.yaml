@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: rabbitmq
     app: {{ .Release.Name }}
-  name: rabbitmq
+  name: {{ .Release.Name }}-rabbitmq
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -19,12 +19,12 @@ spec:
     spec:
       containers:
       - env:
-        - name: RABBITMQ_DEFAULT_PASS
+        - name: RABBITMQ_DEFAULT_USER
           valueFrom:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: rabbitmqUser
-        - name: RABBITMQ_DEFAULT_USER
+        - name: RABBITMQ_DEFAULT_PASS
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secret
@@ -41,4 +41,8 @@ spec:
       - configMap:
           name: {{ .Release.Name }}-volumes
         name: rabbitmq-configmap0
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

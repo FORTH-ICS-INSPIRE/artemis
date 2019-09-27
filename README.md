@@ -13,6 +13,8 @@
 <img src="docs/images/artemis_logo.png" style="margin-bottom: 15px;"/>
 </p>
 
+![](overview.gif)
+
 Table of Contents
   * [General](#general)
   * [Features](#features)
@@ -80,7 +82,9 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 * Configuration file editable by the operator (directly or via the UI),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * Support for both IPv4 and IPv6 prefixes.
-* Support for both mobile and desktop environments (UI): [sample screenshots](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/UI-how-to-and-screenshots)
+* Support for both mobile and desktop environments (UI): [sample screenshots](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/UI-how-to-and-screenshots).
+* Support for docker-compose (local deployment) and Kubernetes (helm charts).
+* Support for multiple modes of operation (passive monitor/detector, active mitigator, etc.).
 * Modularity/extensibility by design.
 * CI/CD.
 
@@ -98,7 +102,7 @@ in a Kubernetes environment, please contact the [ARTEMIS team](#development-team
 ## Minimum Technical Requirements
 
 * CPU: 4 cores (note that needed CPU cores depend on the number of separate processes, e.g., detectors, you spawn)
-* RAM: 4 GB (note that needed memory depends on the number of configured prefixes and load of incoming BGP updates)
+* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#memory-requirements))
 * HDD: 100 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
 * NETWORK: 1 public-facing network interface
 * OS: Ubuntu Linux 16.04+

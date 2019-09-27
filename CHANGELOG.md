@@ -1,6 +1,27 @@
 # Changelog
 
-## [UNRELEASED] (Arktos) - YYYY-MM-DD
+## [UNRELEASED] (NAME) - YYYY-MM-DD
+### Added
+- IPv6 tests (backend testing)
+- PR labeler (GitHub actions)
+- Env variable and formatter for selecting hijack log fields
+- Env variable for ARTEMIS web host for backend logging
+- Logging also withdrawn and outdated hijacks in mail and hijack loggers
+- Extra end_tag and hijack_url in hijacks for logging
+- Reinstating intended modules on ARTEMIS startup
+
+### Changed
+- py-radix, substituted with pytricia tree
+- dep-licenses updated (with currently used modules)
+
+### Fixed
+- Support for millions of prefixes in configuration file
+- Ensure ARTEMIS config file is not clobbered on pod restart
+
+### Removed
+- ipaddress requirement from frontend (not needed)
+
+## [1.3.0] (Arktos) - 2019-09-12
 ### Added
 - Slack logging package and example
 - ARTEMIS logo
@@ -33,12 +54,9 @@
 - Monitoring of monitors and restarting them if not seen any BGP updates within user-defined interval
 - Avoid detectors being stuck on blpop if token erased
 - Fix for historical replay of withdrawals plus bgpstreamhist rate-limit
-
-### Removed
-- TBD (removed a feature)
-
-### Deprecated
-- TBD (soon-to-be removed feature)
+- Minor: creating implicit withdrawals 1 second after the related benign announcement
+- Minor: in handling BGP withdrawals, consider announcements that are strictly newer than the withdrawals
+- Various helm (k8s) chart fixes and improvements (see #221)
 
 ### Security
 - Bumped SQLAlchemy from 1.2.16 to 1.3.3 in /frontend

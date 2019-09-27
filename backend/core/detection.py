@@ -12,7 +12,7 @@ from typing import List
 from typing import NoReturn
 from typing import Tuple
 
-import radix
+import pytricia
 import redis
 import yaml
 from kombu import Connection
@@ -24,7 +24,9 @@ from kombu.mixins import ConsumerProducerMixin
 from utils import exception_handler
 from utils import flatten
 from utils import get_hash
+from utils import get_ip_version
 from utils import get_logger
+from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -341,19 +343,16 @@ class Detection:
             """
             Updates rules everytime it receives a new configuration.
             """
-            self.prefix_tree = radix.Radix()
-            for rule in self.rules:
-                rule_translated_prefix_set = set()
-                for prefix in rule["prefixes"]:
-                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                    rule_translated_prefix_set.update(set(this_translated_prefix_list))
-                rule["prefixes"] = list(rule_translated_prefix_set)
-                for prefix in rule["prefixes"]:
-                    node = self.prefix_tree.search_exact(prefix)
-                    if not node:
-                        node = self.prefix_tree.add(prefix)
-                        node.data["confs"] = []
+            log.info("Initiating detection...")
 
+            log.info("Starting building detection prefix tree...")
+            self.prefix_tree = {
+                "v4": pytricia.PyTricia(32),
+                "v6": pytricia.PyTricia(128),
+            }
+            raw_prefix_count = 0
+            for rule in self.rules:
+                try:
                     rule_translated_origin_asn_set = set()
                     for asn in rule["origin_asns"]:
                         this_translated_asn_list = flatten(translate_asn_range(asn))
@@ -375,7 +374,31 @@ class Detection:
                         "policies": set(rule["policies"]),
                         "community_annotations": rule["community_annotations"],
                     }
-                    node.data["confs"].append(conf_obj)
+                    for prefix in rule["prefixes"]:
+                        for translated_prefix in translate_rfc2622(prefix):
+                            ip_version = get_ip_version(translated_prefix)
+                            if self.prefix_tree[ip_version].has_key(translated_prefix):
+                                node = self.prefix_tree[ip_version][translated_prefix]
+                            else:
+                                node = {
+                                    "prefix": translated_prefix,
+                                    "data": {"confs": []},
+                                }
+                                self.prefix_tree[ip_version].insert(
+                                    translated_prefix, node
+                                )
+                            node["data"]["confs"].append(conf_obj)
+                            raw_prefix_count += 1
+                except Exception:
+                    log.exception("Exception")
+            log.info(
+                "{} prefixes integrated in detection prefix tree in total".format(
+                    raw_prefix_count
+                )
+            )
+            log.info("Finished building detection prefix tree.")
+
+            log.info("Detection initiated, configured and running.")
 
         def handle_ongoing_hijacks(self, message: Dict) -> NoReturn:
             """
@@ -433,10 +456,11 @@ class Detection:
                 monitor_event["path"] = Detection.Worker.__clean_as_path(
                     monitor_event["path"]
                 )
-                prefix_node = self.prefix_tree.search_best(monitor_event["prefix"])
 
-                if prefix_node:
-                    monitor_event["matched_prefix"] = prefix_node.prefix
+                ip_version = get_ip_version(monitor_event["prefix"])
+                if monitor_event["prefix"] in self.prefix_tree[ip_version]:
+                    prefix_node = self.prefix_tree[ip_version][monitor_event["prefix"]]
+                    monitor_event["matched_prefix"] = prefix_node["prefix"]
 
                     try:
                         path_hijacker = -1
@@ -507,10 +531,41 @@ class Detection:
                         monitor_event["hijack_as"],
                         monitor_event["hij_type"],
                     )
+                    hijack = self.redis.get(redis_hijack_key)
+                    if hijack:
+                        hijack = yaml.safe_load(hijack)
+                        hijack["end_tag"] = "outdated"
                     purge_redis_eph_pers_keys(
                         self.redis, redis_hijack_key, monitor_event["hij_key"]
                     )
                     self.mark_outdated(monitor_event["hij_key"], redis_hijack_key)
+                    if hijack:
+                        mail_log.info(
+                            "{}".format(
+                                json.dumps(
+                                    hijack_log_field_formatter(hijack),
+                                    indent=4,
+                                    cls=SetEncoder,
+                                )
+                            ),
+                            extra={
+                                "community_annotation": hijack.get(
+                                    "community_annotation", "NA"
+                                )
+                            },
+                        )
+                        hij_log.info(
+                            "{}".format(
+                                json.dumps(
+                                    hijack_log_field_formatter(hijack), cls=SetEncoder
+                                )
+                            ),
+                            extra={
+                                "community_annotation": hijack.get(
+                                    "community_annotation", "NA"
+                                )
+                            },
+                        )
                 elif not is_hijack:
                     self.gen_implicit_withdrawal(monitor_event)
                     self.mark_handled(raw)
@@ -618,12 +673,12 @@ class Detection:
 
         @exception_handler(log)
         def detect_prefix_squatting_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> str:
             """
             Squatting hijack detection.
             """
-            for item in prefix_node.data["confs"]:
+            for item in prefix_node["data"]["confs"]:
                 # check if there are origin_asns defined (even wildcards)
                 if item["origin_asns"]:
                     return "-"
@@ -631,39 +686,42 @@ class Detection:
 
         @exception_handler(log)
         def detect_prefix_subprefix_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> str:
             """
             Subprefix or exact prefix hijack detection.
             """
             mon_prefix = ipaddress.ip_network(monitor_event["prefix"])
-            if prefix_node.prefixlen < mon_prefix.prefixlen:
+            if (
+                ipaddress.ip_network(prefix_node["prefix"]).prefixlen
+                < mon_prefix.prefixlen
+            ):
                 return "S"
             return "E"
 
         @exception_handler(log)
         def detect_path_type_0_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> Tuple[int, str]:
             """
             Origin hijack detection.
             """
             origin_asn = monitor_event["path"][-1]
-            for item in prefix_node.data["confs"]:
+            for item in prefix_node["data"]["confs"]:
                 if origin_asn in item["origin_asns"] or item["origin_asns"] == [-1]:
                     return (-1, "-")
             return (origin_asn, "0")
 
         @exception_handler(log)
         def detect_path_type_1_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> Tuple[int, str]:
             """
             Type-1 hijack detection.
             """
             origin_asn = monitor_event["path"][-1]
             first_neighbor_asn = monitor_event["path"][-2]
-            for item in prefix_node.data["confs"]:
+            for item in prefix_node["data"]["confs"]:
                 # [] or [-1] neighbors means "allow everything"
                 if (
                     origin_asn in item["origin_asns"] or item["origin_asns"] == [-1]
@@ -677,54 +735,54 @@ class Detection:
 
         @exception_handler(log)
         def detect_path_type_N_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for type-N detection (not supported)
             return (-1, "-")
 
         @exception_handler(log)
         def detect_path_type_U_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for type-U detection (not supported)
             return (-1, "-")
 
         @exception_handler(log)
         def detect_dplane_blackholing_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> str:
             # Placeholder for blackholing detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_dplane_imposture_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> str:
             # Placeholder for imposture detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_dplane_mitm_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> str:
             # Placeholder for mitm detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_pol_leak_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> Tuple[int, str]:
             """
             Route leak hijack detection
             """
-            for item in prefix_node.data["confs"]:
+            for item in prefix_node["data"]["confs"]:
                 if "no-export" in item["policies"]:
                     return (monitor_event["path"][-2], "L")
             return (-1, "-")
 
         @exception_handler(log)
         def detect_pol_other_hijack(
-            self, monitor_event: Dict, prefix_node: radix.Radix, *args, **kwargs
+            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for policy violation detection (not supported)
             return (-1, "-")
@@ -754,6 +812,7 @@ class Detection:
                 "monitor_keys": {monitor_event["key"]},
                 "configured_prefix": monitor_event["matched_prefix"],
                 "timestamp_of_config": self.timestamp,
+                "end_tag": None,
             }
 
             # identify the number of infected ases
@@ -826,7 +885,13 @@ class Detection:
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(
-                        "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                        "{}".format(
+                            json.dumps(
+                                hijack_log_field_formatter(result),
+                                indent=4,
+                                cls=SetEncoder,
+                            )
+                        ),
                         extra={
                             "community_annotation": result.get(
                                 "community_annotation", "NA"
@@ -883,7 +948,9 @@ class Detection:
                 priority=0,
             )
             hij_log.info(
-                "{}".format(json.dumps(result, indent=4, cls=SetEncoder)),
+                "{}".format(
+                    json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
+                ),
                 extra={
                     "community_annotation": result.get("community_annotation", "NA")
                 },
@@ -927,7 +994,7 @@ class Detection:
                     "path": [],
                     "orig_path": {"triggering_bgp_update": monitor_event},
                     "communities": [],
-                    "timestamp": monitor_event["timestamp"] + 0.001,
+                    "timestamp": monitor_event["timestamp"] + 1,
                     "peer_asn": peer_asn,
                 }
                 key_generator(withdraw_msg)
@@ -951,9 +1018,10 @@ class Detection:
                     community = "{}:{}".format(comm_as_value[0], comm_as_value[1])
                     bgp_update_communities.add(community)
 
-                prefix_node = self.prefix_tree.search_best(monitor_event["prefix"])
-                if prefix_node:
-                    for item in prefix_node.data["confs"]:
+                ip_version = get_ip_version(monitor_event["prefix"])
+                if monitor_event["prefix"] in self.prefix_tree[ip_version]:
+                    prefix_node = self.prefix_tree[ip_version][monitor_event["prefix"]]
+                    for item in prefix_node["data"]["confs"]:
                         annotations = []
                         for annotation_element in item.get("community_annotations", []):
                             for annotation in annotation_element:

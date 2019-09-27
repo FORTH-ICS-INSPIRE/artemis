@@ -1,11 +1,13 @@
 import datetime
 import json
+import logging
+import os
 import signal
 import time
 from xmlrpc.client import ServerProxy
 
 import psycopg2.extras
-import radix
+import pytricia
 import redis
 import yaml
 from kombu import Connection
@@ -18,10 +20,13 @@ from utils import BACKEND_SUPERVISOR_URI
 from utils import flatten
 from utils import get_db_conn
 from utils import get_hash
+from utils import get_ip_version
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
+from utils import hijack_log_field_formatter
 from utils import HISTORIC
+from utils import ModulesState
 from utils import MON_SUPERVISOR_URI
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -29,6 +34,8 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import search_worst_prefix
+from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
@@ -37,6 +44,29 @@ from utils import translate_rfc2622
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
+
+hij_log = logging.getLogger("hijack_logger")
+mail_log = logging.getLogger("mail_logger")
+try:
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+except Exception:
+    log.exception("exception")
+    hij_log_filter = []
+
+
+class HijackLogFilter(logging.Filter):
+    def filter(self, rec):
+        if not hij_log_filter:
+            return True
+        for filter_entry in hij_log_filter:
+            for filter_entry_key in filter_entry:
+                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
+                    return True
+        return False
+
+
+mail_log.addFilter(HijackLogFilter())
+hij_log.addFilter(HijackLogFilter())
 
 
 class Database:
@@ -72,7 +102,7 @@ class Database:
             self.connection = connection
             self.prefix_tree = None
             self.monitored_prefixes = set()
-            self.configured_prefixes = set()
+            self.configured_prefix_count = 0
             self.monitor_peers = 0
             self.rules = None
             self.timestamp = -1
@@ -101,6 +131,26 @@ class Database:
                         (x["name"], x["state"] == 20)
                         for x in server.supervisor.getAllProcessInfo()
                         if x["name"] != "listener"
+                    ]
+
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(db_cur, query, processes)
+
+            except Exception:
+                log.exception("exception")
+
+            try:
+                query = (
+                    "INSERT INTO intended_process_states (name, running) "
+                    "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+                )
+
+                for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                    server = ServerProxy(ctx)
+                    processes = [
+                        (x["group"], False)
+                        for x in server.supervisor.getAllProcessInfo()
+                        if x["group"] in ["monitor", "detection", "mitigation"]
                     ]
 
                     with get_wo_cursor(self.wo_conn) as db_cur:
@@ -296,8 +346,6 @@ class Database:
 
             self.config_request_rpc()
 
-            log.info("started")
-
         def get_consumers(self, Consumer, channel):
             return [
                 Consumer(
@@ -392,6 +440,26 @@ class Database:
                     no_ack=True,
                 ),
             ]
+
+        def set_modules_to_intended_state(self):
+            try:
+                query = "SELECT name, running FROM intended_process_states"
+
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+                modules_state = ModulesState()
+                for entry in entries:
+                    # entry[0] --> module name, entry[1] --> intended state
+                    # start only intended modules (after making sure they are stopped
+                    # to avoid stale entries)
+                    if entry[1]:
+                        log.info("Setting {} to start state.".format(entry[0]))
+                        modules_state.call(entry[0], "stop")
+                        time.sleep(1)
+                        modules_state.call(entry[0], "start")
+            except Exception:
+                log.exception("exception")
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
@@ -638,20 +706,15 @@ class Database:
             except Exception:
                 log.exception("{}".format(message))
 
-        def build_radix_tree(self):
-            self.prefix_tree = radix.Radix()
+        def build_prefix_tree(self):
+            log.info("Starting building database prefix tree...")
+            self.prefix_tree = {
+                "v4": pytricia.PyTricia(32),
+                "v6": pytricia.PyTricia(128),
+            }
+            raw_prefix_count = 0
             for rule in self.rules:
-                rule_translated_prefix_set = set()
-                for prefix in rule["prefixes"]:
-                    this_translated_prefix_list = flatten(translate_rfc2622(prefix))
-                    rule_translated_prefix_set.update(set(this_translated_prefix_list))
-                rule["prefixes"] = list(rule_translated_prefix_set)
-                for prefix in rule["prefixes"]:
-                    node = self.prefix_tree.search_exact(prefix)
-                    if not node:
-                        node = self.prefix_tree.add(prefix)
-                        node.data["confs"] = []
-
+                try:
                     rule_translated_origin_asn_set = set()
                     for asn in rule["origin_asns"]:
                         this_translated_asn_list = flatten(translate_asn_range(asn))
@@ -666,49 +729,72 @@ class Database:
                             set(this_translated_asn_list)
                         )
                     rule["neighbors"] = list(rule_translated_neighbor_set)
-
                     conf_obj = {
                         "origin_asns": rule["origin_asns"],
                         "neighbors": rule["neighbors"],
                     }
-                    node.data["confs"].append(conf_obj)
+                    for prefix in rule["prefixes"]:
+                        for translated_prefix in translate_rfc2622(prefix):
+                            ip_version = get_ip_version(translated_prefix)
+                            if self.prefix_tree[ip_version].has_key(translated_prefix):
+                                node = self.prefix_tree[ip_version][translated_prefix]
+                            else:
+                                node = {
+                                    "prefix": translated_prefix,
+                                    "data": {"confs": []},
+                                }
+                                self.prefix_tree[ip_version].insert(
+                                    translated_prefix, node
+                                )
+                            node["data"]["confs"].append(conf_obj)
+                            raw_prefix_count += 1
+                except Exception:
+                    log.exception("Exception")
+            log.info(
+                "{} prefixes integrated in database prefix tree in total".format(
+                    raw_prefix_count
+                )
+            )
+            log.info("Finished building database prefix tree.")
+
             # calculate the monitored and configured prefixes
+            log.info("Calculating configured and monitored prefixes in database...")
             self.monitored_prefixes = set()
-            self.configured_prefixes = set()
-            for prefix in self.prefix_tree.prefixes():
-                self.configured_prefixes.add(prefix)
-                monitored_prefix = self.find_worst_prefix_match(prefix)
-                if monitored_prefix:
-                    self.monitored_prefixes.add(monitored_prefix)
+            self.configured_prefix_count = 0
+            for ip_version in self.prefix_tree:
+                for prefix in self.prefix_tree[ip_version]:
+                    self.configured_prefix_count += 1
+                    monitored_prefix = search_worst_prefix(
+                        prefix, self.prefix_tree[ip_version]
+                    )
+                    if monitored_prefix:
+                        self.monitored_prefixes.add(monitored_prefix)
             try:
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute(
                         "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
-                        (len(self.monitored_prefixes), len(self.configured_prefixes)),
+                        (len(self.monitored_prefixes), self.configured_prefix_count),
                     )
             except Exception:
                 log.exception("exception")
+            log.info("Calculated configured and monitored prefixes in database.")
 
         def find_best_prefix_match(self, prefix):
-            prefix_node = self.prefix_tree.search_best(prefix)
-            if prefix_node:
-                return prefix_node.prefix
-            return None
-
-        def find_worst_prefix_match(self, prefix):
-            prefix_node = self.prefix_tree.search_worst(prefix)
-            if prefix_node:
-                return prefix_node.prefix
+            ip_version = get_ip_version(prefix)
+            if prefix in self.prefix_tree[ip_version]:
+                return self.prefix_tree[ip_version].get_key(prefix)
             return None
 
         def handle_config_notify(self, message):
+            log.info("Reconfiguring database due to conf update...")
+
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
             try:
                 if config["timestamp"] > self.timestamp:
                     self.timestamp = config["timestamp"]
                     self.rules = config.get("rules", [])
-                    self.build_radix_tree()
+                    self.build_prefix_tree()
                     if "timestamp" in config:
                         del config["timestamp"]
                     raw_config = ""
@@ -725,7 +811,11 @@ class Database:
             except Exception:
                 log.exception("{}".format(config))
 
+            log.info("Database initiated, configured and running.")
+
         def handle_config_request_reply(self, message):
+            log.info("Configuring database for the first time...")
+
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
             try:
@@ -733,7 +823,7 @@ class Database:
                     if config["timestamp"] > self.timestamp:
                         self.timestamp = config["timestamp"]
                         self.rules = config.get("rules", [])
-                        self.build_radix_tree()
+                        self.build_prefix_tree()
                         if "timestamp" in config:
                             del config["timestamp"]
                         raw_config = ""
@@ -754,6 +844,9 @@ class Database:
                             log.debug("database config is up-to-date")
             except Exception:
                 log.exception("{}".format(config))
+            self.set_modules_to_intended_state()
+
+            log.info("Database initiated, configured and running.")
 
         def handle_hijack_ongoing_request(self, message):
             timestamp = message.payload
@@ -1176,7 +1269,7 @@ class Database:
                 "FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
                 "WHERE bgp_updates.prefix = %s "
                 "AND bgp_updates.type = 'A' "
-                "AND bgp_updates.timestamp > %s "
+                "AND bgp_updates.timestamp >= %s "
                 "AND hijacks.active = true "
                 "AND bgp_updates.peer_asn = %s "
                 "AND bgp_updates.handled = true "
@@ -1213,6 +1306,10 @@ class Database:
                                 redis_hijack_key = redis_key(
                                     withdrawal[0], entry[3], entry[4]
                                 )
+                                hijack = self.redis.get(redis_hijack_key)
+                                if hijack:
+                                    hijack = yaml.safe_load(hijack)
+                                    hijack["end_tag"] = "withdrawn"
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2]
                                 )
@@ -1222,8 +1319,35 @@ class Database:
                                         "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
                                         (timestamp, entry[1], timestamp, entry[2]),
                                     )
-
                                 log.debug("withdrawn hijack {}".format(entry))
+                                if hijack:
+                                    mail_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                indent=4,
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
+                                    hij_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
                             else:
                                 # add withdrawal to hijack
                                 with get_wo_cursor(self.wo_conn) as db_cur:

@@ -12,6 +12,7 @@ services:
         expose:
             - ${BACKEND_SUPERVISOR_PORT}
         environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -32,12 +33,13 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             GUI_ENABLED: ${GUI_ENABLED}
-            HISTORIC: ${HISTORIC}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             # for backwards compatibility
             SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
+            HISTORIC: ${HISTORIC}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/
@@ -63,6 +65,11 @@ services:
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
             RIS_ID: ${RIS_ID}
             BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
@@ -70,6 +77,7 @@ services:
             MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
+            HISTORIC: ${HISTORIC}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./monitor/:/root/

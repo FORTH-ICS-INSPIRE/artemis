@@ -1,0 +1,37 @@
+kubernetes:
+- artemis-chart/**/*
+
+backend:
+- backend/**/*
+
+frontend:
+- frontend/**/*
+
+monitor:
+- monitor/**/*
+
+taps:
+- monitor/core/taps/**/*
+
+testing:
+- backend/testing/**/*
+- backend/docker-compose.test-backend.yml
+- backend/entrypoint.test
+
+javascript:
+- frontend/**/*.js
+
+configuration:
+- backend/configs/**/*
+- frontend/webapp/configs/**/*
+- monitor/configs/**/*
+
+database:
+- other/db/**/*
+- backend/core/database.py
+
+detection:
+- backend/core/detection.py
+
+mitigation:
+- backend/core/mitigation.py

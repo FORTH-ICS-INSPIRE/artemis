@@ -4,7 +4,7 @@ metadata:
   labels:
     io.kompose.service: monitor
     app: {{ .Release.Name }}
-  name: monitor
+  name: {{ .Release.Name }}-monitor
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
@@ -26,7 +26,7 @@ spec:
         - mountPath: /pvc
           name: monitor-pvc
           subPath: configs
-        command: ['sh', '-c', 'cp -u /configmaps/logging.yaml /configmaps/mon-services.conf /pvc/']
+        command: ['sh', '-c', 'cp -n -u /configmaps/logging.yaml /configmaps/mon-services.conf /pvc/']
       - name: wait-for-service
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
@@ -142,11 +142,6 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: monSupervisorPort
-        - name: HIJACK_LOG_FILTER
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: hijackLogFilter
         - name: MON_TIMEOUT_LAST_BGP_UPDATE
           valueFrom:
             configMapKeyRef:
@@ -169,6 +164,10 @@ spec:
           name: {{ .Release.Name }}-volumes
         name: monitor-configmap
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-pvc
+          claimName: {{ .Release.Name }}-monitor-pvc
         name: monitor-pvc
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
 status: {}

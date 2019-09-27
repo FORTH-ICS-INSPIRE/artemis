@@ -111,5 +111,42 @@
             "num_peers_seen": 3,
             "configured_prefix": "10.0.0.0/8"
         }
+    },
+    {
+        "send": {
+            "key": "4",
+            "timestamp": 4,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [8, 3, 2, 1, 200],
+            "prefix": "2001:db8:abcd:11::/64",
+            "peer_asn": 8
+        },
+        "detection_update_response": {
+            "key": "4",
+            "handled": true,
+            "matched_prefix": "2001:db8:abcd:11::/64",
+            "origin_as": 200
+        },
+        "detection_hijack_response": {
+            "prefix": "2001:db8:abcd:11::/64",
+            "hijack_as": 200,
+            "type": "E|0|-|-",
+            "time_started": 4.0,
+            "configured_prefix": "2001:db8:abcd:11::/64"
+        },
+        "database_hijack_response": {
+            "type": "E|0|-|-",
+            "active": true,
+            "prefix": "2001:db8:abcd:11::/64",
+            "asns_inf": [8, 1, 2, 3],
+            "hijack_as": 200,
+            "peers_seen": [8],
+            "num_asns_inf": 4,
+            "num_peers_seen": 1,
+            "configured_prefix": "2001:db8:abcd:11::/64"
+        }
     }
 ]

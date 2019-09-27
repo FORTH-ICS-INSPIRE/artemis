@@ -4,12 +4,13 @@ import os
 import time
 from copy import deepcopy
 
-import radix
+import pytricia
 import redis
 import requests
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
+from utils import get_ip_version
 from utils import get_logger
 from utils import key_generator
 from utils import load_json
@@ -63,8 +64,9 @@ def normalize_ripe_ris(msg, prefix_tree):
                 if "prefixes" in element:
                     prefixes.extend(element["prefixes"])
             for prefix in prefixes:
+                ip_version = get_ip_version(prefix)
                 try:
-                    if prefix_tree.search_best(prefix):
+                    if prefix in prefix_tree[ip_version]:
                         new_msg = deepcopy(msg_ann)
                         new_msg["prefix"] = prefix
                         del new_msg["announcements"]
@@ -79,8 +81,9 @@ def normalize_ripe_ris(msg, prefix_tree):
             msg_wit["communities"] = []
             prefixes = msg_wit["withdrawals"]
             for prefix in prefixes:
+                ip_version = get_ip_version(prefix)
                 try:
-                    if prefix_tree.search_best(prefix):
+                    if prefix in prefix_tree[ip_version]:
                         new_msg = deepcopy(msg_wit)
                         new_msg["prefix"] = prefix
                         del new_msg["announcements"]
@@ -100,8 +103,9 @@ def normalize_ripe_ris(msg, prefix_tree):
                         elif update_type == "withdrawals":
                             prefixes.append(element)
                     for prefix in prefixes:
+                        ip_version = get_ip_version(prefix)
                         try:
-                            if prefix_tree.search_best(prefix):
+                            if prefix in prefix_tree[ip_version]:
                                 new_msg = deepcopy(msg)
                                 new_msg["prefix"] = prefix
                                 del new_msg[update_type]
@@ -117,9 +121,10 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
 
     prefixes = load_json(prefixes_file)
     assert prefixes is not None
-    prefix_tree = radix.Radix()
+    prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
     for prefix in prefixes:
-        prefix_tree.add(prefix)
+        ip_version = get_ip_version(prefix)
+        prefix_tree[ip_version].insert(prefix, "")
 
     ris_suffix = os.getenv("RIS_ID", "my_as")
 
@@ -163,7 +168,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                 )
                                 if validator.validate(norm_ris_msg):
                                     norm_path_msgs = normalize_msg_path(norm_ris_msg)
-                                    for norm_path_msg in norm_path_msgs[::-1]:
+                                    for norm_path_msg in norm_path_msgs:
                                         key_generator(norm_path_msg)
                                         log.debug(norm_path_msg)
                                         producer.publish(

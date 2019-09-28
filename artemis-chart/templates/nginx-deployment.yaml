@@ -23,7 +23,7 @@ spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.webappHost }} {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.webappHost }}-svc {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - image: nginx:1.15-alpine
         name: nginx

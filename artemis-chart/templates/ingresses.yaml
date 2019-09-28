@@ -10,6 +10,8 @@ metadata:
   {{- range $key, $value := .Values.ingress.frontend.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
+  labels:
+{{ include "artemis.labels" . | indent 4 }}
 spec:
   {{- if .Values.ingress.tlsEnabled }}
   tls:
@@ -37,7 +39,8 @@ metadata:
   {{- range $key, $value := .Values.ingress.graphql.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
-
+  labels:
+{{ include "artemis.labels" . | indent 4 }}
 spec:
   {{- if .Values.ingress.tlsEnabled }}
   tls:

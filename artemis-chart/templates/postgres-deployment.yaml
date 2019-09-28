@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app: {{ .Release.Name }}-postgres
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-postgres
 spec:
   selector:

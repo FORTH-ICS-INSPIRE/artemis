@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app: {{ .Release.Name }}-pg-amqp-bridge
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-pg-amqp-bridge
 spec:
   selector:

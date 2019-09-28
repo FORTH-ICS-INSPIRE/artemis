@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   labels:
     app: {{ .Release.Name }}-nginx
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-nginx
 spec:
   selector:

@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app: {{ .Release.Name }}-monitor
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-monitor
 spec:
   selector:

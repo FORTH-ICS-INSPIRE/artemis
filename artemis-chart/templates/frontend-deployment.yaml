@@ -25,7 +25,7 @@ spec:
         command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-monsup
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{{ .Release.Name }}-{ .Values.monSupervisorHost }}-svc {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.monSupervisorHost }}-svc {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: API_HOST

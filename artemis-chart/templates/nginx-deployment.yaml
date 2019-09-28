@@ -50,9 +50,9 @@ spec:
           - key: tls.key
             path: key.pem
         name: nginx-secret0
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}
 {{- end -}}

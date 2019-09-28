@@ -168,8 +168,8 @@ spec:
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-monitor-pvc
         name: monitor-pvc
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

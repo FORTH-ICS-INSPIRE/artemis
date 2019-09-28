@@ -1,6 +1,6 @@
 1. Get the application URL by running these commands:
 {{- if .Values.ingress.enabled }}
-  http{{ if $.Values.ingress.tlsEnabled }}s{{ end }}://{{ .Values.ingress.host }}
+  http{{ if $.Values.ingress.tlsEnabled }}s{{ end }}://{{ .Values.ingress.host }}/
 {{- else }}
   export POD_NAME=$(kubectl get pods -l "app={{ .Chart.Name }},release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   echo "Visit https://127.0.0.1:8080 to use your application"

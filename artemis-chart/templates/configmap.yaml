@@ -8,7 +8,7 @@ data:
   guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
   systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
   historic: {{ .Values.historic | default "false" | quote }}
-  redisHost: {{ .Release.Name }}-{{ .Values.redisHost | default "backend" | quote }}-svc
+  redisHost: {{ .Release.Name }}-{{ .Values.redisHost | default "backend" }}-svc
   redisPort: {{ .Values.redisPort | default "6379" | quote }}
   backendSupervisorHost: {{ .Release.Name }}-{{ .Values.backendSupervisorHost | default "backend" }}-svc
   backendSupervisorPort: {{ .Values.backendSupervisorPort | default "9001" | quote }}

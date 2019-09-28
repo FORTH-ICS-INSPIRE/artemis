@@ -85,7 +85,6 @@ ingress:
     kubernetes.io/ingress.class: nginx
   graphql:
     annotations:
-      nginx.ingress.kubernetes.io/rewrite-target: /v1alpha1/graphql
   frontend:
     annotations:
 pvc:

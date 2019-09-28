@@ -28,3 +28,10 @@ Return the appropriate apiVersion for deployment.
 {{- print "apps/v1" -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Rewrite graphql
+*/}}
+{{- define "artemis.ingress.rewrite" -}}
+nginx.ingress.kubernetes.io/rewrite-target: /v1alpha1/{{ .Release.Name }}-{{ .Values.hasuraHost }}-svc
+{{- end -}}

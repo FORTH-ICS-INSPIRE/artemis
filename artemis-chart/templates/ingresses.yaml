@@ -10,6 +10,7 @@ metadata:
   {{- range $key, $value := .Values.ingress.frontend.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
+{{ include "artemis.ingress.rewrite" . | indent 4 }}
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 spec:
@@ -25,7 +26,7 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{ .Values.webappHost }}
+          serviceName: {{ .Release.Name }}-{{ .Values.webappHost }}-svc
           servicePort: {{ .Values.webappPort }}
 ---
 apiVersion: extensions/v1beta1
@@ -39,6 +40,7 @@ metadata:
   {{- range $key, $value := .Values.ingress.graphql.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
+{{ include "artemis.ingress.rewrite" . | indent 4 }}
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 spec:
@@ -54,6 +56,6 @@ spec:
       paths:
       - path: /api/graphql
         backend:
-          serviceName: {{ .Values.hasuraHost }}
+          serviceName: {{ .Release.Name}}-{{ .Values.hasuraHost }}-svc
           servicePort: {{ .Values.hasuraPort }}
 {{- end -}}

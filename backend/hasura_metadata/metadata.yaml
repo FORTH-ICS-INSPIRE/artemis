@@ -2,7 +2,6 @@ functions:
 - search_bgpupdates_as_path
 - search_bgpupdates_by_hijack_key
 - search_bgpupdates_by_as_path_and_hijack_key
-remote_schemas: []
 tables:
 - table: view_db_details
   object_relationships: []
@@ -50,21 +49,7 @@ tables:
       - name
       - running
       filter: {}
-  update_permissions:
-  - role: user
-    comment:
-    permission:
-      columns:
-      - name
-      - running
-      filter:
-        "$or":
-        - name:
-            "$eq": monitor
-        - name:
-            "$eq": detection
-        - name:
-            "$eq": mitigation
+  update_permissions: []
   delete_permissions: []
   event_triggers: []
 - table: view_bgpupdates
@@ -177,3 +162,5 @@ tables:
   update_permissions: []
   delete_permissions: []
   event_triggers: []
+query_templates: []
+remote_schemas: []

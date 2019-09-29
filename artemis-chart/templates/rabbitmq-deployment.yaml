@@ -46,6 +46,6 @@ spec:
         name: rabbitmq-configmap0
       {{- with .Values.nodeSelector }}
       nodeSelector:
-      {{ toYaml . | nindent 8 }}
+{{ toYaml . | nindent 8 }}
       {{- end }}
 status: {}

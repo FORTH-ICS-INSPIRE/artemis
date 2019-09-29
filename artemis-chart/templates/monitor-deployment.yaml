@@ -171,6 +171,6 @@ spec:
         name: monitor-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
-      {{ toYaml . | nindent 8 }}
+{{ toYaml . | nindent 8 }}
       {{- end }}
 status: {}

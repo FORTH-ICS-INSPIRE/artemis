@@ -192,6 +192,6 @@ spec:
         name: backend-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
-      {{ toYaml . | nindent 8 }}
+{{ toYaml . | nindent 8 }}
       {{- end }}
 status: {}

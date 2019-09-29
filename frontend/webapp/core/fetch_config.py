@@ -5,7 +5,7 @@ import yaml
 from webapp.utils import API_URI
 from webapp.utils import flatten
 
-log = logging.getLogger("webapp_logger")
+log = logging.getLogger("artemis_logger")
 
 
 class Configuration:

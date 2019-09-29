@@ -5,7 +5,7 @@ from flask import Response
 from flask import stream_with_context
 from webapp.utils import API_URI
 
-log = logging.getLogger("webapp_logger")
+log = logging.getLogger("artemis_logger")
 
 
 def proxy_api_post(action, parameters):

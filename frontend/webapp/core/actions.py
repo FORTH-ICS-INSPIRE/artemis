@@ -9,7 +9,7 @@ from kombu import Queue
 from kombu import uuid
 from webapp.utils import RABBITMQ_URI
 
-log = logging.getLogger("webapp_logger")
+log = logging.getLogger("artemis_logger")
 
 
 def rmq_hijack_action(obj):

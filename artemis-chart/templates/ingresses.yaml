@@ -10,7 +10,6 @@ metadata:
   {{- range $key, $value := .Values.ingress.frontend.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
-{{ include "artemis.ingress.rewrite" . | indent 4 }}
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 spec:
@@ -40,7 +39,6 @@ metadata:
   {{- range $key, $value := .Values.ingress.graphql.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
-{{ include "artemis.ingress.rewrite" . | indent 4 }}
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 spec:

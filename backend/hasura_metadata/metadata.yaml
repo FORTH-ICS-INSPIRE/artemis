@@ -50,21 +50,7 @@ tables:
       - name
       - running
       filter: {}
-  update_permissions:
-  - role: admin
-    comment:
-    permission:
-      columns:
-      - name
-      - running
-      filter:
-        "$or":
-        - name:
-            "$eq": monitor
-        - name:
-            "$eq": detection
-        - name:
-            "$eq": mitigation
+  update_permissions: []
   delete_permissions: []
   event_triggers: []
 - table: view_bgpupdates

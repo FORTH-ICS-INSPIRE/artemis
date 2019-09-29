@@ -45,7 +45,7 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secret
               key: hasuraJwt
-        image: hasura/graphql-engine:v1.0.0-alpha45
+        image: hasura/graphql-engine:v1.0.0-alpha45.cli-migrations
         name: graphql
         resources: {}
       restartPolicy: Always

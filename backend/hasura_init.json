@@ -75,7 +75,7 @@
         ],
         "update_permissions": [
           {
-            "role": "user",
+            "role": "admin",
             "comment": null,
             "permission": {
               "columns": [

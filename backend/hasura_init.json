@@ -73,37 +73,7 @@
             }
           }
         ],
-        "update_permissions": [
-          {
-            "role": "user",
-            "comment": null,
-            "permission": {
-              "columns": [
-                "name",
-                "running"
-              ],
-              "filter": {
-                "$or": [
-                  {
-                    "name": {
-                      "$eq": "monitor"
-                    }
-                  },
-                  {
-                    "name": {
-                      "$eq": "detection"
-                    }
-                  },
-                  {
-                    "name": {
-                      "$eq": "mitigation"
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        ],
+        "update_permissions": [],
         "delete_permissions": [],
         "event_triggers": []
       },

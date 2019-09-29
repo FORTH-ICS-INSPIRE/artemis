@@ -1,7 +1,7 @@
 import { Selector } from 'testcafe';
 
 fixture `artemis`
-    .page `https://localhost`;
+    .page `https://localhost:8443`;
 
 test('Simple Flow', async t => {
     await t

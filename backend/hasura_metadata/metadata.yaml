@@ -177,5 +177,3 @@ tables:
   update_permissions: []
   delete_permissions: []
   event_triggers: []
-query_templates: []
-remote_schemas: []

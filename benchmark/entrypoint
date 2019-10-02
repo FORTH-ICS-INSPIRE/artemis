@@ -1,0 +1,6 @@
+#!/bin/bash
+
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+./wait-for ${BACKEND_SUPERVISOR_HOST}:${BACKEND_SUPERVISOR_PORT} -t 0
+
+python executor.py 10000

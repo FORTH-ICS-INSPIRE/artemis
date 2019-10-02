@@ -10,5 +10,4 @@ ruamel.yaml==0.15.87
 slacker-log-handler==1.7.1
 socketIO-client==0.7.2
 socketIO-client-nexus==0.7.6
-tqdm==4.36.1
 websocket-client==0.54.0

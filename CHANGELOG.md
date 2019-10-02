@@ -4,6 +4,7 @@
 ### Added
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
+- Added benchmarker and PR commenter
 
 ### Changed
 - py-radix, substituted with pytricia tree

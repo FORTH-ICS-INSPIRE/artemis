@@ -100,6 +100,8 @@ def receive(exchange_name, routing_key):
                 recv_cnt, exchange_name, routing_key, LIMIT_UPDATES / (stop - start)
             )
         )
+        with open("/tmp/{}".format(exchange_name), "w") as f:
+            f.write(LIMIT_UPDATES / (stop - start))
 
     print("[+] Receiving {} on {}:{}".format(LIMIT_UPDATES, exchange_name, routing_key))
     with Connection(RABBITMQ_URI) as connection:

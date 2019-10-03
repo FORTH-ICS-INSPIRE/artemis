@@ -1,7 +1,19 @@
 version: '3'
 services:
+    testcafe:
+        image: testcafe/testcafe:latest
+        container_name: testcafe
+        depends_on:
+            - backend
+            - frontend
+        network_mode: host
+        entrypoint: ["/bin/sh", "-c"]
+        command: ["sleep 60s && testcafe chromium:headless /tests/**/*.js"]
+        volumes:
+            - ./testcafe/tests:/tests
     backend:
         image: artemis_backend
+        build: ./backend/
         container_name: backend
         depends_on:
             - rabbitmq
@@ -42,6 +54,7 @@ services:
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
     monitor:
         image: artemis_monitor
+        build: ./monitor/
         container_name: monitor
         depends_on:
             - rabbitmq
@@ -69,6 +82,7 @@ services:
             HISTORIC: ${HISTORIC}
     frontend:
         image: artemis_frontend
+        build: ./frontend/
         container_name: frontend
         depends_on:
             - rabbitmq
@@ -212,17 +226,6 @@ services:
         command:
             - graphql-engine
             - serve
-    testcafe:
-        image: testcafe/testcafe:latest
-        container_name: testcafe
-        depends_on:
-            - backend
-            - frontend
-        network_mode: host
-        entrypoint: ["/bin/sh", "-c"]
-        command: ["sleep 60s && testcafe chromium:headless /tests/**/*.js"]
-        volumes:
-            - ./testcafe/tests:/tests
 
 networks:
     artemis:

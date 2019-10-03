@@ -9,6 +9,7 @@
 - Logging also withdrawn and outdated hijacks in mail and hijack loggers
 - Extra end_tag and hijack_url in hijacks for logging
 - Reinstating intended modules on ARTEMIS startup
+- Added benchmarker and PR commenter
 
 ### Changed
 - py-radix, substituted with pytricia tree

@@ -1,0 +1,15 @@
+prefixes:
+    super_prefix: &super_prefix
+        - 10.0.0.0/8
+monitors:
+    riperis: [] # by default this uses all available monitors
+asns:
+    my_asn: &my_asn
+        1234
+rules:
+- prefixes:
+    - *super_prefix
+  origin_asns:
+    - *my_asn
+  mitigation:
+      manual

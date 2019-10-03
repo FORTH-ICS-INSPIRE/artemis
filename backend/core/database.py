@@ -1,5 +1,7 @@
 import datetime
 import json
+import logging
+import os
 import signal
 import time
 from xmlrpc.client import ServerProxy
@@ -22,7 +24,9 @@ from utils import get_ip_version
 from utils import get_logger
 from utils import get_ro_cursor
 from utils import get_wo_cursor
+from utils import hijack_log_field_formatter
 from utils import HISTORIC
+from utils import ModulesState
 from utils import MON_SUPERVISOR_URI
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -31,6 +35,7 @@ from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import search_worst_prefix
+from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
@@ -39,6 +44,29 @@ from utils import translate_rfc2622
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
+
+hij_log = logging.getLogger("hijack_logger")
+mail_log = logging.getLogger("mail_logger")
+try:
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+except Exception:
+    log.exception("exception")
+    hij_log_filter = []
+
+
+class HijackLogFilter(logging.Filter):
+    def filter(self, rec):
+        if not hij_log_filter:
+            return True
+        for filter_entry in hij_log_filter:
+            for filter_entry_key in filter_entry:
+                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
+                    return True
+        return False
+
+
+mail_log.addFilter(HijackLogFilter())
+hij_log.addFilter(HijackLogFilter())
 
 
 class Database:
@@ -103,6 +131,26 @@ class Database:
                         (x["name"], x["state"] == 20)
                         for x in server.supervisor.getAllProcessInfo()
                         if x["name"] != "listener"
+                    ]
+
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(db_cur, query, processes)
+
+            except Exception:
+                log.exception("exception")
+
+            try:
+                query = (
+                    "INSERT INTO intended_process_states (name, running) "
+                    "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+                )
+
+                for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                    server = ServerProxy(ctx)
+                    processes = [
+                        (x["group"], False)
+                        for x in server.supervisor.getAllProcessInfo()
+                        if x["group"] in ["monitor", "detection", "mitigation"]
                     ]
 
                     with get_wo_cursor(self.wo_conn) as db_cur:
@@ -392,6 +440,26 @@ class Database:
                     no_ack=True,
                 ),
             ]
+
+        def set_modules_to_intended_state(self):
+            try:
+                query = "SELECT name, running FROM intended_process_states"
+
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+                modules_state = ModulesState()
+                for entry in entries:
+                    # entry[0] --> module name, entry[1] --> intended state
+                    # start only intended modules (after making sure they are stopped
+                    # to avoid stale entries)
+                    if entry[1]:
+                        log.info("Setting {} to start state.".format(entry[0]))
+                        modules_state.call(entry[0], "stop")
+                        time.sleep(1)
+                        modules_state.call(entry[0], "start")
+            except Exception:
+                log.exception("exception")
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
@@ -718,7 +786,7 @@ class Database:
             return None
 
         def handle_config_notify(self, message):
-            log.info("Reconfiguring database...")
+            log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
@@ -746,7 +814,7 @@ class Database:
             log.info("Database initiated, configured and running.")
 
         def handle_config_request_reply(self, message):
-            log.info("Reconfiguring database...")
+            log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
@@ -776,6 +844,7 @@ class Database:
                             log.debug("database config is up-to-date")
             except Exception:
                 log.exception("{}".format(config))
+            self.set_modules_to_intended_state()
 
             log.info("Database initiated, configured and running.")
 
@@ -1237,6 +1306,10 @@ class Database:
                                 redis_hijack_key = redis_key(
                                     withdrawal[0], entry[3], entry[4]
                                 )
+                                hijack = self.redis.get(redis_hijack_key)
+                                if hijack:
+                                    hijack = yaml.safe_load(hijack)
+                                    hijack["end_tag"] = "withdrawn"
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2]
                                 )
@@ -1246,8 +1319,35 @@ class Database:
                                         "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
                                         (timestamp, entry[1], timestamp, entry[2]),
                                     )
-
                                 log.debug("withdrawn hijack {}".format(entry))
+                                if hijack:
+                                    mail_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                indent=4,
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
+                                    hij_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
                             else:
                                 # add withdrawal to hijack
                                 with get_wo_cursor(self.wo_conn) as db_cur:

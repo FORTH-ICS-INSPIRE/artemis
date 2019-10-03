@@ -55,6 +55,29 @@
         "event_triggers": []
       },
       {
+        "table": "view_intended_process_states",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "name",
+                "running"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
+      },
+      {
         "table": "view_bgpupdates",
         "object_relationships": [],
         "array_relationships": [],

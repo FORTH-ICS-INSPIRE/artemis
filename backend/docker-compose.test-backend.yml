@@ -39,6 +39,7 @@ services:
         entrypoint:
             - "./entrypoint.test"
         environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -72,6 +73,7 @@ services:
             SEMAPHORE: ${SEMAPHORE}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
         volumes:
             - ./testing/configs/:/etc/artemis/
             - ./testing/supervisor.d/:/etc/supervisor/conf.d/

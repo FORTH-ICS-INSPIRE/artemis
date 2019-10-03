@@ -25,7 +25,7 @@ def display_monitors():
     )
 
 
-@main.route("/hijacks/")
+@main.route("/hijacks", methods=["GET"])
 @login_required
 @roles_accepted("admin", "user")
 def display_hijacks():
@@ -35,7 +35,7 @@ def display_hijacks():
             hijack_keys = hijack_keys.split(",")
         else:
             hijack_keys = [hijack_keys]
-        return render_template("hijacks.htm", hijack_keys=hijack_keys)
+        return render_template("main/hijacks.htm", hijack_keys=hijack_keys)
     return render_template(
         "main/hijacks.htm", hijack_keys=None, js_version=app.config["JS_VERSION"]
     )
@@ -54,7 +54,7 @@ def display_hijack():
 
     if not exist:
         app.artemis_logger.debug("Hijack with id not found: {}".format(_key))
-        return render_template("404.htm")
+        return render_template("errors/404.htm")
 
     if mitigation_status_request.is_up_or_running("mitigation"):
         _mitigation_flag = True

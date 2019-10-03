@@ -15,6 +15,9 @@
 ### Changed
 - py-radix, substituted with pytricia tree
 - dep-licenses updated (with currently used modules)
+- Fixed bug with outdated hijacks that remain hijacks
+- Fixed bug with BGP updates related to more than one hijacks
+- Added outdated_parent logging field to inform logging systems
 
 ### Fixed
 - Support for millions of prefixes in configuration file

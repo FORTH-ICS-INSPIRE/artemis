@@ -45,6 +45,7 @@ DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
         "key",
         "community_annotation",
         "end_tag",
+        "outdated_parent",
         "hijack_url",
     ]
 )

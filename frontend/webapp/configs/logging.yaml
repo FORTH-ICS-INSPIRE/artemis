@@ -36,7 +36,7 @@ handlers:
     #     address: [localhost, /dev/log]
 
 loggers:
-    webapp_logger:
+    artemis_logger:
         level: INFO
         handlers: [console, info_file_handler, error_file_handler]
         propagate: no

@@ -10,7 +10,7 @@ def get_logger(path="/etc/artemis/logging.yaml"):
         with open(path, "r") as f:
             config = yaml.safe_load(f.read())
         logging.config.dictConfig(config)
-        log = logging.getLogger("webapp_logger")
+        log = logging.getLogger("artemis_logger")
         log.info("Loaded configuration from {}".format(path))
     else:
         FORMAT = "%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s"

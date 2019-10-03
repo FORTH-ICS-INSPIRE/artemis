@@ -3,7 +3,7 @@ import logging
 import requests
 from webapp.utils import API_URI
 
-log = logging.getLogger("webapp_logger")
+log = logging.getLogger("artemis_logger")
 
 
 def check_if_hijack_exists(hijack_key):

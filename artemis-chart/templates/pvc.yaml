@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Release.Name }}-postgres-pvc
   labels:
-    app: {{ .Release.Name }}
+{{ include "artemis.labels" . | indent 4 }}
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
@@ -19,7 +19,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Release.Name }}-monitor-pvc
   labels:
-    app: {{ .Release.Name }}
+{{ include "artemis.labels" . | indent 4 }}
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
@@ -35,7 +35,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Release.Name }}-backend-pvc
   labels:
-    app: {{ .Release.Name }}
+{{ include "artemis.labels" . | indent 4 }}
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
@@ -51,7 +51,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Release.Name }}-frontend-pvc
   labels:
-    app: {{ .Release.Name }}
+{{ include "artemis.labels" . | indent 4 }}
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}

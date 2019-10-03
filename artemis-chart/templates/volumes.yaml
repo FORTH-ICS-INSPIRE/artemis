@@ -3,6 +3,6 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-volumes
   labels:
-    app: {{ .Release.Name }}
+{{ include "artemis.labels" . | indent 4 }}
 data:
   {{- (.Files.Glob "files/configmaps/*").AsConfig | nindent 2 }}

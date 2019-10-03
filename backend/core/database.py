@@ -596,7 +596,7 @@ class Database:
 
                         with get_ro_cursor(self.ro_conn) as db_cur:
                             psycopg2.extras.execute_batch(
-                                db_cur, query, (rekey_update_keys,)
+                                db_cur, query, (rekey_update_keys,), page_size=1000
                             )
                             entries = db_cur.fetchall()
 
@@ -858,9 +858,10 @@ class Database:
                 try:
                     results = []
                     query = (
-                        "SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type "
+                        "SELECT b.key, b.prefix, b.origin_as, b.as_path, b.type, b.peer_asn, "
+                        "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, h.type "
                         "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
-                        "WHERE h.active = true AND b.type='A' AND b.handled=true"
+                        "WHERE h.active = true AND b.handled=true"
                     )
 
                     with get_ro_cursor(self.ro_conn) as db_cur:
@@ -872,13 +873,20 @@ class Database:
                             {
                                 "key": entry[0],  # key
                                 "prefix": entry[1],  # prefix
-                                "path": entry[2],  # as_path
-                                "type": entry[3],  # type
-                                "hij_key": entry[4],
-                                "hijack_as": entry[5],
-                                "hij_type": entry[6],
+                                "origin_as": entry[2],  # origin ASN
+                                "path": entry[3],  # as_path
+                                "type": entry[4],  # type
+                                "peer_asn": entry[5],  # peer_asn
+                                "communities": entry[6],  # communities
+                                "timestamp": entry[7].timestamp(),  # timestamp
+                                "service": entry[8],  # service
+                                "matched_prefix": entry[9],  # configured prefix
+                                "hij_key": entry[10],
+                                "hijack_as": entry[11],
+                                "hij_type": entry[12],
                             }
                         )
+
                     if results:
                         for result_bucket in [
                             results[i : i + 10] for i in range(0, len(results), 10)
@@ -1361,14 +1369,59 @@ class Database:
                     log.exception("exception")
 
             try:
+                update_hijack_withdrawals_dict = {}
+                for update_hijack_withdrawal in update_hijack_withdrawals:
+                    hijack_key = update_hijack_withdrawal[0]
+                    withdrawal_key = update_hijack_withdrawal[1]
+                    if withdrawal_key not in update_hijack_withdrawals_dict:
+                        update_hijack_withdrawals_dict[withdrawal_key] = set()
+                    update_hijack_withdrawals_dict[withdrawal_key].add(hijack_key)
+                update_hijack_withdrawals_parallel = set()
+                update_hijack_withdrawals_serial = set()
+                for withdrawal_key in update_hijack_withdrawals_dict:
+                    if len(update_hijack_withdrawals_dict[withdrawal_key]) == 1:
+                        for hijack_key in update_hijack_withdrawals_dict[
+                            withdrawal_key
+                        ]:
+                            update_hijack_withdrawals_parallel.add(
+                                (hijack_key, withdrawal_key)
+                            )
+                    else:
+                        for hijack_key in update_hijack_withdrawals_dict[
+                            withdrawal_key
+                        ]:
+                            update_hijack_withdrawals_serial.add(
+                                (hijack_key, withdrawal_key)
+                            )
+
+                # execute parallel execute values query
                 query = (
                     "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) "
                     "FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
                 )
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     psycopg2.extras.execute_values(
-                        db_cur, query, list(update_hijack_withdrawals), page_size=1000
+                        db_cur,
+                        query,
+                        list(update_hijack_withdrawals_parallel),
+                        page_size=1000,
                     )
+
+                # execute serial execute_batch query
+                query = (
+                    "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
+                    "WHERE bgp_updates.key=%s"
+                )
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_batch(
+                        db_cur,
+                        query,
+                        list(update_hijack_withdrawals_serial),
+                        page_size=1000,
+                    )
+                update_hijack_withdrawals_parallel.clear()
+                update_hijack_withdrawals_serial.clear()
+                update_hijack_withdrawals_dict.clear()
 
                 query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
                 with get_wo_cursor(self.wo_conn) as db_cur:
@@ -1420,11 +1473,54 @@ class Database:
                         psycopg2.extras.execute_values(
                             db_cur, query, list(update_bgp_entries), page_size=1000
                         )
-                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2, v3) WHERE bgp_updates.key=data.v2"
+                    update_bgp_entries_dict = {}
+                    for update_bgp_entry in update_bgp_entries:
+                        hijack_key = update_bgp_entry[0]
+                        bgp_entry_to_update = update_bgp_entry[1]
+                        if bgp_entry_to_update not in update_bgp_entries_dict:
+                            update_bgp_entries_dict[bgp_entry_to_update] = set()
+                        update_bgp_entries_dict[bgp_entry_to_update].add(hijack_key)
+                    update_bgp_entries_parallel = set()
+                    update_bgp_entries_serial = set()
+                    for bgp_entry_to_update in update_bgp_entries_dict:
+                        if len(update_bgp_entries_dict[bgp_entry_to_update]) == 1:
+                            for hijack_key in update_bgp_entries_dict[
+                                bgp_entry_to_update
+                            ]:
+                                update_bgp_entries_parallel.add(
+                                    (hijack_key, bgp_entry_to_update)
+                                )
+                        else:
+                            for hijack_key in update_bgp_entries_dict[
+                                bgp_entry_to_update
+                            ]:
+                                update_bgp_entries_serial.add(
+                                    (hijack_key, bgp_entry_to_update)
+                                )
+
+                    # execute parallel execute values query
+                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
                     with get_wo_cursor(self.wo_conn) as db_cur:
                         psycopg2.extras.execute_values(
-                            db_cur, query, list(update_bgp_entries), page_size=1000
+                            db_cur,
+                            query,
+                            list(update_bgp_entries_parallel),
+                            page_size=1000,
                         )
+
+                    # execute serial execute_batch query
+                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(
+                            db_cur,
+                            query,
+                            list(update_bgp_entries_serial),
+                            page_size=1000,
+                        )
+                    update_bgp_entries_parallel.clear()
+                    update_bgp_entries_serial.clear()
+                    update_bgp_entries_dict.clear()
+
                 except Exception:
                     log.exception("exception")
                     return -1
@@ -1459,7 +1555,8 @@ class Database:
                     "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation) "
                     "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
                     ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
-                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, community_annotation=excluded.community_annotation"
+                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, timestamp_of_config=excluded.timestamp_of_config, "
+                    "configured_prefix=excluded.configured_prefix, community_annotation=excluded.community_annotation"
                 )
 
                 values = []

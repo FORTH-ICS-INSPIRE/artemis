@@ -1,25 +1,28 @@
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: graphql
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-graphql
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-graphql
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-graphql
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy: {}
   template:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: graphql
+        app: {{ .Release.Name }}-graphql
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name}}-{{ .Values.dbHost }}-svc {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - args:
         - graphql-engine
@@ -49,8 +52,8 @@ spec:
         name: graphql
         resources: {}
       restartPolicy: Always
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+{{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

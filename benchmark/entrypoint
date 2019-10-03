@@ -5,12 +5,12 @@
 
 python executor.py 10000
 
-COMMIT_ID=$(curl https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments | jq '.[] | select(.body | contains("Benchmark Result")) | .id')
+COMMENT_ID=$(curl https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments | jq '.[] | select(.body | contains("Benchmark Result")) | .id')
 
-if [ $COMMIT_ID ]; then
+if [ $COMMENT_ID ]; then
     curl -H "Authorization: token ${GITHUB_TOKEN}" -X PATCH \
         -d "{\"body\": \":tada: **Benchmark Results** :tada:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\nHijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
-        "https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments/${COMMIT_ID}"
+        "https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/comments/${COMMENT_ID}"
 else
     curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST \
         -d "{\"body\": \":tada: **Benchmark Results** :tada:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\nHijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \

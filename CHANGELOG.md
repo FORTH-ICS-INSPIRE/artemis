@@ -9,6 +9,7 @@
 - Logging also withdrawn and outdated hijacks in mail and hijack loggers
 - Extra end_tag and hijack_url in hijacks for logging
 - Reinstating intended modules on ARTEMIS startup
+- Support of multiple artemis instances on a single namespace
 - Added benchmarker and PR commenter
 
 ### Changed
@@ -21,6 +22,11 @@
 
 ### Removed
 - ipaddress requirement from frontend (not needed)
+
+### Backwards Incompatible Changes
+- :rotating_light: Changed frontend logger from webapp_logger to artemis_logger in frontend/config/logging.yaml. For old versions you need to replace the name from webapp_logger to artemis_logger
+- :rotating_light: Changed helm chart labels to support multiple releases per namespace and this breaks helm upgrades. To migrate to the new version you need to deploy a new installation and migrate the Persistent Volumes Claims to the new release by attaching them on the current Persistent Volumes.
+
 
 ## [1.3.0] (Arktos) - 2019-09-12
 ### Added

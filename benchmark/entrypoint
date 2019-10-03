@@ -9,10 +9,10 @@ COMMENT_ID=$(curl https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/${P
 
 if [ $COMMENT_ID ]; then
     curl -H "Authorization: token ${GITHUB_TOKEN}" -X PATCH \
-        -d "{\"body\": \":tada: **Benchmark Results** :tada:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\nHijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
+        -d "{\"body\": \":running: **Benchmark Results** :running:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\n- Hijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
         "https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/comments/${COMMENT_ID}"
 else
     curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST \
-        -d "{\"body\": \":tada: **Benchmark Results** :tada:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\nHijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
+        -d "{\"body\": \":running: **Benchmark Results** :running:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\n- Hijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
         "https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments"
 fi

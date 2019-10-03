@@ -4,7 +4,7 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 WORKDIR /root
 
-RUN apk update && apk add --no-cache curl
+RUN apk update && apk add --no-cache curl jq
 
 COPY . ./
 

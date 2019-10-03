@@ -10,6 +10,7 @@
 - Extra end_tag and hijack_url in hijacks for logging
 - Reinstating intended modules on ARTEMIS startup
 - Support of multiple artemis instances on a single namespace
+- Added benchmarker and PR commenter
 
 ### Changed
 - py-radix, substituted with pytricia tree

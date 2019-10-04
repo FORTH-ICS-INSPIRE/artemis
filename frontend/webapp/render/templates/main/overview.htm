@@ -651,7 +651,7 @@
             );
 
             $(document).ready(() => {
-                const ws = new WebSocket('wss://' + window.location.hostname + '/api/graphql', 'graphql-ws');
+                const ws = new WebSocket('wss://' + window.location.host + '/api/graphql', 'graphql-ws');
                 ws.addEventListener('open', (event) => {
                     fetch("/jwt/auth", {
                         method: "GET",

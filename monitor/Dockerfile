@@ -18,5 +18,6 @@ RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/
 
 COPY ./configs/* /etc/artemis/
+COPY ./supervisor.d/* /etc/supervisor/conf.d/
 
 ENTRYPOINT ["./entrypoint"]

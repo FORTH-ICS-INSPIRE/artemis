@@ -1,3 +1,0 @@
-[bandit]
-skips: B301,B101
-exclude: ./frontend/webapp/static

@@ -1,1 +1,0 @@
-../../../other/postgres-entrypoint.sh

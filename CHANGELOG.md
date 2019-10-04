@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED] (Ares) - 2019-10-04 (TBD)
+## [1.3.1] (Ares) - 2019-10-04
 ### Added
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
@@ -11,6 +11,7 @@
 - Reinstating intended modules on ARTEMIS startup
 - Support of multiple artemis instances on a single namespace (k8s)
 - Added benchmarker and PR commenter
+- TestCafe frontend testing framework
 
 ### Changed
 - py-radix, substituted with pytricia tree

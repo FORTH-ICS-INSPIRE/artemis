@@ -416,6 +416,6 @@
   },
   "timezone": "utc",
   "title": "Artemis::BGP Updates per service",
-  "uid": "gOZRBAhWz",
+  "uid": "artemis_bgp_updates_per_service",
   "version": 1
 }

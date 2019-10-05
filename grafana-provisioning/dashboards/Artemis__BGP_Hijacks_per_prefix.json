@@ -413,6 +413,6 @@
   },
   "timezone": "utc",
   "title": "Artemis::BGP Hijacks per prefix",
-  "uid": "_zGITAhZk",
+  "uid": "artemis_bgp_hijacks_per_prefix",
   "version": 1
 }

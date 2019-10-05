@@ -16,7 +16,7 @@ services:
             GF_DB_PORT: ${DB_PORT}
             GF_DB_NAME: ${DB_NAME}
             # Enable non-authenticated users to view dashboards (view only).
-            GF_AUTH_ANONYMOUS_ENABLED: true
+            GF_AUTH_ANONYMOUS_ENABLED: 'true'
             # Default username/password for Grafana is admin/admin
             # Uncomment the following lines to set your own
             #GF_SECURITY_ADMIN_USER: artemis

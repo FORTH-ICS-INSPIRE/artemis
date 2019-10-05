@@ -10,11 +10,14 @@ services:
         volumes:
             - ./grafana-provisioning/:/etc/grafana/provisioning
         environment:
-            DB_USER: ${DB_USER}
-            DB_PASS: ${DB_PASS}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            DB_NAME: ${DB_NAME}
-            GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
-            GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
-            GF_AUTH_ANONYMOUS_ENABLED: ${GF_AUTH_ANONYMOUS_ENABLED}
+            GF_DB_USER: ${DB_USER}
+            GF_DB_PASS: ${DB_PASS}
+            GF_DB_HOST: ${DB_HOST}
+            GF_DB_PORT: ${DB_PORT}
+            GF_DB_NAME: ${DB_NAME}
+            # Enable non-authenticated users to view dashboards (view only).
+            GF_AUTH_ANONYMOUS_ENABLED: true
+            # Default username/password for Grafana is admin/admin
+            # Uncomment the following lines to set your own
+            #GF_SECURITY_ADMIN_USER: artemis
+            #GF_SECURITY_ADMIN_PASSWORD: artemispass

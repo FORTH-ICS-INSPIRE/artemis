@@ -7,11 +7,11 @@ deleteDatasources:
 datasources:
   - name: ArtemisPSQL
     type: postgres
-    url: postgres:$DB_PORT
-    database: $DB_NAME
-    user: $DB_USER
+    url: $GF_DB_HOST:$GF_DB_PORT
+    database: $GF_DB_NAME
+    user: $GF_DB_USER
     secureJsonData:
-      password: $DB_PASS
+      password: $GF_DB_PASS
     jsonData:
       sslmode: "disable" # disable/require/verify-ca/verify-full
       maxOpenConns: 0         # Grafana v5.4+

@@ -1,40 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_ARTEMISPSQL",
-      "label": "ArtemisPSQL",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "postgres",
-      "pluginName": "PostgreSQL"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "bargauge",
-      "name": "Bar Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "6.4.1"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph",
-      "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "postgres",
-      "name": "PostgreSQL",
-      "version": "1.0.0"
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -51,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": null,
-  "iteration": 1570382687352,
+  "id": 1,
+  "iteration": 1570392386850,
   "links": [],
   "panels": [
     {
@@ -124,7 +88,7 @@
           "hide": false,
           "metricColumn": "prefix",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  concat(configured_prefix,':',type) AS metric,\n  count(*) AS \"update\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND\n  active = 'true'\nGROUP BY 1,2\nORDER BY 1,2",
+          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  concat(configured_prefix,':',\"type\") AS metric,\n  count(*) AS \"update\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND\n  \"$state\" = '$value' \nGROUP BY 1,2\nORDER BY 1,2",
           "refId": "B",
           "select": [
             [
@@ -182,7 +146,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Active BGP Hijacks - $prefix",
+      "title": "BGP Hijacks - $prefix - $state: $value",
       "transparent": true,
       "type": "bargauge"
     },
@@ -211,7 +175,7 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 19,
-        "w": 24,
+        "w": 8,
         "x": 0,
         "y": 25
       },
@@ -265,7 +229,7 @@
           ],
           "metricColumn": "CONCAT(prefix,'@', hijack_as)",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  CONCAT(prefix,'@', hijack_as, '  (', \"type\",')') AS metric,\n  sum(num_peers_seen) AS \"hijack_as\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND active = true\nGROUP BY 1,2\nORDER BY 1,2",
+          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  CONCAT(prefix,'@', hijack_as, '  (', \"type\",')') AS metric,\n  sum(num_peers_seen) AS \"hijack_as\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND \"$state\" = '$value'\nGROUP BY 1,2\nORDER BY 1,2",
           "refId": "A",
           "select": [
             [
@@ -315,7 +279,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Prefix - $prefix - Peers Seen",
+      "title": "Prefix - $prefix - Peers Seen - $state: $value",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -362,16 +326,97 @@
     "list": [
       {
         "allValue": null,
-        "current": {},
+        "current": {
+          "tags": [],
+          "text": "active",
+          "value": "active"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "State",
+        "multi": false,
+        "name": "state",
+        "options": [
+          {
+            "selected": true,
+            "text": "active",
+            "value": "active"
+          },
+          {
+            "selected": false,
+            "text": "dormant",
+            "value": "dormant"
+          },
+          {
+            "selected": false,
+            "text": "ignored",
+            "value": "ignored"
+          },
+          {
+            "selected": false,
+            "text": "outdated",
+            "value": "outdated"
+          },
+          {
+            "selected": false,
+            "text": "resolved",
+            "value": "resolved"
+          },
+          {
+            "selected": false,
+            "text": "withdrawn",
+            "value": "withdrawn"
+          }
+        ],
+        "query": "active, dormant, ignored, outdated, resolved, withdrawn",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "tags": [],
+          "text": "true",
+          "value": "true"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "State Value",
+        "multi": false,
+        "name": "value",
+        "options": [
+          {
+            "selected": true,
+            "text": "true",
+            "value": "true"
+          },
+          {
+            "selected": false,
+            "text": "false",
+            "value": "false"
+          }
+        ],
+        "query": "true, false",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        },
         "datasource": "ArtemisPSQL",
-        "definition": "SELECT distinct(configured_prefix) from hijacks WHERE $__timeFilter(time_detected) and active = 'true'",
+        "definition": "SELECT distinct(configured_prefix) from hijacks WHERE $__timeFilter(time_detected) and \"$state\" = '$value'",
         "hide": 0,
         "includeAll": true,
-        "label": null,
+        "label": "Prefix",
         "multi": true,
         "name": "prefix",
         "options": [],
-        "query": "SELECT distinct(configured_prefix) from hijacks WHERE $__timeFilter(time_detected) and active = 'true'",
+        "query": "SELECT distinct(configured_prefix) from hijacks WHERE $__timeFilter(time_detected) and \"$state\" = '$value'",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,

@@ -52,7 +52,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1570277515937,
+  "iteration": 1570382687352,
   "links": [],
   "panels": [
     {
@@ -72,7 +72,7 @@
     {
       "datasource": "ArtemisPSQL",
       "gridPos": {
-        "h": 22,
+        "h": 23,
         "w": 24,
         "x": 0,
         "y": 1
@@ -124,7 +124,7 @@
           "hide": false,
           "metricColumn": "prefix",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  prefix AS metric,\n  count(*) AS \"update\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND\n  active = 'true'\nGROUP BY 1,2\nORDER BY 1,2",
+          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  concat(configured_prefix,':',type) AS metric,\n  count(*) AS \"update\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND\n  active = 'true'\nGROUP BY 1,2\nORDER BY 1,2",
           "refId": "B",
           "select": [
             [
@@ -193,7 +193,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 24
       },
       "id": 9,
       "panels": [],
@@ -210,10 +210,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 9,
-        "w": 8,
+        "h": 19,
+        "w": 24,
         "x": 0,
-        "y": 24
+        "y": 25
       },
       "id": 2,
       "interval": "1s",
@@ -224,6 +224,8 @@
         "max": true,
         "min": false,
         "show": true,
+        "sort": "max",
+        "sortDesc": true,
         "total": true,
         "values": true
       },
@@ -263,7 +265,7 @@
           ],
           "metricColumn": "CONCAT(prefix,'@', hijack_as)",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  CONCAT(prefix,'@', hijack_as, '  (', type,')') AS metric,\n  count(*) AS \"hijack_as\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND active = true\nGROUP BY 1,2\nORDER BY 1,2",
+          "rawSql": "SELECT\n  $__timeGroupAlias(time_detected,$__interval),\n  CONCAT(prefix,'@', hijack_as, '  (', \"type\",')') AS metric,\n  sum(num_peers_seen) AS \"hijack_as\"\nFROM hijacks\nWHERE\n  $__timeFilter(time_detected) AND\n  configured_prefix IN ($prefix) AND active = true\nGROUP BY 1,2\nORDER BY 1,2",
           "refId": "A",
           "select": [
             [
@@ -313,7 +315,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Prefix - $prefix",
+      "title": "Prefix - $prefix - Peers Seen",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -362,14 +364,14 @@
         "allValue": null,
         "current": {},
         "datasource": "ArtemisPSQL",
-        "definition": "SELECT distinct(prefix) from hijacks",
+        "definition": "SELECT distinct(configured_prefix) from hijacks WHERE $__timeFilter(time_detected) and active = 'true'",
         "hide": 0,
         "includeAll": true,
         "label": null,
         "multi": true,
         "name": "prefix",
         "options": [],
-        "query": "SELECT distinct(prefix) from hijacks",
+        "query": "SELECT distinct(configured_prefix) from hijacks WHERE $__timeFilter(time_detected) and active = 'true'",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,

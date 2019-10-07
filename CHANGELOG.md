@@ -1,5 +1,24 @@
 # Changelog
 
+## [UNRELEASED] (NAME) - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
 ## [1.3.1] (Ares) - 2019-10-04
 ### Added
 - IPv6 tests (backend testing)

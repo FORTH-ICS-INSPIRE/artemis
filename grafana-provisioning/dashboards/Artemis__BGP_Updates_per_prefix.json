@@ -52,7 +52,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1570434592109,
+  "iteration": 1570435047528,
   "links": [],
   "panels": [
     {
@@ -471,7 +471,7 @@
             }
           ],
           "metricColumn": "CONCAT(prefix,':',type)",
-          "rawQuery": false,
+          "rawQuery": true,
           "rawSql": "SELECT\n  $__timeGroupAlias(\"timestamp\",$__interval),\n  CONCAT(prefix,':',type) AS metric,\n  count(key) AS \"add\"\nFROM bgp_updates\nWHERE\n  $__timeFilter(\"timestamp\") AND\n  prefix IN ($prefix)\nGROUP BY 1, type,2\nORDER BY 1,2",
           "refId": "A",
           "select": [
@@ -571,14 +571,14 @@
         "allValue": null,
         "current": {},
         "datasource": "ArtemisPSQL",
-        "definition": "SELECT distinct(prefix) from bgp_updates",
+        "definition": "SELECT distinct(prefix) from bgp_updates WHERE $__timeFilter(\"timestamp\")",
         "hide": 0,
         "includeAll": true,
         "label": null,
         "multi": true,
         "name": "prefix",
         "options": [],
-        "query": "SELECT distinct(prefix) from bgp_updates",
+        "query": "SELECT distinct(prefix) from bgp_updates WHERE $__timeFilter(\"timestamp\")",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -623,5 +623,5 @@
   "timezone": "utc",
   "title": "Artemis::BGP Updates per prefix",
   "uid": "artemis_bgp_updates_per_prefix",
-  "version": 2
+  "version": 5
 }

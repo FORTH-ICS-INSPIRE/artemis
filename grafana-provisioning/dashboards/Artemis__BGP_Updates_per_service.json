@@ -1,34 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_ARTEMISPSQL",
-      "label": "ArtemisPSQL",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "postgres",
-      "pluginName": "PostgreSQL"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "bargauge",
-      "name": "Bar Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "6.4.1"
-    },
-    {
-      "type": "datasource",
-      "id": "postgres",
-      "name": "PostgreSQL",
-      "version": "1.0.0"
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -45,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": null,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -373,7 +343,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Adds",
+      "title": "Announcements",
       "transparent": true,
       "type": "bargauge"
     }

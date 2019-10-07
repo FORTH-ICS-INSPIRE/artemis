@@ -52,7 +52,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1570277544549,
+  "iteration": 1570434592109,
   "links": [],
   "panels": [
     {
@@ -276,7 +276,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Total BGP - ADD",
+      "title": "Total BGP - Announcements",
       "transparent": true,
       "type": "bargauge"
     },
@@ -381,7 +381,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Total BGP - WITHDRAW",
+      "title": "Total BGP - Withdrawals",
       "transparent": true,
       "type": "bargauge"
     },
@@ -524,7 +524,7 @@
       "timeShift": null,
       "title": "Prefix - $prefix",
       "tooltip": {
-        "shared": true,
+        "shared": false,
         "sort": 0,
         "value_type": "individual"
       },
@@ -623,5 +623,5 @@
   "timezone": "utc",
   "title": "Artemis::BGP Updates per prefix",
   "uid": "artemis_bgp_updates_per_prefix",
-  "version": 1
+  "version": 2
 }

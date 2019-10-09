@@ -2,7 +2,11 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- Grafana provisioning, env vars and 4 dashboards
+  - Artemis::BGP Hijacks per prefix
+  - Artemis::BGP Updates per prefix
+  - Artemis::BGP Updates per service
+  - Artemis::Offending ASes
 
 ### Changed
 - TBD (Changed existing functionality)

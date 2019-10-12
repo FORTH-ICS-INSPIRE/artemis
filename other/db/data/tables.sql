@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (17, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (18, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -197,6 +197,11 @@ CREATE TABLE IF NOT EXISTS process_states (
     timestamp TIMESTAMP default current_timestamp
 );
 
+CREATE TABLE IF NOT EXISTS intended_process_states (
+    name VARCHAR (32) UNIQUE,
+    running BOOLEAN DEFAULT FALSE
+);
+
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -210,6 +215,8 @@ BEFORE UPDATE ON process_states
 FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 
 CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;
+
+CREATE OR REPLACE VIEW view_intended_process_states AS SELECT * FROM intended_process_states;
 
 CREATE OR REPLACE VIEW view_db_details AS SELECT version, upgraded_on FROM db_details;
 

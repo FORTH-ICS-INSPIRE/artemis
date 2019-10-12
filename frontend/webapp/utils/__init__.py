@@ -11,17 +11,19 @@ BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
 MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST", "monitor")
 MON_SUPERVISOR_PORT = os.getenv("MON_SUPERVISOR_PORT", 9001)
-
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
 )
+
 BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
 )
 MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
 )
+
 API_URI = "http://{}:{}".format(API_HOST, API_PORT)
+GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
 
 
 def flatten(items, seqtypes=(list, tuple)):

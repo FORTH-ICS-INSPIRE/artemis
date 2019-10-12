@@ -74,7 +74,7 @@ def configure_app(app):
     app.config.from_object("webapp.configs.config.BaseConfig")
     app.config.from_pyfile("/etc/artemis/webapp.cfg", silent=False)
 
-    app.artemis_logger = logging.getLogger("webapp_logger")
+    app.artemis_logger = logging.getLogger("artemis_logger")
 
     # Configure Security
     if app.config["AUTH_METHOD"] == "ldap":

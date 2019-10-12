@@ -81,7 +81,7 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 * Comprehensive web-based User Interface (UI).
 * Configuration file editable by the operator (directly or via the UI),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
-* Support for both IPv4 and IPv6 prefixes.
+* Support for both IPv4 and IPv6 prefixes (millions of routed prefixes depending on your resources).
 * Support for both mobile and desktop environments (UI): [sample screenshots](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/UI-how-to-and-screenshots).
 * Support for docker-compose (local deployment) and Kubernetes (helm charts).
 * Support for multiple modes of operation (passive monitor/detector, active mitigator, etc.).

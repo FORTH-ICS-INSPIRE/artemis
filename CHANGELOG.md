@@ -2,18 +2,60 @@
 
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
+- Grafana provisioning, env vars and 4 dashboards
+  - Artemis::BGP Hijacks per prefix
+  - Artemis::BGP Updates per prefix
+  - Artemis::BGP Updates per service
+  - Artemis::Offending ASes
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [1.3.1] (Ares) - 2019-10-04
+### Added
 - IPv6 tests (backend testing)
 - PR labeler (GitHub actions)
+- Env variable and formatter for selecting hijack log fields
+- Env variable for ARTEMIS web host for backend logging
+- Logging also withdrawn and outdated hijacks in mail and hijack loggers
+- Extra end_tag and hijack_url in hijacks for logging
+- Reinstating intended modules on ARTEMIS startup
+- Support of multiple artemis instances on a single namespace (k8s)
+- Added benchmarker and PR commenter
+- TestCafe frontend testing framework
 
 ### Changed
 - py-radix, substituted with pytricia tree
 - dep-licenses updated (with currently used modules)
+- Fixed bug with outdated hijacks that remain hijacks
+- Fixed bug with BGP updates related to more than one hijacks
+- Added outdated_parent logging field to inform logging systems
 
 ### Fixed
 - Support for millions of prefixes in configuration file
+- Ensure ARTEMIS config file is not clobbered on pod restart
 
 ### Removed
 - ipaddress requirement from frontend (not needed)
+
+### Backwards Incompatible Changes
+- :rotating_light: Changed frontend logger from webapp_logger to artemis_logger in logging.yaml and config.py under frontend/webapp/configs.
+For old versions you need to replace the name from webapp_logger to artemis_logger in these two files under your local_configs/frontend folder.
+- :rotating_light: Changed helm chart labels to support multiple releases per namespace and this breaks helm upgrades.
+To migrate to the new version you need to deploy a new installation and migrate the Persistent Volumes Claims (PVC) to the new release by attaching them on the current Persistent Volumes.
+
 
 ## [1.3.0] (Arktos) - 2019-09-12
 ### Added

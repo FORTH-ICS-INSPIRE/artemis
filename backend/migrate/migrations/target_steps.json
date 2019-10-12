@@ -101,6 +101,12 @@
             "db_version": "17",
             "description": "Added community_annotation column in hijacks table",
             "file": "migration_17.sql"
+        },
+        "18": {
+            "id": "18",
+            "db_version": "18",
+            "description": "Added intended process states table in db",
+            "file": "migration_18.sql"
         }
     }
 }

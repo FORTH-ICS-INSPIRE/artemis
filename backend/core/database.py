@@ -1,5 +1,7 @@
 import datetime
 import json
+import logging
+import os
 import signal
 import time
 from xmlrpc.client import ServerProxy
@@ -24,6 +26,7 @@ from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
 from utils import HISTORIC
+from utils import ModulesState
 from utils import MON_SUPERVISOR_URI
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -32,6 +35,7 @@ from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import search_worst_prefix
+from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
 from utils.tool import DB
@@ -41,6 +45,29 @@ from utils.tool import DB
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
+
+hij_log = logging.getLogger("hijack_logger")
+mail_log = logging.getLogger("mail_logger")
+try:
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+except Exception:
+    log.exception("exception")
+    hij_log_filter = []
+
+
+class HijackLogFilter(logging.Filter):
+    def filter(self, rec):
+        if not hij_log_filter:
+            return True
+        for filter_entry in hij_log_filter:
+            for filter_entry_key in filter_entry:
+                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
+                    return True
+        return False
+
+
+mail_log.addFilter(HijackLogFilter())
+hij_log.addFilter(HijackLogFilter())
 
 
 class Database:
@@ -116,6 +143,26 @@ class Database:
                         if x["name"] != "listener"
                     ]
                     self.wo_db.execute_batch(query, processes)
+
+            except Exception:
+                log.exception("exception")
+
+            try:
+                query = (
+                    "INSERT INTO intended_process_states (name, running) "
+                    "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+                )
+
+                for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                    server = ServerProxy(ctx)
+                    processes = [
+                        (x["group"], False)
+                        for x in server.supervisor.getAllProcessInfo()
+                        if x["group"] in ["monitor", "detection", "mitigation"]
+                    ]
+
+                    with get_wo_cursor(self.wo_conn) as db_cur:
+                        psycopg2.extras.execute_batch(db_cur, query, processes)
 
             except Exception:
                 log.exception("exception")
@@ -402,6 +449,26 @@ class Database:
                 ),
             ]
 
+        def set_modules_to_intended_state(self):
+            try:
+                query = "SELECT name, running FROM intended_process_states"
+
+                with get_ro_cursor(self.ro_conn) as db_cur:
+                    db_cur.execute(query)
+                    entries = db_cur.fetchall()
+                modules_state = ModulesState()
+                for entry in entries:
+                    # entry[0] --> module name, entry[1] --> intended state
+                    # start only intended modules (after making sure they are stopped
+                    # to avoid stale entries)
+                    if entry[1]:
+                        log.info("Setting {} to start state.".format(entry[0]))
+                        modules_state.call(entry[0], "stop")
+                        time.sleep(1)
+                        modules_state.call(entry[0], "start")
+            except Exception:
+                log.exception("exception")
+
         def config_request_rpc(self):
             self.correlation_id = uuid()
             callback_queue = Queue(
@@ -532,6 +599,7 @@ class Database:
                             "type, communities, timestamp FROM bgp_updates "
                             "WHERE bgp_updates.handled=false AND bgp_updates.key = %s"
                         )
+
 
                         entries = self.ro_db.execute_batch(query, (rekey_update_keys,))
 
@@ -720,7 +788,7 @@ class Database:
             return None
 
         def handle_config_notify(self, message):
-            log.info("Reconfiguring database...")
+            log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
@@ -748,7 +816,7 @@ class Database:
             log.info("Database initiated, configured and running.")
 
         def handle_config_request_reply(self, message):
-            log.info("Reconfiguring database...")
+            log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
             config = message.payload
@@ -778,6 +846,7 @@ class Database:
                             log.debug("database config is up-to-date")
             except Exception:
                 log.exception("{}".format(config))
+            self.set_modules_to_intended_state()
 
             log.info("Database initiated, configured and running.")
 
@@ -791,9 +860,10 @@ class Database:
                 try:
                     results = []
                     query = (
-                        "SELECT DISTINCT ON(h.key) b.key, b.prefix, b.as_path, b.type, h.key, h.hijack_as, h.type "
+                        "SELECT b.key, b.prefix, b.origin_as, b.as_path, b.type, b.peer_asn, "
+                        "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, h.type "
                         "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
-                        "WHERE h.active = true AND b.type='A' AND b.handled=true"
+                        "WHERE h.active = true AND b.handled=true"
                     )
 
                     entries = self.ro_db.execute(query)
@@ -803,13 +873,20 @@ class Database:
                             {
                                 "key": entry[0],  # key
                                 "prefix": entry[1],  # prefix
-                                "path": entry[2],  # as_path
-                                "type": entry[3],  # type
-                                "hij_key": entry[4],
-                                "hijack_as": entry[5],
-                                "hij_type": entry[6],
+                                "origin_as": entry[2],  # origin ASN
+                                "path": entry[3],  # as_path
+                                "type": entry[4],  # type
+                                "peer_asn": entry[5],  # peer_asn
+                                "communities": entry[6],  # communities
+                                "timestamp": entry[7].timestamp(),  # timestamp
+                                "service": entry[8],  # service
+                                "matched_prefix": entry[9],  # configured prefix
+                                "hij_key": entry[10],
+                                "hijack_as": entry[11],
+                                "hij_type": entry[12],
                             }
                         )
+
                     if results:
                         for result_bucket in [
                             results[i : i + 10] for i in range(0, len(results), 10)
@@ -1213,9 +1290,14 @@ class Database:
                                 redis_hijack_key = redis_key(
                                     withdrawal[0], entry[3], entry[4]
                                 )
+                                hijack = self.redis.get(redis_hijack_key)
+                                if hijack:
+                                    hijack = yaml.safe_load(hijack)
+                                    hijack["end_tag"] = "withdrawn"
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2]
                                 )
+
                                 self.wo_db.execute(
                                     "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, "
                                     "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
@@ -1223,6 +1305,34 @@ class Database:
                                 )
 
                                 log.debug("withdrawn hijack {}".format(entry))
+                                if hijack:
+                                    mail_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                indent=4,
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
+                                    hij_log.info(
+                                        "{}".format(
+                                            json.dumps(
+                                                hijack_log_field_formatter(hijack),
+                                                cls=SetEncoder,
+                                            )
+                                        ),
+                                        extra={
+                                            "community_annotation": hijack.get(
+                                                "community_annotation", "NA"
+                                            )
+                                        },
+                                    )
                             else:
                                 # add withdrawal to hijack
                                 self.wo_db.execute(
@@ -1235,13 +1345,56 @@ class Database:
                     log.exception("exception")
 
             try:
+                update_hijack_withdrawals_dict = {}
+                for update_hijack_withdrawal in update_hijack_withdrawals:
+                    hijack_key = update_hijack_withdrawal[0]
+                    withdrawal_key = update_hijack_withdrawal[1]
+                    if withdrawal_key not in update_hijack_withdrawals_dict:
+                        update_hijack_withdrawals_dict[withdrawal_key] = set()
+                    update_hijack_withdrawals_dict[withdrawal_key].add(hijack_key)
+                update_hijack_withdrawals_parallel = set()
+                update_hijack_withdrawals_serial = set()
+                for withdrawal_key in update_hijack_withdrawals_dict:
+                    if len(update_hijack_withdrawals_dict[withdrawal_key]) == 1:
+                        for hijack_key in update_hijack_withdrawals_dict[
+                            withdrawal_key
+                        ]:
+                            update_hijack_withdrawals_parallel.add(
+                                (hijack_key, withdrawal_key)
+                            )
+                    else:
+                        for hijack_key in update_hijack_withdrawals_dict[
+                            withdrawal_key
+                        ]:
+                            update_hijack_withdrawals_serial.add(
+                                (hijack_key, withdrawal_key)
+                            )
+
+                # execute parallel execute values query
                 query = (
                     "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) "
                     "FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
                 )
+
                 self.wo_db.execute_values(
                     query, list(update_hijack_withdrawals), page_size=1000
                 )
+
+                # execute serial execute_batch query
+                query = (
+                    "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
+                    "WHERE bgp_updates.key=%s"
+                )
+                with get_wo_cursor(self.wo_conn) as db_cur:
+                    psycopg2.extras.execute_batch(
+                        db_cur,
+                        query,
+                        list(update_hijack_withdrawals_serial),
+                        page_size=1000,
+                    )
+                update_hijack_withdrawals_parallel.clear()
+                update_hijack_withdrawals_serial.clear()
+                update_hijack_withdrawals_dict.clear()
 
                 query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
                 self.wo_db.execute_values(
@@ -1291,10 +1444,45 @@ class Database:
                     self.wo_db.execute_values(
                         query, list(update_bgp_entries), page_size=1000
                     )
-                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2, v3) WHERE bgp_updates.key=data.v2"
+                    update_bgp_entries_dict = {}
+                    for update_bgp_entry in update_bgp_entries:
+                        hijack_key = update_bgp_entry[0]
+                        bgp_entry_to_update = update_bgp_entry[1]
+                        if bgp_entry_to_update not in update_bgp_entries_dict:
+                            update_bgp_entries_dict[bgp_entry_to_update] = set()
+                        update_bgp_entries_dict[bgp_entry_to_update].add(hijack_key)
+                    update_bgp_entries_parallel = set()
+                    update_bgp_entries_serial = set()
+                    for bgp_entry_to_update in update_bgp_entries_dict:
+                        if len(update_bgp_entries_dict[bgp_entry_to_update]) == 1:
+                            for hijack_key in update_bgp_entries_dict[
+                                bgp_entry_to_update
+                            ]:
+                                update_bgp_entries_parallel.add(
+                                    (hijack_key, bgp_entry_to_update)
+                                )
+                        else:
+                            for hijack_key in update_bgp_entries_dict[
+                                bgp_entry_to_update
+                            ]:
+                                update_bgp_entries_serial.add(
+                                    (hijack_key, bgp_entry_to_update)
+                                )
+
+                    # execute parallel execute values query
+                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
                     self.wo_db.execute_values(
-                        query, list(update_bgp_entries), page_size=1000
+                        query, list(update_bgp_entries_parallel), page_size=1000
                     )
+
+                    # execute serial execute_batch query
+                    query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
+                    self.wo_db.execute_values(
+                        query, list(update_bgp_entries_serial), page_size=1000
+                    )    
+                    update_bgp_entries_parallel.clear()
+                    update_bgp_entries_serial.clear()
+                    update_bgp_entries_dict.clear()
                 except Exception:
                     log.exception("exception")
                     return -1
@@ -1328,7 +1516,8 @@ class Database:
                     "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation) "
                     "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
                     ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
-                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, community_annotation=excluded.community_annotation"
+                    "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, timestamp_of_config=excluded.timestamp_of_config, "
+                    "configured_prefix=excluded.configured_prefix, community_annotation=excluded.community_annotation"
                 )
 
                 values = []

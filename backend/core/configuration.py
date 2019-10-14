@@ -550,14 +550,63 @@ class Configuration:
                     priority=4,
                 )
 
-        def handle_autoconf_upodates(self, message):
+        def translate_bgp_update_to_dicts(self, bgp_update):
             """
-            Receives a "autoconf-update" message, translated the corresponding
+            Translates a BGP update message payload
+            into ARTEMIS-compatible dictionaries
+            :param bgp_update: {
+                "prefix": <str>,
+                "key": <str>,
+                "peer_asn": <int>,
+                "path": (<int>)<list>
+                "service": <str>,
+                "type": <str>,
+                "communities": [
+                    ...,
+                    {
+                        "asn": <int>,
+                        "value": <int>
+                    },
+                    ...,
+                ]
+                "timestamp" : <float>
+            }
+            :return: (<str>rule_prefix, <list><int>rule_asns,
+            <list><dict>rules)
+            """
+            # initialize dictionaries and lists
+            rule_prefix = {}
+            rule_asns = {}
+            rules = []
+
+            try:
+                # TODO
+                pass
+            except Exception:
+                log.exception("{}".format(bgp_update))
+                return (None, None, None)
+
+            return (rule_prefix, rule_asns, rules)
+
+        def handle_autoconf_updates(self, message):
+            """
+            Receives a "autoconf-update" message, translates the corresponding
             BGP update into ARTEMIS configuration and rewrites the configuration
             :param message:
             :return:
             """
-            pass
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            bgp_update = message.payload
+            (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
+                bgp_update
+            )
+            (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
+                rule_prefix, rule_asns, rules
+            )
+            if ok:
+                # store the new configuration to file
+                with open(self.file, "w") as f:
+                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
 
         def handle_load_as_sets(self, message):
             """

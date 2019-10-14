@@ -11,6 +11,7 @@ from typing import NoReturn
 from typing import Optional
 from typing import Text
 from typing import TextIO
+from typing import Tuple
 from typing import Union
 
 import redis
@@ -170,7 +171,10 @@ class Configuration:
             )
             self.autoconf_update_queue = Queue(
                 "conf-autoconf-update-queue",
+                exchange=self.autoconf_exchange,
+                routing_key="update",
                 durable=False,
+                auto_delete=True,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
@@ -420,7 +424,7 @@ class Configuration:
             return (rule_prefix, rule_asns, rules)
 
         def translate_learn_rule_dicts_to_yaml_conf(
-            self, rule_prefix, rule_asns, rules
+            self, rule_prefix, rule_asns, rules, ignore_existing=False
         ):
             """
             Translates the dicts from translate_learn_rule_msg_to_dicts
@@ -429,6 +433,7 @@ class Configuration:
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
             :param rules: <list><dict>
+            :param ignore_existing: <bool>
             :return: (<dict>, <bool>)
             """
             if not rule_prefix or not rule_asns or not rules:
@@ -454,7 +459,7 @@ class Configuration:
                         yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
                             prefix_anchor, always_dump=True
                         )
-                    else:
+                    elif not ignore_existing:
                         return ("rule already exists", False)
 
                 # append asns
@@ -468,7 +473,7 @@ class Configuration:
                         yaml_conf["asns"][asn_anchor].yaml_set_anchor(
                             asn_anchor, always_dump=True
                         )
-                    else:
+                    elif not ignore_existing:
                         return ("rule already exists", False)
 
                 # append rules
@@ -487,8 +492,11 @@ class Configuration:
 
                     # append neighbors
                     rule_map["neighbors"] = ruamel.yaml.comments.CommentedSeq()
-                    for neighbor in rule["neighbors"]:
-                        rule_map["neighbors"].append(yaml_conf["asns"][neighbor])
+                    if "neighbors" in rule and rule["neighbors"]:
+                        for neighbor in rule["neighbors"]:
+                            rule_map["neighbors"].append(yaml_conf["asns"][neighbor])
+                    else:
+                        del rule_map["neighbors"]
 
                     # append mitigation action
                     rule_map["mitigation"] = rule["mitigation"]
@@ -550,6 +558,49 @@ class Configuration:
                     priority=4,
                 )
 
+        @staticmethod
+        def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
+            """
+            Static method to remove prepending ASs from AS path.
+            """
+            last_add = None
+            new_seq = []
+            for x in seq:
+                if last_add != x:
+                    last_add = x
+                    new_seq.append(x)
+
+            is_loopy = False
+            if len(set(seq)) != len(new_seq):
+                is_loopy = True
+            return (new_seq, is_loopy)
+
+        @staticmethod
+        def __clean_loops(seq: List[int]) -> List[int]:
+            """
+            Static method that remove loops from AS path.
+            """
+            # use inverse direction to clean loops in the path of the traffic
+            seq_inv = seq[::-1]
+            new_seq_inv = []
+            for x in seq_inv:
+                if x not in new_seq_inv:
+                    new_seq_inv.append(x)
+                else:
+                    x_index = new_seq_inv.index(x)
+                    new_seq_inv = new_seq_inv[: x_index + 1]
+            return new_seq_inv[::-1]
+
+        @staticmethod
+        def __clean_as_path(path: List[int]) -> List[int]:
+            """
+            Static wrapper method for loop and prepending removal.
+            """
+            (clean_as_path, is_loopy) = Configuration.Worker.__remove_prepending(path)
+            if is_loopy:
+                clean_as_path = Configuration.Worker.__clean_loops(clean_as_path)
+            return clean_as_path
+
         def translate_bgp_update_to_dicts(self, bgp_update):
             """
             Translates a BGP update message payload
@@ -580,8 +631,46 @@ class Configuration:
             rules = []
 
             try:
-                # TODO
-                pass
+                if bgp_update["type"] == "A":
+
+                    # learned rule prefix
+                    rule_prefix = {
+                        bgp_update["prefix"]: "AUTOCONF_P_{}".format(
+                            bgp_update["prefix"]
+                            .replace("/", "_")
+                            .replace(".", "_")
+                            .replace(":", "_")
+                        )
+                    }
+
+                    # learned rule asns
+                    as_path = Configuration.Worker.__clean_as_path(bgp_update["path"])
+                    origin_asn = None
+                    neighbor = None
+                    asns = set()
+                    if as_path:
+                        origin_asn = as_path[-1]
+                        asns.add(origin_asn)
+                        if len(as_path) > 1:
+                            neighbor = as_path[-2]
+                            asns.add(neighbor)
+                    rule_asns = {}
+                    for asn in sorted(list(asns)):
+                        rule_asns[asn] = "AUTOCONF_AS_{}".format(asn)
+
+                    # learned rule
+                    learned_rule = {
+                        "prefixes": [rule_prefix[bgp_update["prefix"]]],
+                        "origin_asns": [rule_asns[origin_asn]],
+                        "mitigation": "manual",
+                    }
+                    if neighbor:
+                        learned_rule["neighbors"] = [rule_asns[neighbor]]
+                    rules.append(learned_rule)
+                else:
+                    # TODO: handle withdrawals --> rule removals! (last step, make sure that announcements work fine first)
+                    pass
+
             except Exception:
                 log.exception("{}".format(bgp_update))
                 return (None, None, None)
@@ -601,7 +690,7 @@ class Configuration:
                 bgp_update
             )
             (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                rule_prefix, rule_asns, rules
+                rule_prefix, rule_asns, rules, ignore_existing=True
             )
             if ok:
                 # store the new configuration to file

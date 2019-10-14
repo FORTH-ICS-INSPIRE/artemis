@@ -87,6 +87,7 @@ class ExaBGP:
                                     exchange=self.autoconf_exchange,
                                     routing_key="update",
                                     serializer="json",
+                                    priority=4,
                                 )
                     else:
                         log.warning("Invalid format message: {}".format(msg))

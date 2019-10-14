@@ -134,6 +134,14 @@ class Configuration:
                 delivery_mode=1,
             )
             self.config_exchange.declare()
+            self.autoconf_exchange = Exchange(
+                "autoconf-local",
+                type="direct",
+                channel=connection,
+                durable=False,
+                delivery_mode=1,
+            )
+            self.autoconf_exchange.declare()
 
             # QUEUES
             self.config_modify_queue = Queue(
@@ -156,6 +164,12 @@ class Configuration:
             )
             self.load_as_sets_queue = Queue(
                 "conf-load-as-sets-queue",
+                durable=False,
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
+            )
+            self.autoconf_update_queue = Queue(
+                "conf-autoconf-update-queue",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
@@ -189,6 +203,12 @@ class Configuration:
                 Consumer(
                     queues=[self.load_as_sets_queue],
                     on_message=self.handle_load_as_sets,
+                    prefetch_count=1,
+                    no_ack=True,
+                ),
+                Consumer(
+                    queues=[self.autoconf_update_queue],
+                    on_message=self.handle_autoconf_updates,
                     prefetch_count=1,
                     no_ack=True,
                 ),
@@ -529,6 +549,15 @@ class Configuration:
                     retry=True,
                     priority=4,
                 )
+
+        def handle_autoconf_upodates(self, message):
+            """
+            Receives a "autoconf-update" message, translated the corresponding
+            BGP update into ARTEMIS configuration and rewrites the configuration
+            :param message:
+            :return:
+            """
+            pass
 
         def handle_load_as_sets(self, message):
             """

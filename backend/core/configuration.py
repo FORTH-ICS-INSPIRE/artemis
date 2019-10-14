@@ -729,6 +729,15 @@ class Configuration:
                                 raise ArtemisError("invalid-exabgp-ip", entry["ip"])
                         if not isinstance(entry["port"], int):
                             raise ArtemisError("invalid-exabgp-port", entry["port"])
+                        if "autoconf" in entry:
+                            if entry["autoconf"] == "true":
+                                entry["autoconf"] = True
+                            elif entry["autoconf"] == "false":
+                                del entry["autoconf"]
+                            else:
+                                raise ArtemisError(
+                                    "invalid-exabgp-autoconf-flag", entry["autoconf"]
+                                )
 
         @staticmethod
         def __check_asns(_asns):

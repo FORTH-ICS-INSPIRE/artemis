@@ -24,9 +24,10 @@ DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 
 class ExaBGP:
-    def __init__(self, prefixes_file, host):
+    def __init__(self, prefixes_file, host, autoconf=False):
         self.host = host
         self.prefixes = load_json(prefixes_file)
+        self.autoconf = autoconf
         assert self.prefixes is not None
         self.sio = None
         signal.signal(signal.SIGTERM, self.exit)
@@ -36,10 +37,14 @@ class ExaBGP:
     def start(self):
         with Connection(RABBITMQ_URI) as connection:
             self.connection = connection
-            self.exchange = Exchange(
+            self.update_exchange = Exchange(
                 "bgp-update", channel=connection, type="direct", durable=False
             )
-            self.exchange.declare()
+            self.autoconf_exchange = Exchange(
+                "autoconf-local", channel=connection, type="direct", durable=False
+            )
+            self.update_exchange.declare()
+            self.autoconf_exchange.declare()
             validator = mformat_validator()
 
             try:
@@ -73,7 +78,13 @@ class ExaBGP:
                                 log.debug(msg)
                                 producer.publish(
                                     msg,
-                                    exchange=self.exchange,
+                                    exchange=self.update_exchange,
+                                    routing_key="update",
+                                    serializer="json",
+                                )
+                                producer.publish(
+                                    msg,
+                                    exchange=self.autoconf_exchange,
                                     routing_key="update",
                                     serializer="json",
                                 )
@@ -113,13 +124,25 @@ if __name__ == "__main__":
         default=None,
         help="Prefix to be monitored",
     )
+    parser.add_argument(
+        "-a",
+        "--autoconf",
+        type=bool,
+        dest="autoconf",
+        action="store_true",
+        help="Use the feed from this local route collector to build the configuration",
+    )
 
     args = parser.parse_args()
     ping_redis(redis)
 
-    print("Starting ExaBGP on {} for {}".format(args.host, args.prefixes_file))
+    print(
+        "Starting ExaBGP on {} for {} (auto-conf: {})".format(
+            args.host, args.prefixes_file, args.autoconf
+        )
+    )
     try:
-        exa = ExaBGP(args.prefixes_file, args.host)
+        exa = ExaBGP(args.prefixes_file, args.host, args.autoconf)
         exa.start()
     except BaseException:
         log.exception("exception")

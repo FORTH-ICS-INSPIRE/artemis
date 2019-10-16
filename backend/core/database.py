@@ -1312,7 +1312,9 @@ class Database:
                             timestamp = max(withdrawal[2], entry[6])
                             # if a certain percentage of hijack 'A' peers see corresponding hijack 'W'
                             if len(entry[1]) >= int(
-                                WITHDRAWN_HIJACK_THRESHOLD * len(entry[0]) / 100.0
+                                round(
+                                    WITHDRAWN_HIJACK_THRESHOLD * len(entry[0]) / 100.0
+                                )
                             ):
                                 # set hijack as withdrawn and delete from redis
                                 redis_hijack_key = redis_key(

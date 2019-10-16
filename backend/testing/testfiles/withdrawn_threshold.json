@@ -119,13 +119,127 @@
             "orig_path": [],
             "communities": [],
             "service": "a",
+            "type": "A",
+            "path": [82, 31, 21, 11, 100],
+            "prefix": "10.0.0.0/8",
+            "peer_asn": 82
+        },
+        "detection_update_response": {
+            "key": "4",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "origin_as": 100
+        },
+        "detection_hijack_response": {
+            "prefix": "10.0.0.0/8",
+            "hijack_as": 100,
+            "type": "E|0|-|-",
+            "time_started": 1.0,
+            "time_last": 4.0,
+            "configured_prefix": "10.0.0.0/8"
+        },
+        "database_hijack_response": {
+            "type": "E|0|-|-",
+            "active": true,
+            "prefix": "10.0.0.0/8",
+            "asns_inf": [8, 1, 2, 3, 80, 10, 20, 30, 81, 82, 11, 21, 31],
+            "hijack_as": 100,
+            "peers_seen": [8, 80, 81, 82],
+            "num_asns_inf": 13,
+            "num_peers_seen": 4,
+            "configured_prefix": "10.0.0.0/8"
+        }
+    },
+    {
+        "send": {
+            "key": "5",
+            "timestamp": 5,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [83, 31, 21, 11, 100],
+            "prefix": "10.0.0.0/8",
+            "peer_asn": 83
+        },
+        "detection_update_response": {
+            "key": "5",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "origin_as": 100
+        },
+        "detection_hijack_response": {
+            "prefix": "10.0.0.0/8",
+            "hijack_as": 100,
+            "type": "E|0|-|-",
+            "time_started": 1.0,
+            "time_last": 5.0,
+            "configured_prefix": "10.0.0.0/8"
+        },
+        "database_hijack_response": {
+            "type": "E|0|-|-",
+            "active": true,
+            "prefix": "10.0.0.0/8",
+            "asns_inf": [8, 1, 2, 3, 80, 10, 20, 30, 81, 82, 83, 11, 21, 31],
+            "hijack_as": 100,
+            "peers_seen": [8, 80, 81, 82, 83],
+            "num_asns_inf": 14,
+            "num_peers_seen": 5,
+            "configured_prefix": "10.0.0.0/8"
+        }
+    },
+    {
+        "send": {
+            "key": "6",
+            "timestamp": 6,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [84, 31, 21, 11, 100],
+            "prefix": "10.0.0.0/8",
+            "peer_asn": 84
+        },
+        "detection_update_response": {
+            "key": "6",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "origin_as": 100
+        },
+        "detection_hijack_response": {
+            "prefix": "10.0.0.0/8",
+            "hijack_as": 100,
+            "type": "E|0|-|-",
+            "time_started": 1.0,
+            "time_last": 6.0,
+            "configured_prefix": "10.0.0.0/8"
+        },
+        "database_hijack_response": {
+            "type": "E|0|-|-",
+            "active": true,
+            "prefix": "10.0.0.0/8",
+            "asns_inf": [8, 1, 2, 3, 80, 10, 20, 30, 81, 82, 83, 84, 11, 21, 31],
+            "hijack_as": 100,
+            "peers_seen": [8, 80, 81, 82, 83, 84],
+            "num_asns_inf": 15,
+            "num_peers_seen": 6,
+            "configured_prefix": "10.0.0.0/8"
+        }
+    },
+    {
+        "send": {
+            "key": "7",
+            "timestamp": 7,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
             "type": "W",
             "path": [],
             "prefix": "10.0.0.0/8",
             "peer_asn": 8
         },
         "detection_update_response": {
-            "key": "4",
+            "key": "7",
             "handled": true,
             "matched_prefix": "10.0.0.0/8",
             "peer_asn": 8
@@ -137,31 +251,8 @@
     },
     {
         "send": {
-            "key": "5",
-            "timestamp": 5,
-            "orig_path": [],
-            "communities": [],
-            "service": "a",
-            "type": "W",
-            "path": [],
-            "prefix": "10.0.0.0/8",
-            "peer_asn": 80
-        },
-        "detection_update_response": {
-            "key": "5",
-            "handled": true,
-            "matched_prefix": "10.0.0.0/8",
-            "peer_asn": 80
-        },
-        "database_hijack_response": {
-            "peers_withdrawn": [80, 8],
-            "active": true
-        }
-    },
-    {
-        "send": {
-            "key": "6",
-            "timestamp": 6,
+            "key": "8",
+            "timestamp": 8,
             "orig_path": [],
             "communities": [],
             "service": "a",
@@ -171,10 +262,103 @@
             "peer_asn": 81
         },
         "detection_update_response": {
-            "key": "6",
+            "key": "8",
             "handled": true,
             "matched_prefix": "10.0.0.0/8",
-            "peer_asn": 81,
+            "peer_asn": 81
+        },
+        "database_hijack_response": {
+            "peers_withdrawn": [8, 81],
+            "active": true
+        }
+    },
+    {
+        "send": {
+            "key": "9",
+            "timestamp": 9,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "W",
+            "path": [],
+            "prefix": "10.0.0.0/8",
+            "peer_asn": 82
+        },
+        "detection_update_response": {
+            "key": "9",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "peer_asn": 82
+        },
+        "database_hijack_response": {
+            "peers_withdrawn": [8, 81, 82],
+            "active": true
+        }
+    },
+    {
+        "send": {
+            "key": "10",
+            "timestamp": 10,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "W",
+            "path": [],
+            "prefix": "10.0.0.0/8",
+            "peer_asn": 83
+        },
+        "detection_update_response": {
+            "key": "10",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "peer_asn": 83
+        },
+        "database_hijack_response": {
+            "peers_withdrawn": [8, 81, 82, 83],
+            "active": true
+        }
+    },
+    {
+        "send": {
+            "key": "11",
+            "timestamp": 11,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "W",
+            "path": [],
+            "prefix": "10.0.0.0/8",
+            "peer_asn": 84
+        },
+        "detection_update_response": {
+            "key": "11",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "peer_asn": 84
+        },
+        "database_hijack_response": {
+            "peers_withdrawn": [8, 81, 82, 83, 84],
+            "active": false,
+            "withdrawn": true
+        }
+    },
+    {
+        "send": {
+            "key": "12",
+            "timestamp": 12,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "W",
+            "path": [],
+            "prefix": "10.0.0.0/8",
+            "peer_asn": 85
+        },
+        "detection_update_response": {
+            "key": "12",
+            "handled": true,
+            "matched_prefix": "10.0.0.0/8",
+            "peer_asn": 85,
             "hijack_key": []
         }
     }

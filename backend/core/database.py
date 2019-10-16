@@ -38,6 +38,7 @@ from utils import search_worst_prefix
 from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
+from utils import WITHDRAWN_HIJACK_THRESHOLD
 
 # import os
 
@@ -1309,7 +1310,10 @@ class Database:
                         if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
                             entry[1].append(withdrawal[1])
                             timestamp = max(withdrawal[2], entry[6])
-                            if len(entry[0]) == len(entry[1]):
+                            # if a certain percentage of hijack 'A' peers see corresponding hijack 'W'
+                            if len(entry[1]) >= int(
+                                WITHDRAWN_HIJACK_THRESHOLD * len(entry[0]) / 100.0
+                            ):
                                 # set hijack as withdrawn and delete from redis
                                 redis_hijack_key = redis_key(
                                     withdrawal[0], entry[3], entry[4]

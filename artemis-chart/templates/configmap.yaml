@@ -44,3 +44,4 @@ data:
   monTimeoutLastBgpUpdate: {{ .Values.monTimeoutLastBgpUpdate | default "3600" | quote }}
   hijackLogFields: {{ .Values.hijackLogFields | default "[]" | quote }}
   artemisWebHost: {{ .Values.ingress.host | default "artemis.com" }}
+  withdrawnHijackThreshold: {{ .Values.withdrawnHijackThreshold | default "100" | quote }}

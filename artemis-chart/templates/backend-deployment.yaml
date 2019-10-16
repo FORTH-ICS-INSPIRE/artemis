@@ -168,6 +168,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: artemisWebHost
+        - name: WITHDRAWN_HIJACK_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: withdrawnHijackThreshold
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

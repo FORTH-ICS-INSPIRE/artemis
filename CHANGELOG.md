@@ -7,6 +7,7 @@
   - Artemis::BGP Updates per prefix
   - Artemis::BGP Updates per service
   - Artemis::Offending ASes
+- ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
 
 ### Changed
 - TBD (Changed existing functionality)

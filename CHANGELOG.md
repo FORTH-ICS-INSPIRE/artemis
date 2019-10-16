@@ -9,7 +9,7 @@
   - Artemis::Offending ASes
 
 ### Changed
-- TBD (Changed existing functionality)
+- Automatic config file formatting upon config modification
 
 ### Fixed
 - TBD (bug-fix)

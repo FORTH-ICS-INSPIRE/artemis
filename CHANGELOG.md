@@ -9,7 +9,7 @@
   - Artemis::Offending ASes
 
 ### Changed
-- TBD (Changed existing functionality)
+- DB_AUTOCLEAN and dormant hijack thresholds set to 1 day (24h) by default
 
 ### Fixed
 - TBD (bug-fix)

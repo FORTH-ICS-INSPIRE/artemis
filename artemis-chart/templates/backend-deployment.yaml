@@ -1,11 +1,14 @@
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: backend
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-backend
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-backend
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-backend
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
@@ -13,7 +16,7 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: backend
+        app: {{ .Release.Name }}-backend
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
@@ -26,13 +29,13 @@ spec:
         - mountPath: /pvc
           name: backend-pvc
           subPath: configs
-        command: ['sh', '-c', 'cp -n -u /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/']
+        command: ['sh', '-c', 'false | cp -i /configmaps/config.yaml /configmaps/logging.yaml /configmaps/services.conf /pvc/ 2> /dev/null']
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-monsuper
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.monSupervisorHost }} {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.monSupervisorHost }}-svc {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: RIS_ID
@@ -165,6 +168,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: artemisWebHost
+        - name: WITHDRAWN_HIJACK_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: withdrawnHijackThreshold
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend
@@ -187,8 +195,8 @@ spec:
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-backend-pvc
         name: backend-pvc
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+{{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

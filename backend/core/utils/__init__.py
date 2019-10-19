@@ -45,6 +45,7 @@ DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
         "key",
         "community_annotation",
         "end_tag",
+        "outdated_parent",
         "hijack_url",
     ]
 )
@@ -55,6 +56,7 @@ try:
 except Exception:
     HIJACK_LOG_FIELDS = set(DEFAULT_HIJACK_LOG_FIELDS)
 ARTEMIS_WEB_HOST = os.getenv("ARTEMIS_WEB_HOST", "artemis.com")
+WITHDRAWN_HIJACK_THRESHOLD = int(os.getenv("WITHDRAWN_HIJACK_THRESHOLD", 80))
 
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT

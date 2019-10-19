@@ -1,0 +1,18 @@
+#!/bin/bash
+
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+./wait-for ${BACKEND_SUPERVISOR_HOST}:${BACKEND_SUPERVISOR_PORT} -t 0
+
+python executor.py 10000
+
+COMMENT_ID=$(curl https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments | jq '.[] | select(.body | contains("Benchmark Result")) | .id')
+
+if [ $COMMENT_ID ]; then
+    curl -H "Authorization: token ${GITHUB_TOKEN}" -X PATCH \
+        -d "{\"body\": \":running: **Benchmark Results** :running:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\n- Hijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
+        "https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/comments/${COMMENT_ID}"
+else
+    curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST \
+        -d "{\"body\": \":running: **Benchmark Results** :running:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\n- Hijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
+        "https://api.github.com/repos/${SEMAPHORE_REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments"
+fi

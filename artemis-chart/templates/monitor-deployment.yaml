@@ -1,11 +1,14 @@
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: monitor
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-monitor
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-monitor
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-monitor
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
@@ -13,7 +16,7 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: monitor
+        app: {{ .Release.Name }}-monitor
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
@@ -26,10 +29,10 @@ spec:
         - mountPath: /pvc
           name: monitor-pvc
           subPath: configs
-        command: ['sh', '-c', 'cp -n -u /configmaps/logging.yaml /configmaps/mon-services.conf /pvc/']
+        command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /configmaps/mon-services.conf /pvc/ 2> /dev/null']
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: RIS_ID
@@ -166,8 +169,8 @@ spec:
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-monitor-pvc
         name: monitor-pvc
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+{{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

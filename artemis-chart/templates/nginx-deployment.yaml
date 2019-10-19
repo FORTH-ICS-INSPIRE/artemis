@@ -1,12 +1,15 @@
 {{- if not .Values.ingress.enabled -}}
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: nginx
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-nginx
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-nginx
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-nginx
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
@@ -14,14 +17,14 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: nginx
+        app: {{ .Release.Name }}-nginx
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.webappHost }} {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.webappHost }}-svc {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - image: nginx:1.15-alpine
         name: nginx
@@ -48,9 +51,9 @@ spec:
           - key: tls.key
             path: key.pem
         name: nginx-secret0
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+{{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}
 {{- end -}}

@@ -1,11 +1,14 @@
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    io.kompose.service: frontend
-    app: {{ .Release.Name }}
+    app: {{ .Release.Name }}-frontend
+{{ include "artemis.labels" . | indent 4 }}
   name: {{ .Release.Name }}-frontend
 spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-frontend
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
@@ -13,17 +16,17 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        io.kompose.service: frontend
+        app: {{ .Release.Name }}-frontend
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-monsup
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Values.monSupervisorHost }} {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.monSupervisorHost }}-svc {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: API_HOST
@@ -169,8 +172,8 @@ spec:
       - persistentVolumeClaim:
           claimName: {{ .Release.Name }}-frontend-pvc
         name: frontend-pvc
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- range $key, $value := .Values.nodeSelector }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+{{ toYaml . | nindent 8 }}
+      {{- end }}
 status: {}

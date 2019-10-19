@@ -155,7 +155,8 @@
         },
         "database_hijack_response": {
             "peers_withdrawn": [80, 8],
-            "active": true
+            "active": false,
+            "withdrawn": true
         }
     },
     {
@@ -174,12 +175,8 @@
             "key": "6",
             "handled": true,
             "matched_prefix": "10.0.0.0/8",
-            "peer_asn": 81
-        },
-        "database_hijack_response": {
-            "peers_withdrawn": [8, 80, 81],
-            "active": false,
-            "withdrawn": true
+            "peer_asn": 81,
+            "hijack_key": []
         }
     }
 ]

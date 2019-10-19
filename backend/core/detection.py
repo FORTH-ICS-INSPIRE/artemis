@@ -520,36 +520,68 @@ class Detection:
                     except Exception:
                         log.exception("exception")
 
-                if (not is_hijack and "hij_key" in monitor_event) or (
+                outdated_hijack = None
+                if not is_hijack and "hij_key" in monitor_event:
+                    try:
+                        # outdated hijack, benign from now on
+                        redis_hijack_key = redis_key(
+                            monitor_event["prefix"],
+                            monitor_event["hijack_as"],
+                            monitor_event["hij_type"],
+                        )
+                        outdated_hijack = self.redis.get(redis_hijack_key)
+                        purge_redis_eph_pers_keys(
+                            self.redis, redis_hijack_key, monitor_event["hij_key"]
+                        )
+                        # mark in DB only if it is the first time this hijack was purged (pre-existsent in redis)
+                        if outdated_hijack:
+                            self.mark_outdated(
+                                monitor_event["hij_key"], redis_hijack_key
+                            )
+                    except Exception:
+                        log.exception("exception")
+                elif (
                     is_hijack
                     and "hij_key" in monitor_event
                     and monitor_event["initial_redis_hijack_key"]
                     != monitor_event["final_redis_hijack_key"]
                 ):
-                    redis_hijack_key = redis_key(
-                        monitor_event["prefix"],
-                        monitor_event["hijack_as"],
-                        monitor_event["hij_type"],
-                    )
-                    hijack = self.redis.get(redis_hijack_key)
-                    if hijack:
-                        hijack = yaml.safe_load(hijack)
-                        hijack["end_tag"] = "outdated"
-                    purge_redis_eph_pers_keys(
-                        self.redis, redis_hijack_key, monitor_event["hij_key"]
-                    )
-                    self.mark_outdated(monitor_event["hij_key"], redis_hijack_key)
-                    if hijack:
+                    try:
+                        outdated_hijack = self.redis.get(
+                            monitor_event["initial_redis_hijack_key"]
+                        )
+                        # outdated hijack, but still a hijack; need key change
+                        purge_redis_eph_pers_keys(
+                            self.redis,
+                            monitor_event["initial_redis_hijack_key"],
+                            monitor_event["hij_key"],
+                        )
+                        # mark in DB only if it is the first time this hijack was purged (pre-existsent in redis)
+                        if outdated_hijack:
+                            self.mark_outdated(
+                                monitor_event["hij_key"],
+                                monitor_event["initial_redis_hijack_key"],
+                            )
+                    except Exception:
+                        log.exception("exception")
+                elif not is_hijack:
+                    self.gen_implicit_withdrawal(monitor_event)
+                    self.mark_handled(raw)
+
+                if outdated_hijack:
+                    try:
+                        outdated_hijack = yaml.safe_load(outdated_hijack)
+                        outdated_hijack["end_tag"] = "outdated"
                         mail_log.info(
                             "{}".format(
                                 json.dumps(
-                                    hijack_log_field_formatter(hijack),
+                                    hijack_log_field_formatter(outdated_hijack),
                                     indent=4,
                                     cls=SetEncoder,
                                 )
                             ),
                             extra={
-                                "community_annotation": hijack.get(
+                                "community_annotation": outdated_hijack.get(
                                     "community_annotation", "NA"
                                 )
                             },
@@ -557,18 +589,18 @@ class Detection:
                         hij_log.info(
                             "{}".format(
                                 json.dumps(
-                                    hijack_log_field_formatter(hijack), cls=SetEncoder
+                                    hijack_log_field_formatter(outdated_hijack),
+                                    cls=SetEncoder,
                                 )
                             ),
                             extra={
-                                "community_annotation": hijack.get(
+                                "community_annotation": outdated_hijack.get(
                                     "community_annotation", "NA"
                                 )
                             },
                         )
-                elif not is_hijack:
-                    self.gen_implicit_withdrawal(monitor_event)
-                    self.mark_handled(raw)
+                    except Exception:
+                        log.exception("exception")
 
             elif monitor_event["type"] == "W":
                 self.producer.publish(
@@ -800,7 +832,6 @@ class Detection:
 
             if "hij_key" in monitor_event:
                 monitor_event["final_redis_hijack_key"] = redis_hijack_key
-                return
 
             hijack_value = {
                 "prefix": monitor_event["prefix"],
@@ -813,7 +844,15 @@ class Detection:
                 "configured_prefix": monitor_event["matched_prefix"],
                 "timestamp_of_config": self.timestamp,
                 "end_tag": None,
+                "outdated_parent": None,
             }
+
+            if (
+                "hij_key" in monitor_event
+                and monitor_event["initial_redis_hijack_key"]
+                != monitor_event["final_redis_hijack_key"]
+            ):
+                hijack_value["outdated_parent"] = monitor_event["hij_key"]
 
             # identify the number of infected ases
             hijack_value["asns_inf"] = set()
@@ -871,6 +910,7 @@ class Detection:
                     # no update since db already knows!
                     result["monitor_keys"] = hijack_value["monitor_keys"]
                     self.comm_annotate_hijack(monitor_event, result)
+                    result["outdated_parent"] = hijack_value["outdated_parent"]
                 else:
                     hijack_value["time_detected"] = time.time()
                     hijack_value["key"] = get_hash(

@@ -11,7 +11,7 @@ from webapp.utils import GRAPHQL_URI
 from webapp.utils import MON_SUPERVISOR_URI
 
 
-log = logging.getLogger("webapp_logger")
+log = logging.getLogger("artemis_logger")
 
 intervals = (
     ("W", 604800),  # 60 * 60 * 24 * 7

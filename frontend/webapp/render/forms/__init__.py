@@ -14,7 +14,7 @@ from wtforms import SubmitField
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
-log = logging.getLogger("webapp_logger")
+log = logging.getLogger("artemis_logger")
 
 
 class CheckboxMonitorForm(FlaskForm):

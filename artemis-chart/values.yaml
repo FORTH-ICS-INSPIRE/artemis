@@ -50,7 +50,10 @@ hijackLogFilter: '[{"community_annotation":"critical"},{"community_annotation":"
 # timeout (sec) since last seen BGP update for monitors
 monTimeoutLastBgpUpdate: 3600
 # fields to preserve in hijack logs
-hijackLogFields: '["prefix","hijack_as","type","time_started","time_last","peers_seen","configured_prefix","timestamp_of_config","asns_inf","time_detected","key","community_annotation","end_tag","hijack_url"]'
+hijackLogFields: '["prefix","hijack_as","type","time_started","time_last","peers_seen","configured_prefix","timestamp_of_config","asns_inf","time_detected","key","community_annotation","end_tag","outdated_parent","hijack_url"]'
+# percentage of monitor peers that have seen hijack updates, required to see corresponding withdrawals to declare a
+# hijack as withdrawn
+withdrawnHijackThreshold: 80
 
 # services
 svc:

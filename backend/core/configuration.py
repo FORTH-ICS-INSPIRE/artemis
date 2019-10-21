@@ -478,30 +478,108 @@ class Configuration:
 
                 # append rules
                 for rule in rules:
-                    rule_map = ruamel.yaml.comments.CommentedMap()
+                    # first, check existence of rule (by checking the affected prefixes)
+                    existing_rule_found = False
+                    for existing_rule in yaml_conf["rules"]:
+                        existing_rule_prefixes = set()
+                        for existing_prefix_seq in existing_rule["prefixes"]:
+                            for existing_prefix in existing_prefix_seq:
+                                existing_rule_prefixes.add(existing_prefix)
+                        if set(rule_prefix.keys()) == existing_rule_prefixes:
+                            # rule already exists, use it
+                            existing_rule_found = True
 
-                    # append prefix
-                    rule_map["prefixes"] = ruamel.yaml.comments.CommentedSeq()
-                    for prefix in rule["prefixes"]:
-                        rule_map["prefixes"].append(yaml_conf["prefixes"][prefix])
+                            # append origin asns
+                            for origin_asn_anchor in rule["origin_asns"]:
 
-                    # append origin asns
-                    rule_map["origin_asns"] = ruamel.yaml.comments.CommentedSeq()
-                    for origin_asn in rule["origin_asns"]:
-                        rule_map["origin_asns"].append(yaml_conf["asns"][origin_asn])
+                                # translate origin asn anchor into integer for quick retrieval
+                                origin_asn = None
+                                for asn in rule_asns:
+                                    if rule_asns[asn] == origin_asn_anchor:
+                                        origin_asn = asn
+                                        break
 
-                    # append neighbors
-                    rule_map["neighbors"] = ruamel.yaml.comments.CommentedSeq()
-                    if "neighbors" in rule and rule["neighbors"]:
-                        for neighbor in rule["neighbors"]:
-                            rule_map["neighbors"].append(yaml_conf["asns"][neighbor])
-                    else:
-                        del rule_map["neighbors"]
+                                existing_origin_asns = set()
+                                if "origin_asns" in existing_rule:
+                                    for existing_origin_asn_seq in existing_rule[
+                                        "origin_asns"
+                                    ]:
+                                        if existing_origin_asn_seq:
+                                            for (
+                                                existing_origin_asn
+                                            ) in existing_origin_asn_seq:
+                                                existing_origin_asns.add(
+                                                    existing_origin_asn
+                                                )
+                                if existing_origin_asns:
+                                    if origin_asn not in existing_origin_asns:
+                                        existing_rule["origin_asns"].append(
+                                            yaml_conf["asns"][origin_asn_anchor]
+                                        )
 
-                    # append mitigation action
-                    rule_map["mitigation"] = rule["mitigation"]
+                            # append neighbors
+                            if "neighbors" in rule and rule["neighbors"]:
+                                for neighbor_anchor in rule["neighbors"]:
 
-                    yaml_conf["rules"].append(rule_map)
+                                    # translate neighbor anchor into integer for quick retrieval
+                                    neighbor = None
+                                    for asn in rule_asns:
+                                        if rule_asns[asn] == neighbor_anchor:
+                                            neighbor = asn
+                                            break
+
+                                    existing_neighbors = set()
+                                    if "neighbors" in existing_rule:
+                                        for existing_neighbor_seq in existing_rule[
+                                            "neighbors"
+                                        ]:
+                                            if existing_neighbor_seq:
+                                                for (
+                                                    existing_neighbor
+                                                ) in existing_neighbor_seq:
+                                                    if neighbor != -1:
+                                                        existing_neighbors.add(
+                                                            existing_neighbor
+                                                        )
+                                                    else:
+                                                        continue
+                                    if existing_neighbors:
+                                        if neighbor not in existing_neighbors:
+                                            existing_rule["neighbors"].append(
+                                                yaml_conf["asns"][neighbor_anchor]
+                                            )
+                            break
+
+                    # if no existing rule, make a new one
+                    if not existing_rule_found:
+                        rule_map = ruamel.yaml.comments.CommentedMap()
+
+                        # append prefix
+                        rule_map["prefixes"] = ruamel.yaml.comments.CommentedSeq()
+                        for prefix in rule["prefixes"]:
+                            rule_map["prefixes"].append(yaml_conf["prefixes"][prefix])
+
+                        # append origin asns
+                        rule_map["origin_asns"] = ruamel.yaml.comments.CommentedSeq()
+                        for origin_asn_anchor in rule["origin_asns"]:
+                            rule_map["origin_asns"].append(
+                                yaml_conf["asns"][origin_asn_anchor]
+                            )
+
+                        # append neighbors
+                        rule_map["neighbors"] = ruamel.yaml.comments.CommentedSeq()
+                        if "neighbors" in rule and rule["neighbors"]:
+                            for neighbor_anchor in rule["neighbors"]:
+                                rule_map["neighbors"].append(
+                                    yaml_conf["asns"][neighbor_anchor]
+                                )
+                        else:
+                            del rule_map["neighbors"]
+
+                        # append mitigation action
+                        rule_map["mitigation"] = rule["mitigation"]
+
+                        yaml_conf["rules"].append(rule_map)
 
             except Exception:
                 log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
@@ -905,6 +983,16 @@ class Configuration:
                                 raise ArtemisError(
                                     "invalid-exabgp-autoconf-flag", entry["autoconf"]
                                 )
+                elif key == "bgpstreamhist":
+                    if "dir" in info and "autoconf" in info:
+                        if info["autoconf"] == "true":
+                            info["autoconf"] = True
+                        elif info["autoconf"] == "false":
+                            del info["autoconf"]
+                        else:
+                            raise ArtemisError(
+                                "invalid-bgpostreamhist-autoconf-flag", info["autoconf"]
+                            )
 
         @staticmethod
         def __check_asns(_asns):

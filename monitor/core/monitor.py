@@ -367,17 +367,19 @@ class Monitor:
                     )
                 )
                 bgpstreamhist_dir = self.monitors["bgpstreamhist"]
-                p = Popen(
-                    [
-                        "/usr/local/bin/python3",
-                        "taps/bgpstreamhist.py",
-                        "--prefixes",
-                        self.prefix_file,
-                        "--dir",
-                        bgpstreamhist_dir,
-                    ],
-                    shell=False,
-                )
+                if "dir" in self.monitors["bgpstreamhist"]:
+                    bgpstreamhist_dir = self.monitors["bgpstreamhist"]["dir"]
+                bgpstreamhist_cmd = [
+                    "/usr/local/bin/python3",
+                    "taps/bgpstreamhist.py",
+                    "--prefixes",
+                    self.prefix_file,
+                    "--dir",
+                    bgpstreamhist_dir,
+                ]
+                if "autoconf" in self.monitors["bgpstreamhist"]:
+                    bgpstreamhist_cmd.append("-a")
+                p = Popen(bgpstreamhist_cmd, shell=False)
                 self.process_ids.append(
                     (
                         "[bgpstreamhist] {} {}".format(

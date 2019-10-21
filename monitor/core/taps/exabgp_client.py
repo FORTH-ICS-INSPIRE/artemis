@@ -76,18 +76,19 @@ class ExaBGP:
                             for msg in msgs:
                                 key_generator(msg)
                                 log.debug(msg)
+                                if self.autoconf:
+                                    producer.publish(
+                                        msg,
+                                        exchange=self.autoconf_exchange,
+                                        routing_key="update",
+                                        serializer="json",
+                                        priority=4,
+                                    )
                                 producer.publish(
                                     msg,
                                     exchange=self.update_exchange,
                                     routing_key="update",
                                     serializer="json",
-                                )
-                                producer.publish(
-                                    msg,
-                                    exchange=self.autoconf_exchange,
-                                    routing_key="update",
-                                    serializer="json",
-                                    priority=4,
                                 )
                     else:
                         log.warning("Invalid format message: {}".format(msg))
@@ -101,7 +102,7 @@ class ExaBGP:
                 log.exception("exception")
 
     def exit(self):
-        print("Exiting ExaBGP")
+        log.info("Exiting ExaBGP")
         if self.sio is not None:
             self.sio.disconnect()
             self.sio.wait()
@@ -128,7 +129,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "-a",
         "--autoconf",
-        type=bool,
         dest="autoconf",
         action="store_true",
         help="Use the feed from this local route collector to build the configuration",
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ping_redis(redis)
 
-    print(
+    log.info(
         "Starting ExaBGP on {} for {} (auto-conf: {})".format(
             args.host, args.prefixes_file, args.autoconf
         )

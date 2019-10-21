@@ -19,16 +19,21 @@ from utils import RABBITMQ_URI
 log = get_logger()
 
 
-def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None):
+def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None, autoconf=False):
 
     prefixes = load_json(prefixes_file)
     assert prefixes is not None
 
     with Connection(RABBITMQ_URI) as connection:
-        exchange = Exchange(
+        update_exchange = Exchange(
             "bgp-update", channel=connection, type="direct", durable=False
         )
-        exchange.declare()
+        update_exchange.declare()
+        autoconf_exchange = Exchange(
+            "autoconf-local", channel=connection, type="direct", durable=False
+        )
+        update_exchange.declare()
+        autoconf_exchange.declare()
         producer = Producer(connection)
         validator = mformat_validator()
         for csv_file in glob.glob("{}/*.csv".format(input_dir)):
@@ -77,9 +82,17 @@ def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None):
                                             for msg in msgs:
                                                 key_generator(msg)
                                                 log.debug(msg)
+                                                if autoconf:
+                                                    producer.publish(
+                                                        msg,
+                                                        exchange=autoconf_exchange,
+                                                        routing_key="update",
+                                                        serializer="json",
+                                                        priority=4,
+                                                    )
                                                 producer.publish(
                                                     msg,
-                                                    exchange=exchange,
+                                                    exchange=update_exchange,
                                                     routing_key="update",
                                                     serializer="json",
                                                 )
@@ -114,12 +127,24 @@ if __name__ == "__main__":
         default=None,
         help="Directory with csvs to read",
     )
+    parser.add_argument(
+        "-a",
+        "--autoconf",
+        dest="autoconf",
+        action="store_true",
+        help="Use the feed from this historical route collector to build the configuration",
+    )
 
     args = parser.parse_args()
     dir_ = args.dir.rstrip("/")
+    log.info(
+        "Starting BGPstreamhist on {} for {} (auto-conf: {})".format(
+            dir_, args.prefixes_file, args.autoconf
+        )
+    )
 
     try:
-        parse_bgpstreamhist_csvs(args.prefixes_file, dir_)
+        parse_bgpstreamhist_csvs(args.prefixes_file, dir_, args.autoconf)
     except Exception:
         log.exception("exception")
     except KeyboardInterrupt:

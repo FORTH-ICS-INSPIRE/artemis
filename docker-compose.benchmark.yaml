@@ -47,6 +47,7 @@ services:
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             HISTORIC: ${HISTORIC}
+            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
         volumes:
             - ./benchmark/supervisor.d/:/etc/supervisor/conf.d/
             - ./benchmark/configs/:/etc/artemis/

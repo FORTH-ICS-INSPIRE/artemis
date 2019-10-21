@@ -10,6 +10,7 @@
 - ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
 
 ### Changed
+- Automatic config file formatting upon config modification
 - DB_AUTOCLEAN and dormant hijack thresholds set to 1 day (24h) by default
 
 ### Fixed

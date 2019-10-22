@@ -1050,10 +1050,10 @@ class Configuration:
                     raise ArtemisError("invalid-section", section)
 
             data["prefixes"] = {k: flatten(v) for k, v in data["prefixes"].items()}
-            data["asns"] = {k: flatten(v) for k, v in data["asns"].items()}
+            data["asns"] = {k: flatten(v) for k, v in data.get("asns", {}).items()}
 
             Configuration.Worker.__check_prefixes(data["prefixes"])
-            self.__check_rules(data["rules"])
+            self.__check_rules(data.get("rules", []))
             self.__check_monitors(data.get("monitors", {}))
             Configuration.Worker.__check_asns(data["asns"])
 

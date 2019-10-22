@@ -423,8 +423,114 @@ class Configuration:
 
             return (rule_prefix, rule_asns, rules)
 
+        def get_created_prefix_anchors_from_new_rule(self, yaml_conf, rule_prefix):
+            created_prefix_anchors = set()
+            for prefix in rule_prefix:
+                prefix_anchor = rule_prefix[prefix]
+                if "prefixes" not in yaml_conf:
+                    yaml_conf["prefixes"] = ruamel.yaml.comments.CommentedMap()
+                if prefix_anchor not in yaml_conf["prefixes"]:
+                    yaml_conf["prefixes"][
+                        prefix_anchor
+                    ] = ruamel.yaml.comments.CommentedSeq()
+                    yaml_conf["prefixes"][prefix_anchor].append(prefix)
+                    yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
+                        prefix_anchor, always_dump=True
+                    )
+                    created_prefix_anchors.add(prefix_anchor)
+            return created_prefix_anchors
+
+        def get_created_asn_anchors_from_new_rule(self, yaml_conf, rule_asns):
+            created_asn_anchors = set()
+            for asn in sorted(rule_asns):
+                asn_anchor = rule_asns[asn]
+                if "asns" not in yaml_conf:
+                    yaml_conf["asns"] = ruamel.yaml.comments.CommentedMap()
+                if asn_anchor not in yaml_conf["asns"]:
+                    yaml_conf["asns"][asn_anchor] = ruamel.yaml.comments.CommentedSeq()
+                    yaml_conf["asns"][asn_anchor].append(asn)
+                    yaml_conf["asns"][asn_anchor].yaml_set_anchor(
+                        asn_anchor, always_dump=True
+                    )
+                    created_asn_anchors.add(asn_anchor)
+            return created_asn_anchors
+
+        def get_existing_rule_flag_from_new_rule(
+            self, yaml_conf, rule_prefix, rule_asns, rule
+        ):
+
+            # calculate origin asns for the new rule (int format)
+            new_rule_origin_asns = set()
+            for origin_asn_anchor in rule["origin_asns"]:
+
+                # translate origin asn anchor into integer for quick retrieval
+                origin_asn = None
+                for asn in rule_asns:
+                    if rule_asns[asn] == origin_asn_anchor:
+                        origin_asn = asn
+                        break
+                if origin_asn:
+                    new_rule_origin_asns.add(origin_asn)
+
+            # calculate neighbors for the new rule (int format)
+            new_rule_neighbors = set()
+            if "neighbors" in rule and rule["neighbors"]:
+                for neighbor_anchor in rule["neighbors"]:
+
+                    # translate neighbor anchor into integer for quick retrieval
+                    neighbor = None
+                    for asn in rule_asns:
+                        if rule_asns[asn] == neighbor_anchor:
+                            neighbor = asn
+                            break
+                    if neighbor:
+                        new_rule_neighbors.add(neighbor)
+
+            # check existence of rule (by checking the affected prefixes, origin_asns, and neighbors)
+            existing_rule_found = False
+            if "rules" not in yaml_conf:
+                yaml_conf["rules"] = ruamel.yaml.comments.CommentedSeq()
+            for existing_rule in yaml_conf["rules"]:
+                existing_rule_prefixes = set()
+                for existing_prefix_seq in existing_rule["prefixes"]:
+                    for existing_prefix in existing_prefix_seq:
+                        existing_rule_prefixes.add(existing_prefix)
+                if set(rule_prefix.keys()) == existing_rule_prefixes:
+                    # same prefixes, proceed to origin asn checking
+
+                    # calculate the origin asns of the existing rule
+                    existing_origin_asns = set()
+                    if "origin_asns" in existing_rule:
+                        for existing_origin_asn_seq in existing_rule["origin_asns"]:
+                            if existing_origin_asn_seq:
+                                if isinstance(existing_origin_asn_seq, int):
+                                    existing_origin_asns.add(existing_origin_asn_seq)
+                                    continue
+                                for existing_origin_asn in existing_origin_asn_seq:
+                                    if existing_origin_asn != -1:
+                                        existing_origin_asns.add(existing_origin_asn)
+                    if new_rule_origin_asns == existing_origin_asns:
+                        # same prefixes, proceed to neighbor checking
+
+                        # calculate the neighbors of the existing rule
+                        existing_neighbors = set()
+                        if "neighbors" in existing_rule:
+                            for existing_neighbor_seq in existing_rule["neighbors"]:
+                                if existing_neighbor_seq:
+                                    if isinstance(existing_neighbor_seq, int):
+                                        existing_neighbors.add(existing_neighbor_seq)
+                                        continue
+                                    for existing_neighbor in existing_neighbor_seq:
+                                        if existing_neighbor != -1:
+                                            existing_neighbors.add(existing_neighbor)
+                        if new_rule_neighbors == existing_neighbors:
+                            # existing rule found, do nothing
+                            existing_rule_found = True
+                            break
+            return existing_rule_found
+
         def translate_learn_rule_dicts_to_yaml_conf(
-            self, rule_prefix, rule_asns, rules, ignore_existing=False
+            self, rule_prefix, rule_asns, rules
         ):
             """
             Translates the dicts from translate_learn_rule_msg_to_dicts
@@ -433,7 +539,6 @@ class Configuration:
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
             :param rules: <list><dict>
-            :param ignore_existing: <bool>
             :return: (<dict>, <bool>)
             """
             if not rule_prefix or not rule_asns or not rules:
@@ -448,130 +553,21 @@ class Configuration:
                 yaml_conf = ruamel.yaml.load(
                     raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
                 )
-                # append prefix
-                created_prefix_anchors = set()
-                for prefix in rule_prefix:
-                    prefix_anchor = rule_prefix[prefix]
-                    if "prefixes" not in yaml_conf:
-                        yaml_conf["prefixes"] = ruamel.yaml.comments.CommentedMap()
-                    if prefix_anchor not in yaml_conf["prefixes"]:
-                        yaml_conf["prefixes"][
-                            prefix_anchor
-                        ] = ruamel.yaml.comments.CommentedSeq()
-                        yaml_conf["prefixes"][prefix_anchor].append(prefix)
-                        yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
-                            prefix_anchor, always_dump=True
-                        )
-                        created_prefix_anchors.add(prefix_anchor)
-                    elif not ignore_existing:
-                        return ("rule already exists", False)
+                # create prefix anchors
+                created_prefix_anchors = self.get_created_prefix_anchors_from_new_rule(
+                    yaml_conf, rule_prefix
+                )
 
-                # append asns
-                created_asn_anchors = set()
-                for asn in sorted(rule_asns):
-                    asn_anchor = rule_asns[asn]
-                    if "asns" not in yaml_conf:
-                        yaml_conf["asns"] = ruamel.yaml.comments.CommentedMap()
-                    if asn_anchor not in yaml_conf["asns"]:
-                        yaml_conf["asns"][
-                            asn_anchor
-                        ] = ruamel.yaml.comments.CommentedSeq()
-                        yaml_conf["asns"][asn_anchor].append(asn)
-                        yaml_conf["asns"][asn_anchor].yaml_set_anchor(
-                            asn_anchor, always_dump=True
-                        )
-                        created_asn_anchors.add(asn_anchor)
-                    elif not ignore_existing:
-                        return ("rule already exists", False)
+                # create asn anchors
+                created_asn_anchors = self.get_created_asn_anchors_from_new_rule(
+                    yaml_conf, rule_asns
+                )
 
                 # append rules
                 for rule in rules:
-
-                    # calculate origin asns for the new rule (int format)
-                    new_rule_origin_asns = set()
-                    for origin_asn_anchor in rule["origin_asns"]:
-
-                        # translate origin asn anchor into integer for quick retrieval
-                        origin_asn = None
-                        for asn in rule_asns:
-                            if rule_asns[asn] == origin_asn_anchor:
-                                origin_asn = asn
-                                break
-                        if origin_asn:
-                            new_rule_origin_asns.add(origin_asn)
-
-                    # calculate neighbors for the new rule (int format)
-                    new_rule_neighbors = set()
-                    if "neighbors" in rule and rule["neighbors"]:
-                        for neighbor_anchor in rule["neighbors"]:
-
-                            # translate neighbor anchor into integer for quick retrieval
-                            neighbor = None
-                            for asn in rule_asns:
-                                if rule_asns[asn] == neighbor_anchor:
-                                    neighbor = asn
-                                    break
-                            if neighbor:
-                                new_rule_neighbors.add(neighbor)
-
-                    # check existence of rule (by checking the affected prefixes, origin_asns, and neighbors)
-                    existing_rule_found = False
-                    if "rules" not in yaml_conf:
-                        yaml_conf["rules"] = ruamel.yaml.comments.CommentedSeq()
-                    for existing_rule in yaml_conf["rules"]:
-                        existing_rule_prefixes = set()
-                        for existing_prefix_seq in existing_rule["prefixes"]:
-                            for existing_prefix in existing_prefix_seq:
-                                existing_rule_prefixes.add(existing_prefix)
-                        if set(rule_prefix.keys()) == existing_rule_prefixes:
-                            # same prefixes, proceed to origin asn checking
-
-                            # calculate the origin asns of the existing rule
-                            existing_origin_asns = set()
-                            if "origin_asns" in existing_rule:
-                                for existing_origin_asn_seq in existing_rule[
-                                    "origin_asns"
-                                ]:
-                                    if existing_origin_asn_seq:
-                                        if isinstance(existing_origin_asn_seq, int):
-                                            existing_origin_asns.add(
-                                                existing_origin_asn_seq
-                                            )
-                                            continue
-                                        for (
-                                            existing_origin_asn
-                                        ) in existing_origin_asn_seq:
-                                            if existing_origin_asn != -1:
-                                                existing_origin_asns.add(
-                                                    existing_origin_asn
-                                                )
-                            if new_rule_origin_asns == existing_origin_asns:
-                                # same prefixes, proceed to neighbor checking
-
-                                # calculate the neighbors of the existing rule
-                                existing_neighbors = set()
-                                if "neighbors" in existing_rule:
-                                    for existing_neighbor_seq in existing_rule[
-                                        "neighbors"
-                                    ]:
-                                        if existing_neighbor_seq:
-                                            if isinstance(existing_neighbor_seq, int):
-                                                existing_neighbors.add(
-                                                    existing_neighbor_seq
-                                                )
-                                                continue
-                                            for (
-                                                existing_neighbor
-                                            ) in existing_neighbor_seq:
-                                                if existing_neighbor != -1:
-                                                    existing_neighbors.add(
-                                                        existing_neighbor
-                                                    )
-                                if new_rule_neighbors == existing_neighbors:
-                                    # existing rule found, do nothing
-                                    existing_rule_found = True
-                                    break
-
+                    existing_rule_found = self.get_existing_rule_flag_from_new_rule(
+                        yaml_conf, rule_prefix, rule_asns, rule
+                    )
                     # if no existing rule, make a new one
                     if not existing_rule_found:
                         rule_map = ruamel.yaml.comments.CommentedMap()
@@ -814,7 +810,7 @@ class Configuration:
                 bgp_update
             )
             (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                rule_prefix, rule_asns, rules, ignore_existing=True
+                rule_prefix, rule_asns, rules
             )
             if ok:
                 # store the new configuration to file

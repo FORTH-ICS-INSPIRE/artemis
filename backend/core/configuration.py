@@ -751,9 +751,16 @@ class Configuration:
                     if as_path:
                         origin_asn = as_path[-1]
                         asns.add(origin_asn)
-                        if len(as_path) > 1:
-                            neighbor = as_path[-2]
-                            asns.add(neighbor)
+                    neighbors = set()
+                    if "communities" in bgp_update:
+                        for community in bgp_update["communities"]:
+                            asn = int(community["asn"])
+                            value = int(community["value"])
+                            if asn == origin_asn:
+                                neighbors.add(value)
+                    for neighbor in neighbors:
+                        asns.add(neighbor)
+
                     rule_asns = {}
                     for asn in sorted(list(asns)):
                         rule_asns[asn] = "AUTOCONF_AS_{}".format(asn)
@@ -764,8 +771,10 @@ class Configuration:
                         "origin_asns": [rule_asns[origin_asn]],
                         "mitigation": "manual",
                     }
-                    if neighbor:
-                        learned_rule["neighbors"] = [rule_asns[neighbor]]
+                    if neighbors:
+                        learned_rule["neighbors"] = []
+                        for neighbor in neighbors:
+                            learned_rule["neighbors"].append(rule_asns[neighbor])
                     rules.append(learned_rule)
                 else:
                     # TODO: handle withdrawals --> rule removals! (last step, make sure that announcements work fine first)

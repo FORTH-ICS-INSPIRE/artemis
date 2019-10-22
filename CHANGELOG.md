@@ -7,6 +7,8 @@
   - Artemis::BGP Updates per prefix
   - Artemis::BGP Updates per service
   - Artemis::Offending ASes
+- Get prefix, origin and neighbor info (communities) from exaBGP or hist 'A' updates
+- autoconf flag in configuration for exaBGP and hist monitors
 
 ### Changed
 - TBD (Changed existing functionality)

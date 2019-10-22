@@ -449,6 +449,7 @@ class Configuration:
                     raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
                 )
                 # append prefix
+                created_prefix_anchors = set()
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
                     if prefix_anchor not in yaml_conf["prefixes"]:
@@ -459,10 +460,12 @@ class Configuration:
                         yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
                             prefix_anchor, always_dump=True
                         )
+                        created_prefix_anchors.add(prefix_anchor)
                     elif not ignore_existing:
                         return ("rule already exists", False)
 
                 # append asns
+                created_asn_anchors = set()
                 for asn in sorted(rule_asns):
                     asn_anchor = rule_asns[asn]
                     if asn_anchor not in yaml_conf["asns"]:
@@ -473,12 +476,41 @@ class Configuration:
                         yaml_conf["asns"][asn_anchor].yaml_set_anchor(
                             asn_anchor, always_dump=True
                         )
+                        created_asn_anchors.add(asn_anchor)
                     elif not ignore_existing:
                         return ("rule already exists", False)
 
                 # append rules
                 for rule in rules:
-                    # first, check existence of rule (by checking the affected prefixes)
+
+                    # calculate origin asns for the new rule (int format)
+                    new_rule_origin_asns = set()
+                    for origin_asn_anchor in rule["origin_asns"]:
+
+                        # translate origin asn anchor into integer for quick retrieval
+                        origin_asn = None
+                        for asn in rule_asns:
+                            if rule_asns[asn] == origin_asn_anchor:
+                                origin_asn = asn
+                                break
+                        if origin_asn:
+                            new_rule_origin_asns.add(origin_asn)
+
+                    # calculate neighbors for the new rule (int format)
+                    new_rule_neighbors = set()
+                    if "neighbors" in rule and rule["neighbors"]:
+                        for neighbor_anchor in rule["neighbors"]:
+
+                            # translate neighbor anchor into integer for quick retrieval
+                            neighbor = None
+                            for asn in rule_asns:
+                                if rule_asns[asn] == neighbor_anchor:
+                                    neighbor = asn
+                                    break
+                            if neighbor:
+                                new_rule_neighbors.add(neighbor)
+
+                    # check existence of rule (by checking the affected prefixes, origin_asns, and neighbors)
                     existing_rule_found = False
                     for existing_rule in yaml_conf["rules"]:
                         existing_rule_prefixes = set()
@@ -486,69 +518,53 @@ class Configuration:
                             for existing_prefix in existing_prefix_seq:
                                 existing_rule_prefixes.add(existing_prefix)
                         if set(rule_prefix.keys()) == existing_rule_prefixes:
-                            # rule already exists, use it
-                            existing_rule_found = True
+                            # same prefixes, proceed to origin asn checking
 
-                            # append origin asns
-                            for origin_asn_anchor in rule["origin_asns"]:
-
-                                # translate origin asn anchor into integer for quick retrieval
-                                origin_asn = None
-                                for asn in rule_asns:
-                                    if rule_asns[asn] == origin_asn_anchor:
-                                        origin_asn = asn
-                                        break
-
-                                existing_origin_asns = set()
-                                if "origin_asns" in existing_rule:
-                                    for existing_origin_asn_seq in existing_rule[
-                                        "origin_asns"
-                                    ]:
-                                        if existing_origin_asn_seq:
-                                            for (
-                                                existing_origin_asn
-                                            ) in existing_origin_asn_seq:
+                            # calculate the origin asns of the existing rule
+                            existing_origin_asns = set()
+                            if "origin_asns" in existing_rule:
+                                for existing_origin_asn_seq in existing_rule[
+                                    "origin_asns"
+                                ]:
+                                    if existing_origin_asn_seq:
+                                        if isinstance(existing_origin_asn_seq, int):
+                                            existing_origin_asns.add(
+                                                existing_origin_asn_seq
+                                            )
+                                            continue
+                                        for (
+                                            existing_origin_asn
+                                        ) in existing_origin_asn_seq:
+                                            if existing_origin_asn != -1:
                                                 existing_origin_asns.add(
                                                     existing_origin_asn
                                                 )
-                                if existing_origin_asns:
-                                    if origin_asn not in existing_origin_asns:
-                                        existing_rule["origin_asns"].append(
-                                            yaml_conf["asns"][origin_asn_anchor]
-                                        )
+                            if new_rule_origin_asns == existing_origin_asns:
+                                # same prefixes, proceed to neighbor checking
 
-                            # append neighbors
-                            if "neighbors" in rule and rule["neighbors"]:
-                                for neighbor_anchor in rule["neighbors"]:
-
-                                    # translate neighbor anchor into integer for quick retrieval
-                                    neighbor = None
-                                    for asn in rule_asns:
-                                        if rule_asns[asn] == neighbor_anchor:
-                                            neighbor = asn
-                                            break
-
-                                    existing_neighbors = set()
-                                    if "neighbors" in existing_rule:
-                                        for existing_neighbor_seq in existing_rule[
-                                            "neighbors"
-                                        ]:
-                                            if existing_neighbor_seq:
-                                                for (
-                                                    existing_neighbor
-                                                ) in existing_neighbor_seq:
-                                                    if neighbor != -1:
-                                                        existing_neighbors.add(
-                                                            existing_neighbor
-                                                        )
-                                                    else:
-                                                        continue
-                                    if existing_neighbors:
-                                        if neighbor not in existing_neighbors:
-                                            existing_rule["neighbors"].append(
-                                                yaml_conf["asns"][neighbor_anchor]
-                                            )
-                            break
+                                # calculate the neighbors of the existing rule
+                                existing_neighbors = set()
+                                if "neighbors" in existing_rule:
+                                    for existing_neighbor_seq in existing_rule[
+                                        "neighbors"
+                                    ]:
+                                        if existing_neighbor_seq:
+                                            if isinstance(existing_neighbor_seq, int):
+                                                existing_neighbors.add(
+                                                    existing_neighbor_seq
+                                                )
+                                                continue
+                                            for (
+                                                existing_neighbor
+                                            ) in existing_neighbor_seq:
+                                                if existing_neighbor != -1:
+                                                    existing_neighbors.add(
+                                                        existing_neighbor
+                                                    )
+                                if new_rule_neighbors == existing_neighbors:
+                                    # existing rule found, do nothing
+                                    existing_rule_found = True
+                                    break
 
                     # if no existing rule, make a new one
                     if not existing_rule_found:
@@ -580,6 +596,12 @@ class Configuration:
                         rule_map["mitigation"] = rule["mitigation"]
 
                         yaml_conf["rules"].append(rule_map)
+                    # else delete any created anchors (not needed)
+                    else:
+                        for prefix_anchor in created_prefix_anchors:
+                            del yaml_conf["prefixes"][prefix_anchor]
+                        for asn_anchor in created_asn_anchors:
+                            del yaml_conf["asns"][asn_anchor]
 
             except Exception:
                 log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))

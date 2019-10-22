@@ -785,7 +785,11 @@ class Configuration:
             :return:
             """
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+
             bgp_update = message.payload
+            # if you have seen the exact same update before, do nothing
+            if self.redis.get(bgp_update["key"]):
+                return
             (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
                 bgp_update
             )

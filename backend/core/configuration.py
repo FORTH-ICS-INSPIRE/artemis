@@ -135,14 +135,6 @@ class Configuration:
                 delivery_mode=1,
             )
             self.config_exchange.declare()
-            self.autoconf_exchange = Exchange(
-                "autoconf-local",
-                type="direct",
-                channel=connection,
-                durable=False,
-                delivery_mode=1,
-            )
-            self.autoconf_exchange.declare()
 
             # QUEUES
             self.config_modify_queue = Queue(
@@ -171,10 +163,7 @@ class Configuration:
             )
             self.autoconf_update_queue = Queue(
                 "conf-autoconf-update-queue",
-                exchange=self.autoconf_exchange,
-                routing_key="update",
                 durable=False,
-                auto_delete=True,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
@@ -802,20 +791,45 @@ class Configuration:
             """
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
 
-            bgp_update = message.payload
-            # if you have seen the exact same update before, do nothing
-            if self.redis.get(bgp_update["key"]):
-                return
-            (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
-                bgp_update
-            )
-            (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                rule_prefix, rule_asns, rules
-            )
-            if ok:
-                # store the new configuration to file
-                with open(self.file, "w") as f:
-                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+            try:
+                bgp_update = message.payload
+                # if you have seen the exact same update before, do nothing
+                if self.redis.get(bgp_update["key"]):
+                    self.producer.publish(
+                        "",
+                        exchange="",
+                        routing_key=message.properties["reply_to"],
+                        correlation_id=message.properties["correlation_id"],
+                        serializer="json",
+                        retry=True,
+                        priority=4,
+                    )
+                    return
+
+                (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
+                    bgp_update
+                )
+                (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
+                    rule_prefix, rule_asns, rules
+                )
+                if ok:
+                    # store the new configuration to file
+                    with open(self.file, "w") as f:
+                        ruamel.yaml.dump(
+                            yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
+                        )
+            except Exception:
+                log.exception("exception")
+            finally:
+                self.producer.publish(
+                    "",
+                    exchange="",
+                    routing_key=message.properties["reply_to"],
+                    correlation_id=message.properties["correlation_id"],
+                    serializer="json",
+                    retry=True,
+                    priority=4,
+                )
 
         def handle_load_as_sets(self, message):
             """

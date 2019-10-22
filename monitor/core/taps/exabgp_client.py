@@ -81,6 +81,7 @@ class ExaBGP:
                                 key_generator(msg)
                                 log.debug(msg)
                                 if self.autoconf:
+                                    # TODO: turn to RPC call
                                     producer.publish(
                                         msg,
                                         exchange=self.autoconf_exchange,

@@ -5,8 +5,11 @@ import json
 import time
 
 from kombu import Connection
+from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
+from kombu import Queue
+from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from utils import get_logger
@@ -17,6 +20,13 @@ from utils import normalize_msg_path
 from utils import RABBITMQ_URI
 
 log = get_logger()
+
+autoconf_goahead = False
+
+
+def handle_autoconf_update_goahead_reply(message):
+    global autoconf_goahead
+    autoconf_goahead = True
 
 
 def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None, autoconf=False):
@@ -33,11 +43,6 @@ def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None, autoconf=False)
             "bgp-update", channel=connection, type="direct", durable=False
         )
         update_exchange.declare()
-        autoconf_exchange = Exchange(
-            "autoconf-local", channel=connection, type="direct", durable=False
-        )
-        update_exchange.declare()
-        autoconf_exchange.declare()
         producer = Producer(connection)
         validator = mformat_validator()
         for csv_file in glob.glob("{}/*.csv".format(input_dir)):
@@ -87,13 +92,47 @@ def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None, autoconf=False)
                                                 key_generator(msg)
                                                 log.debug(msg)
                                                 if autoconf:
+                                                    global autoconf_goahead
+                                                    autoconf_goahead = False
+                                                    correlation_id = uuid()
+                                                    callback_queue = Queue(
+                                                        uuid(),
+                                                        durable=False,
+                                                        auto_delete=True,
+                                                        max_priority=4,
+                                                        consumer_arguments={
+                                                            "x-priority": 4
+                                                        },
+                                                    )
                                                     producer.publish(
                                                         msg,
-                                                        exchange=autoconf_exchange,
-                                                        routing_key="update",
-                                                        serializer="json",
+                                                        exchange="",
+                                                        routing_key="conf-autoconf-update-queue",
+                                                        reply_to=callback_queue.name,
+                                                        correlation_id=correlation_id,
+                                                        retry=True,
+                                                        declare=[
+                                                            Queue(
+                                                                "conf-autoconf-update-queue",
+                                                                durable=False,
+                                                                max_priority=4,
+                                                                consumer_arguments={
+                                                                    "x-priority": 4
+                                                                },
+                                                            ),
+                                                            callback_queue,
+                                                        ],
                                                         priority=4,
+                                                        serializer="json",
                                                     )
+                                                    with Consumer(
+                                                        connection,
+                                                        on_message=handle_autoconf_update_goahead_reply,
+                                                        queues=[callback_queue],
+                                                        no_ack=True,
+                                                    ):
+                                                        while not autoconf_goahead:
+                                                            connection.drain_events()
                                                 producer.publish(
                                                     msg,
                                                     exchange=update_exchange,

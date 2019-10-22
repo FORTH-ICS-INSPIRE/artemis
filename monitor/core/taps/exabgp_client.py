@@ -46,6 +46,10 @@ class ExaBGP:
             self.update_exchange.declare()
             self.autoconf_exchange.declare()
             validator = mformat_validator()
+            # add /0 if autoconf
+            if self.autoconf:
+                self.prefixes.append("0.0.0.0/0")
+                self.prefixes.append("::/0")
 
             try:
                 self.sio = SocketIO("http://" + self.host, namespace=BaseNamespace)

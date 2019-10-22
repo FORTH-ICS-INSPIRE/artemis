@@ -142,7 +142,7 @@ class Mitigation:
                 queues=[callback_queue],
                 no_ack=True,
             ):
-                while not self.rules:
+                while self.rules is None:
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):

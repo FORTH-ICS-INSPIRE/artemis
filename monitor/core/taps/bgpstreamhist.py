@@ -23,6 +23,10 @@ def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None, autoconf=False)
 
     prefixes = load_json(prefixes_file)
     assert prefixes is not None
+    # add /0 if autoconf
+    if autoconf:
+        prefixes.append("0.0.0.0/0")
+        prefixes.append("::/0")
 
     with Connection(RABBITMQ_URI) as connection:
         update_exchange = Exchange(

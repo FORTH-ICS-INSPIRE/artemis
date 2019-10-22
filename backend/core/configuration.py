@@ -452,6 +452,8 @@ class Configuration:
                 created_prefix_anchors = set()
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
+                    if "prefixes" not in yaml_conf:
+                        yaml_conf["prefixes"] = ruamel.yaml.comments.CommentedMap()
                     if prefix_anchor not in yaml_conf["prefixes"]:
                         yaml_conf["prefixes"][
                             prefix_anchor
@@ -468,6 +470,8 @@ class Configuration:
                 created_asn_anchors = set()
                 for asn in sorted(rule_asns):
                     asn_anchor = rule_asns[asn]
+                    if "asns" not in yaml_conf:
+                        yaml_conf["asns"] = ruamel.yaml.comments.CommentedMap()
                     if asn_anchor not in yaml_conf["asns"]:
                         yaml_conf["asns"][
                             asn_anchor
@@ -512,6 +516,8 @@ class Configuration:
 
                     # check existence of rule (by checking the affected prefixes, origin_asns, and neighbors)
                     existing_rule_found = False
+                    if "rules" not in yaml_conf:
+                        yaml_conf["rules"] = ruamel.yaml.comments.CommentedSeq()
                     for existing_rule in yaml_conf["rules"]:
                         existing_rule_prefixes = set()
                         for existing_prefix_seq in existing_rule["prefixes"]:
@@ -745,6 +751,11 @@ class Configuration:
 
                     # learned rule asns
                     as_path = Configuration.Worker.__clean_as_path(bgp_update["path"])
+                    if len(as_path) > 2:
+                        # ignore, since this is not a self-network origination, but sth transit
+                        # not that for example a 2-hop path may be because the local monitor ASN
+                        # is added (but beyond that, nothing should be processed)
+                        return (None, None, None)
                     origin_asn = None
                     neighbor = None
                     asns = set()
@@ -1049,12 +1060,16 @@ class Configuration:
                 if section not in self.sections:
                     raise ArtemisError("invalid-section", section)
 
-            data["prefixes"] = {k: flatten(v) for k, v in data["prefixes"].items()}
+            data["prefixes"] = {
+                k: flatten(v) for k, v in data.get("prefixes", {}).items()
+            }
             data["asns"] = {k: flatten(v) for k, v in data.get("asns", {}).items()}
+            data["monitors"] = data.get("monitors", {})
+            data["rules"] = data.get("rules", [])
 
             Configuration.Worker.__check_prefixes(data["prefixes"])
-            self.__check_rules(data.get("rules", []))
-            self.__check_monitors(data.get("monitors", {}))
+            self.__check_rules(data["rules"])
+            self.__check_monitors(data["monitors"])
             Configuration.Worker.__check_asns(data["asns"])
 
             return data

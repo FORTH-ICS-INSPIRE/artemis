@@ -21,135 +21,139 @@ from utils import RABBITMQ_URI
 
 log = get_logger()
 
-autoconf_goahead = False
 
+class BGPStreamHist:
+    def __init__(self, prefixes_file=None, input_dir=None, autoconf=False):
+        self.prefixes = load_json(prefixes_file)
+        assert self.prefixes is not None
+        self.input_dir = input_dir
+        self.autoconf = autoconf
+        self.autoconf_goahead = False
 
-def handle_autoconf_update_goahead_reply(message):
-    global autoconf_goahead
-    autoconf_goahead = True
+    def handle_autoconf_update_goahead_reply(self, message):
+        self.autoconf_goahead = True
 
+    def parse_bgpstreamhist_csvs(self):
+        # add /0 if autoconf
+        if self.autoconf:
+            self.prefixes.append("0.0.0.0/0")
+            self.prefixes.append("::/0")
 
-def parse_bgpstreamhist_csvs(prefixes_file=None, input_dir=None, autoconf=False):
-
-    prefixes = load_json(prefixes_file)
-    assert prefixes is not None
-    # add /0 if autoconf
-    if autoconf:
-        prefixes.append("0.0.0.0/0")
-        prefixes.append("::/0")
-
-    with Connection(RABBITMQ_URI) as connection:
-        update_exchange = Exchange(
-            "bgp-update", channel=connection, type="direct", durable=False
-        )
-        update_exchange.declare()
-        producer = Producer(connection)
-        validator = mformat_validator()
-        for csv_file in glob.glob("{}/*.csv".format(input_dir)):
-            try:
-                with open(csv_file, "r") as f:
-                    csv_reader = csv.reader(f, delimiter="|")
-                    for row in csv_reader:
-                        try:
-                            if len(row) != 9:
-                                continue
-                            if row[0].startswith("#"):
-                                continue
-                            # example row: 139.91.0.0/16|8522|1403|1403 6461 2603 21320
-                            # 5408
-                            # 8522|routeviews|route-views2|A|"[{""asn"":1403,""value"":6461}]"|1517446677
-                            this_prefix = row[0]
-                            if row[6] == "A":
-                                as_path = row[3].split(" ")
-                                communities = json.loads(row[7])
-                            else:
-                                as_path = []
-                                communities = []
-                            service = "historical|{}|{}".format(row[4], row[5])
-                            type_ = row[6]
-                            timestamp = float(row[8])
-                            peer_asn = int(row[2])
-                            for prefix in prefixes:
-                                try:
-                                    base_ip, mask_length = this_prefix.split("/")
-                                    our_prefix = IPNetwork(prefix)
-                                    if (
-                                        IPAddress(base_ip) in our_prefix
-                                        and int(mask_length) >= our_prefix.prefixlen
-                                    ):
-                                        msg = {
-                                            "type": type_,
-                                            "timestamp": timestamp,
-                                            "path": as_path,
-                                            "service": service,
-                                            "communities": communities,
-                                            "prefix": this_prefix,
-                                            "peer_asn": peer_asn,
-                                        }
-                                        if validator.validate(msg):
-                                            msgs = normalize_msg_path(msg)
-                                            for msg in msgs:
-                                                key_generator(msg)
-                                                log.debug(msg)
-                                                if autoconf:
-                                                    global autoconf_goahead
-                                                    autoconf_goahead = False
-                                                    correlation_id = uuid()
-                                                    callback_queue = Queue(
-                                                        uuid(),
-                                                        durable=False,
-                                                        auto_delete=True,
-                                                        max_priority=4,
-                                                        consumer_arguments={
-                                                            "x-priority": 4
-                                                        },
-                                                    )
+        with Connection(RABBITMQ_URI) as connection:
+            self.update_exchange = Exchange(
+                "bgp-update", channel=connection, type="direct", durable=False
+            )
+            self.update_exchange.declare()
+            producer = Producer(connection)
+            validator = mformat_validator()
+            for csv_file in glob.glob("{}/*.csv".format(self.input_dir)):
+                try:
+                    with open(csv_file, "r") as f:
+                        csv_reader = csv.reader(f, delimiter="|")
+                        for row in csv_reader:
+                            try:
+                                if len(row) != 9:
+                                    continue
+                                if row[0].startswith("#"):
+                                    continue
+                                # example row: 139.91.0.0/16|8522|1403|1403 6461 2603 21320
+                                # 5408
+                                # 8522|routeviews|route-views2|A|"[{""asn"":1403,""value"":6461}]"|1517446677
+                                this_prefix = row[0]
+                                if row[6] == "A":
+                                    as_path = row[3].split(" ")
+                                    communities = json.loads(row[7])
+                                else:
+                                    as_path = []
+                                    communities = []
+                                service = "historical|{}|{}".format(row[4], row[5])
+                                type_ = row[6]
+                                timestamp = float(row[8])
+                                peer_asn = int(row[2])
+                                for prefix in self.prefixes:
+                                    try:
+                                        base_ip, mask_length = this_prefix.split("/")
+                                        our_prefix = IPNetwork(prefix)
+                                        if (
+                                            IPAddress(base_ip) in our_prefix
+                                            and int(mask_length) >= our_prefix.prefixlen
+                                        ):
+                                            msg = {
+                                                "type": type_,
+                                                "timestamp": timestamp,
+                                                "path": as_path,
+                                                "service": service,
+                                                "communities": communities,
+                                                "prefix": this_prefix,
+                                                "peer_asn": peer_asn,
+                                            }
+                                            if validator.validate(msg):
+                                                msgs = normalize_msg_path(msg)
+                                                for msg in msgs:
+                                                    key_generator(msg)
+                                                    log.debug(msg)
+                                                    if self.autoconf:
+                                                        self.autoconf_goahead = False
+                                                        correlation_id = uuid()
+                                                        callback_queue = Queue(
+                                                            uuid(),
+                                                            durable=False,
+                                                            auto_delete=True,
+                                                            max_priority=4,
+                                                            consumer_arguments={
+                                                                "x-priority": 4
+                                                            },
+                                                        )
+                                                        producer.publish(
+                                                            msg,
+                                                            exchange="",
+                                                            routing_key="conf-autoconf-update-queue",
+                                                            reply_to=callback_queue.name,
+                                                            correlation_id=correlation_id,
+                                                            retry=True,
+                                                            declare=[
+                                                                Queue(
+                                                                    "conf-autoconf-update-queue",
+                                                                    durable=False,
+                                                                    max_priority=4,
+                                                                    consumer_arguments={
+                                                                        "x-priority": 4
+                                                                    },
+                                                                ),
+                                                                callback_queue,
+                                                            ],
+                                                            priority=4,
+                                                            serializer="json",
+                                                        )
+                                                        with Consumer(
+                                                            connection,
+                                                            on_message=self.handle_autoconf_update_goahead_reply,
+                                                            queues=[callback_queue],
+                                                            no_ack=True,
+                                                        ):
+                                                            while (
+                                                                not self.autoconf_goahead
+                                                            ):
+                                                                connection.drain_events()
                                                     producer.publish(
                                                         msg,
-                                                        exchange="",
-                                                        routing_key="conf-autoconf-update-queue",
-                                                        reply_to=callback_queue.name,
-                                                        correlation_id=correlation_id,
-                                                        retry=True,
-                                                        declare=[
-                                                            Queue(
-                                                                "conf-autoconf-update-queue",
-                                                                durable=False,
-                                                                max_priority=4,
-                                                                consumer_arguments={
-                                                                    "x-priority": 4
-                                                                },
-                                                            ),
-                                                            callback_queue,
-                                                        ],
-                                                        priority=4,
+                                                        exchange=self.update_exchange,
+                                                        routing_key="update",
                                                         serializer="json",
                                                     )
-                                                    with Consumer(
-                                                        connection,
-                                                        on_message=handle_autoconf_update_goahead_reply,
-                                                        queues=[callback_queue],
-                                                        no_ack=True,
-                                                    ):
-                                                        while not autoconf_goahead:
-                                                            connection.drain_events()
-                                                producer.publish(
-                                                    msg,
-                                                    exchange=update_exchange,
-                                                    routing_key="update",
-                                                    serializer="json",
+                                                    time.sleep(0.1)
+                                            else:
+                                                log.warning(
+                                                    "Invalid format message: {}".format(
+                                                        msg
+                                                    )
                                                 )
-                                                time.sleep(0.1)
-                                        else:
-                                            log.warning(
-                                                "Invalid format message: {}".format(msg)
-                                            )
-                                except Exception:
-                                    log.exception("prefix")
-                        except Exception:
-                            log.exception("row")
-            except Exception:
-                log.exception("exception")
+                                    except Exception:
+                                        log.exception("prefix")
+                            except Exception:
+                                log.exception("row")
+                except Exception:
+                    log.exception("exception")
 
 
 if __name__ == "__main__":
@@ -187,7 +191,8 @@ if __name__ == "__main__":
     )
 
     try:
-        parse_bgpstreamhist_csvs(args.prefixes_file, dir_, args.autoconf)
+        bgpstreamhist_instance = BGPStreamHist(args.prefixes_file, dir_, args.autoconf)
+        bgpstreamhist_instance.parse_bgpstreamhist_csvs()
     except Exception:
         log.exception("exception")
     except KeyboardInterrupt:

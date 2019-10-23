@@ -4,8 +4,11 @@ import signal
 
 import redis
 from kombu import Connection
+from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
+from kombu import Queue
+from kombu import uuid
 from socketIO_client import BaseNamespace
 from socketIO_client import SocketIO
 from utils import get_logger
@@ -27,12 +30,16 @@ class ExaBGP:
     def __init__(self, prefixes_file, host, autoconf=False):
         self.host = host
         self.prefixes = load_json(prefixes_file)
-        self.autoconf = autoconf
         assert self.prefixes is not None
+        self.autoconf = autoconf
+        self.autoconf_goahead = False
         self.sio = None
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def handle_autoconf_update_goahead_reply(self, message):
+        self.autoconf_goahead = True
 
     def start(self):
         with Connection(RABBITMQ_URI) as connection:
@@ -40,11 +47,7 @@ class ExaBGP:
             self.update_exchange = Exchange(
                 "bgp-update", channel=connection, type="direct", durable=False
             )
-            self.autoconf_exchange = Exchange(
-                "autoconf-local", channel=connection, type="direct", durable=False
-            )
             self.update_exchange.declare()
-            self.autoconf_exchange.declare()
             validator = mformat_validator()
             # add /0 if autoconf
             if self.autoconf:
@@ -81,14 +84,42 @@ class ExaBGP:
                                 key_generator(msg)
                                 log.debug(msg)
                                 if self.autoconf:
-                                    # TODO: turn to RPC call
+                                    self.autoconf_goahead = False
+                                    correlation_id = uuid()
+                                    callback_queue = Queue(
+                                        uuid(),
+                                        durable=False,
+                                        auto_delete=True,
+                                        max_priority=4,
+                                        consumer_arguments={"x-priority": 4},
+                                    )
                                     producer.publish(
                                         msg,
-                                        exchange=self.autoconf_exchange,
-                                        routing_key="update",
-                                        serializer="json",
+                                        exchange="",
+                                        routing_key="conf-autoconf-update-queue",
+                                        reply_to=callback_queue.name,
+                                        correlation_id=correlation_id,
+                                        retry=True,
+                                        declare=[
+                                            Queue(
+                                                "conf-autoconf-update-queue",
+                                                durable=False,
+                                                max_priority=4,
+                                                consumer_arguments={"x-priority": 4},
+                                            ),
+                                            callback_queue,
+                                        ],
                                         priority=4,
+                                        serializer="json",
                                     )
+                                    with Consumer(
+                                        connection,
+                                        on_message=self.handle_autoconf_update_goahead_reply,
+                                        queues=[callback_queue],
+                                        no_ack=True,
+                                    ):
+                                        while not self.autoconf_goahead:
+                                            connection.drain_events()
                                 producer.publish(
                                     msg,
                                     exchange=self.update_exchange,
@@ -106,7 +137,7 @@ class ExaBGP:
             except Exception:
                 log.exception("exception")
 
-    def exit(self):
+    def exit(self, **kwargs):
         log.info("Exiting ExaBGP")
         if self.sio is not None:
             self.sio.disconnect()

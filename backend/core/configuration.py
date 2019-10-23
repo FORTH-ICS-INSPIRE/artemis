@@ -423,10 +423,10 @@ class Configuration:
                         prefix_anchor
                     ] = ruamel.yaml.comments.CommentedSeq()
                     yaml_conf["prefixes"][prefix_anchor].append(prefix)
-                    yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
-                        prefix_anchor, always_dump=True
-                    )
                     created_prefix_anchors.add(prefix_anchor)
+                yaml_conf["prefixes"][prefix_anchor].yaml_set_anchor(
+                    prefix_anchor, always_dump=True
+                )
             return created_prefix_anchors
 
         def get_created_asn_anchors_from_new_rule(self, yaml_conf, rule_asns):
@@ -438,13 +438,13 @@ class Configuration:
                 if asn_anchor not in yaml_conf["asns"]:
                     yaml_conf["asns"][asn_anchor] = ruamel.yaml.comments.CommentedSeq()
                     yaml_conf["asns"][asn_anchor].append(asn)
-                    yaml_conf["asns"][asn_anchor].yaml_set_anchor(
-                        asn_anchor, always_dump=True
-                    )
                     created_asn_anchors.add(asn_anchor)
+                yaml_conf["asns"][asn_anchor].yaml_set_anchor(
+                    asn_anchor, always_dump=True
+                )
             return created_asn_anchors
 
-        def get_existing_rule_flag_from_new_rule(
+        def get_existing_rules_from_new_rule(
             self, yaml_conf, rule_prefix, rule_asns, rule
         ):
 
@@ -476,12 +476,16 @@ class Configuration:
                         new_rule_neighbors.add(neighbor)
 
             # check existence of rule (by checking the affected prefixes, origin_asns, and neighbors)
-            existing_rule_found = False
+            existing_rules_found = set()
+            rule_extension_needed = set()
             if "rules" not in yaml_conf:
                 yaml_conf["rules"] = ruamel.yaml.comments.CommentedSeq()
-            for existing_rule in yaml_conf["rules"]:
+            for i, existing_rule in enumerate(yaml_conf["rules"]):
                 existing_rule_prefixes = set()
                 for existing_prefix_seq in existing_rule["prefixes"]:
+                    if isinstance(existing_prefix_seq, str):
+                        existing_rule_prefixes.add(existing_prefix_seq)
+                        continue
                     for existing_prefix in existing_prefix_seq:
                         existing_rule_prefixes.add(existing_prefix)
                 if set(rule_prefix.keys()) == existing_rule_prefixes:
@@ -514,12 +518,16 @@ class Configuration:
                                             existing_neighbors.add(existing_neighbor)
                         if new_rule_neighbors == existing_neighbors:
                             # existing rule found, do nothing
-                            existing_rule_found = True
-                            break
-            return existing_rule_found
+                            existing_rules_found.add(i)
+                        elif not existing_neighbors:
+                            existing_rules_found.add(i)
+                            # rule extension needed if wildcarded neighbors
+                            rule_extension_needed.add(i)
+
+            return (existing_rules_found, rule_extension_needed)
 
         def translate_learn_rule_dicts_to_yaml_conf(
-            self, rule_prefix, rule_asns, rules
+            self, rule_prefix, rule_asns, rules, withdrawal=False
         ):
             """
             Translates the dicts from translate_learn_rule_msg_to_dicts
@@ -528,13 +536,14 @@ class Configuration:
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
             :param rules: <list><dict>
+            :param withdrawal: <bool>
             :return: (<dict>, <bool>)
             """
-            if not rule_prefix or not rule_asns or not rules:
-                return (
-                    "problem with rule installation; rule probably already exists",
-                    False,
-                )
+
+            if (withdrawal and not rule_prefix) or (
+                not withdrawal and (not rule_prefix or not rule_asns or not rules)
+            ):
+                return ("problem with rule installation", False)
             yaml_conf = None
             try:
                 with open(self.file, "r") as f:
@@ -542,6 +551,43 @@ class Configuration:
                 yaml_conf = ruamel.yaml.load(
                     raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
                 )
+
+                if rule_prefix and withdrawal:
+                    rules_to_be_deleted = []
+                    for existing_rule in yaml_conf["rules"]:
+                        prefix_seqs_to_be_deleted = []
+                        for existing_prefix_seq in existing_rule["prefixes"]:
+                            if isinstance(existing_prefix_seq, str):
+                                for prefix in rule_prefix:
+                                    if existing_prefix_seq == prefix:
+                                        prefix_seqs_to_be_deleted.append(
+                                            existing_prefix_seq
+                                        )
+                                        break
+                                continue
+                            for existing_prefix in existing_prefix_seq:
+                                for prefix in rule_prefix:
+                                    if existing_prefix == prefix:
+                                        prefix_seqs_to_be_deleted.append(
+                                            existing_prefix_seq
+                                        )
+                                        break
+                        if len(prefix_seqs_to_be_deleted) == len(
+                            existing_rule["prefixes"]
+                        ):
+                            # same prefixes, rule needs to be deleted
+                            rules_to_be_deleted.append(existing_rule)
+                        elif prefix_seqs_to_be_deleted:
+                            # only the rule prefix(es) need to be deleted
+                            for prefix_seq in prefix_seqs_to_be_deleted:
+                                existing_rule["prefixes"].remove(prefix_seq)
+                    for rule in rules_to_be_deleted:
+                        yaml_conf["rules"].remove(rule)
+                    for prefix_anchor in rule_prefix.values():
+                        if prefix_anchor in yaml_conf["prefixes"]:
+                            del yaml_conf["prefixes"][prefix_anchor]
+                    return (yaml_conf, True)
+
                 # create prefix anchors
                 created_prefix_anchors = self.get_created_prefix_anchors_from_new_rule(
                     yaml_conf, rule_prefix
@@ -554,11 +600,14 @@ class Configuration:
 
                 # append rules
                 for rule in rules:
-                    existing_rule_found = self.get_existing_rule_flag_from_new_rule(
+                    (
+                        existing_rules_found,
+                        rule_update_needed,
+                    ) = self.get_existing_rules_from_new_rule(
                         yaml_conf, rule_prefix, rule_asns, rule
                     )
                     # if no existing rule, make a new one
-                    if not existing_rule_found:
+                    if not existing_rules_found:
                         rule_map = ruamel.yaml.comments.CommentedMap()
 
                         # append prefix
@@ -587,12 +636,25 @@ class Configuration:
                         rule_map["mitigation"] = rule["mitigation"]
 
                         yaml_conf["rules"].append(rule_map)
-                    # else delete any created anchors (not needed)
-                    else:
+                    # else delete any created anchors (not needed), as long as no rule update is needed
+                    elif not rule_update_needed:
                         for prefix_anchor in created_prefix_anchors:
                             del yaml_conf["prefixes"][prefix_anchor]
                         for asn_anchor in created_asn_anchors:
                             del yaml_conf["asns"][asn_anchor]
+                    # rule update needed (neighbors)
+                    else:
+                        for existing_rule_found in existing_rules_found:
+                            rule_map = yaml_conf["rules"][existing_rule_found]
+                            if "neighbors" in rule and rule["neighbors"]:
+                                if existing_rule_found in rule_update_needed:
+                                    rule_map[
+                                        "neighbors"
+                                    ] = ruamel.yaml.comments.CommentedSeq()
+                                    for neighbor_anchor in rule["neighbors"]:
+                                        rule_map["neighbors"].append(
+                                            yaml_conf["asns"][neighbor_anchor]
+                                        )
 
             except Exception:
                 log.exception("{}-{}-{}".format(rule_prefix, rule_asns, rules))
@@ -736,10 +798,8 @@ class Configuration:
 
                     # learned rule asns
                     as_path = Configuration.Worker.__clean_as_path(bgp_update["path"])
-                    if len(as_path) > 2:
+                    if len(as_path) > 1:
                         # ignore, since this is not a self-network origination, but sth transit
-                        # not that for example a 2-hop path may be because the local monitor ASN
-                        # is added (but beyond that, nothing should be processed)
                         return (None, None, None)
                     origin_asn = None
                     neighbor = None
@@ -773,8 +833,15 @@ class Configuration:
                             learned_rule["neighbors"].append(rule_asns[neighbor])
                     rules.append(learned_rule)
                 else:
-                    # TODO: handle withdrawals --> rule removals! (last step, make sure that announcements work fine first)
-                    pass
+                    # learned rule prefix
+                    rule_prefix = {
+                        bgp_update["prefix"]: "AUTOCONF_P_{}".format(
+                            bgp_update["prefix"]
+                            .replace("/", "_")
+                            .replace(".", "_")
+                            .replace(":", "_")
+                        )
+                    }
 
             except Exception:
                 log.exception("{}".format(bgp_update))
@@ -809,8 +876,11 @@ class Configuration:
                 (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
                     bgp_update
                 )
+                withdrawal = False
+                if bgp_update["type"] == "W":
+                    withdrawal = True
                 (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                    rule_prefix, rule_asns, rules
+                    rule_prefix, rule_asns, rules, withdrawal=withdrawal
                 )
                 if ok:
                     # store the new configuration to file

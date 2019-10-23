@@ -21,16 +21,24 @@ def create_monitor_defs(yaml_conf, monitors):
     """
     Create separate monitor definitions for the ARTEMIS conf file
     """
+
+    # check monitors validity
+    for monitor in monitors:
+        if monitor not in ["riperis", "bgpstreamlive", "betabmp", "exabgp"]:
+            # invalid monitor definition
+            raise Exception("Invalid monitor definition !!!")
+
     yaml_conf["monitors"] = ruamel.yaml.comments.CommentedMap()
-    yaml_conf["monitors"]["riperis"] = monitors["riperis"]
-    yaml_conf["monitors"]["bgpstreamlive"] = monitors["bgpstreamlive"]
-    yaml_conf["monitors"]["betabmp"] = monitors["betabmp"]
-    yaml_conf["monitors"]["exabgp"] = ruamel.yaml.comments.CommentedSeq()
-    for dict_elem in monitors["exabgp"]:
-        exabgp_map = ruamel.yaml.comments.CommentedMap()
-        exabgp_map["ip"] = dict_elem["ip"]
-        exabgp_map["port"] = dict_elem["port"]
-        yaml_conf["monitors"]["exabgp"].append(exabgp_map)
+    for monitor in monitors:
+        if monitor != "exabgp":
+            yaml_conf["monitors"][monitor] = monitors[monitor]
+        else:
+            yaml_conf["monitors"][monitor] = ruamel.yaml.comments.CommentedSeq()
+            for dict_elem in monitors[monitor]:
+                exabgp_map = ruamel.yaml.comments.CommentedMap()
+                exabgp_map["ip"] = dict_elem["ip"]
+                exabgp_map["port"] = dict_elem["port"]
+                yaml_conf["monitors"][monitor].append(exabgp_map)
 
 
 def create_asn_defs(yaml_conf, asns):

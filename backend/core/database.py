@@ -17,6 +17,7 @@ from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import BACKEND_SUPERVISOR_URI
+from utils import chunk_list
 from utils import flatten
 from utils import get_db_conn
 from utils import get_hash
@@ -589,32 +590,32 @@ class Database:
                     rekey_update_keys = list(msg_["monitor_keys"])
                     rekey_updates = []
                     try:
-                        query = (
-                            "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
-                            "type, communities, timestamp FROM bgp_updates "
-                            "WHERE bgp_updates.handled=false AND bgp_updates.key = %s"
-                        )
-
-                        with get_ro_cursor(self.ro_conn) as db_cur:
-                            psycopg2.extras.execute_batch(
-                                db_cur, query, (rekey_update_keys,), page_size=1000
+                        rekey_update_keys_lists = chunk_list(rekey_update_keys, 1000)
+                        for rekey_update_keys_list in rekey_update_keys_lists:
+                            query = (
+                                "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
+                                "type, communities, timestamp FROM bgp_updates "
+                                "WHERE bgp_updates.handled=false AND bgp_updates.key IN " + str(tuple(rekey_update_keys_list))
                             )
-                            entries = db_cur.fetchall()
 
-                        for entry in entries:
-                            rekey_updates.append(
-                                {
-                                    "key": entry[0],  # key
-                                    "prefix": entry[1],  # prefix
-                                    "origin_as": entry[2],  # origin_as
-                                    "peer_asn": entry[3],  # peer_asn
-                                    "path": entry[4],  # as_path
-                                    "service": entry[5],  # service
-                                    "type": entry[6],  # type
-                                    "communities": entry[7],  # communities
-                                    "timestamp": entry[8].timestamp(),
-                                }
-                            )
+                            with get_ro_cursor(self.ro_conn) as db_cur:
+                                db_cur.execute(query)
+                                entries = db_cur.fetchall()
+
+                            for entry in entries:
+                                rekey_updates.append(
+                                    {
+                                        "key": entry[0],  # key
+                                        "prefix": entry[1],  # prefix
+                                        "origin_as": entry[2],  # origin_as
+                                        "peer_asn": entry[3],  # peer_asn
+                                        "path": entry[4],  # as_path
+                                        "service": entry[5],  # service
+                                        "type": entry[6],  # type
+                                        "communities": entry[7],  # communities
+                                        "timestamp": entry[8].timestamp(),
+                                    }
+                                )
 
                         # delete monitor keys from redis so that they can be
                         # reprocessed

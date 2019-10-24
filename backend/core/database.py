@@ -17,9 +17,9 @@ from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import BACKEND_SUPERVISOR_URI
-from utils import chunk_list
 from utils import flatten
 from utils import get_db_conn
+from utils import chunk_list
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
@@ -595,12 +595,11 @@ class Database:
                             query = (
                                 "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
                                 "type, communities, timestamp FROM bgp_updates "
-                                "WHERE bgp_updates.handled=false AND bgp_updates.key IN "
-                                + str(tuple(rekey_update_keys_list))
+                                "WHERE bgp_updates.handled=false AND bgp_updates.key = ANY(%s::text[])"
                             )
 
                             with get_ro_cursor(self.ro_conn) as db_cur:
-                                db_cur.execute(query)
+                                db_cur.execute(query, [rekey_update_keys_list])
                                 entries = db_cur.fetchall()
 
                             for entry in entries:

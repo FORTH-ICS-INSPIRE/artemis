@@ -607,4 +607,4 @@ def hijack_log_field_formatter(hijack_dict):
 def chunk_list(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
-        yield l[i:i + n]
+        yield l[i : i + n]

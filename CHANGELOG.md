@@ -12,9 +12,10 @@
 ### Changed
 - Automatic config file formatting upon config modification
 - DB_AUTOCLEAN and dormant hijack thresholds set to 1 day (24h) by default
+- change of conf_lib.py in order to support a list of dicts per prefix
 
 ### Fixed
-- TBD (bug-fix)
+- small fixes in conf_lib
 
 ### Removed
 - TBD (removed a feature)

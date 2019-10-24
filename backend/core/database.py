@@ -17,9 +17,9 @@ from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import BACKEND_SUPERVISOR_URI
+from utils import chunk_list
 from utils import flatten
 from utils import get_db_conn
-from utils import chunk_list
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger

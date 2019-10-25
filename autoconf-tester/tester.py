@@ -40,6 +40,23 @@ class AutoconfTester:
             "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
         )
 
+        # exchanges
+        self.config_exchange = Exchange(
+            "config", type="direct", durable=False, delivery_mode=1
+        )
+        self.config_exchange.declare()
+
+        # queues
+        self.config_queue = Queue(
+            "autoconf-config-notify-{}".format(uuid()),
+            exchange=self.config_exchange,
+            routing_key="notify",
+            durable=False,
+            auto_delete=True,
+            max_priority=3,
+            consumer_arguments={"x-priority": 3},
+        )
+
     def getDbConnection(self):
         """
         Return a connection for the postgres database.
@@ -138,44 +155,51 @@ class AutoconfTester:
             consumer_arguments={"x-priority": 4},
         )
 
-        with conn.Producer() as producer:
-            print("[+] Sending message '{}'".format(msg))
-            producer.publish(
-                msg,
-                exchange="",
-                routing_key="conf-autoconf-update-queue",
-                reply_to=callback_queue.name,
-                correlation_id=correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "conf-autoconf-update-queue",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="json",
-            )
-            print("[+] Sent message '{}'".format(msg))
-            self.autoconf_goahead = False
-            with conn.Consumer(
+        with nested(
+            conn.Consumer(
+                on_message=self.handle_config_notify,
+                queues=[self.config_queue],
+                no_ack=True,
+            ),
+            conn.Consumer(
                 on_message=self.handle_autoconf_update_goahead_reply,
                 queues=[callback_queue],
                 no_ack=True,
-            ):
+            ),
+        ):
+            self.autoconf_goahead = False
+            with conn.Producer() as producer:
+                print("[+] Sending message '{}'".format(msg))
+                producer.publish(
+                    msg,
+                    exchange="",
+                    routing_key="conf-autoconf-update-queue",
+                    reply_to=callback_queue.name,
+                    correlation_id=correlation_id,
+                    retry=True,
+                    declare=[
+                        Queue(
+                            "conf-autoconf-update-queue",
+                            durable=False,
+                            max_priority=4,
+                            consumer_arguments={"x-priority": 4},
+                        ),
+                        callback_queue,
+                    ],
+                    priority=4,
+                    serializer="json",
+                )
+                print("[+] Sent message '{}'".format(msg))
                 while not self.autoconf_goahead:
                     conn.drain_events()
-            print("[+] Concluded autoconf RPC")
+                print("[+] Concluded autoconf RPC")
 
     def handle_config_notify(self, msg):
         """
         Receive and validate new configuration based on autoconf update
         """
         raw = msg.payload
-        print("New config")
+        print("[+] New config!")
         print(raw)
         # TODO: actual handling!
         self.proceed_to_next_test = True
@@ -187,22 +211,6 @@ class AutoconfTester:
         self.autoconf_goahead = True
 
     def test(self):
-        # exchanges
-        self.config_exchange = Exchange(
-            "config", type="direct", durable=False, delivery_mode=1
-        )
-
-        # queues
-        self.config_queue = Queue(
-            "autoconf-config-notify-{}".format(uuid()),
-            exchange=self.config_exchange,
-            routing_key="notify",
-            durable=False,
-            auto_delete=True,
-            max_priority=3,
-            consumer_arguments={"x-priority": 3},
-        )
-
         with Connection(RABBITMQ_URI) as connection:
             print("[+] Waiting for config exchange..")
             AutoconfTester.waitExchange(
@@ -237,26 +245,19 @@ class AutoconfTester:
             db_con.close()
 
             for i, autoconf_test in enumerate(TESTING_SEQUENCE):
-                with nested(
-                    connection.Consumer(
-                        self.config_queue, callbacks=[self.handle_config_notify]
-                    )
-                ):
-                    print("[+] Commencing test {}: '{}'".format(i + 1, autoconf_test))
-                    with open("testfiles/{}.json".format(autoconf_test), "r") as f:
-                        autoconf_test_info = json.load(f)
-                        message = autoconf_test_info["send"]
-                        self.expected_configuration = autoconf_test_info[
-                            "configuration"
-                        ]
-                        self.proceed_to_next_test = False
-                        message["timestamp"] = self.time_now + i + 1
-                        self.send_next_message(connection, message)
-                        self.proceed_to_next_test = True
-                        # deactivating for now until further checking
-                        # while not self.proceed_to_next_test:
-                        #     print("[+] Waiting for new config notification...")
-                        #     time.sleep(1)
+                print("[+] Commencing test {}: '{}'".format(i + 1, autoconf_test))
+                with open("testfiles/{}.json".format(autoconf_test), "r") as f:
+                    autoconf_test_info = json.load(f)
+                    message = autoconf_test_info["send"]
+                    self.expected_configuration = autoconf_test_info["configuration"]
+                    self.proceed_to_next_test = False
+                    message["timestamp"] = self.time_now + i + 1
+                    self.send_next_message(connection, message)
+                    self.proceed_to_next_test = True
+                    # deactivating for now until further checking
+                    # while not self.proceed_to_next_test:
+                    #     print("[+] Waiting for new config notification...")
+                    #     time.sleep(1)
 
             connection.close()
 

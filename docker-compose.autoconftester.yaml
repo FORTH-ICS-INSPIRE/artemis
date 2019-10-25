@@ -55,6 +55,7 @@ services:
         volumes:
             - ./autoconf-tester/supervisor.d/:/etc/supervisor/conf.d/
             - ./autoconf-tester/configs/:/etc/artemis/
+            - ./backend/entrypoint.test:/root/entrypoint
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq

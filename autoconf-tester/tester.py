@@ -32,6 +32,7 @@ TESTING_SEQUENCE = [
 class AutoconfTester:
     def __init__(self):
         self.time_now = int(time.time())
+        self.autoconf_goahead = False
         self.proceed_to_next_test = True
         self.expected_configuration = None
 
@@ -120,11 +121,13 @@ class AutoconfTester:
         correlation_id = uuid()
         callback_queue = Queue(
             uuid(),
+            channel=conn.default_channel,
             durable=False,
             auto_delete=True,
             max_priority=4,
             consumer_arguments={"x-priority": 4},
         )
+
         with conn.Producer() as producer:
             print("[+] Sending message '{}'".format(msg))
             producer.publish(
@@ -147,10 +150,15 @@ class AutoconfTester:
                 serializer="json",
             )
             print("[+] Sent message '{}'".format(msg))
-            while True:
-                if callback_queue.get():
-                    break
-                time.sleep(0.1)
+            self.autoconf_goahead = False
+            with conn.Consumer(
+                on_message=self.handle_autoconf_update_goahead_reply,
+                queues=[callback_queue],
+                no_ack=True,
+            ):
+                while not self.autoconf_goahead:
+                    conn.drain_events()
+            print("[+] Concluded autoconf RPC")
 
     def handle_config_notify(self, msg):
         """
@@ -161,6 +169,12 @@ class AutoconfTester:
         print(raw)
         # TODO: actual handling!
         self.proceed_to_next_test = True
+
+    def handle_autoconf_update_goahead_reply(self, msg):
+        """
+        Receive autoconf RPC reply and proceed
+        """
+        self.autoconf_goahead = True
 
     def test(self):
         # exchanges
@@ -190,8 +204,8 @@ class AutoconfTester:
             db_cur = db_con.cursor()
             query = "SELECT name FROM process_states WHERE running=True"
             running_modules = set()
-            # wait until all 5 modules are running
-            while len(running_modules) < 5:
+            # wait until all 4 modules are running
+            while len(running_modules) < 4:
                 db_cur.execute(query)
                 entries = db_cur.fetchall()
                 for entry in entries:
@@ -199,7 +213,7 @@ class AutoconfTester:
                 db_con.commit()
                 print("[+] Running modules: {}".format(running_modules))
                 print(
-                    "[+] {}/5 modules are running. Re-executing query...".format(
+                    "[+] {}/4 modules are running. Re-executing query...".format(
                         len(running_modules)
                     )
                 )
@@ -229,6 +243,7 @@ class AutoconfTester:
                         message["timestamp"] = self.time_now + i + 1
                         self.send_next_message(connection, message)
                         while not self.proceed_to_next_test:
+                            print("[+] Waiting for new config notification...")
                             time.sleep(1)
 
             connection.close()

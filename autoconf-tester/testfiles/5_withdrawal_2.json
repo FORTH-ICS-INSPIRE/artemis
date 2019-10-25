@@ -1,12 +1,12 @@
 {
   "send": {
-    "key": 3,
+    "key": 5,
     "orig_path": [],
     "communities": [],
     "service": "test-autoconf",
     "type": "W",
     "path": [],
-    "prefix": "192.168.1.0/24",
+    "prefix": "192.168.2.0/24",
     "peer_asn": 1
   },
   "configuration": {

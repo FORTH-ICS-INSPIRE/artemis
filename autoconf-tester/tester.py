@@ -1,5 +1,7 @@
+import glob
 import json
 import os
+import re
 import socket
 import time
 from xmlrpc.client import ServerProxy
@@ -24,11 +26,6 @@ BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
 BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
 )
-TESTING_SEQUENCE = [
-    "announcement_origin",
-    "announcement_origin_with_neighbors",
-    "withdrawal",
-]
 
 
 class AutoconfTester:
@@ -205,24 +202,64 @@ class AutoconfTester:
                 for inner_key in self.expected_configuration[outer_key]:
                     assert (
                         inner_key in raw[outer_key]
-                    ), "[-] Inner key '{}' not in raw configuration for outer key '{}'".format(
+                    ), "[-] Inner key '{}' of outer key '{}' not in raw configuration ".format(
                         inner_key, outer_key
                     )
-                    assert set(
-                        self.expected_configuration[outer_key][inner_key]
-                    ) == set(
-                        raw[outer_key][inner_key]
-                    ), "[-] Values of inner key '{}' for outer key '{}' do not agree: expected '{}', got '{}'".format(
-                        inner_key,
-                        outer_key,
-                        self.expected_configuration[outer_key][inner_key],
-                        raw[outer_key][inner_key],
-                    )
+                    if isinstance(
+                        self.expected_configuration[outer_key][inner_key], list
+                    ):
+                        assert set(
+                            self.expected_configuration[outer_key][inner_key]
+                        ) == set(
+                            raw[outer_key][inner_key]
+                        ), "[-] Values of inner key '{}' of outer key '{}' do not agree: expected '{}', got '{}'".format(
+                            inner_key,
+                            outer_key,
+                            set(self.expected_configuration[outer_key][inner_key]),
+                            set(raw[outer_key][inner_key]),
+                        )
+                    else:
+                        assert (
+                            self.expected_configuration[outer_key][inner_key]
+                            == raw[outer_key][inner_key]
+                        ), "[-] Value of inner key '{}' of outer key '{}' does not agree: expected '{}', got '{}'".format(
+                            inner_key,
+                            outer_key,
+                            self.expected_configuration[outer_key][inner_key],
+                            raw[outer_key][inner_key],
+                        )
             elif isinstance(self.expected_configuration[outer_key], list):
-                for element in self.expected_configuration[outer_key]:
+                for i, element in enumerate(self.expected_configuration[outer_key]):
                     for inner_key in element:
-                        pass
-                        # TODO
+                        assert (
+                            inner_key in raw[outer_key][i]
+                        ), "[-] Inner key '{}' not in raw configuration element '{}' of outer key '{}'".format(
+                            inner_key, element, outer_key
+                        )
+                        if isinstance(element[inner_key], list):
+                            assert set(element[inner_key]) == set(
+                                raw[outer_key][i][inner_key]
+                            ), (
+                                "[-] Values of inner key '{}' for element '{}' for outer key '{}' do not agree: "
+                                "expected '{}', got '{}'".format(
+                                    inner_key,
+                                    element,
+                                    outer_key,
+                                    set(element[inner_key]),
+                                    set(raw[outer_key][i][inner_key]),
+                                )
+                            )
+                        else:
+                            assert element[inner_key] == raw[outer_key][i][inner_key], (
+                                "[-] Value of inner key '{}' for element '{}' for outer key '{}' does not agree: "
+                                "expected '{}', got '{}'".format(
+                                    inner_key,
+                                    element,
+                                    outer_key,
+                                    element[inner_key],
+                                    raw[outer_key][i][inner_key],
+                                )
+                            )
         self.config_notify_received = True
 
     def handle_autoconf_update_goahead_reply(self, msg):
@@ -257,6 +294,7 @@ class AutoconfTester:
                 self.config_exchange, connection.default_channel
             )
 
+            time.sleep(10)
             # query database for the states of the processes
             db_con = self.getDbConnection()
             db_cur = db_con.cursor()
@@ -284,9 +322,23 @@ class AutoconfTester:
             db_cur.close()
             db_con.close()
 
-            for i, autoconf_test in enumerate(TESTING_SEQUENCE):
-                print("[+] Commencing test {}: '{}'".format(i + 1, autoconf_test))
-                with open("testfiles/{}.json".format(autoconf_test), "r") as f:
+            full_testfiles = glob.glob("testfiles/*.json")
+            testfiles_to_id = {}
+            for full_testfile in full_testfiles:
+                testfile = full_testfile.split("/")[-1]
+                id_match = re.match(r"^(\d+)_.*$", testfile)
+                if id_match:
+                    testfiles_to_id[testfile] = int(id_match.group(1))
+            testfiles = sorted(
+                list(testfiles_to_id.keys()), key=lambda x: testfiles_to_id[x]
+            )
+            for i, testfile in enumerate(testfiles):
+                print(
+                    "[+] Commencing test {}: '{}'".format(
+                        i + 1, testfile.split(".json")[0]
+                    )
+                )
+                with open("testfiles/{}".format(testfile), "r") as f:
                     autoconf_test_info = json.load(f)
                     message = autoconf_test_info["send"]
                     self.expected_configuration = autoconf_test_info["configuration"]

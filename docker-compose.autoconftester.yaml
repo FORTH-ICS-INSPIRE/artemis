@@ -20,7 +20,6 @@ services:
             DB_VERSION: ${DB_VERSION}
             BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            GITHUB_TOKEN: ${GITHUB_TOKEN}
             SEMAPHORE_REPO_SLUG: ${SEMAPHORE_REPO_SLUG}
     backend:
         image: artemis_backend

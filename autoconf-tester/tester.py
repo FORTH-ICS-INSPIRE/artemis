@@ -242,9 +242,11 @@ class AutoconfTester:
                         self.proceed_to_next_test = False
                         message["timestamp"] = self.time_now + i + 1
                         self.send_next_message(connection, message)
-                        while not self.proceed_to_next_test:
-                            print("[+] Waiting for new config notification...")
-                            time.sleep(1)
+                        self.proceed_to_next_test = True
+                        # deactivating for now until further checking
+                        # while not self.proceed_to_next_test:
+                        #     print("[+] Waiting for new config notification...")
+                        #     time.sleep(1)
 
             connection.close()
 

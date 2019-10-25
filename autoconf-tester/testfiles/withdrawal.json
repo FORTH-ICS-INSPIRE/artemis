@@ -1,0 +1,28 @@
+{
+  "send": {
+    "key": 3,
+    "orig_path": [],
+    "communities": [],
+    "service": "test-autoconf",
+    "type": "W",
+    "path": [],
+    "prefix": "192.168.1.0/24",
+    "peer_asn": 1
+  },
+  "configuration": {
+    "prefixes": {},
+    "monitors": {},
+    "asns": {
+      "AUTOCONF_AS_1": [
+        1
+      ],
+      "AUTOCONF_AS_2": [
+        2
+      ],
+      "AUTOCONF_AS_3": [
+        3
+      ]
+    },
+    "rules": []
+  }
+}

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -21,14 +22,21 @@ BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
 )
 
+TESTING_SEQUENCE = [
+    "announcement_origin",
+    "announcement_origin_with_neighbors",
+    "withdrawal",
+]
+
 
 class AutoconfTester:
     def __init__(self):
         self.time_now = int(time.time())
-        self.autoconf_goahead = False
+        self.autoconf_rpc_goahead = False
+        self.proceed_to_next_test = True
 
     def handle_autoconf_update_goahead_reply(self, message):
-        self.autoconf_goahead = True
+        self.autoconf_rpc_goahead = True
 
     def send(self, msg):
         with Connection(RABBITMQ_URI) as connection:
@@ -41,7 +49,7 @@ class AutoconfTester:
                 consumer_arguments={"x-priority": 4},
             )
             with Producer(connection) as producer:
-
+                print("[+] Sending message '{}'".format(msg))
                 producer.publish(
                     msg,
                     exchange="",
@@ -61,64 +69,33 @@ class AutoconfTester:
                     priority=4,
                     serializer="json",
                 )
+                print("[+] Sent message '{}'".format(msg))
+            print("[+] Waiting for autoconf RPC to conclude".format(msg))
+            self.autoconf_rpc_goahead = False
             with Consumer(
                 connection,
                 on_message=self.handle_autoconf_update_goahead_reply,
                 queues=[callback_queue],
                 no_ack=True,
             ):
-                while not self.autoconf_goahead:
+                while not self.autoconf_rpc_goahead:
                     connection.drain_events()
+            print("[+] Autoconf RPC concluded".format(msg))
 
 
 if __name__ == "__main__":
     print("[+] Starting")
     autoconf_tester = AutoconfTester()
 
-    print("[+] Sending announcement with origin only")
-    announcement_origin = {
-        "key": 1,
-        "type": "A",
-        "timestamp": autoconf_tester.time_now + 1,
-        "path": [1],
-        "service": "test-autoconf",
-        "communities": [],
-        "prefix": "192.168.0.0/16",
-        "peer_asn": 1,
-    }
-    autoconf_tester.send(announcement_origin)
-    print("[+] Announcement with origin only sent")
-
-    # TODO handle conf change check!
-
-    print("[+] Sending announcement with origin and neighbors")
-    announcement_origin_with_neighbors = {
-        "key": 2,
-        "type": "A",
-        "timestamp": autoconf_tester.time_now + 2,
-        "path": [1],
-        "service": "test-autoconf",
-        "communities": [{"asn": 1, "value": 2}, {"asn": 1, "value": 3}],
-        "prefix": "192.168.0.0/16",
-        "peer_asn": 1,
-    }
-    autoconf_tester.send(announcement_origin_with_neighbors)
-    print("[+] Announcement with origin and neighbors sent")
-
-    # TODO handle conf change check!
-
-    print("[+] Sending prefix withdrawal")
-    withdrawal = {
-        "key": 3,
-        "type": "W",
-        "timestamp": autoconf_tester.time_now + 2,
-        "path": [],
-        "service": "test-autoconf",
-        "communities": [],
-        "prefix": "192.168.0.0/16",
-        "peer_asn": 1,
-    }
-    print("[+] Withdrawal sent")
+    for i, test in enumerate(TESTING_SEQUENCE):
+        print("[+] Commencing test {}: '{}'".format(i + 1, test))
+        with open("testfiles/{}.json".format(test), "r") as f:
+            message_conf = json.load(f)
+            message = message_conf["send"]
+            message["timestamp"] = autoconf_tester.time_now + 1
+            autoconf_tester.send(message)
+            while not autoconf_tester.proceed_to_next_test:
+                time.sleep(1)
 
     # TODO handle conf change check!
 

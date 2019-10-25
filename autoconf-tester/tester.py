@@ -2,11 +2,13 @@ import json
 import os
 import time
 
+import psycopg2
 from kombu import Connection
-from kombu import Consumer
-from kombu import Producer
+from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
+from kombu.utils.compat import nested
+
 
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
 RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
@@ -15,13 +17,11 @@ RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
 )
-
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
 BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
 )
-
 TESTING_SEQUENCE = [
     "announcement_origin",
     "announcement_origin_with_neighbors",
@@ -32,71 +32,221 @@ TESTING_SEQUENCE = [
 class AutoconfTester:
     def __init__(self):
         self.time_now = int(time.time())
-        self.autoconf_rpc_goahead = False
+        self.proceed_to_next_test = True
+        self.expected_configuration = None
+
+    def getDbConnection(self):
+        """
+        Return a connection for the postgres database.
+        """
+        db_conn = None
+        while not db_conn:
+            try:
+                _db_name = os.getenv("DB_NAME", "artemis_db")
+                _user = os.getenv("DB_USER", "artemis_user")
+                _host = os.getenv("DB_HOST", "postgres")
+                _port = os.getenv("DB_PORT", 5432)
+                _password = os.getenv("DB_PASS", "Art3m1s")
+
+                db_conn = psycopg2.connect(
+                    dbname=_db_name,
+                    user=_user,
+                    host=_host,
+                    port=_port,
+                    password=_password,
+                )
+            except BaseException:
+                time.sleep(1)
+        return db_conn
+
+    @staticmethod
+    def waitExchange(exchange, channel):
+        """
+        Wait passively until the exchange is declared.
+        """
+        while True:
+            try:
+                exchange.declare(passive=True, channel=channel)
+                break
+            except Exception:
+                time.sleep(1)
+
+    @staticmethod
+    def config_request_rpc(conn):
+        """
+        Initial RPC of this service to request the configuration.
+        The RPC is blocked until the configuration service replies back.
+        """
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            channel=conn.default_channel,
+            durable=False,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+
+        with conn.Producer() as producer:
+            producer.publish(
+                "",
+                exchange="",
+                routing_key="config-request-queue",
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                retry=True,
+                declare=[
+                    Queue(
+                        "config-request-queue",
+                        durable=False,
+                        max_priority=4,
+                        consumer_arguments={"x-priority": 4},
+                    ),
+                    callback_queue,
+                ],
+                priority=4,
+            )
+
+        while True:
+            if callback_queue.get():
+                break
+            time.sleep(0.1)
+        print("[+] Config RPC finished")
+
+    def send_next_message(self, conn, msg):
+        """
+        Publish next custom BGP update via the autoconf RPC.
+        """
+        correlation_id = uuid()
+        callback_queue = Queue(
+            uuid(),
+            durable=False,
+            auto_delete=True,
+            max_priority=4,
+            consumer_arguments={"x-priority": 4},
+        )
+        with conn.Producer() as producer:
+            print("[+] Sending message '{}'".format(msg))
+            producer.publish(
+                msg,
+                exchange="",
+                routing_key="conf-autoconf-update-queue",
+                reply_to=callback_queue.name,
+                correlation_id=correlation_id,
+                retry=True,
+                declare=[
+                    Queue(
+                        "conf-autoconf-update-queue",
+                        durable=False,
+                        max_priority=4,
+                        consumer_arguments={"x-priority": 4},
+                    ),
+                    callback_queue,
+                ],
+                priority=4,
+                serializer="json",
+            )
+            print("[+] Sent message '{}'".format(msg))
+            while True:
+                if callback_queue.get():
+                    break
+                time.sleep(0.1)
+
+    def handle_config_notify(self, msg):
+        """
+        Receive and validate new configuration based on autoconf update
+        """
+        raw = msg.payload
+        print("New config")
+        print(raw)
+        # TODO: actual handling!
         self.proceed_to_next_test = True
 
-    def handle_autoconf_update_goahead_reply(self, message):
-        self.autoconf_rpc_goahead = True
+    def test(self):
+        # exchanges
+        self.config_exchange = Exchange(
+            "config", type="direct", durable=False, delivery_mode=1
+        )
 
-    def send(self, msg):
+        # queues
+        self.config_queue = Queue(
+            "autoconf-config-notify-{}".format(uuid()),
+            exchange=self.config_exchange,
+            routing_key="notify",
+            durable=False,
+            auto_delete=True,
+            max_priority=3,
+            consumer_arguments={"x-priority": 3},
+        )
+
         with Connection(RABBITMQ_URI) as connection:
-            correlation_id = uuid()
-            callback_queue = Queue(
-                uuid(),
-                durable=False,
-                auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
+            print("[+] Waiting for config exchange..")
+            AutoconfTester.waitExchange(
+                self.config_exchange, connection.default_channel
             )
-            with Producer(connection) as producer:
-                print("[+] Sending message '{}'".format(msg))
-                producer.publish(
-                    msg,
-                    exchange="",
-                    routing_key="conf-autoconf-update-queue",
-                    reply_to=callback_queue.name,
-                    correlation_id=correlation_id,
-                    retry=True,
-                    declare=[
-                        Queue(
-                            "conf-autoconf-update-queue",
-                            durable=False,
-                            max_priority=4,
-                            consumer_arguments={"x-priority": 4},
-                        ),
-                        callback_queue,
-                    ],
-                    priority=4,
-                    serializer="json",
+
+            # query database for the states of the processes
+            db_con = self.getDbConnection()
+            db_cur = db_con.cursor()
+            query = "SELECT name FROM process_states WHERE running=True"
+            running_modules = set()
+            # wait until all 5 modules are running
+            while len(running_modules) < 5:
+                db_cur.execute(query)
+                entries = db_cur.fetchall()
+                for entry in entries:
+                    running_modules.add(entry[0])
+                db_con.commit()
+                print("[+] Running modules: {}".format(running_modules))
+                print(
+                    "[+] {}/5 modules are running. Re-executing query...".format(
+                        len(running_modules)
+                    )
                 )
-                print("[+] Sent message '{}'".format(msg))
-            print("[+] Waiting for autoconf RPC to conclude".format(msg))
-            self.autoconf_rpc_goahead = False
-            with Consumer(
-                connection,
-                on_message=self.handle_autoconf_update_goahead_reply,
-                queues=[callback_queue],
-                no_ack=True,
-            ):
-                while not self.autoconf_rpc_goahead:
-                    connection.drain_events()
-            print("[+] Autoconf RPC concluded".format(msg))
+                time.sleep(1)
+
+            AutoconfTester.config_request_rpc(connection)
+
+            time.sleep(10)
+
+            db_cur.close()
+            db_con.close()
+
+            for i, autoconf_test in enumerate(TESTING_SEQUENCE):
+                with nested(
+                    connection.Consumer(
+                        self.config_queue, callbacks=[self.handle_config_notify]
+                    )
+                ):
+                    print("[+] Commencing test {}: '{}'".format(i + 1, autoconf_test))
+                    with open("testfiles/{}.json".format(autoconf_test), "r") as f:
+                        autoconf_test_info = json.load(f)
+                        message = autoconf_test_info["send"]
+                        self.expected_configuration = autoconf_test_info[
+                            "configuration"
+                        ]
+                        self.proceed_to_next_test = False
+                        message["timestamp"] = self.time_now + i + 1
+                        self.send_next_message(connection, message)
+                        while not self.proceed_to_next_test:
+                            time.sleep(1)
+
+            connection.close()
+
+        time.sleep(5)
+        self.supervisor.supervisor.stopAllProcesses()
+
+        self.waitProcess("listener", 0)  # 0 STOPPED
+        self.waitProcess("clock", 0)  # 0 STOPPED
+        self.waitProcess("detection", 0)  # 0 STOPPED
+        self.waitProcess("mitigation", 0)  # 0 STOPPED
+        self.waitProcess("configuration", 0)  # 0 STOPPED
+        self.waitProcess("database", 0)  # 0 STOPPED
+        self.waitProcess("observer", 0)  # 0 STOPPED
 
 
 if __name__ == "__main__":
     print("[+] Starting")
     autoconf_tester = AutoconfTester()
-
-    for i, test in enumerate(TESTING_SEQUENCE):
-        print("[+] Commencing test {}: '{}'".format(i + 1, test))
-        with open("testfiles/{}.json".format(test), "r") as f:
-            message_conf = json.load(f)
-            message = message_conf["send"]
-            message["timestamp"] = autoconf_tester.time_now + 1
-            autoconf_tester.send(message)
-            while not autoconf_tester.proceed_to_next_test:
-                time.sleep(1)
-
-    # TODO handle conf change check!
-
+    autoconf_tester.test()
     print("[+] Exiting")

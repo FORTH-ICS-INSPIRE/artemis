@@ -12,6 +12,12 @@ services:
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            DB_VERSION: ${DB_VERSION}
             BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             GITHUB_TOKEN: ${GITHUB_TOKEN}

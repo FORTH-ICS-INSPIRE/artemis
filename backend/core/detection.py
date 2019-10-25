@@ -911,6 +911,7 @@ class Detection:
                     result["monitor_keys"] = hijack_value["monitor_keys"]
                     self.comm_annotate_hijack(monitor_event, result)
                     result["outdated_parent"] = hijack_value["outdated_parent"]
+                    result["bgpupdate_keys"].add(monitor_event["key"])
                 else:
                     hijack_value["time_detected"] = time.time()
                     hijack_value["key"] = get_hash(
@@ -921,6 +922,7 @@ class Detection:
                             "{0:.6f}".format(hijack_value["time_detected"]),
                         ]
                     )
+                    hijack_value["bgpupdate_keys"] = {monitor_event["key"]}
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)

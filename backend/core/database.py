@@ -933,6 +933,19 @@ class Database:
                         "timestamp_of_config": entry[10].timestamp(),
                         "community_annotation": entry[11],
                     }
+
+                    subquery = (
+                        "SELECT key FROM bgp_updates "
+                        "WHERE %s = ANY(hijack_key);"
+                    )
+
+                    with get_ro_cursor(self.ro_conn) as db_cur:
+                        db_cur.execute(subquery, (entry[4],))
+                        subentries = set(db_cur.fetchall())
+                        subentries = list(map(lambda x: x[0], subentries))
+                        log.debug("Adding bgpupdate_keys: {} for {} and {}".format(subentries, redis_key(entry[5], entry[6], entry[7]), entry[4]))
+                        result["bgpupdate_keys"] = list(map(lambda x: x[0], subentries))
+
                     redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
                     redis_pipeline.set(redis_hijack_key, yaml.dump(result))
                     redis_pipeline.sadd("persistent-keys", entry[4])
@@ -1045,19 +1058,32 @@ class Database:
                 redis_hijack_key = redis_key(
                     raw["prefix"], raw["hijack_as"], raw["type"]
                 )
+                redis_hijack = yaml.safe_load(self.redis.get(redis_hijack_key))
                 if self.redis.sismember("persistent-keys", raw["key"]):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
 
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
-                    db_cur.execute(
-                        "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1;",
-                        (raw["key"],),
-                    )
-                    db_cur.execute(
-                        "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s);",
-                        (raw["key"],),
-                    )
+                    if len(redis_hijack.get("bgpupdate_keys", [])) > 0:
+                        log.debug("bgpupdate_keys {} for {}".format(redis_hijack["bgpupdate_keys"], redis_hijack))
+                        db_cur.execute(
+                            "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
+                            (raw["key"], redis_hijack["bgpupdate_keys"],),
+                        )
+                        db_cur.execute(
+                            "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
+                            (raw["key"], redis_hijack["bgpupdate_keys"],),
+                        )
+                    else:
+                        db_cur.execute(
+                            "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1 AND handled = true;",
+                            (raw["key"],),
+                        )
+                        db_cur.execute(
+                            "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) AND handled = true;",
+                            (raw["key"],),
+                        )
+                        log.debug("bgpupdate_keys is empty for {}".format(redis_hijack))
 
             except Exception:
                 log.exception("{}".format(raw))
@@ -1159,14 +1185,7 @@ class Database:
                     query = "UPDATE hijacks SET seen=false WHERE key=%s;"
                     seen_action = True
                 elif raw["action"] == "hijack_action_delete":
-                    query = []
-                    query.append("DELETE FROM hijacks WHERE key=%s;")
-                    query.append(
-                        "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1;"
-                    )
-                    query.append(
-                        "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s);"
-                    )
+                    query = "DELETE FROM hijacks WHERE key=%s;"
                     delete_action = True
                 else:
                     raise BaseException("unreachable code reached")
@@ -1226,13 +1245,34 @@ class Database:
                                         query, (datetime.datetime.now(), hijack_key)
                                     )
                             elif delete_action:
+                                redis_hijack_key = redis_key(raw["prefix"], raw["hijack_as"], raw["type"])
+                                redis_hijack = yaml.safe_load(self.redis.get(redis_hijack_key))
                                 if self.redis.sismember("persistent-keys", hijack_key):
                                     purge_redis_eph_pers_keys(
                                         self.redis, redis_hijack_key, hijack_key
                                     )
-                                for query_ in query:
-                                    with get_wo_cursor(self.wo_conn) as db_cur:
-                                        db_cur.execute(query_, (hijack_key,))
+                                with get_wo_cursor(self.wo_conn) as db_cur:
+                                    db_cur.execute(query, (hijack_key,))
+                                    if len(redis_hijack.get("bgpupdate_keys", [])) > 0:
+                                        log.debug("bgpupdate_keys {} for {}".format(redis_hijack["bgpupdate_keys"], redis_hijack))
+                                        db_cur.execute(
+                                            "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
+                                            (hijack_key, redis_hijack["bgpupdate_keys"],),
+                                        )
+                                        db_cur.execute(
+                                            "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
+                                            (hijack_key, redis_hijack["bgpupdate_keys"],),
+                                        )
+                                    else:
+                                        db_cur.execute(
+                                            "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1 AND handled = true;",
+                                            (hijack_key,)
+                                        )
+                                        db_cur.execute(
+                                            "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) AND handled = true;",
+                                            (hijack_key,)
+                                        )
+                                        log.debug("bgpupdate_keys is empty for {}".format(redis_hijack))
                             else:
                                 raise BaseException("unreachable code reached")
 

@@ -21,6 +21,7 @@ services:
             BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             SEMAPHORE_REPO_SLUG: ${SEMAPHORE_REPO_SLUG}
+            COVERALLS_REPO_TOKEN: coveralls_token_here
     backend:
         image: artemis_backend
         build: ./backend/

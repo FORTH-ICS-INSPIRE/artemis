@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from xmlrpc.client import ServerProxy
 
 import psycopg2
 from kombu import Connection
@@ -35,6 +36,9 @@ class AutoconfTester:
         self.autoconf_goahead = False
         self.proceed_to_next_test = True
         self.expected_configuration = None
+        self.supervisor = ServerProxy(
+            "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
+        )
 
     def getDbConnection(self):
         """
@@ -71,6 +75,12 @@ class AutoconfTester:
                 break
             except Exception:
                 time.sleep(1)
+
+    def waitProcess(self, mod, target):
+        state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
+        while state != target:
+            time.sleep(0.5)
+            state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
 
     @staticmethod
     def config_request_rpc(conn):

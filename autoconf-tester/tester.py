@@ -1,5 +1,6 @@
 import json
 import os
+import socket
 import time
 from xmlrpc.client import ServerProxy
 
@@ -38,23 +39,6 @@ class AutoconfTester:
         self.expected_configuration = None
         self.supervisor = ServerProxy(
             "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
-        )
-
-        # exchanges
-        self.config_exchange = Exchange(
-            "config", type="direct", durable=False, delivery_mode=1
-        )
-        self.config_exchange.declare()
-
-        # queues
-        self.config_queue = Queue(
-            "autoconf-config-notify-{}".format(uuid()),
-            exchange=self.config_exchange,
-            routing_key="notify",
-            durable=False,
-            auto_delete=True,
-            max_priority=3,
-            consumer_arguments={"x-priority": 3},
         )
 
     def getDbConnection(self):
@@ -160,6 +144,7 @@ class AutoconfTester:
                 on_message=self.handle_config_notify,
                 queues=[self.config_queue],
                 no_ack=True,
+                accept=["json"],
             ),
             conn.Consumer(
                 on_message=self.handle_autoconf_update_goahead_reply,
@@ -190,19 +175,55 @@ class AutoconfTester:
                     serializer="json",
                 )
                 print("[+] Sent message '{}'".format(msg))
-                while not self.autoconf_goahead:
-                    conn.drain_events()
+                conn.drain_events()
+                try:
+                    conn.drain_events(timeout=10)
+                except socket.timeout:
+                    # avoid infinite loop by timeout
+                    assert self.autoconf_goahead, "[-] Autoconf consumer timeout"
                 print("[+] Concluded autoconf RPC")
+                try:
+                    conn.drain_events(timeout=10)
+                except socket.timeout:
+                    # avoid infinite loop by timeout
+                    assert (
+                        self.config_notify_received
+                    ), "[-] Config notify consumer timeout"
+                print("[+] Async received config notify")
 
     def handle_config_notify(self, msg):
         """
         Receive and validate new configuration based on autoconf update
         """
         raw = msg.payload
-        print("[+] New config!")
-        print(raw)
-        # TODO: actual handling!
-        self.proceed_to_next_test = True
+        assert isinstance(raw, dict), "[-] Raw configuration is not a dict"
+        for outer_key in self.expected_configuration:
+            assert (
+                outer_key in raw
+            ), "[-] Outer key '{}' not in raw configuration".format(outer_key)
+            if isinstance(self.expected_configuration[outer_key], dict):
+                for inner_key in self.expected_configuration[outer_key]:
+                    assert (
+                        inner_key in raw[outer_key]
+                    ), "[-] Inner key '{}' not in raw configuration for outer key '{}'".format(
+                        inner_key, outer_key
+                    )
+                    assert set(
+                        self.expected_configuration[outer_key][inner_key]
+                    ) == set(
+                        raw[outer_key][inner_key]
+                    ), "[-] Values of inner key '{}' for outer key '{}' do not agree: expected '{}', got '{}'".format(
+                        inner_key,
+                        outer_key,
+                        self.expected_configuration[outer_key][inner_key],
+                        raw[outer_key][inner_key],
+                    )
+            elif isinstance(self.expected_configuration[outer_key], list):
+                for element in self.expected_configuration[outer_key]:
+                    for inner_key in element:
+                        pass
+                        # TODO
+        self.config_notify_received = True
 
     def handle_autoconf_update_goahead_reply(self, msg):
         """
@@ -212,6 +233,25 @@ class AutoconfTester:
 
     def test(self):
         with Connection(RABBITMQ_URI) as connection:
+            # exchanges
+            self.config_exchange = Exchange(
+                "config",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+
+            # queues
+            self.config_queue = Queue(
+                "autoconf-config-notify-{}".format(uuid()),
+                exchange=self.config_exchange,
+                routing_key="notify",
+                durable=False,
+                auto_delete=True,
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
+            )
             print("[+] Waiting for config exchange..")
             AutoconfTester.waitExchange(
                 self.config_exchange, connection.default_channel
@@ -239,7 +279,7 @@ class AutoconfTester:
 
             AutoconfTester.config_request_rpc(connection)
 
-            time.sleep(10)
+            time.sleep(5)
 
             db_cur.close()
             db_con.close()
@@ -250,14 +290,9 @@ class AutoconfTester:
                     autoconf_test_info = json.load(f)
                     message = autoconf_test_info["send"]
                     self.expected_configuration = autoconf_test_info["configuration"]
-                    self.proceed_to_next_test = False
+                    self.config_notify_received = False
                     message["timestamp"] = self.time_now + i + 1
                     self.send_next_message(connection, message)
-                    self.proceed_to_next_test = True
-                    # deactivating for now until further checking
-                    # while not self.proceed_to_next_test:
-                    #     print("[+] Waiting for new config notification...")
-                    #     time.sleep(1)
 
             connection.close()
 

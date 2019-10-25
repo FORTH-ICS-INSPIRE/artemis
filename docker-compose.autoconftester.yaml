@@ -20,8 +20,6 @@ services:
             DB_VERSION: ${DB_VERSION}
             BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            SEMAPHORE_REPO_SLUG: ${SEMAPHORE_REPO_SLUG}
-            COVERALLS_REPO_TOKEN: coveralls_token_here
     backend:
         image: artemis_backend
         build: ./backend/
@@ -34,6 +32,7 @@ services:
         expose:
             - ${BACKEND_SUPERVISOR_PORT}
         environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -44,14 +43,30 @@ services:
             DB_PORT: ${DB_PORT}
             DB_NAME: ${DB_NAME}
             DB_VERSION: ${DB_VERSION}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
-            GUI_ENABLED: ${GUI_ENABLED}
+            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
+            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
+            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
+            GUI_ENABLED: "false"
+            BULK_TIMER: 0.1
+            COVERALLS_REPO_TOKEN: coveralls_token_here
+            GIT_BRANCH: ${GIT_BRANCH}
+            GIT_ID: ${GIT_ID}
+            GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME}
+            GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL}
+            GIT_COMMITTER_NAME: ${GIT_COMMITTER_NAME}
+            GIT_COMMITTER_EMAIL: ${GIT_COMMITTER_EMAIL}
+            GIT_MESSAGE: ${GIT_MESSAGE}
+            GIT_REMOTE: ${GIT_REMOTE}
+            GIT_URL: ${GIT_URL}
+            PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
+            SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
+            SEMAPHORE: ${SEMAPHORE}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-            HISTORIC: ${HISTORIC}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
         volumes:
             - ./autoconf-tester/supervisor.d/:/etc/supervisor/conf.d/
             - ./autoconf-tester/configs/:/etc/artemis/

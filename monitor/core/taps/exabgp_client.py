@@ -9,8 +9,11 @@ from kombu import Exchange
 from kombu import Producer
 from kombu import Queue
 from kombu import uuid
+from netaddr import IPAddress
+from netaddr import IPNetwork
 from socketIO_client import BaseNamespace
 from socketIO_client import SocketIO
+from utils import clean_as_path
 from utils import get_logger
 from utils import key_generator
 from utils import load_json
@@ -77,57 +80,88 @@ class ExaBGP:
                         "prefix": bgp_message["prefix"],
                         "peer_asn": int(bgp_message["peer_asn"]),
                     }
-                    if validator.validate(msg):
-                        with Producer(connection) as producer:
-                            msgs = normalize_msg_path(msg)
-                            for msg in msgs:
-                                key_generator(msg)
-                                log.debug(msg)
-                                if self.autoconf:
-                                    self.autoconf_goahead = False
-                                    correlation_id = uuid()
-                                    callback_queue = Queue(
-                                        uuid(),
-                                        durable=False,
-                                        auto_delete=True,
-                                        max_priority=4,
-                                        consumer_arguments={"x-priority": 4},
+                    for prefix in self.prefixes:
+                        try:
+                            base_ip, mask_length = bgp_message["prefix"].split("/")
+                            our_prefix = IPNetwork(prefix)
+                            if (
+                                IPAddress(base_ip) in our_prefix
+                                and int(mask_length) >= our_prefix.prefixlen
+                            ):
+                                if validator.validate(msg):
+                                    with Producer(connection) as producer:
+                                        msgs = normalize_msg_path(msg)
+                                        for msg in msgs:
+                                            key_generator(msg)
+                                            log.debug(msg)
+                                            if self.autoconf:
+                                                if str(our_prefix) in [
+                                                    "0.0.0.0/0",
+                                                    "::/0",
+                                                ]:
+                                                    if msg["type"] == "A":
+                                                        as_path = clean_as_path(
+                                                            msg["path"]
+                                                        )
+                                                        if len(as_path) > 1:
+                                                            # ignore, since this is not a self-network origination, but sth transit
+                                                            break
+                                                    elif msg["type"] == "W":
+                                                        # ignore irrelevant withdrawals
+                                                        break
+                                                self.autoconf_goahead = False
+                                                correlation_id = uuid()
+                                                callback_queue = Queue(
+                                                    uuid(),
+                                                    durable=False,
+                                                    auto_delete=True,
+                                                    max_priority=4,
+                                                    consumer_arguments={
+                                                        "x-priority": 4
+                                                    },
+                                                )
+                                                producer.publish(
+                                                    msg,
+                                                    exchange="",
+                                                    routing_key="conf-autoconf-update-queue",
+                                                    reply_to=callback_queue.name,
+                                                    correlation_id=correlation_id,
+                                                    retry=True,
+                                                    declare=[
+                                                        Queue(
+                                                            "conf-autoconf-update-queue",
+                                                            durable=False,
+                                                            max_priority=4,
+                                                            consumer_arguments={
+                                                                "x-priority": 4
+                                                            },
+                                                        ),
+                                                        callback_queue,
+                                                    ],
+                                                    priority=4,
+                                                    serializer="json",
+                                                )
+                                                with Consumer(
+                                                    connection,
+                                                    on_message=self.handle_autoconf_update_goahead_reply,
+                                                    queues=[callback_queue],
+                                                    no_ack=True,
+                                                ):
+                                                    while not self.autoconf_goahead:
+                                                        connection.drain_events()
+                                            producer.publish(
+                                                msg,
+                                                exchange=self.update_exchange,
+                                                routing_key="update",
+                                                serializer="json",
+                                            )
+                                else:
+                                    log.warning(
+                                        "Invalid format message: {}".format(msg)
                                     )
-                                    producer.publish(
-                                        msg,
-                                        exchange="",
-                                        routing_key="conf-autoconf-update-queue",
-                                        reply_to=callback_queue.name,
-                                        correlation_id=correlation_id,
-                                        retry=True,
-                                        declare=[
-                                            Queue(
-                                                "conf-autoconf-update-queue",
-                                                durable=False,
-                                                max_priority=4,
-                                                consumer_arguments={"x-priority": 4},
-                                            ),
-                                            callback_queue,
-                                        ],
-                                        priority=4,
-                                        serializer="json",
-                                    )
-                                    with Consumer(
-                                        connection,
-                                        on_message=self.handle_autoconf_update_goahead_reply,
-                                        queues=[callback_queue],
-                                        no_ack=True,
-                                    ):
-                                        while not self.autoconf_goahead:
-                                            connection.drain_events()
-                                producer.publish(
-                                    msg,
-                                    exchange=self.update_exchange,
-                                    routing_key="update",
-                                    serializer="json",
-                                )
-                    else:
-                        log.warning("Invalid format message: {}".format(msg))
+                                break
+                        except Exception:
+                            log.exception("exception")
 
                 self.sio.on("exa_message", exabgp_msg)
                 self.sio.emit("exa_subscribe", {"prefixes": self.prefixes})

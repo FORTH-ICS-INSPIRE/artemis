@@ -294,7 +294,6 @@ class AutoconfTester:
                 self.config_exchange, connection.default_channel
             )
 
-            time.sleep(10)
             # query database for the states of the processes
             db_con = self.getDbConnection()
             db_cur = db_con.cursor()

@@ -1,30 +1,5 @@
 version: '3'
 services:
-    testing:
-        build: ./testing/
-        container_name: testing
-        depends_on:
-            - backend
-        networks:
-            - artemis
-        environment:
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DB_NAME: ${DB_NAME}
-            DB_USER: ${DB_USER}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            DB_PASS: ${DB_PASS}
-            REDIS_HOST: ${REDIS_HOST}
-            REDIS_PORT: ${REDIS_PORT}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-        # volumes:
-        #     - ./testing:/root/
     backend:
         image: artemis_backend
         container_name: backend
@@ -58,7 +33,6 @@ services:
             MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             GUI_ENABLED: "false"
             BULK_TIMER: 0.1
-            COVERALLS_REPO_TOKEN: coveralls_token_here
             GIT_BRANCH: ${GIT_BRANCH}
             GIT_ID: ${GIT_ID}
             GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME}
@@ -69,8 +43,6 @@ services:
             GIT_REMOTE: ${GIT_REMOTE}
             GIT_URL: ${GIT_URL}
             PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
-            SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
-            SEMAPHORE: ${SEMAPHORE}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
@@ -79,6 +51,7 @@ services:
             - ./testing/configs/:/etc/artemis/
             - ./testing/supervisor.d/:/etc/supervisor/conf.d/
             - ./entrypoint.test:/root/entrypoint
+            - ./testing/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq

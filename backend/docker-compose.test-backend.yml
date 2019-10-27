@@ -79,6 +79,7 @@ services:
             - ./testing/configs/:/etc/artemis/
             - ./testing/supervisor.d/:/etc/supervisor/conf.d/
             - ./entrypoint.test:/root/entrypoint
+            - ./core/:/root/core/
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq

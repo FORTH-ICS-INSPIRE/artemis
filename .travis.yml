@@ -8,8 +8,8 @@ jobs:
       - stage: check
         install:
             - python -m pip install pre-commit
-        script:
             - pre-commit install
+        script:
             - pre-commit run --all-files
       - stage: test
         name: TestCafe
@@ -18,11 +18,12 @@ jobs:
             - docker pull inspiregroup/artemis-backend || true
             - docker pull inspiregroup/artemis-frontend || true
             - docker pull inspiregroup/artemis-monitor || true
-        script:
             - docker build --pull --cache-from inspiregroup/artemis-backend -t artemis_backend backend/
             - docker build --pull --cache-from inspiregroup/artemis-frontend -t artemis_frontend frontend/
             - docker build --pull --cache-from inspiregroup/artemis-monitor -t artemis_monitor monitor/
+        script:
             - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
+            - docker-compose -f docker-compose.testcafe.yaml down
       - name: BackendTest
         install:
             - pip install codecov
@@ -30,13 +31,15 @@ jobs:
             - docker pull inspiregroup/artemis-backend || true
             - docker pull inspiregroup/artemis-frontend || true
             - docker pull inspiregroup/artemis-monitor || true
-        script:
             - docker build --pull --cache-from inspiregroup/artemis-backend -t artemis_backend backend/
             - docker build --pull --cache-from inspiregroup/artemis-monitor -t artemis_monitor monitor/
-            - docker-compose -f backend/docker-compose.test-backend.yaml up -d
             - docker build -t artemis_testing backend/testing
+            - docker-compose -f backend/docker-compose.test-backend.yaml up -d
+        script:
             - docker run --rm -ti --env-file .env --network artemis_artemis artemis_testing
-            - sh convert_coverage.sh
-            - docker-compose -f backend/docker-compose.test-backend.yaml down
         after_success:
+            - sh convert_coverage.sh
             - codecov
+            - docker-compose -f backend/docker-compose.test-backend.yaml down
+        after_failure:
+            - docker-compose -f backend/docker-compose.test-backend.yaml down

@@ -440,11 +440,6 @@ class Tester:
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
 
-        self.supervisor.supervisor.startProcess("coveralls")
-
-        self.waitProcess("coveralls", 20)  # 20 RUNNING
-        self.waitProcess("coveralls", 100)  # 0 EXITED
-
 
 class Helper:
     @staticmethod

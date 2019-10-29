@@ -1,0 +1,42 @@
+language: python
+
+services:
+    - docker
+
+jobs:
+    include:
+      - stage: check
+        install:
+            - python -m pip install pre-commit
+        script:
+            - pre-commit install
+            - pre-commit run --all-files
+      - stage: test
+        name: TestCafe
+        install: []
+        before_script:
+            - docker pull inspiregroup/artemis-backend || true
+            - docker pull inspiregroup/artemis-frontend || true
+            - docker pull inspiregroup/artemis-monitor || true
+        script:
+            - docker build --pull --cache-from inspiregroup/artemis-backend -t artemis_backend backend/
+            - docker build --pull --cache-from inspiregroup/artemis-frontend -t artemis_frontend frontend/
+            - docker build --pull --cache-from inspiregroup/artemis-monitor -t artemis_monitor monitor/
+            - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
+      - name: BackendTest
+        install:
+            - pip install codecov
+        before_script:
+            - docker pull inspiregroup/artemis-backend || true
+            - docker pull inspiregroup/artemis-frontend || true
+            - docker pull inspiregroup/artemis-monitor || true
+        script:
+            - docker build --pull --cache-from inspiregroup/artemis-backend -t artemis_backend backend/
+            - docker build --pull --cache-from inspiregroup/artemis-monitor -t artemis_monitor monitor/
+            - docker-compose -f backend/docker-compose.test-backend.yaml up -d
+            - docker build -t artemis_testing backend/testing
+            - docker run --rm -ti --env-file .env --network artemis_artemis artemis_testing
+            - sh convert_coverage.sh
+            - docker-compose -f backend/docker-compose.test-backend.yaml down
+        after_success:
+            - codecov

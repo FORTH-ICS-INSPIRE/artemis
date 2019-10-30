@@ -831,7 +831,7 @@ class Configuration:
                         for community in bgp_update["communities"]:
                             asn = int(community["asn"])
                             value = int(community["value"])
-                            if asn == origin_asn:
+                            if asn == origin_asn and value != origin_asn:
                                 neighbors.add(value)
                     for neighbor in neighbors:
                         asns.add(neighbor)

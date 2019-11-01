@@ -4,7 +4,7 @@ services:
     - docker
 
 env:
-    DOCKER_TAG=$(if [ "$TRAVIS_BRANCH" != "master" ]; then echo dev-${TRAVIS_BRANCH}; else echo "latest"; fi)
+    DOCKER_TAG=$(if [ "$TRAVIS_BRANCH" != "master" && "$TRAVIS_PULL_REQUEST_BRANCH" != "" ]; then echo dev-PR${TRAVIS_PULL_REQUEST}; else echo "latest"; fi)
 
 jobs:
     include:
@@ -26,6 +26,8 @@ jobs:
             - docker build --pull --cache-from inspiregroup/artemis-frontend -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
             - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
             - docker build --pull --cache-from inspiregroup/artemis-monitor -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
+        after_success:
+            - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
       - stage: test
         name: TestCafe
@@ -39,20 +41,12 @@ jobs:
             - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
         script:
             - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
-        after_success:
-            - docker-compose -f docker-compose.testcafe.yaml down
-        after_failure:
-            - docker-compose -f docker-compose.testcafe.yaml down
       - name: BackendTest
         install:
             - pip install codecov
         before_script:
             - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
             - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-            - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
-            - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
-            - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
-            - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
             - docker build -t artemis_testing backend/testing
             - docker-compose -f backend/docker-compose.test-backend.yaml up -d
         script:
@@ -60,6 +54,10 @@ jobs:
         after_success:
             - sh convert_coverage.sh
             - codecov
-            - docker-compose -f backend/docker-compose.test-backend.yaml down
-        after_failure:
-            - docker-compose -f backend/docker-compose.test-backend.yaml down
+      - stage: benchmark
+        install: []
+        before_script:
+            - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+        script:
+            - docker-compose -f docker-compose.benchmark.yaml up --abort-on-container-exit

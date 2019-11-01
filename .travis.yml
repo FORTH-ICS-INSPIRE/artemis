@@ -22,22 +22,22 @@ jobs:
             - docker pull inspiregroup/artemis-monitor || true
         script:
             - docker build --pull --cache-from inspiregroup/artemis-backend -t inspiregroup/artemis-backend:${DOCKER_TAG} backend/
-            - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
             - docker build --pull --cache-from inspiregroup/artemis-frontend -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
-            - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
             - docker build --pull --cache-from inspiregroup/artemis-monitor -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
         after_success:
             - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+            - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
             - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
+            - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
       - stage: test
         name: TestCafe
         install: []
         before_script:
             - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
-            - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
             - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
-            - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
             - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+            - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
             - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
         script:
             - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit

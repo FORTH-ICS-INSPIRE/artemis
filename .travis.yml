@@ -11,42 +11,56 @@ jobs:
       - stage: check
         install:
             - python -m pip install pre-commit
-        script:
             - pre-commit install
+        script:
             - pre-commit run --all-files
-      - stage: build docker images
-        install:
+      - stage: test
+        name: TestCafe
+        install: []
         before_script:
             - docker pull inspiregroup/artemis-backend || true
             - docker pull inspiregroup/artemis-frontend || true
             - docker pull inspiregroup/artemis-monitor || true
         script:
-            - docker build --pull --cache-from inspiregroup/artemis-backend -t artemis_backend backend/
-            - docker tag artemis_backend:latest inspiregroup/artemis-backend:${DOCKER_TAG}
+            - docker build --pull --cache-from inspiregroup/artemis-backend -t inspiregroup/artemis-backend:${DOCKER_TAG} backend/
             - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
-            - docker build --pull --cache-from inspiregroup/artemis-frontend -t artemis_frontend frontend/
-            - docker tag artemis_frontend:latest inspiregroup/artemis-frontend:${DOCKER_TAG}
+            - docker build --pull --cache-from inspiregroup/artemis-frontend -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
             - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
-            - docker build --pull --cache-from inspiregroup/artemis-monitor -t artemis_monitor monitor/
-            - docker tag artemis_monitor:latest inspiregroup/artemis-monitor:${DOCKER_TAG}
+            - docker build --pull --cache-from inspiregroup/artemis-monitor -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
             - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
       - stage: test
         name: TestCafe
         install:
         before_script:
             - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
             - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
             - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
         script:
             - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
+        after_success:
+            - docker-compose -f docker-compose.testcafe.yaml down
+        after_failure:
+            - docker-compose -f docker-compose.testcafe.yaml down
       - name: BackendTest
         install:
             - pip install codecov
         before_script:
             - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
             - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
             - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
+            - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
+            - docker build -t artemis_testing backend/testing
+            - docker-compose -f backend/docker-compose.test-backend.yaml up -d
         script:
-            - docker-compose -f backend/docker-compose.test-backend.yml up --abort-on-container-exit
+            - docker run --rm -ti --env-file .env --network artemis_artemis artemis_testing
         after_success:
+            - sh convert_coverage.sh
             - codecov
+            - docker-compose -f backend/docker-compose.test-backend.yaml down
+        after_failure:
+            - docker-compose -f backend/docker-compose.test-backend.yaml down

@@ -94,6 +94,15 @@ def receive(exchange_name, routing_key):
         while recv_cnt < LIMIT_UPDATES:
             if bind_queue.get():
                 recv_cnt += 1
+                if recv_cnt % 1000 == 0:
+                    print(
+                        "[!] Throughput for {} on {}:{} = {} msg/s".format(
+                            recv_cnt,
+                            exchange_name,
+                            routing_key,
+                            LIMIT_UPDATES / (time.time() - start),
+                        )
+                    )
         stop = time.time()
         print(
             "[!] Throughput for {} on {}:{} = {} msg/s".format(

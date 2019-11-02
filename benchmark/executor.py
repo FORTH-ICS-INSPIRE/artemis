@@ -1,5 +1,4 @@
 import os
-import signal
 import sys
 import time
 from multiprocessing import Process
@@ -94,30 +93,20 @@ def receive(exchange_name, routing_key):
         recv_cnt = 0
         start = time.time()
 
-        def exit_gracefully(signum, frame):
-            stop = time.time()
-            print(
-                "[!] Throughput for {} on {}:{} = {} msg/s".format(
-                    recv_cnt, exchange_name, routing_key, LIMIT_UPDATES / (stop - start)
-                )
-            )
-            with open("{}".format(exchange_name), "w") as f:
-                f.write(str(int(LIMIT_UPDATES / (stop - start))))
-
-        signal.signal(signal.SIGTERM, exit_gracefully)
-
         while recv_cnt < LIMIT_UPDATES:
             if bind_queue.get():
                 recv_cnt += 1
                 if recv_cnt % 1000 == 0:
-                    print(
-                        "[!] Throughput for {} on {}:{} = {} msg/s".format(
-                            recv_cnt,
-                            exchange_name,
-                            routing_key,
-                            LIMIT_UPDATES / (time.time() - start),
+                    with open("{}".format(exchange_name), "w") as f:
+                        print(
+                            "[!] Throughput for {} on {}:{} = {} msg/s".format(
+                                recv_cnt,
+                                exchange_name,
+                                routing_key,
+                                LIMIT_UPDATES / (time.time() - start),
+                            )
                         )
-                    )
+                        f.write(str(int(recv_cnt / (time.time() - start))))
         stop = time.time()
         print(
             "[!] Throughput for {} on {}:{} = {} msg/s".format(

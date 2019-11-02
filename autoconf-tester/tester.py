@@ -358,11 +358,6 @@ class AutoconfTester:
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
 
-        self.supervisor.supervisor.startProcess("coveralls")
-
-        self.waitProcess("coveralls", 20)  # 20 RUNNING
-        self.waitProcess("coveralls", 100)  # 0 EXITED
-
 
 if __name__ == "__main__":
     print("[+] Starting")

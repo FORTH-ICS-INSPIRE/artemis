@@ -59,7 +59,6 @@ services:
             GUI_ENABLED: "false"
             BULK_TIMER: 0.1
             COVERALLS_REPO_TOKEN: coveralls_token_here
-            COVERALLS_PARALLEL: ${COVERALLS_PARALLEL}
             GIT_BRANCH: ${GIT_BRANCH}
             GIT_ID: ${GIT_ID}
             GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME}

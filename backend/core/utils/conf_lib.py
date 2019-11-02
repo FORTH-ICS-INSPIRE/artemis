@@ -17,15 +17,28 @@ def create_prefix_defs(yaml_conf, prefixes):
         yaml_conf["prefixes"][prefix_str].yaml_set_anchor(prefix_str)
 
 
-def create_monitor_defs(yaml_conf):
+def create_monitor_defs(yaml_conf, monitors):
     """
     Create separate monitor definitions for the ARTEMIS conf file
     """
+
+    # check monitors validity
+    for monitor in monitors:
+        if monitor not in ["riperis", "bgpstreamlive", "betabmp", "exabgp"]:
+            # invalid monitor definition
+            raise Exception("Invalid monitor definition !!!")
+
     yaml_conf["monitors"] = ruamel.yaml.comments.CommentedMap()
-    yaml_conf["monitors"]["riperis"] = [""]
-    yaml_conf["monitors"]["bgpstreamlive"] = ["routeviews", "ris"]
-    yaml_conf["monitors"]["betabmp"] = ["betabmp"]
-    # other monitors here
+    for monitor in monitors:
+        if monitor != "exabgp":
+            yaml_conf["monitors"][monitor] = monitors[monitor]
+        else:
+            yaml_conf["monitors"][monitor] = ruamel.yaml.comments.CommentedSeq()
+            for dict_elem in monitors[monitor]:
+                exabgp_map = ruamel.yaml.comments.CommentedMap()
+                exabgp_map["ip"] = dict_elem["ip"]
+                exabgp_map["port"] = dict_elem["port"]
+                yaml_conf["monitors"][monitor].append(exabgp_map)
 
 
 def create_asn_defs(yaml_conf, asns):
@@ -53,7 +66,9 @@ def create_asn_defs(yaml_conf, asns):
             yaml_conf["asns"][asn_group].append(asn)
 
 
-def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
+def create_rule_defs(
+    yaml_conf, prefixes, asns, prefix_pols, mitigation_script_path="manual"
+):
     """
     Create grouped rule definitions for the ARTEMIS conf file
     """
@@ -63,12 +78,13 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
     # (i.e., which prefixes have the same origin and neighbor)
     prefixes_per_orig_neighb_group = {}
     for prefix in sorted(prefix_pols):
-        origin_asns = sorted(list(prefix_pols[prefix]["origins"]))
-        neighbors = sorted(list(prefix_pols[prefix]["neighbors"]))
-        key = (json.dumps(origin_asns), json.dumps(neighbors))
-        if key not in prefixes_per_orig_neighb_group:
-            prefixes_per_orig_neighb_group[key] = set()
-        prefixes_per_orig_neighb_group[key].add(prefix)
+        for dict_item in prefix_pols[prefix]:
+            origin_asns = sorted(list(dict_item["origins"]))
+            neighbors = sorted(list(dict_item["neighbors"]))
+            key = (json.dumps(origin_asns), json.dumps(neighbors))
+            if key not in prefixes_per_orig_neighb_group:
+                prefixes_per_orig_neighb_group[key] = set()
+            prefixes_per_orig_neighb_group[key].add(prefix)
 
     # then form the actual rules
     for key in sorted(prefixes_per_orig_neighb_group):
@@ -93,11 +109,16 @@ def create_rule_defs(yaml_conf, prefixes, asns, prefix_pols):
                     neighbor_groups.add(asn_group)
             else:
                 pol_dict["neighbors"].append(yaml_conf["asns"][asn_str])
-        pol_dict["mitigation"] = "manual"
+        if mitigation_script_path not in ["", "manual"]:
+            pol_dict["mitigation"] = mitigation_script_path
+        else:
+            pol_dict["mitigation"] = "manual"
         yaml_conf["rules"].append(pol_dict)
 
 
-def generate_config_yml(prefixes, asns, prefix_pols, yml_file=None):
+def generate_config_yml(
+    prefixes, monitors, asns, prefix_pols, mitigation_script_path, yml_file=None
+):
     """
     Write the config.yaml file content
     """
@@ -115,9 +136,9 @@ def generate_config_yml(prefixes, asns, prefix_pols, yml_file=None):
 
         # populate conf
         create_prefix_defs(yaml_conf, prefixes)
-        create_monitor_defs(yaml_conf)
+        create_monitor_defs(yaml_conf, monitors)
         create_asn_defs(yaml_conf, asns)
-        create_rule_defs(yaml_conf, prefixes, asns, prefix_pols)
+        create_rule_defs(yaml_conf, prefixes, asns, prefix_pols, mitigation_script_path)
 
         # in-file comments
         yaml_conf.yaml_set_comment_before_after_key(

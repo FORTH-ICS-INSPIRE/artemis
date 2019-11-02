@@ -1,0 +1,44 @@
+#!/bin/bash
+
+pip --no-cache-dir install coverage
+
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+./wait-for ${DB_HOST}:${DB_PORT} -t 0
+
+version=$(PGPASSWORD=$DB_PASS psql postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME} -c "select version from db_details;" -tA)
+
+start_backend() {
+    echo "[+] Starting Backend"
+    if [ "$GUI_ENABLED" = "true" ]; then
+        ./wait-for ${HASURA_HOST}:${HASURA_PORT} -t 0
+        json_hasura=$(cat hasura_init.json | tr '\n' ' ')
+        result=$(curl -s "http://${HASURA_HOST}:${HASURA_PORT}/v1/query" -H "Content-Type: application/json" -H "X-Hasura-Access-Key: ${HASURA_GRAPHQL_ACCESS_KEY}" --data "$json_hasura")
+        if [[ $result = *error* ]]; then
+            echo "[!] initialization of Hasura failed: $result"
+            exit -1
+        fi
+    fi
+    redis-server /etc/redis.conf --daemonize yes --protected-mode no
+    supervisord -n
+}
+
+if [ $version -eq $DB_VERSION ]; then
+    echo "[+] Running on intended database version ($DB_VERSION).. No migration required"
+    start_backend
+elif [ $version -gt $DB_VERSION ]; then
+    echo "[!] Trying to run on a newer ($version) than intended ($DB_VERSION) database version. Please do the following steps:"
+    echo "[!] git pull origin master"
+    echo "[!] docker-compose pull"
+    echo "[!] start ARTEMIS normally"
+    exit -1
+else
+    echo "[!] Older ($version) than intended ($DB_VERSION) Database version found.. Trying to migrate database automatically"
+    python -u migrate/migrate.py
+    if [ "$?" -eq 0 ]; then
+        echo "[+] Migration sucessful.."
+        start_backend
+    else
+        echo "[+] Automated migration failed. Please provide the logs to the development team."
+        exit -1
+    fi
+fi

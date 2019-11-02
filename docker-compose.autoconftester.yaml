@@ -1,25 +1,5 @@
 version: '3'
 services:
-    autoconftester:
-        build: ./autoconf-tester/
-        container_name: autoconftester
-        depends_on:
-            - backend
-        networks:
-            - artemis
-        environment:
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DB_USER: ${DB_USER}
-            DB_PASS: ${DB_PASS}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            DB_NAME: ${DB_NAME}
-            DB_VERSION: ${DB_VERSION}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
     backend:
         image: artemis_backend
         build: ./backend/
@@ -31,6 +11,7 @@ services:
             - artemis
         expose:
             - ${BACKEND_SUPERVISOR_PORT}
+            - ${REDIS_PORT}
         environment:
             ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -47,31 +28,18 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
-            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             GUI_ENABLED: "false"
             BULK_TIMER: 0.1
-            COVERALLS_REPO_TOKEN: coveralls_token_here
-            COVERALLS_PARALLEL: ${COVERALLS_PARALLEL}
-            GIT_BRANCH: ${GIT_BRANCH}
-            GIT_ID: ${GIT_ID}
-            GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME}
-            GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL}
-            GIT_COMMITTER_NAME: ${GIT_COMMITTER_NAME}
-            GIT_COMMITTER_EMAIL: ${GIT_COMMITTER_EMAIL}
-            GIT_MESSAGE: ${GIT_MESSAGE}
-            GIT_REMOTE: ${GIT_REMOTE}
-            GIT_URL: ${GIT_URL}
             PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
-            SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
-            SEMAPHORE: ${SEMAPHORE}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
+            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
         volumes:
-            - ./autoconf-tester/supervisor.d/:/etc/supervisor/conf.d/
             - ./autoconf-tester/configs/:/etc/artemis/
-            - ./backend/entrypoint.test:/root/entrypoint
+            - ./autoconf-tester/supervisor.d/:/etc/supervisor/conf.d/
+            - ./autoconf-tester/entrypoint.test:/root/entrypoint
+            - ./autoconf-tester/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -80,10 +48,6 @@ services:
             - artemis
         expose:
             - ${RABBITMQ_PORT}
-            # - 15672 management port
-        environment:
-            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
@@ -98,15 +62,10 @@ services:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
-            DB_BACKUP: ${DB_BACKUP}
-            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
-            DB_HIJACK_DORMANT: ${DB_HIJACK_DORMANT}
         volumes:
-            - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
-        entrypoint: ["./postgres-entrypoint.sh"]
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
@@ -118,10 +77,8 @@ services:
             - artemis
         environment:
             - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-            - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+            - AMQP_URI=amqp://${RABBITMQ_HOST}//
             - BRIDGE_CHANNELS=events:amq.direct
-            # - RUST_LOG=debug
-            # - RUST_BACKTRACE=1
         volumes:
             - ./autoconf-tester/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]

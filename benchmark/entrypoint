@@ -3,7 +3,7 @@
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${BACKEND_SUPERVISOR_HOST}:${BACKEND_SUPERVISOR_PORT} -t 0
 
-timeout -t 420 python executor.py 10000
+timeout -t 200 python executor.py 10000
 
 if [ ${PULL_REQUEST_NUMBER} != "false" ]; then
     COMMENT_ID=$(curl https://api.github.com/repos/${REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments | jq '.[] | select(.body | contains("Benchmark Result")) | .id')

@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis.svg?branch=master)](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis)
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-[![Coverage Status](https://coveralls.io/repos/github/FORTH-ICS-INSPIRE/artemis/badge.svg?branch=master)](https://coveralls.io/github/FORTH-ICS-INSPIRE/artemis?branch=master)
+[![Coverage Status](https://codecov.io/gh/FORTH-ICS-INSPIRE/artemis/branch/master/graph/badge.svg)](https://codecov.io/gh/FORTH-ICS-INSPIRE/artemis)
 [![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
 [![Mailing list](https://img.shields.io/badge/mail-ARTEMIS-green.svg)](http://lists.ics.forth.gr/mailman/listinfo/artemis)
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)

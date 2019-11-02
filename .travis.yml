@@ -63,6 +63,19 @@ jobs:
     after_success:
     - sh convert_coverage.sh
     - codecov
+  - name: AutoconfTest
+    install:
+    - pip install codecov
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker build -t artemis_autoconf_testing autoconf-tester
+    - docker-compose -f docker-compose.testautoconf.yaml up -d
+    script:
+    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
+    after_success:
+    - sh convert_coverage.sh
+    - codecov
   - name: Benchmark
     install: []
     before_script:

@@ -5,6 +5,9 @@ env:
   global:
   - DOCKER_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
     == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
+branches:
+  only:
+    - master
 jobs:
   include:
   - stage: check
@@ -25,7 +28,7 @@ jobs:
     - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
-  - stage: test
+  - stage: run
     name: TestCafe
     install: []
     before_script:
@@ -52,7 +55,7 @@ jobs:
     after_success:
     - sh convert_coverage.sh
     - codecov
-  - stage: benchmark
+  - name: Benchmark
     install: []
     before_script:
     - git status

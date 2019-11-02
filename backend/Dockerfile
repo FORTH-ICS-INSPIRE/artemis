@@ -10,7 +10,7 @@ COPY . ./
 
 RUN pip --no-cache-dir install -r requirements.txt \
     && pip --no-cache-dir install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49 \
-    && make clean && make \
+    && make clean && make -j 4 \
     && mkdir -p /etc/artemis/ \
     && mkdir -p /var/log/artemis/
 

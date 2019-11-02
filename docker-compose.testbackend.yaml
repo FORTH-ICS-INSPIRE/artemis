@@ -1,32 +1,8 @@
 version: '3'
 services:
-    testing:
-        build: ./testing/
-        container_name: testing
-        depends_on:
-            - backend
-        networks:
-            - artemis
-        environment:
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DB_NAME: ${DB_NAME}
-            DB_USER: ${DB_USER}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            DB_PASS: ${DB_PASS}
-            REDIS_HOST: ${REDIS_HOST}
-            REDIS_PORT: ${REDIS_PORT}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-        # volumes:
-        #     - ./testing:/root/
     backend:
         image: artemis_backend
+        build: ./backend/
         container_name: backend
         depends_on:
             - rabbitmq
@@ -36,8 +12,6 @@ services:
         expose:
             - ${BACKEND_SUPERVISOR_PORT}
             - ${REDIS_PORT}
-        entrypoint:
-            - "./entrypoint.test"
         environment:
             ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -54,30 +28,18 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
-            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             GUI_ENABLED: "false"
             BULK_TIMER: 0.1
-            COVERALLS_REPO_TOKEN: coveralls_token_here
-            GIT_BRANCH: ${GIT_BRANCH}
-            GIT_ID: ${GIT_ID}
-            GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME}
-            GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL}
-            GIT_COMMITTER_NAME: ${GIT_COMMITTER_NAME}
-            GIT_COMMITTER_EMAIL: ${GIT_COMMITTER_EMAIL}
-            GIT_MESSAGE: ${GIT_MESSAGE}
-            GIT_REMOTE: ${GIT_REMOTE}
-            GIT_URL: ${GIT_URL}
             PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
-            SEMAPHORE_BUILD_NUMBER: ${SEMAPHORE_BUILD_NUMBER}
-            SEMAPHORE: ${SEMAPHORE}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
+            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
         volumes:
-            - ./testing/configs/:/etc/artemis/
-            - ./testing/supervisor.d/:/etc/supervisor/conf.d/
-            - ./entrypoint.test:/root/entrypoint
+            - ./tester/configs/:/etc/artemis/
+            - ./tester/supervisor.d/:/etc/supervisor/conf.d/
+            - ./tester/entrypoint.test:/root/entrypoint
+            - ./tester/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -87,7 +49,7 @@ services:
         expose:
             - ${RABBITMQ_PORT}
         volumes:
-            - ./testing/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
+            - ./tester/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
@@ -101,9 +63,9 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
-            - ./testing/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./testing/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./testing/db/libs/:/docker-entrypoint-initdb.d/libs/
+            - ./tester/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./tester/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./tester/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
@@ -118,7 +80,7 @@ services:
             - AMQP_URI=amqp://${RABBITMQ_HOST}//
             - BRIDGE_CHANNELS=events:amq.direct
         volumes:
-            - ./wait-for:/root/wait-for
+            - ./tester/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
 
 networks:

@@ -52,6 +52,7 @@ services:
             SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             HISTORIC: ${HISTORIC}
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
+            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
     monitor:
         image: artemis_monitor
         build: ./monitor/

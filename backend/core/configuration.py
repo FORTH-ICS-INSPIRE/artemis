@@ -261,6 +261,17 @@ class Configuration:
                     # Remove the comment to avoid marking config as different
                     if "comment" in self.data:
                         del self.data["comment"]
+                    # after accepting/writing, format new configuration correctly
+                    with open(self.file, "r") as f:
+                        raw = f.read()
+                    yaml_conf = ruamel.yaml.load(
+                        raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                    )
+                    ruamel.yaml.dump(yaml_conf, Dumper=ruamel.yaml.RoundTripDumper)
+                    with open(self.file, "w") as f:
+                        ruamel.yaml.dump(
+                            yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
+                        )
 
                 # reply back to the sender with a configuration accepted
                 # message.

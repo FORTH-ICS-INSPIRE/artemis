@@ -10,6 +10,7 @@ from kombu import Producer
 from kombu import Queue
 from kombu import uuid
 
+
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
 RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
@@ -91,9 +92,21 @@ def receive(exchange_name, routing_key):
 
         recv_cnt = 0
         start = time.time()
+
         while recv_cnt < LIMIT_UPDATES:
             if bind_queue.get():
                 recv_cnt += 1
+                if recv_cnt % 1000 == 0:
+                    with open("{}".format(exchange_name), "w") as f:
+                        print(
+                            "[!] Throughput for {} on {}:{} = {} msg/s".format(
+                                recv_cnt,
+                                exchange_name,
+                                routing_key,
+                                LIMIT_UPDATES / (time.time() - start),
+                            )
+                        )
+                        f.write(str(int(recv_cnt / (time.time() - start))))
         stop = time.time()
         print(
             "[!] Throughput for {} on {}:{} = {} msg/s".format(

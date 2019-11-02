@@ -10,18 +10,22 @@
 - Get prefix, origin and neighbor info (communities) from exaBGP or hist 'A'/'W' updates
 - autoconf flag in configuration for exaBGP and hist monitors
 - autoconf tester
+- ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
+- TravisCI and CodeCov support
 
 ### Changed
-- TBD (Changed existing functionality)
+- Automatic config file formatting upon config modification
+- DB_AUTOCLEAN and dormant hijack thresholds set to 1 day (24h) by default
+- change of conf_lib.py in order to support a list of dicts per prefix
 
 ### Fixed
-- TBD (bug-fix)
+- small fixes in conf_lib
 
 ### Removed
 - TBD (removed a feature)
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- SemaphoreCI and coveralls
 
 ### Security
 - TBD (addressing vulnerability)

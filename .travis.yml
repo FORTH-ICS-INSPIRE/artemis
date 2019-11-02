@@ -17,22 +17,31 @@ jobs:
     script:
     - pre-commit run --all-files
   - stage: build and push docker
+    name: backend
     install: []
     before_script:
-    - git status
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
     - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} backend/
-    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
-    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
-    - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
+  - name: frontend
+    install: []
+    before_script:
+    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    script:
+    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
+  - name: monitor
+    install: []
+    before_script:
+    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    script:
+    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
+    - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
   - stage: run
     name: TestCafe
     install: []
     before_script:
-    - git status
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
     - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
@@ -45,7 +54,6 @@ jobs:
     install:
     - pip install codecov
     before_script:
-    - git status
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_testing backend/testing
@@ -58,7 +66,6 @@ jobs:
   - name: Benchmark
     install: []
     before_script:
-    - git status
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_benchmark benchmark

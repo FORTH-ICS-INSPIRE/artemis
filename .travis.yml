@@ -56,8 +56,8 @@ jobs:
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - docker build -t artemis_testing backend/testing
-    - docker-compose -f backend/docker-compose.test-backend.yaml up -d
+    - docker build -t artemis_testing tester
+    - docker-compose -f docker-compose.testbackend.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_testing
     after_success:

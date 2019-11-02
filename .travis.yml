@@ -18,19 +18,10 @@ jobs:
     before_script:
     - git status
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || docker pull inspiregroup/artemis-backend
-      || true
-    - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || docker pull inspiregroup/artemis-frontend
-      || true
-    - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || docker pull inspiregroup/artemis-monitor
-      || true
     script:
-    - docker build --pull --cache-from inspiregroup/artemis-backend -t inspiregroup/artemis-backend:${DOCKER_TAG}
-      backend/
-    - docker build --pull --cache-from inspiregroup/artemis-frontend -t inspiregroup/artemis-frontend:${DOCKER_TAG}
-      frontend/
-    - docker build --pull --cache-from inspiregroup/artemis-monitor -t inspiregroup/artemis-monitor:${DOCKER_TAG}
-      monitor/
+    - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} backend/
+    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}

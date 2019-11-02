@@ -128,7 +128,7 @@ class Database:
 
                 for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
                     if not ctx:
-                        break
+                        continue
                     server = ServerProxy(ctx)
                     processes = [
                         (x["name"], x["state"] == 20)

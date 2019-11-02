@@ -49,7 +49,7 @@ services:
         expose:
             - ${RABBITMQ_PORT}
         volumes:
-            - ./testing/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
+            - ./tester/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
@@ -63,9 +63,9 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
-            - ./testing/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./testing/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./testing/db/libs/:/docker-entrypoint-initdb.d/libs/
+            - ./tester/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./tester/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./tester/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
@@ -80,7 +80,7 @@ services:
             - AMQP_URI=amqp://${RABBITMQ_HOST}//
             - BRIDGE_CHANNELS=events:amq.direct
         volumes:
-            - ./wait-for:/root/wait-for
+            - ./tester/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
 
 networks:

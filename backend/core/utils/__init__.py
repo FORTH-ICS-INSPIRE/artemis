@@ -16,8 +16,8 @@ import yaml
 
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
-MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST", "monitor")
-MON_SUPERVISOR_PORT = os.getenv("MON_SUPERVISOR_PORT", 9001)
+MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST")
+MON_SUPERVISOR_PORT = os.getenv("MON_SUPERVISOR_PORT")
 HISTORIC = os.getenv("HISTORIC", "false")
 DB_NAME = os.getenv("DB_NAME", "artemis_db")
 DB_USER = os.getenv("DB_USER", "artemis_user")
@@ -64,9 +64,12 @@ RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
 BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
 )
-MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
-    MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
-)
+if MON_SUPERVISOR_HOST and MON_SUPERVISOR_PORT:
+    MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
+        MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
+    )
+else:
+    MON_SUPERVISOR_URI = None
 RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
 ASN_REGEX = r"^AS(\d+)$"
 
@@ -166,17 +169,22 @@ log = get_logger()
 class ModulesState:
     def __init__(self):
         self.backend_server = ServerProxy(BACKEND_SUPERVISOR_URI)
-        self.mon_server = ServerProxy(MON_SUPERVISOR_URI)
+        if MON_SUPERVISOR_URI:
+            self.mon_server = ServerProxy(MON_SUPERVISOR_URI)
+        else:
+            self.mon_server = None
 
     def call(self, module, action):
         try:
             if module == "all":
                 if action == "start":
                     for ctx in {self.backend_server, self.mon_server}:
-                        ctx.supervisor.startAllProcesses()
+                        if ctx:
+                            ctx.supervisor.startAllProcesses()
                 elif action == "stop":
                     for ctx in {self.backend_server, self.mon_server}:
-                        ctx.supervisor.stopAllProcesses()
+                        if ctx:
+                            ctx.supervisor.stopAllProcesses()
             else:
                 ctx = self.backend_server
                 if module == "monitor":
@@ -199,6 +207,8 @@ class ModulesState:
         ctx = self.backend_server
         if module == "monitor":
             ctx = self.mon_server
+        if not ctx:
+            return False
 
         try:
             if up:

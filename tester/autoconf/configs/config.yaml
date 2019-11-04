@@ -1,4 +1,10 @@
 prefixes: {}
 monitors: {}
-asns: {}
+asns:
+  AUTOCONF_AS_1:
+  - 1
+  AUTOCONF_AS_2:
+  - 2
+  AUTOCONF_AS_3:
+  - 3
 rules: []

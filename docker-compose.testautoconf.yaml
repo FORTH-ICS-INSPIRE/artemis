@@ -80,7 +80,7 @@ services:
             - AMQP_URI=amqp://${RABBITMQ_HOST}//
             - BRIDGE_CHANNELS=events:amq.direct
         volumes:
-            - ./tester/wait-for:/root/wait-for
+            - ./backend/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
 
 networks:

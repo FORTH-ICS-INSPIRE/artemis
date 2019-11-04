@@ -9,7 +9,7 @@ COPY requirements.txt /root/
 RUN pip --no-cache-dir install -r requirements.txt
 
 COPY entrypoint /root/
-COPY ../wait-for /root/
+COPY wait-for /root/
 RUN mkdir -p /root/testfiles /root/configs
 COPY testfiles/ /root/testfiles/
 COPY configs/ /root/configs/

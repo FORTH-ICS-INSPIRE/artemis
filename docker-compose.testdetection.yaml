@@ -36,8 +36,8 @@ services:
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
         volumes:
-            - ./tester/configs/:/etc/artemis/
-            - ./tester/supervisor.d/:/etc/supervisor/conf.d/
+            - ./tester/detection/configs/:/etc/artemis/
+            - ./tester/detection/supervisor.d/:/etc/supervisor/conf.d/
             - ./tester/entrypoint.test:/root/entrypoint
             - ./tester/.coveragerc:/root/core/.coveragerc
     rabbitmq:
@@ -49,7 +49,7 @@ services:
         expose:
             - ${RABBITMQ_PORT}
         volumes:
-            - ./tester/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
+            - ./tester/detection/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
@@ -63,9 +63,9 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
-            - ./tester/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./tester/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./tester/db/libs/:/docker-entrypoint-initdb.d/libs/
+            - ./tester/detection/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./tester/detection/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./tester/detection/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge

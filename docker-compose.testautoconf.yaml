@@ -36,10 +36,10 @@ services:
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
         volumes:
-            - ./autoconf-tester/configs/:/etc/artemis/
-            - ./autoconf-tester/supervisor.d/:/etc/supervisor/conf.d/
-            - ./autoconf-tester/entrypoint.test:/root/entrypoint
-            - ./autoconf-tester/.coveragerc:/root/core/.coveragerc
+            - ./tester/autoconf/configs/:/etc/artemis/
+            - ./tester/autoconf/supervisor.d/:/etc/supervisor/conf.d/
+            - ./tester/entrypoint.test:/root/entrypoint
+            - ./tester/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -80,7 +80,7 @@ services:
             - AMQP_URI=amqp://${RABBITMQ_HOST}//
             - BRIDGE_CHANNELS=events:amq.direct
         volumes:
-            - ./autoconf-tester/wait-for:/root/wait-for
+            - ./tester/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
 
 networks:

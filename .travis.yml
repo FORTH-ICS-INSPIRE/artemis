@@ -77,6 +77,7 @@ jobs:
     - sh convert_coverage.sh
     - codecov
   - name: Benchmark
+    if: type == pull_request
     install: []
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}

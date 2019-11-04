@@ -1,0 +1,14 @@
+prefixes: {}
+monitors:
+  riperis: [''] # by default this uses all available monitors
+  bgpstreamlive:
+    - routeviews
+    - ris
+  betabmp:
+    - betabmp
+  exabgp:
+    - ip: exabgp # this will automatically be resolved to the exabgp container's IP
+      port: 5000 # default port
+      autoconf: "true"
+asns: {}
+rules: []

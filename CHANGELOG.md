@@ -7,6 +7,9 @@
   - Artemis::BGP Updates per prefix
   - Artemis::BGP Updates per service
   - Artemis::Offending ASes
+- Get prefix, origin and neighbor info (communities) from exaBGP or hist 'A'/'W' updates
+- autoconf flag in configuration for exaBGP and hist monitors
+- autoconf tester
 - ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
 - TravisCI and CodeCov support
 
@@ -22,7 +25,7 @@
 - TBD (removed a feature)
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- SemaphoreCI and coveralls
 
 ### Security
 - TBD (addressing vulnerability)

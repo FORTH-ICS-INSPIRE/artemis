@@ -50,16 +50,29 @@ jobs:
     - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
     script:
     - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
-  - name: BackendTest
+  - name: TestDetection
     install:
     - pip install codecov
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - docker build -t artemis_testing tester
-    - docker-compose -f docker-compose.testbackend.yaml up -d
+    - docker build -t artemis_detection_testing tester/detection
+    - docker-compose -f docker-compose.testdetection.yaml up -d
     script:
-    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_testing
+    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
+    after_success:
+    - sh convert_coverage.sh
+    - codecov
+  - name: TestAutoconf
+    install:
+    - pip install codecov
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker build -t artemis_autoconf_testing tester/autoconf
+    - docker-compose -f docker-compose.testautoconf.yaml up -d
+    script:
+    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
     after_success:
     - sh convert_coverage.sh
     - codecov

@@ -498,7 +498,7 @@ class Database:
                 queues=[callback_queue],
                 no_ack=True,
             ):
-                while not self.rules:
+                while self.rules is None:
                     self.connection.drain_events()
 
         def handle_bgp_update(self, message):

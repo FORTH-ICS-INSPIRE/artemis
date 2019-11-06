@@ -25,6 +25,7 @@ from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
+from utils import hijack_log_field_formatter
 from utils import HISTORIC
 from utils import ModulesState
 from utils import MON_SUPERVISOR_URI
@@ -1477,7 +1478,7 @@ class Database:
                     query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
                     self.wo_db.execute_values(
                         query, list(update_bgp_entries_serial), page_size=1000
-                    )    
+                    )
                     update_bgp_entries_parallel.clear()
                     update_bgp_entries_serial.clear()
                     update_bgp_entries_dict.clear()

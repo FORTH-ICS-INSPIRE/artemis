@@ -72,7 +72,7 @@ class DB:
             self._cursor = self._connection.cursor()
             return self._cursor
 
-    def execute(self, query, vals=None, retry_counter=0):
+    def execute(self, query, vals=None, retry_counter=0, fetch_one=False):
         try:
             if vals:
                 self._cursor.execute(query, vals)
@@ -97,7 +97,10 @@ class DB:
             if not self.readonly:
                 self._connection.commit()
         if self.readonly:
-            return self._cursor.fetchall()
+            if self.fetch_one:
+                return self._cursor.fetchone()
+            else:
+                return self._cursor.fetchall()
 
     def execute_batch(self, query, vals, page_size=1000, retry_counter=0):
         try:

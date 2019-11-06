@@ -1670,8 +1670,9 @@ class Database:
         def _retrieve_most_recent_config_hash(self):
             try:
                 hash_ = self.ro_db.execute(
-                    "SELECT key from configs ORDER BY time_modified DESC LIMIT 1"
-                )[0]
+                    "SELECT key from configs ORDER BY time_modified DESC LIMIT 1",
+                    fetch_one=True,
+                )
 
                 if isinstance(hash_, tuple):
                     return hash_[0]

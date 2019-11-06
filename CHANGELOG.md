@@ -14,7 +14,7 @@
 - DB_AUTOCLEAN and dormant hijack thresholds set to 1 day (24h) by default
 
 ### Fixed
-- TBD (bug-fix)
+- Issue on handle_hijack_update() DB function with multiple selects
 
 ### Removed
 - TBD (removed a feature)

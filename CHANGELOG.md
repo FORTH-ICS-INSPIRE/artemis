@@ -19,6 +19,7 @@
 - change of conf_lib.py in order to support a list of dicts per prefix
 
 ### Fixed
+- Issue on handle_hijack_update() DB function with multiple selects
 - small fixes in conf_lib
 
 ### Removed

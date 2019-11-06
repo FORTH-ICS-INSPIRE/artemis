@@ -3,12 +3,12 @@
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
 - Grafana provisioning, env vars and 4 dashboards
-- Artemis::BGP Hijacks per prefix
-- Artemis::BGP Updates per prefix
-- Artemis::BGP Updates per service
-- Artemis::Offending ASes
-- ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
-- TravisCI and CodeCov support
+  - Artemis::BGP Hijacks per prefix
+  - Artemis::BGP Updates per prefix
+  - Artemis::BGP Updates per service
+  - Artemis::Offending ASes
+  - ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
+  - TravisCI and CodeCov support
 
 ### Changed
 - Automatic config file formatting upon config modification

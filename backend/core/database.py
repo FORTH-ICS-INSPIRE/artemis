@@ -164,8 +164,7 @@ class Database:
                         if x["group"] in ["monitor", "detection", "mitigation"]
                     ]
 
-                    with get_wo_cursor(self.wo_conn) as db_cur:
-                        psycopg2.extras.execute_batch(db_cur, query, processes)
+                    self.wo_db.execute_batch(query, processes)
 
             except Exception:
                 log.exception("exception")
@@ -456,9 +455,7 @@ class Database:
             try:
                 query = "SELECT name, running FROM intended_process_states"
 
-                with get_ro_cursor(self.ro_conn) as db_cur:
-                    db_cur.execute(query)
-                    entries = db_cur.fetchall()
+                entries = self.ro_db.execute(query)
                 modules_state = ModulesState()
                 for entry in entries:
                     # entry[0] --> module name, entry[1] --> intended state

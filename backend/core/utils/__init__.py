@@ -224,7 +224,6 @@ class ModulesState:
             log.exception("exception")
             return False
 
-
 def flatten(items, seqtypes=(list, tuple)):
     res = []
     if not isinstance(items, seqtypes):

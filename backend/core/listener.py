@@ -2,7 +2,10 @@ import os
 import sys
 
 from supervisor.childutils import listener
+from utils import get_logger
 from utils.tool import DB
+
+log = get_logger()
 
 
 def write_stdout(s):
@@ -44,6 +47,9 @@ def run():
 
         if headers["eventname"] in ("PROCESS_STATE_RUNNING", "PROCESS_STATE_STOPPED"):
             process = body["processname"]
+            log.debug(
+                "message from {} and event {}".format(process, headers["eventname"])
+            )
             if process != "listener":
                 new_state = headers["eventname"] == "PROCESS_STATE_RUNNING"
                 write_stderr("{} -> {}".format(process, new_state))

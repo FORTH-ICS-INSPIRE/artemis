@@ -50,6 +50,7 @@ class DB:
                 self._connection.set_session(
                     autocommit=self.autocommit, readonly=self.readonly
                 )
+                log.debug("connection established")
                 return self._connection
             except psycopg2.OperationalError as error:
                 if not self.reconnect or retry_counter >= LIMIT_RETRIES:
@@ -73,6 +74,7 @@ class DB:
             return self._cursor
 
     def execute(self, query, vals=None, retry_counter=0, fetch_one=False):
+        log.debug("execute query {}".format(query))
         try:
             if vals:
                 self._cursor.execute(query, vals)
@@ -88,7 +90,7 @@ class DB:
             )
             time.sleep(1)
             self.reset()
-            self.execute(query, vals, retry_counter)
+            self.execute(query, vals, retry_counter, fetch_one)
         except (Exception, psycopg2.Error) as error:
             if not self.readonly:
                 self._connection.rollback()
@@ -97,12 +99,13 @@ class DB:
             if not self.readonly:
                 self._connection.commit()
         if self.readonly:
-            if self.fetch_one:
+            if fetch_one:
                 return self._cursor.fetchone()
             else:
                 return self._cursor.fetchall()
 
     def execute_batch(self, query, vals, page_size=1000, retry_counter=0):
+        log.debug("execute_batch query {}".format(query))
         try:
             psycopg2.extras.execute_batch(
                 self._cursor, query, vals, page_size=page_size
@@ -129,6 +132,7 @@ class DB:
             return self._cursor.fetchall()
 
     def execute_values(self, query, vals, page_size=1000, retry_counter=0):
+        log.debug("execute_values query {}".format(query))
         try:
             psycopg2.extras.execute_values(
                 self._cursor, query, vals, page_size=page_size
@@ -152,11 +156,13 @@ class DB:
             self._connection.commit()
 
     def reset(self):
+        log.debug("connection reset")
         self.close()
         self.connect()
         self.cursor()
 
     def close(self):
+        log.debug("connection close")
         if self._connection:
             if self._cursor:
                 self._cursor.close()
@@ -166,5 +172,6 @@ class DB:
         self._cursor = None
 
     def init(self):
+        log.debug("connection init")
         self.connect()
         self.cursor()

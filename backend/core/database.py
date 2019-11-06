@@ -1388,7 +1388,7 @@ class Database:
                     "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
                     "WHERE bgp_updates.key=%s"
                 )
-                self.wo_db.execute_values(
+                self.wo_db.execute_batch(
                     query, list(update_hijack_withdrawals_serial), page_size=1000
                 )
                 update_hijack_withdrawals_parallel.clear()

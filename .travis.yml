@@ -63,6 +63,8 @@ jobs:
     after_success:
     - sh convert_coverage.sh
     - codecov
+    after_failure:
+    - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
     install:
     - pip install codecov
@@ -76,6 +78,8 @@ jobs:
     after_success:
     - sh convert_coverage.sh
     - codecov
+    after_failure:
+    - docker-compose -f docker-compose.testautoconf.yaml logs
   - name: Benchmark
     if: type == pull_request
     install: []

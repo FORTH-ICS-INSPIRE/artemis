@@ -101,8 +101,7 @@ class DB:
         if self.readonly:
             if fetch_one:
                 return self._cursor.fetchone()
-            else:
-                return self._cursor.fetchall()
+            return self._cursor.fetchall()
 
     def execute_batch(self, query, vals, page_size=1000, retry_counter=0):
         log.debug("execute_batch query {}".format(query))

@@ -3,10 +3,10 @@
 ## [UNRELEASED] (NAME) - YYYY-MM-DD
 ### Added
 - Grafana provisioning, env vars and 4 dashboards
-  - Artemis::BGP Hijacks per prefix
-  - Artemis::BGP Updates per prefix
-  - Artemis::BGP Updates per service
-  - Artemis::Offending ASes
+- Artemis::BGP Hijacks per prefix
+- Artemis::BGP Updates per prefix
+- Artemis::BGP Updates per service
+- Artemis::Offending ASes
 - ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
 - TravisCI and CodeCov support
 
@@ -16,11 +16,8 @@
 - change of conf_lib.py in order to support a list of dicts per prefix
 
 ### Fixed
-<<<<<<< HEAD
 - Issue on handle_hijack_update() DB function with multiple selects
-=======
 - small fixes in conf_lib
->>>>>>> 9a7fe183f964f1f8bb443f8f4454775c18e3ab48
 
 ### Removed
 - TBD (removed a feature)

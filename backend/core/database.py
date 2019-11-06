@@ -1480,7 +1480,7 @@ class Database:
 
                     # execute serial execute_batch query
                     query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
-                    self.wo_db.execute_values(
+                    self.wo_db.execute_batch(
                         query, list(update_bgp_entries_serial), page_size=1000
                     )
                     update_bgp_entries_parallel.clear()

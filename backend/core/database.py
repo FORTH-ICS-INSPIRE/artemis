@@ -16,6 +16,7 @@ from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import BACKEND_SUPERVISOR_URI
+from utils import chunk_list
 from utils import DB_HOST
 from utils import DB_NAME
 from utils import DB_PASS
@@ -595,28 +596,31 @@ class Database:
                     rekey_update_keys = list(msg_["monitor_keys"])
                     rekey_updates = []
                     try:
-                        query = (
-                            "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
-                            "type, communities, timestamp FROM bgp_updates "
-                            "WHERE bgp_updates.handled=false AND bgp_updates.key = %s"
-                        )
-
-                        entries = self.ro_db.execute_batch(query, (rekey_update_keys,))
-
-                        for entry in entries:
-                            rekey_updates.append(
-                                {
-                                    "key": entry[0],  # key
-                                    "prefix": entry[1],  # prefix
-                                    "origin_as": entry[2],  # origin_as
-                                    "peer_asn": entry[3],  # peer_asn
-                                    "path": entry[4],  # as_path
-                                    "service": entry[5],  # service
-                                    "type": entry[6],  # type
-                                    "communities": entry[7],  # communities
-                                    "timestamp": entry[8].timestamp(),
-                                }
+                        rekey_update_keys_lists = chunk_list(rekey_update_keys, 1000)
+                        for rekey_update_keys_list in rekey_update_keys_lists:
+                            query = (
+                                "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
+                                "type, communities, timestamp FROM bgp_updates "
+                                "WHERE bgp_updates.handled=false AND bgp_updates.key = ANY(%s::text[])"
                             )
+                            entries = self.ro_db.execute(
+                                query, [rekey_update_keys_list]
+                            )
+
+                            for entry in entries:
+                                rekey_updates.append(
+                                    {
+                                        "key": entry[0],  # key
+                                        "prefix": entry[1],  # prefix
+                                        "origin_as": entry[2],  # origin_as
+                                        "peer_asn": entry[3],  # peer_asn
+                                        "path": entry[4],  # as_path
+                                        "service": entry[5],  # service
+                                        "type": entry[6],  # type
+                                        "communities": entry[7],  # communities
+                                        "timestamp": entry[8].timestamp(),
+                                    }
+                                )
 
                         # delete monitor keys from redis so that they can be
                         # reprocessed

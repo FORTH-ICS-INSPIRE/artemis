@@ -1,22 +1,5 @@
 version: '3'
 services:
-    benchmark:
-        build: ./benchmark/
-        container_name: benchmark
-        depends_on:
-            - backend
-        networks:
-            - artemis
-        environment:
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            GITHUB_TOKEN: ${GITHUB_TOKEN}
-            SEMAPHORE_REPO_SLUG: ${SEMAPHORE_REPO_SLUG}
-            PULL_REQUEST_NUMBER: ${PULL_REQUEST_NUMBER}
     backend:
         image: artemis_backend
         build: ./backend/

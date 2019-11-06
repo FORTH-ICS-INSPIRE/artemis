@@ -4,7 +4,7 @@ import unittest
 
 ENV_FILE = ".env"
 TABLES_VERSION_FILE = "other/db/data/tables.sql"
-TABLES_TEST_VERSION_FILE = "backend/testing/db/data/tables.sql"
+TABLES_TEST_VERSION_FILE = "tester/db/data/tables.sql"
 K8S_VALUES_FILE = "artemis-chart/values.yaml"
 CONFIGMAP_FILE = "artemis-chart/templates/configmap.yaml"
 COMPOSE_FILE = "docker-compose.yaml"

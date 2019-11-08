@@ -621,8 +621,8 @@ class Database:
 
                         # delete monitor keys from redis so that they can be
                         # reprocessed
-                        for key in rekey_update_keys:
-                            self.redis.delete(key)
+                        for rekey_update_key in rekey_update_keys:
+                            self.redis.delete(rekey_update_key)
 
                         # send to detection
                         self.producer.publish(

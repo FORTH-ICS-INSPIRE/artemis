@@ -104,7 +104,9 @@ class DB:
             return self._cursor.fetchall()
 
     def execute_batch(self, query, vals, page_size=1000, retry_counter=0):
-        log.debug("execute_batch query {}".format(query))
+        if not vals:
+            return None
+        log.debug("execute_batch query {}, vals {}".format(query, len(vals)))
         try:
             psycopg2.extras.execute_batch(
                 self._cursor, query, vals, page_size=page_size
@@ -131,7 +133,9 @@ class DB:
             return self._cursor.fetchall()
 
     def execute_values(self, query, vals, page_size=1000, retry_counter=0):
-        log.debug("execute_values query {}".format(query))
+        if not vals:
+            return None
+        log.debug("execute_values query {}, vals {}".format(query, len(vals)))
         try:
             psycopg2.extras.execute_values(
                 self._cursor, query, vals, page_size=page_size

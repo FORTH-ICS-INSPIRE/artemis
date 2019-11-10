@@ -1,0 +1,92 @@
+language: python
+services:
+- docker
+env:
+  global:
+  - DOCKER_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
+    == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
+branches:
+  only:
+    - master
+jobs:
+  include:
+  - stage: check
+    install:
+    - python -m pip install pre-commit
+    - pre-commit install
+    script:
+    - pre-commit run --all-files
+  - stage: build and push docker
+    name: backend
+    install: []
+    before_script:
+    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    script:
+    - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} backend/
+    - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
+  - name: frontend
+    install: []
+    before_script:
+    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    script:
+    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
+  - name: monitor
+    install: []
+    before_script:
+    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    script:
+    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
+    - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
+  - stage: run
+    name: TestCafe
+    install: []
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
+    - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
+    script:
+    - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
+  - name: TestDetection
+    install:
+    - pip install codecov
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker build -t artemis_detection_testing tester/detection
+    - docker-compose -f docker-compose.testdetection.yaml up -d
+    script:
+    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
+    after_success:
+    - sh convert_coverage.sh
+    - codecov
+  - name: TestAutoconf
+    install:
+    - pip install codecov
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker build -t artemis_autoconf_testing tester/autoconf
+    - docker-compose -f docker-compose.testautoconf.yaml up -d
+    script:
+    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
+    after_success:
+    - sh convert_coverage.sh
+    - codecov
+  - name: Benchmark
+    if: type == pull_request
+    install: []
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker build -t artemis_benchmark benchmark
+    - docker-compose -f docker-compose.benchmark.yaml up -d
+    script:
+    - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
+      -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
+notifications:
+  slack:
+    secure: es0zP6IAgEJbdvJz8apGlQAO0SOnMMuQwTbItiXTUjA60Tfn2gcB7vk8n60Y/pEsLn9Z9Kk9WJp7/S9jZiKITpzLxSabo0+PF+DangvNUZMmJ9NV7oJOxGVQS94Ape2pHs6x4SUpP6JkadIU5ZxXbjVr8ZIPL2VfdclPlMBsM/K3ZNgd5cPLnPKsPuKn9WtTFDm/oGaWh/V6Y9T7/l/kNZrj6K7IcrI2rv4+LKLZDNicaQIN59M4Qt4niaETYNqZuqtWewHZH+KlXKzukFZ92qUDEG/3TBvqQDqimbjAXZkltso1MXBnSblrKNb1b00WysGwhT89zPeovhjcrHZB9vH9mKGNp5qoiBjVGzKYHLptitNqupP2ReUaRqKonRAw43iAN+8SSfrmCtyQGDv60fWLheUw+fbK8IRMrAYIG9t20/upDbrPTxU741Cqzgfy5fygnAuqmRi5AkckymJte5bf/SwQsmf5IFpc6FP6fcGZT6yL1zf55tsi8pXpq80SLokcH2bO17wEHSJxuNPOxNgJQjugY/VX58owZgHgYn1sLGpxrKlAwuQgs1+Av16TRGhCjyQPgWRN9inva/AwNEtA+ljp4PqzTk7oBI9MLaX3osU8Rm6bfMI2KNwcWpfcbztkYwZQLR4v45M91QnAE9UCbbkg4epgTli2RKnHCyQ=

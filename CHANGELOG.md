@@ -7,7 +7,12 @@
   - Artemis::BGP Updates per prefix
   - Artemis::BGP Updates per service
   - Artemis::Offending ASes
+- Get prefix, origin and neighbor info (communities) from exaBGP or hist 'A'/'W' updates
+- autoconf flag in configuration for exaBGP and hist monitors
+- autoconf tester
 - ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
+- TravisCI and CodeCov support
+- Database restart recovery
 
 ### Changed
 - Automatic config file formatting upon config modification
@@ -15,13 +20,14 @@
 - change of conf_lib.py in order to support a list of dicts per prefix
 
 ### Fixed
+- Issue on handle_hijack_update() DB function with multiple selects
 - small fixes in conf_lib
 
 ### Removed
 - TBD (removed a feature)
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- SemaphoreCI and coveralls
 
 ### Security
 - TBD (addressing vulnerability)

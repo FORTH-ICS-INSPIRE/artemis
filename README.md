@@ -1,7 +1,7 @@
-[![Build Status](https://semaphoreci.com/api/v1/slowr/artemis/branches/master/shields_badge.svg)](https://semaphoreci.com/slowr/artemis)
+[![Build Status](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis.svg?branch=master)](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis)
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-[![Coverage Status](https://coveralls.io/repos/github/FORTH-ICS-INSPIRE/artemis/badge.svg?branch=master)](https://coveralls.io/github/FORTH-ICS-INSPIRE/artemis?branch=master)
+[![Coverage Status](https://codecov.io/gh/FORTH-ICS-INSPIRE/artemis/branch/master/graph/badge.svg)](https://codecov.io/gh/FORTH-ICS-INSPIRE/artemis)
 [![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
 [![Mailing list](https://img.shields.io/badge/mail-ARTEMIS-green.svg)](http://lists.ics.forth.gr/mailman/listinfo/artemis)
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)
@@ -39,7 +39,7 @@ Table of Contents
 
 ## General
 
-ARTEMIS is a defense approach against BGP prefix hijacking attacks.
+ARTEMIS is an open-soure tool, that implements a defense approach against BGP prefix hijacking attacks.
 It is (a) based on accurate and fast detection operated by the AS itself,
 by leveraging the pervasiveness of publicly available BGP monitoring
 services and it (b) enables flexible and fast mitigation of hijacking events.
@@ -56,19 +56,19 @@ can be neutralized within a minute!
 *Any of these combinations is valid. To start with, we recommend using mode (2).*
 Mode (3) is under development (currently only a mitigation wrapper is offered).
 
-You can read more about the ARTEMIS methodology and research experiments
+You can read more about the ARTEMIS methodology, blog posts, presentations, publications and research experiments
 on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
 
 This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a server/VM as a modular and extensible
-multi-container application. It has been tested at a major
-greek ISP, a dual-homed edge academic network,
-and a major US R&E backbone network.
+multi-container (microservice) application. It has been tested at
+AMS-IX, a major greek ISP, FORTH (a dual-homed edge academic network),
+and Internet2 (a major US R&E backbone network).
 
 ## Features
 
 For a detailed list of supported features please check the [CHANGELOG](CHANGELOG.md) file
-(section: "Added"). The following main features are supported:
+(sections: "Added"). The following main features are supported:
 
 * Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS.
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types (please refer to the attack taxonomy in our [ARTEMIS ToN paper](https://www.inspire.edu.gr/wp-content/pdfs/artemis_TON2018.pdf)):
@@ -83,10 +83,14 @@ For a detailed list of supported features please check the [CHANGELOG](CHANGELOG
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * Support for both IPv4 and IPv6 prefixes (millions of routed prefixes depending on your resources).
 * Support for both mobile and desktop environments (UI): [sample screenshots](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/UI-how-to-and-screenshots).
-* Support for docker-compose (local deployment) and Kubernetes (helm charts).
+* Support for `docker-compose` (local single-server deployment) and Kubernetes (helm charts).
 * Support for multiple modes of operation (passive monitor/detector, active mitigator, etc.).
+* Support for historical BGP updates replaying.
+* Support for local real-time monitoring feeds.
+* Support for automated generation of the configuration file.
+* Compatibility with grafana charts.
 * Modularity/extensibility by design.
-* CI/CD.
+* CI/CD (Travis CI, Codecov).
 
 ## System Architecture
 
@@ -96,17 +100,18 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 
 ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
-copy of the ARTEMIS tool up and running on your local machine. For instructions on how to set up ARTEMIS
-in a Kubernetes environment, please contact the [ARTEMIS team](#development-team-and-contact).
+copy of the ARTEMIS tool up and running on your local machine using the `docker-compose` utility.
+For instructions on how to set up ARTEMIS
+in a Kubernetes environment, please check this [Wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Kubernetes-Deployment).
 
 ## Minimum Technical Requirements
 
-* CPU: 4 cores (note that needed CPU cores depend on the number of separate processes, e.g., detectors, you spawn)
+* CPU: 4 cores (note that needed CPU cores depend on the number of separate processes, e.g., detectors or database modules you spawn)
 * RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#memory-requirements))
-* HDD: 100 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
-* NETWORK: 1 public-facing network interface
-* OS: Ubuntu Linux 16.04+
-* SW PACKAGES: docker-ce and docker-compose should be pre-installed (see instructions later)
+* HDD: 50 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
+* NETWORK: 1 public-facing network interface (optionally: one internal interface for connection with local route collectors)
+* OS: Ubuntu Linux 16.04+ (other Linux distributions will work too)
+* SW PACKAGES: `docker-ce` and `docker-compose` should be pre-installed (see instructions later)
 and docker should have sudo privileges, if only non-sudo user is allowed
 * Other: SSH server
 
@@ -117,7 +122,7 @@ set the corresponding <> fields in the file before running:
 ```
 sudo ./other/ufw_setup.sh
 ```
-**NOTE: For security reasons, we highly recommend protecting your machine with such rules.**
+**NOTE: For security reasons, we highly recommend protecting your machine with such rules. ARTEMIS tries to minimize external port exposure.**
 
 ## How to Install and Setup
 
@@ -144,7 +149,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    https://<ARTEMIS_HOST>/admin/system
    ```
    you can:
-   1. edit the basic configuration file of ARTEMIS that servers as the ground truth for detecting BGP hijacks (consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file))
+   1. edit the basic configuration file of ARTEMIS that serves as the ground truth for detecting BGP hijacks (consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file) first)
    2. control the monitoring, detection and mitigation modules.
 
 6. Stop ARTEMIS (optional)

@@ -322,7 +322,7 @@ class Detection:
                 queues=[callback_queue],
                 no_ack=True,
             ):
-                while not self.rules:
+                while self.rules is None:
                     self.connection.drain_events()
             log.debug("{}".format(self.rules))
 

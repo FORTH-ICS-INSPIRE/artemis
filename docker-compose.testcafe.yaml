@@ -53,6 +53,8 @@ services:
             HISTORIC: ${HISTORIC}
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
+        volumes:
+            - ./tester/detection/configs/logging.yaml:/etc/artemis/logging.yaml
     monitor:
         image: artemis_monitor
         build: ./monitor/

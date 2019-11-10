@@ -44,7 +44,7 @@ class Configuration:
             return []
 
         prefixes_list = []
-        for rule in self.config_yaml["rules"]:
+        for rule in self.config_yaml.get("rules", []):
             rule["prefixes"] = flatten(rule["prefixes"])
             for prefix in rule["prefixes"]:
                 if prefix not in prefixes_list:
@@ -52,7 +52,7 @@ class Configuration:
         return prefixes_list
 
     def get_rules_list(self):
-        return self.config_yaml["rules"]
+        return self.config_yaml.get("rules", [])
 
     def get_raw_response(self):
         return self.raw_json

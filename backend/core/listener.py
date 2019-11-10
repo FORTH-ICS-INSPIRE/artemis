@@ -55,12 +55,18 @@ def run():
             process = body["processname"]
             if process != "listener":
                 new_state = headers["eventname"] == "PROCESS_STATE_RUNNING"
-                try:
-                    write_stderr("{} -> {}".format(process, new_state))
-                    db_cursor.execute(query, (process, new_state))
-                    db_conn.commit()
-                except Exception:
-                    db_conn.rollback()
+                while True:
+                    try:
+                        write_stderr("{} -> {}".format(process, new_state))
+                        db_cursor.execute(query, (process, new_state))
+                        db_conn.commit()
+                        break
+                    except (psycopg2.InterfaceError, psycopg2.OperationalError):
+                        db_conn = create_connect_db()
+                        db_cursor = db_conn.cursor()
+                    except BaseException:
+                        db_conn.rollback()
+                        break
 
         # acknowledge the event
         write_stdout("RESULT 2\nOK")

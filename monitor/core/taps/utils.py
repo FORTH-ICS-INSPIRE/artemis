@@ -247,3 +247,46 @@ class mformat_validator:
         yield self.valid_communities
         yield self.valid_timestamp
         yield self.valid_peer_asn
+
+
+def __remove_prepending(seq):
+    """
+    Method to remove prepending ASs from AS path.
+    """
+    last_add = None
+    new_seq = []
+    for x in seq:
+        if last_add != x:
+            last_add = x
+            new_seq.append(x)
+
+    is_loopy = False
+    if len(set(seq)) != len(new_seq):
+        is_loopy = True
+    return (new_seq, is_loopy)
+
+
+def __clean_loops(seq):
+    """
+    Method to remove loops from AS path.
+    """
+    # use inverse direction to clean loops in the path of the traffic
+    seq_inv = seq[::-1]
+    new_seq_inv = []
+    for x in seq_inv:
+        if x not in new_seq_inv:
+            new_seq_inv.append(x)
+        else:
+            x_index = new_seq_inv.index(x)
+            new_seq_inv = new_seq_inv[: x_index + 1]
+    return new_seq_inv[::-1]
+
+
+def clean_as_path(path):
+    """
+    Method for loop and prepending removal.
+    """
+    (clean_as_path, is_loopy) = __remove_prepending(path)
+    if is_loopy:
+        clean_as_path = __clean_loops(clean_as_path)
+    return clean_as_path

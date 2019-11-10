@@ -943,13 +943,13 @@ class Database:
                         subentries = set(db_cur.fetchall())
                         subentries = list(map(lambda x: x[0], subentries))
                         log.debug(
-                            "Adding bgpupdate_keys: {} for {} and {}".format(
+                            "Adding monitor keys: {} for {} and {}".format(
                                 subentries,
                                 redis_key(entry[5], entry[6], entry[7]),
                                 entry[4],
                             )
                         )
-                        result["bgpupdate_keys"] = list(map(lambda x: x[0], subentries))
+                        result["monitor_keys"] = set(map(lambda x: x[0], subentries))
 
                     redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
                     redis_pipeline.set(redis_hijack_key, yaml.dump(result))
@@ -1069,19 +1069,19 @@ class Database:
 
                 with get_wo_cursor(self.wo_conn) as db_cur:
                     db_cur.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
-                    if len(redis_hijack.get("bgpupdate_keys", [])) > 0:
+                    if len(redis_hijack.get("monitor_keys", [])) > 0:
                         log.debug(
-                            "bgpupdate_keys {} for {}".format(
-                                redis_hijack["bgpupdate_keys"], redis_hijack
+                            "monitor_keys {} for {}".format(
+                                redis_hijack["monitor_keys"], redis_hijack
                             )
                         )
                         db_cur.execute(
                             "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
-                            (raw["key"], redis_hijack["bgpupdate_keys"]),
+                            (raw["key"], redis_hijack["monitor_keys"]),
                         )
                         db_cur.execute(
                             "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
-                            (raw["key"], redis_hijack["bgpupdate_keys"]),
+                            (raw["key"], redis_hijack["monitor_keys"]),
                         )
                     else:
                         db_cur.execute(
@@ -1092,7 +1092,7 @@ class Database:
                             "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) AND handled = true;",
                             (raw["key"],),
                         )
-                        log.debug("bgpupdate_keys is empty for {}".format(redis_hijack))
+                        log.debug("monitor_keys is empty for {}".format(redis_hijack))
 
             except Exception:
                 log.exception("{}".format(raw))
@@ -1266,26 +1266,20 @@ class Database:
                                     )
                                 with get_wo_cursor(self.wo_conn) as db_cur:
                                     db_cur.execute(query, (hijack_key,))
-                                    if len(redis_hijack.get("bgpupdate_keys", [])) > 0:
+                                    if len(redis_hijack.get("monitor_keys", [])) > 0:
                                         log.debug(
-                                            "bgpupdate_keys {} for {}".format(
-                                                redis_hijack["bgpupdate_keys"],
+                                            "monitor_keys {} for {}".format(
+                                                redis_hijack["monitor_keys"],
                                                 redis_hijack,
                                             )
                                         )
                                         db_cur.execute(
                                             "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
-                                            (
-                                                hijack_key,
-                                                redis_hijack["bgpupdate_keys"],
-                                            ),
+                                            (hijack_key, redis_hijack["monitor_keys"]),
                                         )
                                         db_cur.execute(
                                             "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
-                                            (
-                                                hijack_key,
-                                                redis_hijack["bgpupdate_keys"],
-                                            ),
+                                            (hijack_key, redis_hijack["monitor_keys"]),
                                         )
                                     else:
                                         db_cur.execute(
@@ -1297,7 +1291,7 @@ class Database:
                                             (hijack_key,),
                                         )
                                         log.debug(
-                                            "bgpupdate_keys is empty for {}".format(
+                                            "monitor_keys is empty for {}".format(
                                                 redis_hijack
                                             )
                                         )

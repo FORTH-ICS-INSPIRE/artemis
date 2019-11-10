@@ -840,7 +840,6 @@ class Detection:
                 "time_started": monitor_event["timestamp"],
                 "time_last": monitor_event["timestamp"],
                 "peers_seen": {monitor_event["peer_asn"]},
-                "monitor_keys": {monitor_event["key"]},
                 "configured_prefix": monitor_event["matched_prefix"],
                 "timestamp_of_config": self.timestamp,
                 "end_tag": None,
@@ -908,10 +907,9 @@ class Detection:
                     result["peers_seen"].update(hijack_value["peers_seen"])
                     result["asns_inf"].update(hijack_value["asns_inf"])
                     # no update since db already knows!
-                    result["monitor_keys"] = hijack_value["monitor_keys"]
+                    result["monitor_keys"].add(monitor_event["key"])
                     self.comm_annotate_hijack(monitor_event, result)
                     result["outdated_parent"] = hijack_value["outdated_parent"]
-                    result["bgpupdate_keys"].add(monitor_event["key"])
                 else:
                     hijack_value["time_detected"] = time.time()
                     hijack_value["key"] = get_hash(
@@ -922,7 +920,7 @@ class Detection:
                             "{0:.6f}".format(hijack_value["time_detected"]),
                         ]
                     )
-                    hijack_value["bgpupdate_keys"] = {monitor_event["key"]}
+                    hijack_value["monitor_keys"] = {monitor_event["key"]}
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)

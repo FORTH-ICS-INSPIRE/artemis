@@ -29,33 +29,20 @@ handlers:
         backupCount: 20
         encoding: utf8
 
-    # for email
     # smtps_handler:
-    #     # utils.TLSSMTPHandler for TLS
-    #     # utils.SSLSMTPHandler for SSL
-    #     class: utils.TLSSMTPHandler
+    #     class: utils.SMTPSHandler
     #     level: INFO
     #     formatter: simple
     #     mailhost:
     #     - smtp.server.com
-    #     - 25
-    #     fromaddr: from@email.com
-    #     toaddrs:
-    #     - to1@email.com
-    #     - to2@email.com
-    #     subject: "Subject Title"
+    #     - port
+    #     fromaddr: from
+    #     toaddrs: to
+    #     subject: subject
     #     credentials:
     #     - username
-    #     - pass
+    #     - password
     #     secure: True
-
-    # for slack
-    # slack_handler:
-    #     class: slacker_log_handler.SlackerLogHandler
-    #     api_key: SLACK_API_TOKEN
-    #     channel: "#general"
-    #     username: "Hijack Announcer"
-    #     level: INFO
 
     null_handler:
         class: logging.NullHandler
@@ -77,15 +64,15 @@ handlers:
 
 loggers:
     artemis_logger:
-        level: INFO
-        handlers: [console, info_file_handler, error_file_handler]
+        level: DEBUG
+        handlers: [console]
         propagate: no
     mail_logger:
-        level: INFO
+        level: CRITICAL
         handlers: [null_handler]
         propagate: no
     hijack_logger:
-        level: INFO
+        level: CRITICAL
         handlers: [null_handler]
         propagate: no
     taps_logger:

@@ -942,13 +942,13 @@ class Database:
                     subentries = set(self.ro_db.execute(subquery, (entry[4],)))
                     subentries = set(map(lambda x: x[0], subentries))
                     log.debug(
-                        "Adding monitor keys: {} for {} and {}".format(
+                        "Adding bgpupdate_keys: {} for {} and {}".format(
                             subentries,
                             redis_key(entry[5], entry[6], entry[7]),
                             entry[4],
                         )
                     )
-                    result["monitor_keys"] = subentries
+                    result["bgpupdate_keys"] = subentries
 
                     redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
                     redis_pipeline.set(redis_hijack_key, yaml.dump(result))
@@ -1059,19 +1059,19 @@ class Database:
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
 
                 self.wo_db.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
-                if len(redis_hijack.get("monitor_keys", [])) > 0:
+                if len(redis_hijack.get("bgpupdate_keys", [])) > 0:
                     log.debug(
-                        "monitor_keys {} for {}".format(
-                            redis_hijack["monitor_keys"], redis_hijack_key
+                        "bgpupdate_keys {} for {}".format(
+                            redis_hijack["bgpupdate_keys"], redis_hijack_key
                         )
                     )
                     self.wo_db.execute(
                         "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
-                        (raw["key"], list(redis_hijack["monitor_keys"])),
+                        (raw["key"], list(redis_hijack["bgpupdate_keys"])),
                     )
                     self.wo_db.execute(
                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
-                        (raw["key"], list(redis_hijack["monitor_keys"])),
+                        (raw["key"], list(redis_hijack["bgpupdate_keys"])),
                     )
                 else:
                     self.wo_db.execute(
@@ -1082,7 +1082,7 @@ class Database:
                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) AND handled = true;",
                         (raw["key"],),
                     )
-                    log.debug("monitor_keys is empty for {}".format(redis_hijack_key))
+                    log.debug("bgpupdate_keys is empty for {}".format(redis_hijack_key))
 
             except Exception:
                 log.exception("{}".format(raw))
@@ -1245,26 +1245,25 @@ class Database:
                                     purge_redis_eph_pers_keys(
                                         self.redis, redis_hijack_key, hijack_key
                                     )
-
                                 self.wo_db.execute(query, (hijack_key,))
-                                if len(redis_hijack.get("monitor_keys", [])) > 0:
+                                if len(redis_hijack.get("bgpupdate_keys", [])) > 0:
                                     log.debug(
-                                        "monitor_keys {} for {}".format(
-                                            redis_hijack["monitor_keys"], redis_hijack
+                                        "bgpupdate_keys {} for {}".format(
+                                            redis_hijack["bgpupdate_keys"], redis_hijack
                                         )
                                     )
                                     self.wo_db.execute(
                                         "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
                                         (
                                             hijack_key,
-                                            list(redis_hijack["monitor_keys"]),
+                                            list(redis_hijack["bgpupdate_keys"]),
                                         ),
                                     )
                                     self.wo_db.execute(
                                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
                                         (
                                             hijack_key,
-                                            list(redis_hijack["monitor_keys"]),
+                                            list(redis_hijack["bgpupdate_keys"]),
                                         ),
                                     )
                                 else:
@@ -1277,7 +1276,7 @@ class Database:
                                         (hijack_key,),
                                     )
                                     log.debug(
-                                        "monitor_keys is empty for {}".format(
+                                        "bgpupdate_keys is empty for {}".format(
                                             redis_hijack
                                         )
                                     )

@@ -338,11 +338,7 @@ class Tester:
                     running_modules.add(entry[0])
                 db_con.commit()
                 print("Running modules: {}".format(running_modules))
-                print(
-                    "{}/6 modules are running. Re-executing query...".format(
-                        len(running_modules)
-                    )
-                )
+                print("{}/6 modules are running.".format(len(running_modules)))
                 time.sleep(1)
 
             Tester.config_request_rpc(connection)
@@ -351,11 +347,11 @@ class Tester:
 
             # call all helper functions
             Helper.hijack_resolve(
-                db_con, connection, "a", "139.5.46.0/24", "S|0|-", 133720
+                db_con, connection, "a", "139.5.46.0/24", "S|0|-|-", 133720
             )
             Helper.hijack_mitigate(db_con, connection, "b", "10.91.236.0/24")
             Helper.hijack_ignore(
-                db_con, connection, "c", "139.5.237.0/24", "S|0|-", 136334
+                db_con, connection, "c", "139.5.237.0/24", "S|0|-|-", 136334
             )
             Helper.hijack_comment(db_con, connection, "d", "test")
             Helper.hijack_ack(db_con, connection, "e", "true")
@@ -366,15 +362,21 @@ class Tester:
                 db_con, connection, ["f", "g"], "hijack_action_acknowledge_not"
             )
             Helper.hijack_multiple_action(
-                db_con, connection, ["h"], "hijack_action_resolve"
+                db_con, connection, ["f"], "hijack_action_resolve"
             )
             Helper.hijack_multiple_action(
-                db_con, connection, ["i"], "hijack_action_ignore"
+                db_con, connection, ["g"], "hijack_action_ignore"
             )
             Helper.hijack_delete(
-                db_con, connection, "j", "139.5.237.0/24", "S|0|-", 136334
+                db_con, connection, "h", "139.5.24.0/24", "S|0|-|-", 133720
             )
-            Helper.hijack_mitigate(db_con, connection, "k", "2001:db8:abcd:12::0/80")
+            Helper.hijack_delete(
+                db_con, connection, "i", "139.5.16.0/22", "S|0|-|-", 133676
+            )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["f", "g"], "hijack_action_delete"
+            )
+            Helper.hijack_mitigate(db_con, connection, "j", "2001:db8:abcd:12::0/80")
             Helper.load_as_sets(connection)
 
             time.sleep(10)
@@ -627,7 +629,13 @@ class Helper:
                 priority=4,
             )
         while True:
-            if callback_queue.get():
+            msg = callback_queue.get()
+            if msg:
+                assert (
+                    msg.payload["status"] == "accepted"
+                ), 'Action "{}" for [{}] failed with reason: {}'.format(
+                    action, hijack_keys, msg.payload.get("reason", "")
+                )
                 break
             time.sleep(0.1)
 
@@ -699,7 +707,7 @@ def hijack_action_test_result(db_con, hijack_key, action, extra=None):
         db_cur.execute(query, query_arguments)
         res = db_cur.fetchone()
         db_con.commit()
-        if (res[0] == 1) or (res[0] == 0 and action == "delete"):
+        if (res[0] == 1 and action != "delete") or (res[0] == 0 and action == "delete"):
             return True
 
         time.sleep(1)

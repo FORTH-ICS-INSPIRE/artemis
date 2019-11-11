@@ -367,14 +367,21 @@ class Tester:
             Helper.hijack_multiple_action(
                 db_con, connection, ["g"], "hijack_action_ignore"
             )
-            Helper.hijack_delete(
-                db_con, connection, "h", "139.5.24.0/24", "S|0|-|-", 133720
-            )
-            Helper.hijack_delete(
-                db_con, connection, "i", "139.5.16.0/22", "S|0|-|-", 133676
-            )
+            # multi-action delete a hijack purged from cache
             Helper.hijack_multiple_action(
-                db_con, connection, ["f", "g"], "hijack_action_delete"
+                db_con, connection, ["f"], "hijack_action_delete"
+            )
+            # delete a hijack purged from cache
+            Helper.hijack_delete(
+                db_con, connection, "g", "139.5.16.0/22", "S|0|-|-", 133676
+            )
+            # multi-action delete a hijack using cache
+            Helper.hijack_multiple_action(
+                db_con, connection, ["h"], "hijack_action_delete"
+            )
+            # delete a hijack using cache
+            Helper.hijack_delete(
+                db_con, connection, "i", "139.5.24.0/24", "S|0|-|-", 133720
             )
             Helper.hijack_mitigate(db_con, connection, "j", "2001:db8:abcd:12::0/80")
             Helper.load_as_sets(connection)

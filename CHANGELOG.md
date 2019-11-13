@@ -21,7 +21,8 @@
 
 ### Fixed
 - Issue on handle_hijack_update() DB function with multiple selects
-- small fixes in conf_lib
+- Small fixes in conf_lib
+- Even when bgpstreamlive (and beta) RMQ connections are closed, re-open them
 
 ### Removed
 - TBD (removed a feature)

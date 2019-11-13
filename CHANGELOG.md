@@ -22,11 +22,10 @@
 ### Fixed
 - Issue on handle_hijack_update() DB function with multiple selects
 - Small fixes in conf_lib
-- Even when bgpstreamlive (and beta) RMQ connections are closed, re-open them
 - Blocking deletion of redis hijack keys to avoid race conditions
 
 ### Removed
-- TBD (removed a feature)
+- Rekeying functionality for hijack updates with deprecated hijack key
 
 ### Deprecated
 - SemaphoreCI and coveralls

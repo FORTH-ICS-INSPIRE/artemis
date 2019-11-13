@@ -207,15 +207,6 @@ class Detection:
                 max_priority=3,
                 consumer_arguments={"x-priority": 3},
             )
-            self.update_rekey_queue = Queue(
-                "detection-update-rekey",
-                exchange=self.update_exchange,
-                routing_key="hijack-rekey",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
-            )
 
             self.config_request_rpc()
             log.info("started")
@@ -245,12 +236,6 @@ class Detection:
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,
-                    prefetch_count=10,
-                    no_ack=True,
-                ),
-                Consumer(
-                    queues=[self.update_rekey_queue],
-                    on_message=self.handle_rekey_update,
                     prefetch_count=10,
                     no_ack=True,
                 ),
@@ -416,14 +401,6 @@ class Detection:
             for update in message.payload:
                 self.handle_bgp_update(update)
 
-        def handle_rekey_update(self, message: Dict) -> NoReturn:
-            """
-            Handles BGP updates, needing hijack rekeying from the database.
-            """
-            # log.debug('{} rekeying events'.format(len(message.payload)))
-            for update in message.payload:
-                self.handle_bgp_update(update)
-
         def handle_bgp_update(self, message: Dict) -> NoReturn:
             """
             Callback function that runs the main logic of
@@ -533,7 +510,7 @@ class Detection:
                         purge_redis_eph_pers_keys(
                             self.redis, redis_hijack_key, monitor_event["hij_key"]
                         )
-                        # mark in DB only if it is the first time this hijack was purged (pre-existsent in redis)
+                        # mark in DB only if it is the first time this hijack was purged (pre-existent in redis)
                         if outdated_hijack:
                             self.mark_outdated(
                                 monitor_event["hij_key"], redis_hijack_key

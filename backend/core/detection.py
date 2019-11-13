@@ -966,35 +966,40 @@ class Detection:
             except Exception:
                 log.exception("exception")
             finally:
+                # execute whatever has been accumulated in redis till now
+                redis_pipeline.execute()
+
+                # publish hijack
+                self.producer.publish(
+                    result,
+                    exchange=self.hijack_exchange,
+                    routing_key="update",
+                    serializer="yaml",
+                    priority=0,
+                )
+
+                self.producer.publish(
+                    result,
+                    exchange=self.hijack_hashing,
+                    routing_key=redis_hijack_key,
+                    serializer="yaml",
+                    priority=0,
+                )
+                hij_log.info(
+                    "{}".format(
+                        json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
+                    ),
+                    extra={
+                        "community_annotation": result.get("community_annotation", "NA")
+                    },
+                )
+
                 # unlock, by pushing back the token (at most one other process
                 # waiting will be unlocked)
+                redis_pipeline = self.redis.pipeline()
                 redis_pipeline.set("{}token_active".format(redis_hijack_key), 1)
                 redis_pipeline.lpush("{}token".format(redis_hijack_key), "token")
                 redis_pipeline.execute()
-
-            self.producer.publish(
-                result,
-                exchange=self.hijack_exchange,
-                routing_key="update",
-                serializer="yaml",
-                priority=0,
-            )
-
-            self.producer.publish(
-                result,
-                exchange=self.hijack_hashing,
-                routing_key=redis_hijack_key,
-                serializer="yaml",
-                priority=0,
-            )
-            hij_log.info(
-                "{}".format(
-                    json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
-                ),
-                extra={
-                    "community_annotation": result.get("community_annotation", "NA")
-                },
-            )
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

@@ -291,6 +291,16 @@ def get_hash(obj):
 
 
 def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
+    # to prevent detectors from working in parallel with key deletion
+    redis_instance.set("{}token_active".format(ephemeral_key), "1")
+    if redis_instance.exists("{}token".format(ephemeral_key)):
+        token = redis_instance.blpop("{}token".format(ephemeral_key), timeout=60)
+        if not token:
+            log.info(
+                "Redis cleanup encountered redis token timeout for hijack {}".format(
+                    persistent_key
+                )
+            )
     redis_pipeline = redis_instance.pipeline()
     # purge also tokens since they are not relevant any more
     redis_pipeline.delete("{}token_active".format(ephemeral_key))

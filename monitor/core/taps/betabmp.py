@@ -71,7 +71,7 @@ def run_bgpstream_beta_bmp(prefixes_file=None):
                     # get next record
                     try:
                         rec = stream.get_next_record()
-                    except Exception:
+                    except BaseException:
                         continue
                     if (rec.status != "valid") or (rec.type != "update"):
                         continue
@@ -79,7 +79,7 @@ def run_bgpstream_beta_bmp(prefixes_file=None):
                     # get next element
                     try:
                         elem = rec.get_next_elem()
-                    except Exception:
+                    except BaseException:
                         continue
 
                     while elem:
@@ -148,7 +148,7 @@ def run_bgpstream_beta_bmp(prefixes_file=None):
                                     break
                         try:
                             elem = rec.get_next_elem()
-                        except Exception:
+                        except BaseException:
                             continue
         except Exception:
             log.exception("exception")

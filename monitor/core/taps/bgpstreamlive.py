@@ -79,7 +79,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                     # get next record
                     try:
                         rec = stream.get_next_record()
-                    except Exception:
+                    except BaseException:
                         continue
                     if (rec.status != "valid") or (rec.type != "update"):
                         continue
@@ -87,7 +87,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                     # get next element
                     try:
                         elem = rec.get_next_elem()
-                    except Exception:
+                    except BaseException:
                         continue
 
                     while elem:
@@ -156,7 +156,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                                     break
                         try:
                             elem = rec.get_next_elem()
-                        except Exception:
+                        except BaseException:
                             continue
         except Exception:
             log.exception("exception")

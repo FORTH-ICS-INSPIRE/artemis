@@ -937,9 +937,7 @@ class Database:
                         "community_annotation": entry[11],
                     }
 
-                    subquery = (
-                        "SELECT key FROM bgp_updates " "WHERE %s = ANY(hijack_key);"
-                    )
+                    subquery = "SELECT key FROM bgp_updates WHERE %s = ANY(hijack_key);"
 
                     subentries = set(self.ro_db.execute(subquery, (entry[4],)))
                     subentries = set(map(lambda x: x[0], subentries))
@@ -1064,9 +1062,8 @@ class Database:
                     "redis-entry for {}: {}".format(redis_hijack_key, redis_hijack)
                 )
                 self.wo_db.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
-                if (
-                    redis_hijack
-                    and len(yaml.safe_load(redis_hijack).get("bgpupdate_keys", [])) > 0
+                if redis_hijack and yaml.safe_load(redis_hijack).get(
+                    "bgpupdate_keys", []
                 ):
                     log.debug("deleting hijack using cache for bgp updates")
                     redis_hijack = yaml.safe_load(redis_hijack)
@@ -1256,14 +1253,8 @@ class Database:
                                     )
                                 )
                                 self.wo_db.execute(query, (hijack_key,))
-                                if (
-                                    redis_hijack
-                                    and len(
-                                        yaml.safe_load(redis_hijack).get(
-                                            "bgpupdate_keys", []
-                                        )
-                                    )
-                                    > 0
+                                if redis_hijack and yaml.safe_load(redis_hijack).get(
+                                    "bgpupdate_keys", []
                                 ):
                                     log.debug(
                                         "deleting hijack using cache for bgp updates"

@@ -207,15 +207,6 @@ class Detection:
                 max_priority=3,
                 consumer_arguments={"x-priority": 3},
             )
-            self.update_rekey_queue = Queue(
-                "detection-update-rekey",
-                exchange=self.update_exchange,
-                routing_key="hijack-rekey",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
-            )
 
             self.config_request_rpc()
             log.info("started")
@@ -245,12 +236,6 @@ class Detection:
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,
-                    prefetch_count=10,
-                    no_ack=True,
-                ),
-                Consumer(
-                    queues=[self.update_rekey_queue],
-                    on_message=self.handle_rekey_update,
                     prefetch_count=10,
                     no_ack=True,
                 ),
@@ -416,14 +401,6 @@ class Detection:
             for update in message.payload:
                 self.handle_bgp_update(update)
 
-        def handle_rekey_update(self, message: Dict) -> NoReturn:
-            """
-            Handles BGP updates, needing hijack rekeying from the database.
-            """
-            # log.debug('{} rekeying events'.format(len(message.payload)))
-            for update in message.payload:
-                self.handle_bgp_update(update)
-
         def handle_bgp_update(self, message: Dict) -> NoReturn:
             """
             Callback function that runs the main logic of
@@ -533,7 +510,7 @@ class Detection:
                         purge_redis_eph_pers_keys(
                             self.redis, redis_hijack_key, monitor_event["hij_key"]
                         )
-                        # mark in DB only if it is the first time this hijack was purged (pre-existsent in redis)
+                        # mark in DB only if it is the first time this hijack was purged (pre-existent in redis)
                         if outdated_hijack:
                             self.mark_outdated(
                                 monitor_event["hij_key"], redis_hijack_key
@@ -968,35 +945,40 @@ class Detection:
             except Exception:
                 log.exception("exception")
             finally:
+                # execute whatever has been accumulated in redis till now
+                redis_pipeline.execute()
+
+                # publish hijack
+                self.producer.publish(
+                    result,
+                    exchange=self.hijack_exchange,
+                    routing_key="update",
+                    serializer="yaml",
+                    priority=0,
+                )
+
+                self.producer.publish(
+                    result,
+                    exchange=self.hijack_hashing,
+                    routing_key=redis_hijack_key,
+                    serializer="yaml",
+                    priority=0,
+                )
+                hij_log.info(
+                    "{}".format(
+                        json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
+                    ),
+                    extra={
+                        "community_annotation": result.get("community_annotation", "NA")
+                    },
+                )
+
                 # unlock, by pushing back the token (at most one other process
                 # waiting will be unlocked)
+                redis_pipeline = self.redis.pipeline()
                 redis_pipeline.set("{}token_active".format(redis_hijack_key), 1)
                 redis_pipeline.lpush("{}token".format(redis_hijack_key), "token")
                 redis_pipeline.execute()
-
-            self.producer.publish(
-                result,
-                exchange=self.hijack_exchange,
-                routing_key="update",
-                serializer="yaml",
-                priority=0,
-            )
-
-            self.producer.publish(
-                result,
-                exchange=self.hijack_hashing,
-                routing_key=redis_hijack_key,
-                serializer="yaml",
-                priority=0,
-            )
-            hij_log.info(
-                "{}".format(
-                    json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
-                ),
-                extra={
-                    "community_annotation": result.get("community_annotation", "NA")
-                },
-            )
 
         def mark_handled(self, monitor_event: Dict) -> NoReturn:
             """

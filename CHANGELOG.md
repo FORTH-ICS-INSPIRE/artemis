@@ -22,11 +22,12 @@
 
 ### Fixed
 - Issue on handle_hijack_update() DB function with multiple selects
-- small fixes in conf_lib
+- Small fixes in conf_lib
+- Blocking deletion of redis hijack keys to avoid race conditions
 - Optimization on hijack deletion by storing the keys on redis
 
 ### Removed
-- TBD (removed a feature)
+- Rekeying functionality for hijack updates with deprecated hijack key
 
 ### Deprecated
 - SemaphoreCI and coveralls

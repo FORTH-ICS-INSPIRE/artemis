@@ -23,6 +23,7 @@
 ### Fixed
 - Issue on handle_hijack_update() DB function with multiple selects
 - small fixes in conf_lib
+- Optimization on hijack deletion by storing the keys on redis
 
 ### Removed
 - TBD (removed a feature)

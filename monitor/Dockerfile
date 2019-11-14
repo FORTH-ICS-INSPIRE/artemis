@@ -1,4 +1,4 @@
-FROM mavromat/bgpstream-redis:v1.0-bgpstream
+FROM mavromat/bgpstream-redis:v1.1-bgpstream
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 

@@ -3,6 +3,7 @@ services:
     backend:
         image: inspiregroup/artemis-backend:${SYSTEM_VERSION}
         container_name: backend
+        restart: always
         depends_on:
             - rabbitmq
             - postgres
@@ -55,6 +56,7 @@ services:
     monitor:
         image: inspiregroup/artemis-monitor:${SYSTEM_VERSION}
         container_name: monitor
+        restart: always
         depends_on:
             - rabbitmq
         networks:
@@ -93,6 +95,7 @@ services:
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
+        restart: always
         depends_on:
             - rabbitmq
             - postgres
@@ -218,6 +221,7 @@ services:
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
+        restart: always
         depends_on:
             - postgres
             - backend

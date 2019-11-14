@@ -17,12 +17,14 @@
 ### Changed
 - Automatic config file formatting upon config modification
 - DB_AUTOCLEAN and dormant hijack thresholds set to 1 day (24h) by default
-- change of conf_lib.py in order to support a list of dicts per prefix
+- Change of conf_lib.py in order to support a list of dicts per prefix
+- Always restart containers for smooth server rebooting
 
 ### Fixed
 - Issue on handle_hijack_update() DB function with multiple selects
 - Small fixes in conf_lib
 - Blocking deletion of redis hijack keys to avoid race conditions
+- Optimization on hijack deletion by storing the keys on redis
 
 ### Removed
 - Rekeying functionality for hijack updates with deprecated hijack key

@@ -13,6 +13,7 @@
 - ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
 - TravisCI and CodeCov support
 - Database restart recovery
+- Vagrant support
 
 ### Changed
 - Automatic config file formatting upon config modification

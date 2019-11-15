@@ -11,6 +11,7 @@ Vagrant.configure(2) do |config|
   config.vm.box = VAGRANT_BOX
   config.vm.hostname = VM_NAME
   config.vm.synced_folder '.', '/vagrant', disabled: true
+  config.vm.network "private_network", type: "dhcp"
   config.vm.provider "virtualbox" do |v|
     v.name = VM_NAME
     v.cpus = 4
@@ -22,5 +23,13 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", path: "bootstrap.sh"
 
   # Instruct ARTEMIS to always use latest containers
-  config.vm.provision :shell, :inline => "cd artemis && git pull origin master && docker-compose pull && docker-compose up -d", run: "always"
+  config.vm.provision :shell, path: "update_and_start_artemis.sh", run: "always"
+  config.vm.provision :shell, :inline => "sleep 60", run: "always"
+  config.vm.provision :shell, path: "show_artemis_url.sh", run: "always"
+
+  # Always shut down ARTEMIS when halting
+  config.trigger.before :halt do |trigger|
+    trigger.warn = "Shutting down ARTEMIS"
+    trigger.run_remote = {inline: "cd /home/vagrant/artemis && docker-compose down && sleep 60"}
+  end
 end

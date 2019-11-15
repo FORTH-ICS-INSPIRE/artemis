@@ -50,4 +50,14 @@ cp -rn backend/configs/* local_configs/backend && cp -rn backend/supervisor.d lo
 cp -rn monitor/supervisor.d local_configs/monitor && cp -rn frontend/webapp/configs/* local_configs/frontend
 #echo "[+] ARTEMIS VM provisioning completed"
 
+# Setting up firewall
+
+apt-get -y install ufw
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow https
+ufw allow ssh
+ufw allow in on lo to any
+ufw enable
+
 reboot

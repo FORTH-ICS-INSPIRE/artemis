@@ -1,0 +1,66 @@
+# encoding: utf-8
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANT_BOX = "ubuntu/bionic64"
+VM_NAME = 'artemis-vm'
+VM_USER = 'artemis-user'
+
+Vagrant.configure(2) do |config|
+
+  # Configure VM
+  config.vm.box = VAGRANT_BOX
+  config.vm.hostname = VM_NAME
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+  config.vm.provider "virtualbox" do |v|
+    v.name = VM_NAME
+    v.cpus = 2
+    v.memory = 4096
+    v.gui = true
+  end
+
+  # Install ARTEMIS dependencies (provisioning)
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "[+] Updating sources..."
+    apt-get update
+    echo "[+] Removing stale docker installations..."
+    apt-get remove docker docker-engine docker.io containerd runc
+    echo "[+] Updating sources..."
+    apt-get update
+    echo "[+] Installing Docker dependencies..."
+    apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+    echo "[+] Adding docker's official GPG key..."
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    echo "[+] Adding docker's stable repository..."
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    echo "[+] Updating sources..."
+    apt-get update
+    echo "[+] Installing latest version of docker engine..."
+    apt-get -y install docker-ce docker-ce-cli containerd.io
+    echo "[+] Installed docker version $(docker -v)"
+    echo "[+] Downloading latest docker-compose..."
+    curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    echo "[+] Making docker-compose executable..."
+    chmod +x /usr/local/bin/docker-compose
+    echo "[+] Creating symbolic link for docker-compose..."
+    ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+    echo "[+] Installed docker-compose version $(docker-compose -v)"
+    echo "[+] Adding default artemis_user to docker group..."
+    groupadd docker
+    usermod -aG docker artemis_user
+    echo "[+] Installing ntp..."
+    apt-get install -y ntp
+    echo "[+] Installing git..."
+    apt-get install -y git
+    echo "[+] Cloning latest ARTEMIS from GitHub..."
+    git clone https://github.com/FORTH-ICS-INSPIRE/artemis.git
+    cd artemis
+    git pull origin master
+    echo "[+] Pulling newest containers..."
+    echo "[+] Setting up local configuration files..."
+    mkdir -p local_configs && mkdir -p local_configs/backend && mkdir -p local_configs/monitor && mkdir -p local_configs/frontend
+    cp -rn backend/configs/* local_configs/backend && cp -rn backend/supervisor.d local_configs/backend && cp -rn monitor/configs/* local_configs/monitor
+    cp -rn monitor/supervisor.d local_configs/monitor && cp -rn frontend/webapp/configs/* local_configs/frontend
+    echo "[+] ARTEMIS VM provisioning completed"
+  SHELL
+end

@@ -41,8 +41,8 @@ def run_bgpstream_beta_bmp(prefixes_file=None):
     # create a new bgpstream instance
     stream = _pybgpstream.BGPStream()
 
-    # set BMP data interface
-    stream.set_data_interface("beta-bmp-stream")
+    # use the CAIDA project for BMP feeds
+    stream.add_filter("project", "caida")
 
     # filter prefixes
     for prefix in prefixes:

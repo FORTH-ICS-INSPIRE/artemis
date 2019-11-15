@@ -1,8 +1,6 @@
 1. To turn your VM on:
    ```
    ./vagrant up
-   cd artemis
-   docker-compose pull
    ```
 
 2. To pause your VM:

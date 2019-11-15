@@ -24,8 +24,7 @@ monitors:
     bgpstreamlive:
         - routeviews
         - ris
-    betabmp:
-        - betabmp
+        - caida
     # exabgp:
     #     - ip: exabgp
     #       port: 5000

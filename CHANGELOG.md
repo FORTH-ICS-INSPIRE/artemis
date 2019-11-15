@@ -13,6 +13,7 @@
 - ENV variable WITHDRAWN_HIJACK_THRESHOLD to consider hijacks withdrawn based on a threshold
 - TravisCI and CodeCov support
 - Database restart recovery
+- CAIDA project support (besides RV, RIS) for bgpstreamlive
 
 ### Changed
 - Automatic config file formatting upon config modification
@@ -32,6 +33,7 @@
 
 ### Deprecated
 - SemaphoreCI and coveralls
+- BetaBMP client (kept support in conf file)
 
 ### Security
 - TBD (addressing vulnerability)

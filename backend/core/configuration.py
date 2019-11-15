@@ -116,7 +116,7 @@ class Configuration:
                 "rrc23",
                 "rrc00",
             }
-            self.available_bgpstreamlive = {"routeviews", "ris"}
+            self.available_bgpstreamlive = {"routeviews", "ris", "caida"}
 
             # reads and parses initial configuration file
             with open(self.file, "r") as f:

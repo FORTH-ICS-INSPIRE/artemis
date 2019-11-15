@@ -3,8 +3,7 @@ prefixes:
         - 139.91.250.0/24
 monitors:
     riperis: ['rrc01']
-    bgpstreamlive: ['routeviews', 'ris']
-    betabmp: ['betabmp']
+    bgpstreamlive: ['routeviews', 'ris', 'caida']
     bgpstreamhist: ./
     exabgp:
         - ip: exabgp

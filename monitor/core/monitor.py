@@ -136,7 +136,6 @@ class Monitor:
                 self.redis_pubsub = self.redis.pubsub()
                 self.redis_pubsub_mon_channels = [
                     "__keyspace@0__:ris_seen_bgp_update",
-                    "__keyspace@0__:betabmp_seen_bgp_update",
                     "__keyspace@0__:bgpstreamlive_seen_bgp_update",
                     "__keyspace@0__:exabgp_seen_bgp_update",
                 ]
@@ -219,7 +218,6 @@ class Monitor:
             self.init_exabgp_instance()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
-            self.init_betabmp_instance()
             log.info("All configured monitoring instances initiated.")
 
             log.info("Monitor initiated, configured and running.")
@@ -419,33 +417,6 @@ class Monitor:
                 )
                 self.redis.set(
                     "bgpstreamlive_seen_bgp_update",
-                    "1",
-                    ex=os.getenv(
-                        "MON_TIMEOUT_LAST_BGP_UPDATE",
-                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                    ),
-                )
-
-        @exception_handler(log)
-        def init_betabmp_instance(self):
-            if "betabmp" in self.monitors:
-                log.debug(
-                    "starting {} for {}".format(
-                        self.monitors["betabmp"], self.prefix_file
-                    )
-                )
-                p = Popen(
-                    [
-                        "/usr/local/bin/python3",
-                        "taps/betabmp.py",
-                        "--prefixes",
-                        self.prefix_file,
-                    ],
-                    shell=False,
-                )
-                self.process_ids.append(("[betabmp] {}".format(self.prefix_file), p))
-                self.redis.set(
-                    "betabmp_seen_bgp_update",
                     "1",
                     ex=os.getenv(
                         "MON_TIMEOUT_LAST_BGP_UPDATE",

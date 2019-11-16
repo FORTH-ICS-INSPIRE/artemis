@@ -1,24 +1,33 @@
-1. To turn your VM on:
+0. Change your current working directory:
+   ```
+   cd <PATH_TO_ARTEMIS>/vagrant
+   ```
+1. Provision your VM for the first time (will lead to a reboot):
+   ```
+   ./vagrant up --provision
+   ```
+2. Turn your VM on (will automatically update and boot ARTEMIS):
    ```
    ./vagrant up
    ```
-   *Note 1: the first up will also provision the VM, and will cause a reboot. Just run an "up" again after this happens.*
-
-   *Note 2: the final output (after reboot and the 2nd "up")  will be: "Visit ARTEMIS at: https://${artemis_host}". Note the IP address, which is the host-only address of the VM.*
-
-2. To pause your VM:
+   *Note: the final output will be: "Visit ARTEMIS at: https://${artemis_host}". Note the IP address, which is the host-only address of the VM.*
+3. Pause your VM (saving its current execution state):
    ```
    ./vagrant suspend
    ```
-3. To turn your VM off:
+4. Turn your VM off (will automaticall shut ARTEMIS down):
    ```
    ./vagrant halt
    ```
-4. To destroy your VM:
+5. Destroy your VM (*attention: this will also erase all VM data*):
    ```
    ./vagrant destroy
    ```
-5. To ssh into your VM:
+6. `ssh` into your VM (using the locally generated SSH key):
    ```
    ./vagrant ssh
    ```
+
+Temporary VM data will be stored under `.vagrant`.
+Please let the ARTEMIS devs know in case something does not work as expected.
+The setup has been tested with VirtualBox 5+ and the latest vagrant executable (included in the folder).

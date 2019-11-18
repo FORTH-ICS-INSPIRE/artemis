@@ -65,8 +65,13 @@ test('BGP Update Simple', async t => {
         .expect(Selector('#modules_states').find('li').withText('Mitigation').textContent).contains("Mitigation On 1/1")
         .click(Selector('a').withText('Admin'))
         .click(Selector('a').withText('System'))
+        .click(Selector('#system_modules_monitor').find('.slider.round'))
+        .expect(Selector('#module_monitor_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
+        .click(Selector('#system_modules_detection').find('.slider.round'))
+        .expect(Selector('#module_detection_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
         .click(Selector('#system_modules_mitigation').find('.slider.round'))
-        .expect(Selector('#module_mitigation_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1");
+        .expect(Selector('#module_mitigation_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
+        .click(Selector('a').withText('Sign out'));
     },
     async token => {
         await getToken();

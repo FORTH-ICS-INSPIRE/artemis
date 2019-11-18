@@ -65,5 +65,14 @@ test('Simple Flow', async t => {
         .pressKey('tab')
         .typeText(Selector('#confirm'), 'admin123')
         .click(Selector('#submit'))
-        .expect(Selector('.alert.alert-success.alert-dismissible').textContent).eql("\n                ×\n                Success! Your password has been changed successfully!\n            ");
+        .expect(Selector('.alert.alert-success.alert-dismissible').textContent).eql("\n                ×\n                Success! Your password has been changed successfully!\n            ")
+        .click(Selector('a').withText('Admin'))
+        .click(Selector('a').withText('System'))
+        .click(Selector('#system_modules_monitor').find('.slider.round'))
+        .expect(Selector('#module_monitor_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
+        .click(Selector('#system_modules_detection').find('.slider.round'))
+        .expect(Selector('#module_detection_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
+        .click(Selector('#system_modules_mitigation').find('.slider.round'))
+        .expect(Selector('#module_mitigation_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
+        .click(Selector('a').withText('Sign out'));
 });

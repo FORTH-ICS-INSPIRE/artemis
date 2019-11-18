@@ -1,9 +1,24 @@
 import { Selector } from 'testcafe';
 
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
+
+async function getToken() {
+    const { stdout, stderr } = await exec('access_token=$(curl -k -X POST -H "Content-Type: application/json" -d \'{"username":"admin", "password":"admin123"}\' https://localhost/jwt/auth | jq -r .access_token)');
+    console.log('stdout:', stdout);
+    console.log('stderr:', stderr);
+}
+
+async function execQuery() {
+    const { stdout, stderr } = await exec('curl -k -X POST -H "Content-Type: application/json" -H "Authorization":"Bearer $access_token" https://localhost/api/graphql -d \'{"query": "mutation insertHijack {insert_view_hijacks(objects: {active: true, comment: \"\", community_annotation: \"\", configured_prefix: \"10.0.0.0/8\", dormant: false, hijack_as: \"1\", ignored: false, key: \"1\", num_asns_inf: 10, num_peers_seen: 10, outdated: false, prefix: \"10.0.0.0/8\", resolved: false, seen: false, type: \"S|-|-|-\", under_mitigation: false, withdrawn: false, time_detected: \"2019-11-16T00:00:15.003573\"}) {returning {key}}}"}\'');
+    console.log('stdout:', stdout);
+    console.log('stderr:', stderr);
+}
+
 fixture `artemis`
     .page `https://localhost:8443`;
 
-test('Simple Flow', async t => {
+test('BGP Update Simple', async t => {
     await t
         .typeText(Selector('#email'), 'admin')
         .pressKey('tab')
@@ -28,6 +43,14 @@ test('Simple Flow', async t => {
         .expect(Selector('#module_monitor_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
         .expect(Selector('#module_detection_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
         .expect(Selector('#module_mitigation_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
+        .click(Selector('#system_modules_monitor').find('.slider.round'))
+        .expect(Selector('button').withText('Active 1/1').textContent).eql(" Active 1/1", 'Monitor Module Active', {
+            timeout: 3000
+        })
+        .click(Selector('#system_modules_detection').find('.slider.round'))
+        .expect(Selector('button').withText('Active 1/1').textContent).eql(" Active 1/1", 'Detection Module Active', {
+            timeout: 3000
+        })
         .click(Selector('#system_modules_mitigation').find('.slider.round'))
         .expect(Selector('button').withText('Active 1/1').textContent).eql(" Active 1/1", 'Mitigation Module Active', {
             timeout: 3000
@@ -39,31 +62,16 @@ test('Simple Flow', async t => {
         .click(Selector('a').withText('Admin'))
         .click(Selector('a').withText('System'))
         .expect(Selector('span').withText('# test config').find('.cm-comment').textContent).contains("# test config")
-        .click(Selector('a').withText('Actions'))
-        .click(Selector('a').withText('Change Password'))
-        .typeText(Selector('#old_password'), 'admin123')
-        .pressKey('tab')
-        .typeText(Selector('#password'), '321admin')
-        .pressKey('tab')
-        .typeText(Selector('#confirm'), '321admin')
-        .click(Selector('#submit'))
-        .click(Selector('a').withText('Sign out'))
-        .typeText(Selector('#email'), 'admin')
-        .pressKey('tab')
-        .typeText(Selector('#password'), '321admin')
-        .click(Selector('#submit'))
         .expect(Selector('#modules_states').find('li').withText('Mitigation').textContent).contains("Mitigation On 1/1")
         .click(Selector('a').withText('Admin'))
         .click(Selector('a').withText('System'))
         .click(Selector('#system_modules_mitigation').find('.slider.round'))
-        .expect(Selector('#module_mitigation_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1")
-        .click(Selector('a').withText('Actions'))
-        .click(Selector('a').withText('Change Password'))
-        .typeText(Selector('#old_password'), '321admin')
-        .pressKey('tab')
-        .typeText(Selector('#password'), 'admin123')
-        .pressKey('tab')
-        .typeText(Selector('#confirm'), 'admin123')
-        .click(Selector('#submit'))
-        .expect(Selector('.alert.alert-success.alert-dismissible').textContent).eql("\n                ×\n                Success! Your password has been changed successfully!\n            ");
-});
+        .expect(Selector('#module_mitigation_instances_running').find('button').withText('Active 0/1').textContent).eql(" Active 0/1");
+    },
+    async token => {
+        await getToken();
+    },
+    async query => {
+        await execQuery();
+    }
+);

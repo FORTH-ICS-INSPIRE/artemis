@@ -2,28 +2,23 @@ FROM mavromat/alpine-python:3.6
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
-RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis curl git libffi-dev cmake
+RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis curl git libffi-dev librtr0 librtr-dev
 
 WORKDIR /root
 
 COPY . ./
 
 RUN pip --no-cache-dir install -r requirements.txt \
-    && pip --no-cache-dir install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49 \
-    && make clean && make -j 4 \
-    && mkdir -p /etc/artemis/ \
-    && mkdir -p /var/log/artemis/
-
-RUN git clone https://github.com/rtrlib/rtrlib.git
-WORKDIR /root/rtrlib
-RUN cmake -D CMAKE_BUILD_TYPE=Release .
-RUN make && make install
-WORKDIR /root
+    && pip --no-cache-dir install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49
 
 RUN git clone https://github.com/rtrlib/python-binding.git
 WORKDIR /root/python-binding
 RUN python setup.py build && python setup.py install
 WORKDIR /root
+
+RUN make clean && make -j 4 \
+    && mkdir -p /etc/artemis/ \
+    && mkdir -p /var/log/artemis/
 
 COPY ./configs/* /etc/artemis/
 

@@ -2,7 +2,7 @@ FROM mavromat/alpine-python:3.6
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
-RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis curl
+RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis curl git
 
 WORKDIR /root
 
@@ -13,6 +13,11 @@ RUN pip --no-cache-dir install -r requirements.txt \
     && make clean && make -j 4 \
     && mkdir -p /etc/artemis/ \
     && mkdir -p /var/log/artemis/
+
+RUN git clone https://github.com/rtrlib/python-binding.git
+WORKDIR /root/python-binding
+RUN python setup.py build && python setup.py install
+WORKDIR /root
 
 COPY ./configs/* /etc/artemis/
 

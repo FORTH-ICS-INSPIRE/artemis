@@ -822,6 +822,7 @@ class Detection:
                 "timestamp_of_config": self.timestamp,
                 "end_tag": None,
                 "outdated_parent": None,
+                "rpki_status": "NA",  # TODO: retrieve this properly!
             }
 
             if (
@@ -889,6 +890,7 @@ class Detection:
                     self.comm_annotate_hijack(monitor_event, result)
                     result["outdated_parent"] = hijack_value["outdated_parent"]
                     result["bgpupdate_keys"].add(monitor_event["key"])
+                    result["rpki_status"] = hijack_value["rpki_status"]
                 else:
                     hijack_value["time_detected"] = time.time()
                     hijack_value["key"] = get_hash(

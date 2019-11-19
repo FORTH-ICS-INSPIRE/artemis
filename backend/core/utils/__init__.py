@@ -42,6 +42,7 @@ DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
         "time_detected",
         "key",
         "community_annotation",
+        "rpki_status",
         "end_tag",
         "outdated_parent",
         "hijack_url",

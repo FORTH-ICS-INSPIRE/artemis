@@ -170,7 +170,8 @@
                 "under_mitigation",
                 "withdrawn",
                 "outdated",
-                "community_annotation"
+                "community_annotation",
+                "rpki_status"
               ],
               "filter": {}
             }

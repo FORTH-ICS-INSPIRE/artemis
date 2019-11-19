@@ -2,11 +2,17 @@ FROM mavromat/alpine-python:3.6
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
-RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis curl git libffi-dev librtr0 librtr-dev
+RUN apk update && apk add --no-cache supervisor tcl postgresql-client postgresql-dev redis curl git libffi-dev cmake libssh
 
 WORKDIR /root
 
 COPY . ./
+
+RUN git clone https://github.com/rtrlib/rtrlib.git
+WORKDIR /root/rtrlib
+RUN cmake -D CMAKE_BUILD_TYPE=Release .
+RUN make && make install
+WORKDIR /root
 
 RUN pip --no-cache-dir install -r requirements.txt \
     && pip --no-cache-dir install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49

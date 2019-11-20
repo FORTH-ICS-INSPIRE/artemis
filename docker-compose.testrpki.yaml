@@ -65,9 +65,9 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
-            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
+            - ./tester/rpki/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./tester/rpki/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./tester/rpki/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge

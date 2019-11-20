@@ -6,13 +6,10 @@ services:
         restart: unless-stopped
         networks:
             - artemis
-        expose:
-            - 3323 # RTR
-            #- 9556 # HTTP
         ports:
             - "3323:3323" # RTR
             #- "9556:9556" # HTTP
         volumes:
             - ./local_configs/routinator/tals:/home/routinator/.rpki-cache/tals
-            - ./local_configs/other/routinator/routinator.conf:/home/routinator/.routinator.conf
-            - ./local_configs/other/routinator/rpki-repo:/home/routinator/rpki-repo
+            - ./local_configs/routinator/routinator.conf:/home/routinator/.routinator.conf
+            - ./local_configs/routinator/rpki-repo:/home/routinator/rpki-repo

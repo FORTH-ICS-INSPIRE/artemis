@@ -54,6 +54,8 @@ hijackLogFields: '["prefix","hijack_as","type","time_started","time_last","peers
 # percentage of monitor peers that have seen hijack updates, required to see corresponding withdrawals to declare a
 # hijack as withdrawn
 withdrawnHijackThreshold: 80
+rpkiValidatorHost: routinator
+rpkiValidatorPort: 3323
 
 # services
 svc:

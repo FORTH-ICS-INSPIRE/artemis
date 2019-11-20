@@ -71,6 +71,8 @@ else:
     MON_SUPERVISOR_URI = None
 RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
 ASN_REGEX = r"^AS(\d+)$"
+RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
+RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
 
 
 class TLSSMTPHandler(SMTPHandler):

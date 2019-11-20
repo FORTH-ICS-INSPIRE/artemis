@@ -21,6 +21,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from rtrlib import RTRManager
 from utils import exception_handler
 from utils import flatten
 from utils import get_hash
@@ -34,9 +35,13 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import RPKI_VALIDATOR_HOST
+from utils import RPKI_VALIDATOR_PORT
 from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
+
+# from rtrlib import PfxvState
 
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
@@ -121,6 +126,22 @@ class Detection:
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
+
+            self.rtrmanager = None
+            try:
+                self.rtrmanager = RTRManager(RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT)
+                self.rtrmanager.start()
+                log.info(
+                    "Connected to RPKI VALIDATOR {}:{}".format(
+                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                    )
+                )
+            except Exception:
+                log.info(
+                    "Could not connect to RPKI VALIDATOR {}:{}".format(
+                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                    )
+                )
 
             # EXCHANGES
             self.update_exchange = Exchange(

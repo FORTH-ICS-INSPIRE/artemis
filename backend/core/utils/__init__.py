@@ -596,17 +596,15 @@ def get_rpki_val_result(mgr, asn, network, netmask):
         result = mgr.validate(asn, network, netmask)
         if result.is_valid:
             return "VA"
-        elif result.is_invalid:
+        if result.is_invalid:
             if result.as_invalid:
                 return "IA"
-            elif result.length_invalid:
+            if result.length_invalid:
                 return "IL"
-            else:
-                return "IU"
-        elif result.not_found:
+            return "IU"
+        if result.not_found:
             return "NF"
-        else:
-            return "NA"
+        return "NA"
     except Exception:
         log.exception("exception")
         return "NA"

@@ -45,5 +45,6 @@ data:
   hijackLogFields: {{ .Values.hijackLogFields | default "[]" | quote }}
   artemisWebHost: {{ .Values.ingress.host | default "artemis.com" }}
   withdrawnHijackThreshold: {{ .Values.withdrawnHijackThreshold | default "80" | quote }}
+  rpkiValidatorEnabled: {{ .Values.rpkiValidatorEnabled | default "false" | quote }}
   rpkiValidatorHost: {{ .Values.rpkiValidatorHost | default "routinator" | quote }}
   rpkiValidatorPort: {{ .Values.rpkiValidatorPort | default "3323" | quote }}

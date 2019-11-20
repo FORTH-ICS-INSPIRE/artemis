@@ -36,6 +36,7 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import RPKI_VALIDATOR_ENABLED
 from utils import RPKI_VALIDATOR_HOST
 from utils import RPKI_VALIDATOR_PORT
 from utils import SetEncoder
@@ -127,20 +128,27 @@ class Detection:
             ping_redis(self.redis)
 
             self.rtrmanager = None
-            try:
-                self.rtrmanager = RTRManager(RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT)
-                self.rtrmanager.start()
-                log.info(
-                    "Connected to RPKI VALIDATOR '{}:{}'".format(
-                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                    )
-                )
-            except Exception:
-                log.info(
-                    "Could not connect to RPKI VALIDATOR '{}:{}'".format(
-                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                    )
-                )
+            if RPKI_VALIDATOR_ENABLED == "true":
+                while True:
+                    try:
+                        self.rtrmanager = RTRManager(
+                            RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                        )
+                        self.rtrmanager.start()
+                        log.info(
+                            "Connected to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        break
+                    except Exception:
+                        log.info(
+                            "Could not connect to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        log.info("Retrying RTR connection in 5 seconds...")
+                        time.sleep(5)
 
             # EXCHANGES
             self.update_exchange = Exchange(
@@ -845,7 +853,11 @@ class Detection:
                 "rpki_status": "NA",
             }
 
-            if self.rtrmanager and monitor_event["path"]:
+            if (
+                RPKI_VALIDATOR_ENABLED == "true"
+                and self.rtrmanager
+                and monitor_event["path"]
+            ):
                 asn = monitor_event["path"][-1]
                 network, netmask = monitor_event["prefix"].split("/")
                 hijack_value["rpki_status"] = get_rpki_val_result(

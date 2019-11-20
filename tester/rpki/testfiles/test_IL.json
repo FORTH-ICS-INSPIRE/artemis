@@ -1,0 +1,41 @@
+[
+    {
+        "send": {
+            "key": "1",
+            "timestamp": 1,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [8, 3, 2, 5408, 8522],
+            "prefix": "139.91.1.0/24",
+            "peer_asn": 8
+        },
+        "detection_update_response": {
+            "key": "1",
+            "handled": true,
+            "matched_prefix": "139.91.0.0/16",
+            "origin_as": 8522
+        },
+        "detection_hijack_response": {
+            "prefix": "139.91.1.0/24",
+            "hijack_as": -1,
+            "type": "S|-|-|-",
+            "time_started": 1.0,
+            "configured_prefix": "139.91.0.0/16",
+            "rpki_status": "IL"
+        },
+        "database_hijack_response": {
+            "type": "S|-|-|-",
+            "active": true,
+            "prefix": "139.91.1.0/24",
+            "asns_inf": [8, 3],
+            "hijack_as": -1,
+            "peers_seen": [8],
+            "num_asns_inf": 2,
+            "num_peers_seen": 1,
+            "configured_prefix": "139.91.0.0/16",
+            "rpki_status": "IL"
+        }
+    }
+]

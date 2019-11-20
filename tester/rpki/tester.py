@@ -15,6 +15,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.utils.compat import nested
+from rtrlib import RTRManager
 
 
 class Tester:
@@ -270,6 +271,29 @@ class Tester:
         RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
             RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
         )
+        RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
+        RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
+
+        # check RPKI RTR manager connectivity
+        while True:
+            try:
+                rtrmanager = RTRManager(RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT)
+                rtrmanager.start()
+                print(
+                    "Connected to RPKI VALIDATOR '{}:{}'".format(
+                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                    )
+                )
+                rtrmanager.stop()
+                break
+            except Exception:
+                print(
+                    "Could not connect to RPKI VALIDATOR '{}:{}'".format(
+                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                    )
+                )
+                print("Retrying in 5 seconds...")
+                time.sleep(5)
 
         # exchanges
         self.update_exchange = Exchange(
@@ -322,6 +346,8 @@ class Tester:
             Tester.waitExchange(self.hijack_exchange, connection.default_channel)
             print("Waiting for update exchange..")
             Tester.waitExchange(self.update_exchange, connection.default_channel)
+
+            self.supervisor.supervisor.startAllProcesses()
 
             # query database for the states of the processes
             db_con = self.getDbConnection()

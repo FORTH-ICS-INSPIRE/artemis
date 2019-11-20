@@ -4,15 +4,26 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 WORKDIR /root
 
-RUN apk update && apk add --no-cache postgresql-dev
+COPY . ./
+
+RUN apk update && apk add --no-cache postgresql-dev git libffi-dev cmake libssh
+
+RUN git clone https://github.com/rtrlib/rtrlib.git
+WORKDIR /root/rtrlib
+RUN cmake -D CMAKE_BUILD_TYPE=Release .
+RUN make && make install
+WORKDIR /root
+
 COPY requirements.txt /root/
 RUN pip --no-cache-dir install -r requirements.txt
 
-COPY entrypoint /root/
-COPY wait-for /root/
-RUN mkdir -p /root/testfiles /root/configs
-COPY testfiles/ /root/testfiles/
-COPY configs/ /root/configs/
-COPY tester.py /root/
+RUN ln -s /usr/local/lib64/librtr.so /usr/local/lib/librtr.so \
+    && ln -s /usr/local/lib64/librtr.so.0 /usr/local/lib/librtr.so.0 \
+    && ln -s /usr/local/lib64/librtr.so.0.7.0 /usr/local/lib/librtr.so.0.7.0
+
+RUN git clone https://github.com/rtrlib/python-binding.git
+WORKDIR /root/python-binding
+RUN python setup.py build && python setup.py install
+WORKDIR /root
 
 ENTRYPOINT ["./entrypoint"]

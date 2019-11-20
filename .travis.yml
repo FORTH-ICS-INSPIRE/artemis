@@ -1,4 +1,5 @@
 language: python
+sudo: required
 services:
 - docker
 env:
@@ -94,11 +95,11 @@ jobs:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - mkdir -p local_configs/routinator/tals
-    - chown -R 1012:1012 local_configs/routinator/tals
+    - sudo chown -R 1012:1012 local_configs/routinator/tals
     - mkdir -p local_configs/routinator/rpki-repo
-    - chown -R 1012:1012 local_configs/routinator/rpki-repo
+    - sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
     - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
-    - chown -R 1012:1012 local_configs/routinator/routinator.conf
+    - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
     - docker build -t artemis_rpki_testing tester/rpki
     - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
     - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d

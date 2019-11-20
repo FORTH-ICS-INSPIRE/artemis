@@ -27,6 +27,7 @@ from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
+from utils import get_rpki_val_result
 from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
@@ -40,8 +41,6 @@ from utils import RPKI_VALIDATOR_PORT
 from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
-
-# from rtrlib import PfxvState
 
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
@@ -132,13 +131,13 @@ class Detection:
                 self.rtrmanager = RTRManager(RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT)
                 self.rtrmanager.start()
                 log.info(
-                    "Connected to RPKI VALIDATOR {}:{}".format(
+                    "Connected to RPKI VALIDATOR '{}:{}'".format(
                         RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
                     )
                 )
             except Exception:
                 log.info(
-                    "Could not connect to RPKI VALIDATOR {}:{}".format(
+                    "Could not connect to RPKI VALIDATOR '{}:{}'".format(
                         RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
                     )
                 )
@@ -843,8 +842,15 @@ class Detection:
                 "timestamp_of_config": self.timestamp,
                 "end_tag": None,
                 "outdated_parent": None,
-                "rpki_status": "NA",  # TODO: retrieve this properly!
+                "rpki_status": "NA",
             }
+
+            if self.rtrmanager and monitor_event["path"]:
+                asn = monitor_event["path"][-1]
+                network, netmask = monitor_event["prefix"].split("/")
+                hijack_value["rpki_status"] = get_rpki_val_result(
+                    self.rtrmanager, asn, network, int(netmask)
+                )
 
             if (
                 "hij_key" in monitor_event

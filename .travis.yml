@@ -87,6 +87,26 @@ jobs:
     script:
     - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
+  - name: TestRPKI
+    install:
+    - pip install codecov
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - mkdir -p local_configs/routinator/tals
+    - chown -R 1012:1012 local_configs/routinator/tals
+    - mkdir -p local_configs/routinator/rpki-repo
+    - chown -R 1012:1012 local_configs/routinator/rpki-repo
+    - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
+    - chown -R 1012:1012 local_configs/routinator/routinator.conf
+    - docker build -t artemis_rpki_testing tester/rpki
+    - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
+    - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
+    script:
+    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
+    after_success:
+    - sh convert_coverage.sh
+    - codecov
 notifications:
   slack:
     secure: es0zP6IAgEJbdvJz8apGlQAO0SOnMMuQwTbItiXTUjA60Tfn2gcB7vk8n60Y/pEsLn9Z9Kk9WJp7/S9jZiKITpzLxSabo0+PF+DangvNUZMmJ9NV7oJOxGVQS94Ape2pHs6x4SUpP6JkadIU5ZxXbjVr8ZIPL2VfdclPlMBsM/K3ZNgd5cPLnPKsPuKn9WtTFDm/oGaWh/V6Y9T7/l/kNZrj6K7IcrI2rv4+LKLZDNicaQIN59M4Qt4niaETYNqZuqtWewHZH+KlXKzukFZ92qUDEG/3TBvqQDqimbjAXZkltso1MXBnSblrKNb1b00WysGwhT89zPeovhjcrHZB9vH9mKGNp5qoiBjVGzKYHLptitNqupP2ReUaRqKonRAw43iAN+8SSfrmCtyQGDv60fWLheUw+fbK8IRMrAYIG9t20/upDbrPTxU741Cqzgfy5fygnAuqmRi5AkckymJte5bf/SwQsmf5IFpc6FP6fcGZT6yL1zf55tsi8pXpq80SLokcH2bO17wEHSJxuNPOxNgJQjugY/VX58owZgHgYn1sLGpxrKlAwuQgs1+Av16TRGhCjyQPgWRN9inva/AwNEtA+ljp4PqzTk7oBI9MLaX3osU8Rm6bfMI2KNwcWpfcbztkYwZQLR4v45M91QnAE9UCbbkg4epgTli2RKnHCyQ=

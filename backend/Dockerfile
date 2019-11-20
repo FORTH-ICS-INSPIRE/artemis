@@ -17,6 +17,10 @@ WORKDIR /root
 RUN pip --no-cache-dir install -r requirements.txt \
     && pip --no-cache-dir install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49
 
+RUN ln -s /usr/local/lib64/librtr.so /usr/local/lib/librtr.so \
+    && ln -s /usr/local/lib64/librtr.so.0 /usr/local/lib/librtr.so.0 \
+    && ln -s /usr/local/lib64/librtr.so.0.7.0 /usr/local/lib/librtr.so.0.7.0
+
 RUN git clone https://github.com/rtrlib/python-binding.git
 WORKDIR /root/python-binding
 RUN python setup.py build && python setup.py install

@@ -34,6 +34,8 @@ services:
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
+            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
+            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
         volumes:
             - ./tester/detection/configs/:/etc/artemis/
             - ./tester/detection/supervisor.d/:/etc/supervisor/conf.d/

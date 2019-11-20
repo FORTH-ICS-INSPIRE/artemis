@@ -130,6 +130,8 @@ To download and install the required software packages, please follow steps 1 th
 
 To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#setup-tool).
 
+*Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation; please check out [this Wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Setup-an-ARTEMIS-VM-in-1-minute) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
+
 ## How to Run and Configure
 
 1. Start ARTEMIS:

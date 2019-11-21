@@ -75,7 +75,7 @@ mapHelpText_system['field_time_last_update'] = "The timestamp of the newest know
 mapHelpText_system['field_community_annotation'] = "The user-defined annotation of the hijack according to the communities of hijacked BGP updates.";
 mapHelpText_system['field_rpki_status'] = `The RPKI status of the hijacked prefix.<ul>
 <li>"NA" → Non Applicable</li>
-<li>"VA" → Valid</li>
+<li>"VD" → Valid</li>
 <li>"IA" → Invalid ASN</li>
 <li>"IL" → Invalid Prefix Length</li>
 <li>"IU" → Invalid Unknown</li>

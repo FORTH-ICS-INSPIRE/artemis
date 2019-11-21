@@ -595,7 +595,7 @@ def get_rpki_val_result(mgr, asn, network, netmask):
     try:
         result = mgr.validate(asn, network, netmask)
         if result.is_valid:
-            return "VA"
+            return "VD"
         if result.is_invalid:
             if result.as_invalid:
                 return "IA"

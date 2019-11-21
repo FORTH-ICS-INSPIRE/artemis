@@ -23,7 +23,7 @@
             "type": "E|1|-|-",
             "time_started": 1.0,
             "configured_prefix": "139.91.0.0/16",
-            "rpki_status": "VA"
+            "rpki_status": "VD"
         },
         "database_hijack_response": {
             "type": "E|1|-|-",
@@ -35,7 +35,7 @@
             "num_asns_inf": 3,
             "num_peers_seen": 1,
             "configured_prefix": "139.91.0.0/16",
-            "rpki_status": "VA"
+            "rpki_status": "VD"
         }
     }
 ]

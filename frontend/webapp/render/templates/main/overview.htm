@@ -53,6 +53,7 @@
                                             <th helpText="field_matched_prefix">Matched Prefix</th>
                                             <th helpText="field_hijack_type">Type</th>
                                             <th helpText="field_hijacker_as">Hijacker AS</th>
+                                            <th helpText="field_rpki_status">RPKI</th>
                                             <th helpText="field_peers_seen"># Peers Seen</th>
                                             <th helpText="field_ases_infected"># ASes Infected</th>
                                             <th helpText="field_hijack_ack">Ack</th>
@@ -66,6 +67,7 @@
                                                 <th>Matched Prefix</th>
                                                 <th>Type</th>
                                                 <th>Hijack AS</th>
+                                                <th>RPKI</th>
                                                 <th># Peers Seen</th>
                                                 <th># ASes Infected</th>
                                                 <th>Ack</th>
@@ -149,6 +151,7 @@
                 "prefix",
                 "type",
                 "hijack_as",
+                "rpki_status",
                 "num_peers_seen",
                 "num_asns_inf",
                 "key","seen",
@@ -206,6 +209,7 @@
                 'time': null,
                 'prefix': null,
                 'hijack_as': null,
+                'rpki_status': null,
                 'type': null
             };
 
@@ -217,7 +221,8 @@
                 2: "prefix",
                 3: "configured_prefix",
                 4: "type",
-                5: "hijack_as"
+                5: "hijack_as",
+                6: "rpki_status"
             };
 
             var columns = [
@@ -227,6 +232,7 @@
                 { data: 'configured_prefix' },
                 { data: 'type' },
                 { data: 'hijack_as' },
+                { data: 'rpki_status' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }];
 
@@ -487,6 +493,20 @@
                                     $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)|(-|L), or valid subset');
                                     $(this).children("div").show();
                                 }
+                            }else if(search_table_map[index] == 'rpki_status'){
+                                var type_regex = /^\s*((VD)|(IA)|(IL)|(IU)|(NF)|(NA))\s*$/;
+                                if(type_regex.exec(value)){
+                                    match_value = value.replace(/^\s+|\s+$/g, '');
+                                    filter_parameters[search_table_map[index]] = match_value;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not (VD)|(IA)|(IL)|(IU)|(NF)|(NA)');
+                                    $(this).children("div").show();
+                                }
                             }else{
                                 filter_parameters[search_table_map[index]] = value;
                             }
@@ -513,6 +533,11 @@
 
                 if(filter_parameters['type'] != null){
                     filters.push('{ type: {_like: "%' + filter_parameters['type'] + '%"} }');
+                }
+
+                if(filter_parameters['rpki_status'] != null){
+                    filters.push('{ rpki_status: {_eq: "' + filter_parameters['rpki_status'] + '"} }');
+                    download_filters.push('rpki_status.eq.' + filter_parameters['rpki_status']);
                 }
 
                 if(filters.length > 0){
@@ -602,6 +627,7 @@
                         { data: 'configured_prefix' },
                         { data: 'type', "width": "60px" },
                         { data: 'hijack_as' },
+                        { data: 'rpki_status' },
                         { data: 'num_peers_seen', "width": "30px" },
                         { data: 'num_asns_inf', "width": "30px" },
                         { data: 'seen', "width": "14px" },
@@ -609,11 +635,11 @@
                     ],
                     "columnDefs": [
                         {
-                            "targets": [2,3,4,5,8,9],
+                            "targets": [2,3,4,5,6,9,10],
                             "orderable": false
                         },
                         {
-                            "targets": [0,1,2,3,4,5,6,7,8],
+                            "targets": [0,1,2,3,4,5,6,7,8,9],
                             "className": "text-center",
                         },
                     ],

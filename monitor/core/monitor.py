@@ -441,20 +441,20 @@ class Monitor:
                         "--prefixes",
                         self.prefix_file,
                         "--kafka_host",
-                        self.monitor["bgpstreamkafka"]["host"],
+                        str(self.monitors["bgpstreamkafka"]["host"]),
                         "--kafka_port",
-                        self.monitor["bgpstreamkafka"]["port"],
+                        str(self.monitors["bgpstreamkafka"]["port"]),
                         "--kafka_topic",
-                        self.monitor["bgpstreamkafka"]["topic"],
+                        str(self.monitors["bgpstreamkafka"]["topic"]),
                     ],
                     shell=False,
                 )
                 self.process_ids.append(
                     (
                         "[bgpstreamkafka] {} {} {} {}".format(
-                            self.monitor["bgpstreamkafka"]["host"],
-                            self.monitor["bgpstreamkafka"]["port"],
-                            self.monitor["bgpstreamkafka"]["topic"],
+                            self.monitors["bgpstreamkafka"]["host"],
+                            self.monitors["bgpstreamkafka"]["port"],
+                            self.monitors["bgpstreamkafka"]["topic"],
                             self.prefix_file,
                         ),
                         p,

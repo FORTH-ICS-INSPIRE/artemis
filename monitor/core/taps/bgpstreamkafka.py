@@ -183,23 +183,12 @@ if __name__ == "__main__":
         help="Prefix(es) to be monitored (json file with prefix list)",
     )
     parser.add_argument(
-        "-k",
-        "--kafka_host",
-        type=str,
-        dest="kafka_host",
-        default=None,
-        help="kafka host",
+        "--kafka_host", type=str, dest="kafka_host", default=None, help="kafka host"
     )
     parser.add_argument(
-        "-p",
-        "--kafka_port",
-        type=str,
-        dest="kafka_port",
-        default=None,
-        help="kafka port",
+        "--kafka_port", type=str, dest="kafka_port", default=None, help="kafka port"
     )
     parser.add_argument(
-        "-t",
         "--kafka_topic",
         type=str,
         dest="kafka_topic",
@@ -215,7 +204,7 @@ if __name__ == "__main__":
         run_bgpstream(
             args.prefixes_file,
             args.kafka_host,
-            args.kafka_port,
+            int(args.kafka_port),
             args.kafka_topic,
             start=int(time.time()) - START_TIME_OFFSET,
             end=0,

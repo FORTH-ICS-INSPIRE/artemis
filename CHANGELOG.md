@@ -14,6 +14,7 @@
 - TravisCI and CodeCov support
 - Database restart recovery
 - CAIDA project support (besides RV, RIS) for bgpstreamlive
+- bgpstreamkafka tap
 
 ### Changed
 - Automatic config file formatting upon config modification
@@ -34,6 +35,7 @@
 ### Deprecated
 - SemaphoreCI and coveralls
 - BetaBMP client (kept support in conf file)
+- betabmp conf keyword support
 
 ### Security
 - TBD (addressing vulnerability)

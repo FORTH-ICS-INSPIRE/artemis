@@ -88,7 +88,7 @@ class Configuration:
                 "exabgp",
                 "bgpstreamhist",
                 "bgpstreamlive",
-                "betabmp",
+                "bgpstreamkafka",
             }
             self.available_ris = {
                 "rrc01",
@@ -117,6 +117,7 @@ class Configuration:
                 "rrc00",
             }
             self.available_bgpstreamlive = {"routeviews", "ris", "caida"}
+            self.required_bgpstreamkafka = {"host", "port", "topic"}
 
             # reads and parses initial configuration file
             with open(self.file, "r") as f:
@@ -1119,6 +1120,11 @@ class Configuration:
                 elif key == "bgpstreamlive":
                     if not info or not set(info).issubset(self.available_bgpstreamlive):
                         raise ArtemisError("invalid-bgpstreamlive-project", info)
+                elif key == "bgpstreamkafka":
+                    if not set(info.keys()).issubset(self.required_bgpstreamkafka):
+                        raise ArtemisError(
+                            "invalid-bgpstreamkakfa-configuration", list(info.keys())
+                        )
                 elif key == "exabgp":
                     for entry in info:
                         if "ip" not in entry and "port" not in entry:

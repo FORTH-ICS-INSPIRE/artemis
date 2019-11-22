@@ -138,6 +138,7 @@ class Monitor:
                     "__keyspace@0__:ris_seen_bgp_update",
                     "__keyspace@0__:bgpstreamlive_seen_bgp_update",
                     "__keyspace@0__:exabgp_seen_bgp_update",
+                    "__keyspace@0__:bgpstreamkafka_seen_bgp_update",
                 ]
                 for pubsub_mon_channel in self.redis_pubsub_mon_channels:
                     self.redis_pubsub.psubscribe(
@@ -218,6 +219,7 @@ class Monitor:
             self.init_exabgp_instance()
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
+            self.init_bgpstreamkafka_instance()
             log.info("All configured monitoring instances initiated.")
 
             log.info("Monitor initiated, configured and running.")
@@ -417,6 +419,49 @@ class Monitor:
                 )
                 self.redis.set(
                     "bgpstreamlive_seen_bgp_update",
+                    "1",
+                    ex=os.getenv(
+                        "MON_TIMEOUT_LAST_BGP_UPDATE",
+                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                    ),
+                )
+
+        @exception_handler(log)
+        def init_bgpstreamkafka_instance(self):
+            if "bgpstreamkafka" in self.monitors:
+                log.debug(
+                    "starting {} for {}".format(
+                        self.monitors["bgpstreamkafka"], self.prefix_file
+                    )
+                )
+                p = Popen(
+                    [
+                        "/usr/local/bin/python3",
+                        "taps/bgpstreamkafka.py",
+                        "--prefixes",
+                        self.prefix_file,
+                        "--kafka_host",
+                        self.monitor["bgpstreamkafka"]["host"],
+                        "--kafka_port",
+                        self.monitor["bgpstreamkafka"]["port"],
+                        "--kafka_topic",
+                        self.monitor["bgpstreamkafka"]["topic"],
+                    ],
+                    shell=False,
+                )
+                self.process_ids.append(
+                    (
+                        "[bgpstreamkafka] {} {} {} {}".format(
+                            self.monitor["bgpstreamkafka"]["host"],
+                            self.monitor["bgpstreamkafka"]["port"],
+                            self.monitor["bgpstreamkafka"]["topic"],
+                            self.prefix_file,
+                        ),
+                        p,
+                    )
+                )
+                self.redis.set(
+                    "bgpstreamkafka_seen_bgp_update",
                     "1",
                     ex=os.getenv(
                         "MON_TIMEOUT_LAST_BGP_UPDATE",

@@ -8,10 +8,10 @@ WORKDIR /root
 
 COPY . ./
 
-RUN git clone https://github.com/rtrlib/rtrlib.git
+RUN git clone -b v0.7.0 --depth 1 https://github.com/rtrlib/rtrlib.git
 WORKDIR /root/rtrlib
 RUN cmake -D CMAKE_BUILD_TYPE=Release .
-RUN make && make install
+RUN make -j 4 && make install
 WORKDIR /root
 
 RUN pip --no-cache-dir install -r requirements.txt \
@@ -23,6 +23,7 @@ RUN ln -s /usr/local/lib64/librtr.so /usr/local/lib/librtr.so \
 
 RUN git clone https://github.com/rtrlib/python-binding.git
 WORKDIR /root/python-binding
+RUN git checkout 2ade90eddd1895515948481136c8197e9cada128
 RUN python setup.py build && python setup.py install
 WORKDIR /root
 

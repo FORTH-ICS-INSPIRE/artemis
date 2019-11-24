@@ -21,7 +21,7 @@
 - DB_AUTOCLEAN and dormant hijack thresholds set to 1 day (24h) by default
 - Change of conf_lib.py in order to support a list of dicts per prefix
 - Always restart containers for smooth server rebooting
-- Updated version of BGPStream on custom image (mavromat/bgpstream-redis:v1.1-bgpstream)
+- Updated version of BGPStream on custom image (mavromat/bgpstream-redis:v1.2-bgpstream)
 
 ### Fixed
 - Issue on handle_hijack_update() DB function with multiple selects
@@ -36,6 +36,7 @@
 - SemaphoreCI and coveralls
 - BetaBMP client (kept support in conf file)
 - betabmp conf keyword support
+- psycopgs2-binary (2.7.7) with psycopg2 (2.8.4)
 
 ### Security
 - TBD (addressing vulnerability)

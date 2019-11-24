@@ -5,9 +5,16 @@ monitors:
     - routeviews
     - ris
     - caida
+  # bgpstreamkafka:
+  #   host: bmp.bgpstream.caida.org
+  #   port: 9092
+  #   topic: '^openbmp\.router--.+\.peer-as--.+\.bmp_raw'
   exabgp:
     - ip: exabgp # this will automatically be resolved to the exabgp container's IP
       port: 5000 # default port
       autoconf: "true"
+  # bgpstreamhist:
+  #   dir: <csv_dir_with_formatted_BGP_updates>
+  #   autoconf: "true"
 asns: {}
 rules: []

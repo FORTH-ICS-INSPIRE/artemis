@@ -107,7 +107,7 @@ def run_bgpstream(
             while elem:
                 if elem.type in {"A", "W"}:
                     redis.set(
-                        "bgpstreamlive_seen_bgp_update",
+                        "bgpstreamkafka_seen_bgp_update",
                         "1",
                         ex=int(
                             os.getenv(
@@ -117,9 +117,7 @@ def run_bgpstream(
                         ),
                     )
                     this_prefix = str(elem.fields["prefix"])
-                    service = "bgpstream|{}|{}".format(
-                        str(rec.project), str(rec.collector)
-                    )
+                    service = "bgpstreamkafka|{}".format(str(rec.collector))
                     type_ = elem.type
                     if type_ == "A":
                         as_path = elem.fields["as-path"].split(" ")

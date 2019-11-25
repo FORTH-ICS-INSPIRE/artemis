@@ -106,7 +106,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                         ),
                     )
                     this_prefix = str(elem.fields["prefix"])
-                    service = "bgpstream|{}|{}".format(
+                    service = "bgpstreamlive|{}|{}".format(
                         str(rec.project), str(rec.collector)
                     )
                     type_ = elem.type

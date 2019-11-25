@@ -24,6 +24,7 @@ from utils import translate_rfc2622
 
 log = get_logger()
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
+PY_BIN = "/usr/local/bin/python"
 
 
 class Monitor:
@@ -295,7 +296,7 @@ class Monitor:
                 rrcs = ",".join(self.monitors["riperis"])
                 p = Popen(
                     [
-                        "/usr/local/bin/python3",
+                        PY_BIN,
                         "taps/ripe_ris.py",
                         "--prefixes",
                         self.prefix_file,
@@ -331,7 +332,7 @@ class Monitor:
                         exabgp_monitor["ip"], exabgp_monitor["port"]
                     )
                     exabgp_cmd = [
-                        "/usr/local/bin/python3",
+                        PY_BIN,
                         "taps/exabgp_client.py",
                         "--prefixes",
                         self.prefix_file,
@@ -370,7 +371,7 @@ class Monitor:
                 if "dir" in self.monitors["bgpstreamhist"]:
                     bgpstreamhist_dir = self.monitors["bgpstreamhist"]["dir"]
                 bgpstreamhist_cmd = [
-                    "/usr/local/bin/python3",
+                    PY_BIN,
                     "taps/bgpstreamhist.py",
                     "--prefixes",
                     self.prefix_file,
@@ -400,7 +401,7 @@ class Monitor:
                 bgpstream_projects = ",".join(self.monitors["bgpstreamlive"])
                 p = Popen(
                     [
-                        "/usr/local/bin/python3",
+                        PY_BIN,
                         "taps/bgpstreamlive.py",
                         "--prefixes",
                         self.prefix_file,
@@ -436,7 +437,7 @@ class Monitor:
                 )
                 p = Popen(
                     [
-                        "/usr/local/bin/python3",
+                        PY_BIN,
                         "taps/bgpstreamkafka.py",
                         "--prefixes",
                         self.prefix_file,

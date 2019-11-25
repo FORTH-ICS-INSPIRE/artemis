@@ -2,8 +2,11 @@ FROM mavromat/bgpstream-redis:v1.2-bgpstream
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+RUN ln -s /usr/bin/python /usr/local/bin/python
+
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends python3-pip supervisor libpq-dev git && \
+    apt-get -y install --no-install-recommends python3-dev python3-setuptools python3-pip supervisor libpq-dev git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

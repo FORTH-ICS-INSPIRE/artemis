@@ -70,7 +70,13 @@ and Internet2 (a major US R&E backbone network).
 For a detailed list of supported features please check the [CHANGELOG](CHANGELOG.md) file
 (sections: "Added"). The following main features are supported:
 
-* Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS.
+* Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS, via:
+  * Real-time [RIPE RIS live](https://ris-live.ripe.net/)
+  * [RIPE RIS RIB collections](https://bgpstream.caida.org/data#!ris)
+  * [RouteViews RIB collections](https://bgpstream.caida.org/data#!routeviews)
+  * Real-time [public CAIDA BMP feeds](https://bgpstream.caida.org/data#!caida-bmp)
+  * Real-time local BGP feeds ([exaBGP](https://github.com/Exa-Networks/exabgp))
+  * Real-time [private BMP feeds](https://bgpstream.caida.org/v2-beta#bmp-private)
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types (please refer to the attack taxonomy in our [ARTEMIS ToN paper](https://www.inspire.edu.gr/wp-content/pdfs/artemis_TON2018.pdf)):
   * exact-prefix, type 0/1, any data plane manipulation
   * sub-prefix, any type (0/1/-), any data plane manipulation
@@ -88,6 +94,7 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 * Support for historical BGP updates replaying.
 * Support for local real-time monitoring feeds.
 * Support for automated generation of the configuration file.
+* Support for RPKI validation of hijacked prefixes.
 * Compatibility with grafana charts.
 * Modularity/extensibility by design.
 * CI/CD (Travis CI, Codecov).

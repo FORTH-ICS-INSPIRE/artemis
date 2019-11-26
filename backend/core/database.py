@@ -365,92 +365,77 @@ class Database:
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
                     prefetch_count=100,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_queue],
                     on_message=self.handle_hijack_update,
                     prefetch_count=100,
-                    no_ack=True,
                     accept=["yaml"],
                 ),
                 Consumer(
                     queues=[self.withdraw_queue],
                     on_message=self.handle_withdraw_update,
                     prefetch_count=100,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.db_clock_queue],
                     on_message=self._scheduler_instruction,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.handled_queue],
                     on_message=self.handle_handled_bgp_update,
                     prefetch_count=100,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_resolve_queue],
                     on_message=self.handle_resolve_hijack,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_ignore_queue],
                     on_message=self.handle_hijack_ignore_request,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_comment_queue],
                     on_message=self.handle_hijack_comment,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_seen_queue],
                     on_message=self.handle_hijack_seen,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_multiple_action_queue],
                     on_message=self.handle_hijack_multiple_action,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_ongoing_request_queue],
                     on_message=self.handle_hijack_ongoing_request,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_outdate_queue],
                     on_message=self.handle_hijack_outdate,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_delete_queue],
                     on_message=self.handle_delete_hijack,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
             ]
 
@@ -504,13 +489,13 @@ class Database:
                 self.connection,
                 on_message=self.handle_config_request_reply,
                 queues=[callback_queue],
-                no_ack=True,
             ):
                 while self.rules is None:
                     self.connection.drain_events()
 
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            message.ack()
             msg_ = message.payload
             # prefix, key, origin_as, peer_asn, as_path, service, type, communities,
             # timestamp, hijack_key, handled, matched_prefix, orig_path
@@ -564,6 +549,7 @@ class Database:
 
         def handle_withdraw_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            message.ack()
             msg_ = message.payload
             try:
                 # update hijacks based on withdrawal messages
@@ -579,6 +565,7 @@ class Database:
 
         def handle_hijack_outdate(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            message.ack()
             try:
                 raw = message.payload
                 self.outdate_hijacks.add((raw["persistent_hijack_key"],))
@@ -587,6 +574,7 @@ class Database:
 
         def handle_hijack_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            message.ack()
             msg_ = message.payload
             try:
                 key = msg_["key"]  # persistent hijack key
@@ -664,6 +652,7 @@ class Database:
 
         def handle_handled_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            message.ack()
             try:
                 key_ = (message.payload,)
                 self.handled_bgp_entries.add(key_)
@@ -749,6 +738,7 @@ class Database:
             return None
 
         def handle_config_notify(self, message):
+            message.ack()
             log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -777,6 +767,7 @@ class Database:
             log.info("Database initiated, configured and running.")
 
         def handle_config_request_reply(self, message):
+            message.ack()
             log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -812,6 +803,7 @@ class Database:
             log.info("Database initiated, configured and running.")
 
         def handle_hijack_ongoing_request(self, message):
+            message.ack()
             timestamp = message.payload
 
             # need redis to handle future case of multiple db processes
@@ -985,6 +977,7 @@ class Database:
                 log.exception("exception")
 
         def handle_resolve_hijack(self, message):
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -1004,6 +997,7 @@ class Database:
                 log.exception("{}".format(raw))
 
         def handle_delete_hijack(self, message):
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -1051,6 +1045,7 @@ class Database:
                 log.exception("{}".format(raw))
 
         def handle_mitigation_request(self, message):
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -1062,6 +1057,7 @@ class Database:
                 log.exception("{}".format(raw))
 
         def handle_hijack_ignore_request(self, message):
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -1079,6 +1075,7 @@ class Database:
                 log.exception("{}".format(raw))
 
         def handle_hijack_comment(self, message):
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -1109,6 +1106,7 @@ class Database:
                 log.exception("{}".format(raw))
 
         def handle_hijack_seen(self, message):
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
@@ -1120,6 +1118,7 @@ class Database:
                 log.exception("{}".format(raw))
 
         def handle_hijack_multiple_action(self, message):
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             query = None
@@ -1692,6 +1691,7 @@ class Database:
                 log.debug("{}".format(str_))
 
         def _scheduler_instruction(self, message):
+            message.ack()
             msg_ = message.payload
             if msg_["op"] == "bulk_operation":
                 self._update_bulk()

@@ -140,13 +140,11 @@ class AutoconfTester:
             conn.Consumer(
                 on_message=self.handle_config_notify,
                 queues=[self.config_queue],
-                no_ack=True,
                 accept=["json"],
             ),
             conn.Consumer(
                 on_message=self.handle_autoconf_update_goahead_reply,
                 queues=[callback_queue],
-                no_ack=True,
             ),
         ):
             self.autoconf_goahead = False
@@ -192,6 +190,7 @@ class AutoconfTester:
         """
         Receive and validate new configuration based on autoconf update
         """
+        msg.ack()
         raw = msg.payload
         assert isinstance(raw, dict), "[-] Raw configuration is not a dict"
         for outer_key in self.expected_configuration:
@@ -266,6 +265,7 @@ class AutoconfTester:
         """
         Receive autoconf RPC reply and proceed
         """
+        msg.ack()
         self.autoconf_goahead = True
 
     def test(self):

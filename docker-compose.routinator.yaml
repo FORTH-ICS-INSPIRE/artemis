@@ -1,7 +1,7 @@
 version: '3'
 services:
     routinator:
-        image: nlnetlabs/routinator:latest
+        image: nlnetlabs/routinator:v0.6.2
         container_name: routinator
         restart: unless-stopped
         networks:

@@ -21,11 +21,13 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from rtrlib import RTRManager
 from utils import exception_handler
 from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
+from utils import get_rpki_val_result
 from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
@@ -34,6 +36,9 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import RPKI_VALIDATOR_ENABLED
+from utils import RPKI_VALIDATOR_HOST
+from utils import RPKI_VALIDATOR_PORT
 from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
@@ -121,6 +126,29 @@ class Detection:
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
+
+            self.rtrmanager = None
+            if RPKI_VALIDATOR_ENABLED == "true":
+                while True:
+                    try:
+                        self.rtrmanager = RTRManager(
+                            RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                        )
+                        self.rtrmanager.start()
+                        log.info(
+                            "Connected to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        break
+                    except Exception:
+                        log.info(
+                            "Could not connect to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        log.info("Retrying RTR connection in 5 seconds...")
+                        time.sleep(5)
 
             # EXCHANGES
             self.update_exchange = Exchange(
@@ -822,7 +850,30 @@ class Detection:
                 "timestamp_of_config": self.timestamp,
                 "end_tag": None,
                 "outdated_parent": None,
+                "rpki_status": "NA",
             }
+
+            if (
+                RPKI_VALIDATOR_ENABLED == "true"
+                and self.rtrmanager
+                and monitor_event["path"]
+            ):
+                try:
+                    asn = monitor_event["path"][-1]
+                    if "/" in monitor_event["prefix"]:
+                        network, netmask = monitor_event["prefix"].split("/")
+                    # /32 or /128
+                    else:
+                        ip_version = get_ip_version(monitor_event["prefix"])
+                        network = monitor_event["prefix"]
+                        netmask = 32
+                        if ip_version == "v6":
+                            netmask = 128
+                    hijack_value["rpki_status"] = get_rpki_val_result(
+                        self.rtrmanager, asn, network, int(netmask)
+                    )
+                except Exception:
+                    log.exception("exception")
 
             if (
                 "hij_key" in monitor_event
@@ -889,6 +940,7 @@ class Detection:
                     self.comm_annotate_hijack(monitor_event, result)
                     result["outdated_parent"] = hijack_value["outdated_parent"]
                     result["bgpupdate_keys"].add(monitor_event["key"])
+                    result["rpki_status"] = hijack_value["rpki_status"]
                 else:
                     hijack_value["time_detected"] = time.time()
                     hijack_value["key"] = get_hash(

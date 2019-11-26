@@ -1,0 +1,80 @@
+[
+    {
+        "send": {
+            "key": "1",
+            "timestamp": 1,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [8, 3, 2, 1, 100],
+            "prefix": "10.1.0.0/24",
+            "peer_asn": 8
+        },
+        "detection_update_response": {
+            "key": "1",
+            "handled": true,
+            "matched_prefix": "10.1.0.0/24",
+            "origin_as": 100
+        },
+        "detection_hijack_response": {
+            "prefix": "10.1.0.0/24",
+            "hijack_as": 100,
+            "type": "Q|0|-|-",
+            "time_started": 1.0,
+            "configured_prefix": "10.1.0.0/24",
+            "rpki_status": "NF"
+        },
+        "database_hijack_response": {
+            "type": "Q|0|-|-",
+            "active": true,
+            "prefix": "10.1.0.0/24",
+            "asns_inf": [8, 3, 2, 1],
+            "hijack_as": 100,
+            "peers_seen": [8],
+            "num_asns_inf": 4,
+            "num_peers_seen": 1,
+            "configured_prefix": "10.1.0.0/24",
+            "rpki_status": "NF"
+        }
+    },
+    {
+        "send": {
+            "key": "2",
+            "timestamp": 2,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [8, 3, 2, 5408, 8522],
+            "prefix": "2001:db8:abcd:12::1",
+            "peer_asn": 8
+        },
+        "detection_update_response": {
+            "key": "2",
+            "handled": true,
+            "matched_prefix": "2001:db8:abcd:12::/64",
+            "origin_as": 8522
+        },
+        "detection_hijack_response": {
+            "prefix": "2001:db8:abcd:12::1",
+            "hijack_as": -1,
+            "type": "S|-|-|-",
+            "time_started": 2.0,
+            "configured_prefix": "2001:db8:abcd:12::/64",
+            "rpki_status": "NF"
+        },
+        "database_hijack_response": {
+            "type": "S|-|-|-",
+            "active": true,
+            "prefix": "2001:db8:abcd:12::1",
+            "asns_inf": [8, 3],
+            "hijack_as": -1,
+            "peers_seen": [8],
+            "num_asns_inf": 2,
+            "num_peers_seen": 1,
+            "configured_prefix": "2001:db8:abcd:12::/64",
+            "rpki_status": "NF"
+        }
+    }
+]

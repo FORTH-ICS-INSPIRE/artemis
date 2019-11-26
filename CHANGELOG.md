@@ -15,6 +15,9 @@
 - Database restart recovery
 - CAIDA project support (besides RV, RIS) for bgpstreamlive
 - bgpstreamkafka tap
+- RPKI status in hijack alerts
+- RPKI validator env vars
+- optional routinator RPKI validator microservice
 
 ### Changed
 - Automatic config file formatting upon config modification

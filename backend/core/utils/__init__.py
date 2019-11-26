@@ -42,6 +42,7 @@ DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
         "time_detected",
         "key",
         "community_annotation",
+        "rpki_status",
         "end_tag",
         "outdated_parent",
         "hijack_url",
@@ -70,6 +71,9 @@ else:
     MON_SUPERVISOR_URI = None
 RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
 ASN_REGEX = r"^AS(\d+)$"
+RPKI_VALIDATOR_ENABLED = os.getenv("RPKI_VALIDATOR_ENABLED", "false")
+RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
+RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
 
 
 class TLSSMTPHandler(SMTPHandler):
@@ -585,3 +589,22 @@ def chunk_list(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
         yield l[i : i + n]
+
+
+def get_rpki_val_result(mgr, asn, network, netmask):
+    try:
+        result = mgr.validate(asn, network, netmask)
+        if result.is_valid:
+            return "VD"
+        if result.is_invalid:
+            if result.as_invalid:
+                return "IA"
+            if result.length_invalid:
+                return "IL"
+            return "IU"
+        if result.not_found:
+            return "NF"
+        return "NA"
+    except Exception:
+        log.exception("exception")
+        return "NA"

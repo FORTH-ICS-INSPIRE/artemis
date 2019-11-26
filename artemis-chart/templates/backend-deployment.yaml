@@ -173,6 +173,21 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: withdrawnHijackThreshold
+        - name: RPKI_VALIDATOR_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rpkiValidatorEnabled
+        - name: RPKI_VALIDATOR_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rpkiValidatorHost
+        - name: RPKI_VALIDATOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rpkiValidatorPort
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

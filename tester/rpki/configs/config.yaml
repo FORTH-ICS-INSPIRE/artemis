@@ -1,0 +1,63 @@
+prefixes:
+    super_prefix: &super_prefix
+        139.91.0.0/16
+    sub_prefix_1: &sub_prefix_1
+        139.91.250.0/24
+    sub_prefix_2: &sub_prefix_2
+        139.91.2.0/24
+    priv_prefix: &priv_prefix
+        10.1.0.0/24
+    ipv6_prefix: &ipv6_prefix
+        2001:db8:abcd:12::/64
+
+asns:
+    my_asn: &my_asn
+        8522
+    primary_upstream: &primary_upstream
+        5408
+    backup_upstream_1: &backup_upstream_1
+        56910
+    backup_upstream_2: &backup_upstream_2
+        12361
+
+rules:
+- prefixes:
+    - *super_prefix
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *primary_upstream
+    - *backup_upstream_1
+    - *backup_upstream_2
+  mitigation:
+      manual
+- prefixes:
+    - *sub_prefix_1
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *backup_upstream_1
+  mitigation:
+    manual
+- prefixes:
+    - *sub_prefix_2
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *backup_upstream_2
+  mitigation:
+    manual
+- prefixes:
+    - *priv_prefix
+  mitigation:
+    manual
+- prefixes:
+    - *ipv6_prefix
+  origin_asns:
+    - *my_asn
+  neighbors:
+    - *primary_upstream
+    - *backup_upstream_1
+    - *backup_upstream_2
+  mitigation:
+      manual

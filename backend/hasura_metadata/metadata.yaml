@@ -130,6 +130,7 @@ tables:
       - withdrawn
       - outdated
       - community_annotation
+      - rpki_status
       filter: {}
   update_permissions: []
   delete_permissions: []

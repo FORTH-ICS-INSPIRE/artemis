@@ -14,6 +14,8 @@
 - TravisCI and CodeCov support
 - Database restart recovery
 - CAIDA project support (besides RV, RIS) for bgpstreamlive
+- rpki_status in hijack alerts
+- RPKI validator env vars
 
 ### Changed
 - Automatic config file formatting upon config modification

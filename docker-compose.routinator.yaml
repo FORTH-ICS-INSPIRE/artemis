@@ -1,0 +1,14 @@
+version: '3'
+services:
+    routinator:
+        image: nlnetlabs/routinator:latest
+        container_name: routinator
+        restart: unless-stopped
+        networks:
+            - artemis
+        expose:
+            - ${RPKI_VALIDATOR_PORT}
+        volumes:
+            - ./local_configs/routinator/tals:/home/routinator/.rpki-cache/tals
+            - ./local_configs/routinator/routinator.conf:/home/routinator/.routinator.conf
+            - ./local_configs/routinator/rpki-repo:/home/routinator/rpki-repo

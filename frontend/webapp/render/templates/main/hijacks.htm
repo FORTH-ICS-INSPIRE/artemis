@@ -82,6 +82,7 @@
                         <th helpText="field_matched_prefix">Matched Prefix</th>
                         <th helpText="field_hijack_type">Type</th>
                         <th helpText="field_hijacker_as">Hijacker AS</th>
+                        <th helpText="field_rpki_status">RPKI</th>
                         <th helpText="field_peers_seen"># Peers Seen</th>
                         <th helpText="field_ases_infected"># ASes Infected</th>
                         <th helpText="field_hijack_ack">Ack</th>
@@ -96,6 +97,7 @@
                             <th>Matched Prefix</th>
                             <th>Type</th>
                             <th>Hijack AS</th>
+                            <th>RPKI</th>
                             <th># Peers Seen</th>
                             <th># ASes Infected</th>
                             <th>Ack</th>
@@ -149,6 +151,7 @@
                                                     <option value="prefix">Hijacked Prefix</option>
                                                     <option value="configured_prefix">Matched Prefix</option>
                                                     <option value="hijack_as">Hijack AS</option>
+                                                    <option value="rpki_status">RPKI</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -199,7 +202,7 @@
             var table;
             var ws = null;
 
-            var hasura_fetch = ["time_detected","prefix","type","hijack_as","num_peers_seen","num_asns_inf","key","seen","withdrawn","resolved","ignored","active","dormant","under_mitigation","outdated","time_last","configured_prefix"];
+            var hasura_fetch = ["time_detected","prefix","type","hijack_as","rpki_status","num_peers_seen","num_asns_inf","key","seen","withdrawn","resolved","ignored","active","dormant","under_mitigation","outdated","time_last","configured_prefix"];
             var hasura = {
                 "subscription": {
                     "count" : {
@@ -252,6 +255,7 @@
                 { data: 'configured_prefix' },
                 { data: 'type' },
                 { data: 'hijacker_as' },
+                { data: 'rpki_status' },
                 { data: 'num_peers_seen' },
                 { data: 'num_asns_inf' }
             ];
@@ -261,6 +265,7 @@
                 'time': null,
                 'prefix': null,
                 'hijack_as': null,
+                'rpki_status': null,
                 'type': null
             };
 
@@ -282,7 +287,8 @@
                 3: "prefix",
                 4: "configured_prefix",
                 5: "type",
-                6: "hijack_as"
+                6: "hijack_as",
+                7: "rpki_status"
             };
 
             var custom_time = [
@@ -427,6 +433,20 @@
                                     $(this).children("div").text('Not (S|E|Q)|(0|1|-)|(-)|(-|L), or valid subset');
                                     $(this).children("div").show();
                                 }
+                            }else if(search_table_map[index] == 'rpki_status'){
+                                var type_regex = /^\s*((VD)|(IA)|(IL)|(IU)|(NF)|(NA))\s*$/;
+                                if(type_regex.exec(value)){
+                                    match_value = value.replace(/^\s+|\s+$/g, '');
+                                    filter_parameters[search_table_map[index]] = match_value;
+                                    if($(this).children("input").hasClass("is-invalid")){
+                                        $(this).children("input").removeClass("is-invalid");
+                                        $(this).children("div").hide();
+                                    }
+                                }else{
+                                    $(this).children("input").addClass("is-invalid");
+                                    $(this).children("div").text('Not (VD)|(IA)|(IL)|(IU)|(NF)|(NA)');
+                                    $(this).children("div").show();
+                                }
                             }else{
                                 filter_parameters[search_table_map[index]] = value;
                             }
@@ -473,6 +493,11 @@
                 if(filter_parameters['type'] != null){
                     filters.push('{ type: {_like: "%' + filter_parameters['type'] + '%"} }');
                     download_filters.push('type.like.*' + filter_parameters['type'] + '*');
+                }
+
+                if(filter_parameters['rpki_status'] != null){
+                    filters.push('{ rpki_status: {_eq: "' + filter_parameters['rpki_status'] + '"} }');
+                    download_filters.push('rpki_status.eq.' + filter_parameters['rpki_status']);
                 }
 
                 if(filter_parameters['status'] != null){
@@ -621,6 +646,7 @@
                         { data: 'configured_prefix' },
                         { data: 'type', "width": "78px" },
                         { data: 'hijack_as' },
+                        { data: 'rpki_status' },
                         { data: 'num_peers_seen' },
                         { data: 'num_asns_inf' },
                         { data: 'seen', "width": "14px" },
@@ -636,11 +662,11 @@
                     {% endif %}
                     "columnDefs": [
                         {
-                            "targets": [2,3,4,5,6,9,10],
+                            "targets": [2,3,4,5,6,7,10,11],
                             "orderable": false
                         },
                         {
-                            "targets": [0,1,2,3,4,5,6,7,8,9,10],
+                            "targets": [0,1,2,3,4,5,6,7,8,9,10,11],
                             "className": "text-center",
                         }
                     ],

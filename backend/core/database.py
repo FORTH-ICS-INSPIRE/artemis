@@ -627,6 +627,9 @@ class Database:
                     self.insert_hijacks_entries[key]["community_annotation"] = msg_[
                         "community_annotation"
                     ]
+                    self.insert_hijacks_entries[key]["rpki_status"] = msg_[
+                        "rpki_status"
+                    ]
                 else:
                     self.insert_hijacks_entries[key]["time_started"] = min(
                         self.insert_hijacks_entries[key]["time_started"],
@@ -652,6 +655,9 @@ class Database:
                     )
                     self.insert_hijacks_entries[key]["community_annotation"] = msg_[
                         "community_annotation"
+                    ]
+                    self.insert_hijacks_entries[key]["rpki_status"] = msg_[
+                        "rpki_status"
                     ]
             except Exception:
                 log.exception("{}".format(msg_))
@@ -863,7 +869,7 @@ class Database:
                 query = (
                     "SELECT time_started, time_last, peers_seen, "
                     "asns_inf, key, prefix, hijack_as, type, time_detected, "
-                    "configured_prefix, timestamp_of_config, community_annotation "
+                    "configured_prefix, timestamp_of_config, community_annotation, rpki_status "
                     "FROM hijacks WHERE active = true"
                 )
 
@@ -884,6 +890,7 @@ class Database:
                         "configured_prefix": entry[9],
                         "timestamp_of_config": entry[10].timestamp(),
                         "community_annotation": entry[11],
+                        "rpki_status": entry[12],
                     }
 
                     subquery = "SELECT key FROM bgp_updates WHERE %s = ANY(hijack_key);"
@@ -1556,11 +1563,11 @@ class Database:
                 query = (
                     "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
                     "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                    "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation) "
+                    "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation, rpki_status) "
                     "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
                     ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
                     "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, timestamp_of_config=excluded.timestamp_of_config, "
-                    "configured_prefix=excluded.configured_prefix, community_annotation=excluded.community_annotation"
+                    "configured_prefix=excluded.configured_prefix, community_annotation=excluded.community_annotation, rpki_status=excluded.rpki_status"
                 )
 
                 values = []
@@ -1605,6 +1612,7 @@ class Database:
                         # asns_inf
                         self.insert_hijacks_entries[key]["asns_inf"],
                         self.insert_hijacks_entries[key]["community_annotation"],
+                        self.insert_hijacks_entries[key]["rpki_status"],
                     )
                     values.append(entry)
 

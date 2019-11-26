@@ -107,6 +107,12 @@
             "db_version": "18",
             "description": "Added intended process states table in db",
             "file": "migration_18.sql"
+        },
+        "19": {
+            "id": "19",
+            "db_version": "19",
+            "description": "Added rpki_status column in hijacks table",
+            "file": "migration_19.sql"
         }
     }
 }

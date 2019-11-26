@@ -145,6 +145,14 @@
                                     </div>
                                 </div>
                                 <div class="row">
+                                    <div class="col-lg-6">
+                                        <p><b helpText="field_rpki_status">RPKI Status:</b></p>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <input id="info_rpki_status" class="form-control" type="text" readonly>
+                                    </div>
+                                </div>
+                                <div class="row">
                                     <div class="col-lg-6 mt-4">
                                         <p><b>Display Peers Seen Hijack:</b></p>
                                     </div>
@@ -855,6 +863,7 @@
                 $( "#info_config_timestamp" ).val( transform_date_to_local( hijack_obj['timestamp_of_config'] )  );
                 $( "#info_last_update" ).val( transform_date_to_local( hijack_obj['time_last'] )  );
                 $( "#info_community_annotation" ).val( hijack_obj['community_annotation'] );
+                $( "#info_rpki_status" ).val( hijack_obj['rpki_status'] );
 
                 update_comment_box(hijack_obj['comment']);
 

@@ -858,11 +858,22 @@ class Detection:
                 and self.rtrmanager
                 and monitor_event["path"]
             ):
-                asn = monitor_event["path"][-1]
-                network, netmask = monitor_event["prefix"].split("/")
-                hijack_value["rpki_status"] = get_rpki_val_result(
-                    self.rtrmanager, asn, network, int(netmask)
-                )
+                try:
+                    asn = monitor_event["path"][-1]
+                    if "/" in monitor_event["prefix"]:
+                        network, netmask = monitor_event["prefix"].split("/")
+                    # /32 or /128
+                    else:
+                        ip_version = get_ip_version(monitor_event["prefix"])
+                        network = monitor_event["prefix"]
+                        netmask = 32
+                        if ip_version == "v6":
+                            netmask = 128
+                    hijack_value["rpki_status"] = get_rpki_val_result(
+                        self.rtrmanager, asn, network, int(netmask)
+                    )
+                except Exception:
+                    log.exception("exception")
 
             if (
                 "hij_key" in monitor_event

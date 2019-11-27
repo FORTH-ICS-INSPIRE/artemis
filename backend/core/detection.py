@@ -869,9 +869,20 @@ class Detection:
                         netmask = 32
                         if ip_version == "v6":
                             netmask = 128
-                    hijack_value["rpki_status"] = get_rpki_val_result(
-                        self.rtrmanager, asn, network, int(netmask)
+                    redis_rpki_asn_prefix_key = "rpki_as{}_p{}".format(
+                        asn, monitor_event["prefix"]
                     )
+                    redis_rpki_status = self.redis.get(redis_rpki_asn_prefix_key)
+                    if not redis_rpki_status:
+                        rpki_status = get_rpki_val_result(
+                            self.rtrmanager, asn, network, int(netmask)
+                        )
+                    else:
+                        rpki_status = redis_rpki_status.decode()
+                    hijack_value["rpki_status"] = rpki_status
+                    # the default refresh interval for the RPKI RTR manager is 3600 seconds
+                    self.redis.set(redis_rpki_asn_prefix_key, rpki_status, ex=3600)
+
                 except Exception:
                     log.exception("exception")
 

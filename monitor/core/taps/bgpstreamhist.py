@@ -32,6 +32,7 @@ class BGPStreamHist:
         self.autoconf_goahead = False
 
     def handle_autoconf_update_goahead_reply(self, message):
+        message.ack()
         self.autoconf_goahead = True
 
     def parse_bgpstreamhist_csvs(self):
@@ -144,7 +145,6 @@ class BGPStreamHist:
                                                             connection,
                                                             on_message=self.handle_autoconf_update_goahead_reply,
                                                             queues=[callback_queue],
-                                                            no_ack=True,
                                                         ):
                                                             while (
                                                                 not self.autoconf_goahead

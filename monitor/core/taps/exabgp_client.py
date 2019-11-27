@@ -42,6 +42,7 @@ class ExaBGP:
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def handle_autoconf_update_goahead_reply(self, message):
+        message.ack()
         self.autoconf_goahead = True
 
     def start(self):
@@ -145,7 +146,6 @@ class ExaBGP:
                                                     connection,
                                                     on_message=self.handle_autoconf_update_goahead_reply,
                                                     queues=[callback_queue],
-                                                    no_ack=True,
                                                 ):
                                                     while not self.autoconf_goahead:
                                                         connection.drain_events()

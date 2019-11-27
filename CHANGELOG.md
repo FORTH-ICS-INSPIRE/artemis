@@ -31,6 +31,7 @@
 - Small fixes in conf_lib
 - Blocking deletion of redis hijack keys to avoid race conditions
 - Optimization on hijack deletion by storing the keys on redis
+- Optimization on RPKI validation to happen periodically instead of per hijack update
 
 ### Removed
 - Rekeying functionality for hijack updates with deprecated hijack key

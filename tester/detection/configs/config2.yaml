@@ -5,9 +5,13 @@ monitors:
     riperis: ['rrc01']
     bgpstreamlive: ['routeviews', 'ris', 'caida']
     bgpstreamhist: ./
+    bgpstreamkafka:
+      host: bmp.bgpstream.caida.org
+      port: 9092
+      topic: '^openbmp\.router--.+\.peer-as--.+\.bmp_raw'
     exabgp:
-        - ip: exabgp
-          port: 5000
+      - ip: exabgp
+        port: 5000
 asns:
     my_asn: &my_asn
         8522

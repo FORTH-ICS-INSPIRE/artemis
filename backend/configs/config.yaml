@@ -25,6 +25,10 @@ monitors:
         - routeviews
         - ris
         - caida
+    # bgpstreamkafka:
+    #     host: bmp.bgpstream.caida.org
+    #     port: 9092
+    #     topic: '^openbmp\.router--.+\.peer-as--.+\.bmp_raw'
     # exabgp:
     #     - ip: exabgp
     #       port: 5000

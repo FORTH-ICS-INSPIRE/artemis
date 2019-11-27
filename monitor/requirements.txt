@@ -2,7 +2,7 @@ Cython==0.29.3
 ipaddress==1.0.22
 kombu==4.2.2.post1
 netaddr==0.7.19
-psycopg2-binary==2.7.7
+psycopg2==2.8.4
 pytricia==1.0.0
 PyYAML==5.1
 redis==3.1.0
@@ -11,3 +11,4 @@ slacker-log-handler==1.7.1
 socketIO-client==0.7.2
 socketIO-client-nexus==0.7.6
 websocket-client==0.54.0
+wheel==0.33.6

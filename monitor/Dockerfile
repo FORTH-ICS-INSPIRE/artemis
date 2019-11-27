@@ -1,9 +1,9 @@
-FROM mavromat/bgpstream-redis:v1.1-bgpstream
+FROM mavromat/bgpstream-redis:v1.2-bgpstream
 
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends python3-pip supervisor && \
+    apt-get -y install --no-install-recommends python3-pip supervisor libpq-dev git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

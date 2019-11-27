@@ -1335,9 +1335,7 @@ class Database:
                         # to prevent detectors from working in parallel with hijack update
                         hijack = None
                         self.redis.set("{}token_active".format(redis_hijack_key), "1")
-                        if self.redis_instance.exists(
-                            "{}token".format(redis_hijack_key)
-                        ):
+                        if self.redis.exists("{}token".format(redis_hijack_key)):
                             token = self.redis.blpop(
                                 "{}token".format(redis_hijack_key), timeout=60
                             )

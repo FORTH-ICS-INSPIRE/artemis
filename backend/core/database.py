@@ -1615,7 +1615,7 @@ class Database:
                     )
                     values.append(entry)
 
-                    self.wo_db.execute_values(query, values, page_size=1000)
+                self.wo_db.execute_values(query, values, page_size=1000)
             except Exception:
                 log.exception("exception")
                 return -1

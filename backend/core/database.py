@@ -1334,7 +1334,10 @@ class Database:
                         redis_hijack_key = redis_key(withdrawal[0], entry[3], entry[4])
                         # to prevent detectors from working in parallel with hijack update
                         hijack = None
-                        self.redis.set("{}token_active".format(redis_hijack_key), "1")
+                        if self.redis.exists("{}token_active".format(redis_hijack_key)):
+                            self.redis.set(
+                                "{}token_active".format(redis_hijack_key), "1"
+                            )
                         if self.redis.exists("{}token".format(redis_hijack_key)):
                             token = self.redis.blpop(
                                 "{}token".format(redis_hijack_key), timeout=60

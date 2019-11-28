@@ -1330,6 +1330,34 @@ class Database:
                         # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
                         # 6: time_last
                         update_hijack_withdrawals.add((entry[2], withdrawal[3]))
+                        # update the bgpupdate_keys related to this hijack with withdrawals
+                        redis_hijack_key = redis_key(withdrawal[0], entry[3], entry[4])
+                        # to prevent detectors from working in parallel with hijack update
+                        hijack = None
+                        if self.redis.exists("{}token_active".format(redis_hijack_key)):
+                            self.redis.set(
+                                "{}token_active".format(redis_hijack_key), "1"
+                            )
+                        if self.redis.exists("{}token".format(redis_hijack_key)):
+                            token = self.redis.blpop(
+                                "{}token".format(redis_hijack_key), timeout=60
+                            )
+                            if not token:
+                                log.info(
+                                    "Redis withdrawal addition encountered redis token timeout for hijack {}".format(
+                                        entry[2]
+                                    )
+                                )
+                            hijack = self.redis.get(redis_hijack_key)
+                            redis_pipeline = self.redis.pipeline()
+                            if hijack:
+                                hijack = yaml.safe_load(hijack)
+                                hijack["bgpupdate_keys"].add(withdrawal[3])
+                                redis_pipeline.set(redis_hijack_key, yaml.dump(hijack))
+                            redis_pipeline.lpush(
+                                "{}token".format(redis_hijack_key), "token"
+                            )
+                            redis_pipeline.execute()
                         if entry[5] > withdrawal[2]:
                             continue
                         # matching withdraw with a hijack
@@ -1343,12 +1371,7 @@ class Database:
                                 )
                             ):
                                 # set hijack as withdrawn and delete from redis
-                                redis_hijack_key = redis_key(
-                                    withdrawal[0], entry[3], entry[4]
-                                )
-                                hijack = self.redis.get(redis_hijack_key)
                                 if hijack:
-                                    hijack = yaml.safe_load(hijack)
                                     hijack["end_tag"] = "withdrawn"
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2]

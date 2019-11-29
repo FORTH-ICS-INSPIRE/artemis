@@ -3,7 +3,12 @@ import sys
 import time
 
 import psycopg2
+from kombu import Connection
+from kombu import Consumer
+from kombu import Exchange
+from kombu import Queue
 from supervisor.childutils import listener
+from utils import RABBITMQ_URI
 
 
 def write_stdout(s):
@@ -21,6 +26,10 @@ query = (
     "VALUES (%s, %s) ON CONFLICT (name) DO UPDATE "
     "SET running = EXCLUDED.running"
 )
+
+
+def handle_pg_amq_message(message):
+    message.ack()
 
 
 def create_connect_db():
@@ -46,6 +55,27 @@ def create_connect_db():
 def run():
     db_conn = create_connect_db()
     db_cursor = db_conn.cursor()
+    pg_amq_bridge = Exchange("amq.direct", type="direct", durable=True, delivery_mode=1)
+    pg_amq_queue = Queue(
+        "listener-pg-amq-update",
+        exchange=pg_amq_bridge,
+        routing_key="update-insert",
+        durable=False,
+        auto_delete=True,
+        max_priority=1,
+        consumer_arguments={"x-priority": 1},
+    )
+    rmq_connection = Connection(RABBITMQ_URI)
+    pg_amq_consumer = Consumer(
+        rmq_connection,
+        on_message=handle_pg_amq_message,
+        queues=[pg_amq_queue],
+        prefetch_count=100,
+    )
+
+    # TODO: check if the following needs to depend on initial intended db state for detection
+    pg_amq_consumer.consume()
+
     while True:
         headers, body = listener.wait(sys.stdin, sys.stdout)
         body = dict([pair.split(":") for pair in body.split(" ")])
@@ -55,6 +85,16 @@ def run():
             process = body["processname"]
             if process != "listener":
                 new_state = headers["eventname"] == "PROCESS_STATE_RUNNING"
+
+                # consumer to work when detection is off, and stop when on
+                if process == "detection":
+                    if new_state:
+                        if pg_amq_consumer.consuming_from(pg_amq_queue):
+                            pg_amq_consumer.cancel_by_queue(pg_amq_queue)
+                    else:
+                        if not pg_amq_consumer.consuming_from(pg_amq_queue):
+                            pg_amq_consumer.consume()
+
                 while True:
                     try:
                         write_stderr("{} -> {}".format(process, new_state))
@@ -64,7 +104,7 @@ def run():
                     except (psycopg2.InterfaceError, psycopg2.OperationalError):
                         db_conn = create_connect_db()
                         db_cursor = db_conn.cursor()
-                    except BaseException:
+                    except Exception:
                         db_conn.rollback()
                         break
 

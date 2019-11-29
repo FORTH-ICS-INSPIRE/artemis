@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED] (NAME) - YYYY-MM-DD
+## [UNRELEASED] (Ajax) - YYYY-MM-DD
 ### Added
 - Grafana provisioning, env vars and 4 dashboards
   - Artemis::BGP Hijacks per prefix
@@ -42,9 +42,6 @@
 - BetaBMP client (kept support in conf file)
 - betabmp conf keyword support
 - psycopgs2-binary (2.7.7) with psycopg2 (2.8.4)
-
-### Security
-- TBD (addressing vulnerability)
 
 ## [1.3.1] (Ares) - 2019-10-04
 ### Added

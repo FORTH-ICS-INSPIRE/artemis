@@ -18,6 +18,7 @@
 - RPKI status in hijack alerts
 - RPKI validator env vars
 - optional routinator RPKI validator microservice
+- make_release script to automate release pushes
 
 ### Changed
 - Automatic config file formatting upon config modification

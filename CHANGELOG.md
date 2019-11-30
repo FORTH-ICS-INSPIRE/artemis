@@ -34,6 +34,8 @@
 - Optimization on hijack deletion by storing the keys on redis
 - Fix with withdrawal storage also on redis (besides announcements)
 - Optimization on RPKI validation to happen periodically instead of per hijack update
+- no_ack issue in ARTEMIS microservices (replaced with proper acks)
+- non-existent consumer for pg-amq when detection was off (fixed with dynamic trigger (de-)activation)
 
 ### Removed
 - Rekeying functionality for hijack updates with deprecated hijack key

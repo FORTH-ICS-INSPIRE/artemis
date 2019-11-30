@@ -23,7 +23,7 @@ query = (
 )
 
 drop_trigger_query = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
-create_trigger_query = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change();"
+create_trigger_query = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
 
 
 def create_connect_db():

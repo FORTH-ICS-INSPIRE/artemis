@@ -113,6 +113,12 @@
             "db_version": "19",
             "description": "Added rpki_status column in hijacks table",
             "file": "migration_19.sql"
+        },
+        "20": {
+            "id": "20",
+            "db_version": "20",
+            "description": "Remove trigger by default",
+            "file": "migration_20.sql"
         }
     }
 }

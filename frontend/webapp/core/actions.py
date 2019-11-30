@@ -41,6 +41,7 @@ def rmq_hijack_action(obj):
 
 class Learn_hijack_rule:
     def on_response(self, message):
+        message.ack()
         if message.properties["correlation_id"] == self.correlation_id:
             self.response = message.payload
 
@@ -79,10 +80,7 @@ class Learn_hijack_rule:
                     priority=4,
                 )
             with Consumer(
-                connection,
-                on_message=self.on_response,
-                queues=[callback_queue],
-                no_ack=True,
+                connection, on_message=self.on_response, queues=[callback_queue]
             ):
                 while self.response is None:
                     connection.drain_events()
@@ -98,6 +96,7 @@ class Comment_hijack:
         )
 
     def on_response(self, message):
+        message.ack()
         if message.properties["correlation_id"] == self.correlation_id:
             self.response = message.payload
 
@@ -126,10 +125,7 @@ class Comment_hijack:
                     priority=4,
                 )
             with Consumer(
-                connection,
-                on_message=self.on_response,
-                queues=[callback_queue],
-                no_ack=True,
+                connection, on_message=self.on_response, queues=[callback_queue]
             ):
                 while self.response is None:
                     connection.drain_events()
@@ -140,6 +136,7 @@ class Comment_hijack:
 
 class Submit_new_config:
     def on_response(self, message):
+        message.ack()
         if message.properties["correlation_id"] == self.correlation_id:
             self.response = message.payload
 
@@ -170,10 +167,7 @@ class Submit_new_config:
                         priority=4,
                     )
                 with Consumer(
-                    connection,
-                    on_message=self.on_response,
-                    queues=[callback_queue],
-                    no_ack=True,
+                    connection, on_message=self.on_response, queues=[callback_queue]
                 ):
                     while self.response is None:
                         connection.drain_events()
@@ -192,6 +186,7 @@ class Submit_new_config:
 
 class Load_as_sets:
     def on_response(self, message):
+        message.ack()
         if message.properties["correlation_id"] == self.correlation_id:
             self.response = message.payload
 
@@ -220,10 +215,7 @@ class Load_as_sets:
                     priority=4,
                 )
                 with Consumer(
-                    connection,
-                    on_message=self.on_response,
-                    queues=[callback_queue],
-                    no_ack=True,
+                    connection, on_message=self.on_response, queues=[callback_queue]
                 ):
                     while self.response is None:
                         connection.drain_events()
@@ -240,6 +232,7 @@ class Hijacks_multiple_action:
         )
 
     def on_response(self, message):
+        message.ack()
         if message.properties["correlation_id"] == self.correlation_id:
             self.response = message.payload
 
@@ -272,10 +265,7 @@ class Hijacks_multiple_action:
                     priority=4,
                 )
             with Consumer(
-                connection,
-                on_message=self.on_response,
-                queues=[callback_queue],
-                no_ack=True,
+                connection, on_message=self.on_response, queues=[callback_queue]
             ):
                 while self.response is None:
                     connection.drain_events()

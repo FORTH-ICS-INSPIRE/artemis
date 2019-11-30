@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (19, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (20, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -49,10 +49,6 @@ CREATE INDEX handled_idx
 ON bgp_updates(handled);
 
 SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
-
-create trigger send_update_event
-after insert on bgp_updates
-for each row execute procedure rabbitmq.on_row_change();
 
 CREATE TABLE IF NOT EXISTS hijacks (
     key VARCHAR ( 32 ) NOT NULL,

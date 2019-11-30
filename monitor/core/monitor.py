@@ -157,11 +157,11 @@ class Monitor:
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
-                    no_ack=True,
                 )
             ]
 
         def handle_config_notify(self, message):
+            message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
@@ -270,12 +270,12 @@ class Monitor:
                 self.connection,
                 on_message=self.handle_config_request_reply,
                 queues=[callback_queue],
-                no_ack=True,
             ):
                 while not self.rules and not self.monitors:
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):
+            message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             if self.correlation_id == message.properties["correlation_id"]:
                 raw = message.payload

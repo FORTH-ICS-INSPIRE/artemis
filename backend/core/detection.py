@@ -247,25 +247,21 @@ class Detection:
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
-                    prefetch_count=1000,
-                    no_ack=True,
+                    prefetch_count=100,
                 ),
                 Consumer(
                     queues=[self.update_unhandled_queue],
                     on_message=self.handle_unhandled_bgp_updates,
-                    prefetch_count=1000,
-                    no_ack=True,
+                    prefetch_count=100,
                 ),
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,
                     prefetch_count=10,
-                    no_ack=True,
                 ),
             ]
 
@@ -283,6 +279,7 @@ class Detection:
             from the configuration service.
             Upon arrival this service updates its running configuration.
             """
+            message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
@@ -333,7 +330,6 @@ class Detection:
                 self.connection,
                 on_message=self.handle_config_request_reply,
                 queues=[callback_queue],
-                no_ack=True,
             ):
                 while self.rules is None:
                     self.connection.drain_events()
@@ -344,6 +340,7 @@ class Detection:
             Callback function for the config request RPC.
             Updates running configuration upon receiving a new configuration.
             """
+            message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             if self.correlation_id == message.properties["correlation_id"]:
                 raw = message.payload
@@ -418,6 +415,7 @@ class Detection:
             Handles ongoing hijacks from the database.
             """
             # log.debug('{} ongoing hijack events'.format(len(message.payload)))
+            message.ack()
             for update in message.payload:
                 self.handle_bgp_update(update)
 
@@ -426,6 +424,7 @@ class Detection:
             Handles unhanlded bgp updates from the database in batches of 50.
             """
             # log.debug('{} unhandled events'.format(len(message.payload)))
+            message.ack()
             for update in message.payload:
                 self.handle_bgp_update(update)
 
@@ -438,6 +437,7 @@ class Detection:
             if isinstance(message, dict):
                 monitor_event = message
             else:
+                message.ack()
                 monitor_event = json.loads(message.payload)
                 monitor_event["path"] = monitor_event["as_path"]
                 monitor_event["timestamp"] = datetime(

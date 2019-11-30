@@ -50,11 +50,11 @@ ON bgp_updates(handled);
 
 SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
-create trigger send_update_event
+create trigger send_insert_test_event
 after insert on bgp_updates
 for each row execute procedure rabbitmq.on_row_change('update-insert');
 
-create trigger send_update_event2
+create trigger send_update_test_event
 after update on bgp_updates
 for each row execute procedure rabbitmq.on_row_change('update-update');
 
@@ -136,7 +136,7 @@ ON hijacks(time_last, hijack_as, prefix, type);
 
 SELECT create_hypertable('hijacks', 'time_detected', if_not_exists => TRUE);
 
-create trigger send_hijack_event
+create trigger send_hijack_test_event
 after insert or update on hijacks
 for each row execute procedure rabbitmq.on_row_change("hijack-update");
 

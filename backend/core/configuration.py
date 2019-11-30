@@ -179,32 +179,27 @@ class Configuration:
                     queues=[self.config_modify_queue],
                     on_message=self.handle_config_modify,
                     prefetch_count=1,
-                    no_ack=True,
                     accept=["yaml"],
                 ),
                 Consumer(
                     queues=[self.config_request_queue],
                     on_message=self.handle_config_request,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.hijack_learn_rule_queue],
                     on_message=self.handle_hijack_learn_rule_request,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.load_as_sets_queue],
                     on_message=self.handle_load_as_sets,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
                 Consumer(
                     queues=[self.autoconf_update_queue],
                     on_message=self.handle_autoconf_updates,
                     prefetch_count=1,
-                    no_ack=True,
                 ),
             ]
 
@@ -215,6 +210,7 @@ class Configuration:
             Replies back to the sender if the configuration is accepted
             or rejected and notifies all Subscribers if new configuration is used.
             """
+            message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             raw_ = message.payload
 
@@ -304,6 +300,7 @@ class Configuration:
             Handles all config requests from other Services
             by replying back with the current configuration.
             """
+            message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             self.producer.publish(
                 self.data,
@@ -709,6 +706,7 @@ class Configuration:
             }
             :return: -
             """
+            message.ack()
             raw = message.payload
             log.debug("payload: {}".format(raw))
             (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
@@ -887,6 +885,7 @@ class Configuration:
             :param message:
             :return:
             """
+            message.ack()
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
 
             try:
@@ -939,6 +938,7 @@ class Configuration:
             :param message:
             :return:
             """
+            message.ack()
             with open(self.file, "r") as f:
                 raw = f.read()
             yaml_conf = ruamel.yaml.load(

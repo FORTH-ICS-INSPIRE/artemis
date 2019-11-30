@@ -56,6 +56,7 @@ class Observer:
                 self.content = f.readlines()
 
         def on_response(self, message):
+            message.ack()
             if message.properties["correlation_id"] == self.correlation_id:
                 self.response = message.payload
 
@@ -94,7 +95,6 @@ class Observer:
                         self.connection,
                         on_message=self.on_response,
                         queues=[callback_queue],
-                        no_ack=True,
                     ):
                         while not self.response:
                             self.connection.drain_events()

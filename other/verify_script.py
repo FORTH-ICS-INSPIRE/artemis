@@ -9,6 +9,7 @@ K8S_VALUES_FILE = "artemis-chart/values.yaml"
 CONFIGMAP_FILE = "artemis-chart/templates/configmap.yaml"
 COMPOSE_FILE = "docker-compose.yaml"
 DEPLOYMENT_FILE = "artemis-chart/templates/{}-deployment.yaml"
+TESTCAFE_FILE = "testcafe/tests/simple-flow.js"
 
 
 def get_match_from_file(fp, query):
@@ -38,11 +39,27 @@ class TestStringMethods(unittest.TestCase):
         configmap_version = get_match_from_file(
             CONFIGMAP_FILE, r"\.Values\.dbVersion \| default \"([0-9]*)\""
         )
+        testcafe_version = get_match_from_file(TESTCAFE_FILE, r"Database v.([0-9]*)")
 
-        self.assertEqual(version, tables_version)
-        self.assertEqual(version, tables_test_version)
-        self.assertEqual(version, k8s_version)
-        self.assertEqual(version, configmap_version)
+        self.assertEqual(
+            version,
+            tables_version,
+            "Wrong db version in {}".format(TABLES_VERSION_FILE),
+        )
+        self.assertEqual(
+            version,
+            tables_test_version,
+            "Wrong db version in {}".format(TABLES_TEST_VERSION_FILE),
+        )
+        self.assertEqual(
+            version, k8s_version, "Wrong db version in {}".format(K8S_VALUES_FILE)
+        )
+        self.assertEqual(
+            version, configmap_version, "Wrong db version in {}".format(CONFIGMAP_FILE)
+        )
+        self.assertEqual(
+            version, testcafe_version, "Wrong db version in {}".format(TESTCAFE_FILE)
+        )
 
     def test_js_version(self):
         version = get_match_from_file(ENV_FILE, r"JS_VERSION=([0-9.]*)")
@@ -51,8 +68,12 @@ class TestStringMethods(unittest.TestCase):
             CONFIGMAP_FILE, r"\.Values\.jsVersion \| default \"([0-9.]*)\""
         )
 
-        self.assertEqual(version, k8s_version)
-        self.assertEqual(version, configmap_version)
+        self.assertEqual(
+            version, k8s_version, "Wrong js version in {}".format(K8S_VALUES_FILE)
+        )
+        self.assertEqual(
+            version, configmap_version, "Wrong js version in {}".format(CONFIGMAP_FILE)
+        )
 
     def test_system_version(self):
         version = get_match_from_file(ENV_FILE, r"SYSTEM_VERSION=([\-_a-zA-Z0-9.]*)")
@@ -63,8 +84,14 @@ class TestStringMethods(unittest.TestCase):
             CONFIGMAP_FILE, r"\.Values\.systemVersion \| default \"([\-_a-zA-Z0-9.]*)\""
         )
 
-        self.assertEqual(version, k8s_version)
-        self.assertEqual(version, configmap_version)
+        self.assertEqual(
+            version, k8s_version, "Wrong system version in {}".format(K8S_VALUES_FILE)
+        )
+        self.assertEqual(
+            version,
+            configmap_version,
+            "Wrong system version in {}".format(CONFIGMAP_FILE),
+        )
 
     def test_deployment_version(self):
         version = get_match_from_file(

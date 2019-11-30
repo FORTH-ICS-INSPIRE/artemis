@@ -4,17 +4,24 @@
 ./wait-for ${BACKEND_SUPERVISOR_HOST}:${BACKEND_SUPERVISOR_PORT} -t 0
 
 timeout -t 200 python executor.py 10000
+rmq_update_insert=$(cat bgp-update-update)
+rmq_hijack_insert=$(cat hijack-update-update)
+postgres_update_insert=$(cat amq.direct-update-insert)
+postgres_update_update=$(cat amq.direct-update-update)
+postgres_hijack_insert=$(cat amq.direct-hijack-update)
+
+body=":running: **Benchmark Results** :running:\n- RMQ Update inserts: **$rmq_update_insert**/s\n- RMQ Hijack inserts: **$rmq_hijack_insert**/s\n- PG Update inserts: **$postgres_update_insert**/s\n- PG Update updates: **$postgres_update_update**/s\n- PG Hijack inserts: **$postgres_hijack_insert**/s"
 
 if [ ${PULL_REQUEST_NUMBER} != "false" ]; then
-    COMMENT_ID=$(curl https://api.github.com/repos/${REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments | jq '.[] | select(.body | contains("Benchmark Result")) | .id')
+    COMMENT_ID=$(curl https://api.github.com/repos/${REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments | jq '.[] | select(.body | contains("Benchmark Results")) | .id')
 
     if [ $COMMENT_ID ]; then
         curl -H "Authorization: token ${GITHUB_TOKEN}" -X PATCH \
-            -d "{\"body\": \":running: **Benchmark Results** :running:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\n- Hijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
+            -d "{\"body\": \"$body\"}" \
             "https://api.github.com/repos/${REPO_SLUG}/issues/comments/${COMMENT_ID}"
     else
         curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST \
-            -d "{\"body\": \":running: **Benchmark Results** :running:\n- BGP Updates (updates/sec): **$(cat bgp-update)**\n- Hijacks Detected (hijacks/sec): **$(cat hijack-update)**\"}" \
+            -d "{\"body\": \"$body\"}" \
             "https://api.github.com/repos/${REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments"
     fi
 fi

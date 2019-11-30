@@ -68,7 +68,7 @@ services:
         volumes:
             - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./tester/detection/db/data/tables.sql:/docker-entrypoint-initdb.d/data/tables.sql
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         entrypoint: ["./postgres-entrypoint.sh"]
     pg-amqp-bridge:

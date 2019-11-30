@@ -50,10 +50,6 @@ ON bgp_updates(handled);
 
 SELECT create_hypertable('bgp_updates', 'timestamp', if_not_exists => TRUE);
 
-create trigger send_update_event
-after insert on bgp_updates
-for each row execute procedure rabbitmq.on_row_change();
-
 CREATE TABLE IF NOT EXISTS hijacks (
     key VARCHAR ( 32 ) NOT NULL,
     type  VARCHAR ( 7 ),

@@ -22,6 +22,9 @@ query = (
     "SET running = EXCLUDED.running"
 )
 
+drop_trigger_query = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
+create_trigger_query = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change();"
+
 
 def create_connect_db():
     _db_conn = None
@@ -58,7 +61,16 @@ def run():
                 while True:
                     try:
                         write_stderr("{} -> {}".format(process, new_state))
-                        db_cursor.execute(query, (process, new_state))
+                        if process == "detection":
+                            if new_state:
+                                q = "{}{}{}".format(
+                                    drop_trigger_query, create_trigger_query, query
+                                )
+                            else:
+                                q = "{}{}".format(drop_trigger_query, query)
+                        else:
+                            q = query
+                        db_cursor.execute(q, (process, new_state))
                         db_conn.commit()
                         break
                     except (psycopg2.InterfaceError, psycopg2.OperationalError):

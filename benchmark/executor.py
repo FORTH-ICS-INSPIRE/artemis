@@ -147,7 +147,7 @@ if __name__ == "__main__":
     precvs = [
         Process(target=receive, args=("amq.direct", "update-insert")),
         Process(target=receive, args=("amq.direct", "update-update")),
-        Process(target=receive, args=("amq.direct", "hijack-insert")),
+        Process(target=receive, args=("amq.direct", "hijack-update")),
         Process(target=receive, args=("bgp-update", "update")),
         Process(target=receive, args=("hijack-update", "update")),
     ]

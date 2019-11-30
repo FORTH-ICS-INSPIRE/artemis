@@ -8,9 +8,9 @@ rmq_update_insert=$(cat bgp-update-update)
 rmq_hijack_insert=$(cat hijack-update-update)
 postgres_update_insert=$(cat amq.direct-update-insert)
 postgres_update_update=$(cat amq.direct-update-update)
-postgres_hijack_insert=$(cat amq.direct-hijack-insert)
+postgres_hijack_insert=$(cat amq.direct-hijack-update)
 
-body=":running: **Benchmark Results** :running:\n- RMQ BGP Update inserts: **$rmq_update_insert/s**\n- RQM Hijack inserts: **$rmq_hijack_insert/s**\n- PG BGP Update inserts: **$postgres_update_insert/s**\n- PG BPG Update updates: **$postgres_update_update/s**\n- PG Hijack inserts: **$postgres_hijack_insert/s**"
+body=":running: **Benchmark Results** :running:\n- RMQ BGP Update inserts: **$rmq_update_insert**/s\n- RMQ Hijack inserts: **$rmq_hijack_insert**/s\n- PG BGP Update inserts: **$postgres_update_insert**/s\n- PG BPG Update updates: **$postgres_update_update**/s\n- PG Hijack inserts: **$postgres_hijack_insert**/s"
 
 if [ ${PULL_REQUEST_NUMBER} != "false" ]; then
     COMMENT_ID=$(curl https://api.github.com/repos/${REPO_SLUG}/issues/${PULL_REQUEST_NUMBER}/comments | jq '.[] | select(.body | contains("Benchmark Results")) | .id')

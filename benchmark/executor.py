@@ -97,7 +97,7 @@ def receive(exchange_name, routing_key):
             if bind_queue.get():
                 recv_cnt += 1
                 if recv_cnt % 1000 == 0:
-                    with open("{}".format(exchange_name), "w") as f:
+                    with open("{}-{}".format(exchange_name, routing_key), "w") as f:
                         print(
                             "[!] Throughput for {} on {}:{} = {} msg/s".format(
                                 recv_cnt,
@@ -113,7 +113,7 @@ def receive(exchange_name, routing_key):
                 recv_cnt, exchange_name, routing_key, LIMIT_UPDATES / (stop - start)
             )
         )
-        with open("{}".format(exchange_name), "w") as f:
+        with open("{}-{}".format(exchange_name, routing_key), "w") as f:
             f.write(str(int(LIMIT_UPDATES / (stop - start))))
 
     print("[+] Receiving {} on {}:{}".format(LIMIT_UPDATES, exchange_name, routing_key))
@@ -144,19 +144,21 @@ if __name__ == "__main__":
     print("[+] Starting")
     wait()
 
-    precv0 = Process(target=receive, args=("bgp-update", "update"))
-    # precv1 = Process(target=receive, args=("handled-update", "update"))
-    precv2 = Process(target=receive, args=("hijack-update", "update"))
+    precvs = [
+        Process(target=receive, args=("amq.direct", "update-insert")),
+        Process(target=receive, args=("amq.direct", "update-update")),
+        Process(target=receive, args=("amq.direct", "hijack-insert")),
+        Process(target=receive, args=("bgp-update", "update")),
+        Process(target=receive, args=("hijack-update", "update")),
+    ]
     psend = Process(target=send, args=())
 
-    precv0.start()
-    # precv1.start()
-    precv2.start()
+    for precv in precvs:
+        precv.start()
     time.sleep(1)
     psend.start()
 
-    precv0.join()
-    # precv1.join()
-    precv2.join()
+    for precv in precvs:
+        precv.join()
     psend.join()
     print("[+] Exiting")

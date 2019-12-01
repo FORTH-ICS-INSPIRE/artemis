@@ -9,6 +9,7 @@ from ipaddress import ip_network as str2ip
 
 import ujson as json
 import yaml
+from kombu import serialization
 
 HISTORIC = os.getenv("HISTORIC", "false")
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
@@ -20,6 +21,14 @@ RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
 )
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 def get_logger(path="/etc/artemis/logging.yaml"):

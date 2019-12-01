@@ -614,9 +614,9 @@ class Database:
                     self.insert_hijacks_entries[key]["num_asns_inf"] = len(
                         msg_["asns_inf"]
                     )
-                    self.insert_hijacks_entries[key]["monitor_keys"] = msg_[
-                        "monitor_keys"
-                    ]
+                    self.insert_hijacks_entries[key]["monitor_keys"] = set(
+                        msg_["monitor_keys"]
+                    )
                     self.insert_hijacks_entries[key]["time_detected"] = msg_[
                         "time_detected"
                     ]

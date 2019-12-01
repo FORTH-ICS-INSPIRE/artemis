@@ -92,7 +92,10 @@ class Learn_hijack_rule:
                     serializer="ujson",
                 )
             with Consumer(
-                connection, on_message=self.on_response, queues=[callback_queue]
+                connection,
+                on_message=self.on_response,
+                queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.response is None:
                     connection.drain_events()
@@ -138,7 +141,10 @@ class Comment_hijack:
                     serializer="ujson",
                 )
             with Consumer(
-                connection, on_message=self.on_response, queues=[callback_queue]
+                connection,
+                on_message=self.on_response,
+                queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.response is None:
                     connection.drain_events()
@@ -180,7 +186,10 @@ class Submit_new_config:
                         priority=4,
                     )
                 with Consumer(
-                    connection, on_message=self.on_response, queues=[callback_queue]
+                    connection,
+                    on_message=self.on_response,
+                    queues=[callback_queue],
+                    accept=["ujson"],
                 ):
                     while self.response is None:
                         connection.drain_events()
@@ -229,7 +238,10 @@ class Load_as_sets:
                     serializer="ujson",
                 )
                 with Consumer(
-                    connection, on_message=self.on_response, queues=[callback_queue]
+                    connection,
+                    on_message=self.on_response,
+                    queues=[callback_queue],
+                    accept=["ujson"],
                 ):
                     while self.response is None:
                         connection.drain_events()
@@ -280,7 +292,10 @@ class Hijacks_multiple_action:
                     serializer="ujson",
                 )
             with Consumer(
-                connection, on_message=self.on_response, queues=[callback_queue]
+                connection,
+                on_message=self.on_response,
+                queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.response is None:
                     connection.drain_events()

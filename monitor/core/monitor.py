@@ -157,6 +157,7 @@ class Monitor:
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
+                    accept=["ujson"],
                 )
             ]
 
@@ -271,6 +272,7 @@ class Monitor:
                 self.connection,
                 on_message=self.handle_config_request_reply,
                 queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while not self.rules and not self.monitors:
                     self.connection.drain_events()

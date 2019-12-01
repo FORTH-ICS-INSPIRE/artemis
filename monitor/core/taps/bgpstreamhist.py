@@ -145,6 +145,7 @@ class BGPStreamHist:
                                                             connection,
                                                             on_message=self.handle_autoconf_update_goahead_reply,
                                                             queues=[callback_queue],
+                                                            accept=["ujson"],
                                                         ):
                                                             while (
                                                                 not self.autoconf_goahead

@@ -1,23 +1,13 @@
 import os
 import time
 
-import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
-from kombu import serialization
 from utils import get_logger
 from utils import RABBITMQ_URI
 
 log = get_logger()
-
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
 
 
 class Scheduler:

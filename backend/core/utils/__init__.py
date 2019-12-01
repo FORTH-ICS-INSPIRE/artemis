@@ -11,6 +11,7 @@ from xmlrpc.client import ServerProxy
 import requests
 import ujson as json
 import yaml
+from kombu import serialization
 
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
@@ -74,6 +75,14 @@ ASN_REGEX = r"^AS(\d+)$"
 RPKI_VALIDATOR_ENABLED = os.getenv("RPKI_VALIDATOR_ENABLED", "false")
 RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
 RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 class TLSSMTPHandler(SMTPHandler):

@@ -397,13 +397,17 @@ class Tester:
                     connection.Consumer(
                         self.hijack_queue,
                         callbacks=[self.validate_message],
-                        accept=["yaml"],
+                        accept=["ujson"],
                     ),
                     connection.Consumer(
-                        self.update_queue, callbacks=[self.validate_message]
+                        self.update_queue,
+                        callbacks=[self.validate_message],
+                        accept=["ujson"],
                     ),
                     connection.Consumer(
-                        self.hijack_db_queue, callbacks=[self.validate_message]
+                        self.hijack_db_queue,
+                        callbacks=[self.validate_message],
+                        accept=["ujson"],
                     ),
                 ):
                     send_cnt = 0

@@ -20,7 +20,6 @@ from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
-from kombu import serialization
 from kombu.mixins import ConsumerProducerMixin
 from utils import ArtemisError
 from utils import flatten
@@ -37,15 +36,6 @@ from utils import update_aliased_list
 from yaml import load as yload
 
 log = get_logger()
-
-
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
 
 
 class Configuration:

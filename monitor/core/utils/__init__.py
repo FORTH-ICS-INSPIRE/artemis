@@ -9,6 +9,7 @@ from logging.handlers import SMTPHandler
 
 import ujson as json
 import yaml
+from kombu import serialization
 
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
@@ -37,6 +38,14 @@ MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
 )
 RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
 ASN_REGEX = r"^AS(\d+)$"
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 class TLSSMTPHandler(SMTPHandler):

@@ -149,11 +149,12 @@ class AutoconfTester:
             conn.Consumer(
                 on_message=self.handle_config_notify,
                 queues=[self.config_queue],
-                accept=["json"],
+                accept=["ujson"],
             ),
             conn.Consumer(
                 on_message=self.handle_autoconf_update_goahead_reply,
                 queues=[callback_queue],
+                accept=["ujson"],
             ),
         ):
             self.autoconf_goahead = False

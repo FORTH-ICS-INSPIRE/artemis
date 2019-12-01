@@ -12,7 +12,6 @@ from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
-from kombu import serialization
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import BACKEND_SUPERVISOR_URI
@@ -69,14 +68,6 @@ class HijackLogFilter(logging.Filter):
 
 mail_log.addFilter(HijackLogFilter())
 hij_log.addFilter(HijackLogFilter())
-
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
 
 
 class Database:

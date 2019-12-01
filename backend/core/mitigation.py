@@ -8,7 +8,6 @@ from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
-from kombu import serialization
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import get_ip_version
@@ -17,14 +16,6 @@ from utils import RABBITMQ_URI
 from utils import translate_rfc2622
 
 log = get_logger()
-
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
 
 
 class Mitigation:

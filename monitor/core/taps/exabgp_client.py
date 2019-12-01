@@ -3,13 +3,11 @@ import os
 import signal
 
 import redis
-import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
 from kombu import Queue
-from kombu import serialization
 from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -29,14 +27,6 @@ from utils import REDIS_PORT
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
-
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
 
 
 class ExaBGP:

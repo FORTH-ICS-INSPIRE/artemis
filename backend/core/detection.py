@@ -82,14 +82,7 @@ class HijackLogFilter(logging.Filter):
 mail_log.addFilter(HijackLogFilter())
 hij_log.addFilter(HijackLogFilter())
 
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
-
+# additional serializer for pg-amqp messages
 serialization.register(
     "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
 )

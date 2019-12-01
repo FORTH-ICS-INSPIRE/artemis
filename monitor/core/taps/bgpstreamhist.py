@@ -9,7 +9,6 @@ from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
 from kombu import Queue
-from kombu import serialization
 from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -22,14 +21,6 @@ from utils import normalize_msg_path
 from utils import RABBITMQ_URI
 
 log = get_logger()
-
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
 
 
 class BGPStreamHist:

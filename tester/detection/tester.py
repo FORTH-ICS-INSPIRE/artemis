@@ -26,6 +26,11 @@ serialization.register(
     content_encoding="utf-8",
 )
 
+# additional serializer for pg-amqp messages
+serialization.register(
+    "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
+)
+
 
 class Tester:
     def __init__(self):
@@ -420,12 +425,12 @@ class Tester:
                     connection.Consumer(
                         self.update_queue,
                         callbacks=[self.validate_message],
-                        accept=["ujson"],
+                        accept=["ujson", "text"],
                     ),
                     connection.Consumer(
                         self.hijack_db_queue,
                         callbacks=[self.validate_message],
-                        accept=["ujson"],
+                        accept=["ujson", "text"],
                     ),
                 ):
                     send_cnt = 0

@@ -425,12 +425,12 @@ class Tester:
                     connection.Consumer(
                         self.update_queue,
                         callbacks=[self.validate_message],
-                        accept=["ujson", "text"],
+                        accept=["ujson", "txtjson"],
                     ),
                     connection.Consumer(
                         self.hijack_db_queue,
                         callbacks=[self.validate_message],
-                        accept=["ujson", "text"],
+                        accept=["ujson", "txtjson"],
                     ),
                 ):
                     send_cnt = 0

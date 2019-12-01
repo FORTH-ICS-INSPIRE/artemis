@@ -181,10 +181,8 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                     log.warning(
                                         "Invalid format message: {}".format(msg)
                                     )
-                    except json.decoder.JSONDecodeError:
-                        log.exception("Message {}".format(data))
                     except Exception:
-                        log.exception("exception")
+                        log.exception("exception message {}".format(data))
                 log.warning("Iterator ran out of data; the connection will be retried")
             except Exception:
                 log.exception("server closed connection")

@@ -88,10 +88,6 @@ loggers:
         level: INFO
         handlers: [null_handler]
         propagate: no
-    taps_logger:
-        level: INFO
-        handlers: [taps_file_handler]
-        propagate: no
 
 root:
     level: INFO

@@ -1,10 +1,10 @@
-import json
 import os
 import subprocess
 import time
 from codecs import open as c_open
 
 import psycopg2
+import ujson as json
 
 
 def get_target_version():

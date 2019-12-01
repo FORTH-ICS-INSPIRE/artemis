@@ -11,4 +11,5 @@ redis==3.1.0
 ruamel.yaml==0.15.87
 six==1.13.0
 slacker-log-handler==1.7.1
+ujson==1.35
 watchdog==0.9.0

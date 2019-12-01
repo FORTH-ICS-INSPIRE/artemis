@@ -1,5 +1,4 @@
 import hashlib
-import json
 import logging.config
 import logging.handlers
 import os
@@ -8,6 +7,7 @@ import time
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
 
+import ujson as json
 import yaml
 
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
@@ -174,7 +174,7 @@ def dump_json(json_obj, filename):
 
 
 def get_hash(obj):
-    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+    return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
 
 def valid_prefix(input_prefix):

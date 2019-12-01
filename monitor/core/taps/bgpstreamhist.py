@@ -1,14 +1,15 @@
 import argparse
 import csv
 import glob
-import json
 import time
 
+import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -21,6 +22,14 @@ from utils import normalize_msg_path
 from utils import RABBITMQ_URI
 
 log = get_logger()
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 class BGPStreamHist:
@@ -139,7 +148,7 @@ class BGPStreamHist:
                                                                 callback_queue,
                                                             ],
                                                             priority=4,
-                                                            serializer="json",
+                                                            serializer="ujson",
                                                         )
                                                         with Consumer(
                                                             connection,
@@ -154,7 +163,7 @@ class BGPStreamHist:
                                                         msg,
                                                         exchange=self.update_exchange,
                                                         routing_key="update",
-                                                        serializer="json",
+                                                        serializer="ujson",
                                                     )
                                                     time.sleep(0.1)
                                             else:

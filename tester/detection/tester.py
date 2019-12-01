@@ -1,7 +1,6 @@
 import datetime
 import difflib
 import hashlib
-import json
 import os
 import re
 import socket
@@ -10,13 +9,22 @@ from xmlrpc.client import ServerProxy
 
 import psycopg2
 import redis
-import yaml
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from kombu.utils.compat import nested
 from psycopg2 import sql
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 class Tester:
@@ -94,7 +102,7 @@ class Tester:
 
     @staticmethod
     def get_hash(obj):
-        return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+        return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
     @staticmethod
     def waitExchange(exchange, channel):
@@ -215,7 +223,7 @@ class Tester:
                 self.messages[self.curr_idx]["send"],
                 exchange=self.update_exchange,
                 routing_key="update",
-                serializer="json",
+                serializer="ujson",
             )
 
     @staticmethod
@@ -252,6 +260,7 @@ class Tester:
                     callback_queue,
                 ],
                 priority=4,
+                serializer="ujson",
             )
 
         while True:
@@ -467,6 +476,7 @@ class Helper:
                 exchange=hijack_exchange,
                 routing_key="resolve",
                 priority=2,
+                serializer="ujson",
             )
         result = hijack_action_test_result(db_con, hijack_key, "resolved")
         assert (
@@ -484,6 +494,7 @@ class Helper:
                 exchange=mitigation_exchange,
                 routing_key="mitigate",
                 priority=2,
+                serializer="ujson",
             )
         result = hijack_action_test_result(db_con, hijack_key, "under_mitigation")
         assert (
@@ -506,6 +517,7 @@ class Helper:
                 exchange=hijack_exchange,
                 routing_key="ignore",
                 priority=2,
+                serializer="ujson",
             )
         result = hijack_action_test_result(db_con, hijack_key, "ignored")
         assert (
@@ -534,6 +546,7 @@ class Helper:
                 reply_to=callback_queue.name,
                 correlation_id=correlation_id,
                 priority=4,
+                serializer="ujson",
             )
         while True:
             if callback_queue.get():
@@ -585,6 +598,7 @@ class Helper:
                 exchange=hijack_exchange,
                 routing_key="seen",
                 priority=2,
+                serializer="ujson",
             )
         assert (
             hijack_action_test_result(db_con, hijack_key, "seen", state) is True
@@ -606,6 +620,7 @@ class Helper:
                 exchange=hijack_exchange,
                 routing_key="delete",
                 priority=2,
+                serializer="ujson",
             )
         result = hijack_action_test_result(db_con, hijack_key, "delete")
         assert (
@@ -634,6 +649,7 @@ class Helper:
                 reply_to=callback_queue.name,
                 correlation_id=correlation_id,
                 priority=4,
+                serializer="ujson",
             )
         while True:
             msg = callback_queue.get()
@@ -668,6 +684,7 @@ class Helper:
                 reply_to=callback_queue.name,
                 correlation_id=correlation_id,
                 priority=4,
+                serializer="ujson",
             )
         while True:
             m = callback_queue.get()

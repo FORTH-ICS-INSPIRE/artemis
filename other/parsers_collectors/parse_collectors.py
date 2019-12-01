@@ -1,6 +1,5 @@
-import json
-
 import requests
+import ujson as json
 from bs4 import BeautifulSoup
 
 collectors_obj = {}

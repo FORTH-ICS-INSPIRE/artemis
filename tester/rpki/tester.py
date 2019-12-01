@@ -1,6 +1,5 @@
 import datetime
 import hashlib
-import json
 import os
 import re
 import socket
@@ -9,13 +8,22 @@ from xmlrpc.client import ServerProxy
 
 import psycopg2
 import redis
-import yaml
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from kombu.utils.compat import nested
 from rtrlib import RTRManager
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 class Tester:
@@ -93,7 +101,7 @@ class Tester:
 
     @staticmethod
     def get_hash(obj):
-        return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+        return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
     @staticmethod
     def waitExchange(exchange, channel):
@@ -214,7 +222,7 @@ class Tester:
                 self.messages[self.curr_idx]["send"],
                 exchange=self.update_exchange,
                 routing_key="update",
-                serializer="json",
+                serializer="ujson",
             )
 
     @staticmethod

@@ -1,5 +1,4 @@
 import argparse
-import json
 import os
 import time
 from copy import deepcopy
@@ -7,9 +6,11 @@ from copy import deepcopy
 import pytricia
 import redis
 import requests
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
+from kombu import serialization
 from utils import get_ip_version
 from utils import get_logger
 from utils import key_generator
@@ -26,6 +27,14 @@ update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 def normalize_ripe_ris(msg, prefix_tree):
@@ -175,7 +184,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                             norm_path_msg,
                                             exchange=exchange,
                                             routing_key="update",
-                                            serializer="json",
+                                            serializer="ujson",
                                         )
                                 else:
                                     log.warning(

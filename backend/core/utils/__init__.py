@@ -1,5 +1,4 @@
 import hashlib
-import json
 import logging.config
 import logging.handlers
 import os
@@ -10,6 +9,7 @@ from logging.handlers import SMTPHandler
 from xmlrpc.client import ServerProxy
 
 import requests
+import ujson as json
 import yaml
 
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
@@ -291,7 +291,7 @@ def key_generator(msg):
 
 
 def get_hash(obj):
-    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+    return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
 
 def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
@@ -339,13 +339,6 @@ def calculate_more_specifics(prefix, min_length, max_length):
     for prefix_length in range(min_length, max_length + 1):
         for sub_prefix in prefix.subnets(new_prefix=prefix_length):
             yield str(sub_prefix)
-
-
-class SetEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, set):
-            return list(o)
-        return super(SetEncoder, self).default(o)
 
 
 def translate_rfc2622(input_prefix, just_match=False):

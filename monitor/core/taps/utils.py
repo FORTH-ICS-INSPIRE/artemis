@@ -1,6 +1,5 @@
 import copy
 import hashlib
-import json
 import logging.config
 import os
 import time
@@ -8,6 +7,7 @@ from datetime import datetime
 from datetime import timedelta
 from ipaddress import ip_network as str2ip
 
+import ujson as json
 import yaml
 
 HISTORIC = os.getenv("HISTORIC", "false")
@@ -69,7 +69,7 @@ def key_generator(msg):
 
 
 def get_hash(obj):
-    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+    return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
 
 def ping_redis(redis_instance, timeout=5):

@@ -1,6 +1,5 @@
-import json
-
 import ruamel.yaml
+import ujson as json
 
 
 def create_prefix_defs(yaml_conf, prefixes):

@@ -2,3 +2,4 @@ kombu==4.2.2.post1
 psycopg2==2.8.4
 PyYAML==5.1
 redis==3.1.0
+ujson==1.35

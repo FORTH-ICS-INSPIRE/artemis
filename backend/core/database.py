@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 import os
 import signal
@@ -8,11 +7,12 @@ from xmlrpc.client import ServerProxy
 
 import pytricia
 import redis
-import yaml
+import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import BACKEND_SUPERVISOR_URI
@@ -36,7 +36,6 @@ from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import search_worst_prefix
-from utils import SetEncoder
 from utils import translate_asn_range
 from utils import translate_rfc2622
 from utils import WITHDRAWN_HIJACK_THRESHOLD
@@ -70,6 +69,14 @@ class HijackLogFilter(logging.Filter):
 
 mail_log.addFilter(HijackLogFilter())
 hij_log.addFilter(HijackLogFilter())
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 class Database:
@@ -365,77 +372,91 @@ class Database:
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
                     prefetch_count=100,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_queue],
                     on_message=self.handle_hijack_update,
                     prefetch_count=100,
-                    accept=["yaml"],
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.withdraw_queue],
                     on_message=self.handle_withdraw_update,
                     prefetch_count=100,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.db_clock_queue],
                     on_message=self._scheduler_instruction,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.handled_queue],
                     on_message=self.handle_handled_bgp_update,
                     prefetch_count=100,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_resolve_queue],
                     on_message=self.handle_resolve_hijack,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_ignore_queue],
                     on_message=self.handle_hijack_ignore_request,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_comment_queue],
                     on_message=self.handle_hijack_comment,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_seen_queue],
                     on_message=self.handle_hijack_seen,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_multiple_action_queue],
                     on_message=self.handle_hijack_multiple_action,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_ongoing_request_queue],
                     on_message=self.handle_hijack_ongoing_request,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_outdate_queue],
                     on_message=self.handle_hijack_outdate,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_delete_queue],
                     on_message=self.handle_delete_hijack,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
             ]
 
@@ -484,11 +505,13 @@ class Database:
                     callback_queue,
                 ],
                 priority=4,
+                serializer="ujson",
             )
             with Consumer(
                 self.connection,
                 on_message=self.handle_config_request_reply,
                 queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.rules is None:
                     self.connection.drain_events()
@@ -850,6 +873,7 @@ class Database:
                                 routing_key="ongoing",
                                 retry=False,
                                 priority=1,
+                                serializer="ujson",
                             )
                 except Exception:
                     log.exception("exception")
@@ -899,7 +923,7 @@ class Database:
                     result["bgpupdate_keys"] = subentries
 
                     redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
-                    redis_pipeline.set(redis_hijack_key, yaml.dump(result))
+                    redis_pipeline.set(redis_hijack_key, json.dumps(result))
                     redis_pipeline.sadd("persistent-keys", entry[4])
                 redis_pipeline.execute()
 
@@ -1012,11 +1036,9 @@ class Database:
                     "redis-entry for {}: {}".format(redis_hijack_key, redis_hijack)
                 )
                 self.wo_db.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
-                if redis_hijack and yaml.safe_load(redis_hijack).get(
-                    "bgpupdate_keys", []
-                ):
+                if redis_hijack and json.loads(redis_hijack).get("bgpupdate_keys", []):
                     log.debug("deleting hijack using cache for bgp updates")
-                    redis_hijack = yaml.safe_load(redis_hijack)
+                    redis_hijack = json.loads(redis_hijack)
                     log.debug(
                         "bgpupdate_keys {} for {}".format(
                             redis_hijack["bgpupdate_keys"], redis_hijack_key
@@ -1089,9 +1111,9 @@ class Database:
                     exchange="",
                     routing_key=message.properties["reply_to"],
                     correlation_id=message.properties["correlation_id"],
-                    serializer="json",
                     retry=True,
                     priority=4,
+                    serializer="ujson",
                 )
             except Exception:
                 self.producer.publish(
@@ -1099,9 +1121,9 @@ class Database:
                     exchange="",
                     routing_key=message.properties["reply_to"],
                     correlation_id=message.properties["correlation_id"],
-                    serializer="json",
                     retry=True,
                     priority=4,
+                    serializer="ujson",
                 )
                 log.exception("{}".format(raw))
 
@@ -1157,9 +1179,9 @@ class Database:
                     exchange="",
                     routing_key=message.properties["reply_to"],
                     correlation_id=message.properties["correlation_id"],
-                    serializer="json",
                     retry=True,
                     priority=4,
+                    serializer="ujson",
                 )
             else:
                 for hijack_key in raw["keys"]:
@@ -1206,13 +1228,13 @@ class Database:
                                     )
                                 )
                                 self.wo_db.execute(query, (hijack_key,))
-                                if redis_hijack and yaml.safe_load(redis_hijack).get(
+                                if redis_hijack and json.loads(redis_hijack).get(
                                     "bgpupdate_keys", []
                                 ):
                                     log.debug(
                                         "deleting hijack using cache for bgp updates"
                                     )
-                                    redis_hijack = yaml.safe_load(redis_hijack)
+                                    redis_hijack = json.loads(redis_hijack)
                                     log.debug(
                                         "bgpupdate_keys {} for {}".format(
                                             redis_hijack["bgpupdate_keys"], redis_hijack
@@ -1262,9 +1284,9 @@ class Database:
                             exchange="",
                             routing_key=message.properties["reply_to"],
                             correlation_id=message.properties["correlation_id"],
-                            serializer="json",
                             retry=True,
                             priority=4,
+                            serializer="ujson",
                         )
 
             self.producer.publish(
@@ -1272,9 +1294,9 @@ class Database:
                 exchange="",
                 routing_key=message.properties["reply_to"],
                 correlation_id=message.properties["correlation_id"],
-                serializer="json",
                 retry=True,
                 priority=4,
+                serializer="ujson",
             )
 
         def _insert_bgp_updates(self):
@@ -1350,9 +1372,11 @@ class Database:
                             hijack = self.redis.get(redis_hijack_key)
                             redis_pipeline = self.redis.pipeline()
                             if hijack:
-                                hijack = yaml.safe_load(hijack)
-                                hijack["bgpupdate_keys"].add(withdrawal[3])
-                                redis_pipeline.set(redis_hijack_key, yaml.dump(hijack))
+                                hijack = json.loads(hijack)
+                                hijack["bgpupdate_keys"] = set(
+                                    hijack["bgpupdate_keys"] + withdrawal[3]
+                                )
+                                redis_pipeline.set(redis_hijack_key, json.dumps(hijack))
                             redis_pipeline.lpush(
                                 "{}token".format(redis_hijack_key), "token"
                             )
@@ -1388,7 +1412,6 @@ class Database:
                                             json.dumps(
                                                 hijack_log_field_formatter(hijack),
                                                 indent=4,
-                                                cls=SetEncoder,
                                             )
                                         ),
                                         extra={
@@ -1400,8 +1423,7 @@ class Database:
                                     hij_log.info(
                                         "{}".format(
                                             json.dumps(
-                                                hijack_log_field_formatter(hijack),
-                                                cls=SetEncoder,
+                                                hijack_log_field_formatter(hijack)
                                             )
                                         ),
                                         extra={
@@ -1646,40 +1668,6 @@ class Database:
             num_of_entries = len(self.insert_hijacks_entries)
             self.insert_hijacks_entries.clear()
             return num_of_entries
-
-        # def _retrieve_unhandled(self, amount):
-        #     results = []
-        #     query = (
-        #         "SELECT key, prefix, origin_as, peer_asn, as_path, service, "
-        #         "type, communities, timestamp FROM bgp_updates WHERE "
-        #         "handled = false ORDER BY timestamp DESC LIMIT(%s)"
-        #     )
-        #     with get_ro_cursor(self.ro_conn) as db_cur:
-        #         db_cur.execute(query, (amount,))
-        #         entries = db_cur.fetchall()
-        #
-        #     for entry in entries:
-        #         results.append(
-        #             {
-        #                 "key": entry[0],  # key
-        #                 "prefix": entry[1],  # prefix
-        #                 "origin_as": entry[2],  # origin_as
-        #                 "peer_asn": entry[3],  # peer_asn
-        #                 "path": entry[4],  # as_path
-        #                 "service": entry[5],  # service
-        #                 "type": entry[6],  # type
-        #                 "communities": entry[7],  # communities
-        #                 "timestamp": entry[8].timestamp(),
-        #             }
-        #         )
-        #     if results:
-        #         self.producer.publish(
-        #             results,
-        #             exchange=self.update_exchange,
-        #             routing_key="unhandled",
-        #             retry=False,
-        #             priority=2,
-        #         )
 
         def _handle_hijack_outdate(self):
             if not self.outdate_hijacks:

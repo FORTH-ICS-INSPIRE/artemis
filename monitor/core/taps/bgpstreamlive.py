@@ -4,9 +4,11 @@ import time
 
 import _pybgpstream
 import redis
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
+from kombu import serialization
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from utils import get_logger
@@ -25,6 +27,15 @@ START_TIME_OFFSET = 3600  # seconds
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
+
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
@@ -150,7 +161,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                                         msg,
                                         exchange=exchange,
                                         routing_key="update",
-                                        serializer="json",
+                                        serializer="ujson",
                                     )
                             else:
                                 log.warning("Invalid format message: {}".format(msg))

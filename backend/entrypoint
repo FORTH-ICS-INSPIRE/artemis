@@ -1,8 +1,10 @@
 #!/bin/bash
-make -j 4
+#make -j 4
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
 ./wait-for ${MON_SUPERVISOR_HOST}:${MON_SUPERVISOR_PORT} -t 0
+
+pip install ujson
 
 version=$(PGPASSWORD=$DB_PASS psql postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME} -c "select version from db_details;" -tA)
 

@@ -1,5 +1,4 @@
 import glob
-import json
 import os
 import re
 import socket
@@ -7,12 +6,13 @@ import time
 from xmlrpc.client import ServerProxy
 
 import psycopg2
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from kombu.utils.compat import nested
-
 
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
 RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
@@ -25,6 +25,14 @@ BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
 BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
+)
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
 )
 
 
@@ -114,6 +122,7 @@ class AutoconfTester:
                     callback_queue,
                 ],
                 priority=4,
+                serializer="ujson",
             )
 
         while True:
@@ -167,7 +176,7 @@ class AutoconfTester:
                         callback_queue,
                     ],
                     priority=4,
-                    serializer="json",
+                    serializer="ujson",
                 )
                 print("[+] Sent message '{}'".format(msg))
                 conn.drain_events()

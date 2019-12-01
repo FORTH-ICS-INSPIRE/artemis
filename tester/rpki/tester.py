@@ -264,6 +264,7 @@ class Tester:
                     callback_queue,
                 ],
                 priority=4,
+                serializer="ujson",
             )
 
         while True:

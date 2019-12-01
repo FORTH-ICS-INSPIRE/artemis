@@ -1365,7 +1365,7 @@ class Database:
                             if hijack:
                                 hijack = json.loads(hijack)
                                 hijack["bgpupdate_keys"] = set(
-                                    hijack["bgpupdate_keys"] + withdrawal[3]
+                                    hijack["bgpupdate_keys"] + [withdrawal[3]]
                                 )
                                 redis_pipeline.set(redis_hijack_key, json.dumps(hijack))
                             redis_pipeline.lpush(

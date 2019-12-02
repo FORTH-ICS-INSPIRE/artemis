@@ -154,12 +154,6 @@ class Tester:
                 assert self.redis.sismember(
                     "peer-asns", event["peer_asn"]
                 ), "Monitor/Peer ASN not found in Redis"
-        elif message.delivery_info["routing_key"] == "1":
-            expected = self.messages[self.curr_idx]["detection_hijack_response"]
-            redis_hijack_key = Tester.redis_key(
-                event["prefix"], event["hijack_as"], event["type"]
-            )
-            assert self.redis.exists(redis_hijack_key), "Hijack key not found in Redis"
         elif message.delivery_info["routing_key"] == "hijack-update":
             expected = self.messages[self.curr_idx]["database_hijack_response"]
             if event["active"]:
@@ -170,6 +164,12 @@ class Tester:
                 assert not self.redis.sismember(
                     "persistent-keys", event["key"]
                 ), "Persistent key found in Redis but should have been removed."
+        else:
+            expected = self.messages[self.curr_idx]["detection_hijack_response"]
+            redis_hijack_key = Tester.redis_key(
+                event["prefix"], event["hijack_as"], event["type"]
+            )
+            assert self.redis.exists(redis_hijack_key), "Hijack key not found in Redis"
 
         # compare expected message with received one. exit on
         # mismatch.

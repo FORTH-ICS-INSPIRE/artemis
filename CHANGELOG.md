@@ -19,7 +19,6 @@
 - RPKI validator env vars
 - optional routinator RPKI validator microservice
 - make_release script to automate release pushes
-- TEST_ENV variable for developers
 
 ### Changed
 - Automatic config file formatting upon config modification

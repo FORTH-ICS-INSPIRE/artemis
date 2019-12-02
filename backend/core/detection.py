@@ -1066,6 +1066,14 @@ class Detection:
                 serializer="ujson",
             )
 
+            self.producer.publish(
+                result,
+                exchange=self.hijack_hashing,
+                routing_key=redis_hijack_key,
+                priority=0,
+                serializer="ujson",
+            )
+
         def gen_implicit_withdrawal(self, monitor_event: Dict) -> NoReturn:
             """
             Checks if a benign BGP update should trigger an implicit withdrawal

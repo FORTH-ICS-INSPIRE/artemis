@@ -281,9 +281,11 @@ def dump_json(json_obj, filename):
 
 
 def redis_key(prefix, hijack_as, _type):
-    assert isinstance(prefix, str)
-    assert isinstance(hijack_as, int)
-    assert isinstance(_type, str)
+    assert (
+        isinstance(prefix, str)
+        and isinstance(hijack_as, int)
+        and isinstance(_type, str)
+    )
     return get_hash([prefix, hijack_as, _type])
 
 

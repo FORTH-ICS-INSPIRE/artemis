@@ -1002,14 +1002,6 @@ class Detection:
                 # publish hijack
                 self.producer.publish(
                     result,
-                    exchange=self.hijack_exchange,
-                    routing_key="update",
-                    priority=0,
-                    serializer="ujson",
-                )
-
-                self.producer.publish(
-                    result,
                     exchange=self.hijack_hashing,
                     routing_key=redis_hijack_key,
                     priority=0,

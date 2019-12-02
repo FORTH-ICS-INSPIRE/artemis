@@ -100,9 +100,11 @@ class Tester:
 
     @staticmethod
     def redis_key(prefix, hijack_as, _type):
-        assert isinstance(prefix, str)
-        assert isinstance(hijack_as, int)
-        assert isinstance(_type, str)
+        assert (
+            isinstance(prefix, str)
+            and isinstance(hijack_as, int)
+            and isinstance(_type, str)
+        )
         return Tester.get_hash([prefix, hijack_as, _type])
 
     @staticmethod
@@ -152,7 +154,7 @@ class Tester:
                 assert self.redis.sismember(
                     "peer-asns", event["peer_asn"]
                 ), "Monitor/Peer ASN not found in Redis"
-        elif message.delivery_info["routing_key"] == "update":
+        elif message.delivery_info["routing_key"] == "1":
             expected = self.messages[self.curr_idx]["detection_hijack_response"]
             redis_hijack_key = Tester.redis_key(
                 event["prefix"], event["hijack_as"], event["type"]
@@ -296,6 +298,10 @@ class Tester:
             "hijack-update", type="direct", durable=False, delivery_mode=1
         )
 
+        self.hijack_hashing = Exchange(
+            "hijack-hashing", type="x-consistent-hash", durable=False, delivery_mode=1
+        )
+
         self.pg_amq_bridge = Exchange(
             "amq.direct", type="direct", durable=True, delivery_mode=1
         )
@@ -313,8 +319,8 @@ class Tester:
 
         self.hijack_queue = Queue(
             "hijack-testing",
-            exchange=self.hijack_exchange,
-            routing_key="update",
+            exchange=self.hijack_hashing,
+            routing_key="1",
             durable=False,
             auto_delete=True,
             max_priority=1,
@@ -336,6 +342,8 @@ class Tester:
             Tester.waitExchange(self.pg_amq_bridge, connection.default_channel)
             print("Waiting for hijack exchange..")
             Tester.waitExchange(self.hijack_exchange, connection.default_channel)
+            print("Waiting for hijack_hashing exchange..")
+            Tester.waitExchange(self.hijack_hashing, connection.default_channel)
             print("Waiting for update exchange..")
             Tester.waitExchange(self.update_exchange, connection.default_channel)
 

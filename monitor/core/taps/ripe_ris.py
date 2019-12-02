@@ -188,7 +188,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                 log.warning("Iterator ran out of data; the connection will be retried")
             except Exception:
                 log.exception("server closed connection")
-                time.sleep(5)
+                time.sleep(60)
 
 
 if __name__ == "__main__":

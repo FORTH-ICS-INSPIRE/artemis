@@ -75,6 +75,7 @@ ASN_REGEX = r"^AS(\d+)$"
 RPKI_VALIDATOR_ENABLED = os.getenv("RPKI_VALIDATOR_ENABLED", "false")
 RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
 RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
+TEST_ENV = os.getenv("TEST_ENV", "false")
 
 serialization.register(
     "ujson",
@@ -281,9 +282,11 @@ def dump_json(json_obj, filename):
 
 
 def redis_key(prefix, hijack_as, _type):
-    assert isinstance(prefix, str)
-    assert isinstance(hijack_as, int)
-    assert isinstance(_type, str)
+    assert (
+        isinstance(prefix, str)
+        and isinstance(hijack_as, int)
+        and isinstance(_type, str)
+    )
     return get_hash([prefix, hijack_as, _type])
 
 

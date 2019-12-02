@@ -56,6 +56,7 @@ services:
             RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+            TEST_ENV: "true"
         volumes:
             - ./tester/detection/configs/logging.yaml:/etc/artemis/logging.yaml
     monitor:

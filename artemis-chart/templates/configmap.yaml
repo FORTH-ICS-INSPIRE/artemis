@@ -48,3 +48,4 @@ data:
   rpkiValidatorEnabled: {{ .Values.rpkiValidatorEnabled | default "false" | quote }}
   rpkiValidatorHost: {{ .Values.rpkiValidatorHost | default "routinator" | quote }}
   rpkiValidatorPort: {{ .Values.rpkiValidatorPort | default "3323" | quote }}
+  testEnv: {{ .Values.testEnv | default "false" | quote }}

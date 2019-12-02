@@ -39,6 +39,7 @@ from utils import REDIS_PORT
 from utils import RPKI_VALIDATOR_ENABLED
 from utils import RPKI_VALIDATOR_HOST
 from utils import RPKI_VALIDATOR_PORT
+from utils import TEST_ENV
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
@@ -127,6 +128,10 @@ class Detection:
             self.rules = None
             self.prefix_tree = None
             self.mon_num = 1
+
+            setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
+            if TEST_ENV == "true":
+                setattr(self, "publish_hijack_fun", self.publish_hijack_result_test)
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
@@ -1000,21 +1005,8 @@ class Detection:
                 redis_pipeline.execute()
 
                 # publish hijack
-                self.producer.publish(
-                    result,
-                    exchange=self.hijack_exchange,
-                    routing_key="update",
-                    priority=0,
-                    serializer="ujson",
-                )
+                self.publish_hijack_fun(result, redis_hijack_key)
 
-                self.producer.publish(
-                    result,
-                    exchange=self.hijack_hashing,
-                    routing_key=redis_hijack_key,
-                    priority=0,
-                    serializer="ujson",
-                )
                 hij_log.info(
                     "{}".format(json.dumps(hijack_log_field_formatter(result))),
                     extra={
@@ -1053,6 +1045,24 @@ class Detection:
                 exchange=self.hijack_exchange,
                 routing_key="outdate",
                 priority=1,
+                serializer="ujson",
+            )
+
+        def publish_hijack_result_production(self, result, redis_hijack_key):
+            self.producer.publish(
+                result,
+                exchange=self.hijack_hashing,
+                routing_key=redis_hijack_key,
+                priority=0,
+                serializer="ujson",
+            )
+
+        def publish_hijack_result_test(self, result, redis_hijack_key):
+            self.producer.publish(
+                result,
+                exchange=self.hijack_exchange,
+                routing_key="update",
+                priority=0,
                 serializer="ujson",
             )
 

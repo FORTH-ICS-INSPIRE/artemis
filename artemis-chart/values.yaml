@@ -57,6 +57,7 @@ withdrawnHijackThreshold: 80
 rpkiValidatorEnabled: false
 rpkiValidatorHost: routinator
 rpkiValidatorPort: 3323
+testEnv: false
 
 # services
 svc:

@@ -19,6 +19,7 @@
 - RPKI validator env vars
 - optional routinator RPKI validator microservice
 - make_release script to automate release pushes
+- TEST_ENV variable for developers
 
 ### Changed
 - Automatic config file formatting upon config modification
@@ -36,6 +37,7 @@
 - Optimization on RPKI validation to happen periodically instead of per hijack update
 - no_ack issue in ARTEMIS microservices (replaced with proper acks)
 - non-existent consumer for pg-amq when detection was off (fixed with dynamic trigger (de-)activation)
+- ARTEMIS monitor + detection performance issue
 
 ### Removed
 - Rekeying functionality for hijack updates with deprecated hijack key

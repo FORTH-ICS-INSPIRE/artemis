@@ -45,6 +45,7 @@ services:
             RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+            TEST_ENV: ${TEST_ENV}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./backend/:/root/

@@ -1,9 +1,9 @@
 import argparse
 import csv
 import glob
-import json
 import time
 
+import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -139,12 +139,13 @@ class BGPStreamHist:
                                                                 callback_queue,
                                                             ],
                                                             priority=4,
-                                                            serializer="json",
+                                                            serializer="ujson",
                                                         )
                                                         with Consumer(
                                                             connection,
                                                             on_message=self.handle_autoconf_update_goahead_reply,
                                                             queues=[callback_queue],
+                                                            accept=["ujson"],
                                                         ):
                                                             while (
                                                                 not self.autoconf_goahead
@@ -154,7 +155,7 @@ class BGPStreamHist:
                                                         msg,
                                                         exchange=self.update_exchange,
                                                         routing_key="update",
-                                                        serializer="json",
+                                                        serializer="ujson",
                                                     )
                                                     time.sleep(0.1)
                                             else:

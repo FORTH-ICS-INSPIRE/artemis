@@ -1,1 +1,2 @@
 kombu==4.2.2.post1
+ujson==1.35

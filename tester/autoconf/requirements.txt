@@ -1,2 +1,3 @@
 kombu==4.2.2.post1
 psycopg2==2.8.4
+ujson==1.35

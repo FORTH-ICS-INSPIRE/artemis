@@ -1,6 +1,5 @@
 import datetime
 import hashlib
-import json
 import os
 import re
 import socket
@@ -9,13 +8,27 @@ from xmlrpc.client import ServerProxy
 
 import psycopg2
 import redis
-import yaml
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from kombu.utils.compat import nested
 from rtrlib import RTRManager
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
+
+# additional serializer for pg-amqp messages
+serialization.register(
+    "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
+)
 
 
 class Tester:
@@ -86,14 +99,16 @@ class Tester:
 
     @staticmethod
     def redis_key(prefix, hijack_as, _type):
-        assert isinstance(prefix, str)
-        assert isinstance(hijack_as, int)
-        assert isinstance(_type, str)
+        assert (
+            isinstance(prefix, str)
+            and isinstance(hijack_as, int)
+            and isinstance(_type, str)
+        )
         return Tester.get_hash([prefix, hijack_as, _type])
 
     @staticmethod
     def get_hash(obj):
-        return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+        return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
     @staticmethod
     def waitExchange(exchange, channel):
@@ -214,7 +229,7 @@ class Tester:
                 self.messages[self.curr_idx]["send"],
                 exchange=self.update_exchange,
                 routing_key="update",
-                serializer="json",
+                serializer="ujson",
             )
 
     @staticmethod
@@ -251,6 +266,7 @@ class Tester:
                     callback_queue,
                 ],
                 priority=4,
+                serializer="ujson",
             )
 
         while True:
@@ -389,13 +405,17 @@ class Tester:
                     connection.Consumer(
                         self.hijack_queue,
                         callbacks=[self.validate_message],
-                        accept=["yaml"],
+                        accept=["ujson"],
                     ),
                     connection.Consumer(
-                        self.update_queue, callbacks=[self.validate_message]
+                        self.update_queue,
+                        callbacks=[self.validate_message],
+                        accept=["ujson", "txtjson"],
                     ),
                     connection.Consumer(
-                        self.hijack_db_queue, callbacks=[self.validate_message]
+                        self.hijack_db_queue,
+                        callbacks=[self.validate_message],
+                        accept=["ujson", "txtjson"],
                     ),
                 ):
                     send_cnt = 0

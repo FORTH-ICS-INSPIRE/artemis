@@ -1,5 +1,4 @@
 import copy
-import json
 import re
 import signal
 import time
@@ -16,6 +15,7 @@ from typing import Union
 
 import redis
 import ruamel.yaml
+import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -185,21 +185,25 @@ class Configuration:
                     queues=[self.config_request_queue],
                     on_message=self.handle_config_request,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_learn_rule_queue],
                     on_message=self.handle_hijack_learn_rule_request,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.load_as_sets_queue],
                     on_message=self.handle_load_as_sets,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.autoconf_update_queue],
                     on_message=self.handle_autoconf_updates,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
             ]
 
@@ -251,9 +255,9 @@ class Configuration:
                         self.data,
                         exchange=self.config_exchange,
                         routing_key="notify",
-                        serializer="json",
                         retry=True,
                         priority=2,
+                        serializer="ujson",
                     )
                     # Remove the comment to avoid marking config as different
                     if "comment" in self.data:
@@ -277,9 +281,9 @@ class Configuration:
                     exchange="",
                     routing_key=message.properties["reply_to"],
                     correlation_id=message.properties["correlation_id"],
-                    serializer="json",
                     retry=True,
                     priority=4,
+                    serializer="ujson",
                 )
             else:
                 log.debug("rejected new configuration")
@@ -290,9 +294,9 @@ class Configuration:
                     exchange="",
                     routing_key=message.properties["reply_to"],
                     correlation_id=message.properties["correlation_id"],
-                    serializer="json",
                     retry=True,
                     priority=4,
+                    serializer="ujson",
                 )
 
         def handle_config_request(self, message: Dict) -> NoReturn:
@@ -307,9 +311,9 @@ class Configuration:
                 exchange="",
                 routing_key=message.properties["reply_to"],
                 correlation_id=message.properties["correlation_id"],
-                serializer="json",
                 retry=True,
                 priority=4,
+                serializer="ujson",
             )
 
         def translate_learn_rule_msg_to_dicts(self, raw):
@@ -735,9 +739,9 @@ class Configuration:
                     exchange="",
                     routing_key=message.properties["reply_to"],
                     correlation_id=message.properties["correlation_id"],
-                    serializer="json",
                     retry=True,
                     priority=4,
+                    serializer="ujson",
                 )
 
         @staticmethod
@@ -897,9 +901,9 @@ class Configuration:
                         exchange="",
                         routing_key=message.properties["reply_to"],
                         correlation_id=message.properties["correlation_id"],
-                        serializer="json",
                         retry=True,
                         priority=4,
+                        serializer="ujson",
                     )
                     return
 
@@ -926,9 +930,9 @@ class Configuration:
                     exchange="",
                     routing_key=message.properties["reply_to"],
                     correlation_id=message.properties["correlation_id"],
-                    serializer="json",
                     retry=True,
                     priority=4,
+                    serializer="ujson",
                 )
 
         def handle_load_as_sets(self, message):
@@ -994,9 +998,9 @@ class Configuration:
                 exchange="",
                 routing_key=message.properties["reply_to"],
                 correlation_id=message.properties["correlation_id"],
-                serializer="json",
                 retry=True,
                 priority=4,
+                serializer="ujson",
             )
             # as-sets were resolved, update configuration
             if (not error) and done_as_set_translations:

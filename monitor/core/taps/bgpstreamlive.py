@@ -150,7 +150,7 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                                         msg,
                                         exchange=exchange,
                                         routing_key="update",
-                                        serializer="json",
+                                        serializer="ujson",
                                     )
                             else:
                                 log.warning("Invalid format message: {}".format(msg))

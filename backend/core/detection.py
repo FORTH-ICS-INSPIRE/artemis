@@ -1,5 +1,4 @@
 import ipaddress
-import json
 import logging
 import os
 import re
@@ -14,11 +13,12 @@ from typing import Tuple
 
 import pytricia
 import redis
-import yaml
+import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from rtrlib import RTRManager
@@ -39,7 +39,7 @@ from utils import REDIS_PORT
 from utils import RPKI_VALIDATOR_ENABLED
 from utils import RPKI_VALIDATOR_HOST
 from utils import RPKI_VALIDATOR_PORT
-from utils import SetEncoder
+from utils import TEST_ENV
 from utils import translate_asn_range
 from utils import translate_rfc2622
 
@@ -83,6 +83,11 @@ class HijackLogFilter(logging.Filter):
 mail_log.addFilter(HijackLogFilter())
 hij_log.addFilter(HijackLogFilter())
 
+# additional serializer for pg-amqp messages
+serialization.register(
+    "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
+)
+
 
 class Detection:
     """
@@ -123,6 +128,10 @@ class Detection:
             self.rules = None
             self.prefix_tree = None
             self.mon_num = 1
+
+            setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
+            if TEST_ENV == "true":
+                setattr(self, "publish_hijack_fun", self.publish_hijack_result_test)
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
@@ -208,15 +217,6 @@ class Detection:
                 max_priority=1,
                 consumer_arguments={"x-priority": 1},
             )
-            self.update_unhandled_queue = Queue(
-                "detection-update-unhandled",
-                exchange=self.update_exchange,
-                routing_key="unhandled",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
-            )
             self.hijack_ongoing_queue = Queue(
                 "detection-hijack-ongoing",
                 exchange=self.hijack_exchange,
@@ -247,21 +247,19 @@ class Detection:
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
                     prefetch_count=100,
-                ),
-                Consumer(
-                    queues=[self.update_unhandled_queue],
-                    on_message=self.handle_unhandled_bgp_updates,
-                    prefetch_count=100,
+                    accept=["ujson", "txtjson"],
                 ),
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
                     on_message=self.handle_ongoing_hijacks,
                     prefetch_count=10,
+                    accept=["ujson"],
                 ),
             ]
 
@@ -271,6 +269,7 @@ class Detection:
                 exchange=self.hijack_exchange,
                 routing_key="ongoing-request",
                 priority=1,
+                serializer="ujson",
             )
 
         def handle_config_notify(self, message: Dict) -> NoReturn:
@@ -292,6 +291,7 @@ class Detection:
                     exchange=self.hijack_exchange,
                     routing_key="ongoing-request",
                     priority=1,
+                    serializer="ujson",
                 )
 
         def config_request_rpc(self) -> NoReturn:
@@ -325,11 +325,13 @@ class Detection:
                     callback_queue,
                 ],
                 priority=4,
+                serializer="ujson",
             )
             with Consumer(
                 self.connection,
                 on_message=self.handle_config_request_reply,
                 queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.rules is None:
                     self.connection.drain_events()
@@ -414,16 +416,7 @@ class Detection:
             """
             Handles ongoing hijacks from the database.
             """
-            # log.debug('{} ongoing hijack events'.format(len(message.payload)))
-            message.ack()
-            for update in message.payload:
-                self.handle_bgp_update(update)
-
-        def handle_unhandled_bgp_updates(self, message: Dict) -> NoReturn:
-            """
-            Handles unhanlded bgp updates from the database in batches of 50.
-            """
-            # log.debug('{} unhandled events'.format(len(message.payload)))
+            log.debug("{} ongoing hijack events".format(len(message.payload)))
             message.ack()
             for update in message.payload:
                 self.handle_bgp_update(update)
@@ -438,7 +431,7 @@ class Detection:
                 monitor_event = message
             else:
                 message.ack()
-                monitor_event = json.loads(message.payload)
+                monitor_event = message.payload
                 monitor_event["path"] = monitor_event["as_path"]
                 monitor_event["timestamp"] = datetime(
                     *map(int, re.findall(r"\d+", monitor_event["timestamp"]))
@@ -575,14 +568,13 @@ class Detection:
 
                 if outdated_hijack:
                     try:
-                        outdated_hijack = yaml.safe_load(outdated_hijack)
+                        outdated_hijack = json.loads(outdated_hijack)
                         outdated_hijack["end_tag"] = "outdated"
                         mail_log.info(
                             "{}".format(
                                 json.dumps(
                                     hijack_log_field_formatter(outdated_hijack),
                                     indent=4,
-                                    cls=SetEncoder,
                                 )
                             ),
                             extra={
@@ -593,10 +585,7 @@ class Detection:
                         )
                         hij_log.info(
                             "{}".format(
-                                json.dumps(
-                                    hijack_log_field_formatter(outdated_hijack),
-                                    cls=SetEncoder,
-                                )
+                                json.dumps(hijack_log_field_formatter(outdated_hijack))
                             ),
                             extra={
                                 "community_annotation": outdated_hijack.get(
@@ -618,6 +607,7 @@ class Detection:
                     exchange=self.update_exchange,
                     routing_key="withdraw",
                     priority=0,
+                    serializer="ujson",
                 )
 
         @staticmethod
@@ -937,20 +927,27 @@ class Detection:
             try:
                 result = self.redis.get(redis_hijack_key)
                 if result:
-                    result = yaml.safe_load(result)
+                    result = json.loads(result)
                     result["time_started"] = min(
                         result["time_started"], hijack_value["time_started"]
                     )
                     result["time_last"] = max(
                         result["time_last"], hijack_value["time_last"]
                     )
+                    result["peers_seen"] = set(result["peers_seen"])
                     result["peers_seen"].update(hijack_value["peers_seen"])
+
+                    result["asns_inf"] = set(result["asns_inf"])
                     result["asns_inf"].update(hijack_value["asns_inf"])
+
                     # no update since db already knows!
                     result["monitor_keys"] = hijack_value["monitor_keys"]
                     self.comm_annotate_hijack(monitor_event, result)
                     result["outdated_parent"] = hijack_value["outdated_parent"]
+
+                    result["bgpupdate_keys"] = set(result["bgpupdate_keys"])
                     result["bgpupdate_keys"].add(monitor_event["key"])
+
                     result["rpki_status"] = hijack_value["rpki_status"]
                 else:
                     hijack_value["time_detected"] = time.time()
@@ -968,11 +965,7 @@ class Detection:
                     self.comm_annotate_hijack(monitor_event, result)
                     mail_log.info(
                         "{}".format(
-                            json.dumps(
-                                hijack_log_field_formatter(result),
-                                indent=4,
-                                cls=SetEncoder,
-                            )
+                            json.dumps(hijack_log_field_formatter(result), indent=4)
                         ),
                         extra={
                             "community_annotation": result.get(
@@ -980,7 +973,7 @@ class Detection:
                             )
                         },
                     )
-                redis_pipeline.set(redis_hijack_key, yaml.dump(result))
+                redis_pipeline.set(redis_hijack_key, json.dumps(result))
 
                 # store the origin, neighbor combination for this hijack BGP update
                 origin = None
@@ -1012,25 +1005,10 @@ class Detection:
                 redis_pipeline.execute()
 
                 # publish hijack
-                self.producer.publish(
-                    result,
-                    exchange=self.hijack_exchange,
-                    routing_key="update",
-                    serializer="yaml",
-                    priority=0,
-                )
+                self.publish_hijack_fun(result, redis_hijack_key)
 
-                self.producer.publish(
-                    result,
-                    exchange=self.hijack_hashing,
-                    routing_key=redis_hijack_key,
-                    serializer="yaml",
-                    priority=0,
-                )
                 hij_log.info(
-                    "{}".format(
-                        json.dumps(hijack_log_field_formatter(result), cls=SetEncoder)
-                    ),
+                    "{}".format(json.dumps(hijack_log_field_formatter(result))),
                     extra={
                         "community_annotation": result.get("community_annotation", "NA")
                     },
@@ -1053,6 +1031,7 @@ class Detection:
                 exchange=self.handled_exchange,
                 routing_key="update",
                 priority=1,
+                serializer="ujson",
             )
 
         def mark_outdated(self, hij_key: str, redis_hij_key: str) -> NoReturn:
@@ -1062,7 +1041,37 @@ class Detection:
             # log.debug('{}'.format(hij_key))
             msg = {"persistent_hijack_key": hij_key, "redis_hijack_key": redis_hij_key}
             self.producer.publish(
-                msg, exchange=self.hijack_exchange, routing_key="outdate", priority=1
+                msg,
+                exchange=self.hijack_exchange,
+                routing_key="outdate",
+                priority=1,
+                serializer="ujson",
+            )
+
+        def publish_hijack_result_production(self, result, redis_hijack_key):
+            self.producer.publish(
+                result,
+                exchange=self.hijack_hashing,
+                routing_key=redis_hijack_key,
+                priority=0,
+                serializer="ujson",
+            )
+
+        def publish_hijack_result_test(self, result, redis_hijack_key):
+            self.producer.publish(
+                result,
+                exchange=self.hijack_exchange,
+                routing_key="update",
+                priority=0,
+                serializer="ujson",
+            )
+
+            self.producer.publish(
+                result,
+                exchange=self.hijack_hashing,
+                routing_key=redis_hijack_key,
+                priority=0,
+                serializer="ujson",
             )
 
         def gen_implicit_withdrawal(self, monitor_event: Dict) -> NoReturn:
@@ -1089,7 +1098,7 @@ class Detection:
                     withdraw_msg,
                     exchange=self.update_exchange,
                     routing_key="update",
-                    serializer="json",
+                    serializer="ujson",
                 )
 
         def comm_annotate_hijack(self, monitor_event: Dict, hijack: Dict) -> NoReturn:

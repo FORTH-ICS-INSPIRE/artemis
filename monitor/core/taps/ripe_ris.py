@@ -1,5 +1,4 @@
 import argparse
-import json
 import os
 import time
 from copy import deepcopy
@@ -7,6 +6,7 @@ from copy import deepcopy
 import pytricia
 import redis
 import requests
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
@@ -175,16 +175,14 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                             norm_path_msg,
                                             exchange=exchange,
                                             routing_key="update",
-                                            serializer="json",
+                                            serializer="ujson",
                                         )
                                 else:
                                     log.warning(
                                         "Invalid format message: {}".format(msg)
                                     )
-                    except json.decoder.JSONDecodeError:
-                        log.exception("Message {}".format(data))
                     except Exception:
-                        log.exception("exception")
+                        log.exception("exception message {}".format(data))
                 log.warning("Iterator ran out of data; the connection will be retried")
             except Exception:
                 log.exception("server closed connection")

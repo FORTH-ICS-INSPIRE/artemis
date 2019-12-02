@@ -1,9 +1,9 @@
-import json
 import logging
 import time
 from xmlrpc.client import ServerProxy
 
 import requests
+import ujson as json
 from flask_jwt_extended import create_access_token
 from flask_security import current_user
 from webapp.utils import BACKEND_SUPERVISOR_URI

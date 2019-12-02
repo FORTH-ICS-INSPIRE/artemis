@@ -4,12 +4,21 @@ import time
 from multiprocessing import Process
 from xmlrpc.client import ServerProxy
 
+import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
 RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
@@ -79,7 +88,10 @@ def send():
                     msg_["key"] = "{}-{}".format(x, y)
                     msg_["prefix"] = "10.{}.{}.0/24".format(x, y)
                     producer.publish(
-                        msg_, exchange=exchange, routing_key="update", serializer="json"
+                        msg_,
+                        exchange=exchange,
+                        routing_key="update",
+                        serializer="ujson",
                     )
                     send_cnt += 1
     print("[+] Exit send")

@@ -188,6 +188,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: rpkiValidatorPort
+        - name: TEST_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: testEnv
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

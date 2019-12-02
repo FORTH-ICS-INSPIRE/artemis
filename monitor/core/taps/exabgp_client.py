@@ -140,12 +140,13 @@ class ExaBGP:
                                                         callback_queue,
                                                     ],
                                                     priority=4,
-                                                    serializer="json",
+                                                    serializer="ujson",
                                                 )
                                                 with Consumer(
                                                     connection,
                                                     on_message=self.handle_autoconf_update_goahead_reply,
                                                     queues=[callback_queue],
+                                                    accept=["ujson"],
                                                 ):
                                                     while not self.autoconf_goahead:
                                                         connection.drain_events()
@@ -153,7 +154,7 @@ class ExaBGP:
                                                 msg,
                                                 exchange=self.update_exchange,
                                                 routing_key="update",
-                                                serializer="json",
+                                                serializer="ujson",
                                             )
                                 else:
                                     log.warning(

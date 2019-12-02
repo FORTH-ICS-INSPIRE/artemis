@@ -1,9 +1,9 @@
-import json
 import signal
 import subprocess
 import time
 
 import pytricia
+import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -90,11 +90,13 @@ class Mitigation:
                     queues=[self.config_queue],
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.mitigate_queue],
                     on_message=self.handle_mitigation_request,
                     prefetch_count=1,
+                    accept=["ujson"],
                 ),
             ]
 
@@ -134,11 +136,13 @@ class Mitigation:
                     callback_queue,
                 ],
                 priority=4,
+                serializer="ujson",
             )
             with Consumer(
                 self.connection,
                 on_message=self.handle_config_request_reply,
                 queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.rules is None:
                     self.connection.drain_events()
@@ -215,6 +219,7 @@ class Mitigation:
                     exchange=self.mitigation_exchange,
                     routing_key="mit-start",
                     priority=2,
+                    serializer="ujson",
                 )
             else:
                 log.warn("no rule for hijack {}".format(hijack_event))

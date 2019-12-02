@@ -3,7 +3,7 @@ import os
 import time
 
 import psycopg2.extras
-import yaml
+import ujson as json
 
 
 def create_connect_db():
@@ -27,7 +27,7 @@ def create_connect_db():
 
 
 def get_hash(obj):
-    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+    return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
 
 def calculate_new_keys(cur):

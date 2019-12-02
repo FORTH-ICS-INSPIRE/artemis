@@ -1,6 +1,5 @@
 import copy
 import hashlib
-import json
 import logging.config
 import os
 import time
@@ -8,7 +7,9 @@ from datetime import datetime
 from datetime import timedelta
 from ipaddress import ip_network as str2ip
 
+import ujson as json
 import yaml
+from kombu import serialization
 
 HISTORIC = os.getenv("HISTORIC", "false")
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
@@ -21,13 +22,21 @@ RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
+
 
 def get_logger(path="/etc/artemis/logging.yaml"):
     if os.path.exists(path):
         with open(path, "r") as f:
             config = yaml.safe_load(f.read())
         logging.config.dictConfig(config)
-        log = logging.getLogger("taps_logger")
+        log = logging.getLogger("artemis_logger")
         log.info("Loaded configuration from {}".format(path))
     else:
         FORMAT = "%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s"
@@ -69,7 +78,7 @@ def key_generator(msg):
 
 
 def get_hash(obj):
-    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+    return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
 
 def ping_redis(redis_instance, timeout=5):

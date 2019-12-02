@@ -1,5 +1,4 @@
 import hashlib
-import json
 import logging.config
 import logging.handlers
 import os
@@ -8,7 +7,9 @@ import time
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
 
+import ujson as json
 import yaml
+from kombu import serialization
 
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
@@ -37,6 +38,14 @@ MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
 )
 RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
 ASN_REGEX = r"^AS(\d+)$"
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 class TLSSMTPHandler(SMTPHandler):
@@ -174,7 +183,7 @@ def dump_json(json_obj, filename):
 
 
 def get_hash(obj):
-    return hashlib.shake_128(yaml.dump(obj).encode("utf-8")).hexdigest(16)
+    return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
 
 def valid_prefix(input_prefix):

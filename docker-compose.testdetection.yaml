@@ -37,6 +37,7 @@ services:
             RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+            TEST_ENV: "true"
         volumes:
             - ./tester/detection/configs/:/etc/artemis/
             - ./tester/detection/supervisor.d/:/etc/supervisor/conf.d/

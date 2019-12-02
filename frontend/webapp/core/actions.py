@@ -1,15 +1,25 @@
 import difflib
 import logging
 
+import ujson as json
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
 from kombu import Queue
+from kombu import serialization
 from kombu import uuid
 from webapp.utils import RABBITMQ_URI
 
 log = logging.getLogger("artemis_logger")
+
+serialization.register(
+    "ujson",
+    json.dumps,
+    json.loads,
+    content_type="application/x-ujson",
+    content_encoding="utf-8",
+)
 
 
 def rmq_hijack_action(obj):
@@ -36,6 +46,7 @@ def rmq_hijack_action(obj):
                 exchange=exchange,
                 routing_key=obj["routing_key"],
                 priority=2,
+                serializer="ujson",
             )
 
 
@@ -78,9 +89,13 @@ class Learn_hijack_rule:
                     reply_to=callback_queue.name,
                     correlation_id=self.correlation_id,
                     priority=4,
+                    serializer="ujson",
                 )
             with Consumer(
-                connection, on_message=self.on_response, queues=[callback_queue]
+                connection,
+                on_message=self.on_response,
+                queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.response is None:
                     connection.drain_events()
@@ -123,9 +138,13 @@ class Comment_hijack:
                     reply_to=callback_queue.name,
                     correlation_id=self.correlation_id,
                     priority=4,
+                    serializer="ujson",
                 )
             with Consumer(
-                connection, on_message=self.on_response, queues=[callback_queue]
+                connection,
+                on_message=self.on_response,
+                queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.response is None:
                     connection.drain_events()
@@ -167,7 +186,10 @@ class Submit_new_config:
                         priority=4,
                     )
                 with Consumer(
-                    connection, on_message=self.on_response, queues=[callback_queue]
+                    connection,
+                    on_message=self.on_response,
+                    queues=[callback_queue],
+                    accept=["ujson"],
                 ):
                     while self.response is None:
                         connection.drain_events()
@@ -213,9 +235,13 @@ class Load_as_sets:
                     reply_to=callback_queue.name,
                     correlation_id=self.correlation_id,
                     priority=4,
+                    serializer="ujson",
                 )
                 with Consumer(
-                    connection, on_message=self.on_response, queues=[callback_queue]
+                    connection,
+                    on_message=self.on_response,
+                    queues=[callback_queue],
+                    accept=["ujson"],
                 ):
                     while self.response is None:
                         connection.drain_events()
@@ -263,9 +289,13 @@ class Hijacks_multiple_action:
                     reply_to=callback_queue.name,
                     correlation_id=self.correlation_id,
                     priority=4,
+                    serializer="ujson",
                 )
             with Consumer(
-                connection, on_message=self.on_response, queues=[callback_queue]
+                connection,
+                on_message=self.on_response,
+                queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.response is None:
                     connection.drain_events()

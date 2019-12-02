@@ -52,6 +52,7 @@ class Scheduler:
                         routing_key="pulse",
                         retry=True,
                         priority=3,
+                        serializer="ujson",
                     )
 
 

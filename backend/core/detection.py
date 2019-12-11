@@ -460,9 +460,7 @@ class Detection:
                     prefix_node = self.prefix_tree[ip_version][monitor_event["prefix"]]
                     monitor_event["matched_prefix"] = prefix_node["prefix"]
 
-                    path_hijacker = -1
-                    pol_hijacker = -1
-                    init_hij_dimensions = [
+                    final_hij_dimensions = [
                         "-",
                         "-",
                         "-",
@@ -470,6 +468,8 @@ class Detection:
                     ]  # prefix, path, dplane, policy
                     for prefix_node_conf in prefix_node["data"]["confs"]:
                         try:
+                            path_hijacker = -1
+                            pol_hijacker = -1
                             hij_dimensions = [
                                 "-",
                                 "-",
@@ -524,15 +524,14 @@ class Detection:
                                             break
                                 hij_dimension_index += 1
                             # check if dimension combination in hijack combinations for this rule,
-                            # but do not commit hijack yet (record the first hijack issue)
+                            # but do not commit hijack yet (record the last possible hijack issue)
                             if hij_dimensions in HIJACK_DIM_COMBINATIONS:
-                                if not is_hijack:
-                                    init_hij_dimensions = hij_dimensions[::]
-                                    is_hijack = True
-                                    # show pol hijacker only if the path hijacker is uncertain
-                                    hijacker = path_hijacker
-                                    if path_hijacker == -1 and pol_hijacker != -1:
-                                        hijacker = pol_hijacker
+                                final_hij_dimensions = hij_dimensions[::]
+                                is_hijack = True
+                                # show pol hijacker only if the path hijacker is uncertain
+                                hijacker = path_hijacker
+                                if path_hijacker == -1 and pol_hijacker != -1:
+                                    hijacker = pol_hijacker
                             # benign rule matching beats hijack detection
                             else:
                                 is_hijack = False
@@ -541,7 +540,7 @@ class Detection:
                             log.exception("exception")
                     if is_hijack:
                         try:
-                            hij_dimensions = init_hij_dimensions
+                            hij_dimensions = final_hij_dimensions
                             self.commit_hijack(monitor_event, hijacker, hij_dimensions)
                         except Exception:
                             log.exception("exception")

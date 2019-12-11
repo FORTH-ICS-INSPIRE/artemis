@@ -27,7 +27,7 @@
             "communities": [],
             "service": "a",
             "type": "A",
-            "path": [4, 3, 1005, 1000],
+            "path": [4, 1005, 1000],
             "prefix": "10.0.40.0/24",
             "peer_asn": 4
         },
@@ -48,10 +48,10 @@
             "type": "E|1|-|-",
             "active": true,
             "prefix": "10.0.40.0/24",
-            "asns_inf": [3, 4],
+            "asns_inf": [4],
             "hijack_as": 1005,
             "peers_seen": [4],
-            "num_asns_inf": 2,
+            "num_asns_inf": 1,
             "num_peers_seen": 1,
             "configured_prefix": "10.0.40.0/24"
         }
@@ -92,6 +92,26 @@
             "num_asns_inf": 2,
             "num_peers_seen": 1,
             "configured_prefix": "10.0.40.0/24"
+        }
+    },
+    {
+        "send": {
+            "key": "4",
+            "timestamp": 4,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [5, 1003, 1000],
+            "prefix": "10.0.40.0/24",
+            "peer_asn": 5
+        },
+        "detection_update_response": {
+            "key": "4",
+            "handled": true,
+            "matched_prefix": "10.0.40.0/24",
+            "origin_as": 1000,
+            "hijack_key": []
         }
     }
 ]

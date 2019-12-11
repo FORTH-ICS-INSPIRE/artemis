@@ -460,63 +460,91 @@ class Detection:
                     prefix_node = self.prefix_tree[ip_version][monitor_event["prefix"]]
                     monitor_event["matched_prefix"] = prefix_node["prefix"]
 
-                    try:
-                        path_hijacker = -1
-                        pol_hijacker = -1
-                        hij_dimensions = [
-                            "-",
-                            "-",
-                            "-",
-                            "-",
-                        ]  # prefix, path, dplane, policy
-                        hij_dimension_index = 0
-                        for func_dim in self.__hijack_dimension_checker_gen():
-                            if hij_dimension_index == 0:
-                                # prefix dimension
-                                for func_pref in func_dim():
-                                    hij_dimensions[hij_dimension_index] = func_pref(
-                                        monitor_event, prefix_node
-                                    )
-                                    if hij_dimensions[hij_dimension_index] != "-":
-                                        break
-                            elif hij_dimension_index == 1:
-                                # path type dimension
-                                for func_path in func_dim(len(monitor_event["path"])):
-                                    (
-                                        path_hijacker,
-                                        hij_dimensions[hij_dimension_index],
-                                    ) = func_path(monitor_event, prefix_node)
-                                    if hij_dimensions[hij_dimension_index] != "-":
-                                        break
-                            elif hij_dimension_index == 2:
-                                # data plane dimension
-                                for func_dplane in func_dim():
-                                    hij_dimensions[hij_dimension_index] = func_dplane(
-                                        monitor_event, prefix_node
-                                    )
-                                    if hij_dimensions[hij_dimension_index] != "-":
-                                        break
-                            elif hij_dimension_index == 3:
-                                # policy dimension
-                                for func_pol in func_dim(len(monitor_event["path"])):
-                                    (
-                                        pol_hijacker,
-                                        hij_dimensions[hij_dimension_index],
-                                    ) = func_pol(monitor_event, prefix_node)
-                                    if hij_dimensions[hij_dimension_index] != "-":
-                                        break
-                            hij_dimension_index += 1
-                        # check if dimension combination in hijack combinations
-                        # and commit hijack
-                        if hij_dimensions in HIJACK_DIM_COMBINATIONS:
-                            is_hijack = True
-                            # show pol hijacker only if the path hijacker is uncertain
-                            hijacker = path_hijacker
-                            if path_hijacker == -1 and pol_hijacker != -1:
-                                hijacker = pol_hijacker
+                    path_hijacker = -1
+                    pol_hijacker = -1
+                    init_hij_dimensions = [
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                    ]  # prefix, path, dplane, policy
+                    for prefix_node_conf in prefix_node["data"]["confs"]:
+                        try:
+                            hij_dimensions = [
+                                "-",
+                                "-",
+                                "-",
+                                "-",
+                            ]  # prefix, path, dplane, policy
+                            hij_dimension_index = 0
+                            for func_dim in self.__hijack_dimension_checker_gen():
+                                if hij_dimension_index == 0:
+                                    # prefix dimension
+                                    for func_pref in func_dim():
+                                        hij_dimensions[hij_dimension_index] = func_pref(
+                                            monitor_event, prefix_node, prefix_node_conf
+                                        )
+                                        if hij_dimensions[hij_dimension_index] != "-":
+                                            break
+                                elif hij_dimension_index == 1:
+                                    # path type dimension
+                                    for func_path in func_dim(
+                                        len(monitor_event["path"])
+                                    ):
+                                        (
+                                            path_hijacker,
+                                            hij_dimensions[hij_dimension_index],
+                                        ) = func_path(
+                                            monitor_event, prefix_node, prefix_node_conf
+                                        )
+                                        if hij_dimensions[hij_dimension_index] != "-":
+                                            break
+                                elif hij_dimension_index == 2:
+                                    # data plane dimension
+                                    for func_dplane in func_dim():
+                                        hij_dimensions[
+                                            hij_dimension_index
+                                        ] = func_dplane(
+                                            monitor_event, prefix_node, prefix_node_conf
+                                        )
+                                        if hij_dimensions[hij_dimension_index] != "-":
+                                            break
+                                elif hij_dimension_index == 3:
+                                    # policy dimension
+                                    for func_pol in func_dim(
+                                        len(monitor_event["path"])
+                                    ):
+                                        (
+                                            pol_hijacker,
+                                            hij_dimensions[hij_dimension_index],
+                                        ) = func_pol(
+                                            monitor_event, prefix_node, prefix_node_conf
+                                        )
+                                        if hij_dimensions[hij_dimension_index] != "-":
+                                            break
+                                hij_dimension_index += 1
+                            # check if dimension combination in hijack combinations for this rule,
+                            # but do not commit hijack yet (record the first hijack issue)
+                            if hij_dimensions in HIJACK_DIM_COMBINATIONS:
+                                if not is_hijack:
+                                    init_hij_dimensions = hij_dimensions[::]
+                                    is_hijack = True
+                                    # show pol hijacker only if the path hijacker is uncertain
+                                    hijacker = path_hijacker
+                                    if path_hijacker == -1 and pol_hijacker != -1:
+                                        hijacker = pol_hijacker
+                            # benign rule matching beats hijack detection
+                            else:
+                                is_hijack = False
+                                break
+                        except Exception:
+                            log.exception("exception")
+                    if is_hijack:
+                        try:
+                            hij_dimensions = init_hij_dimensions
                             self.commit_hijack(monitor_event, hijacker, hij_dimensions)
-                    except Exception:
-                        log.exception("exception")
+                        except Exception:
+                            log.exception("exception")
 
                 outdated_hijack = None
                 if not is_hijack and "hij_key" in monitor_event:
@@ -700,20 +728,29 @@ class Detection:
 
         @exception_handler(log)
         def detect_prefix_squatting_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> str:
             """
             Squatting hijack detection.
             """
-            for item in prefix_node["data"]["confs"]:
-                # check if there are origin_asns defined (even wildcards)
-                if item["origin_asns"]:
-                    return "-"
+            # check if there are origin_asns defined (even wildcards)
+            if prefix_node_conf["origin_asns"]:
+                return "-"
             return "Q"
 
         @exception_handler(log)
         def detect_prefix_subprefix_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> str:
             """
             Subprefix or exact prefix hijack detection.
@@ -728,88 +765,133 @@ class Detection:
 
         @exception_handler(log)
         def detect_path_type_0_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> Tuple[int, str]:
             """
             Origin hijack detection.
             """
             origin_asn = monitor_event["path"][-1]
-            for item in prefix_node["data"]["confs"]:
-                if origin_asn in item["origin_asns"] or item["origin_asns"] == [-1]:
-                    return (-1, "-")
+            if origin_asn in prefix_node_conf["origin_asns"] or prefix_node_conf[
+                "origin_asns"
+            ] == [-1]:
+                return (-1, "-")
             return (origin_asn, "0")
 
         @exception_handler(log)
         def detect_path_type_1_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> Tuple[int, str]:
             """
             Type-1 hijack detection.
             """
             origin_asn = monitor_event["path"][-1]
             first_neighbor_asn = monitor_event["path"][-2]
-            for item in prefix_node["data"]["confs"]:
-                # [] or [-1] neighbors means "allow everything"
-                if (
-                    origin_asn in item["origin_asns"] or item["origin_asns"] == [-1]
-                ) and (
-                    (not item["neighbors"])
-                    or item["neighbors"] == [-1]
-                    or first_neighbor_asn in item["neighbors"]
-                ):
-                    return (-1, "-")
+            # [] or [-1] neighbors means "allow everything"
+            if (
+                origin_asn in prefix_node_conf["origin_asns"]
+                or prefix_node_conf["origin_asns"] == [-1]
+            ) and (
+                (not prefix_node_conf["neighbors"])
+                or prefix_node_conf["neighbors"] == [-1]
+                or first_neighbor_asn in prefix_node_conf["neighbors"]
+            ):
+                return (-1, "-")
             return (first_neighbor_asn, "1")
 
         @exception_handler(log)
         def detect_path_type_N_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for type-N detection (not supported)
             return (-1, "-")
 
         @exception_handler(log)
         def detect_path_type_U_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for type-U detection (not supported)
             return (-1, "-")
 
         @exception_handler(log)
         def detect_dplane_blackholing_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> str:
             # Placeholder for blackholing detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_dplane_imposture_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> str:
             # Placeholder for imposture detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_dplane_mitm_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> str:
             # Placeholder for mitm detection  (not supported)
             return "-"
 
         @exception_handler(log)
         def detect_pol_leak_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> Tuple[int, str]:
             """
             Route leak hijack detection
             """
-            for item in prefix_node["data"]["confs"]:
-                if "no-export" in item["policies"]:
-                    return (monitor_event["path"][-2], "L")
+            if "no-export" in prefix_node_conf["policies"]:
+                return (monitor_event["path"][-2], "L")
             return (-1, "-")
 
         @exception_handler(log)
         def detect_pol_other_hijack(
-            self, monitor_event: Dict, prefix_node: Dict, *args, **kwargs
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
         ) -> Tuple[int, str]:
             # Placeholder for policy violation detection (not supported)
             return (-1, "-")

@@ -1,6 +1,25 @@
 # Changelog
 
-## [UNRELEASED] (Ajax) - YYYY-MM-DD
+## [UNRELEASED] (latest) - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- Added stderr output of supervisor processes on docker-compose logs (Please update your custom supervisor confs if using local_configs)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [1.4.0] (Ajax) - 2019-12-02
 ### Added
 - Grafana provisioning, env vars and 4 dashboards
   - Artemis::BGP Hijacks per prefix

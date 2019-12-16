@@ -9,6 +9,7 @@
 
 ### Fixed
 - Added stderr output of supervisor processes on docker-compose logs (Please update your custom supervisor confs if using local_configs)
+- Issue with multiple rules for same prefix(es) in detection
 
 ### Removed
 - TBD (removed a feature)

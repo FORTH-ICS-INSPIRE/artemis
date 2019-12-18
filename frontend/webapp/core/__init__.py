@@ -195,6 +195,9 @@ def jwt_auth():
     # if user is not logged in check parameters
     if not current_user.is_authenticated:
         data = request.get_json()
+        if not data:
+            resp = jsonify({"error": "wrong credentials"})
+            return resp, 401
         username = data["username"]
         password = data["password"]
         app.artemis_logger.info(username)
@@ -252,9 +255,9 @@ def overview():
     return render_template("/main/overview.htm", js_version=app.config["JS_VERSION"])
 
 
+@app.route("/proxy_api", methods=["GET", "POST"])
 @login_required
 @roles_accepted("admin", "user")
-@app.route("/proxy_api", methods=["GET", "POST"])
 def proxy_api():
     if request.method == "POST":
         data = json.loads(request.data.decode("utf-8"))

@@ -2,7 +2,7 @@
 
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- Added additional ports (8080, 8443) to nginx configuration for rootless docker support
 
 ### Changed
 - TBD (Changed existing functionality)
@@ -18,7 +18,7 @@
 - TBD (soon-to-be removed feature)
 
 ### Security
-- TBD (addressing vulnerability)
+- Secured "proxy_api" endpoint from unauthorized access. Thanks to @marcgweg for finding this issue
 
 ## [1.4.0] (Ajax) - 2019-12-02
 ### Added

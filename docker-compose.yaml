@@ -155,10 +155,11 @@ services:
             - postgrest
         networks:
             - artemis
-        expose:
-            - 80 # HTTP
-            - 443 # HTTPS
         ports:
+            # uncomment both lines for rootless
+            # - "8080:8080"
+            # - "8443:8443"
+            # comment both lines when running rootless
             - "80:80"
             - "443:443"
         volumes:

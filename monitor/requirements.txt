@@ -1,5 +1,5 @@
 Cython==0.29.3
-ipaddress==1.0.22
+ipaddress==1.0.23
 kombu==4.2.2.post1
 netaddr==0.7.19
 psycopg2==2.8.4

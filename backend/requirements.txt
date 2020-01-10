@@ -2,7 +2,7 @@ cffi==1.13.2
 Cython==0.29.3
 enum34==1.1.6
 ipaddress==1.0.23
-kombu==4.2.2.post1
+kombu==4.6.7
 netaddr==0.7.19
 psycopg2==2.8.4
 pytricia==1.0.0

@@ -1,4 +1,4 @@
-kombu==4.2.2.post1
+kombu==4.6.7
 psycopg2==2.8.4
 PyYAML==5.3
 redis==3.1.0

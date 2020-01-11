@@ -1,4 +1,4 @@
-Cython==0.29.3
+Cython==0.29.14
 ipaddress==1.0.23
 kombu==4.6.7
 netaddr==0.7.19

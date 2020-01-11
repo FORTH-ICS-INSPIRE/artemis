@@ -11,5 +11,5 @@ slacker-log-handler==1.7.1
 socketIO-client==0.7.2
 socketIO-client-nexus==0.7.6
 ujson==1.35
-websocket-client==0.54.0
+websocket-client==0.57.0
 wheel==0.33.6

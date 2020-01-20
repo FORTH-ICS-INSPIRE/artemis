@@ -2,7 +2,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Coverage Status](https://codecov.io/gh/FORTH-ICS-INSPIRE/artemis/branch/master/graph/badge.svg)](https://codecov.io/gh/FORTH-ICS-INSPIRE/artemis)
-[![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg?logo=discord&style=flat)](https://discord.gg/8UerJvh)
+[![Slack](https://img.shields.io/badge/chat-slack-purple.svg?logo=slack&style=flat)](https://join.slack.com/t/bgpartemis/shared_invite/enQtOTA0MTM4OTMxNzI5LTM5MzBjZDU4NWEwNDcwMjBiNWFiNDI5ZWU4MDViYTJmNDgwZTEyMTNjYjk5NTU2OGZmODY5MzgxOTllN2U0MTk)
 [![Mailing list](https://img.shields.io/badge/mail-ARTEMIS-green.svg)](http://lists.ics.forth.gr/mailman/listinfo/artemis)
 ![Release](https://img.shields.io/github/release/FORTH-ICS-INSPIRE/artemis.svg?style=flat)
 [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/LICENSE)
@@ -188,7 +188,7 @@ Please check [this file](CONTRIBUTING.md).
 
 We follow a custom Agile approach for our development.
 
-If you need to contact us about a bug, an issue or a question you have; you can reach us over at our [Discord Community Server](https://discord.gg/8UerJvh). Otherwise, you can contact the ARTEMIS developers via e-mail using the [ARTEMIS mailing list](http://lists.ics.forth.gr/mailman/listinfo/artemis).
+If you need to contact us about a bug, an issue or a question you have; you can reach us over at our [Slack Community Channel](https://join.slack.com/t/bgpartemis/shared_invite/enQtOTA0MTM4OTMxNzI5LTM5MzBjZDU4NWEwNDcwMjBiNWFiNDI5ZWU4MDViYTJmNDgwZTEyMTNjYjk5NTU2OGZmODY5MzgxOTllN2U0MTk). Otherwise, you can contact the ARTEMIS developers via e-mail using the [ARTEMIS mailing list](http://lists.ics.forth.gr/mailman/listinfo/artemis).
 
 ## Versioning
 

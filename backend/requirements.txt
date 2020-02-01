@@ -9,7 +9,7 @@ pytricia==1.0.0
 PyYAML==5.3
 redis==3.3.11
 ruamel.yaml==0.16.5
-six==1.13.0
+six==1.14.0
 slacker-log-handler==1.7.1
 ujson==1.35
 watchdog==0.9.0

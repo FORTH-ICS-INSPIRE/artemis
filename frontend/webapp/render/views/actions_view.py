@@ -229,7 +229,7 @@ def delete_user():
 @login_required
 def set_new_password():
     form = ChangePasswordForm(request.form)
-    user = app.security.datastore.get_user(session["user_id"])
+    user = app.security.datastore.get_user(session["_user_id"])
     old_password = user.password
     _status = "empty"
 

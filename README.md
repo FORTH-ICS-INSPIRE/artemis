@@ -173,7 +173,7 @@ docker-compose -f docker-compose.yaml -f docker-compose.<other_service>.yaml -..
 
 ## Demo
 
-A running demo of ARTEMIS based on the configuration of our home institute (FORTH) can be found [here](http://www.inspire.edu.gr/artemis/demo/).
+A running demo of ARTEMIS based on the configuration of our home institute (FORTH) can be found [here](https://demo.bgpartemis.org).
 You can access the demo as a guest (non-admin) user by using the following credentials:
 * username: "guest"
 * password: "guest@artemis2018"

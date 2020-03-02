@@ -10,6 +10,7 @@
 ### Fixed
 - Added stderr output of supervisor processes on docker-compose logs (Please update your custom supervisor confs if using local_configs)
 - Issue with multiple rules for same prefix(es) in detection
+- Update RIPE Stat API call for ASN to country mapping
 
 ### Removed
 - TBD (removed a feature)

@@ -11,6 +11,7 @@
 - Added stderr output of supervisor processes on docker-compose logs (Please update your custom supervisor confs if using local_configs)
 - Issue with multiple rules for same prefix(es) in detection
 - Update RIPE Stat API call for ASN to country mapping
+- Minor issue with deprecated version of routinator (upgraded to 0.6.4)
 
 ### Removed
 - TBD (removed a feature)

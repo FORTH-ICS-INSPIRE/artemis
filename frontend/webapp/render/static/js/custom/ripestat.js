@@ -5,7 +5,7 @@ function getName(ASN){
 }
 
 function getCountry(ASN){
-  return fetch('https://stat.ripe.net/data/geoloc/data.json?resource=AS' + ASN).then((response) => response.json())
+  return fetch('https://stat.ripe.net/data/maxmind-geo-lite-announced-by-as/data.json?resource=AS' + ASN).then((response) => response.json())
 }
 
 function getAbuse(ASN){
@@ -55,11 +55,13 @@ function asn_map_to_name(){ // eslint-disable-line no-unused-vars
                         data_['name'] = (name.data.names[ASN_int]);
 
                         var countries_set = new Set();
-                        for(var country in countries.data.locations){
-                            if(countries.data.locations[country].country.includes('-')){
-                                countries_set.add(countries.data.locations[country].country.split('-')[0]);
-                            }else{
-                                countries_set.add(countries.data.locations[country].country);
+                        for(var resource in countries.data.located_resources){
+                            for(var location in countries.data.located_resources[resource].locations){
+                                if(countries.data.located_resources[resource].locations[location].country.includes('-')){
+                                    countries_set.add(countries.data.located_resources[resource].locations[location].country.split('-')[0]);
+                                }else{
+                                    countries_set.add(countries.data.located_resources[resource].locations[location].country);
+                                }
                             }
                         }
                         data_['countries'] = Array.from(countries_set).join(', ');

@@ -5,11 +5,11 @@ netaddr==0.7.19
 psycopg2==2.8.4
 pytricia==1.0.0
 PyYAML==5.3
-redis==3.3.11
+redis==3.4.0
 ruamel.yaml==0.16.5
 slacker-log-handler==1.7.1
 socketIO-client==0.7.2
 socketIO-client-nexus==0.7.6
 ujson==1.35
 websocket-client==0.57.0
-wheel==0.33.6
+wheel==0.34.2

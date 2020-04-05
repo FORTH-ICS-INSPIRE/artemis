@@ -362,8 +362,6 @@ class AutoconfTester:
 
         self.waitProcess("listener", 0)  # 0 STOPPED
         self.waitProcess("clock", 0)  # 0 STOPPED
-        self.waitProcess("detection", 0)  # 0 STOPPED
-        self.waitProcess("mitigation", 0)  # 0 STOPPED
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED

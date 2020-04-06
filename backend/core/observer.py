@@ -112,11 +112,6 @@ class Observer:
                     ):
                         while self.response is None:
                             self.connection.drain_events()
-                    log.info(
-                        "Received response from configuration module with status '{}'".format(
-                            str(self.response["status"])
-                        )
-                    )
 
                     if self.response["status"] == "accepted":
                         text = "new configuration accepted:\n{}".format(changes)

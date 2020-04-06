@@ -357,7 +357,9 @@ class AutoconfTester:
 
             connection.close()
 
+        print("[+] Sleeping for 5 seconds...")
         time.sleep(5)
+        print("[+] Instructing all processes to stop...")
         self.supervisor.supervisor.stopAllProcesses()
 
         self.waitProcess("listener", 0)  # 0 STOPPED
@@ -365,6 +367,7 @@ class AutoconfTester:
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
+        print("[+] All processes (listener, clock, conf, db and observer) are stopped.")
 
 
 if __name__ == "__main__":

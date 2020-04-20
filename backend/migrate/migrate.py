@@ -50,7 +50,7 @@ def create_connect_db():
             _password = os.getenv("DB_PASS", "Art3m1s")
 
             _db_conn = psycopg2.connect(
-                dbname=_db_name, user=_user, host=_host, port=_port, password=_password
+                application_name="backend-migrate", dbname=_db_name, user=_user, host=_host, port=_port, password=_password
             )
         except Exception:
             print("Exception couldn't connect to db.\nRetrying in 5 seconds...")

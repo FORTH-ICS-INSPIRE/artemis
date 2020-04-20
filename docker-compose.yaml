@@ -220,7 +220,7 @@ services:
         expose:
             - ${API_PORT}
         environment:
-            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=postgrest
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
     pg-amqp-bridge:
@@ -234,7 +234,7 @@ services:
         networks:
             - artemis
         environment:
-            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=pg-amqp-bridge
             - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
             - BRIDGE_CHANNELS=events:amq.direct
             # - RUST_LOG=debug
@@ -253,7 +253,7 @@ services:
         expose:
             - ${HASURA_PORT}
         environment:
-            HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=graphql
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_GUI}
             HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'

@@ -60,6 +60,7 @@ class AutoconfTester:
                 _password = os.getenv("DB_PASS", "Art3m1s")
 
                 db_conn = psycopg2.connect(
+                    application_name="autoconf-tester",
                     dbname=_db_name,
                     user=_user,
                     host=_host,

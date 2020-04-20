@@ -110,6 +110,7 @@ class Database:
 
             # DB variables
             self.ro_db = DB(
+                application_name="backend-readonly",
                 user=DB_USER,
                 password=DB_PASS,
                 host=DB_HOST,
@@ -120,6 +121,7 @@ class Database:
                 readonly=True,
             )
             self.wo_db = DB(
+                application_name="backend-write",
                 user=DB_USER,
                 password=DB_PASS,
                 host=DB_HOST,

@@ -37,7 +37,7 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: dbUri
-        image: postgrest/postgrest:v5.2.0
+        image: postgrest/postgrest:v7.0.0
         name: postgrest
         resources: {}
       restartPolicy: Always

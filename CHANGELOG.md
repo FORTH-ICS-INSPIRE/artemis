@@ -3,6 +3,7 @@
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
 - Added additional ports (8080, 8443) to nginx configuration for rootless docker support
+- Added application names for all postgres connections
 
 ### Changed
 - TBD (Changed existing functionality)

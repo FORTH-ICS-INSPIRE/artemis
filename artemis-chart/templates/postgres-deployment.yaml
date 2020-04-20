@@ -54,7 +54,7 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: dbUser
-        image: timescale/timescaledb:1.1.0-pg10
+        image: timescale/timescaledb:1.7.0-pg12
         name: postgres
         resources: {}
         volumeMounts:

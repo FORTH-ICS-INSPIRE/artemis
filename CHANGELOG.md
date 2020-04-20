@@ -29,6 +29,9 @@
 ### Security
 - Secured "proxy_api" endpoint from unauthorized access. Thanks to @marcgweg for finding this issue
 
+### Backwards Incompatible Changes
+- :rotating_light: Upgraded timescaledb version to latest release (v1.7.0). For older versions you must start from clean database and restore afterwards.
+
 ## [1.4.0] (Ajax) - 2019-12-02
 ### Added
 - Grafana provisioning, env vars and 4 dashboards

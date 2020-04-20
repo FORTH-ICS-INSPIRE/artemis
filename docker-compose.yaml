@@ -186,7 +186,7 @@ services:
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
-        image: timescale/timescaledb:1.1.0-pg10
+        image: timescale/timescaledb:1.7.0-pg12
         container_name: postgres
         restart: always
         networks:
@@ -203,7 +203,7 @@ services:
         volumes:
             - ./postgres-data-current:/var/lib/postgresql/data
             - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
-            - ./postgres-data-backup/:/tmp/
+            - ./postgres-data-backup/:/backup/
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/

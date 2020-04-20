@@ -54,7 +54,7 @@ services:
         volumes:
             - ./testing/detection/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
-        image: timescale/timescaledb:1.1.0-pg10
+        image: timescale/timescaledb:1.7.0-pg12
         container_name: postgres
         restart: always
         networks:

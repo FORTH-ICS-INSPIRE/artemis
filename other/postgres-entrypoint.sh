@@ -3,7 +3,7 @@
 if [[ "${DB_BACKUP}" == "true" ]]; then
     cat > /etc/periodic/daily/backup <<EOF
 #!/bin/sh
-pg_dump -d $POSTGRES_DB -U $POSTGRES_USER -F t -f /tmp/db.tar > /tmp/db.log 2>&1
+pg_dump -d $POSTGRES_DB -U $POSTGRES_USER -F t -f /backup/db.tar > /backup/db.log 2>&1
 EOF
     chmod +x /etc/periodic/daily/backup
 else

@@ -52,6 +52,7 @@ class Tester:
                 _password = os.getenv("DB_PASS", "Art3m1s")
 
                 db_conn = psycopg2.connect(
+                    application_name="detection-tester",
                     dbname=_db_name,
                     user=_user,
                     host=_host,

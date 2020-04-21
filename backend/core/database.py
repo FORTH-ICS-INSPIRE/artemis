@@ -110,6 +110,7 @@ class Database:
 
             # DB variables
             self.ro_db = DB(
+                application_name="backend-readonly",
                 user=DB_USER,
                 password=DB_PASS,
                 host=DB_HOST,
@@ -120,6 +121,7 @@ class Database:
                 readonly=True,
             )
             self.wo_db = DB(
+                application_name="backend-write",
                 user=DB_USER,
                 password=DB_PASS,
                 host=DB_HOST,
@@ -1523,7 +1525,7 @@ class Database:
                         "LEFT JOIN bgp_updates AS wit ON (hij.key=ANY(wit.hijack_key))) WHERE "
                         "ann.timestamp >= data.v3 AND wit.timestamp >= data.v3 AND "
                         "ann.type='A' AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type='W' "
-                        "ORDER BY wit_time DESC LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) "
+                        "ORDER BY wit_time DESC, hij.key LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) "
                         "AS removed WHERE hijacks.key=removed.key"
                     )
                     self.wo_db.execute_values(

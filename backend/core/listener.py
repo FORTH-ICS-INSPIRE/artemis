@@ -37,7 +37,12 @@ def create_connect_db():
             _password = os.getenv("DB_PASS", "Art3m1s")
 
             _db_conn = psycopg2.connect(
-                dbname=_db_name, user=_user, host=_host, port=_port, password=_password
+                application_name="backend-listener",
+                dbname=_db_name,
+                user=_user,
+                host=_host,
+                port=_port,
+                password=_password,
             )
         except BaseException as e:
             time.sleep(1)

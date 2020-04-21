@@ -14,6 +14,7 @@ log = get_logger()
 class DB:
     def __init__(
         self,
+        application_name,
         user,
         password,
         host,
@@ -23,6 +24,7 @@ class DB:
         autocommit=False,
         readonly=False,
     ):
+        self.application_name = application_name
         self.user = user
         self.password = password
         self.host = host
@@ -39,6 +41,7 @@ class DB:
         if not self._connection:
             try:
                 self._connection = psycopg2.connect(
+                    application_name=self.application_name,
                     user=self.user,
                     password=self.password,
                     host=self.host,

@@ -11,7 +11,9 @@ services:
             - artemis
         expose:
             - ${BACKEND_SUPERVISOR_PORT}
+            - ${REDIS_PORT}
         environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -22,21 +24,25 @@ services:
             DB_PORT: ${DB_PORT}
             DB_NAME: ${DB_NAME}
             DB_VERSION: ${DB_VERSION}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
-            GUI_ENABLED: ${GUI_ENABLED}
+            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
+            GUI_ENABLED: "false"
+            BULK_TIMER: 0.1
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-            HISTORIC: ${HISTORIC}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
+            RPKI_VALIDATOR_ENABLED: "true"
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
         volumes:
-            - ./benchmark/supervisor.d/:/etc/supervisor/conf.d/
-            - ./benchmark/configs/:/etc/artemis/
+            - ./testing/rpki/configs/:/etc/artemis/
+            - ./testing/rpki/supervisor.d/:/etc/supervisor/conf.d/
+            - ./testing/entrypoint.test:/root/entrypoint
+            - ./testing/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -45,10 +51,6 @@ services:
             - artemis
         expose:
             - ${RABBITMQ_PORT}
-            # - 15672 management port
-        environment:
-            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
@@ -63,15 +65,10 @@ services:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
-            DB_BACKUP: ${DB_BACKUP}
-            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
-            DB_HIJACK_DORMANT: ${DB_HIJACK_DORMANT}
         volumes:
-            - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
-            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./tester/detection/db/data/tables.sql:/docker-entrypoint-initdb.d/data/tables.sql
-            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
-        entrypoint: ["./postgres-entrypoint.sh"]
+            - ./testing/rpki/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./testing/rpki/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./testing/rpki/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
@@ -83,12 +80,10 @@ services:
             - artemis
         environment:
             - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-            - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+            - AMQP_URI=amqp://${RABBITMQ_HOST}//
             - BRIDGE_CHANNELS=events:amq.direct
-            # - RUST_LOG=debug
-            # - RUST_BACKTRACE=1
         volumes:
-            - ./benchmark/wait-for:/root/wait-for
+            - ./backend/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
 
 networks:

@@ -4,12 +4,12 @@ import unittest
 
 ENV_FILE = ".env"
 TABLES_VERSION_FILE = "other/db/data/tables.sql"
-TABLES_TEST_VERSION_FILE = "tester/detection/db/data/tables.sql"
+TABLES_TEST_VERSION_FILE = "testing/detection/db/data/tables.sql"
 K8S_VALUES_FILE = "artemis-chart/values.yaml"
 CONFIGMAP_FILE = "artemis-chart/templates/configmap.yaml"
 COMPOSE_FILE = "docker-compose.yaml"
 DEPLOYMENT_FILE = "artemis-chart/templates/{}-deployment.yaml"
-TESTCAFE_FILE = "testcafe/tests/simple-flow.js"
+TESTCAFE_FILE = "testing/testcafe/tests/simple-flow.js"
 
 
 def get_match_from_file(fp, query):

@@ -23,8 +23,8 @@ jobs:
     before_script:
       - docker-compose pull postgres
     script:
-      - wget -O postgres-data-current.tar.gz --no-check-certificate 'https://docs.google.com/uc?export=download&id=1UwtIp7gF5uO5PfhTbOAMPpDLJ4H55m7a'
-      - tar xzvf postgres-data-current.tar.gz
+      - wget -q -O postgres-data-current.tar.gz --no-check-certificate 'https://docs.google.com/uc?export=download&id=1UwtIp7gF5uO5PfhTbOAMPpDLJ4H55m7a'
+      - tar xzf postgres-data-current.tar.gz
       - docker-compose up -d postgres
       - sleep 10
       - docker-compose logs postgres | grep "database system is ready to accept connections"

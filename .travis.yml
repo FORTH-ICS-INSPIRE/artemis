@@ -11,13 +11,28 @@ branches:
     - master
 jobs:
   include:
-  - stage: check
+  - stage: checks
+    name: PreCommitCheck
     install:
     - python -m pip install pre-commit
     - pre-commit install
     script:
     - pre-commit run --all-files
-  - stage: build and push docker
+  - name: MigrationCheck
+    install: []
+    before_script:
+      - docker-compose pull postgres
+    script:
+      - wget -O postgres-data-current.tar.gz --no-check-certificate 'https://docs.google.com/uc?export=download&id=1UwtIp7gF5uO5PfhTbOAMPpDLJ4H55m7a'
+      - tar xzvf postgres-data-current.tar.gz
+      - docker-compose up -d postgres
+      - sleep 10
+      - docker-compose logs postgres | grep "database system is ready to accept connections"
+    after_success:
+      - docker-compose logs postgres
+    after_failure:
+      - docker-compose logs postgres
+  - stage: build and push containers
     name: backend
     install: []
     before_script:
@@ -39,7 +54,7 @@ jobs:
     script:
     - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
-  - stage: run
+  - stage: run tests
     name: TestCafe
     install: []
     before_script:
@@ -116,19 +131,6 @@ jobs:
     - codecov
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
-  - name: MigrationCheck
-    install: []
-    before_script:
-      - docker-compose pull postgres
-    script:
-      - mkdir -p postgres-data-current
-      - wget -O postgres-data-current.tar.gz --no-check-certificate 'https://docs.google.com/uc?export=download&id=1UwtIp7gF5uO5PfhTbOAMPpDLJ4H55m7a'
-      - tar xzvf postgres-data-current.tar.gz
-      - docker-compose up -d postgres
-      - sleep 10
-      - docker-compose logs postgres | grep "database system is ready to accept connections"
-    after_failure:
-      - docker-compose logs postgres
 notifications:
   slack:
     secure: es0zP6IAgEJbdvJz8apGlQAO0SOnMMuQwTbItiXTUjA60Tfn2gcB7vk8n60Y/pEsLn9Z9Kk9WJp7/S9jZiKITpzLxSabo0+PF+DangvNUZMmJ9NV7oJOxGVQS94Ape2pHs6x4SUpP6JkadIU5ZxXbjVr8ZIPL2VfdclPlMBsM/K3ZNgd5cPLnPKsPuKn9WtTFDm/oGaWh/V6Y9T7/l/kNZrj6K7IcrI2rv4+LKLZDNicaQIN59M4Qt4niaETYNqZuqtWewHZH+KlXKzukFZ92qUDEG/3TBvqQDqimbjAXZkltso1MXBnSblrKNb1b00WysGwhT89zPeovhjcrHZB9vH9mKGNp5qoiBjVGzKYHLptitNqupP2ReUaRqKonRAw43iAN+8SSfrmCtyQGDv60fWLheUw+fbK8IRMrAYIG9t20/upDbrPTxU741Cqzgfy5fygnAuqmRi5AkckymJte5bf/SwQsmf5IFpc6FP6fcGZT6yL1zf55tsi8pXpq80SLokcH2bO17wEHSJxuNPOxNgJQjugY/VX58owZgHgYn1sLGpxrKlAwuQgs1+Av16TRGhCjyQPgWRN9inva/AwNEtA+ljp4PqzTk7oBI9MLaX3osU8Rm6bfMI2KNwcWpfcbztkYwZQLR4v45M91QnAE9UCbbkg4epgTli2RKnHCyQ=

@@ -183,7 +183,7 @@ services:
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         entrypoint: ["./postgres-entrypoint.sh"]
     postgrest:
-        image: postgrest/postgrest:v5.2.0
+        image: postgrest/postgrest:v7.0.0
         container_name: postgrest
         restart: always
         depends_on:

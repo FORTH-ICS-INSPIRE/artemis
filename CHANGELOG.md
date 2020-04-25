@@ -9,6 +9,7 @@
 ### Changed
 - Upgraded nginx to latest release (v1.17)
 - Upgrade rabbitmq to latest release (v3.8.3)
+- Upgrade postgrest to latest release version (v7.0.0)
 
 ### Fixed
 - LIMIT query planner bug (http://datamangling.com/2014/01/17/limit-1-and-performance-in-a-postgres-query/)

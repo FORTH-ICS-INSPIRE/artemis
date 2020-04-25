@@ -104,7 +104,7 @@ jobs:
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - docker build -t artemis_benchmark benchmark
+    - docker build -t artemis_benchmark testing/benchmark
     - docker-compose -f docker-compose.benchmark.yaml up -d
     script:
     - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"

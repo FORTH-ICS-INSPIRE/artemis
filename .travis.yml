@@ -65,9 +65,9 @@ jobs:
     - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
     - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
     script:
-    - docker-compose -f .travis/docker-compose.testcafe.yaml up --abort-on-container-exit
+    - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
     after_failure:
-    - docker-compose -f .travis/docker-compose.testcafe.yaml logs
+    - docker-compose -f docker-compose.testcafe.yaml logs
   - name: TestDetection
     install:
     - pip install codecov
@@ -75,14 +75,14 @@ jobs:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_detection_testing testing/detection
-    - docker-compose -f .travis/docker-compose.testdetection.yaml up -d
+    - docker-compose -f docker-compose.testdetection.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
     after_success:
     - sh convert_coverage.sh
     - codecov
     after_failure:
-    - docker-compose -f .travis/docker-compose.testdetection.yaml logs
+    - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
     install:
     - pip install codecov
@@ -90,14 +90,14 @@ jobs:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_autoconf_testing testing/autoconf
-    - docker-compose -f .travis/docker-compose.testautoconf.yaml up -d
+    - docker-compose -f docker-compose.testautoconf.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
     after_success:
     - sh convert_coverage.sh
     - codecov
     after_failure:
-    - docker-compose -f .travis/docker-compose.testautoconf.yaml logs
+    - docker-compose -f docker-compose.testautoconf.yaml logs
   - name: Benchmark
     if: type == pull_request
     install: []
@@ -105,7 +105,7 @@ jobs:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_benchmark benchmark
-    - docker-compose -f .travis/docker-compose.benchmark.yaml up -d
+    - docker-compose -f docker-compose.benchmark.yaml up -d
     script:
     - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
@@ -123,14 +123,14 @@ jobs:
     - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
     - docker build -t artemis_rpki_testing testing/rpki
     - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
-    - docker-compose -f .travis/docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
+    - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
     after_success:
     - sh convert_coverage.sh
     - codecov
     after_failure:
-    - docker-compose -f .travis/docker-compose.testrpki.yaml logs
+    - docker-compose -f docker-compose.testrpki.yaml logs
 notifications:
   slack:
     secure: es0zP6IAgEJbdvJz8apGlQAO0SOnMMuQwTbItiXTUjA60Tfn2gcB7vk8n60Y/pEsLn9Z9Kk9WJp7/S9jZiKITpzLxSabo0+PF+DangvNUZMmJ9NV7oJOxGVQS94Ape2pHs6x4SUpP6JkadIU5ZxXbjVr8ZIPL2VfdclPlMBsM/K3ZNgd5cPLnPKsPuKn9WtTFDm/oGaWh/V6Y9T7/l/kNZrj6K7IcrI2rv4+LKLZDNicaQIN59M4Qt4niaETYNqZuqtWewHZH+KlXKzukFZ92qUDEG/3TBvqQDqimbjAXZkltso1MXBnSblrKNb1b00WysGwhT89zPeovhjcrHZB9vH9mKGNp5qoiBjVGzKYHLptitNqupP2ReUaRqKonRAw43iAN+8SSfrmCtyQGDv60fWLheUw+fbK8IRMrAYIG9t20/upDbrPTxU741Cqzgfy5fygnAuqmRi5AkckymJte5bf/SwQsmf5IFpc6FP6fcGZT6yL1zf55tsi8pXpq80SLokcH2bO17wEHSJxuNPOxNgJQjugY/VX58owZgHgYn1sLGpxrKlAwuQgs1+Av16TRGhCjyQPgWRN9inva/AwNEtA+ljp4PqzTk7oBI9MLaX3osU8Rm6bfMI2KNwcWpfcbztkYwZQLR4v45M91QnAE9UCbbkg4epgTli2RKnHCyQ=

@@ -167,7 +167,7 @@ services:
             # uncomment after Step 2 of README
             - ./local_configs/frontend/certs/:/etc/nginx/certs/
     rabbitmq:
-        image: rabbitmq:3.7.8-management-alpine
+        image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq
         restart: always
         networks:

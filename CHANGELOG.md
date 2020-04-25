@@ -4,6 +4,7 @@
 ### Added
 - Added additional ports (8080, 8443) to nginx configuration for rootless docker support
 - Added application names for all postgres connections
+- Added database migration check between latest release and current version
 
 ### Changed
 - TBD (Changed existing functionality)

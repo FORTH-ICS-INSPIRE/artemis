@@ -35,8 +35,8 @@ services:
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
         volumes:
-            - ./benchmark/supervisor.d/:/etc/supervisor/conf.d/
-            - ./benchmark/configs/:/etc/artemis/
+            - ./testing/benchmark/supervisor.d/:/etc/supervisor/conf.d/
+            - ./testing/benchmark/configs/:/etc/artemis/
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -69,7 +69,7 @@ services:
         volumes:
             - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./tester/detection/db/data/tables.sql:/docker-entrypoint-initdb.d/data/tables.sql
+            - ./testing/detection/db/data/tables.sql:/docker-entrypoint-initdb.d/data/tables.sql
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         entrypoint: ["./postgres-entrypoint.sh"]
     pg-amqp-bridge:
@@ -88,7 +88,7 @@ services:
             # - RUST_LOG=debug
             # - RUST_BACKTRACE=1
         volumes:
-            - ./benchmark/wait-for:/root/wait-for
+            - ./testing/benchmark/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
 
 networks:

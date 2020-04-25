@@ -39,10 +39,10 @@ services:
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
         volumes:
-            - ./tester/rpki/configs/:/etc/artemis/
-            - ./tester/rpki/supervisor.d/:/etc/supervisor/conf.d/
-            - ./tester/entrypoint.test:/root/entrypoint
-            - ./tester/.coveragerc:/root/core/.coveragerc
+            - ./testing/rpki/configs/:/etc/artemis/
+            - ./testing/rpki/supervisor.d/:/etc/supervisor/conf.d/
+            - ./testing/entrypoint.test:/root/entrypoint
+            - ./testing/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -66,9 +66,9 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
-            - ./tester/rpki/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./tester/rpki/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./tester/rpki/db/libs/:/docker-entrypoint-initdb.d/libs/
+            - ./testing/rpki/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./testing/rpki/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./testing/rpki/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge

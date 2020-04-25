@@ -11,13 +11,28 @@ branches:
     - master
 jobs:
   include:
-  - stage: check
+  - stage: checks
+    name: PreCommitCheck
     install:
     - python -m pip install pre-commit
     - pre-commit install
     script:
     - pre-commit run --all-files
-  - stage: build and push docker
+  - name: MigrationCheck
+    install: []
+    before_script:
+      - docker-compose pull postgres
+    script:
+      - wget -q -O postgres-data-current.tar.gz --no-check-certificate 'https://docs.google.com/uc?export=download&id=1UwtIp7gF5uO5PfhTbOAMPpDLJ4H55m7a'
+      - tar xzf postgres-data-current.tar.gz
+      - docker-compose up -d postgres
+      - sleep 10
+      - docker-compose logs postgres | grep "database system is ready to accept connections"
+    after_success:
+      - docker-compose logs postgres
+    after_failure:
+      - docker-compose logs postgres
+  - stage: build and push containers
     name: backend
     install: []
     before_script:
@@ -39,7 +54,7 @@ jobs:
     script:
     - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
-  - stage: run
+  - stage: run tests
     name: TestCafe
     install: []
     before_script:
@@ -59,7 +74,7 @@ jobs:
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - docker build -t artemis_detection_testing tester/detection
+    - docker build -t artemis_detection_testing testing/detection
     - docker-compose -f docker-compose.testdetection.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
@@ -74,7 +89,7 @@ jobs:
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - docker build -t artemis_autoconf_testing tester/autoconf
+    - docker build -t artemis_autoconf_testing testing/autoconf
     - docker-compose -f docker-compose.testautoconf.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
@@ -89,7 +104,7 @@ jobs:
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - docker build -t artemis_benchmark benchmark
+    - docker build -t artemis_benchmark testing/benchmark
     - docker-compose -f docker-compose.benchmark.yaml up -d
     script:
     - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
@@ -106,7 +121,7 @@ jobs:
     - sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
     - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
     - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
-    - docker build -t artemis_rpki_testing tester/rpki
+    - docker build -t artemis_rpki_testing testing/rpki
     - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
     - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
     script:

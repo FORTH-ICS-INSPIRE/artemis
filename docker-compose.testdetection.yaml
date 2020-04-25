@@ -39,10 +39,10 @@ services:
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
         volumes:
-            - ./tester/detection/configs/:/etc/artemis/
-            - ./tester/detection/supervisor.d/:/etc/supervisor/conf.d/
-            - ./tester/entrypoint.test:/root/entrypoint
-            - ./tester/.coveragerc:/root/core/.coveragerc
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./testing/detection/supervisor.d/:/etc/supervisor/conf.d/
+            - ./testing/entrypoint.test:/root/entrypoint
+            - ./testing/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq
@@ -52,7 +52,7 @@ services:
         expose:
             - ${RABBITMQ_PORT}
         volumes:
-            - ./tester/detection/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
+            - ./testing/detection/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
         image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
@@ -66,9 +66,9 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
-            - ./tester/detection/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./tester/detection/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./tester/detection/db/libs/:/docker-entrypoint-initdb.d/libs/
+            - ./testing/detection/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./testing/detection/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./testing/detection/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge

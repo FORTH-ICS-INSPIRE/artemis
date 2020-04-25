@@ -39,10 +39,10 @@ services:
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
         volumes:
-            - ./tester/autoconf/configs/:/etc/artemis/
-            - ./tester/autoconf/supervisor.d/:/etc/supervisor/conf.d/
-            - ./tester/entrypoint.test:/root/entrypoint
-            - ./tester/.coveragerc:/root/core/.coveragerc
+            - ./testing/autoconf/configs/:/etc/artemis/
+            - ./testing/autoconf/supervisor.d/:/etc/supervisor/conf.d/
+            - ./testing/entrypoint.test:/root/entrypoint
+            - ./testing/.coveragerc:/root/core/.coveragerc
     rabbitmq:
         image: rabbitmq:3.7.8-management-alpine
         container_name: rabbitmq

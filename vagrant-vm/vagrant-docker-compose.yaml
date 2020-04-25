@@ -143,7 +143,7 @@ services:
             - ./local_configs/frontend/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
     nginx:
-        image: nginx:1.15-alpine
+        image: nginx:1.17-alpine
         container_name: nginx
         restart: always
         depends_on:

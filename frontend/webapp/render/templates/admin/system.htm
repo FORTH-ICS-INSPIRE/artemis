@@ -285,7 +285,7 @@
                 $("#conf_timestamp").html("Last Update: " + transform_date_to_local(data["view_configs"][0]["timestamp"]))
                 valid_conf = data["view_configs"][0]["raw_config"];
                 valid_comment = data["view_configs"][0]["comment"];
-                editor.setValue($("#code_yaml").val());
+                //editor.setValue($("#code_yaml").val());
                 editor.options.readOnly = true;
                 comment_editor.setValue($("#code_config_comment_box").val());
                 comment_editor.options.readOnly = true;

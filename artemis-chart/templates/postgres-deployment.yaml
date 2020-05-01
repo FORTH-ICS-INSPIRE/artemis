@@ -71,7 +71,7 @@ spec:
         - mountPath: /var/lib/postgresql/data/
           name: postgres-pvc
           subPath: postgres-data
-        - mountPath: /tmp/
+        - mountPath: /backup/
           name: postgres-pvc
           subPath: postgres-backup
       restartPolicy: Always

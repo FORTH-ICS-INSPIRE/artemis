@@ -65,7 +65,7 @@ class Scheduler:
                             exchange=self.db_clock_exchange,
                             routing_key="pulse",
                             retry=True,
-                            priority=2,
+                            priority=3,
                             serializer="ujson",
                         )
                         self.clock = 0

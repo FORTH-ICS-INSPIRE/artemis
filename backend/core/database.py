@@ -14,6 +14,9 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from utils import AUTO_IGNORE_INTERVAL
+from utils import AUTO_IGNORE_NUM_ASES_INFECTED
+from utils import AUTO_IGNORE_NUM_PEERS_SEEN
 from utils import BACKEND_SUPERVISOR_URI
 from utils import DB_HOST
 from utils import DB_NAME
@@ -1694,6 +1697,48 @@ class Database:
             if str_ != "":
                 log.debug("{}".format(str_))
 
+        def auto_ignore_check(self):
+            if AUTO_IGNORE_INTERVAL <= 0:
+                return
+            try:
+                # fetch ongoing hijack events
+                query = (
+                    "SELECT time_started, time_last, num_peers_seen, "
+                    "num_asns_inf, key, prefix, hijack_as, type, time_detected, "
+                    "configured_prefix, timestamp_of_config, community_annotation, rpki_status "
+                    "FROM hijacks WHERE active = true"
+                )
+
+                entries = self.ro_db.execute(query)
+
+                # check which of them should be auto-ignored
+                time_now = int(time.time())
+                for entry in entries:
+                    time_last_updated = int(entry[1].timestamp())
+                    num_peers_seen = int(entry[2])
+                    num_asns_inf = int(entry[3])
+                    hij_key = entry[4]
+                    prefix = entry[5]
+                    hijack_as = entry[6]
+                    hij_type = entry[7]
+                    if (
+                        (time_now - time_last_updated > AUTO_IGNORE_INTERVAL)
+                        and (num_peers_seen <= AUTO_IGNORE_NUM_PEERS_SEEN)
+                        and (num_asns_inf <= AUTO_IGNORE_NUM_ASES_INFECTED)
+                    ):
+                        redis_hijack_key = redis_key(prefix, hijack_as, hij_type)
+                        # if ongoing, clear redis
+                        if self.redis.sismember("persistent-keys", hij_key):
+                            purge_redis_eph_pers_keys(
+                                self.redis, redis_hijack_key, hij_key
+                            )
+                        self.wo_db.execute(
+                            "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;",
+                            (hij_key,),
+                        )
+            except Exception:
+                log.exception("exception")
+
         def _scheduler_instruction(self, message):
             message.ack()
             msg_ = message.payload
@@ -1701,6 +1746,8 @@ class Database:
                 self._update_bulk()
             # elif msg_["op"] == "send_unhandled":
             #     self._retrieve_unhandled(msg_["amount"])
+            elif msg_["op"] == "auto_ignore_check":
+                self.auto_ignore_check()
             else:
                 log.warning(
                     "Received uknown instruction from scheduler: {}".format(msg_)

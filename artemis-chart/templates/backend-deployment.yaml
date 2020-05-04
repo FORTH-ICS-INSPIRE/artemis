@@ -193,6 +193,21 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: testEnv
+        - name: AUTO_IGNORE_NUM_ASES_INFECTED
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: autoIgnoreNumAsesInfected
+        - name: AUTO_IGNORE_NUM_PEERS_SEEN
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: autoIgnoreNumPeersSeen
+        - name: AUTO_IGNORE_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: autoIgnoreInterval
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

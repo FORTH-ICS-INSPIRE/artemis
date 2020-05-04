@@ -49,3 +49,6 @@ data:
   rpkiValidatorHost: {{ .Values.rpkiValidatorHost | default "routinator" | quote }}
   rpkiValidatorPort: {{ .Values.rpkiValidatorPort | default "3323" | quote }}
   testEnv: {{ .Values.testEnv | default "false" | quote }}
+  autoIgnoreNumAsesInfected: {{ .Values.autoIgnoreNumAsesInfected | default "0" | quote }}
+  autoIgnoreNumPeersSeen: {{ .Values.autoIgnoreNumPeersSeen | default "0" | quote }}
+  autoIgnoreInterval: {{ .Values.autoIgnoreInterval | default "0" | quote }}

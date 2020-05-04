@@ -38,6 +38,9 @@ services:
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
+            AUTO_IGNORE_NUM_ASES_INFECTED: ${AUTO_IGNORE_NUM_ASES_INFECTED}
+            AUTO_IGNORE_NUM_PEERS_SEEN: ${AUTO_IGNORE_NUM_PEERS_SEEN}
+            AUTO_IGNORE_INTERVAL: ${AUTO_IGNORE_INTERVAL}
         volumes:
             - ./testing/autoconf/configs/:/etc/artemis/
             - ./testing/autoconf/supervisor.d/:/etc/supervisor/conf.d/

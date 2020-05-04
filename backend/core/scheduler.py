@@ -1,10 +1,10 @@
-import os
 import time
 
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
 from utils import AUTO_IGNORE_INTERVAL
+from utils import BULK_TIMER
 from utils import get_logger
 from utils import RABBITMQ_URI
 
@@ -28,10 +28,10 @@ class Scheduler:
 
     class Worker:
         def __init__(self, connection):
-            self.clock = 0
+            self.clock = 0.0
             self.connection = connection
             # Time in secs to gather entries to perform a bulk operation
-            self.time_to_wait_bulk = float(os.getenv("BULK_TIMER", 1))
+            self.time_to_wait_bulk = BULK_TIMER
             # Time in secs to check for hijack alerts to be auto-ignored
             self.time_to_wait_auto_ignore = AUTO_IGNORE_INTERVAL
 

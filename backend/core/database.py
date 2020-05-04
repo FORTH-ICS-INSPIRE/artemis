@@ -1722,7 +1722,7 @@ class Database:
                     hijack_as = entry[6]
                     hij_type = entry[7]
                     if (
-                        (time_now - time_last_updated > AUTO_IGNORE_INTERVAL)
+                        (time_now - time_last_updated >= AUTO_IGNORE_INTERVAL)
                         and (num_peers_seen <= AUTO_IGNORE_NUM_PEERS_SEEN)
                         and (num_asns_inf <= AUTO_IGNORE_NUM_ASES_INFECTED)
                     ):

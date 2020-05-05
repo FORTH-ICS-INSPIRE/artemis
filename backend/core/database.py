@@ -222,6 +222,15 @@ class Database:
                 "mitigation", type="direct", durable=False, delivery_mode=1
             )
 
+            self.module_state_exchange = Exchange(
+                "module-state",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+            self.module_state_exchange.declare()
+
             # QUEUES
             self.update_queue = Queue(
                 "db-bgp-update",
@@ -356,6 +365,15 @@ class Database:
                 max_priority=2,
                 consumer_arguments={"x-priority": 2},
             )
+            self.module_loaded_queue = Queue(
+                "state-module-loaded",
+                exchange=self.module_state_exchange,
+                routing_key="loading",
+                durable=False,
+                auto_delete=True,
+                max_priority=2,
+                consumer_arguments={"x-priority": 2},
+            )
 
             self.config_request_rpc()
 
@@ -451,6 +469,12 @@ class Database:
                     prefetch_count=1,
                     accept=["ujson"],
                 ),
+                Consumer(
+                    queues=[self.module_loaded_queue],
+                    on_message=self.handle_module_loaded,
+                    prefetch_count=1,
+                    accept=["ujson"],
+                ),
             ]
 
         def set_modules_to_intended_state(self):
@@ -508,6 +532,12 @@ class Database:
             ):
                 while self.rules is None:
                     self.connection.drain_events()
+
+        def handle_module_loaded(self, message):
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            message.ack()
+            # msg_ = message.payload
+            # TODO implement DB logic
 
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))

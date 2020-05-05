@@ -313,7 +313,7 @@ class Detection:
                 queues=[callback_queue],
                 accept=["ujson"],
             ):
-                while not self.loading_change_ack:
+                while not self.signal_loading_ack:
                     self.connection.drain_events()
                 self.signal_loading_ack = False
 

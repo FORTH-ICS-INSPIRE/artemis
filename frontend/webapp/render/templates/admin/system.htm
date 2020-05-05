@@ -254,9 +254,9 @@
                     }
                     clean_data.push(data[elem]);
                     if(group in agg_data){
-                        agg_data[group] = agg_data[group] && data[elem]["running"];
+                        agg_data[group] = agg_data[group] && data[elem]["running"] && data[elem]["loading"];
                     }else{
-                        agg_data[group] = data[elem]["running"];
+                        agg_data[group] = data[elem]["running"] && data[elem]["loading"];
                     }
                 }
                 clean_data.sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
@@ -269,12 +269,12 @@
                     }
                     var result = aggregate_status_of_modules_no_index(clean_data, group);
 
-                    if(result[2] == "on"){
-                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-success"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
-                    }else if(result[2] == "off"){
-                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-danger"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
+                    if(result[3] == "on"){
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-success"> Active <span class="badge badge-light">' + result[0] + '/' + result[2] +'</span></button>');
+                    }else if(result[3] == "off"){
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-danger"> Active <span class="badge badge-light">' + result[0] + '/' + result[2] +'</span></button>');
                     }else{
-                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-warning"> Active <span class="badge badge-light">' + result[0] + '/' + result[1] +'</span></button>');
+                        $("#module_" + group + "_instances_running").html('<button type="button" class="btn btn-warning"> Active <span class="badge badge-light">' + result[0] + '/' + result[2] +'</span></button>');
                     }
                 }
             }

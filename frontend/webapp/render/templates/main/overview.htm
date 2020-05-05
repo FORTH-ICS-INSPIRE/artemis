@@ -394,17 +394,17 @@
                     html_code.push(calculate_time_passed(seconds_elapsed));
                     html_code.push('</time_passed></div></div>');
                 }else if(obj.running == "multiple"){
-                    if(obj.multiple_status[2] == "on"){
+                    if(obj.multiple_status[3] == "on"){
                         html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">');
-                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[2]);
                         html_code.push('</span></button></div>');
-                    }else if(obj.multiple_status[2] == "off"){
+                    }else if(obj.multiple_status[3] == "off"){
                         html_code.push('<button type="button" class="btn btn-danger btn-sm"> On <span class="badge badge-light">');
-                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[2]);
                         html_code.push('</span></button></div>');
                     }else{
                         html_code.push('<button type="button" class="btn btn-warning btn-sm"> On <span class="badge badge-light">');
-                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[2]);
                         html_code.push('</span></button></div>');
                     }
                     html_code.push('<div class="col-lg-8"><a id="view_multiple_');

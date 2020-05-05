@@ -172,9 +172,7 @@ class Configuration:
                 consumer_arguments={"x-priority": 4},
             )
 
-            self.signal_loading(True)
             log.info("started")
-            self.signal_loading(False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection

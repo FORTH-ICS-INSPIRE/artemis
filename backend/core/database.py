@@ -459,6 +459,12 @@ class Database:
                     prefetch_count=1,
                     accept=["ujson"],
                 ),
+                Consumer(
+                    queues=[self.module_loading_queue],
+                    on_message=self.handle_module_loading,
+                    prefetch_count=1,
+                    accept=["ujson"],
+                ),
             ]
 
         def set_modules_to_intended_state(self):
@@ -517,17 +523,10 @@ class Database:
                 while self.rules is None:
                     self.connection.drain_events()
 
-        def signal_loading(self, status=False):
-            msg = {"module": "database", "loading": status}
-            self.handle_module_loading(msg, True)
-
-        def handle_module_loading(self, message, self_orig=False):
-            if not self_orig:
-                # log.debug('message: {}\npayload: {}'.format(message, message.payload))
-                message.ack()
-                msg_ = message.payload
-            else:
-                msg_ = message
+        def handle_module_loading(self, message):
+            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+            message.ack()
+            msg_ = message.payload
             try:
                 module = msg_["module"]
                 loading = msg_["loading"]
@@ -536,16 +535,24 @@ class Database:
             except Exception:
                 log.exception("exception")
             finally:
-                if not self_orig:
-                    self.producer.publish(
-                        "",
-                        exchange="",
-                        routing_key=message.properties["reply_to"],
-                        correlation_id=message.properties["correlation_id"],
-                        retry=True,
-                        priority=4,
-                        serializer="ujson",
-                    )
+                self.producer.publish(
+                    "",
+                    exchange="",
+                    routing_key=message.properties["reply_to"],
+                    correlation_id=message.properties["correlation_id"],
+                    retry=True,
+                    priority=4,
+                    serializer="ujson",
+                )
+
+        def signal_loading(self, status=False):
+            try:
+                module = "database"
+                loading = status
+                query = "UPDATE process_states SET loading=%s WHERE name=%s;"
+                self.wo_db.execute(query, (loading, module))
+            except Exception:
+                log.exception("exception")
 
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -824,6 +831,7 @@ class Database:
 
         def handle_config_request_reply(self, message):
             message.ack()
+            self.signal_loading(True)
             log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -857,6 +865,7 @@ class Database:
             self.set_modules_to_intended_state()
 
             log.info("Database initiated, configured and running.")
+            self.signal_loading(False)
 
         def handle_hijack_ongoing_request(self, message):
             message.ack()

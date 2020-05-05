@@ -1,3 +1,4 @@
 kombu==4.6.7
 psycopg2==2.8.4
+redis==3.4.0
 ujson==1.35

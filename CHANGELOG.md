@@ -5,6 +5,7 @@
 - Added additional ports (8080, 8443) to nginx configuration for rootless docker support
 - Added application names for all postgres connections
 - Added database migration check between latest release and current version
+- Auto-ignore mechanism and env variables
 
 ### Changed
 - Upgraded nginx to latest release (v1.17)

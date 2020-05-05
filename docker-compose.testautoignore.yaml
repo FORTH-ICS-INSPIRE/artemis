@@ -38,14 +38,15 @@ services:
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
-            AUTO_IGNORE_NUM_ASES_INFECTED: 10
+            AUTO_IGNORE_NUM_ASES_INFECTED: 3
             AUTO_IGNORE_NUM_PEERS_SEEN: 2
-            AUTO_IGNORE_INTERVAL: 60
+            AUTO_IGNORE_INTERVAL: 10
         volumes:
-            - ./testing/autoconf/configs/:/etc/artemis/
-            - ./testing/autoconf/supervisor.d/:/etc/supervisor/conf.d/
+            - ./testing/autoignore/configs/:/etc/artemis/
+            - ./testing/autoignore/supervisor.d/:/etc/supervisor/conf.d/
             - ./testing/entrypoint.test:/root/entrypoint
             - ./testing/.coveragerc:/root/core/.coveragerc
+            - ./testing/tester.py:/root/tester.py
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq
@@ -69,9 +70,9 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
         volumes:
-            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
+            - ./testing/autoignore/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./testing/autoignore/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./testing/autoignore/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge

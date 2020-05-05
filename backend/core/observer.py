@@ -5,6 +5,7 @@ import time
 import ujson as json
 from kombu import Connection
 from kombu import Consumer
+from kombu import Exchange
 from kombu import Producer
 from kombu import Queue
 from kombu import serialization
@@ -62,11 +63,33 @@ class Observer:
         def __init__(self, d, fn, connection):
             super().__init__()
             self.connection = connection
+            self.module_state_exchange = Exchange(
+                "module-state",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+            self.module_state_exchange.declare()
+            self.signal_loading("start")
             self.response = None
             self.correlation_id = None
             self.path = "{}/{}".format(d, fn)
             with open(self.path, "r") as f:
                 self.content = f.readlines()
+            self.signal_loading("end")
+
+        def signal_loading(self, status="end"):
+            with Producer(self.connection) as producer:
+                msg = {"module": "observer", "loading": status}
+                producer.publish(
+                    msg,
+                    exchange=self.module_state_exchange,
+                    routing_key="loading",
+                    retry=True,
+                    priority=2,
+                    serializer="ujson",
+                )
 
         def on_response(self, message):
             message.ack()

@@ -61,6 +61,14 @@ class Mitigation:
             self.config_exchange = Exchange(
                 "config", type="direct", durable=False, delivery_mode=1
             )
+            self.module_state_exchange = Exchange(
+                "module-state",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+            self.module_state_exchange.declare()
 
             # QUEUES
             self.config_queue = Queue(
@@ -82,7 +90,9 @@ class Mitigation:
                 consumer_arguments={"x-priority": 2},
             )
 
+            self.signal_loading("start")
             self.config_request_rpc()
+            self.signal_loading("end")
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -100,14 +110,27 @@ class Mitigation:
                 ),
             ]
 
+        def signal_loading(self, status="end"):
+            msg = {"module": "mitigation", "loading": status}
+            self.producer.publish(
+                msg,
+                exchange=self.module_state_exchange,
+                routing_key="loading",
+                retry=True,
+                priority=2,
+                serializer="ujson",
+            )
+
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
+            self.signal_loading("start")
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
                 self.timestamp = raw["timestamp"]
                 self.rules = raw.get("rules", [])
                 self.init_mitigation()
+            self.signal_loading("end")
 
         def config_request_rpc(self):
             self.correlation_id = uuid()

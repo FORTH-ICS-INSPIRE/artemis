@@ -137,6 +137,15 @@ class Configuration:
             )
             self.config_exchange.declare()
 
+            self.module_state_exchange = Exchange(
+                "module-state",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+            self.module_state_exchange.declare()
+
             # QUEUES
             self.config_modify_queue = Queue(
                 "config-modify-queue",
@@ -169,7 +178,9 @@ class Configuration:
                 consumer_arguments={"x-priority": 4},
             )
 
+            self.signal_loading("start")
             log.info("started")
+            self.signal_loading("end")
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
@@ -207,6 +218,17 @@ class Configuration:
                 ),
             ]
 
+        def signal_loading(self, status="end"):
+            msg = {"module": "configuration", "loading": status}
+            self.producer.publish(
+                msg,
+                exchange=self.module_state_exchange,
+                routing_key="loading",
+                retry=True,
+                priority=2,
+                serializer="ujson",
+            )
+
         def handle_config_modify(self, message: Dict) -> NoReturn:
             """
             Consumer for Config-Modify messages that parses and checks
@@ -216,6 +238,7 @@ class Configuration:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
+            self.signal_loading("start")
             raw_ = message.payload
 
             # Case received config from Frontend with comment
@@ -298,6 +321,7 @@ class Configuration:
                     priority=4,
                     serializer="ujson",
                 )
+            self.signal_loading("end")
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """

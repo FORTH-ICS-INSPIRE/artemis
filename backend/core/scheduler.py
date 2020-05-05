@@ -39,8 +39,32 @@ class Scheduler:
                 delivery_mode=1,
             )
             self.db_clock_exchange.declare()
+
+            self.module_state_exchange = Exchange(
+                "module-state",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+            self.module_state_exchange.declare()
+
+            self.signal_loading("start")
             log.info("started")
+            self.signal_loading("end")
             self._db_clock_send()
+
+        def signal_loading(self, status="end"):
+            with Producer(self.connection) as producer:
+                msg = {"module": "clock", "loading": status}
+                producer.publish(
+                    msg,
+                    exchange=self.module_state_exchange,
+                    routing_key="loading",
+                    retry=True,
+                    priority=2,
+                    serializer="ujson",
+                )
 
         def _db_clock_send(self):
             with Producer(self.connection) as producer:

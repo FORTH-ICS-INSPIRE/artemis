@@ -129,36 +129,6 @@ class Detection:
             self.prefix_tree = None
             self.mon_num = 1
 
-            setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
-            if TEST_ENV == "true":
-                setattr(self, "publish_hijack_fun", self.publish_hijack_result_test)
-
-            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-            ping_redis(self.redis)
-
-            self.rtrmanager = None
-            if RPKI_VALIDATOR_ENABLED == "true":
-                while True:
-                    try:
-                        self.rtrmanager = RTRManager(
-                            RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                        )
-                        self.rtrmanager.start()
-                        log.info(
-                            "Connected to RPKI VALIDATOR '{}:{}'".format(
-                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                            )
-                        )
-                        break
-                    except Exception:
-                        log.info(
-                            "Could not connect to RPKI VALIDATOR '{}:{}'".format(
-                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                            )
-                        )
-                        log.info("Retrying RTR connection in 5 seconds...")
-                        time.sleep(5)
-
             # EXCHANGES
             self.update_exchange = Exchange(
                 "bgp-update",
@@ -207,6 +177,15 @@ class Detection:
                 "amq.direct", type="direct", durable=True, delivery_mode=1
             )
 
+            self.module_state_exchange = Exchange(
+                "module-state",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+            self.module_state_exchange.declare()
+
             # QUEUES
             self.update_queue = Queue(
                 "detection-update-update",
@@ -236,8 +215,41 @@ class Detection:
                 consumer_arguments={"x-priority": 3},
             )
 
+            self.signal_loading("start")
+
+            setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
+            if TEST_ENV == "true":
+                setattr(self, "publish_hijack_fun", self.publish_hijack_result_test)
+
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+            ping_redis(self.redis)
+
+            self.rtrmanager = None
+            if RPKI_VALIDATOR_ENABLED == "true":
+                while True:
+                    try:
+                        self.rtrmanager = RTRManager(
+                            RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                        )
+                        self.rtrmanager.start()
+                        log.info(
+                            "Connected to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        break
+                    except Exception:
+                        log.info(
+                            "Could not connect to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        log.info("Retrying RTR connection in 5 seconds...")
+                        time.sleep(5)
+
             self.config_request_rpc()
             log.info("started")
+            self.signal_loading("end")
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
@@ -272,6 +284,17 @@ class Detection:
                 serializer="ujson",
             )
 
+        def signal_loading(self, status="end"):
+            msg = {"module": "detection", "loading": status}
+            self.producer.publish(
+                msg,
+                exchange=self.module_state_exchange,
+                routing_key="loading",
+                retry=True,
+                priority=2,
+                serializer="ujson",
+            )
+
         def handle_config_notify(self, message: Dict) -> NoReturn:
             """
             Consumer for Config-Notify messages that come
@@ -280,6 +303,7 @@ class Detection:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
+            self.signal_loading("start")
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
                 self.timestamp = raw["timestamp"]
@@ -293,6 +317,7 @@ class Detection:
                     priority=1,
                     serializer="ujson",
                 )
+            self.signal_loading("end")
 
         def config_request_rpc(self) -> NoReturn:
             """

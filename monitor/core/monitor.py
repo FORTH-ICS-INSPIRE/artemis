@@ -72,6 +72,15 @@ class Monitor:
                 "config", type="direct", durable=False, delivery_mode=1
             )
 
+            self.module_state_exchange = Exchange(
+                "module-state",
+                channel=connection,
+                type="direct",
+                durable=False,
+                delivery_mode=1,
+            )
+            self.module_state_exchange.declare()
+
             # QUEUES
             self.config_queue = Queue(
                 "monitor-config-notify",
@@ -83,12 +92,25 @@ class Monitor:
                 consumer_arguments={"x-priority": 2},
             )
 
+            self.signal_loading("start")
             self.config_request_rpc()
 
             # setup Redis monitor listeners
             self.setup_redis_mon_listeners()
 
             log.info("started")
+            self.signal_loading("end")
+
+        def signal_loading(self, status="end"):
+            msg = {"module": "configuration", "loading": status}
+            self.producer.publish(
+                msg,
+                exchange=self.module_state_exchange,
+                routing_key="loading",
+                retry=True,
+                priority=2,
+                serializer="ujson",
+            )
 
         def setup_redis_mon_listeners(self):
             def redis_event_handler(msg):

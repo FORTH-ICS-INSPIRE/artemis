@@ -365,8 +365,8 @@ class Database:
                 max_priority=2,
                 consumer_arguments={"x-priority": 2},
             )
-            self.module_loaded_queue = Queue(
-                "state-module-loaded",
+            self.module_loading_queue = Queue(
+                "state-module-loading",
                 exchange=self.module_state_exchange,
                 routing_key="loading",
                 durable=False,
@@ -470,8 +470,8 @@ class Database:
                     accept=["ujson"],
                 ),
                 Consumer(
-                    queues=[self.module_loaded_queue],
-                    on_message=self.handle_module_loaded,
+                    queues=[self.module_loading_queue],
+                    on_message=self.handle_module_loading,
                     prefetch_count=1,
                     accept=["ujson"],
                 ),
@@ -536,7 +536,8 @@ class Database:
         def handle_module_loaded(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             message.ack()
-            # msg_ = message.payload
+            msg_ = message.payload
+            log.info(msg_)
             # TODO implement DB logic
 
         def handle_bgp_update(self, message):

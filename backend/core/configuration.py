@@ -178,9 +178,9 @@ class Configuration:
                 consumer_arguments={"x-priority": 4},
             )
 
-            self.signal_loading("start")
+            self.signal_loading(True)
             log.info("started")
-            self.signal_loading("end")
+            self.signal_loading(False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
@@ -218,7 +218,7 @@ class Configuration:
                 ),
             ]
 
-        def signal_loading(self, status="end"):
+        def signal_loading(self, status=False):
             msg = {"module": "configuration", "loading": status}
             self.producer.publish(
                 msg,
@@ -238,7 +238,7 @@ class Configuration:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading("start")
+            self.signal_loading(True)
             raw_ = message.payload
 
             # Case received config from Frontend with comment
@@ -321,7 +321,7 @@ class Configuration:
                     priority=4,
                     serializer="ujson",
                 )
-            self.signal_loading("end")
+            self.signal_loading(False)
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """

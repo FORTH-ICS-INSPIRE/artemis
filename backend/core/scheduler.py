@@ -49,12 +49,12 @@ class Scheduler:
             )
             self.module_state_exchange.declare()
 
-            self.signal_loading("start")
+            self.signal_loading(True)
             log.info("started")
-            self.signal_loading("end")
+            self.signal_loading(False)
             self._db_clock_send()
 
-        def signal_loading(self, status="end"):
+        def signal_loading(self, status=False):
             with Producer(self.connection) as producer:
                 msg = {"module": "clock", "loading": status}
                 producer.publish(

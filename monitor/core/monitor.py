@@ -92,16 +92,16 @@ class Monitor:
                 consumer_arguments={"x-priority": 2},
             )
 
-            self.signal_loading("start")
+            self.signal_loading(True)
             self.config_request_rpc()
 
             # setup Redis monitor listeners
             self.setup_redis_mon_listeners()
 
             log.info("started")
-            self.signal_loading("end")
+            self.signal_loading(False)
 
-        def signal_loading(self, status="end"):
+        def signal_loading(self, status=False):
             msg = {"module": "configuration", "loading": status}
             self.producer.publish(
                 msg,
@@ -186,14 +186,14 @@ class Monitor:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading("start")
+            self.signal_loading(True)
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
                 self.timestamp = raw["timestamp"]
                 self.rules = raw.get("rules", [])
                 self.monitors = raw.get("monitors", {})
                 self.start_monitors()
-            self.signal_loading("end")
+            self.signal_loading(False)
 
         def start_monitors(self):
             log.info("Initiating monitor...")

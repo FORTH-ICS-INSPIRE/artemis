@@ -71,15 +71,15 @@ class Observer:
                 delivery_mode=1,
             )
             self.module_state_exchange.declare()
-            self.signal_loading("start")
+            self.signal_loading(True)
             self.response = None
             self.correlation_id = None
             self.path = "{}/{}".format(d, fn)
             with open(self.path, "r") as f:
                 self.content = f.readlines()
-            self.signal_loading("end")
+            self.signal_loading(False)
 
-        def signal_loading(self, status="end"):
+        def signal_loading(self, status=False):
             with Producer(self.connection) as producer:
                 msg = {"module": "observer", "loading": status}
                 producer.publish(

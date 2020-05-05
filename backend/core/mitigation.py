@@ -90,9 +90,9 @@ class Mitigation:
                 consumer_arguments={"x-priority": 2},
             )
 
-            self.signal_loading("start")
+            self.signal_loading(True)
             self.config_request_rpc()
-            self.signal_loading("end")
+            self.signal_loading(False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -110,7 +110,7 @@ class Mitigation:
                 ),
             ]
 
-        def signal_loading(self, status="end"):
+        def signal_loading(self, status=False):
             msg = {"module": "mitigation", "loading": status}
             self.producer.publish(
                 msg,
@@ -124,13 +124,13 @@ class Mitigation:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading("start")
+            self.signal_loading(True)
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
                 self.timestamp = raw["timestamp"]
                 self.rules = raw.get("rules", [])
                 self.init_mitigation()
-            self.signal_loading("end")
+            self.signal_loading(False)
 
         def config_request_rpc(self):
             self.correlation_id = uuid()

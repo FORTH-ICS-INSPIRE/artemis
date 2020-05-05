@@ -215,7 +215,7 @@ class Detection:
                 consumer_arguments={"x-priority": 3},
             )
 
-            self.signal_loading("start")
+            self.signal_loading(True)
 
             setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
             if TEST_ENV == "true":
@@ -249,7 +249,7 @@ class Detection:
 
             self.config_request_rpc()
             log.info("started")
-            self.signal_loading("end")
+            self.signal_loading(False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
@@ -284,7 +284,7 @@ class Detection:
                 serializer="ujson",
             )
 
-        def signal_loading(self, status="end"):
+        def signal_loading(self, status=False):
             msg = {"module": "detection", "loading": status}
             self.producer.publish(
                 msg,
@@ -303,7 +303,7 @@ class Detection:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading("start")
+            self.signal_loading(True)
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
                 self.timestamp = raw["timestamp"]
@@ -317,7 +317,7 @@ class Detection:
                     priority=1,
                     serializer="ujson",
                 )
-            self.signal_loading("end")
+            self.signal_loading(False)
 
         def config_request_rpc(self) -> NoReturn:
             """

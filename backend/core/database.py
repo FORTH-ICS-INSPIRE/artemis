@@ -375,7 +375,9 @@ class Database:
                 consumer_arguments={"x-priority": 2},
             )
 
+            self.signal_loading(True)
             self.config_request_rpc()
+            self.signal_loading(False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -533,12 +535,31 @@ class Database:
                 while self.rules is None:
                     self.connection.drain_events()
 
+        def signal_loading(self, status=False):
+            msg = {"module": "database", "loading": status}
+            self.producer.publish(
+                msg,
+                exchange=self.module_state_exchange,
+                routing_key="loading",
+                retry=True,
+                priority=2,
+                serializer="ujson",
+            )
+
         def handle_module_loading(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             message.ack()
             msg_ = message.payload
-            log.info(msg_)
-            # TODO implement DB logic
+            try:
+                module = msg_["module"]
+                loading = msg_["loading"]
+                query = (
+                    "UPDATE process_states SET loading=%s WHERE name=%s;",
+                    (loading, module),
+                )
+                self.wo_db.execute(query)
+            except Exception:
+                log.exception("exception")
 
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -786,6 +807,7 @@ class Database:
 
         def handle_config_notify(self, message):
             message.ack()
+            self.signal_loading(True)
             log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -812,6 +834,7 @@ class Database:
                 log.exception("{}".format(config))
 
             log.info("Database initiated, configured and running.")
+            self.signal_loading(False)
 
         def handle_config_request_reply(self, message):
             message.ack()

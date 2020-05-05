@@ -184,6 +184,7 @@ class Detection:
                 durable=False,
                 delivery_mode=1,
             )
+            self.module_state_exchange.declare()
 
             # QUEUES
             self.update_queue = Queue(

@@ -144,6 +144,7 @@ class Configuration:
                 durable=False,
                 delivery_mode=1,
             )
+            self.module_state_exchange.declare()
 
             # QUEUES
             self.config_modify_queue = Queue(

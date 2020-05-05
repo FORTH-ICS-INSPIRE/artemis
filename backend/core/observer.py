@@ -70,6 +70,7 @@ class Observer:
                 durable=False,
                 delivery_mode=1,
             )
+            self.module_state_exchange.declare()
             self.signal_loading(True)
             self.response = None
             self.correlation_id = None

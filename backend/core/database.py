@@ -553,11 +553,8 @@ class Database:
             try:
                 module = msg_["module"]
                 loading = msg_["loading"]
-                query = (
-                    "UPDATE process_states SET loading=%s WHERE name=%s;",
-                    (loading, module),
-                )
-                self.wo_db.execute(query)
+                query = "UPDATE process_states SET loading=%s WHERE name=%s;"
+                self.wo_db.execute(query, (loading, module))
             except Exception:
                 log.exception("exception")
 

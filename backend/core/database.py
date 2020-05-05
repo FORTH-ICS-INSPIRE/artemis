@@ -536,7 +536,7 @@ class Database:
             except Exception:
                 log.exception("exception")
             finally:
-                if not self.orig:
+                if not self_orig:
                     self.producer.publish(
                         "",
                         exchange="",

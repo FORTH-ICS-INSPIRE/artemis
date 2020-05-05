@@ -62,13 +62,13 @@ class Observer:
         def __init__(self, d, fn, connection):
             super().__init__()
             self.connection = connection
+            self.correlation_id = None
+            self.signal_loading_ack = False
             self.signal_loading(True)
             self.response = None
-            self.correlation_id = None
             self.path = "{}/{}".format(d, fn)
             with open(self.path, "r") as f:
                 self.content = f.readlines()
-            self.signal_loading_ack = False
             self.signal_loading(False)
 
         def signal_loading(self, status=False):

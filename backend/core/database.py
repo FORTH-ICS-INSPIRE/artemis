@@ -535,6 +535,17 @@ class Database:
                 self.wo_db.execute(query, (loading, module))
             except Exception:
                 log.exception("exception")
+            finally:
+                if not self.orig:
+                    self.producer.publish(
+                        "",
+                        exchange="",
+                        routing_key=message.properties["reply_to"],
+                        correlation_id=message.properties["correlation_id"],
+                        retry=True,
+                        priority=4,
+                        serializer="ujson",
+                    )
 
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))

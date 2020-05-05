@@ -68,7 +68,6 @@ class Mitigation:
                 durable=False,
                 delivery_mode=1,
             )
-            self.module_state_exchange.declare()
 
             # QUEUES
             self.config_queue = Queue(

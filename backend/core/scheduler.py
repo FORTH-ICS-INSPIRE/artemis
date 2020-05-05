@@ -47,7 +47,6 @@ class Scheduler:
                 durable=False,
                 delivery_mode=1,
             )
-            self.module_state_exchange.declare()
 
             self.signal_loading(True)
             log.info("started")

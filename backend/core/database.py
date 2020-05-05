@@ -533,7 +533,7 @@ class Database:
                 while self.rules is None:
                     self.connection.drain_events()
 
-        def handle_module_loaded(self, message):
+        def handle_module_loading(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             message.ack()
             msg_ = message.payload

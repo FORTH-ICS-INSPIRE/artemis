@@ -20,7 +20,7 @@ risId: 8522
 # database
 dbHost: postgres
 dbPort: 5432
-dbVersion: 20
+dbVersion: 21
 dbName: artemis_db
 dbUser: artemis_user
 dbPass: Art3m1s

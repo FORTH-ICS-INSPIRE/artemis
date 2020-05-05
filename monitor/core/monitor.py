@@ -186,12 +186,14 @@ class Monitor:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
+            self.signal_loading("start")
             raw = message.payload
             if raw["timestamp"] > self.timestamp:
                 self.timestamp = raw["timestamp"]
                 self.rules = raw.get("rules", [])
                 self.monitors = raw.get("monitors", {})
                 self.start_monitors()
+            self.signal_loading("end")
 
         def start_monitors(self):
             log.info("Initiating monitor...")

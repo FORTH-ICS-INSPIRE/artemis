@@ -19,7 +19,7 @@ data:
   risId: {{ .Values.risId | default "8522" | quote }}
   dbHost: {{ .Release.Name }}-{{ .Values.dbHost | default "postgres" }}-svc
   dbPort: {{ .Values.dbPort | default "5432" | quote }}
-  dbVersion: {{ .Values.dbVersion | default "20" | quote }}
+  dbVersion: {{ .Values.dbVersion | default "21" | quote }}
   dbName: {{ .Values.dbName | default "artemis_db" | quote }}
   dbUser: {{ .Values.dbUser | default "artemis_user" | quote }}
   dbSchema: {{ .Values.dbSchema | default "public" | quote }}

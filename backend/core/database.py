@@ -222,15 +222,6 @@ class Database:
                 "mitigation", type="direct", durable=False, delivery_mode=1
             )
 
-            self.module_state_exchange = Exchange(
-                "module-state",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
-            )
-            self.module_state_exchange.declare()
-
             # QUEUES
             self.update_queue = Queue(
                 "db-bgp-update",
@@ -366,13 +357,10 @@ class Database:
                 consumer_arguments={"x-priority": 2},
             )
             self.module_loading_queue = Queue(
-                "state-module-loading",
-                exchange=self.module_state_exchange,
-                routing_key="loading",
+                "state-module-loading-queue",
                 durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
             )
 
             self.signal_loading(True)
@@ -471,12 +459,6 @@ class Database:
                     prefetch_count=1,
                     accept=["ujson"],
                 ),
-                Consumer(
-                    queues=[self.module_loading_queue],
-                    on_message=self.handle_module_loading,
-                    prefetch_count=1,
-                    accept=["ujson"],
-                ),
             ]
 
         def set_modules_to_intended_state(self):
@@ -537,19 +519,15 @@ class Database:
 
         def signal_loading(self, status=False):
             msg = {"module": "database", "loading": status}
-            self.producer.publish(
-                msg,
-                exchange=self.module_state_exchange,
-                routing_key="loading",
-                retry=True,
-                priority=2,
-                serializer="ujson",
-            )
+            self.handle_module_loading(msg, True)
 
-        def handle_module_loading(self, message):
-            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
-            message.ack()
-            msg_ = message.payload
+        def handle_module_loading(self, message, self_orig=False):
+            if not self_orig:
+                # log.debug('message: {}\npayload: {}'.format(message, message.payload))
+                message.ack()
+                msg_ = message.payload
+            else:
+                msg_ = message
             try:
                 module = msg_["module"]
                 loading = msg_["loading"]

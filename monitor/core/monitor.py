@@ -66,20 +66,13 @@ class Monitor:
             self.flag = True
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
+            self.signal_loading_ack = False
+            self.correlation_id = None
 
             # EXCHANGES
             self.config_exchange = Exchange(
                 "config", type="direct", durable=False, delivery_mode=1
             )
-
-            self.module_state_exchange = Exchange(
-                "module-state",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
-            )
-            self.module_state_exchange.declare()
 
             # QUEUES
             self.config_queue = Queue(
@@ -102,15 +95,50 @@ class Monitor:
             self.signal_loading(False)
 
         def signal_loading(self, status=False):
-            msg = {"module": "configuration", "loading": status}
+            msg = {"module": "monitor", "loading": status}
+            self.correlation_id = uuid()
+            callback_queue = Queue(
+                uuid(),
+                durable=False,
+                auto_delete=True,
+                max_priority=4,
+                consumer_arguments={"x-priority": 4},
+            )
+
             self.producer.publish(
                 msg,
-                exchange=self.module_state_exchange,
-                routing_key="loading",
+                exchange="",
+                routing_key="state-module-loading-queue",
+                reply_to=callback_queue.name,
+                correlation_id=self.correlation_id,
                 retry=True,
-                priority=2,
+                declare=[
+                    Queue(
+                        "state-module-loading-queue",
+                        durable=False,
+                        max_priority=4,
+                        consumer_arguments={"x-priority": 4},
+                    ),
+                    callback_queue,
+                ],
+                priority=4,
                 serializer="ujson",
             )
+            with Consumer(
+                self.connection,
+                on_message=self.handle_signal_loading_ack,
+                queues=[callback_queue],
+                accept=["ujson"],
+            ):
+                while not self.loading_change_ack:
+                    self.connection.drain_events()
+                self.signal_loading_ack = False
+
+        def handle_signal_loading_ack(self, message):
+            message.ack()
+            log.debug("message: {}\npayload: {}".format(message, message.payload))
+            if self.correlation_id == message.properties["correlation_id"]:
+                self.signal_loading_ack = True
 
         def setup_redis_mon_listeners(self):
             def redis_event_handler(msg):

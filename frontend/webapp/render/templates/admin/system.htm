@@ -254,9 +254,9 @@
                     }
                     clean_data.push(data[elem]);
                     if(group in agg_data){
-                        agg_data[group] = agg_data[group] && data[elem]["running"] && data[elem]["loading"];
+                        agg_data[group] = agg_data[group] && data[elem]["running"] && !data[elem]["loading"];
                     }else{
-                        agg_data[group] = data[elem]["running"] && data[elem]["loading"];
+                        agg_data[group] = data[elem]["running"] && !data[elem]["loading"];
                     }
                 }
                 clean_data.sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));

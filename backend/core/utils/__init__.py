@@ -76,6 +76,9 @@ RPKI_VALIDATOR_ENABLED = os.getenv("RPKI_VALIDATOR_ENABLED", "false")
 RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
 RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
 TEST_ENV = os.getenv("TEST_ENV", "false")
+GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
+HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
+
 
 serialization.register(
     "ujson",

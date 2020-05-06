@@ -8,6 +8,9 @@ from xmlrpc.client import ServerProxy
 import pytricia
 import redis
 import ujson as json
+from gql import Client
+from gql import gql
+from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -24,6 +27,8 @@ from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
+from utils import GRAPHQL_URI
+from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import hijack_log_field_formatter
 from utils import HISTORIC
 from utils import ModulesState
@@ -53,6 +58,18 @@ try:
 except Exception:
     log.exception("exception")
     hij_log_filter = []
+
+process_states_loading_mutation = """
+    mutation updateProcessStates($name: String, $loading: Boolean) {
+        update_view_processes(where: {name: {_eq: $name}}, _set: {loading: $loading}) {
+        affected_rows
+        returning {
+          name
+          loading
+        }
+      }
+    }
+"""
 
 
 class HijackLogFilter(logging.Filter):
@@ -356,12 +373,6 @@ class Database:
                 max_priority=2,
                 consumer_arguments={"x-priority": 2},
             )
-            self.module_loading_queue = Queue(
-                "state-module-loading-queue",
-                durable=False,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
 
             self.signal_loading(True)
             self.config_request_rpc()
@@ -459,12 +470,6 @@ class Database:
                     prefetch_count=1,
                     accept=["ujson"],
                 ),
-                Consumer(
-                    queues=[self.module_loading_queue],
-                    on_message=self.handle_module_loading,
-                    prefetch_count=1,
-                    accept=["ujson"],
-                ),
             ]
 
         def set_modules_to_intended_state(self):
@@ -523,34 +528,29 @@ class Database:
                 while self.rules is None:
                     self.connection.drain_events()
 
-        def handle_module_loading(self, message):
-            # log.debug('message: {}\npayload: {}'.format(message, message.payload))
-            message.ack()
-            msg_ = message.payload
-            try:
-                module = msg_["module"]
-                loading = msg_["loading"]
-                query = "UPDATE process_states SET loading=%s WHERE name LIKE %s;"
-                self.wo_db.execute(query, (loading, module + "%"))
-            except Exception:
-                log.exception("exception")
-            finally:
-                self.producer.publish(
-                    "",
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    retry=True,
-                    priority=4,
-                    serializer="ujson",
-                )
-
         def signal_loading(self, status=False):
             try:
-                module = "database"
-                loading = status
-                query = "UPDATE process_states SET loading=%s WHERE name LIKE %s;"
-                self.wo_db.execute(query, (loading, module + "%"))
+
+                transport = RequestsHTTPTransport(
+                    url=GRAPHQL_URI,
+                    use_json=True,
+                    headers={
+                        "Content-type": "application/json; charset=utf-8",
+                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
+                    },
+                    verify=False,
+                )
+
+                client = Client(
+                    retries=3, transport=transport, fetch_schema_from_transport=True
+                )
+
+                query = gql(process_states_loading_mutation)
+
+                params = {"name": "database", "loading": status}
+
+                client.execute(query, variable_values=params)
+
             except Exception:
                 log.exception("exception")
 

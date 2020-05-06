@@ -14,6 +14,9 @@ from typing import Tuple
 import pytricia
 import redis
 import ujson as json
+from gql import Client
+from gql import gql
+from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -28,6 +31,8 @@ from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
 from utils import get_rpki_val_result
+from utils import GRAPHQL_URI
+from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
@@ -67,6 +72,18 @@ try:
 except Exception:
     log.exception("exception")
     hij_log_filter = []
+
+process_states_loading_mutation = """
+    mutation updateProcessStates($name: String, $loading: Boolean) {
+        update_view_processes(where: {name: {_eq: $name}}, _set: {loading: $loading}) {
+        affected_rows
+        returning {
+          name
+          loading
+        }
+      }
+    }
+"""
 
 
 class HijackLogFilter(logging.Filter):
@@ -129,7 +146,6 @@ class Detection:
             self.prefix_tree = None
             self.mon_num = 1
             self.correlation_id = None
-            self.signal_loading_ack = False
 
             # EXCHANGES
             self.update_exchange = Exchange(
@@ -278,50 +294,30 @@ class Detection:
             )
 
         def signal_loading(self, status=False):
-            msg = {"module": "detection", "loading": status}
-            self.correlation_id = uuid()
-            callback_queue = Queue(
-                uuid(),
-                durable=False,
-                auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
+            try:
 
-            self.producer.publish(
-                msg,
-                exchange="",
-                routing_key="state-module-loading-queue",
-                reply_to=callback_queue.name,
-                correlation_id=self.correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "state-module-loading-queue",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="ujson",
-            )
-            with Consumer(
-                self.connection,
-                on_message=self.handle_signal_loading_ack,
-                queues=[callback_queue],
-                accept=["ujson"],
-            ):
-                while not self.signal_loading_ack:
-                    self.connection.drain_events()
-                self.signal_loading_ack = False
+                transport = RequestsHTTPTransport(
+                    url=GRAPHQL_URI,
+                    use_json=True,
+                    headers={
+                        "Content-type": "application/json; charset=utf-8",
+                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
+                    },
+                    verify=False,
+                )
 
-        def handle_signal_loading_ack(self, message):
-            message.ack()
-            log.debug("message: {}\npayload: {}".format(message, message.payload))
-            if self.correlation_id == message.properties["correlation_id"]:
-                self.signal_loading_ack = True
+                client = Client(
+                    retries=3, transport=transport, fetch_schema_from_transport=True
+                )
+
+                query = gql(process_states_loading_mutation)
+
+                params = {"name": "detection", "loading": status}
+
+                client.execute(query, variable_values=params)
+
+            except Exception:
+                log.exception("exception")
 
         def handle_config_notify(self, message: Dict) -> NoReturn:
             """

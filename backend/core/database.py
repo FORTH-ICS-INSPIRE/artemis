@@ -530,8 +530,8 @@ class Database:
             try:
                 module = msg_["module"]
                 loading = msg_["loading"]
-                query = "UPDATE process_states SET loading=%s WHERE name=%s;"
-                self.wo_db.execute(query, (loading, module))
+                query = "UPDATE process_states SET loading=%s WHERE name LIKE %s;"
+                self.wo_db.execute(query, (loading, module + "%"))
             except Exception:
                 log.exception("exception")
             finally:
@@ -549,8 +549,8 @@ class Database:
             try:
                 module = "database"
                 loading = status
-                query = "UPDATE process_states SET loading=%s WHERE name=%s;"
-                self.wo_db.execute(query, (loading, module))
+                query = "UPDATE process_states SET loading=%s WHERE name LIKE %s;"
+                self.wo_db.execute(query, (loading, module + "%"))
             except Exception:
                 log.exception("exception")
 

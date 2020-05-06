@@ -98,6 +98,7 @@
                         <button type="button" id="config_cancel" class="btn btn-warning btn-sm float-right config-cancel-button">Cancel</button>
                         <button type="button" id="config_load_as_sets" class="btn btn-primary btn-sm float-right load-as-set-margin">Load AS-SETs</button>
                     </div>
+                    <div id="loading_alert_box"></div>
                     <div class="panel-body">
                         <div id="config_alert_box"></div>
 
@@ -247,6 +248,9 @@
                 var data = data["view_processes"];
                 var clean_data = [];
                 var agg_data = {};
+                var any_module_loading = false;
+                var loading_alert_box;
+                var loading_message = '';
                 for (var elem in data) {
                     var group = data[elem]['name'].split('_')[0];
                     if(modules_list.includes(group) == false){
@@ -260,6 +264,39 @@
                     }
                 }
                 clean_data.sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
+                for (var elem in data) {
+                    any_module_loading = any_module_loading || data[elem]["loading"];
+                }
+                if(any_module_loading == true){
+                    document.getElementById('config_action').disabled = true;
+                    document.getElementById('config_cancel').disabled = true;
+                    document.getElementById('config_load_as_sets').disabled = true;
+                    loading_alert_box = document.getElementById('loading_alert_box');
+                    loading_message = '<div class="alert alert-warning">Reloading microservices ('
+                    var at_least_one_module_loading_displayed = false;
+                    for (var elem in data) {
+                        if((data[elem]["running"] == true) && (data[elem]["loading"] == true)){
+                            if(at_least_one_module_loading_displayed == true){
+                                loading_message += ', ';
+                            }
+                            loading_message += data[elem]["name"];
+                            at_least_one_module_loading_displayed = true;
+                        }
+                    }
+                    loading_message += '). Please wait...</div>'
+                    loading_alert_box.innerHTML = loading_message;
+                }else{
+                    document.getElementById('config_action').disabled = false;
+                    document.getElementById('config_cancel').disabled = false;
+                    document.getElementById('config_load_as_sets').disabled = false;
+                    loading_alert_box = document.getElementById('loading_alert_box');
+                    if(loading_alert_box.innerHTML.startsWith('<div class="alert alert-warning">')){
+                        loading_message = '<div class="alert alert-success alert-dismissible">'
+                        loading_message += '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+                        loading_message += 'All microservices successfully reloaded.</div>'
+                        loading_alert_box.innerHTML = loading_message;
+                    }
+                }
 
                 for (var group in agg_data) {
                     if(agg_data[group]) {

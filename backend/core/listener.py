@@ -66,7 +66,7 @@ def run():
                 while True:
                     try:
                         write_stderr("{} -> {}".format(process, new_state))
-                        if process == "detection":
+                        if process.startswith("detection"):
                             if new_state:
                                 q = "{}{}{}".format(
                                     drop_trigger_query, create_trigger_query, query

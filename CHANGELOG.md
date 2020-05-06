@@ -2,9 +2,10 @@
 
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
-- Added additional ports (8080, 8443) to nginx configuration for rootless docker support
-- Added application names for all postgres connections
-- Added database migration check between latest release and current version
+- Additional ports (8080, 8443) to nginx configuration for rootless docker support
+- Application names for all postgres connections
+- Database migration check between latest release and current version
+- Mechanism to show which modules are (re)loading upon configuration change
 
 ### Changed
 - Upgraded nginx to latest release (v1.17)

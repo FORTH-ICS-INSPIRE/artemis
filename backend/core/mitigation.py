@@ -142,12 +142,16 @@ class Mitigation:
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             self.signal_loading(True)
-            raw = message.payload
-            if raw["timestamp"] > self.timestamp:
-                self.timestamp = raw["timestamp"]
-                self.rules = raw.get("rules", [])
-                self.init_mitigation()
-            self.signal_loading(False)
+            try:
+                raw = message.payload
+                if raw["timestamp"] > self.timestamp:
+                    self.timestamp = raw["timestamp"]
+                    self.rules = raw.get("rules", [])
+                    self.init_mitigation()
+            except Exception:
+                log.exception("Exception")
+            finally:
+                self.signal_loading(False)
 
         def config_request_rpc(self):
             self.correlation_id = uuid()

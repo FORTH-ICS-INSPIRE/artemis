@@ -320,20 +320,24 @@ class Detection:
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             self.signal_loading(True)
-            raw = message.payload
-            if raw["timestamp"] > self.timestamp:
-                self.timestamp = raw["timestamp"]
-                self.rules = raw.get("rules", [])
-                self.init_detection()
-                # Request ongoing hijacks from DB
-                self.producer.publish(
-                    self.timestamp,
-                    exchange=self.hijack_exchange,
-                    routing_key="ongoing-request",
-                    priority=1,
-                    serializer="ujson",
-                )
-            self.signal_loading(False)
+            try:
+                raw = message.payload
+                if raw["timestamp"] > self.timestamp:
+                    self.timestamp = raw["timestamp"]
+                    self.rules = raw.get("rules", [])
+                    self.init_detection()
+                    # Request ongoing hijacks from DB
+                    self.producer.publish(
+                        self.timestamp,
+                        exchange=self.hijack_exchange,
+                        routing_key="ongoing-request",
+                        priority=1,
+                        serializer="ujson",
+                    )
+            except Exception:
+                log.exception("Exception")
+            finally:
+                self.signal_loading(False)
 
         def config_request_rpc(self) -> NoReturn:
             """

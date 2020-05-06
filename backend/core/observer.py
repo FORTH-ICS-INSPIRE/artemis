@@ -72,9 +72,13 @@ class Observer:
             self.signal_loading(True)
             self.response = None
             self.path = "{}/{}".format(d, fn)
-            with open(self.path, "r") as f:
-                self.content = f.readlines()
-            self.signal_loading(False)
+            try:
+                with open(self.path, "r") as f:
+                    self.content = f.readlines()
+            except Exception:
+                log.exception("exception")
+            finally:
+                self.signal_loading(False)
 
         def signal_loading(self, status=False):
             if GUI_ENABLED != "true":

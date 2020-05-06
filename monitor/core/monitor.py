@@ -203,13 +203,17 @@ class Monitor:
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             self.signal_loading(True)
-            raw = message.payload
-            if raw["timestamp"] > self.timestamp:
-                self.timestamp = raw["timestamp"]
-                self.rules = raw.get("rules", [])
-                self.monitors = raw.get("monitors", {})
-                self.start_monitors()
-            self.signal_loading(False)
+            try:
+                raw = message.payload
+                if raw["timestamp"] > self.timestamp:
+                    self.timestamp = raw["timestamp"]
+                    self.rules = raw.get("rules", [])
+                    self.monitors = raw.get("monitors", {})
+                    self.start_monitors()
+            except Exception:
+                log.exception("Exception")
+            finally:
+                self.signal_loading(False)
 
         def start_monitors(self):
             log.info("Initiating monitor...")

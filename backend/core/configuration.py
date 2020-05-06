@@ -253,89 +253,95 @@ class Configuration:
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             self.signal_loading(True)
-            raw_ = message.payload
+            try:
+                raw_ = message.payload
 
-            # Case received config from Frontend with comment
-            comment = None
-            if isinstance(raw_, dict) and "comment" in raw_:
-                comment = raw_["comment"]
-                del raw_["comment"]
-                raw = raw_["config"]
-            else:
-                raw = raw_
+                # Case received config from Frontend with comment
+                comment = None
+                if isinstance(raw_, dict) and "comment" in raw_:
+                    comment = raw_["comment"]
+                    del raw_["comment"]
+                    raw = raw_["config"]
+                else:
+                    raw = raw_
 
-            if "yaml" in message.content_type:
-                stream = StringIO("".join(raw))
-                data, _flag, _error = self.parse(stream, yaml=True)
-            else:
-                data, _flag, _error = self.parse(raw)
+                if "yaml" in message.content_type:
+                    stream = StringIO("".join(raw))
+                    data, _flag, _error = self.parse(stream, yaml=True)
+                else:
+                    data, _flag, _error = self.parse(raw)
 
-            # _flag is True or False depending if the new configuration was
-            # accepted or not.
-            if _flag:
-                log.debug("accepted new configuration")
-                # compare current with previous data excluding --obviously-- timestamps
-                # change to sth better
-                prev_data = copy.deepcopy(data)
-                del prev_data["timestamp"]
-                new_data = copy.deepcopy(self.data)
-                del new_data["timestamp"]
-                prev_data_str = json.dumps(prev_data, sort_keys=True)
-                new_data_str = json.dumps(new_data, sort_keys=True)
-                if prev_data_str != new_data_str:
-                    self.data = data
-                    self._update_local_config_file()
-                    if comment:
-                        self.data["comment"] = comment
+                # _flag is True or False depending if the new configuration was
+                # accepted or not.
+                if _flag:
+                    log.debug("accepted new configuration")
+                    # compare current with previous data excluding --obviously-- timestamps
+                    # change to sth better
+                    prev_data = copy.deepcopy(data)
+                    del prev_data["timestamp"]
+                    new_data = copy.deepcopy(self.data)
+                    del new_data["timestamp"]
+                    prev_data_str = json.dumps(prev_data, sort_keys=True)
+                    new_data_str = json.dumps(new_data, sort_keys=True)
+                    if prev_data_str != new_data_str:
+                        self.data = data
+                        self._update_local_config_file()
+                        if comment:
+                            self.data["comment"] = comment
 
+                        self.producer.publish(
+                            self.data,
+                            exchange=self.config_exchange,
+                            routing_key="notify",
+                            retry=True,
+                            priority=2,
+                            serializer="ujson",
+                        )
+                        # Remove the comment to avoid marking config as different
+                        if "comment" in self.data:
+                            del self.data["comment"]
+                        # after accepting/writing, format new configuration correctly
+                        with open(self.file, "r") as f:
+                            raw = f.read()
+                        yaml_conf = ruamel.yaml.load(
+                            raw,
+                            Loader=ruamel.yaml.RoundTripLoader,
+                            preserve_quotes=True,
+                        )
+                        ruamel.yaml.dump(yaml_conf, Dumper=ruamel.yaml.RoundTripDumper)
+                        with open(self.file, "w") as f:
+                            ruamel.yaml.dump(
+                                yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
+                            )
+
+                    # reply back to the sender with a configuration accepted
+                    # message.
                     self.producer.publish(
-                        self.data,
-                        exchange=self.config_exchange,
-                        routing_key="notify",
+                        {"status": "accepted", "config:": self.data},
+                        exchange="",
+                        routing_key=message.properties["reply_to"],
+                        correlation_id=message.properties["correlation_id"],
                         retry=True,
-                        priority=2,
+                        priority=4,
                         serializer="ujson",
                     )
-                    # Remove the comment to avoid marking config as different
-                    if "comment" in self.data:
-                        del self.data["comment"]
-                    # after accepting/writing, format new configuration correctly
-                    with open(self.file, "r") as f:
-                        raw = f.read()
-                    yaml_conf = ruamel.yaml.load(
-                        raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                else:
+                    log.debug("rejected new configuration")
+                    # replay back to the sender with a configuration rejected and
+                    # reason message.
+                    self.producer.publish(
+                        {"status": "rejected", "reason": _error},
+                        exchange="",
+                        routing_key=message.properties["reply_to"],
+                        correlation_id=message.properties["correlation_id"],
+                        retry=True,
+                        priority=4,
+                        serializer="ujson",
                     )
-                    ruamel.yaml.dump(yaml_conf, Dumper=ruamel.yaml.RoundTripDumper)
-                    with open(self.file, "w") as f:
-                        ruamel.yaml.dump(
-                            yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
-                        )
-
-                # reply back to the sender with a configuration accepted
-                # message.
-                self.producer.publish(
-                    {"status": "accepted", "config:": self.data},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    retry=True,
-                    priority=4,
-                    serializer="ujson",
-                )
-            else:
-                log.debug("rejected new configuration")
-                # replay back to the sender with a configuration rejected and
-                # reason message.
-                self.producer.publish(
-                    {"status": "rejected", "reason": _error},
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    retry=True,
-                    priority=4,
-                    serializer="ujson",
-                )
-            self.signal_loading(False)
+            except Exception:
+                log.exception("exception")
+            finally:
+                self.signal_loading(False)
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """

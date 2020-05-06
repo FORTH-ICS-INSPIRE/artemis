@@ -36,6 +36,7 @@ from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
+from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
@@ -72,18 +73,6 @@ try:
 except Exception:
     log.exception("exception")
     hij_log_filter = []
-
-process_states_loading_mutation = """
-    mutation updateProcessStates($name: String, $loading: Boolean) {
-        update_view_processes(where: {name: {_eq: $name}}, _set: {loading: $loading}) {
-        affected_rows
-        returning {
-          name
-          loading
-        }
-      }
-    }
-"""
 
 
 class HijackLogFilter(logging.Filter):
@@ -310,9 +299,9 @@ class Detection:
                     retries=3, transport=transport, fetch_schema_from_transport=True
                 )
 
-                query = gql(process_states_loading_mutation)
+                query = gql(PROCESS_STATES_LOADING_MUTATION)
 
-                params = {"name": "detection", "loading": status}
+                params = {"name": "detection%", "loading": status}
 
                 client.execute(query, variable_values=params)
 

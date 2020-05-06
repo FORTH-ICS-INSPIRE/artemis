@@ -15,10 +15,10 @@ from kombu import uuid
 from utils import get_logger
 from utils import GRAPHQL_URI
 from utils import HASURA_GRAPHQL_ACCESS_KEY
+from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer as WatchObserver
-
 
 log = get_logger()
 
@@ -29,18 +29,6 @@ serialization.register(
     content_type="application/x-ujson",
     content_encoding="utf-8",
 )
-
-process_states_loading_mutation = """
-    mutation updateProcessStates($name: String, $loading: Boolean) {
-        update_view_processes(where: {name: {_eq: $name}}, _set: {loading: $loading}) {
-        affected_rows
-        returning {
-          name
-          loading
-        }
-      }
-    }
-"""
 
 
 class Observer:
@@ -104,9 +92,9 @@ class Observer:
                     retries=3, transport=transport, fetch_schema_from_transport=True
                 )
 
-                query = gql(process_states_loading_mutation)
+                query = gql(PROCESS_STATES_LOADING_MUTATION)
 
-                params = {"name": "observer", "loading": status}
+                params = {"name": "observer%", "loading": status}
 
                 client.execute(query, variable_values=params)
 

@@ -41,6 +41,18 @@ MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
 RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
 ASN_REGEX = r"^AS(\d+)$"
 
+PROCESS_STATES_LOADING_MUTATION = """
+    mutation updateProcessStates($name: String, $loading: Boolean) {
+        update_view_processes(where: {name: {_like: $name}}, _set: {loading: $loading}) {
+        affected_rows
+        returning {
+          name
+          loading
+        }
+      }
+    }
+"""
+
 serialization.register(
     "ujson",
     json.dumps,

@@ -21,6 +21,7 @@ from utils import get_logger
 from utils import GRAPHQL_URI
 from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import ping_redis
+from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
@@ -30,18 +31,6 @@ from utils import translate_rfc2622
 log = get_logger()
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 PY_BIN = "/usr/local/bin/python"
-
-process_states_loading_mutation = """
-    mutation updateProcessStates($name: String, $loading: Boolean) {
-        update_view_processes(where: {name: {_eq: $name}}, _set: {loading: $loading}) {
-        affected_rows
-        returning {
-          name
-          loading
-        }
-      }
-    }
-"""
 
 
 class Monitor:
@@ -127,9 +116,9 @@ class Monitor:
                     retries=3, transport=transport, fetch_schema_from_transport=True
                 )
 
-                query = gql(process_states_loading_mutation)
+                query = gql(PROCESS_STATES_LOADING_MUTATION)
 
-                params = {"name": "monitor", "loading": status}
+                params = {"name": "monitor%", "loading": status}
 
                 client.execute(query, variable_values=params)
 

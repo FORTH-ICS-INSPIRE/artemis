@@ -79,6 +79,18 @@ TEST_ENV = os.getenv("TEST_ENV", "false")
 GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
 
+PROCESS_STATES_LOADING_MUTATION = """
+    mutation updateProcessStates($name: String, $loading: Boolean) {
+        update_view_processes(where: {name: {_like: $name}}, _set: {loading: $loading}) {
+        affected_rows
+        returning {
+          name
+          loading
+        }
+      }
+    }
+"""
+
 
 serialization.register(
     "ujson",

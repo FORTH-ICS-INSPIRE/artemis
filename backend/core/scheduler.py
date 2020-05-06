@@ -10,21 +10,10 @@ from kombu import Producer
 from utils import get_logger
 from utils import GRAPHQL_URI
 from utils import HASURA_GRAPHQL_ACCESS_KEY
+from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
 
 log = get_logger()
-
-process_states_loading_mutation = """
-    mutation updateProcessStates($name: String, $loading: Boolean) {
-        update_view_processes(where: {name: {_eq: $name}}, _set: {loading: $loading}) {
-        affected_rows
-        returning {
-          name
-          loading
-        }
-      }
-    }
-"""
 
 
 class Scheduler:
@@ -80,9 +69,9 @@ class Scheduler:
                     retries=3, transport=transport, fetch_schema_from_transport=True
                 )
 
-                query = gql(process_states_loading_mutation)
+                query = gql(PROCESS_STATES_LOADING_MUTATION)
 
-                params = {"name": "clock", "loading": status}
+                params = {"name": "clock%", "loading": status}
 
                 client.execute(query, variable_values=params)
 

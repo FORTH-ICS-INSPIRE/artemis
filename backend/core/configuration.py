@@ -30,6 +30,7 @@ from utils import get_logger
 from utils import GRAPHQL_URI
 from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import ping_redis
+from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
@@ -41,18 +42,6 @@ from utils import update_aliased_list
 from yaml import load as yload
 
 log = get_logger()
-
-process_states_loading_mutation = """
-    mutation updateProcessStates($name: String, $loading: Boolean) {
-        update_view_processes(where: {name: {_eq: $name}}, _set: {loading: $loading}) {
-        affected_rows
-        returning {
-          name
-          loading
-        }
-      }
-    }
-"""
 
 
 class Configuration:
@@ -242,9 +231,9 @@ class Configuration:
                     retries=3, transport=transport, fetch_schema_from_transport=True
                 )
 
-                query = gql(process_states_loading_mutation)
+                query = gql(PROCESS_STATES_LOADING_MUTATION)
 
-                params = {"name": "configuration", "loading": status}
+                params = {"name": "configuration%", "loading": status}
 
                 client.execute(query, variable_values=params)
 

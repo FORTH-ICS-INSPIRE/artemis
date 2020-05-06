@@ -32,6 +32,7 @@ from utils import get_ip_version
 from utils import get_logger
 from utils import get_rpki_val_result
 from utils import GRAPHQL_URI
+from utils import GUI_ENABLED
 from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import hijack_log_field_formatter
 from utils import key_generator
@@ -283,6 +284,8 @@ class Detection:
             )
 
         def signal_loading(self, status=False):
+            if GUI_ENABLED != "true":
+                return
             try:
 
                 transport = RequestsHTTPTransport(

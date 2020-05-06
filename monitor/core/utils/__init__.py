@@ -28,6 +28,7 @@ REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
+GUI_ENABLED = os.getenv("GUI_ENABLED", "true")
 
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT

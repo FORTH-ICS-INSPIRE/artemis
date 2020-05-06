@@ -16,6 +16,7 @@ from kombu.mixins import ConsumerProducerMixin
 from utils import get_ip_version
 from utils import get_logger
 from utils import GRAPHQL_URI
+from utils import GUI_ENABLED
 from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
@@ -110,6 +111,8 @@ class Mitigation:
             ]
 
         def signal_loading(self, status=False):
+            if GUI_ENABLED != "true":
+                return
             try:
 
                 transport = RequestsHTTPTransport(

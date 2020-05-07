@@ -1,18 +1,12 @@
 import os
 import time
 
-from gql import Client
-from gql import gql
-from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
 from utils import get_logger
-from utils import GRAPHQL_URI
-from utils import GUI_ENABLED
-from utils import HASURA_GRAPHQL_ACCESS_KEY
-from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
+from utils import signal_loading
 
 log = get_logger()
 
@@ -48,38 +42,10 @@ class Scheduler:
             )
             self.db_clock_exchange.declare()
 
-            self.signal_loading(True)
+            signal_loading("clock", True)
             log.info("started")
-            self.signal_loading(False)
+            signal_loading("clock", False)
             self._db_clock_send()
-
-        def signal_loading(self, status=False):
-            if GUI_ENABLED != "true":
-                return
-            try:
-
-                transport = RequestsHTTPTransport(
-                    url=GRAPHQL_URI,
-                    use_json=True,
-                    headers={
-                        "Content-type": "application/json; charset=utf-8",
-                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
-                    },
-                    verify=False,
-                )
-
-                client = Client(
-                    retries=3, transport=transport, fetch_schema_from_transport=True
-                )
-
-                query = gql(PROCESS_STATES_LOADING_MUTATION)
-
-                params = {"name": "clock%", "loading": status}
-
-                client.execute(query, variable_values=params)
-
-            except Exception:
-                log.exception("exception")
 
         def _db_clock_send(self):
             with Producer(self.connection) as producer:

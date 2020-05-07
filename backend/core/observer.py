@@ -3,9 +3,6 @@ import signal
 import time
 
 import ujson as json
-from gql import Client
-from gql import gql
-from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer
@@ -13,11 +10,8 @@ from kombu import Queue
 from kombu import serialization
 from kombu import uuid
 from utils import get_logger
-from utils import GRAPHQL_URI
-from utils import GUI_ENABLED
-from utils import HASURA_GRAPHQL_ACCESS_KEY
-from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
+from utils import signal_loading
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer as WatchObserver
 
@@ -69,7 +63,7 @@ class Observer:
             super().__init__()
             self.connection = connection
             self.correlation_id = None
-            self.signal_loading(True)
+            signal_loading("observer", True)
             self.response = None
             self.path = "{}/{}".format(d, fn)
             try:
@@ -78,35 +72,7 @@ class Observer:
             except Exception:
                 log.exception("exception")
             finally:
-                self.signal_loading(False)
-
-        def signal_loading(self, status=False):
-            if GUI_ENABLED != "true":
-                return
-            try:
-
-                transport = RequestsHTTPTransport(
-                    url=GRAPHQL_URI,
-                    use_json=True,
-                    headers={
-                        "Content-type": "application/json; charset=utf-8",
-                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
-                    },
-                    verify=False,
-                )
-
-                client = Client(
-                    retries=3, transport=transport, fetch_schema_from_transport=True
-                )
-
-                query = gql(PROCESS_STATES_LOADING_MUTATION)
-
-                params = {"name": "observer%", "loading": status}
-
-                client.execute(query, variable_values=params)
-
-            except Exception:
-                log.exception("exception")
+                signal_loading("observer", False)
 
         def on_response(self, message):
             message.ack()

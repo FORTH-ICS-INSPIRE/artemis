@@ -16,9 +16,6 @@ from typing import Union
 import redis
 import ruamel.yaml
 import ujson as json
-from gql import Client
-from gql import gql
-from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -27,15 +24,12 @@ from kombu.mixins import ConsumerProducerMixin
 from utils import ArtemisError
 from utils import flatten
 from utils import get_logger
-from utils import GRAPHQL_URI
-from utils import GUI_ENABLED
-from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import ping_redis
-from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
+from utils import signal_loading
 from utils import translate_as_set
 from utils import translate_asn_range
 from utils import translate_rfc2622
@@ -215,34 +209,6 @@ class Configuration:
                 ),
             ]
 
-        def signal_loading(self, status=False):
-            if GUI_ENABLED != "true":
-                return
-            try:
-
-                transport = RequestsHTTPTransport(
-                    url=GRAPHQL_URI,
-                    use_json=True,
-                    headers={
-                        "Content-type": "application/json; charset=utf-8",
-                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
-                    },
-                    verify=False,
-                )
-
-                client = Client(
-                    retries=3, transport=transport, fetch_schema_from_transport=True
-                )
-
-                query = gql(PROCESS_STATES_LOADING_MUTATION)
-
-                params = {"name": "configuration%", "loading": status}
-
-                client.execute(query, variable_values=params)
-
-            except Exception:
-                log.exception("exception")
-
         def handle_config_modify(self, message: Dict) -> NoReturn:
             """
             Consumer for Config-Modify messages that parses and checks
@@ -252,7 +218,7 @@ class Configuration:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading(True)
+            signal_loading("configuration", True)
             try:
                 raw_ = message.payload
 
@@ -341,7 +307,7 @@ class Configuration:
             except Exception:
                 log.exception("exception")
             finally:
-                self.signal_loading(False)
+                signal_loading("configuration", False)
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """

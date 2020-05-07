@@ -4,9 +4,6 @@ import time
 
 import pytricia
 import ujson as json
-from gql import Client
-from gql import gql
-from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -15,11 +12,8 @@ from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from utils import get_ip_version
 from utils import get_logger
-from utils import GRAPHQL_URI
-from utils import GUI_ENABLED
-from utils import HASURA_GRAPHQL_ACCESS_KEY
-from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
+from utils import signal_loading
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -90,9 +84,9 @@ class Mitigation:
                 consumer_arguments={"x-priority": 2},
             )
 
-            self.signal_loading(True)
+            signal_loading("mitigation", True)
             self.config_request_rpc()
-            self.signal_loading(False)
+            signal_loading("mitigation", False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -110,38 +104,10 @@ class Mitigation:
                 ),
             ]
 
-        def signal_loading(self, status=False):
-            if GUI_ENABLED != "true":
-                return
-            try:
-
-                transport = RequestsHTTPTransport(
-                    url=GRAPHQL_URI,
-                    use_json=True,
-                    headers={
-                        "Content-type": "application/json; charset=utf-8",
-                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
-                    },
-                    verify=False,
-                )
-
-                client = Client(
-                    retries=3, transport=transport, fetch_schema_from_transport=True
-                )
-
-                query = gql(PROCESS_STATES_LOADING_MUTATION)
-
-                params = {"name": "mitigation%", "loading": status}
-
-                client.execute(query, variable_values=params)
-
-            except Exception:
-                log.exception("exception")
-
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading(True)
+            signal_loading("mitigation", True)
             try:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
@@ -151,7 +117,7 @@ class Mitigation:
             except Exception:
                 log.exception("Exception")
             finally:
-                self.signal_loading(False)
+                signal_loading("mitigation", False)
 
         def config_request_rpc(self):
             self.correlation_id = uuid()

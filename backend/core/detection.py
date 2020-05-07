@@ -14,9 +14,6 @@ from typing import Tuple
 import pytricia
 import redis
 import ujson as json
-from gql import Client
-from gql import gql
-from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -31,13 +28,9 @@ from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
 from utils import get_rpki_val_result
-from utils import GRAPHQL_URI
-from utils import GUI_ENABLED
-from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import hijack_log_field_formatter
 from utils import key_generator
 from utils import ping_redis
-from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
@@ -46,6 +39,7 @@ from utils import REDIS_PORT
 from utils import RPKI_VALIDATOR_ENABLED
 from utils import RPKI_VALIDATOR_HOST
 from utils import RPKI_VALIDATOR_PORT
+from utils import signal_loading
 from utils import TEST_ENV
 from utils import translate_asn_range
 from utils import translate_rfc2622
@@ -214,7 +208,7 @@ class Detection:
                 consumer_arguments={"x-priority": 3},
             )
 
-            self.signal_loading(True)
+            signal_loading("detection", True)
 
             setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
             if TEST_ENV == "true":
@@ -248,7 +242,7 @@ class Detection:
 
             self.config_request_rpc()
             log.info("started")
-            self.signal_loading(False)
+            signal_loading("detection", False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
@@ -283,34 +277,6 @@ class Detection:
                 serializer="ujson",
             )
 
-        def signal_loading(self, status=False):
-            if GUI_ENABLED != "true":
-                return
-            try:
-
-                transport = RequestsHTTPTransport(
-                    url=GRAPHQL_URI,
-                    use_json=True,
-                    headers={
-                        "Content-type": "application/json; charset=utf-8",
-                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
-                    },
-                    verify=False,
-                )
-
-                client = Client(
-                    retries=3, transport=transport, fetch_schema_from_transport=True
-                )
-
-                query = gql(PROCESS_STATES_LOADING_MUTATION)
-
-                params = {"name": "detection%", "loading": status}
-
-                client.execute(query, variable_values=params)
-
-            except Exception:
-                log.exception("exception")
-
         def handle_config_notify(self, message: Dict) -> NoReturn:
             """
             Consumer for Config-Notify messages that come
@@ -319,7 +285,7 @@ class Detection:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading(True)
+            signal_loading("detection", True)
             try:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
@@ -337,7 +303,7 @@ class Detection:
             except Exception:
                 log.exception("Exception")
             finally:
-                self.signal_loading(False)
+                signal_loading("detection", False)
 
         def config_request_rpc(self) -> NoReturn:
             """

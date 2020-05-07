@@ -8,9 +8,6 @@ from xmlrpc.client import ServerProxy
 import pytricia
 import redis
 import ujson as json
-from gql import Client
-from gql import gql
-from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -27,21 +24,18 @@ from utils import flatten
 from utils import get_hash
 from utils import get_ip_version
 from utils import get_logger
-from utils import GRAPHQL_URI
-from utils import GUI_ENABLED
-from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import hijack_log_field_formatter
 from utils import HISTORIC
 from utils import ModulesState
 from utils import MON_SUPERVISOR_URI
 from utils import ping_redis
-from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import purge_redis_eph_pers_keys
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import search_worst_prefix
+from utils import signal_loading
 from utils import translate_asn_range
 from utils import translate_rfc2622
 from utils import WITHDRAWN_HIJACK_THRESHOLD
@@ -364,9 +358,9 @@ class Database:
                 consumer_arguments={"x-priority": 2},
             )
 
-            self.signal_loading(True)
+            signal_loading("database", True)
             self.config_request_rpc()
-            self.signal_loading(False)
+            signal_loading("database", False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -517,34 +511,6 @@ class Database:
             ):
                 while self.rules is None:
                     self.connection.drain_events()
-
-        def signal_loading(self, status=False):
-            if GUI_ENABLED != "true":
-                return
-            try:
-
-                transport = RequestsHTTPTransport(
-                    url=GRAPHQL_URI,
-                    use_json=True,
-                    headers={
-                        "Content-type": "application/json; charset=utf-8",
-                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
-                    },
-                    verify=False,
-                )
-
-                client = Client(
-                    retries=3, transport=transport, fetch_schema_from_transport=True
-                )
-
-                query = gql(PROCESS_STATES_LOADING_MUTATION)
-
-                params = {"name": "database%", "loading": status}
-
-                client.execute(query, variable_values=params)
-
-            except Exception:
-                log.exception("exception")
 
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -792,7 +758,7 @@ class Database:
 
         def handle_config_notify(self, message):
             message.ack()
-            self.signal_loading(True)
+            signal_loading("database", True)
             log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -819,11 +785,11 @@ class Database:
                 log.exception("{}".format(config))
 
             log.info("Database initiated, configured and running.")
-            self.signal_loading(False)
+            signal_loading("database", False)
 
         def handle_config_request_reply(self, message):
             message.ack()
-            self.signal_loading(True)
+            signal_loading("database", True)
             log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -857,7 +823,7 @@ class Database:
             self.set_modules_to_intended_state()
 
             log.info("Database initiated, configured and running.")
-            self.signal_loading(False)
+            signal_loading("database", False)
 
         def handle_hijack_ongoing_request(self, message):
             message.ack()

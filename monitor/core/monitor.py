@@ -5,9 +5,6 @@ from subprocess import Popen
 
 import pytricia
 import redis
-from gql import Client
-from gql import gql
-from gql.transport.requests import RequestsHTTPTransport
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -18,15 +15,12 @@ from utils import dump_json
 from utils import exception_handler
 from utils import get_ip_version
 from utils import get_logger
-from utils import GRAPHQL_URI
-from utils import GUI_ENABLED
-from utils import HASURA_GRAPHQL_ACCESS_KEY
 from utils import ping_redis
-from utils import PROCESS_STATES_LOADING_MUTATION
 from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
 from utils import search_worst_prefix
+from utils import signal_loading
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -91,42 +85,14 @@ class Monitor:
                 consumer_arguments={"x-priority": 2},
             )
 
-            self.signal_loading(True)
+            signal_loading("monitor", True)
             self.config_request_rpc()
 
             # setup Redis monitor listeners
             self.setup_redis_mon_listeners()
 
             log.info("started")
-            self.signal_loading(False)
-
-        def signal_loading(self, status=False):
-            if GUI_ENABLED != "true":
-                return
-            try:
-
-                transport = RequestsHTTPTransport(
-                    url=GRAPHQL_URI,
-                    use_json=True,
-                    headers={
-                        "Content-type": "application/json; charset=utf-8",
-                        "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
-                    },
-                    verify=False,
-                )
-
-                client = Client(
-                    retries=3, transport=transport, fetch_schema_from_transport=True
-                )
-
-                query = gql(PROCESS_STATES_LOADING_MUTATION)
-
-                params = {"name": "monitor%", "loading": status}
-
-                client.execute(query, variable_values=params)
-
-            except Exception:
-                log.exception("exception")
+            signal_loading("monitor", False)
 
         def setup_redis_mon_listeners(self):
             def redis_event_handler(msg):
@@ -202,7 +168,7 @@ class Monitor:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.signal_loading(True)
+            signal_loading("monitor", True)
             try:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
@@ -213,7 +179,7 @@ class Monitor:
             except Exception:
                 log.exception("Exception")
             finally:
-                self.signal_loading(False)
+                signal_loading("monitor", False)
 
         def start_monitors(self):
             log.info("Initiating monitor...")

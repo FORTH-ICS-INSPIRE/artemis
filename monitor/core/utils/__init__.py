@@ -9,6 +9,9 @@ from logging.handlers import SMTPHandler
 
 import ujson as json
 import yaml
+from gql import Client
+from gql import gql
+from gql.transport.requests import RequestsHTTPTransport
 from kombu import serialization
 
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
@@ -349,3 +352,32 @@ def get_ip_version(prefix):
     if ":" in prefix:
         return "v6"
     return "v4"
+
+
+def signal_loading(module, status=False):
+    if GUI_ENABLED != "true":
+        return
+    try:
+
+        transport = RequestsHTTPTransport(
+            url=GRAPHQL_URI,
+            use_json=True,
+            headers={
+                "Content-type": "application/json; charset=utf-8",
+                "x-hasura-admin-secret": HASURA_GRAPHQL_ACCESS_KEY,
+            },
+            verify=False,
+        )
+
+        client = Client(
+            retries=3, transport=transport, fetch_schema_from_transport=True
+        )
+
+        query = gql(PROCESS_STATES_LOADING_MUTATION)
+
+        params = {"name": "{}%".format(module), "loading": status}
+
+        client.execute(query, variable_values=params)
+
+    except Exception:
+        log.exception("exception")

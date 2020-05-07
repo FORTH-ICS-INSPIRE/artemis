@@ -634,7 +634,7 @@ def get_rpki_val_result(mgr, asn, network, netmask):
         return "NA"
 
 
-def signal_loading(self, module, status=False):
+def signal_loading(module, status=False):
     if GUI_ENABLED != "true":
         return
     try:

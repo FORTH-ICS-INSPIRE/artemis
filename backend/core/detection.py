@@ -39,6 +39,7 @@ from utils import REDIS_PORT
 from utils import RPKI_VALIDATOR_ENABLED
 from utils import RPKI_VALIDATOR_HOST
 from utils import RPKI_VALIDATOR_PORT
+from utils import signal_loading
 from utils import TEST_ENV
 from utils import translate_asn_range
 from utils import translate_rfc2622
@@ -128,36 +129,7 @@ class Detection:
             self.rules = None
             self.prefix_tree = None
             self.mon_num = 1
-
-            setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
-            if TEST_ENV == "true":
-                setattr(self, "publish_hijack_fun", self.publish_hijack_result_test)
-
-            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-            ping_redis(self.redis)
-
-            self.rtrmanager = None
-            if RPKI_VALIDATOR_ENABLED == "true":
-                while True:
-                    try:
-                        self.rtrmanager = RTRManager(
-                            RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                        )
-                        self.rtrmanager.start()
-                        log.info(
-                            "Connected to RPKI VALIDATOR '{}:{}'".format(
-                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                            )
-                        )
-                        break
-                    except Exception:
-                        log.info(
-                            "Could not connect to RPKI VALIDATOR '{}:{}'".format(
-                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                            )
-                        )
-                        log.info("Retrying RTR connection in 5 seconds...")
-                        time.sleep(5)
+            self.correlation_id = None
 
             # EXCHANGES
             self.update_exchange = Exchange(
@@ -236,8 +208,41 @@ class Detection:
                 consumer_arguments={"x-priority": 3},
             )
 
+            signal_loading("detection", True)
+
+            setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
+            if TEST_ENV == "true":
+                setattr(self, "publish_hijack_fun", self.publish_hijack_result_test)
+
+            self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+            ping_redis(self.redis)
+
+            self.rtrmanager = None
+            if RPKI_VALIDATOR_ENABLED == "true":
+                while True:
+                    try:
+                        self.rtrmanager = RTRManager(
+                            RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                        )
+                        self.rtrmanager.start()
+                        log.info(
+                            "Connected to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        break
+                    except Exception:
+                        log.info(
+                            "Could not connect to RPKI VALIDATOR '{}:{}'".format(
+                                RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
+                            )
+                        )
+                        log.info("Retrying RTR connection in 5 seconds...")
+                        time.sleep(5)
+
             self.config_request_rpc()
             log.info("started")
+            signal_loading("detection", False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
@@ -280,19 +285,25 @@ class Detection:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            raw = message.payload
-            if raw["timestamp"] > self.timestamp:
-                self.timestamp = raw["timestamp"]
-                self.rules = raw.get("rules", [])
-                self.init_detection()
-                # Request ongoing hijacks from DB
-                self.producer.publish(
-                    self.timestamp,
-                    exchange=self.hijack_exchange,
-                    routing_key="ongoing-request",
-                    priority=1,
-                    serializer="ujson",
-                )
+            signal_loading("detection", True)
+            try:
+                raw = message.payload
+                if raw["timestamp"] > self.timestamp:
+                    self.timestamp = raw["timestamp"]
+                    self.rules = raw.get("rules", [])
+                    self.init_detection()
+                    # Request ongoing hijacks from DB
+                    self.producer.publish(
+                        self.timestamp,
+                        exchange=self.hijack_exchange,
+                        routing_key="ongoing-request",
+                        priority=1,
+                        serializer="ujson",
+                    )
+            except Exception:
+                log.exception("Exception")
+            finally:
+                signal_loading("detection", False)
 
         def config_request_rpc(self) -> NoReturn:
             """

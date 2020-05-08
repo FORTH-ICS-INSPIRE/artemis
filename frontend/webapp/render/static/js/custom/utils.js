@@ -213,6 +213,7 @@ function input_filter_prefix(value, dom){ // eslint-disable-line no-unused-vars
 function aggregate_status_of_modules(data, name_to_aggregate, index){ // eslint-disable-line no-unused-vars
     var status = {
         "on": 0,
+        "loading": 0,
         "total": 0
     }
 
@@ -220,22 +221,30 @@ function aggregate_status_of_modules(data, name_to_aggregate, index){ // eslint-
         if(data[index].running){
             status['on']++;
         }
+        if(data[index].loading){
+            status['loading']++;
+        }
         status['total']++;
         index++;
     }
 
     if(status['on'] == 0){
-        return [status['on'], status['total'], "off"];
+        return [status['on'], 0, status['total'], "off"];
     }else if(status['on'] == status['total']){
-        return [status['on'], status['total'], "on"];
+        if(status['loading'] > 0){
+            return [status['on'], status['loading'], status['total'], "loading"];
+        }else{
+            return [status['on'], 0, status['total'], "on"];
+        }
     }else{
-        return [status['on'], status['total'], "semi"];
+        return [status['on'], status["loading"], status['total'], "semi"];
     }
 }
 
 function aggregate_status_of_modules_no_index(data, name_to_aggregate){ // eslint-disable-line no-unused-vars
     var status = {
         "on": 0,
+        "loading": 0,
         "total": 0
     }
 
@@ -244,16 +253,23 @@ function aggregate_status_of_modules_no_index(data, name_to_aggregate){ // eslin
             if(data[index].running){
                 status['on']++;
             }
+            if(data[index].loading){
+                status['loading']++;
+            }
             status['total']++;
             index++;
         }
     }
 
     if(status['on'] == 0){
-        return [status['on'], status['total'], "off"];
+        return [status['on'], 0, status['total'], "off"];
     }else if(status['on'] == status['total']){
-        return [status['on'], status['total'], "on"];
+        if(status['loading'] > 0){
+            return [status['on'], status['loading'], status['total'], "loading"];
+        }else{
+            return [status['on'], 0, status['total'], "on"];
+        }
     }else{
-        return [status['on'], status['total'], "semi"];
+        return [status['on'], status["loading"], status['total'], "semi"];
     }
 }

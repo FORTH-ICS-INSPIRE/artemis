@@ -1,5 +1,5 @@
 
-var proc_stats_query = "{ view_processes { name running timestamp } }";
+var proc_stats_query = "{ view_processes { name running loading timestamp } }";
 var config_stats_query = "{ view_configs(limit: 1, order_by: {time_modified: desc}) { raw_config comment time_modified } }";
 
 function waitForConnection(ws, message) {

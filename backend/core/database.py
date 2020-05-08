@@ -35,6 +35,7 @@ from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import search_worst_prefix
+from utils import signal_loading
 from utils import translate_asn_range
 from utils import translate_rfc2622
 from utils import WITHDRAWN_HIJACK_THRESHOLD
@@ -357,7 +358,9 @@ class Database:
                 consumer_arguments={"x-priority": 2},
             )
 
+            signal_loading("database", True)
             self.config_request_rpc()
+            signal_loading("database", False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -755,6 +758,7 @@ class Database:
 
         def handle_config_notify(self, message):
             message.ack()
+            signal_loading("database", True)
             log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -781,9 +785,11 @@ class Database:
                 log.exception("{}".format(config))
 
             log.info("Database initiated, configured and running.")
+            signal_loading("database", False)
 
         def handle_config_request_reply(self, message):
             message.ack()
+            signal_loading("database", True)
             log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -817,6 +823,7 @@ class Database:
             self.set_modules_to_intended_state()
 
             log.info("Database initiated, configured and running.")
+            signal_loading("database", False)
 
         def handle_hijack_ongoing_request(self, message):
             message.ack()

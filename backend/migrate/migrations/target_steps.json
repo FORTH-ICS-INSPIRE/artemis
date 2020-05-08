@@ -119,6 +119,12 @@
             "db_version": "20",
             "description": "Remove trigger by default",
             "file": "migration_20.sql"
+        },
+        "21": {
+            "id": "21",
+            "db_version": "21",
+            "description": "Add loading column to process_states table",
+            "file": "migration_21.sql"
         }
     }
 }

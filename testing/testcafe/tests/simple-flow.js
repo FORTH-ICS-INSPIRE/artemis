@@ -11,7 +11,7 @@ test('Simple Flow', async t => {
         .click(Selector('#submit'))
         .expect(Selector('li').withText('Clock').textContent).contains("Clock On 1/1")
         .expect(Selector('li').withText('Configuration').textContent).contains("Configuration On 1/1")
-        .expect(Selector('li').withText('Database v.20').textContent).contains("Database v.20 On 1/1")
+        .expect(Selector('li').withText('Database v.21').textContent).contains("Database v.21 On 1/1")
         .expect(Selector('li').withText('Detection').textContent).contains("Detection On 0/1")
         .expect(Selector('#modules_states').find('li').withText('Mitigation').textContent).contains("Mitigation On 0/1")
         .expect(Selector('#modules_states').find('li').withText('Monitor').textContent).contains("Monitor On 0/1")

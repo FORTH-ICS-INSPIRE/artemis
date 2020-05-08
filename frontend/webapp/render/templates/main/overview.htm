@@ -302,6 +302,7 @@
                                         "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
                                         "parent_name": data['view_processes'][key].name.split('_')[0],
                                         "running": data['view_processes'][key].running,
+                                        "loading": data['view_processes'][key].loading,
                                         "timestamp": data['view_processes'][key].timestamp,
                                         "display": false
                                     }
@@ -317,6 +318,7 @@
                                         "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
                                         "parent_name": data['view_processes'][key].name.split('_')[0],
                                         "running": data['view_processes'][key].running,
+                                        "loading": data['view_processes'][key].loading,
                                         "timestamp": data['view_processes'][key].timestamp,
                                         "display": false
                                     }
@@ -332,6 +334,7 @@
                                     "raw_name": name,
                                     "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
                                     "running": data['view_processes'][key].running,
+                                    "loading": data['view_processes'][key].loading,
                                     "timestamp": data['view_processes'][key].timestamp,
                                     "display": true
                                 }
@@ -369,9 +372,19 @@
                 html_code.push('<div class="row"><div class="col-lg-4">');
                 if(obj.running == true){
                     if("parent_name" in obj){
-                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On </div>');
+                        if(obj.loading == true){
+                            html_code.push('<button type="button" class="btn btn-warning btn-sm"> On </div>');
+                        }
+                        else{
+                            html_code.push('<button type="button" class="btn btn-success btn-sm"> On </div>');
+                        }
                     }else{
-                        html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">1/1</span></button></div>');
+                        if(obj.loading == true){
+                            html_code.push('<button type="button" class="btn btn-warning btn-sm"> On <span class="badge badge-light">1/1</span></button></div>');
+                        }
+                        else{
+                            html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">1/1</span></button></div>');
+                        }
                     }
 
                     var seconds_elapsed = elapsed_seconds(obj.timestamp);
@@ -381,17 +394,17 @@
                     html_code.push(calculate_time_passed(seconds_elapsed));
                     html_code.push('</time_passed></div></div>');
                 }else if(obj.running == "multiple"){
-                    if(obj.multiple_status[2] == "on"){
+                    if(obj.multiple_status[3] == "on"){
                         html_code.push('<button type="button" class="btn btn-success btn-sm"> On <span class="badge badge-light">');
-                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[2]);
                         html_code.push('</span></button></div>');
-                    }else if(obj.multiple_status[2] == "off"){
+                    }else if(obj.multiple_status[3] == "off"){
                         html_code.push('<button type="button" class="btn btn-danger btn-sm"> On <span class="badge badge-light">');
-                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[2]);
                         html_code.push('</span></button></div>');
                     }else{
                         html_code.push('<button type="button" class="btn btn-warning btn-sm"> On <span class="badge badge-light">');
-                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[1]);
+                        html_code.push(obj.multiple_status[0] + "/" + obj.multiple_status[2]);
                         html_code.push('</span></button></div>');
                     }
                     html_code.push('<div class="col-lg-8"><a id="view_multiple_');

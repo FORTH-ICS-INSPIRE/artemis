@@ -20,6 +20,7 @@ from utils import RABBITMQ_URI
 from utils import REDIS_HOST
 from utils import REDIS_PORT
 from utils import search_worst_prefix
+from utils import signal_loading
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -66,6 +67,7 @@ class Monitor:
             self.flag = True
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
+            self.correlation_id = None
 
             # EXCHANGES
             self.config_exchange = Exchange(
@@ -83,12 +85,14 @@ class Monitor:
                 consumer_arguments={"x-priority": 2},
             )
 
+            signal_loading("monitor", True)
             self.config_request_rpc()
 
             # setup Redis monitor listeners
             self.setup_redis_mon_listeners()
 
             log.info("started")
+            signal_loading("monitor", False)
 
         def setup_redis_mon_listeners(self):
             def redis_event_handler(msg):
@@ -164,12 +168,18 @@ class Monitor:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            raw = message.payload
-            if raw["timestamp"] > self.timestamp:
-                self.timestamp = raw["timestamp"]
-                self.rules = raw.get("rules", [])
-                self.monitors = raw.get("monitors", {})
-                self.start_monitors()
+            signal_loading("monitor", True)
+            try:
+                raw = message.payload
+                if raw["timestamp"] > self.timestamp:
+                    self.timestamp = raw["timestamp"]
+                    self.rules = raw.get("rules", [])
+                    self.monitors = raw.get("monitors", {})
+                    self.start_monitors()
+            except Exception:
+                log.exception("Exception")
+            finally:
+                signal_loading("monitor", False)
 
         def start_monitors(self):
             log.info("Initiating monitor...")

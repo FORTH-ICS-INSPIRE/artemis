@@ -7,6 +7,7 @@ from utils import AUTO_IGNORE_INTERVAL
 from utils import BULK_TIMER
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import signal_loading
 
 log = get_logger()
 
@@ -34,6 +35,7 @@ class Scheduler:
             self.time_to_wait_bulk = BULK_TIMER
             # Time in secs to check for hijack alerts to be auto-ignored
             self.time_to_wait_auto_ignore = AUTO_IGNORE_INTERVAL
+            self.correlation_id = None
 
             self.db_clock_exchange = Exchange(
                 "db-clock",
@@ -43,7 +45,10 @@ class Scheduler:
                 delivery_mode=1,
             )
             self.db_clock_exchange.declare()
+
+            signal_loading("clock", True)
             log.info("started")
+            signal_loading("clock", False)
             self._db_clock_send()
 
         def _db_clock_send(self):

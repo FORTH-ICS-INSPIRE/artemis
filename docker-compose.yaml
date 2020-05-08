@@ -88,6 +88,7 @@ services:
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             HISTORIC: ${HISTORIC}
+            GUI_ENABLED: ${GUI_ENABLED}
         volumes:
             # uncomment to run from source code (only if you build from source)
             # - ./monitor/:/root/

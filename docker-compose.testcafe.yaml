@@ -44,7 +44,7 @@ services:
             HASURA_HOST: ${HASURA_HOST}
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            GUI_ENABLED: ${GUI_ENABLED}
+            GUI_ENABLED: "true"
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             # for backwards compatibility

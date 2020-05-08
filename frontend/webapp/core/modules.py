@@ -2,10 +2,11 @@ import logging
 import time
 from xmlrpc.client import ServerProxy
 
-import requests
-import ujson as json
 from flask_jwt_extended import create_access_token
 from flask_security import current_user
+from gql import Client
+from gql import gql
+from gql.transport.requests import RequestsHTTPTransport
 from webapp.utils import BACKEND_SUPERVISOR_URI
 from webapp.utils import GRAPHQL_URI
 from webapp.utils import MON_SUPERVISOR_URI
@@ -146,21 +147,25 @@ class Modules_state:
     def update_intended_process_states(self, name, running=False):
         try:
             access_token = create_access_token(identity=current_user)
-            graqphql_request_headers = {
-                "Content-Type": "application/json; charset=utf-8",
-                "Authorization": "Bearer {}".format(access_token),
-            }
-            graqphql_request_payload = json.dumps(
-                {
-                    "variables": {"name": name, "running": running},
-                    "operationName": "updateIntendedProcessStates",
-                    "query": intended_process_states_mutation,
-                }
-            )
-            requests.post(
+            transport = RequestsHTTPTransport(
                 url=GRAPHQL_URI,
-                headers=graqphql_request_headers,
-                data=graqphql_request_payload,
+                use_json=True,
+                headers={
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization": "Bearer {}".format(access_token),
+                },
+                verify=False,
             )
+
+            client = Client(
+                retries=3, transport=transport, fetch_schema_from_transport=True
+            )
+
+            query = gql(intended_process_states_mutation)
+
+            params = {"name": name, "running": running}
+
+            client.execute(query, variable_values=params)
+
         except Exception:
             log.exception("exception")

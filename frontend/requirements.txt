@@ -14,6 +14,7 @@ Flask-Principal==0.4.0
 Flask-Security==3.0.0
 Flask-SQLAlchemy==2.4.1
 Flask-WTF==0.14.3
+gql==0.4.0
 gunicorn==20.0.4
 kombu==4.6.7
 ldap3==2.5.2

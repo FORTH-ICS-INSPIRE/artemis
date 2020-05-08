@@ -13,6 +13,7 @@ from kombu.mixins import ConsumerProducerMixin
 from utils import get_ip_version
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import signal_loading
 from utils import translate_rfc2622
 
 log = get_logger()
@@ -48,6 +49,7 @@ class Mitigation:
             self.timestamp = -1
             self.rules = None
             self.prefix_tree = None
+            self.correlation_id = None
 
             # EXCHANGES
             self.mitigation_exchange = Exchange(
@@ -82,7 +84,9 @@ class Mitigation:
                 consumer_arguments={"x-priority": 2},
             )
 
+            signal_loading("mitigation", True)
             self.config_request_rpc()
+            signal_loading("mitigation", False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -103,11 +107,17 @@ class Mitigation:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            raw = message.payload
-            if raw["timestamp"] > self.timestamp:
-                self.timestamp = raw["timestamp"]
-                self.rules = raw.get("rules", [])
-                self.init_mitigation()
+            signal_loading("mitigation", True)
+            try:
+                raw = message.payload
+                if raw["timestamp"] > self.timestamp:
+                    self.timestamp = raw["timestamp"]
+                    self.rules = raw.get("rules", [])
+                    self.init_mitigation()
+            except Exception:
+                log.exception("Exception")
+            finally:
+                signal_loading("mitigation", False)
 
         def config_request_rpc(self):
             self.correlation_id = uuid()

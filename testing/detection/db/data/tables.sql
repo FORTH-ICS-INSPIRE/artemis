@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (20, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (21, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -199,6 +199,7 @@ $$ LANGUAGE SQL;
 CREATE TABLE IF NOT EXISTS process_states (
     name VARCHAR (32) UNIQUE,
     running BOOLEAN DEFAULT FALSE,
+        loading BOOLEAN DEFAULT FALSE,
     timestamp TIMESTAMP default current_timestamp
 );
 

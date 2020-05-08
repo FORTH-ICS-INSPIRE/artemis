@@ -11,9 +11,9 @@ from kombu import serialization
 from kombu import uuid
 from utils import get_logger
 from utils import RABBITMQ_URI
+from utils import signal_loading
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer as WatchObserver
-
 
 log = get_logger()
 
@@ -62,11 +62,17 @@ class Observer:
         def __init__(self, d, fn, connection):
             super().__init__()
             self.connection = connection
-            self.response = None
             self.correlation_id = None
+            signal_loading("observer", True)
+            self.response = None
             self.path = "{}/{}".format(d, fn)
-            with open(self.path, "r") as f:
-                self.content = f.readlines()
+            try:
+                with open(self.path, "r") as f:
+                    self.content = f.readlines()
+            except Exception:
+                log.exception("exception")
+            finally:
+                signal_loading("observer", False)
 
         def on_response(self, message):
             message.ack()

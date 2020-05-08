@@ -2,9 +2,10 @@
 
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
-- Added additional ports (8080, 8443) to nginx configuration for rootless docker support
-- Added application names for all postgres connections
-- Added database migration check between latest release and current version
+- Additional ports (8080, 8443) to nginx configuration for rootless docker support
+- Application names for all postgres connections
+- Database migration check between latest release and current version
+- Mechanism to show which modules are (re)loading upon configuration change
 - Auto-ignore mechanism and env variables
 
 ### Changed
@@ -12,6 +13,7 @@
 - Upgrade rabbitmq to latest release (v3.8.3)
 - Upgrade postgrest to latest release version (v7.0.0)
 - Upgraded hasura-engine to v1.1.0
+- Updated version of BGPStream on custom image (mavromat/bgpstream-redis:v1.3-bgpstream)
 
 ### Fixed
 - LIMIT query planner bug (http://datamangling.com/2014/01/17/limit-1-and-performance-in-a-postgres-query/)

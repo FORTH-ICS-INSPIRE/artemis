@@ -13,11 +13,11 @@
    vagrant up
    ```
    *Note: the final output will be: "Visit ARTEMIS at: https://${artemis_host}". Note the IP address, which is the host-only address of the VM.*
-6. Pause your VM (saving its current execution state):
+6. Pause your VM (saving its current execution state) [optional]:
    ```
    vagrant suspend
    ```
-7. Turn your VM off (will automaticall shut ARTEMIS down):
+7. Turn your VM off (will automatically shut ARTEMIS down):
    ```
    vagrant halt
    ```
@@ -25,7 +25,7 @@
    ```
    vagrant destroy
    ```
-9. `ssh` into your VM (using the locally generated SSH key):
+9. `ssh` into your VM (using the locally generated SSH key) [optional]:
    ```
    vagrant ssh
    ```

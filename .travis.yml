@@ -70,7 +70,7 @@ jobs:
     - docker-compose -f docker-compose.testcafe.yaml logs
   - name: TestDetection
     install:
-    - pip install codecov
+    - pip install coverage==4.5.4 codecov==2.0.22
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -85,7 +85,7 @@ jobs:
     - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
     install:
-    - pip install codecov
+    - pip install coverage==4.5.4 codecov==2.0.22
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -111,7 +111,7 @@ jobs:
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
   - name: TestRPKI
     install:
-    - pip install codecov
+    - pip install coverage==4.5.4 codecov==2.0.22
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest

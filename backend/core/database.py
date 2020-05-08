@@ -1721,7 +1721,9 @@ class Database:
                 # check which of them should be auto-ignored
                 time_now = int(time.time())
                 for entry in entries:
-                    time_last_updated = int(entry[1].timestamp())
+                    time_last_updated = max(
+                        int(entry[1].timestamp()), int(entry[8].timestamp())
+                    )
                     num_peers_seen = int(entry[2])
                     num_asns_inf = int(entry[3])
                     hij_key = entry[4]

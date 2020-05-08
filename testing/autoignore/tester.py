@@ -361,7 +361,6 @@ class AutoignoreTester:
                     # send and validate all messages in the messages.json file
                     while send_cnt < send_len:
                         self.curr_idx = send_cnt
-                        # sleep for at least 15 seconds between messages so that we check the ignore mechanism
                         self.send_next_message(connection)
                         send_cnt += 1
                         # sleep until we receive all expected messages
@@ -372,6 +371,13 @@ class AutoignoreTester:
                             except socket.timeout:
                                 # avoid infinite loop by timeout
                                 assert False, "Consumer timeout"
+                        # sleep for at least 20 seconds between messages so that we check that the ignore mechanism
+                        # is not triggered by mistake
+                        if send_cnt < send_len:
+                            print(
+                                "[+] Sleeping for 20 seconds to ensure auto-ignore works correctly"
+                            )
+                            time.sleep(20)
 
             connection.close()
 

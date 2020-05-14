@@ -140,13 +140,13 @@ def setup():
 @app.errorhandler(404)
 def page_not_found(error):
     app.artemis_logger.info("Page Not Found Error: {}".format(error))
-    return render_template("/errors/404.htm")
+    return render_template("/errors/404.htm"), 404
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
     app.artemis_logger.error("Server Error: {}".format(error))
-    return render_template("/errors/500.htm")
+    return render_template("/errors/500.htm"), 500
 
 
 @app.errorhandler(Exception)

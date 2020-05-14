@@ -139,7 +139,6 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
   - name: Nikto
-    if: branch = master
     before_script:
     - docker-compose up -d
     script:

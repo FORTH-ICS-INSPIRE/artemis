@@ -138,12 +138,21 @@ jobs:
     - codecov
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
-  - name: Nikto
+  - name: ZAP Baseline (Passive)
     before_script:
+    - docker pull ictu/zap2docker-weekly
     - docker-compose up -d
     script:
     - sleep 15
-    - docker run --rm --network artemis_artemis alpine/nikto -h https://nginx
+    - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-baseline.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"'
+  - name: ZAP Full (Active)
+    if: branch = master
+    before_script:
+    - docker pull ictu/zap2docker-weekly
+    - docker-compose up -d
+    script:
+    - sleep 15
+    - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-full-scan.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"'
 
 notifications:
   slack:

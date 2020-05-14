@@ -139,6 +139,7 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
   - name: ZAP Baseline (Passive)
+    if: branch != master
     before_script:
     - docker pull ictu/zap2docker-weekly
     - docker-compose up -d

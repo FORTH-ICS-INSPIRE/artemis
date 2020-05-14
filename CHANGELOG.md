@@ -6,6 +6,7 @@
 - Application names for all postgres connections
 - Database migration check between latest release and current version
 - Mechanism to show which modules are (re)loading upon configuration change
+- ZAP Active and Passive scanning
 
 ### Changed
 - Upgraded nginx to latest release (v1.17)

@@ -1,5 +1,6 @@
 language: python
-sudo: required
+dist: xenial
+os: linux
 services:
 - docker
 env:

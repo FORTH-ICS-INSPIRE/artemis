@@ -16,4 +16,3 @@ postgres-data-backup/*
 *.rdb
 *_history
 local_configs/*
-prod-*.js

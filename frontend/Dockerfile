@@ -15,11 +15,10 @@ FROM mavromat/alpine-python:3.6
 
 WORKDIR /root
 
-RUN apk add --update --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
+RUN apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
 
 COPY requirements.txt ./requirements.txt
-RUN pip --no-cache-dir install --upgrade 'pip<19.0' && \
-    pip --no-cache-dir install -r requirements.txt
+RUN pip --no-cache-dir install -r requirements.txt
 
 RUN mkdir -p /etc/artemis/ && mkdir -p /var/log/artemis/
 

@@ -1,5 +1,4 @@
 FROM mavromat/bgpstream-redis:v1.3-bgpstream
-
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \
@@ -21,6 +20,7 @@ COPY ./supervisor.d/* /etc/supervisor/conf.d/
 
 COPY entrypoint Makefile wait-for ./
 COPY core ./core
+
 RUN make clean && make -j
 
 ENTRYPOINT ["./entrypoint"]

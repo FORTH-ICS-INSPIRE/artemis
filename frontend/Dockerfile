@@ -15,10 +15,10 @@ FROM mavromat/alpine-python:3.6
 
 WORKDIR /root
 
-RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
+RUN apk add --update --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
 
 COPY requirements.txt ./requirements.txt
-RUN pip install --upgrade 'pip<19.0' && \
+RUN pip --no-cache-dir install --upgrade 'pip<19.0' && \
     pip --no-cache-dir install -r requirements.txt
 
 RUN mkdir -p /etc/artemis/ && mkdir -p /var/log/artemis/
@@ -26,7 +26,8 @@ RUN mkdir -p /etc/artemis/ && mkdir -p /var/log/artemis/
 COPY ./webapp/configs/* /etc/artemis/
 
 COPY entrypoint init.py wait-for ./
-COPY webapp ./webapp
+COPY ./webapp ./webapp
+
 RUN rm /root/webapp/render/static/js/custom/*
 COPY --from=builder /root/prod/ /root/webapp/render/static/js/custom/
 

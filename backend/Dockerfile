@@ -36,8 +36,8 @@ RUN pip --no-cache-dir install -r requirements.txt --ignore-installed && \
     pip --no-cache-dir install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49
 
 COPY hasura_metadata entrypoint hasura_init.json Makefile wait-for ./
-COPY migrate migrate
-COPY core core
+COPY migrate ./migrate
+COPY core ./core
 
 RUN make clean && make -j
 

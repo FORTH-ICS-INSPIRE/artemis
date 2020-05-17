@@ -153,7 +153,7 @@ jobs:
     - docker-compose up -d
     script:
     - sleep 15
-    - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-full-scan.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"'
+    - travis_wait 30 docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-full-scan.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"'
 
 notifications:
   slack:

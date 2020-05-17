@@ -4,6 +4,7 @@ import time
 from datetime import timedelta
 
 import ujson as json
+from flask import abort
 from flask import Flask
 from flask import g
 from flask import jsonify
@@ -28,6 +29,7 @@ from webapp.core.proxy_api import proxy_api_post
 from webapp.data.models import db
 from webapp.render.views.actions_view import actions
 from webapp.render.views.admin_view import admin
+from webapp.render.views.errors_view import errors
 from webapp.render.views.main_view import main
 from webapp.utils.path import get_app_base_path
 
@@ -54,6 +56,7 @@ app.login_manager.session_protection = "strong"
 app.register_blueprint(main, url_prefix="/main")
 app.register_blueprint(admin, url_prefix="/admin")
 app.register_blueprint(actions, url_prefix="/actions")
+app.register_blueprint(errors, url_prefix="/errors")
 
 
 def load_user(payload):
@@ -99,8 +102,8 @@ def setup():
         app.artemis_logger.exception("exception while retrieving status of modules..")
         exit(-1)
 
-    app.artemis_logger.debug("setting database for the first time")
     if not os.path.isfile(app.config["DB_FULL_PATH"]):
+        app.artemis_logger.debug("setting database for the first time")
         db.create_all()
 
         def create_roles(ctx):
@@ -136,34 +139,36 @@ def setup():
 
         create_user(data_store)
 
+    app.extensions["security"]._unauthorized_callback = lambda: abort(400)
+
 
 @app.errorhandler(400)
 def bad_request(error):
     app.artemis_logger.info("Page Not Found Error: {}".format(error))
-    return render_template("/errors/400.htm"), 400
+    return redirect("/errors/400")
 
 
 @app.errorhandler(404)
 def page_not_found(error):
     app.artemis_logger.info("Page Not Found Error: {}".format(error))
-    return render_template("/errors/400.htm"), 400
+    return redirect("/errors/400")
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
     app.artemis_logger.error("Server Error: {}".format(error))
-    return render_template("/errors/500.htm"), 500
+    return redirect("/errors/500")
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     app.artemis_logger.exception("Unhandled Exception: {}".format(error))
-    return render_template("/errors/500.htm"), 500
+    return redirect("/errors/500")
 
 
 @app.login_manager.unauthorized_handler
 def unauth_handler():
-    return render_template("/errors/400.htm"), 400
+    return redirect("/login")
 
 
 @app.context_processor

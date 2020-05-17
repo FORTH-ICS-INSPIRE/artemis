@@ -141,7 +141,7 @@ services:
             SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
         volumes:
             # uncomment to run from source code  (only if you build from source)
-            # - ./frontend/:/root/
+            - ./frontend/:/root/
             # comment after Step 2 of README
             - ./frontend/webapp/configs/:/etc/artemis/
             # uncomment after Step 2 of README

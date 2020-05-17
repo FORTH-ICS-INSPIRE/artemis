@@ -139,21 +139,12 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
   - name: ZAP Baseline (Passive)
-    if: branch != master
     before_script:
     - docker pull ictu/zap2docker-weekly
     - docker-compose up -d
     script:
     - sleep 15
-    - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-baseline.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"'
-  - name: ZAP Full (Active)
-    if: branch = master
-    before_script:
-    - docker pull ictu/zap2docker-weekly
-    - docker-compose up -d
-    script:
-    - sleep 15
-    - travis_wait 30 docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-full-scan.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"'
+    - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-baseline.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"' || true
 
 notifications:
   slack:

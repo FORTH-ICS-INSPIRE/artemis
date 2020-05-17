@@ -32,7 +32,7 @@ data:
   webappPort: {{ .Values.webappPort | default "8000" | quote }}
   adminUser: {{ .Values.adminUser | default "admin" | quote }}
   adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
-  jsVersion: {{ .Values.jsVersion | default "1.0.3" | quote }}
+  jsVersion: {{ .Values.jsVersion | default "1.0.4" | quote }}
   rabbitmqHost: {{ .Release.Name }}-{{ .Values.rabbimtqHost | default "rabbitmq" }}-svc
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}

@@ -137,10 +137,16 @@ def setup():
         create_user(data_store)
 
 
+@app.errorhandler(400)
+def bad_request(error):
+    app.artemis_logger.info("Page Not Found Error: {}".format(error))
+    return render_template("/errors/400.htm"), 400
+
+
 @app.errorhandler(404)
 def page_not_found(error):
     app.artemis_logger.info("Page Not Found Error: {}".format(error))
-    return render_template("/errors/404.htm"), 404
+    return render_template("/errors/400.htm"), 400
 
 
 @app.errorhandler(500)
@@ -152,12 +158,12 @@ def internal_server_error(error):
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     app.artemis_logger.exception("Unhandled Exception: {}".format(error))
-    return render_template("/errors/500.htm")
+    return render_template("/errors/500.htm"), 500
 
 
 @app.login_manager.unauthorized_handler
 def unauth_handler():
-    return render_template("/errors/401.htm")
+    return render_template("/errors/400.htm"), 400
 
 
 @app.context_processor
@@ -197,7 +203,7 @@ def jwt_auth():
         data = request.get_json()
         if not data:
             resp = jsonify({"error": "wrong credentials"})
-            return resp, 401
+            return resp, 400
         username = data["username"]
         password = data["password"]
         app.artemis_logger.info(username)
@@ -206,7 +212,7 @@ def jwt_auth():
 
         if not user or not verify_password(password, user.password):
             resp = jsonify({"error": "wrong credentials"})
-            return resp, 401
+            return resp, 400
     else:
         user = current_user
     # Create the tokens we will be sending back to the user

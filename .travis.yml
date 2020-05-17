@@ -37,23 +37,29 @@ jobs:
     name: backend
     install: []
     before_script:
+    - docker pull inspiregroup/artemis-backend:latest
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} backend/
+    - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/
     - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
   - name: frontend
     install: []
     before_script:
+    - docker pull inspiregroup/artemis-frontend:latest
+    - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
   - name: monitor
     install: []
     before_script:
+    - docker pull inspiregroup/artemis-monitor:latest
+    - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
+    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
   - stage: run tests
     name: TestCafe

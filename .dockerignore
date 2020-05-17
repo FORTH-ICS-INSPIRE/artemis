@@ -1,4 +1,10 @@
 venv/
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
 *.pyc
 *.c
 *.so
@@ -8,7 +14,6 @@ node_modules/
 artemis.db
 webapp.log
 .npm/
-*.pem
 frontend/db/*
 postgres-data-current/*
 postgres-data-backup/*

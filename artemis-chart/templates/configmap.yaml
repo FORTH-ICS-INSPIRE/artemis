@@ -33,10 +33,12 @@ data:
   adminUser: {{ .Values.adminUser | default "admin" | quote }}
   adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
   jsVersion: {{ .Values.jsVersion | default "1.0.3" | quote }}
+  gunicornWorkers: {{ .Values.gunicornWorkers | default "4" | quote }}
   rabbitmqHost: {{ .Release.Name }}-{{ .Values.rabbimtqHost | default "rabbitmq" }}-svc
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}
   rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Release.Name }}-{{ .Values.rabbitmqHost | default "rabbitmq"}}-svc:{{ .Values.rabbitmqPort | default 5672 }}//
+  rabbitmqIoThreadPoolSize: {{ .Values.rabbitmqIoThreadPoolSize | default "128" | quote }}
   hasuraHost: {{ .Release.Name }}-{{ .Values.hasuraHost | default "graphql" }}-svc
   hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
   hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}

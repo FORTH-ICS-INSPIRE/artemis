@@ -51,6 +51,8 @@ services:
             - artemis
         expose:
             - ${RABBITMQ_PORT}
+        environment:
+            RABBITMQ_IO_THREAD_POOL_SIZE: 16
         volumes:
             - ./testing/detection/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:

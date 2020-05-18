@@ -49,6 +49,7 @@ services:
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_IO_THREAD_POOL_SIZE: ${RABBITMQ_IO_THREAD_POOL_SIZE:-128}
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:

@@ -505,7 +505,6 @@
                     download_filters.push(filter_parameters['status'] + ".eq.true");
                 }
 
-
                 if(filters.length > 0){
                     $("#distinct_values_selection").val('select');
                     $('#distinct_values_text').val("");
@@ -596,7 +595,9 @@
                         });
                         var tool_elems = $("#hijacks_wrapper").children('div').eq(0).children('div');
                         {% if current_user.has_roles('admin') %}
-                        var display_multiple_actions = '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
+                        var display_multiple_actions = '';
+                        display_multiple_actions += '<button id="select_page" type="button" class="btn btn-primary btn-sm">Select Page</button>  ';
+                        display_multiple_actions += '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
                         display_multiple_actions += '<input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>';
                         display_multiple_actions += '</label></span>  <select class="form-control form-control-sm-auto" id="action_selection">';
                         display_multiple_actions += '<option value="hijack_action_resolve">Mark as Resolved</option>';
@@ -623,6 +624,15 @@
                             };
                             action_multiple_call(url, obj);
                         } );
+
+                        $('#select_page').click(function() {
+                            let p = table.rows({ page: 'current' }).nodes();
+                            selected_hijacks = p.map(x => x.id).toArray();
+                            $('#selected_hijacks_num').html(selected_hijacks.length);
+                            table.draw(false);
+                            $('#clear_all_selected').prop('disabled', false);
+                            $('#apply_selected').prop('disabled', false);
+                        })
 
                         $('#clear_all_selected').click(function() {
                             selected_hijacks = [];
@@ -747,18 +757,17 @@
             });
 
             {% if current_user.has_roles('admin') %}
-
                 function action_delete_hijacks(){
                     let url = "{{ url_for('actions.submit_hijacks_actions') }}";
                     let obj = {
                         "hijack_keys" : selected_hijacks,
                         "action": "hijack_action_delete"
                     };
-                    var result = action_multiple_call(url, obj);
+                    let result = action_multiple_call(url, obj);
                 }
 
                 async function action_multiple_call(url, obj){
-                    var result = await postFetch_json(url, obj);
+                    let result = await postFetch_json(url, obj);
                     if(result['status'] == "success"){
                         selected_hijacks = [];
                         $('#selected_hijacks_num').html(selected_hijacks.length);
@@ -767,7 +776,6 @@
                         $('#apply_selected').prop('disabled', true);
                     }
                 }
-
             {% endif %}
 
 
@@ -799,10 +807,8 @@
                 fetchDistinctValues(distinct_on, query);
             });
 
-
-
             function downloadTable_update_link(){
-                var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
+                let url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
                 if(downloadTable_parameters != null){
                     url += "&parameters=" + downloadTable_parameters;
                 }

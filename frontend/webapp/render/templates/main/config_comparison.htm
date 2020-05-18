@@ -29,25 +29,25 @@
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="config_a">Select config:</label>
-                                    <form name="config_a_form">
+                                    <div name="config_a_form">
                                         <select class="form-control_custom w-75 p-1" id="config_a">
                                             {% for config_ in configs %}
                                             <option id="{{ config_['time_modified'] }}">{{ config_['time_modified'] }}</div> </option>
                                             {% endfor %}
                                         </select>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="config_a">Select config:</label>
-                                    <form name="config_b_form">
+                                    <div name="config_b_form">
                                         <select class="form-control_custom w-75 p-1" id="config_b" autocomplete="off">
                                             {% for config_ in configs %}
                                             <option id="{{ config_['time_modified'] }}">{{ config_['time_modified'] }}</div> </option>
                                             {% endfor %}
                                         </select>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
                 	   </div>
@@ -63,10 +63,10 @@
                                     <div class="panel-body">
                                         <div class="row">
                                             <div class="col-lg-6">
-                                                <form><textarea id="config_comment_box_a" name="config_comment_box_a"></textarea></form>
+                                                <div><textarea id="config_comment_box_a" name="config_comment_box_a"></textarea></div>
                                             </div>
                                             <div class="col-lg-6">
-                                                <form><textarea id="config_comment_box_b" name="config_comment_box_b"></textarea></form>
+                                                <div><textarea id="config_comment_box_b" name="config_comment_box_b"></textarea></div>
                                             </div>
                                         </div>
                                     </div>

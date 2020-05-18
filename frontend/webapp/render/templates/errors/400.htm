@@ -1,14 +1,13 @@
 {% extends "base/layout_container.htm" %}
 
 {% block title %}
-    {{super()}} - Error 401: Unauthorized to access this page
+    {{super()}} - Error 400: Bad request
 {% endblock %}
 
 {% block head %}
     {{super()}}
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-	<meta http-equiv="refresh" content="3;url={{ url_for('security.login') }}" />
 {% endblock %}
 
 {% block page_content %}
@@ -18,10 +17,10 @@
 		        <div class="col-6 mx-auto">
 		            <div class="jumbotron vertical-center">
 		            	<p class="lead">
-		                    <img src="{{ url_for('static', filename='images/401_unauthorized.png') }}"></img>
+		                    <img src="{{ url_for('static', filename='images/400_not_found.png') }}"></img>
 		                </p>
-		                <h1 class="display-4">Error 401</h1>
-		                <p class="lead">You are not authorized to access this page.</p>
+		                <h1 class="display-4">Error 400</h1>
+		                <p class="lead">Bad request, authentication needed or page does not exist.</p>
 		            </div>
 		        </div>
 		    </div>

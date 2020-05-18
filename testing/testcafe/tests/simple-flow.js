@@ -47,7 +47,7 @@ test('Simple Flow', async t => {
         .pressKey('tab')
         .typeText(Selector('#confirm'), '321admin')
         .click(Selector('#submit'))
-        .click(Selector('a').withText('Sign out'))
+        .click(Selector('a').withText('Logout'))
         .typeText(Selector('#email'), 'admin')
         .pressKey('tab')
         .typeText(Selector('#password'), '321admin')

@@ -54,7 +54,7 @@ def display_hijack():
 
     if not exist:
         app.artemis_logger.debug("Hijack with id not found: {}".format(_key))
-        return render_template("errors/404.htm")
+        return render_template("errors/400.htm"), 400
 
     if mitigation_status_request.is_up_or_running("mitigation"):
         _mitigation_flag = True

@@ -67,6 +67,7 @@ class BaseConfig(object):
     POSTS_PER_PAGE = 25
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Strict"
 
 
 def configure_app(app):

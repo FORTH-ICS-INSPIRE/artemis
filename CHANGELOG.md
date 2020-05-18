@@ -7,6 +7,7 @@
 - Database migration check between latest release and current version
 - Mechanism to show which modules are (re)loading upon configuration change
 - ZAP Active and Passive scanning
+- Select Page button on hijacks page to select all hijacks on current page
 
 ### Changed
 - Upgraded nginx to latest release (v1.17)

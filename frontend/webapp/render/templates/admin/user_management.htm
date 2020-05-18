@@ -66,7 +66,7 @@
                         <i class="fa fa-bell fa-fw"></i> Demote Admin
                     </div>
                           <div class="panel-body">
-                        <form action="{{ url_for('actions.remove_admin') }}" method="POST" name="create_admin_form">
+                        <form action="{{ url_for('actions.remove_admin') }}" method="POST" name="remove_admin_form">
                             {{ users_to_remove_admin_form.hidden_tag() }}
                             {% from "security/_macros.html" import render_field %}
                             <label for="admin_priviliges"><strong>Select user to remove admin privileges:</strong></label>
@@ -86,7 +86,7 @@
                         <i class="fa fa-bell fa-fw"></i> Delete user
                     </div>
                           <div class="panel-body">
-                        <form action="{{ url_for('actions.delete_user') }}" method="POST" name="create_admin_form">
+                        <form action="{{ url_for('actions.delete_user') }}" method="POST" name="delete_user_form">
                             {{ users_to_delete_form.hidden_tag() }}
                             {% from "security/_macros.html" import render_field %}
                             <label for="admin_priviliges"><strong>Select user to delete:</strong></label>

@@ -35,7 +35,7 @@ webappPort: 8000
 adminUser: admin
 adminPass: admin123
 adminEmail: admin@admin
-jsVersion: 1.0.3
+jsVersion: 1.0.4
 # rabbitmq
 rabbitmqHost: rabbitmq
 rabbitmqPort: 5672

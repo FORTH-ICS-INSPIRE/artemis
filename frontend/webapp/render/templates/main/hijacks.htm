@@ -596,7 +596,7 @@
                         var tool_elems = $("#hijacks_wrapper").children('div').eq(0).children('div');
                         {% if current_user.has_roles('admin') %}
                         var display_multiple_actions = '';
-                        display_multiple_actions += '<button id="select_page" type="button" class="btn btn-primary btn-sm">Select Page</button>';
+                        display_multiple_actions += '<button id="select_page" type="button" class="btn btn-primary btn-sm">Select Page</button>  ';
                         display_multiple_actions += '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
                         display_multiple_actions += '<input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>';
                         display_multiple_actions += '</label></span>  <select class="form-control form-control-sm-auto" id="action_selection">';
@@ -605,8 +605,8 @@
                         display_multiple_actions += '<option value="hijack_action_acknowledge">Mark as Acknowledged</option>';
                         display_multiple_actions += '<option value="hijack_action_acknowledge_not">Mark as Not Acknowledged</option>';
                         display_multiple_actions += '<option value="hijack_action_delete">Delete Hijack</option></select>';
-                        display_multiple_actions += '<button id="apply_selected" type="button" disabled class="btn btn-primary btn-sm">Apply</button>';
-                        display_multiple_actions += '<button id="clear_all_selected" type="button" disabled class="btn btn-danger btn-sm">Clear</button>';
+                        display_multiple_actions += '  <button id="apply_selected" type="button" disabled class="btn btn-primary btn-sm">Apply</button>';
+                        display_multiple_actions += '  <button id="clear_all_selected" type="button" disabled class="btn btn-danger btn-sm">Clear</button>';
 
                         $(tool_elems).eq(1).html( display_multiple_actions + '<a id="download_table_button" href="#" target="_blank" class="btn btn-primary btn-sm float-right" role="button">Download Table</a>');
 

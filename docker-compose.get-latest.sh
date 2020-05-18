@@ -20,12 +20,12 @@ function upgrade() {
 # Checks
 if [[ -d postgres-data-current && ! -r postgres-data-current ]]; then
   echo "[!] You don't have permission to delete current database. Run sudo chmod -R 777 postgres-data-*"
-  exit -1
+  exit 1
 fi
-current_version=$(cat .env | grep -Ei "SYSTEM_VERSION=(.*)" | cut -d= -f2)
+current_version=$(grep -Ei "SYSTEM_VERSION=(.*)" .env | cut -d= -f2)
 if [ "$current_version" != "latest" ]; then
   echo "[!] This script only works when SYSTEM_VERSION is set to latest"
-  exit -1
+  exit 1
 fi
 
 out=$(docker-compose ps -q)
@@ -36,7 +36,7 @@ if [ -z "$out" ]; then
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     upgrade
   else
-    exit -1
+    exit 1
   fi
 else
   docker-compose exec postgres sh -c 'pg_dump -d $POSTGRES_DB -U $POSTGRES_USER -F t -f /tmp/db.tar > /tmp/db.log 2>&1' && \

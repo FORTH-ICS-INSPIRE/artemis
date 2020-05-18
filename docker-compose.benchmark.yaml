@@ -52,7 +52,7 @@ services:
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
-        image: timescale/timescaledb:1.7.0-pg12
+        image: timescale/timescaledb:1.7.0-pg10
         container_name: postgres
         restart: always
         networks:

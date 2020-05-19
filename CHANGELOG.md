@@ -6,6 +6,7 @@
 - Application names for all postgres connections
 - Database migration check between latest release and current version
 - Mechanism to show which modules are (re)loading upon configuration change
+- GUNICORN_WORKERS and RABBITMQ_IO_THREAD_POOL_SIZE variables smaller deployments
 - ZAP Active and Passive scanning
 - Select Page button on hijacks page to select all hijacks on current page
 

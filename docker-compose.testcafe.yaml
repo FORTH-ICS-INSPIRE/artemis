@@ -129,6 +129,7 @@ services:
             # for backwards compatibility
             SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
             SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
+            GUNICORN_WORKERS: 1
     nginx:
         image: nginx:1.17-alpine
         container_name: nginx
@@ -159,6 +160,7 @@ services:
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_IO_THREAD_POOL_SIZE: 16
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:

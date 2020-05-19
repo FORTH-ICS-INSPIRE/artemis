@@ -21,6 +21,7 @@ from flask_security.decorators import login_required
 from flask_security.decorators import roles_accepted
 from flask_security.utils import hash_password
 from flask_security.utils import verify_password
+from flask_talisman import Talisman
 from webapp.configs.config import configure_app
 from webapp.core.fetch_config import Configuration
 from webapp.core.modules import Modules_state
@@ -42,6 +43,22 @@ app = Flask(
     static_folder="../render/static",
 )
 
+# Content Security Policy
+csp = {
+    "default-src": "'self'",
+    "script-src": "'self'",
+    "connect-src": ["'self'", "stat.ripe.net"],
+    "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "stackpath.bootstrapcdn.com",
+        "cdn.datatables.net",
+    ],
+    "frame-ancestors": "'none'",
+    "img-src": "'self' data:",
+    "object-src": "'none'",
+}
+
 with app.app_context():
     configure_app(app)
     db.init_app(app)
@@ -51,6 +68,12 @@ with app.app_context():
     werk_log.setLevel(logging.ERROR)
     data_store = app.security.datastore
     jwt = JWTManager(app)
+    talisman = Talisman(
+        app,
+        force_https=False,
+        content_security_policy=csp,
+        content_security_policy_nonce_in=["script-src"],
+    )
 
 app.login_manager.session_protection = "strong"
 app.register_blueprint(main, url_prefix="/main")

@@ -374,7 +374,7 @@
     {{super()}}
     {% block scripts %}
         {{super()}}
-        <script>
+        <script nonce="{{ csp_nonce() }}">
             var table;
             var hijack_obj = {
                 'key' : "{{ hijack_key }}"
@@ -1200,26 +1200,26 @@
             }
 
         </script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.8.6/clipboard-polyfill.js"></script>
-        <script src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
-        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
-        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.8.6/clipboard-polyfill.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/textile/textile.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/merge/merge.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/yaml/yaml.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/textile/textile.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/merge/merge.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/yaml/yaml.min.js"></script>
 
-        <script src="{{ url_for('static', filename='js/custom/actions.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/actions.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
 
     {% endblock %}
 {% endblock %}

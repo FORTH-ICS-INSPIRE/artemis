@@ -152,7 +152,7 @@ spec:
         - name: GUNICORN_WORKERS
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: {{ .Release.Name }}-configmap
               key: gunicornWorkers
         image: inspiregroup/artemis-frontend:{{ .Values.systemVersion }}
         imagePullPolicy: Always

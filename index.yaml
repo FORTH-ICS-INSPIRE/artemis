@@ -2,8 +2,50 @@ apiVersion: v1
 entries:
   artemis-chart:
   - apiVersion: v2
+    appVersion: 1.4.0
+    created: "2020-05-21T02:14:54.446722596+02:00"
+    description: ARTEMIS helm chart for deploying on kubernetes.
+    digest: 8ad43bf8e1ce3bc7750bbcc1c1426e128f8ebc90666f09bb2a1a49ed6d0fccb4
+    home: https://github.com/FORTH-ICS-INSPIRE/artemis
+    icon: https://github.com/FORTH-ICS-INSPIRE/artemis/blob/gh-pages/logo.png
+    keywords:
+    - helm
+    - artemis
+    - bgp
+    - hijack
+    maintainers:
+    - email: jim.mavrommatis@gmail.com
+      name: Dimitrios Mavrommatis
+      url: https://slowr.github.io
+    name: artemis-chart
+    type: application
+    urls:
+    - artemis-chart-0.0.3.tgz
+    version: 0.0.3
+  - apiVersion: v2
+    appVersion: latest
+    created: "2020-05-21T02:14:54.447724003+02:00"
+    description: ARTEMIS helm chart for deploying on kubernetes.
+    digest: 00ac0f14e9e3e820eb01f1e25111b6e45405ae64d7d82837686ee3e46cb7eec2
+    home: https://github.com/FORTH-ICS-INSPIRE/artemis
+    icon: https://github.com/FORTH-ICS-INSPIRE/artemis/blob/gh-pages/logo.png
+    keywords:
+    - helm
+    - artemis
+    - bgp
+    - hijack
+    maintainers:
+    - email: jim.mavrommatis@gmail.com
+      name: Dimitrios Mavrommatis
+      url: https://slowr.github.io
+    name: artemis-chart
+    type: application
+    urls:
+    - artemis-chart-0.0.4.tgz
+    version: 0.0.3
+  - apiVersion: v2
     appVersion: 1.3.1
-    created: "2019-10-04T12:18:46.887707496-06:00"
+    created: "2020-05-21T02:14:54.445393203+02:00"
     description: ARTEMIS helm chart for deploying on kubernetes.
     digest: b13ad0f19b243414b0275cdda95e634bc3c5d1bd1726a1a7258a0f7da2b612fc
     home: https://github.com/FORTH-ICS-INSPIRE/artemis
@@ -20,11 +62,11 @@ entries:
     name: artemis-chart
     type: application
     urls:
-    - https://forth-ics-inspire.github.io/artemis/artemis-chart-0.0.2.tgz
+    - artemis-chart-0.0.2.tgz
     version: 0.0.2
   - apiVersion: v1
     appVersion: latest
-    created: "2019-10-04T12:18:46.884575324-06:00"
+    created: "2020-05-21T02:14:54.442332004+02:00"
     description: ARTEMIS helm chart for deploying on kubernetes.
     digest: 6665e9a52dfada7be900ca0ef1049942ca84fdf4b57fbea9f9c5b9ceacd9f8af
     home: https://github.com/FORTH-ICS-INSPIRE/artemis
@@ -39,6 +81,6 @@ entries:
       url: https://slowr.github.io
     name: artemis-chart
     urls:
-    - https://forth-ics-inspire.github.io/artemis/artemis-chart-0.0.1.tgz
+    - artemis-chart-0.0.1.tgz
     version: 0.0.1
-generated: "2019-10-04T12:18:46.881226654-06:00"
+generated: "2020-05-21T02:14:54.44067637+02:00"

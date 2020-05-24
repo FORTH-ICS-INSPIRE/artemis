@@ -6,7 +6,7 @@ metadata:
 {{ include "artemis.labels" . | indent 4 }}
 data:
   guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
-  systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
+  systemVersion: {{ .Values.systemVersion | default "release-1.5.0" | quote }}
   historic: {{ .Values.historic | default "false" | quote }}
   redisHost: {{ .Release.Name }}-{{ .Values.redisHost | default "backend" }}-svc
   redisPort: {{ .Values.redisPort | default "6379" | quote }}

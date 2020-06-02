@@ -1,0 +1,15 @@
+version: '3'
+services:
+    openbmp-bgpstream:
+        image: caida/bgpstream:latest
+        container_name: openbmp-bgpstream
+        depends_on:
+            - openbmp-kafka
+            - openbmp-collector
+        restart: always
+        networks:
+            - artemis
+        environment:
+                KAFKA_FQDN: openbmp-kafka
+        command: ["bgpreader", "-d", "kafka", "-o", "brokers=openbmp-kafka", "-o", "topic=openbmp.bmp_raw"]
+

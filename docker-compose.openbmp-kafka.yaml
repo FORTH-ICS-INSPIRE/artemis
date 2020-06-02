@@ -1,0 +1,16 @@
+version: '3'
+services:
+    openbmp-kafka:
+        image: openbmp/kafka:latest
+        container_name: openbmp-kafka
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - 2181:2181
+            - 9092:9092
+        volumes:
+            - ./local_data/kafka:/data/kafka
+        environment:
+                KAFKA_FQDN: openbmp-kafka
+

@@ -1,0 +1,17 @@
+version: '3'
+services:
+    openbmp-collector:
+        image: openbmp/collector:latest
+        container_name: openbmp-collector
+        depends_on:
+            - openbmp-kafka
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - 5000:5000
+        volumes:
+            - ./local_configs/openbmp/openbmpd.conf:/usr/etc/openbmp/openbmpd.conf
+        environment:
+                KAFKA_FQDN: openbmp-kafka
+

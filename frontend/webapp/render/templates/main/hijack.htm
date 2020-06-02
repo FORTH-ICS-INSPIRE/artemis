@@ -360,7 +360,7 @@
                         This action will also delete all BGP messages related to this hijack and cannot be undone.
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" onclick="action_delete_hijack();" data-dismiss="modal">Delete</button>
+                        <button type="button" id="action_delete_hijack" class="btn btn-danger" data-dismiss="modal">Delete</button>
                         <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
                     </div>
                 </div>
@@ -1199,6 +1199,10 @@
                 return html_;
             }
 
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('action_delete_hijack')
+                    .addEventListener('click', () => action_delete_hijack());
+            });
         </script>
         <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
         <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.8.6/clipboard-polyfill.js"></script>

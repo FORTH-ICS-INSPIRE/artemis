@@ -111,13 +111,13 @@
         <div class="row mt-3">
             <div class="col-lg-8">
                 <p> Select Status:
-                    <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm" onclick="filter_by_status('active');">Ongoing</button> /
-                    <button type="button" id="status_dormant_button" helpText="field_hijack_status_dormant" class="btn btn-outline-secondary btn-sm" onclick="filter_by_status('dormant');">Dormant</button> /
-                    <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm" onclick="filter_by_status('resolved');">Resolved</button> /
-                    <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm" onclick="filter_by_status('ignored');">Ignored</button> /
-                    <button type="button" id="status_under_mitigation_button" helpText="field_hijack_under_mitigation" class="btn btn-outline-primary btn-sm" onclick="filter_by_status('under_mitigation');">Under Mitigation</button> /
-                    <button type="button" id="status_withdrawn_button" helpText="field_hijack_status_withdrawn" class="btn btn-outline-info btn-sm" onclick="filter_by_status('withdrawn');">Withdrawn</button> /
-                    <button type="button" id="status_outdated_button" helpText="field_hijack_status_outdated" class="btn btn-outline-dark btn-sm" onclick="filter_by_status('outdated');">Outdated</button>
+                    <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm">Ongoing</button> /
+                    <button type="button" id="status_dormant_button" helpText="field_hijack_status_dormant" class="btn btn-outline-secondary btn-sm">Dormant</button> /
+                    <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm">Resolved</button> /
+                    <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm">Ignored</button> /
+                    <button type="button" id="status_under_mitigation_button" helpText="field_hijack_under_mitigation" class="btn btn-outline-primary btn-sm">Under Mitigation</button> /
+                    <button type="button" id="status_withdrawn_button" helpText="field_hijack_status_withdrawn" class="btn btn-outline-info btn-sm">Withdrawn</button> /
+                    <button type="button" id="status_outdated_button" helpText="field_hijack_status_outdated" class="btn btn-outline-dark btn-sm">Outdated</button>
                 </p>
             </div>
             <div class="col-lg-4">
@@ -184,7 +184,7 @@
                         This action will also delete all BGP messages related to this(these) hijack(s) and cannot be undone.
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" onclick="action_delete_hijacks();" data-dismiss="modal">Delete</button>
+                        <button type="button" id="action_delete_hijacks" class="btn btn-danger" data-dismiss="modal">Delete</button>
                         <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
                     </div>
                 </div>
@@ -815,10 +815,28 @@
                 $("#download_table_button").attr("href", url);
             }
 
-            $("#view-hijack-by-key-button").click(function() {
+            $("#view-hijack-by-key-button").on('click', function() {
                 window.location.href = hijack_redirect + "?key=" + $("#hijack-key-input").val();
             });
 
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('status_active_button')
+                    .addEventListener('click', () => filter_by_status('active'));
+                document.getElementById('status_resolved_button')
+                    .addEventListener('click', () => filter_by_status('resolved'));
+                document.getElementById('status_dormant_button')
+                    .addEventListener('click', () => filter_by_status('dormant'));
+                document.getElementById('status_ignored_button')
+                    .addEventListener('click', () => filter_by_status('ignored'));
+                document.getElementById('status_outdated_button')
+                    .addEventListener('click', () => filter_by_status('outdated'));
+                document.getElementById('status_under_mitigation_button')
+                    .addEventListener('click', () => filter_by_status('under_mitigation'));
+                document.getElementById('status_withdrawn_button')
+                    .addEventListener('click', () => filter_by_status('withdrawn'));
+                document.getElementById('action_delete_hijacks')
+                    .addEventListener('click', () => action_delete_hijacks());
+            });
         </script>
         <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
         <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.8.6/clipboard-polyfill.js"></script>

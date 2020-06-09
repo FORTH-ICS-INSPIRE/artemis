@@ -166,7 +166,7 @@ class BGPStreamHist:
                                                         )
                                                     )
                                             except BaseException:
-                                                log.exception("Error when normalizing BGP message")                        
+                                                log.exception("Error when normalizing BGP message: {}".format(msg))
                                             break
                                     except Exception:
                                         log.exception("prefix")

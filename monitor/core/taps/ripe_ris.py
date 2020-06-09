@@ -183,7 +183,7 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                             "Invalid format message: {}".format(msg)
                                         )
                                 except BaseException:
-                                    log.exception("Error when normalizing BGP message")                        
+                                    log.exception("Error when normalizing BGP message: {}".format(norm_ris_msg))                        
                     except Exception:
                         log.exception("exception message {}".format(data))
                 log.warning("Iterator ran out of data; the connection will be retried")

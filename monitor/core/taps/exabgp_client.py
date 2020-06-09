@@ -89,77 +89,80 @@ class ExaBGP:
                                 IPAddress(base_ip) in our_prefix
                                 and int(mask_length) >= our_prefix.prefixlen
                             ):
-                                if validator.validate(msg):
-                                    with Producer(connection) as producer:
-                                        msgs = normalize_msg_path(msg)
-                                        for msg in msgs:
-                                            key_generator(msg)
-                                            log.debug(msg)
-                                            if self.autoconf:
-                                                if str(our_prefix) in [
-                                                    "0.0.0.0/0",
-                                                    "::/0",
-                                                ]:
-                                                    if msg["type"] == "A":
-                                                        as_path = clean_as_path(
-                                                            msg["path"]
-                                                        )
-                                                        if len(as_path) > 1:
-                                                            # ignore, since this is not a self-network origination, but sth transit
+                                try:
+                                    if validator.validate(msg):
+                                        with Producer(connection) as producer:
+                                            msgs = normalize_msg_path(msg)
+                                            for msg in msgs:
+                                                key_generator(msg)
+                                                log.debug(msg)
+                                                if self.autoconf:
+                                                    if str(our_prefix) in [
+                                                        "0.0.0.0/0",
+                                                        "::/0",
+                                                    ]:
+                                                        if msg["type"] == "A":
+                                                            as_path = clean_as_path(
+                                                                msg["path"]
+                                                            )
+                                                            if len(as_path) > 1:
+                                                                # ignore, since this is not a self-network origination, but sth transit
+                                                                break
+                                                        elif msg["type"] == "W":
+                                                            # ignore irrelevant withdrawals
                                                             break
-                                                    elif msg["type"] == "W":
-                                                        # ignore irrelevant withdrawals
-                                                        break
-                                                self.autoconf_goahead = False
-                                                correlation_id = uuid()
-                                                callback_queue = Queue(
-                                                    uuid(),
-                                                    durable=False,
-                                                    auto_delete=True,
-                                                    max_priority=4,
-                                                    consumer_arguments={
-                                                        "x-priority": 4
-                                                    },
-                                                )
+                                                    self.autoconf_goahead = False
+                                                    correlation_id = uuid()
+                                                    callback_queue = Queue(
+                                                        uuid(),
+                                                        durable=False,
+                                                        auto_delete=True,
+                                                        max_priority=4,
+                                                        consumer_arguments={
+                                                            "x-priority": 4
+                                                        },
+                                                    )
+                                                    producer.publish(
+                                                        msg,
+                                                        exchange="",
+                                                        routing_key="conf-autoconf-update-queue",
+                                                        reply_to=callback_queue.name,
+                                                        correlation_id=correlation_id,
+                                                        retry=True,
+                                                        declare=[
+                                                            Queue(
+                                                                "conf-autoconf-update-queue",
+                                                                durable=False,
+                                                                max_priority=4,
+                                                                consumer_arguments={
+                                                                    "x-priority": 4
+                                                                },
+                                                            ),
+                                                            callback_queue,
+                                                        ],
+                                                        priority=4,
+                                                        serializer="ujson",
+                                                    )
+                                                    with Consumer(
+                                                        connection,
+                                                        on_message=self.handle_autoconf_update_goahead_reply,
+                                                        queues=[callback_queue],
+                                                        accept=["ujson"],
+                                                    ):
+                                                        while not self.autoconf_goahead:
+                                                            connection.drain_events()
                                                 producer.publish(
                                                     msg,
-                                                    exchange="",
-                                                    routing_key="conf-autoconf-update-queue",
-                                                    reply_to=callback_queue.name,
-                                                    correlation_id=correlation_id,
-                                                    retry=True,
-                                                    declare=[
-                                                        Queue(
-                                                            "conf-autoconf-update-queue",
-                                                            durable=False,
-                                                            max_priority=4,
-                                                            consumer_arguments={
-                                                                "x-priority": 4
-                                                            },
-                                                        ),
-                                                        callback_queue,
-                                                    ],
-                                                    priority=4,
+                                                    exchange=self.update_exchange,
+                                                    routing_key="update",
                                                     serializer="ujson",
                                                 )
-                                                with Consumer(
-                                                    connection,
-                                                    on_message=self.handle_autoconf_update_goahead_reply,
-                                                    queues=[callback_queue],
-                                                    accept=["ujson"],
-                                                ):
-                                                    while not self.autoconf_goahead:
-                                                        connection.drain_events()
-                                            producer.publish(
-                                                msg,
-                                                exchange=self.update_exchange,
-                                                routing_key="update",
-                                                serializer="ujson",
-                                            )
-                                else:
-                                    log.warning(
-                                        "Invalid format message: {}".format(msg)
-                                    )
+                                    else:
+                                        log.warning(
+                                            "Invalid format message: {}".format(msg)
+                                        )
+                                except BaseException:
+                                    log.exception("Error when normalizing BGP message")                        
                                 break
                         except Exception:
                             log.exception("exception")

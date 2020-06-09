@@ -162,7 +162,11 @@ class ExaBGP:
                                             "Invalid format message: {}".format(msg)
                                         )
                                 except BaseException:
-                                    log.exception("Error when normalizing BGP message: {}".format(msg))
+                                    log.exception(
+                                        "Error when normalizing BGP message: {}".format(
+                                            msg
+                                        )
+                                    )
                                 break
                         except Exception:
                             log.exception("exception")

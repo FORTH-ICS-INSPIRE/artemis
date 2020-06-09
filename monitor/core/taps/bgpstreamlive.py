@@ -154,9 +154,13 @@ def run_bgpstream(prefixes_file=None, projects=[], start=0, end=0):
                                             serializer="ujson",
                                         )
                                 else:
-                                    log.warning("Invalid format message: {}".format(msg))
+                                    log.warning(
+                                        "Invalid format message: {}".format(msg)
+                                    )
                             except BaseException:
-                                log.exception("Error when normalizing BGP message: {}".format(msg))                        
+                                log.exception(
+                                    "Error when normalizing BGP message: {}".format(msg)
+                                )
                             break
                 try:
                     elem = rec.get_next_elem()

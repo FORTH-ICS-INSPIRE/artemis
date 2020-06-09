@@ -168,7 +168,9 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                 )
                                 try:
                                     if validator.validate(norm_ris_msg):
-                                        norm_path_msgs = normalize_msg_path(norm_ris_msg)
+                                        norm_path_msgs = normalize_msg_path(
+                                            norm_ris_msg
+                                        )
                                         for norm_path_msg in norm_path_msgs:
                                             key_generator(norm_path_msg)
                                             log.debug(norm_path_msg)
@@ -183,12 +185,18 @@ def parse_ripe_ris(connection, prefixes_file, hosts):
                                             "Invalid format message: {}".format(msg)
                                         )
                                 except BaseException:
-                                    log.exception("Error when normalizing BGP message: {}".format(norm_ris_msg))                        
+                                    log.exception(
+                                        "Error when normalizing BGP message: {}".format(
+                                            norm_ris_msg
+                                        )
+                                    )
                     except Exception:
                         log.exception("exception message {}".format(data))
                 log.warning("Iterator ran out of data; the connection will be retried")
             except Exception:
-                log.info("RIPE RIS Server closed connection. Restarting socket in 60seconds..")
+                log.info(
+                    "RIPE RIS Server closed connection. Restarting socket in 60seconds.."
+                )
                 time.sleep(60)
 
 

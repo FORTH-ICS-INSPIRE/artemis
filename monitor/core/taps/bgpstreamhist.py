@@ -110,7 +110,9 @@ class BGPStreamHist:
                                                                 elif msg["type"] == "W":
                                                                     # ignore irrelevant withdrawals
                                                                     break
-                                                            self.autoconf_goahead = False
+                                                            self.autoconf_goahead = (
+                                                                False
+                                                            )
                                                             correlation_id = uuid()
                                                             callback_queue = Queue(
                                                                 uuid(),
@@ -166,7 +168,11 @@ class BGPStreamHist:
                                                         )
                                                     )
                                             except BaseException:
-                                                log.exception("Error when normalizing BGP message: {}".format(msg))
+                                                log.exception(
+                                                    "Error when normalizing BGP message: {}".format(
+                                                        msg
+                                                    )
+                                                )
                                             break
                                     except Exception:
                                         log.exception("prefix")

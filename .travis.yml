@@ -50,7 +50,7 @@ jobs:
     - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
   - name: monitor
     install: []

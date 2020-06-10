@@ -18,7 +18,6 @@ test('Simple Flow', async t => {
         .expect(Selector('li').withText('Observer').textContent).contains("Observer On 1/1")
         .expect(Selector('#db_stat_value_monitored_prefixes').find('b').withText('1').textContent).eql("1")
         .expect(Selector('#db_stat_value_configured_prefixes').find('b').withText('3').textContent).eql("3")
-        .expect(Selector('p').withText('ARTEMIS v.\'latest\'').textContent).eql("ARTEMIS v.'latest'")
         .click(Selector('#navbar_bgpupdates'))
         .expect(Selector('h3').withText('No BGP Updates to display').textContent).eql("No BGP Updates to display")
         .click(Selector('#navbar_hijacks'))

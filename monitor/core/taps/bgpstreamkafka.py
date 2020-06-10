@@ -132,7 +132,7 @@ def run_bgpstream(
                         as_path = []
                         communities = []
                     timestamp = float(rec.time)
-                    if timestamp==0:
+                    if timestamp == 0:
                         timestamp = time.time()
                         log.debug("fixed timestamp: {}".format(timestamp))
 

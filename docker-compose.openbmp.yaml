@@ -27,4 +27,3 @@ services:
             - ./local_data/kafka:/data/kafka
         environment:
                 KAFKA_FQDN: openbmp-kafka
-

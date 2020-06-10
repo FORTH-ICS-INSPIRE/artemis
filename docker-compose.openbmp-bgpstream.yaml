@@ -12,4 +12,3 @@ services:
         environment:
                 KAFKA_FQDN: openbmp-kafka
         command: ["bgpreader", "-d", "kafka", "-o", "brokers=openbmp-kafka", "-o", "topic=openbmp.bmp_raw"]
-

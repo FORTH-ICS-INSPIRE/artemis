@@ -7,7 +7,7 @@
 {% block head %}
     {{super()}}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/switches.css') }}">
     <link rel="stylesheet" href="https://cdn.datatables.net/rowreorder/1.2.5/css/rowReorder.dataTables.min.css">
@@ -111,13 +111,13 @@
         <div class="row mt-3">
             <div class="col-lg-8">
                 <p> Select Status:
-                    <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm" onclick="filter_by_status('active');">Ongoing</button> /
-                    <button type="button" id="status_dormant_button" helpText="field_hijack_status_dormant" class="btn btn-outline-secondary btn-sm" onclick="filter_by_status('dormant');">Dormant</button> /
-                    <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm" onclick="filter_by_status('resolved');">Resolved</button> /
-                    <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm" onclick="filter_by_status('ignored');">Ignored</button> /
-                    <button type="button" id="status_under_mitigation_button" helpText="field_hijack_under_mitigation" class="btn btn-outline-primary btn-sm" onclick="filter_by_status('under_mitigation');">Under Mitigation</button> /
-                    <button type="button" id="status_withdrawn_button" helpText="field_hijack_status_withdrawn" class="btn btn-outline-info btn-sm" onclick="filter_by_status('withdrawn');">Withdrawn</button> /
-                    <button type="button" id="status_outdated_button" helpText="field_hijack_status_outdated" class="btn btn-outline-dark btn-sm" onclick="filter_by_status('outdated');">Outdated</button>
+                    <button type="button" id="status_active_button" helpText="field_hijack_status_ongoing" class="btn btn-outline-danger btn-sm">Ongoing</button> /
+                    <button type="button" id="status_dormant_button" helpText="field_hijack_status_dormant" class="btn btn-outline-secondary btn-sm">Dormant</button> /
+                    <button type="button" id="status_resolved_button" helpText="field_hijack_status_resolved" class="btn btn-outline-success btn-sm">Resolved</button> /
+                    <button type="button" id="status_ignored_button" helpText="field_hijack_status_ignored" class="btn btn-outline-warning btn-sm">Ignored</button> /
+                    <button type="button" id="status_under_mitigation_button" helpText="field_hijack_under_mitigation" class="btn btn-outline-primary btn-sm">Under Mitigation</button> /
+                    <button type="button" id="status_withdrawn_button" helpText="field_hijack_status_withdrawn" class="btn btn-outline-info btn-sm">Withdrawn</button> /
+                    <button type="button" id="status_outdated_button" helpText="field_hijack_status_outdated" class="btn btn-outline-dark btn-sm">Outdated</button>
                 </p>
             </div>
             <div class="col-lg-4">
@@ -184,7 +184,7 @@
                         This action will also delete all BGP messages related to this(these) hijack(s) and cannot be undone.
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" onclick="action_delete_hijacks();" data-dismiss="modal">Delete</button>
+                        <button type="button" id="action_delete_hijacks" class="btn btn-danger" data-dismiss="modal">Delete</button>
                         <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
                     </div>
                 </div>
@@ -198,7 +198,7 @@
     {{super()}}
     {% block scripts %}
         {{super()}}
-        <script>
+        <script nonce="{{ csp_nonce() }}">
             var table;
             var ws = null;
 
@@ -505,7 +505,6 @@
                     download_filters.push(filter_parameters['status'] + ".eq.true");
                 }
 
-
                 if(filters.length > 0){
                     $("#distinct_values_selection").val('select');
                     $('#distinct_values_text').val("");
@@ -596,7 +595,9 @@
                         });
                         var tool_elems = $("#hijacks_wrapper").children('div').eq(0).children('div');
                         {% if current_user.has_roles('admin') %}
-                        var display_multiple_actions = '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
+                        var display_multiple_actions = '';
+                        display_multiple_actions += '<button id="select_page" type="button" class="btn btn-primary btn-sm">Select Page</button>  ';
+                        display_multiple_actions += '<span class="btn-group-toggle" data-toggle="buttons"><label class="btn btn-secondary active btn-sm">';
                         display_multiple_actions += '<input type="checkbox" checked autocomplete="off" disabled> Selected Hijacks <b id="selected_hijacks_num">0</b>';
                         display_multiple_actions += '</label></span>  <select class="form-control form-control-sm-auto" id="action_selection">';
                         display_multiple_actions += '<option value="hijack_action_resolve">Mark as Resolved</option>';
@@ -623,6 +624,15 @@
                             };
                             action_multiple_call(url, obj);
                         } );
+
+                        $('#select_page').click(function() {
+                            let p = table.rows({ page: 'current' }).nodes();
+                            selected_hijacks = p.map(x => x.id).toArray();
+                            $('#selected_hijacks_num').html(selected_hijacks.length);
+                            table.draw(false);
+                            $('#clear_all_selected').prop('disabled', false);
+                            $('#apply_selected').prop('disabled', false);
+                        })
 
                         $('#clear_all_selected').click(function() {
                             selected_hijacks = [];
@@ -747,18 +757,17 @@
             });
 
             {% if current_user.has_roles('admin') %}
-
                 function action_delete_hijacks(){
                     let url = "{{ url_for('actions.submit_hijacks_actions') }}";
                     let obj = {
                         "hijack_keys" : selected_hijacks,
                         "action": "hijack_action_delete"
                     };
-                    var result = action_multiple_call(url, obj);
+                    let result = action_multiple_call(url, obj);
                 }
 
                 async function action_multiple_call(url, obj){
-                    var result = await postFetch_json(url, obj);
+                    let result = await postFetch_json(url, obj);
                     if(result['status'] == "success"){
                         selected_hijacks = [];
                         $('#selected_hijacks_num').html(selected_hijacks.length);
@@ -767,7 +776,6 @@
                         $('#apply_selected').prop('disabled', true);
                     }
                 }
-
             {% endif %}
 
 
@@ -799,34 +807,50 @@
                 fetchDistinctValues(distinct_on, query);
             });
 
-
-
             function downloadTable_update_link(){
-                var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
+                let url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
                 if(downloadTable_parameters != null){
                     url += "&parameters=" + downloadTable_parameters;
                 }
                 $("#download_table_button").attr("href", url);
             }
 
-            $("#view-hijack-by-key-button").click(function() {
+            $("#view-hijack-by-key-button").on('click', function() {
                 window.location.href = hijack_redirect + "?key=" + $("#hijack-key-input").val();
             });
 
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('status_active_button')
+                    .addEventListener('click', () => filter_by_status('active'));
+                document.getElementById('status_resolved_button')
+                    .addEventListener('click', () => filter_by_status('resolved'));
+                document.getElementById('status_dormant_button')
+                    .addEventListener('click', () => filter_by_status('dormant'));
+                document.getElementById('status_ignored_button')
+                    .addEventListener('click', () => filter_by_status('ignored'));
+                document.getElementById('status_outdated_button')
+                    .addEventListener('click', () => filter_by_status('outdated'));
+                document.getElementById('status_under_mitigation_button')
+                    .addEventListener('click', () => filter_by_status('under_mitigation'));
+                document.getElementById('status_withdrawn_button')
+                    .addEventListener('click', () => filter_by_status('withdrawn'));
+                document.getElementById('action_delete_hijacks')
+                    .addEventListener('click', () => action_delete_hijacks());
+            });
         </script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.7.0/clipboard-polyfill.js"></script>
-        <script src="{{ url_for('static', filename='js/custom/prod-graphql.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/prod-utils.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
-        <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
-        <script src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
-        <script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
-        <script src="{{ url_for('static', filename='js/daterangepicker.min.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/prod-display_info.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/prod-ripestat.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/prod-actions.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.8.6/clipboard-polyfill.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='datatable/jquery.dataTables.min.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='datatable/datetime-moment.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='datatable/dataTables.bootstrap4.min.js') }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdn.datatables.net/rowreorder/1.2.5/js/dataTables.rowReorder.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/daterangepicker.min.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/display_info.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/ripestat.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/actions.js') }}{{ js_version }}"></script>
     {% endblock %}
 {% endblock %}

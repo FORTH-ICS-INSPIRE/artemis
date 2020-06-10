@@ -35,12 +35,14 @@ webappPort: 8000
 adminUser: admin
 adminPass: admin123
 adminEmail: admin@admin
-jsVersion: 1.0.3
+gunicornWorkers: 4
+jsVersion: 1.0.4
 # rabbitmq
 rabbitmqHost: rabbitmq
 rabbitmqPort: 5672
 rabbitmqUser: guest
 rabbitmqPass: guest
+rabbitmqIoThreadPoolSize: 128
 # hasura
 hasuraHost: graphql
 hasuraPort: 8080

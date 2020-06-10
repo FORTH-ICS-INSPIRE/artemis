@@ -32,6 +32,11 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secret
               key: rabbitmqPass
+        - name: RABBITMQ_IO_THREAD_POOL_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqIoThreadPoolSize
         image: rabbitmq:3.8.3-management-alpine
         name: rabbitmq
         resources: {}

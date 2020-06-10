@@ -9,23 +9,25 @@ RUN apk add --no-cache openssl && \
 
 COPY ./webapp/render/static/js/custom/ /root/
 COPY ./minify-js.sh /root/
-RUN mkdir /root/prod/
-RUN ./minify-js.sh
+RUN mkdir /root/prod/ && ./minify-js.sh
 
 FROM mavromat/alpine-python:3.6
 
 WORKDIR /root
 
-COPY . ./
-RUN rm /root/webapp/render/static/js/custom/*
-COPY --from=builder /root/prod/ /root/webapp/render/static/js/custom/
+RUN apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
 
-RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl sqlite-dev sqlite
-RUN pip install --upgrade 'pip<19.0'
+COPY requirements.txt ./requirements.txt
 RUN pip --no-cache-dir install -r requirements.txt
 
-RUN mkdir -p /etc/artemis/
-RUN mkdir -p /var/log/artemis/
+RUN mkdir -p /etc/artemis/ && mkdir -p /var/log/artemis/
+
 COPY ./webapp/configs/* /etc/artemis/
+
+COPY entrypoint init.py wait-for ./
+COPY ./webapp ./webapp
+
+RUN rm /root/webapp/render/static/js/custom/*
+COPY --from=builder /root/prod/ /root/webapp/render/static/js/custom/
 
 ENTRYPOINT ["./entrypoint"]

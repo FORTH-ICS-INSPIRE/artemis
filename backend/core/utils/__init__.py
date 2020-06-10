@@ -613,10 +613,10 @@ def hijack_log_field_formatter(hijack_dict):
     return logged_hijack_dict
 
 
-def chunk_list(l, n):
-    """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+def chunk_list(bucket, n):
+    """Yield successive n-sized chunks from bucket."""
+    for i in range(0, len(bucket), n):
+        yield bucket[i : i + n]
 
 
 def get_rpki_val_result(mgr, asn, network, netmask):

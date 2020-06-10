@@ -147,7 +147,7 @@ class TestStringMethods(unittest.TestCase):
     def test_env_values(self):
         env_vals = set(get_matches_from_file(ENV_FILE, r"([A-Z_]+)="))
         env_vals.remove("COMPOSE_PROJECT_NAME")
-        dc_vals = set(get_matches_from_file(COMPOSE_FILE, r"\$\{([A-Z_]+)\}"))
+        dc_vals = set(get_matches_from_file(COMPOSE_FILE, r"\$\{([A-Z_]+)[:\-0-9]*\}"))
 
         self.assertTrue(env_vals.issubset(dc_vals))
 

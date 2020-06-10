@@ -13,6 +13,7 @@ flask-nav==0.6
 Flask-Principal==0.4.0
 Flask-Security==3.0.0
 Flask-SQLAlchemy==2.4.1
+flask-talisman==0.7.0
 Flask-WTF==0.14.3
 gql==0.4.0
 gunicorn==20.0.4

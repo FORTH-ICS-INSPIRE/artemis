@@ -2,11 +2,32 @@
 
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [1.5.0] (Aeolus) - 2020-05-24
+### Added
 - Additional ports (8080, 8443) to nginx configuration for rootless docker support
 - Application names for all postgres connections
 - Database migration check between latest release and current version
 - Mechanism to show which modules are (re)loading upon configuration change
-- Auto-ignore mechanism and env variables
+- GUNICORN_WORKERS and RABBITMQ_IO_THREAD_POOL_SIZE variables smaller deployments
+- ZAP Active and Passive scanning
+- Select Page button on hijacks page to select all hijacks on current page
 
 ### Changed
 - Upgraded nginx to latest release (v1.17)
@@ -22,12 +43,6 @@
 - Update RIPE Stat API call for ASN to country mapping
 - Minor issue with deprecated version of routinator (upgraded to 0.6.4)
 - Observer ujson encoding bug
-
-### Removed
-- TBD (removed a feature)
-
-### Deprecated
-- TBD (soon-to-be removed feature)
 
 ### Security
 - Secured "proxy_api" endpoint from unauthorized access. Thanks to @marcgweg for finding this issue

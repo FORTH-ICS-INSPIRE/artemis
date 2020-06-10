@@ -123,7 +123,7 @@
         "21": {
             "id": "21",
             "db_version": "21",
-            "description": "Add loading column to process_states table",
+            "description": "Add loading column in process_states table",
             "file": "migration_21.sql"
         }
     }

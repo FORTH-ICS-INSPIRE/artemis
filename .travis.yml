@@ -1,5 +1,6 @@
 language: python
-sudo: required
+dist: xenial
+os: linux
 services:
 - docker
 env:
@@ -36,23 +37,29 @@ jobs:
     name: backend
     install: []
     before_script:
+    - docker pull inspiregroup/artemis-backend:latest
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} backend/
+    - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/
     - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
   - name: frontend
     install: []
     before_script:
+    - docker pull inspiregroup/artemis-frontend:latest
+    - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
   - name: monitor
     install: []
     before_script:
+    - docker pull inspiregroup/artemis-monitor:latest
+    - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
+    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
   - stage: run tests
     name: TestCafe
@@ -70,7 +77,7 @@ jobs:
     - docker-compose -f docker-compose.testcafe.yaml logs
   - name: TestDetection
     install:
-    - pip install coverage==4.5.4 codecov==2.0.22
+    - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -85,7 +92,7 @@ jobs:
     - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
     install:
-    - pip install coverage==4.5.4 codecov==2.0.22
+    - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -111,7 +118,7 @@ jobs:
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
   - name: TestRPKI
     install:
-    - pip install coverage==4.5.4 codecov==2.0.22
+    - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -146,6 +153,14 @@ jobs:
     - codecov
     after_failure:
     - docker-compose -f docker-compose.testautoignore.yaml logs
+  - name: ZAP Baseline (Passive)
+    before_script:
+    - docker pull ictu/zap2docker-weekly
+    - docker-compose up -d
+    script:
+    - sleep 15
+    - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-baseline.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"' || true
+
 notifications:
   slack:
     secure: es0zP6IAgEJbdvJz8apGlQAO0SOnMMuQwTbItiXTUjA60Tfn2gcB7vk8n60Y/pEsLn9Z9Kk9WJp7/S9jZiKITpzLxSabo0+PF+DangvNUZMmJ9NV7oJOxGVQS94Ape2pHs6x4SUpP6JkadIU5ZxXbjVr8ZIPL2VfdclPlMBsM/K3ZNgd5cPLnPKsPuKn9WtTFDm/oGaWh/V6Y9T7/l/kNZrj6K7IcrI2rv4+LKLZDNicaQIN59M4Qt4niaETYNqZuqtWewHZH+KlXKzukFZ92qUDEG/3TBvqQDqimbjAXZkltso1MXBnSblrKNb1b00WysGwhT89zPeovhjcrHZB9vH9mKGNp5qoiBjVGzKYHLptitNqupP2ReUaRqKonRAw43iAN+8SSfrmCtyQGDv60fWLheUw+fbK8IRMrAYIG9t20/upDbrPTxU741Cqzgfy5fygnAuqmRi5AkckymJte5bf/SwQsmf5IFpc6FP6fcGZT6yL1zf55tsi8pXpq80SLokcH2bO17wEHSJxuNPOxNgJQjugY/VX58owZgHgYn1sLGpxrKlAwuQgs1+Av16TRGhCjyQPgWRN9inva/AwNEtA+ljp4PqzTk7oBI9MLaX3osU8Rm6bfMI2KNwcWpfcbztkYwZQLR4v45M91QnAE9UCbbkg4epgTli2RKnHCyQ=

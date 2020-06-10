@@ -47,7 +47,7 @@
     {{super()}}
     {% block scripts %}
         {{super()}}
-        <script>
+        <script nonce="{{ csp_nonce() }}">
             $( document ).ready(function() {
                 $("#security\\.register_user").addClass("active");
             });

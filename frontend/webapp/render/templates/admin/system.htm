@@ -102,7 +102,7 @@
                     <div class="panel-body">
                         <div id="config_alert_box"></div>
 
-                        <form><textarea id="code_yaml" name="code_yaml"></textarea></form>
+                        <div><textarea id="code_yaml" name="code_yaml"></textarea></div>
                         </br>
                         <div class="row">
                             <div class="col-lg-6">
@@ -122,7 +122,7 @@
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-lg-12">
-                                    <form><textarea id="code_config_comment_box" name="code_config_comment_box"></textarea></form>
+                                    <div><textarea id="code_config_comment_box" name="code_config_comment_box"></textarea></div>
                                 </div>
                             </div>
                         </div>
@@ -138,7 +138,7 @@
     {{super()}}
     {% block scripts %}
         {{super()}}
-        <script>
+        <script nonce="{{ csp_nonce() }}">
             var editor = null;
             var comment_editor = null;
             var valid_conf;
@@ -399,13 +399,13 @@
             });
 
         </script>
-        <script src="{{ url_for('static', filename='js/custom/prod-graphql.js') }}{{ js_version }}"></script>
-        <script src="{{ url_for('static', filename='js/custom/prod-utils.js') }}{{ js_version }}"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/yaml/yaml.min.js"></script>
-        <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/dialog/dialog.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/search.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/searchcursor.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/graphql.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/custom/utils.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/codemirror.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/mode/yaml/yaml.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}{{ js_version }}"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/dialog/dialog.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/search.min.js"></script>
+        <script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.42.0/addon/search/searchcursor.min.js"></script>
     {% endblock %}
 {% endblock %}

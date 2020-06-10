@@ -4,6 +4,7 @@ import time
 from datetime import timedelta
 
 import ujson as json
+from flask import abort
 from flask import Flask
 from flask import g
 from flask import jsonify
@@ -20,6 +21,7 @@ from flask_security.decorators import login_required
 from flask_security.decorators import roles_accepted
 from flask_security.utils import hash_password
 from flask_security.utils import verify_password
+from flask_talisman import Talisman
 from webapp.configs.config import configure_app
 from webapp.core.fetch_config import Configuration
 from webapp.core.modules import Modules_state
@@ -28,6 +30,7 @@ from webapp.core.proxy_api import proxy_api_post
 from webapp.data.models import db
 from webapp.render.views.actions_view import actions
 from webapp.render.views.admin_view import admin
+from webapp.render.views.errors_view import errors
 from webapp.render.views.main_view import main
 from webapp.utils.path import get_app_base_path
 
@@ -40,6 +43,22 @@ app = Flask(
     static_folder="../render/static",
 )
 
+# Content Security Policy
+csp = {
+    "default-src": "'self'",
+    "script-src": "'self'",
+    "connect-src": ["'self'", "stat.ripe.net"],
+    "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "stackpath.bootstrapcdn.com",
+        "cdn.datatables.net",
+    ],
+    "frame-ancestors": "'none'",
+    "img-src": "'self' data:",
+    "object-src": "'none'",
+}
+
 with app.app_context():
     configure_app(app)
     db.init_app(app)
@@ -49,11 +68,18 @@ with app.app_context():
     werk_log.setLevel(logging.ERROR)
     data_store = app.security.datastore
     jwt = JWTManager(app)
+    talisman = Talisman(
+        app,
+        force_https=False,
+        content_security_policy=csp,
+        content_security_policy_nonce_in=["script-src"],
+    )
 
 app.login_manager.session_protection = "strong"
 app.register_blueprint(main, url_prefix="/main")
 app.register_blueprint(admin, url_prefix="/admin")
 app.register_blueprint(actions, url_prefix="/actions")
+app.register_blueprint(errors, url_prefix="/errors")
 
 
 def load_user(payload):
@@ -99,8 +125,8 @@ def setup():
         app.artemis_logger.exception("exception while retrieving status of modules..")
         exit(-1)
 
-    app.artemis_logger.debug("setting database for the first time")
     if not os.path.isfile(app.config["DB_FULL_PATH"]):
+        app.artemis_logger.debug("setting database for the first time")
         db.create_all()
 
         def create_roles(ctx):
@@ -136,28 +162,36 @@ def setup():
 
         create_user(data_store)
 
+    app.extensions["security"]._unauthorized_callback = lambda: abort(400)
+
+
+@app.errorhandler(400)
+def bad_request(error):
+    app.artemis_logger.info("Page Not Found Error: {}".format(error))
+    return redirect("/errors/400")
+
 
 @app.errorhandler(404)
 def page_not_found(error):
     app.artemis_logger.info("Page Not Found Error: {}".format(error))
-    return render_template("/errors/404.htm")
+    return redirect("/errors/400")
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
     app.artemis_logger.error("Server Error: {}".format(error))
-    return render_template("/errors/500.htm")
+    return redirect("/errors/500")
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(error):
     app.artemis_logger.exception("Unhandled Exception: {}".format(error))
-    return render_template("/errors/500.htm")
+    return redirect("/errors/500")
 
 
 @app.login_manager.unauthorized_handler
 def unauth_handler():
-    return render_template("/errors/401.htm")
+    return redirect("/login")
 
 
 @app.context_processor
@@ -197,7 +231,7 @@ def jwt_auth():
         data = request.get_json()
         if not data:
             resp = jsonify({"error": "wrong credentials"})
-            return resp, 401
+            return resp, 400
         username = data["username"]
         password = data["password"]
         app.artemis_logger.info(username)
@@ -206,7 +240,7 @@ def jwt_auth():
 
         if not user or not verify_password(password, user.password):
             resp = jsonify({"error": "wrong credentials"})
-            return resp, 401
+            return resp, 400
     else:
         user = current_user
     # Create the tokens we will be sending back to the user

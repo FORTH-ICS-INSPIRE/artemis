@@ -14,4 +14,17 @@ services:
             - ./local_configs/openbmp/openbmpd.conf:/usr/etc/openbmp/openbmpd.conf
         environment:
                 KAFKA_FQDN: openbmp-kafka
+    openbmp-kafka:
+        image: openbmp/kafka:latest
+        container_name: openbmp-kafka
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - 2181:2181
+            - 9092:9092
+        volumes:
+            - ./local_data/kafka:/data/kafka
+        environment:
+                KAFKA_FQDN: openbmp-kafka
 

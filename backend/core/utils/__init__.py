@@ -665,3 +665,7 @@ def signal_loading(module, status=False):
 
     except Exception:
         log.exception("exception")
+
+
+def dict_hash(d):
+    return json.dumps(d, sort_keys=True)

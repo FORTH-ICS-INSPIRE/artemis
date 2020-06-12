@@ -140,7 +140,7 @@ jobs:
     - docker-compose -f docker-compose.testrpki.yaml logs
   - name: TestAutoignore
     install:
-    - pip install coverage==4.5.4 codecov==2.0.22
+    - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest

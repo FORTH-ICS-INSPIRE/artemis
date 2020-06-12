@@ -1,5 +1,6 @@
 import signal
 import time
+from threading import Timer
 
 import pytricia
 import redis
@@ -8,8 +9,6 @@ from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
-from kombu.asynchronous.timer import Entry
-from kombu.asynchronous.timer import Timer
 from kombu.mixins import ConsumerProducerMixin
 from utils import DB_HOST
 from utils import DB_NAME
@@ -64,8 +63,7 @@ class AutoIgnoreChecker:
             self.autoignore_rules = None
             # https: // docs.celeryproject.org / projects / kombu / en / stable / reference / kombu.asynchronous.timer.html
             # https://docs.celeryproject.org/projects/kombu/en/stable/_modules/kombu/asynchronous/timer.html#Timer
-            self.rule_timer = Timer(max_interval=None, on_error=self.on_timer_error)
-            self.rule_timer_entries = {}
+            self.rule_timer_threads = {}
             self.timestamp = -1
 
             # DB variables
@@ -230,39 +228,42 @@ class AutoIgnoreChecker:
             conf_rule_keys = set()
             for rule_key in self.autoignore_rules:
                 conf_rule_keys.add(rule_key)
-            set_rule_keys = set(self.rule_timer_entries.keys())
+            set_rule_keys = set(self.rule_timer_threads.keys())
             unconfigured_rule_keys = conf_rule_keys - set_rule_keys
             obsolete_rule_keys = set_rule_keys - conf_rule_keys
 
             # start not started timers
             for key in unconfigured_rule_keys:
-                self.rule_timer_entries[key] = Entry(self.auto_ignore_check_rule, key)
-                self.rule_timer.enter_after(
-                    self.autoignore_rules[key]["interval"], self.rule_timer_entries[key]
+                self.rule_timer_threads[key] = Timer(
+                    interval=self.autoignore_rules[key]["interval"],
+                    function=self.auto_ignore_check_rule,
+                    args=[key],
                 )
+                self.rule_timer_threads[key].start()
                 log.info(
-                    "Entered timer {} - {}".format(
-                        self.rule_timer_entries[key], self.autoignore_rules[key]
+                    "Started timer {} - {}".format(
+                        self.rule_timer_threads[key], self.autoignore_rules[key]
                     )
                 )
 
             # cancel started obsolete timers
             for key in obsolete_rule_keys:
-                self.rule_timer.cancel(self.rule_timer_entries[key].tref)
+                self.rule_timer_threads[key].cancel()
                 log.info(
                     "Cancelled timer {} - {}".format(
-                        self.rule_timer_entries[key], self.autoignore_rules[key]
+                        self.rule_timer_threads[key], self.autoignore_rules[key]
                     )
                 )
+                del self.rule_timer_threads[key]
 
         def on_timer_error(self):
             log.error("Timer error")
-            self.rule_timer.clear()
-            self.rule_timer_entries.clear()
+            self.rule_timer_threads.clear()
             self.set_rule_timers()
 
         def auto_ignore_check_rule(self, key):
             rule = self.autoignore_rules.get(key, None)
+            log.info("Checking autoignore rule {}".format(rule))
             if not rule:
                 return
 
@@ -278,8 +279,8 @@ class AutoIgnoreChecker:
                 # fetch ongoing hijack events
                 query = (
                     "SELECT time_started, time_last, num_peers_seen, "
-                    "num_asns_inf, key, prefix, hijack_as, type, time_detected, "
-                    "FROM hijacks WHERE active = true AND configured_prefix IN "
+                    "num_asns_inf, key, prefix, hijack_as, type, time_detected "
+                    "FROM hijacks WHERE active = true"
                 )
 
                 entries = self.ro_db.execute(query)
@@ -323,12 +324,15 @@ class AutoIgnoreChecker:
             except Exception:
                 log.exception("exception")
             finally:
-                self.rule_timer.enter_after(
-                    rule["interval"], self.rule_timer_entries[key]
+                self.rule_timer_threads[key] = Timer(
+                    interval=self.autoignore_rules[key]["interval"],
+                    function=self.auto_ignore_check_rule,
+                    args=[key],
                 )
+                self.rule_timer_threads[key].start()
                 log.info(
-                    "Entered timer {} - {}".format(
-                        self.rule_timer_entries[key], self.autoignore_rules[key]
+                    "Started timer {} - {}".format(
+                        self.rule_timer_threads[key], self.autoignore_rules[key]
                     )
                 )
 

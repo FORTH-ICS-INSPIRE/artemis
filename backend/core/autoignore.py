@@ -8,8 +8,8 @@ from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
-from kombu.asynchronous import Entry
-from kombu.asynchronous import Timer
+from kombu.asynchronous.timer import Entry
+from kombu.asynchronous.timer import Timer
 from kombu.mixins import ConsumerProducerMixin
 from utils import DB_HOST
 from utils import DB_NAME
@@ -45,6 +45,7 @@ class AutoIgnoreChecker:
         try:
             with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
+                self.worker.run()
         except Exception:
             log.exception("exception")
         finally:
@@ -107,6 +108,10 @@ class AutoIgnoreChecker:
             # redis db
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
+
+            signal_loading("autoignore", True)
+            self.config_request_rpc()
+            signal_loading("autoignore", False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -174,6 +179,7 @@ class AutoIgnoreChecker:
 
         def handle_config_request_reply(self, message):
             message.ack()
+            signal_loading("autoignore", True)
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             if self.correlation_id == message.properties["correlation_id"]:
                 config = message.payload
@@ -182,6 +188,7 @@ class AutoIgnoreChecker:
                     self.autoignore_rules = config.get("autoignore", [])
                     self.build_prefix_tree()
                     self.set_rule_timers()
+            signal_loading("autoignore", False)
 
         def build_prefix_tree(self):
             log.info("Starting building autoignore prefix tree...")
@@ -221,7 +228,7 @@ class AutoIgnoreChecker:
 
         def set_rule_timers(self):
             conf_rule_keys = set()
-            for rule_key, rule in self.autoignore_rules:
+            for rule_key in self.autoignore_rules:
                 conf_rule_keys.add(rule_key)
             set_rule_keys = set(self.rule_timer_entries.keys())
             unconfigured_rule_keys = conf_rule_keys - set_rule_keys
@@ -233,10 +240,20 @@ class AutoIgnoreChecker:
                 self.rule_timer.enter_after(
                     self.autoignore_rules[key]["interval"], self.rule_timer_entries[key]
                 )
+                log.info(
+                    "Entered timer {} - {}".format(
+                        self.rule_timer_entries[key], self.autoignore_rules[key]
+                    )
+                )
 
             # cancel started obsolete timers
             for key in obsolete_rule_keys:
                 self.rule_timer.cancel(self.rule_timer_entries[key].tref)
+                log.info(
+                    "Cancelled timer {} - {}".format(
+                        self.rule_timer_entries[key], self.autoignore_rules[key]
+                    )
+                )
 
         def on_timer_error(self):
             log.error("Timer error")
@@ -255,6 +272,7 @@ class AutoIgnoreChecker:
             thres_num_peers_seen = rule["thres_num_peers_seen"]
             thres_num_ases_infected = rule["thres_num_ases_infected"]
             interval = rule["interval"]
+            log.info("Checking rule {}".format(rule))
 
             try:
                 # fetch ongoing hijack events
@@ -276,6 +294,8 @@ class AutoIgnoreChecker:
                         continue
                     if best_node_match["rule_key"] != key:
                         continue
+
+                    log.info("Matched prefix {}".format(prefix))
 
                     time_last_updated = max(
                         int(entry[1].timestamp()), int(entry[8].timestamp())
@@ -306,3 +326,17 @@ class AutoIgnoreChecker:
                 self.rule_timer.enter_after(
                     rule["interval"], self.rule_timer_entries[key]
                 )
+                log.info(
+                    "Entered timer {} - {}".format(
+                        self.rule_timer_entries[key], self.autoignore_rules[key]
+                    )
+                )
+
+
+def run():
+    service = AutoIgnoreChecker()
+    service.run()
+
+
+if __name__ == "__main__":
+    run()

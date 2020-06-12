@@ -60,9 +60,6 @@ rpkiValidatorEnabled: false
 rpkiValidatorHost: routinator
 rpkiValidatorPort: 3323
 testEnv: false
-autoIgnoreNumAsesInfected: 0
-autoIgnoreNumPeersSeen: 0
-autoIgnoreInterval: 0
 
 # services
 svc:

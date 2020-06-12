@@ -1,33 +1,33 @@
 import signal
 import time
-import redis
 
+import redis
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
 from kombu import Queue
-from kombu.mixins import ConsumerProducerMixin
-from kombu.asynchronous import Timer
-from kombu.asynchronous import Entry
 from kombu import uuid
-
-from utils.tool import DB
+from kombu.asynchronous import Entry
+from kombu.asynchronous import Timer
+from kombu.mixins import ConsumerProducerMixin
 from utils import DB_HOST
 from utils import DB_NAME
 from utils import DB_PASS
 from utils import DB_PORT
 from utils import DB_USER
-from utils import RABBITMQ_URI
-from utils import REDIS_HOST
-from utils import REDIS_PORT
-from utils import get_logger
-from utils import signal_loading
 from utils import dict_hash
-from utils import redis_key
+from utils import get_logger
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
+from utils import RABBITMQ_URI
+from utils import REDIS_HOST
+from utils import redis_key
+from utils import REDIS_PORT
+from utils import signal_loading
+from utils.tool import DB
 
 log = get_logger()
+
 
 class AutoIgnoreChecker:
     def __init__(self):
@@ -112,7 +112,7 @@ class AutoIgnoreChecker:
                     on_message=self.handle_config_notify,
                     prefetch_count=1,
                     accept=["ujson"],
-                ),
+                )
             ]
 
         def handle_config_notify(self, message):
@@ -160,10 +160,10 @@ class AutoIgnoreChecker:
                 serializer="ujson",
             )
             with Consumer(
-                    self.connection,
-                    on_message=self.handle_config_request_reply,
-                    queues=[callback_queue],
-                    accept=["ujson"],
+                self.connection,
+                on_message=self.handle_config_request_reply,
+                queues=[callback_queue],
+                accept=["ujson"],
             ):
                 while self.rules is None:
                     self.connection.drain_events()
@@ -189,8 +189,12 @@ class AutoIgnoreChecker:
 
             # start not started timers
             for hash in unconfigured_rule_hashes:
-                self.rule_timer_entries[hash] = Entry(self.auto_ignore_check_rule, rule, hash)
-                self.rule_timer.enter_after(rule["interval"], self.rule_timer_entries[hash])
+                self.rule_timer_entries[hash] = Entry(
+                    self.auto_ignore_check_rule, rule, hash
+                )
+                self.rule_timer.enter_after(
+                    rule["interval"], self.rule_timer_entries[hash]
+                )
 
             # cancel started obsolete timers
             for hash in obsolete_rule_hashes:
@@ -232,8 +236,8 @@ class AutoIgnoreChecker:
                     hij_type = entry[7]
                     if (
                         (time_now - time_last_updated >= interval)
-                        and (num_peers_seen <= num_peers_seen)
-                        and (num_asns_inf <= num_asns_inf)
+                        and (num_peers_seen <= thres_num_peers_seen)
+                        and (num_asns_inf <= thres_num_ases_infected)
                     ):
                         redis_hijack_key = redis_key(prefix, hijack_as, hij_type)
                         # if ongoing, clear redis
@@ -248,4 +252,6 @@ class AutoIgnoreChecker:
             except Exception:
                 log.exception("exception")
             finally:
-                self.rule_timer.enter_after(rule["interval"], self.rule_timer_entries[hash])
+                self.rule_timer.enter_after(
+                    rule["interval"], self.rule_timer_entries[hash]
+                )

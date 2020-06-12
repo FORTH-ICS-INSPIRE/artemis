@@ -3,7 +3,6 @@ import time
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
-from utils import AUTO_IGNORE_INTERVAL
 from utils import BULK_TIMER
 from utils import get_logger
 from utils import RABBITMQ_URI
@@ -33,8 +32,6 @@ class Scheduler:
             self.connection = connection
             # Time in secs to gather entries to perform a bulk operation
             self.time_to_wait_bulk = BULK_TIMER
-            # Time in secs to check for hijack alerts to be auto-ignored
-            self.time_to_wait_auto_ignore = AUTO_IGNORE_INTERVAL
             self.correlation_id = None
 
             self.db_clock_exchange = Exchange(
@@ -64,16 +61,6 @@ class Scheduler:
                         priority=3,
                         serializer="ujson",
                     )
-                    if self.clock >= self.time_to_wait_auto_ignore:
-                        producer.publish(
-                            {"op": "auto_ignore_check"},
-                            exchange=self.db_clock_exchange,
-                            routing_key="pulse",
-                            retry=True,
-                            priority=3,
-                            serializer="ujson",
-                        )
-                        self.clock = 0
 
 
 def run():

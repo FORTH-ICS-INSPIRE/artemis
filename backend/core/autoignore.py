@@ -213,6 +213,7 @@ class AutoIgnoreChecker:
                 return
 
             try:
+                # TODO: take into account autoignore rule prefixes!!!
                 # fetch ongoing hijack events
                 query = (
                     "SELECT time_started, time_last, num_peers_seen, "

@@ -138,21 +138,21 @@ jobs:
     - codecov
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
-#  - name: TestAutoignore
-#    install:
-#    - pip install coverage==4.5.4 codecov==2.0.22
-#    before_script:
-#    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-#    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-#    - docker build -t artemis_autoignore_testing testing/autoignore
-#    - docker-compose -f docker-compose.testautoignore.yaml up -d
-#    script:
-#    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoignore_testing
-#    after_success:
-#    - sh convert_coverage.sh
-#    - codecov
-#    after_failure:
-#    - docker-compose -f docker-compose.testautoignore.yaml logs
+  - name: TestAutoignore
+    install:
+    - pip install coverage==4.5.4 codecov==2.0.22
+    before_script:
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker build -t artemis_autoignore_testing testing/autoignore
+    - docker-compose -f docker-compose.testautoignore.yaml up -d
+    script:
+    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoignore_testing
+    after_success:
+    - sh convert_coverage.sh
+    - codecov
+    after_failure:
+    - docker-compose -f docker-compose.testautoignore.yaml logs
   - name: ZAP Baseline (Passive)
     before_script:
     - docker pull ictu/zap2docker-weekly

@@ -15,3 +15,14 @@ rules:
   - *16_upstream
   mitigation:
       manual
+
+autoignore:
+  non_important_prefixes: &non_important_prefixes
+    prefixes:
+      - *16_prefix
+    thres_num_peers_seen:
+      1
+    thres_num_ases_infected:
+      5
+    interval:
+      10

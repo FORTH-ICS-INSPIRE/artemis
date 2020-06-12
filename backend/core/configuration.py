@@ -1202,6 +1202,7 @@ class Configuration:
                         str2ip(prefix)
                     except Exception:
                         raise ArtemisError("invalid-prefix", prefix)
+                field = None
                 try:
                     for field in [
                         "thres_num_peers_seen",

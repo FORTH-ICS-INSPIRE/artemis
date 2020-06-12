@@ -1,6 +1,7 @@
 import signal
 import time
 
+import pytricia
 import redis
 from kombu import Connection
 from kombu import Consumer
@@ -15,6 +16,7 @@ from utils import DB_NAME
 from utils import DB_PASS
 from utils import DB_PORT
 from utils import DB_USER
+from utils import get_ip_version
 from utils import get_logger
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -23,6 +25,7 @@ from utils import REDIS_HOST
 from utils import redis_key
 from utils import REDIS_PORT
 from utils import signal_loading
+from utils import translate_rfc2622
 from utils.tool import DB
 
 log = get_logger()
@@ -56,6 +59,7 @@ class AutoIgnoreChecker:
     class Worker(ConsumerProducerMixin):
         def __init__(self, connection):
             self.connection = connection
+            self.prefix_tree = None
             self.autoignore_rules = None
             # https: // docs.celeryproject.org / projects / kombu / en / stable / reference / kombu.asynchronous.timer.html
             # https://docs.celeryproject.org/projects/kombu/en/stable/_modules/kombu/asynchronous/timer.html#Timer
@@ -119,10 +123,11 @@ class AutoIgnoreChecker:
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             signal_loading("autoignore", True)
             try:
-                raw = message.payload
-                if raw["timestamp"] > self.timestamp:
-                    self.timestamp = raw["timestamp"]
-                    self.autoignore_rules = raw.get("autoignore", {})
+                config = message.payload
+                if config["timestamp"] > self.timestamp:
+                    self.timestamp = config["timestamp"]
+                    self.autoignore_rules = config.get("autoignore", {})
+                    self.build_prefix_tree()
                     self.set_rule_timers()
             except Exception:
                 log.exception("Exception")
@@ -171,11 +176,48 @@ class AutoIgnoreChecker:
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             if self.correlation_id == message.properties["correlation_id"]:
-                raw = message.payload
-                if raw["timestamp"] > self.timestamp:
-                    self.timestamp = raw["timestamp"]
-                    self.autoignore_rules = raw.get("autoignore", [])
+                config = message.payload
+                if config["timestamp"] > self.timestamp:
+                    self.timestamp = config["timestamp"]
+                    self.autoignore_rules = config.get("autoignore", [])
+                    self.build_prefix_tree()
                     self.set_rule_timers()
+
+        def build_prefix_tree(self):
+            log.info("Starting building autoignore prefix tree...")
+            self.prefix_tree = {
+                "v4": pytricia.PyTricia(32),
+                "v6": pytricia.PyTricia(128),
+            }
+            raw_prefix_count = 0
+            for key in self.autoignore_rules:
+                try:
+                    rule = self.autoignore_rules[key]
+                    for prefix in rule["prefixes"]:
+                        for translated_prefix in translate_rfc2622(prefix):
+                            ip_version = get_ip_version(translated_prefix)
+                            if self.prefix_tree[ip_version].has_key(translated_prefix):
+                                node = self.prefix_tree[ip_version][translated_prefix]
+                            else:
+                                node = {"prefix": translated_prefix, "rule_key": key}
+                                self.prefix_tree[ip_version].insert(
+                                    translated_prefix, node
+                                )
+                            raw_prefix_count += 1
+                except Exception:
+                    log.exception("Exception")
+            log.info(
+                "{} prefixes integrated in autoignore prefix tree in total".format(
+                    raw_prefix_count
+                )
+            )
+            log.info("Finished building autoignore prefix tree.")
+
+        def find_best_prefix_node(self, prefix):
+            ip_version = get_ip_version(prefix)
+            if prefix in self.prefix_tree[ip_version]:
+                return self.prefix_tree[ip_version][prefix]
+            return None
 
         def set_rule_timers(self):
             conf_rule_keys = set()
@@ -187,11 +229,9 @@ class AutoIgnoreChecker:
 
             # start not started timers
             for key in unconfigured_rule_keys:
-                self.rule_timer_entries[key] = Entry(
-                    self.auto_ignore_check_rule, rule, key
-                )
+                self.rule_timer_entries[key] = Entry(self.auto_ignore_check_rule, key)
                 self.rule_timer.enter_after(
-                    rule["interval"], self.rule_timer_entries[key]
+                    self.autoignore_rules[key]["interval"], self.rule_timer_entries[key]
                 )
 
             # cancel started obsolete timers
@@ -204,22 +244,24 @@ class AutoIgnoreChecker:
             self.rule_timer_entries.clear()
             self.set_rule_timers()
 
-        def auto_ignore_check_rule(self, rule, key):
+        def auto_ignore_check_rule(self, key):
+            rule = self.autoignore_rules.get(key, None)
+            if not rule:
+                return
+
+            if rule["interval"] <= 0:
+                return
+
             thres_num_peers_seen = rule["thres_num_peers_seen"]
             thres_num_ases_infected = rule["thres_num_ases_infected"]
             interval = rule["interval"]
 
-            if interval <= 0:
-                return
-
             try:
-                # TODO: take into account autoignore rule prefixes!!!
                 # fetch ongoing hijack events
                 query = (
                     "SELECT time_started, time_last, num_peers_seen, "
                     "num_asns_inf, key, prefix, hijack_as, type, time_detected, "
-                    "configured_prefix, timestamp_of_config, community_annotation, rpki_status "
-                    "FROM hijacks WHERE active = true"
+                    "FROM hijacks WHERE active = true AND configured_prefix IN "
                 )
 
                 entries = self.ro_db.execute(query)
@@ -227,13 +269,20 @@ class AutoIgnoreChecker:
                 # check which of them should be auto-ignored
                 time_now = int(time.time())
                 for entry in entries:
+
+                    prefix = entry[5]
+                    best_node_match = self.find_best_prefix_match(prefix)
+                    if not best_node_match:
+                        continue
+                    if best_node_match["rule_key"] != key:
+                        continue
+
                     time_last_updated = max(
                         int(entry[1].timestamp()), int(entry[8].timestamp())
                     )
                     num_peers_seen = int(entry[2])
                     num_asns_inf = int(entry[3])
                     hij_key = entry[4]
-                    prefix = entry[5]
                     hijack_as = entry[6]
                     hij_type = entry[7]
                     if (

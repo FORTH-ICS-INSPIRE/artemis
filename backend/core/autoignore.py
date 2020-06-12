@@ -15,7 +15,6 @@ from utils import DB_NAME
 from utils import DB_PASS
 from utils import DB_PORT
 from utils import DB_USER
-from utils import dict_hash
 from utils import get_logger
 from utils import ping_redis
 from utils import purge_redis_eph_pers_keys
@@ -57,7 +56,7 @@ class AutoIgnoreChecker:
     class Worker(ConsumerProducerMixin):
         def __init__(self, connection):
             self.connection = connection
-            self.rules = None
+            self.autoignore_rules = None
             # https: // docs.celeryproject.org / projects / kombu / en / stable / reference / kombu.asynchronous.timer.html
             # https://docs.celeryproject.org/projects/kombu/en/stable/_modules/kombu/asynchronous/timer.html#Timer
             self.rule_timer = Timer(max_interval=None, on_error=self.on_timer_error)
@@ -123,7 +122,7 @@ class AutoIgnoreChecker:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
                     self.timestamp = raw["timestamp"]
-                    self.rules = raw.get("rules", [])
+                    self.autoignore_rules = raw.get("autoignore", {})
                     self.set_rule_timers()
             except Exception:
                 log.exception("Exception")
@@ -165,7 +164,7 @@ class AutoIgnoreChecker:
                 queues=[callback_queue],
                 accept=["ujson"],
             ):
-                while self.rules is None:
+                while self.autoignore_rules is None:
                     self.connection.drain_events()
 
         def handle_config_request_reply(self, message):
@@ -175,35 +174,37 @@ class AutoIgnoreChecker:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
                     self.timestamp = raw["timestamp"]
-                    self.rules = raw.get("rules", [])
+                    self.autoignore_rules = raw.get("autoignore", [])
                     self.set_rule_timers()
 
         def set_rule_timers(self):
-            conf_rule_hashes = set()
-            for rule in self.rules:
-                rule_hash = dict_hash(rule)
-                conf_rule_hashes.add(rule_hash)
-            set_rule_hashes = set(self.rule_timer_entries.keys())
-            unconfigured_rule_hashes = conf_rule_hashes - set_rule_hashes
-            obsolete_rule_hashes = set_rule_hashes - conf_rule_hashes
+            conf_rule_keys = set()
+            for rule_key, rule in self.autoignore_rules:
+                conf_rule_keys.add(rule_key)
+            set_rule_keys = set(self.rule_timer_entries.keys())
+            unconfigured_rule_keys = conf_rule_keys - set_rule_keys
+            obsolete_rule_keys = set_rule_keys - conf_rule_keys
 
             # start not started timers
-            for hash in unconfigured_rule_hashes:
-                self.rule_timer_entries[hash] = Entry(
-                    self.auto_ignore_check_rule, rule, hash
+            for key in unconfigured_rule_keys:
+                self.rule_timer_entries[key] = Entry(
+                    self.auto_ignore_check_rule, rule, key
                 )
                 self.rule_timer.enter_after(
-                    rule["interval"], self.rule_timer_entries[hash]
+                    rule["interval"], self.rule_timer_entries[key]
                 )
 
             # cancel started obsolete timers
-            for hash in obsolete_rule_hashes:
-                self.rule_timer.cancel(self.rule_timer_entries[hash].tref)
+            for key in obsolete_rule_keys:
+                self.rule_timer.cancel(self.rule_timer_entries[key].tref)
 
         def on_timer_error(self):
-            pass
+            log.error("Timer error")
+            self.rule_timer.clear()
+            self.rule_timer_entries.clear()
+            self.set_rule_timers()
 
-        def auto_ignore_check_rule(self, rule, hash):
+        def auto_ignore_check_rule(self, rule, key):
             thres_num_peers_seen = rule["thres_num_peers_seen"]
             thres_num_ases_infected = rule["thres_num_ases_infected"]
             interval = rule["interval"]
@@ -253,5 +254,5 @@ class AutoIgnoreChecker:
                 log.exception("exception")
             finally:
                 self.rule_timer.enter_after(
-                    rule["interval"], self.rule_timer_entries[hash]
+                    rule["interval"], self.rule_timer_entries[key]
                 )

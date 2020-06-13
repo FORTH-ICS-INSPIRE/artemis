@@ -141,6 +141,12 @@ jobs:
   - name: ZAP Baseline (Passive)
     before_script:
     - docker pull ictu/zap2docker-weekly
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
+    - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
     - docker-compose up -d
     script:
     - sleep 15

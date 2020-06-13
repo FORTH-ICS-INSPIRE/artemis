@@ -34,6 +34,7 @@ jobs:
     after_failure:
       - docker-compose logs postgres
   - stage: build and push containers
+    if: fork = false
     name: backend
     install: []
     before_script:
@@ -62,6 +63,7 @@ jobs:
     - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
   - stage: run tests
+    if: fork = false
     name: TestCafe
     install: []
     before_script:

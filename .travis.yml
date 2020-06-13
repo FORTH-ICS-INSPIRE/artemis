@@ -51,7 +51,7 @@ jobs:
     - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
   - name: monitor
     install: []
@@ -79,7 +79,7 @@ jobs:
     - docker-compose -f docker-compose.testcafe.yaml logs
   - name: TestDetection
     install:
-    - pip install coverage==4.5.4 codecov==2.0.22
+    - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -94,7 +94,7 @@ jobs:
     - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
     install:
-    - pip install coverage==4.5.4 codecov==2.0.22
+    - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -120,7 +120,7 @@ jobs:
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
   - name: TestRPKI
     install:
-    - pip install coverage==4.5.4 codecov==2.0.22
+    - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
     - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
@@ -143,6 +143,12 @@ jobs:
   - name: ZAP Baseline (Passive)
     before_script:
     - docker pull ictu/zap2docker-weekly
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
+    - docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
     - docker-compose up -d
     script:
     - sleep 15

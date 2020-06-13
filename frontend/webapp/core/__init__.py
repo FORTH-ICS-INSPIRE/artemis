@@ -101,7 +101,9 @@ def setup():
         app.artemis_logger.info("waiting for postgrest")
 
     try:
-        app.config["VERSION"] = os.getenv("SYSTEM_VERSION")
+        app.config["VERSION"] = "{}@{}".format(
+            os.getenv("SYSTEM_VERSION"), os.getenv("REVISION", "HEAD")
+        )
     except BaseException:
         app.config["VERSION"] = "Fail"
         app.artemis_logger.debug("failed to get version")

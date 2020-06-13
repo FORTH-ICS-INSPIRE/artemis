@@ -58,7 +58,7 @@ Depending on the preferences of the user, ARTEMIS can be used in 3 basic modes a
 Mode (3) is under development (currently only a mitigation wrapper is offered).*
 
 You can read more about the ARTEMIS methodology, blog posts, presentations, publications and research experiments
-on the ARTEMIS [webpage](http://www.inspire.edu.gr/artemis).
+on the ARTEMIS [webpage](https://bgpartemis.org).
 
 This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a server/VM as a modular and extensible

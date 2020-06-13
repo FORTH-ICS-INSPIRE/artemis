@@ -228,42 +228,45 @@ class AutoIgnoreChecker:
             conf_rule_keys = set()
             for rule_key in self.autoignore_rules:
                 conf_rule_keys.add(rule_key)
-            set_rule_keys = set(self.rule_timer_threads.keys())
-            unconfigured_rule_keys = conf_rule_keys - set_rule_keys
-            obsolete_rule_keys = set_rule_keys - conf_rule_keys
+            current_rule_keys = set(self.rule_timer_threads.keys())
 
-            # start not started timers
-            for key in unconfigured_rule_keys:
-                self.rule_timer_threads[key] = Timer(
-                    interval=self.autoignore_rules[key]["interval"],
-                    function=self.auto_ignore_check_rule,
-                    args=[key],
-                )
-                self.rule_timer_threads[key].start()
-                log.info(
-                    "Started timer {} - {}".format(
-                        self.rule_timer_threads[key], self.autoignore_rules[key]
+            # cancel started timers
+            for key in current_rule_keys:
+                try:
+                    self.rule_timer_threads[key].cancel()
+                    log.debug(
+                        "Cancelled timer {} - {}".format(
+                            self.rule_timer_threads[key], self.autoignore_rules[key]
+                        )
                     )
-                )
-
-            # cancel started obsolete timers
-            for key in obsolete_rule_keys:
-                self.rule_timer_threads[key].cancel()
-                log.info(
-                    "Cancelled timer {} - {}".format(
-                        self.rule_timer_threads[key], self.autoignore_rules[key]
+                except Exception:
+                    log.exception(
+                        "Exception when stopping timer for rule {}".format(key)
                     )
-                )
-                del self.rule_timer_threads[key]
+                finally:
+                    del self.rule_timer_threads[key]
 
-        def on_timer_error(self):
-            log.error("Timer error")
-            self.rule_timer_threads.clear()
-            self.set_rule_timers()
+            # start configured timers
+            for key in conf_rule_keys:
+                try:
+                    self.rule_timer_threads[key] = Timer(
+                        interval=self.autoignore_rules[key]["interval"],
+                        function=self.auto_ignore_check_rule,
+                        args=[key],
+                    )
+                    self.rule_timer_threads[key].start()
+                    log.debug(
+                        "Started timer {} - {}".format(
+                            self.rule_timer_threads[key], self.autoignore_rules[key]
+                        )
+                    )
+                except Exception:
+                    log.exception(
+                        "Exception when starting timer for rule {}".format(key)
+                    )
 
         def auto_ignore_check_rule(self, key):
             rule = self.autoignore_rules.get(key, None)
-            log.info("Checking autoignore rule {}".format(rule))
             if not rule:
                 return
 
@@ -273,7 +276,7 @@ class AutoIgnoreChecker:
             thres_num_peers_seen = rule["thres_num_peers_seen"]
             thres_num_ases_infected = rule["thres_num_ases_infected"]
             interval = rule["interval"]
-            log.info("Checking rule {}".format(rule))
+            log.debug("Checking autoignore rule {}".format(rule))
 
             try:
                 # fetch ongoing hijack events
@@ -290,13 +293,13 @@ class AutoIgnoreChecker:
                 for entry in entries:
 
                     prefix = entry[5]
-                    best_node_match = self.find_best_prefix_match(prefix)
+                    best_node_match = self.find_best_prefix_node(prefix)
                     if not best_node_match:
                         continue
                     if best_node_match["rule_key"] != key:
                         continue
 
-                    log.info("Matched prefix {}".format(prefix))
+                    log.debug("Matched prefix {}".format(prefix))
 
                     time_last_updated = max(
                         int(entry[1].timestamp()), int(entry[8].timestamp())
@@ -307,9 +310,9 @@ class AutoIgnoreChecker:
                     hijack_as = entry[6]
                     hij_type = entry[7]
                     if (
-                        (time_now - time_last_updated >= interval)
-                        and (num_peers_seen <= thres_num_peers_seen)
-                        and (num_asns_inf <= thres_num_ases_infected)
+                        (time_now - time_last_updated > interval)
+                        and (num_peers_seen < thres_num_peers_seen)
+                        and (num_asns_inf < thres_num_ases_infected)
                     ):
                         redis_hijack_key = redis_key(prefix, hijack_as, hij_type)
                         # if ongoing, clear redis
@@ -321,6 +324,7 @@ class AutoIgnoreChecker:
                             "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;",
                             (hij_key,),
                         )
+                        log.debug("Ignored hijack {}".format(entry))
             except Exception:
                 log.exception("exception")
             finally:
@@ -330,7 +334,7 @@ class AutoIgnoreChecker:
                     args=[key],
                 )
                 self.rule_timer_threads[key].start()
-                log.info(
+                log.debug(
                     "Started timer {} - {}".format(
                         self.rule_timer_threads[key], self.autoignore_rules[key]
                     )

@@ -386,13 +386,13 @@ class AutoignoreTester:
         print("[+] Instructing all processes to stop...")
         self.supervisor.supervisor.stopAllProcesses()
 
+        self.waitProcess("autoignore", 0)  # 0 STOPPED
         self.waitProcess("listener", 0)  # 0 STOPPED
         self.waitProcess("clock", 0)  # 0 STOPPED
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
         self.waitProcess("detection", 0)  # 0 STOPPED
-        self.waitProcess("autoignore", 0)  # 0 STOPPED
         print(
             "[+] All processes (listener, clock, conf, db, detection, autoignore and observer) are stopped."
         )

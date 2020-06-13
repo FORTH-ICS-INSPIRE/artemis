@@ -309,8 +309,8 @@ class Tester:
                         RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
                     )
                 )
-                print("Retrying in 5 seconds...")
-                time.sleep(5)
+                print("Retrying in 30 seconds...")
+                time.sleep(30)
 
         # exchanges
         self.update_exchange = Exchange(

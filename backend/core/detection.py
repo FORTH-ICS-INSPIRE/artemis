@@ -237,8 +237,8 @@ class Detection:
                                 RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
                             )
                         )
-                        log.info("Retrying RTR connection in 5 seconds...")
-                        time.sleep(5)
+                        log.info("Retrying RTR connection in 30 seconds...")
+                        time.sleep(30)
 
             self.config_request_rpc()
             log.info("started")

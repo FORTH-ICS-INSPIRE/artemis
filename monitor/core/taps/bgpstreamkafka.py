@@ -132,6 +132,10 @@ def run_bgpstream(
                         as_path = []
                         communities = []
                     timestamp = float(rec.time)
+                    if timestamp == 0:
+                        timestamp = time.time()
+                        log.debug("fixed timestamp: {}".format(timestamp))
+
                     peer_asn = elem.peer_asn
 
                     for prefix in prefixes:
@@ -150,19 +154,26 @@ def run_bgpstream(
                                 "prefix": this_prefix,
                                 "peer_asn": peer_asn,
                             }
-                            if validator.validate(msg):
-                                msgs = normalize_msg_path(msg)
-                                for msg in msgs:
-                                    key_generator(msg)
-                                    log.debug(msg)
-                                    producer.publish(
-                                        msg,
-                                        exchange=exchange,
-                                        routing_key="update",
-                                        serializer="ujson",
+                            try:
+                                if validator.validate(msg):
+                                    msgs = normalize_msg_path(msg)
+                                    for msg in msgs:
+                                        key_generator(msg)
+                                        log.debug(msg)
+                                        producer.publish(
+                                            msg,
+                                            exchange=exchange,
+                                            routing_key="update",
+                                            serializer="ujson",
+                                        )
+                                else:
+                                    log.warning(
+                                        "Invalid format message: {}".format(msg)
                                     )
-                            else:
-                                log.warning("Invalid format message: {}".format(msg))
+                            except BaseException:
+                                log.exception(
+                                    "Error when normalizing BGP message: {}".format(msg)
+                                )
                             break
                 try:
                     elem = rec.get_next_elem()

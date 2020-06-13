@@ -1,0 +1,41 @@
+version: '3'
+services:
+    openbmp-collector:
+        image: openbmp/collector:latest
+        container_name: openbmp-collector
+        depends_on:
+            - openbmp-kafka
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - 5000:5000
+        volumes:
+            - ./local_configs/openbmp/openbmpd.conf:/usr/etc/openbmp/openbmpd.conf
+        environment:
+                KAFKA_FQDN: openbmp-kafka
+    openbmp-kafka:
+        image: openbmp/kafka:latest
+        container_name: openbmp-kafka
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - 2181:2181
+            - 9092:9092
+        volumes:
+            - ./local_data/kafka:/data/kafka
+        environment:
+                KAFKA_FQDN: openbmp-kafka
+    # openbmp-bgpstream:
+    #     image: caida/bgpstream:latest
+    #     container_name: openbmp-bgpstream
+    #     depends_on:
+    #         - openbmp-kafka
+    #         - openbmp-collector
+    #     restart: always
+    #     networks:
+    #         - artemis
+    #     environment:
+    #             KAFKA_FQDN: openbmp-kafka
+    #     command: ["bgpreader", "-d", "kafka", "-o", "brokers=openbmp-kafka", "-o", "topic=openbmp.bmp_raw"]

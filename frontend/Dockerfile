@@ -30,4 +30,7 @@ COPY ./webapp ./webapp
 RUN rm /root/webapp/render/static/js/custom/*
 COPY --from=builder /root/prod/ /root/webapp/render/static/js/custom/
 
+ARG revision="HEAD"
+ENV REVISION="$revision"
+
 ENTRYPOINT ["./entrypoint"]

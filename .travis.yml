@@ -34,6 +34,7 @@ jobs:
     after_failure:
       - docker-compose logs postgres
   - stage: build and push containers
+    if: fork = false
     name: backend
     install: []
     before_script:
@@ -44,6 +45,7 @@ jobs:
     - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/
     - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
   - name: frontend
+    if: fork = false
     install: []
     before_script:
     - docker pull inspiregroup/artemis-frontend:latest
@@ -53,6 +55,7 @@ jobs:
     - docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
     - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
   - name: monitor
+    if: fork = false
     install: []
     before_script:
     - docker pull inspiregroup/artemis-monitor:latest
@@ -62,6 +65,7 @@ jobs:
     - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
     - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
   - stage: run tests
+    if: fork = false
     name: TestCafe
     install: []
     before_script:
@@ -76,6 +80,7 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testcafe.yaml logs
   - name: TestDetection
+    if: fork = false
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
@@ -91,6 +96,7 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
+    if: fork = false
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
@@ -106,7 +112,7 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testautoconf.yaml logs
   - name: Benchmark
-    if: type == pull_request
+    if: type == pull_request && fork = false
     install: []
     before_script:
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
@@ -117,6 +123,7 @@ jobs:
     - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
   - name: TestRPKI
+    if: fork = false
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
@@ -139,6 +146,7 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
   - name: ZAP Baseline (Passive)
+    if: fork = false
     before_script:
     - docker pull ictu/zap2docker-weekly
     - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}

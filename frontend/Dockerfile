@@ -11,7 +11,7 @@ COPY ./webapp/render/static/js/custom/ /root/
 COPY ./minify-js.sh /root/
 RUN mkdir /root/prod/ && ./minify-js.sh
 
-FROM mavromat/alpine-python:3.6
+FROM mavromat/artemis-base-images:frontend-1.0.0
 
 WORKDIR /root
 

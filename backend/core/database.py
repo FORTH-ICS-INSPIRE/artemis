@@ -50,7 +50,7 @@ VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
 hij_log = logging.getLogger("hijack_logger")
 mail_log = logging.getLogger("mail_logger")
 try:
-    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER", "[]"))
 except Exception:
     log.exception("exception")
     hij_log_filter = []

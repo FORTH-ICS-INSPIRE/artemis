@@ -3,8 +3,8 @@ LDFLAGS := $(shell python3.6m-config --ldflags)
 FLAGS := -Os -shared -fPIC
 CC := gcc
 CPY := cython
-PROJDIRS := core/
-SRCFILES := $(shell find $(PROJDIRS) -maxdepth 2 -type f -name "*.py")
+PROJDIRS := core/ core/utils
+SRCFILES := $(shell find $(PROJDIRS) -maxdepth 1 -type f -name "*.py")
 OBJFILES := $(patsubst %.py,%.so,$(SRCFILES))
 
 all: $(OBJFILES)

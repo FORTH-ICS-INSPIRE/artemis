@@ -2,7 +2,7 @@
 
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- Redirection to login page when session is expired (#404)
 
 ### Changed
 - TBD (Changed existing functionality)

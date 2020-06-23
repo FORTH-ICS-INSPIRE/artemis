@@ -211,7 +211,14 @@
                     $('#config_load_as_sets').html('Load AS-SETs');
                     $("#config_alert_box").html(message);
                 })
-                .catch(error => console.error(error));
+                .catch(error => {
+                    if (error instanceof TypeError) {
+                        alert("Your session has expired")
+                        window.location.href = "/login"
+                    } else {
+                        console.error(error)
+                    }
+                });
             }
 
             function submit_new_config(publish_config){
@@ -241,7 +248,14 @@
                     }
                     $("#config_alert_box").html(message);
                 })
-                .catch(error => console.error(error));
+                .catch(error => {
+                    if (error instanceof TypeError) {
+                        alert("Your session has expired")
+                        window.location.href = "/login"
+                    } else {
+                        console.error(error)
+                    }
+                });
             }
 
             function render_module_state(data) {
@@ -340,7 +354,14 @@
                         'Content-Type': 'application/json'
                     },
                 })
-                .catch(error => console.error(error))
+                .catch(error => {
+                    if (error instanceof TypeError) {
+                        alert("Your session has expired")
+                        window.location.href = "/login"
+                    } else {
+                        console.error(error)
+                    }
+                });
             }
 
             $(document).ready(() => {

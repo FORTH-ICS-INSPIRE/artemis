@@ -8,10 +8,10 @@ repos:
       pass_filenames: false
     - id: unittest
       name: Backend Unit Tests
-      entry: /bin/bash -c 'cd backend/core && python -m unittest discover tests'
+      entry: /bin/bash -c 'cd backend && make test'
       language: script
       pass_filenames: false
-  stages: [commit]
+      stages: [push]
 - repo: https://github.com/ambv/black
   rev: 19.3b0
   hooks:

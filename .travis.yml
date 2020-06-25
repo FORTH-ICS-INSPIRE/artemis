@@ -15,7 +15,7 @@ jobs:
   - stage: checks
     name: PreCommitCheck
     install:
-    - python -m pip install pre-commit
+    - python -m pip install pre-commit pytest
     - python -m pip install -r backend/requirements.txt
     - pre-commit install
     script:

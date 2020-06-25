@@ -1,9 +1,6 @@
-import logging
 import unittest
 from unittest.mock import MagicMock
 from unittest.mock import patch
-
-logging.disable(logging.CRITICAL)
 
 import detection
 

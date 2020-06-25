@@ -8,7 +8,25 @@ logging.disable(logging.CRITICAL)
 import detection
 
 
-class TestWorker(unittest.TestCase):
+class BGPHandlerTester(unittest.TestCase):
+    """
+    Detection combinations to check:
+    S|0|-|-: sub-prefix announced by illegal origin
+    S|0|-|L: sub-prefix announced by illegal origin and no-export policy violation
+    S|1|-|-: sub-prefix announced by seemingly legal origin, but with an illegal first hop
+    S|1|-|L: sub-prefix announced by seemingly legal origin, but with an illegal first hop and no-export policy violation
+    S|-|-|-: not S|0|- or S|1|-, potential type-N or type-U hijack
+    S|-|-|L: not S|0|- or S|1|-, potential type-N or type-U hijack and no-export policy violation
+    E|0|-|-: exact-prefix announced by illegal origin
+    E|0|-|-|L: exact-prefix announced by illegal origin and no-export policy violation
+    E|1|-|-: exact-prefix announced by seemingly legal origin, but with an illegal first hop
+    E|1|-|L: exact-prefix announced by seemingly legal origin, but with an illegal first hop and no-export policy violation
+    Q|0|-|-: squatting hijack (is always '0' on the path dimension since any origin is illegal)
+    Q|0|-|L: squatting hijack and no-export policy violation
+    E|-|-|-: not a hijack
+    E|-|-|L: no-export policy violation
+    """
+
     @patch("redis.Redis", MagicMock())
     @patch("detection.signal_loading", MagicMock())
     @patch("detection.ping_redis", MagicMock())
@@ -58,24 +76,6 @@ class TestWorker(unittest.TestCase):
             },
         ]
         self.worker.init_detection()
-
-    """
-    Detection combinations to check:
-    S|0|-|-: sub-prefix announced by illegal origin
-    S|0|-|L: sub-prefix announced by illegal origin and no-export policy violation
-    S|1|-|-: sub-prefix announced by seemingly legal origin, but with an illegal first hop
-    S|1|-|L: sub-prefix announced by seemingly legal origin, but with an illegal first hop and no-export policy violation
-    S|-|-|-: not S|0|- or S|1|-, potential type-N or type-U hijack
-    S|-|-|L: not S|0|- or S|1|-, potential type-N or type-U hijack and no-export policy violation
-    E|0|-|-: exact-prefix announced by illegal origin
-    E|0|-|-|L: exact-prefix announced by illegal origin and no-export policy violation
-    E|1|-|-: exact-prefix announced by seemingly legal origin, but with an illegal first hop
-    E|1|-|L: exact-prefix announced by seemingly legal origin, but with an illegal first hop and no-export policy violation
-    Q|0|-|-: squatting hijack (is always '0' on the path dimension since any origin is illegal)
-    Q|0|-|L: squatting hijack and no-export policy violation
-    E|-|-|-: not a hijack
-    E|-|-|L: no-export policy violation
-    """
 
     @patch("detection.Detection.Worker.commit_hijack")
     def test_handle_bgp_update_subprefix_type_0(self, mock_commit_hijack):

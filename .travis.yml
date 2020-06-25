@@ -16,6 +16,7 @@ jobs:
     name: PreCommitCheck
     install:
     - python -m pip install pre-commit
+    - python -m pip install -r backend/requirements.txt
     - pre-commit install
     script:
     - pre-commit run --all-files

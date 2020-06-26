@@ -82,6 +82,7 @@ TEST_ENV = os.getenv("TEST_ENV", "false")
 GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
 GUI_ENABLED = os.getenv("GUI_ENABLED", "true")
+AUTO_FORMAT = os.getenv("AUTO_FORMAT", "true")
 
 PROCESS_STATES_LOADING_MUTATION = """
     mutation updateProcessStates($name: String, $loading: Boolean) {

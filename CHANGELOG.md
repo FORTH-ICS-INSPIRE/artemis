@@ -3,6 +3,7 @@
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
 - Redirection to login page when session is expired (#404)
+- AUTO_FORMAT env variable to disable auto-formatting (#362)
 
 ### Changed
 - TBD (Changed existing functionality)

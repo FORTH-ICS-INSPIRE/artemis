@@ -22,6 +22,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu.mixins import ConsumerProducerMixin
 from utils import ArtemisError
+from utils import AUTO_FORMAT
 from utils import flatten
 from utils import get_logger
 from utils import ping_redis
@@ -267,18 +268,21 @@ class Configuration:
                         if "comment" in self.data:
                             del self.data["comment"]
                         # after accepting/writing, format new configuration correctly
-                        with open(self.file, "r") as f:
-                            raw = f.read()
-                        yaml_conf = ruamel.yaml.load(
-                            raw,
-                            Loader=ruamel.yaml.RoundTripLoader,
-                            preserve_quotes=True,
-                        )
-                        ruamel.yaml.dump(yaml_conf, Dumper=ruamel.yaml.RoundTripDumper)
-                        with open(self.file, "w") as f:
-                            ruamel.yaml.dump(
-                                yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
-                            )
+                        if AUTO_FORMAT == "true":
+                            with open(self.file, "r") as f:
+                                raw = f.read()
+                                yaml_conf = ruamel.yaml.load(
+                                    raw,
+                                    Loader=ruamel.yaml.RoundTripLoader,
+                                    preserve_quotes=True,
+                                )
+                                ruamel.yaml.dump(
+                                    yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
+                                )
+                                with open(self.file, "w") as f:
+                                    ruamel.yaml.dump(
+                                        yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
+                                    )
 
                     # reply back to the sender with a configuration accepted
                     # message.

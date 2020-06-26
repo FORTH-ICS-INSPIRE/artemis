@@ -193,6 +193,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: testEnv
+        - name: AUTO_FORMAT
+          valueFrom:
+          configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: autoFormat
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

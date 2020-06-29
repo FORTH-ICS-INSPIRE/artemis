@@ -6,6 +6,12 @@ repos:
       language: script
       entry: ./other/verify_script.py
       pass_filenames: false
+    - id: unittest
+      name: Backend Unit Tests
+      entry: /bin/bash -c 'cd backend && make test'
+      language: script
+      files: "backend/core"
+      pass_filenames: false
 - repo: https://github.com/ambv/black
   rev: 19.3b0
   hooks:

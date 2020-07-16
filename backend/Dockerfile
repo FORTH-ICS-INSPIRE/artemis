@@ -1,4 +1,4 @@
-FROM mavromat/artemis-backend-base:latest
+FROM mavromat/artemis-base-images:backend-1.0.0
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 WORKDIR /root

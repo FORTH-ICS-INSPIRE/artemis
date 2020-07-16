@@ -1,4 +1,4 @@
-FROM mavromat/bgpstream-redis:v1.3-bgpstream
+FROM mavromat/artemis-base-images:monitor-1.0.0
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \

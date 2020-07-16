@@ -21,7 +21,6 @@ from kombu import Queue
 from kombu import serialization
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
-from rtrlib import RTRManager
 from utils import exception_handler
 from utils import flatten
 from utils import get_hash
@@ -64,7 +63,7 @@ log = get_logger()
 hij_log = logging.getLogger("hijack_logger")
 mail_log = logging.getLogger("mail_logger")
 try:
-    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER"))
+    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER", "[]"))
 except Exception:
     log.exception("exception")
     hij_log_filter = []
@@ -219,6 +218,8 @@ class Detection:
 
             self.rtrmanager = None
             if RPKI_VALIDATOR_ENABLED == "true":
+                from rtrlib import RTRManager
+
                 while True:
                     try:
                         self.rtrmanager = RTRManager(

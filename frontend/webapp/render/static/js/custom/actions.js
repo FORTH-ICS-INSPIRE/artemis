@@ -13,5 +13,13 @@ function postFetch_json(url, obj) { // eslint-disable-line no-unused-vars
                 result(data);
             }
         )
+        .catch(error => {
+            if (error instanceof TypeError) {
+                alert("Your session has expired")
+                window.location.href = "/login"
+            } else {
+                console.error(error)
+            }
+        });
     });
 }

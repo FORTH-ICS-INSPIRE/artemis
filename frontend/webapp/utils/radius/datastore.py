@@ -1,13 +1,14 @@
 """Connects Flask-Security datastore to RADIUS."""
 import os
+from itertools import cycle
 
-from pyrad.client import Client
-from pyrad.packet import AccessAccept, AccessRequest
-from pyrad.dictionary import Dictionary
+from flask import current_app
 from flask_security.datastore import SQLAlchemyUserDatastore
 from flask_security.utils import config_value
-from flask import current_app
-from itertools import cycle
+from pyrad.client import Client
+from pyrad.dictionary import Dictionary
+from pyrad.packet import AccessAccept
+from pyrad.packet import AccessRequest
 
 
 class RADIUSUserDatastore(SQLAlchemyUserDatastore):
@@ -20,20 +21,33 @@ class RADIUSUserDatastore(SQLAlchemyUserDatastore):
         log = current_app.artemis_logger
 
         self.role_mapping = config_value("RADIUS_ROLE_MAPPING", default=None)
-        self.role_attribute_code = config_value("RADIUS_ROLE_ATTRIBUTE_CODE", default=None)
+        self.role_attribute_code = config_value(
+            "RADIUS_ROLE_ATTRIBUTE_CODE", default=None
+        )
         try:
-            self.role_attribute_code = int(self.role_attribute_code) if self.role_attribute_code is not None else None
+            self.role_attribute_code = (
+                int(self.role_attribute_code)
+                if self.role_attribute_code is not None
+                else None
+            )
         except ValueError:
-            raise Exception("RADIUS_ROLE_ATTRIBUTE_CODE must be a number (was %s)" % self.role_attribute_code)
+            raise Exception(
+                "RADIUS_ROLE_ATTRIBUTE_CODE must be a number (was %s)"
+                % self.role_attribute_code
+            )
 
         self.default_role = config_value("RADIUS_DEFAULT_ROLE", default="user")
-        servers = self._create_radius_clients(config_value("RADIUS_SERVERS", default=[]))
+        servers = self._create_radius_clients(
+            config_value("RADIUS_SERVERS", default=[])
+        )
         self.client_iterator = cycle(servers)
         self.client_attempts = len(servers)
         try:
             self.current_client = next(self.client_iterator)
-            log.info("Radius servers configured. First server to try is %s:%s" % (
-                self.current_client.server, self.current_client.authport))
+            log.info(
+                "Radius servers configured. First server to try is %s:%s"
+                % (self.current_client.server, self.current_client.authport)
+            )
         except StopIteration:
             raise Exception("No radius servers defined but RADIUS auth is enabled!")
 
@@ -63,7 +77,7 @@ class RADIUSUserDatastore(SQLAlchemyUserDatastore):
                 log.debug("Found role mapping attr")
                 for v in self.role_mapping.keys():
                     if isinstance(v, int):
-                        cmp = int.from_bytes(value, byteorder='big', signed=False)
+                        cmp = int.from_bytes(value, byteorder="big", signed=False)
                         if int(cmp) == int(v):
                             role = self.role_mapping[v]
                     if isinstance(v, str):
@@ -80,11 +94,17 @@ class RADIUSUserDatastore(SQLAlchemyUserDatastore):
 
         def mk_client(x):
             try:
-                c = Client(server=x["host"], authport=x["port"], secret=x["secret"].encode(), dict=Dictionary(dictPath))
+                c = Client(
+                    server=x["host"],
+                    authport=x["port"],
+                    secret=x["secret"].encode(),
+                    dict=Dictionary(dictPath),
+                )
             except KeyError as e:
                 raise Exception(
                     "%s attribute is missing in one of the radius host entries. Please fix SECURITY_RADIUS_SERVERS:\n "
-                    "%s" % (str(e), str(servers)))
+                    "%s" % (str(e), str(servers))
+                )
             try:
                 c.timeout = x["timeout"]
             except KeyError:
@@ -98,8 +118,10 @@ class RADIUSUserDatastore(SQLAlchemyUserDatastore):
         result = list(map(mk_client, servers))
 
         for s in result:
-            log.info(" prepared radius connection to %s:%s, timeout=%s, retries=%s" % (
-                s.server, s.authport, s.timeout, s.retries))
+            log.info(
+                " prepared radius connection to %s:%s, timeout=%s, retries=%s"
+                % (s.server, s.authport, s.timeout, s.retries)
+            )
 
         return result
 
@@ -108,15 +130,22 @@ class RADIUSUserDatastore(SQLAlchemyUserDatastore):
         attempt = 1
         while attempt <= self.client_attempts:
             try:
-                log.info("RADIUS authenticate user %s attempt %s server %s:%s (timeout=%s, retries=%s)" % (
-                    username, attempt, self.current_client.server, self.current_client.authport,
-                    self.current_client.timeout,
-                    self.current_client.retries))
+                log.info(
+                    "RADIUS authenticate user %s attempt %s server %s:%s (timeout=%s, retries=%s)"
+                    % (
+                        username,
+                        attempt,
+                        self.current_client.server,
+                        self.current_client.authport,
+                        self.current_client.timeout,
+                        self.current_client.retries,
+                    )
+                )
                 r = self.current_client
                 req = r.CreateAuthPacket(code=AccessRequest, User_Name=username)
                 req["User-Password"] = req.PwCrypt(password)
                 return r.SendPacket(req)
-            except:
+            except Exception:
                 log.error("No response from RADIUS, switching to next one")
                 self.current_client = next(self.client_iterator)
             finally:

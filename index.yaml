@@ -2,6 +2,27 @@ apiVersion: v1
 entries:
   artemis-chart:
   - apiVersion: v2
+    appVersion: 1.5.0
+    created: "2020-05-21T02:14:54.447724003+02:00"
+    description: ARTEMIS helm chart for deploying on kubernetes.
+    digest: 00ac0f14e9e3e820eb01f1e25111b6e45405ae64d7d82837686ee3e46cb7eec2
+    home: https://github.com/FORTH-ICS-INSPIRE/artemis
+    icon: https://github.com/FORTH-ICS-INSPIRE/artemis/blob/gh-pages/logo.png
+    keywords:
+    - helm
+    - artemis
+    - bgp
+    - hijack
+    maintainers:
+    - email: jim.mavrommatis@gmail.com
+      name: Dimitrios Mavrommatis
+      url: https://slowr.github.io
+    name: artemis-chart
+    type: application
+    urls:
+    - artemis-chart-0.0.4.tgz
+    version: 0.0.4
+  - apiVersion: v2
     appVersion: 1.4.0
     created: "2020-05-21T02:14:54.446722596+02:00"
     description: ARTEMIS helm chart for deploying on kubernetes.
@@ -21,27 +42,6 @@ entries:
     type: application
     urls:
     - artemis-chart-0.0.3.tgz
-    version: 0.0.3
-  - apiVersion: v2
-    appVersion: latest
-    created: "2020-05-21T02:14:54.447724003+02:00"
-    description: ARTEMIS helm chart for deploying on kubernetes.
-    digest: 00ac0f14e9e3e820eb01f1e25111b6e45405ae64d7d82837686ee3e46cb7eec2
-    home: https://github.com/FORTH-ICS-INSPIRE/artemis
-    icon: https://github.com/FORTH-ICS-INSPIRE/artemis/blob/gh-pages/logo.png
-    keywords:
-    - helm
-    - artemis
-    - bgp
-    - hijack
-    maintainers:
-    - email: jim.mavrommatis@gmail.com
-      name: Dimitrios Mavrommatis
-      url: https://slowr.github.io
-    name: artemis-chart
-    type: application
-    urls:
-    - artemis-chart-0.0.4.tgz
     version: 0.0.3
   - apiVersion: v2
     appVersion: 1.3.1

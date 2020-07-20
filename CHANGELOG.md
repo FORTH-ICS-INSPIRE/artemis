@@ -3,6 +3,7 @@
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
 - Redirection to login page when session is expired (#404)
+- Support RADIUS integration for user authentication (#409)
 
 ### Changed
 - TBD (Changed existing functionality)

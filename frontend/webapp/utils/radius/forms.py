@@ -61,7 +61,9 @@ class RADIUSLoginForm(Form, NextFormMixin):
                 log.info("Login using Super-user login")
                 return self._try_local_auth()
 
-            auth_result, role = _datastore.authenticate(self.email.data, self.password.data)
+            auth_result, role = _datastore.authenticate(
+                self.email.data, self.password.data
+            )
             if auth_result is None:
                 self.password.errors.append("No response from RADIUS")
                 log.info("RADIUS authenticate() returned None")
@@ -78,15 +80,14 @@ class RADIUSLoginForm(Form, NextFormMixin):
                 self.user.email = username
             else:
                 self.user = _datastore.create_user(
-                    username=username,
-                    email=username,
-                    password=None,
-                    active=True
+                    username=username, email=username, password=None, active=True
                 )
             self._set_role(self.user, _datastore.find_role(role))
             _datastore.commit()
-        except:
-            self.password.errors.append("Internal error. Contact developer and/or check the logs.")
+        except Exception:
+            self.password.errors.append(
+                "Internal error. Contact developer and/or check the logs."
+            )
             log.exception("Unexpected error while handling RADIUS form")
             return False
 
@@ -94,12 +95,14 @@ class RADIUSLoginForm(Form, NextFormMixin):
 
     # because the user manipulation is broken i.e. it can lead to multiple entries in roles_users table (perhaps lack of
     # primary key in the table definition?) so until it's fixed the role manipulation is done via low level sqls
-    # fixme:
-    #  use _datastore.add_role_to_user and _datastore.remove_role_from_user *once* constraint is fixed (see comment above)
     def _set_role(self, user, role):
-        _datastore.db.session.execute("""delete from roles_users where user_id=:user_id""", {"user_id": user.id})
-        _datastore.db.session.execute("""insert into roles_users (user_id,role_id) values (:user_id, :role_id)""",
-                                      {"user_id": user.id, "role_id": role.id})
+        _datastore.db.session.execute(
+            """delete from roles_users where user_id=:user_id""", {"user_id": user.id}
+        )
+        _datastore.db.session.execute(
+            """insert into roles_users (user_id,role_id) values (:user_id, :role_id)""",
+            {"user_id": user.id, "role_id": role.id},
+        )
 
     def _try_local_auth(self):
         self.user = _datastore.find_user(username=self.email.data)

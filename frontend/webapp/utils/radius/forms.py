@@ -93,16 +93,10 @@ class RADIUSLoginForm(Form, NextFormMixin):
 
         return True
 
-    # because the user manipulation is broken i.e. it can lead to multiple entries in roles_users table (perhaps lack of
-    # primary key in the table definition?) so until it's fixed the role manipulation is done via low level sqls
     def _set_role(self, user, role):
-        _datastore.db.session.execute(
-            """delete from roles_users where user_id=:user_id""", {"user_id": user.id}
-        )
-        _datastore.db.session.execute(
-            """insert into roles_users (user_id,role_id) values (:user_id, :role_id)""",
-            {"user_id": user.id, "role_id": role.id},
-        )
+        _datastore.remove_role_from_user(user, _datastore.find_role("admin"))
+        _datastore.remove_role_from_user(user, _datastore.find_role("user"))
+        _datastore.add_role_to_user(user, role)
 
     def _try_local_auth(self):
         self.user = _datastore.find_user(username=self.email.data)

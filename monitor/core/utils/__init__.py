@@ -29,7 +29,8 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
-GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
+HASURA_HOST = os.getenv("HASURA_HOST", "graphql")
+HASURA_PORT = os.getenv("HASURA_PORT", 8080)
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
 GUI_ENABLED = os.getenv("GUI_ENABLED", "true")
 
@@ -42,6 +43,8 @@ BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
 MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
 )
+GRAPHQL_URI = "http://{}:{}/v1alpha1/graphql".format(HASURA_HOST, HASURA_PORT)
+
 RIPE_ASSET_REGEX = r"^RIPE_WHOIS_AS_SET_(.*)$"
 ASN_REGEX = r"^AS(\d+)$"
 

@@ -7,6 +7,8 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 API_HOST = os.getenv("API_HOST", "postgrest")
 API_PORT = os.getenv("API_PORT", 3000)
+HASURA_HOST = os.getenv("HASURA_HOST", "graphql")
+HASURA_PORT = os.getenv("HASURA_PORT", 8080)
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
 MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST", "monitor")
@@ -21,9 +23,8 @@ BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
 MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
     MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
 )
-
+GRAPHQL_URI = "http://{}:{}/v1alpha1/graphql".format(HASURA_HOST, HASURA_PORT)
 API_URI = "http://{}:{}".format(API_HOST, API_PORT)
-GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
 
 
 def flatten(items, seqtypes=(list, tuple)):

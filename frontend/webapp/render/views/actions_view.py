@@ -219,6 +219,9 @@ def delete_user():
     app.artemis_logger.debug("delete user {}".format(form))
 
     if form.select_field.data:
+        user = app.security.datastore.find_user(id=form.select_field.data)
+        for role in user.roles:
+            app.security.datastore.remove_role_from_user(user, role)
         db.session.query(User).filter(User.id == form.select_field.data).delete()
         db.session.commit()
 
@@ -233,21 +236,18 @@ def set_new_password():
     old_password = user.password
     _status = "empty"
 
-    if form.validate_on_submit():
-        if form.old_password.data:
-            app.artemis_logger.debug(
-                "verify: {}".format(
-                    verify_password(form.old_password.data, old_password)
-                )
-            )
-            if verify_password(form.old_password.data, old_password):
-                app.artemis_logger.debug("password_match")
-                user = User.query.filter_by(username=user.username).first()
-                user.password = hash_password(form.password.data)
-                db.session.commit()
-                _status = "success"
-            else:
-                _status = "wrong_old_password"
+    if form.validate_on_submit() and form.old_password.data:
+        app.artemis_logger.debug(
+            "verify: {}".format(verify_password(form.old_password.data, old_password))
+        )
+        if verify_password(form.old_password.data, old_password):
+            app.artemis_logger.debug("password_match")
+            user = User.query.filter_by(username=user.username).first()
+            user.password = hash_password(form.password.data)
+            db.session.commit()
+            _status = "success"
+        else:
+            _status = "wrong_old_password"
 
     return render_template(
         "security/new_password.htm", password_change=form, status=_status

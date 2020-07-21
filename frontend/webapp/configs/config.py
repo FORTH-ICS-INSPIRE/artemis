@@ -11,6 +11,8 @@ from webapp.render.forms import ExtendedLoginForm
 from webapp.render.forms import ExtendedRegisterForm
 from webapp.utils.ldap.datastore import LDAPUserDatastore
 from webapp.utils.ldap.forms import LDAPLoginForm
+from webapp.utils.radius.datastore import RADIUSUserDatastore
+from webapp.utils.radius.forms import RADIUSLoginForm
 
 
 class BaseConfig(object):
@@ -86,6 +88,15 @@ def configure_app(app):
             user_datastore,
             register_form=ExtendedRegisterForm,
             login_form=LDAPLoginForm,
+        )
+    elif app.config["AUTH_METHOD"] == "radius":
+        app.artemis_logger.info("RADIUS login enabled")
+        user_datastore = RADIUSUserDatastore(db, User, Role)
+        app.security = Security(
+            app,
+            user_datastore,
+            register_form=ExtendedRegisterForm,
+            login_form=RADIUSLoginForm,
         )
     else:
         app.artemis_logger.info("SQLite login enabled")

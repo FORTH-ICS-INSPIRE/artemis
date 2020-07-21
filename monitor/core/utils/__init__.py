@@ -34,8 +34,8 @@ if GRAPHQL_URI is None:
     HASURA_HOST = os.getenv("HASURA_HOST", "graphql")
     HASURA_PORT = os.getenv("HASURA_PORT", 8080)
     GRAPHQL_URI = "http://{HASURA_HOST}:{HASURA_PORT}/v1alpha1/graphql".format(
-        HASURA_HOST=HASURA_HOST,
-        HASURA_PORT=HASURA_PORT)
+        HASURA_HOST=HASURA_HOST, HASURA_PORT=HASURA_PORT
+    )
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
 GUI_ENABLED = os.getenv("GUI_ENABLED", "true")
 

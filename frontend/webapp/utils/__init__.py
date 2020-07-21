@@ -23,7 +23,15 @@ MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
 )
 
 API_URI = "http://{}:{}".format(API_HOST, API_PORT)
-GRAPHQL_URI = "http://graphql:8080/v1alpha1/graphql"
+
+GRAPHQL_URI = os.getenv("GRAPHQL_URI")
+if GRAPHQL_URI is None:
+    HASURA_HOST = os.getenv("HASURA_HOST", "graphql")
+    HASURA_PORT = os.getenv("HASURA_PORT", 8080)
+    GRAPHQL_URI = "http://{HASURA_HOST}:{HASURA_PORT}/v1alpha1/graphql".format(
+        HASURA_HOST=HASURA_HOST, HASURA_PORT=HASURA_PORT
+    )
+HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
 
 
 def flatten(items, seqtypes=(list, tuple)):

@@ -29,7 +29,7 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
-GRAPHQL_URI = os.getenv('GRAPHQL_URI')
+GRAPHQL_URI = os.getenv("GRAPHQL_URI")
 if GRAPHQL_URI is None:
     HASURA_HOST = os.getenv("HASURA_HOST", "graphql")
     HASURA_PORT = os.getenv("HASURA_PORT", 8080)

@@ -79,7 +79,7 @@ RPKI_VALIDATOR_ENABLED = os.getenv("RPKI_VALIDATOR_ENABLED", "false")
 RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
 RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
 TEST_ENV = os.getenv("TEST_ENV", "false")
-GRAPHQL_URI = os.getenv('GRAPHQL_URI')
+GRAPHQL_URI = os.getenv("GRAPHQL_URI")
 if GRAPHQL_URI is None:
     HASURA_HOST = os.getenv("HASURA_HOST", "graphql")
     HASURA_PORT = os.getenv("HASURA_PORT", 8080)

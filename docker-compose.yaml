@@ -84,6 +84,9 @@ services:
             MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HISTORIC: ${HISTORIC}
             GUI_ENABLED: ${GUI_ENABLED}
         volumes:
@@ -122,6 +125,7 @@ services:
             API_PORT: ${API_PORT}
             HASURA_HOST: ${HASURA_HOST}
             HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
             BIND_IP: ${BIND_IP}
             WEBAPP_PORT: ${WEBAPP_PORT}

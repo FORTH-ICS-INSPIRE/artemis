@@ -3,6 +3,7 @@
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
 - Redirection to login page when session is expired (#404)
+- Support for GRAPHQL_URI to be set via environment variables, or to take a lazy approach and set HASURA_HOST and HASURA_PORT env variables
 
 ### Changed
 - TBD (Changed existing functionality)

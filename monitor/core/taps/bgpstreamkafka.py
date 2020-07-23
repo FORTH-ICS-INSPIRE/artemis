@@ -209,13 +209,21 @@ if __name__ == "__main__":
 
     ping_redis(redis)
 
+    start_time = int(time.time()) - START_TIME_OFFSET
+    # Bypass for https://github.com/FORTH-ICS-INSPIRE/artemis/issues/411#issuecomment-661325802
+    if "BGPSTREAM_TIMESTAMP_BYPASS" in os.environ:
+        log.warn(
+            "Using BGPSTREAM_TIMESTAMP_BYPASS, meaning BMP timestamps are thrown away from BGPStream"
+        )
+        start_time = 0
+
     try:
         run_bgpstream(
             args.prefixes_file,
             args.kafka_host,
             int(args.kafka_port),
             args.kafka_topic,
-            start=int(time.time()) - START_TIME_OFFSET,
+            start=start_time,
             end=0,
         )
     except Exception:

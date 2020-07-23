@@ -123,29 +123,6 @@ jobs:
     script:
     - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
-  - name: TestRPKI
-    if: fork = false
-    install:
-    - pip install coverage==4.5.4 codecov==2.1.0
-    before_script:
-    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - mkdir -p local_configs/routinator/tals
-    - sudo chown -R 1012:1012 local_configs/routinator/tals
-    - mkdir -p local_configs/routinator/rpki-repo
-    - sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
-    - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
-    - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
-    - docker build -t artemis_rpki_testing testing/rpki
-    - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
-    - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
-    script:
-    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
-    after_success:
-    - sh convert_coverage.sh
-    - codecov
-    after_failure:
-    - docker-compose -f docker-compose.testrpki.yaml logs
   - name: TestAutoignore
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
@@ -161,6 +138,29 @@ jobs:
     - codecov
     after_failure:
     - docker-compose -f docker-compose.testautoignore.yaml logs
+#  - name: TestRPKI
+#    if: fork = false
+#    install:
+#    - pip install coverage==4.5.4 codecov==2.1.0
+#    before_script:
+#    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+#    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+#    - mkdir -p local_configs/routinator/tals
+#    - sudo chown -R 1012:1012 local_configs/routinator/tals
+#    - mkdir -p local_configs/routinator/rpki-repo
+#    - sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
+#    - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
+#    - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
+#    - docker build -t artemis_rpki_testing testing/rpki
+#    - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
+#    - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
+#    script:
+#    - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
+#    after_success:
+#    - sh convert_coverage.sh
+#    - codecov
+#    after_failure:
+#    - docker-compose -f docker-compose.testrpki.yaml logs
   - name: ZAP Baseline (Passive)
     if: fork = false
     before_script:

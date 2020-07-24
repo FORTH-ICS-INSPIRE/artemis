@@ -1,0 +1,97 @@
+version: '3'
+services:
+  openbmp-collector:
+    image: openbmp/collector:latest
+    container_name: openbmp-collector
+    depends_on:
+      - openbmp-kafka
+    restart: always
+    networks:
+      openbmp:
+        ipv4_address: 20.0.0.100
+    #    volumes:
+    #      - ./local_configs/openbmp/openbmpd.conf:/usr/etc/openbmp/openbmpd.conf
+    environment:
+      KAFKA_FQDN: openbmp-kafka
+    entrypoint: ["sh", "-c"]
+    command: ["/wait-for openbmp-kafka:9092 -t 0 && sed -i \"s;-l /var/log/openbmpd.log;;\" /usr/sbin/run && /usr/sbin/run"]
+    volumes:
+      - ./wait-for:/wait-for
+  openbmp-kafka:
+    image: openbmp/kafka:latest
+    container_name: openbmp-kafka
+    restart: always
+    privileged: true
+    networks:
+      openbmp:
+    environment:
+      KAFKA_FQDN: openbmp-kafka
+  #    entrypoint: ["sh", "-c"]
+  #    command: ["sed -i \"s;> /var/log/kafka.log;;\" /usr/sbin/run && /usr/sbin/run"]
+  bgpstream:
+    image: caida/bgpstream:latest
+    container_name: bgpstream
+    depends_on:
+      - openbmp-kafka
+      - openbmp-collector
+    restart: always
+    networks:
+      openbmp:
+    environment:
+      KAFKA_FQDN: openbmp-kafka
+    entrypoint: ["sh", "-c"]
+    command: ["./wait-for openbmp-kafka:9092 -t 0 && bgpreader -d kafka -o brokers=openbmp-kafka:9092 -o topic=openbmp.bmp_raw"]
+    volumes:
+      - ./wait-for:/wait-for
+  r01:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: r01
+    restart: always
+    networks:
+      openbmp:
+      r01:
+        ipv4_address: 11.0.0.100
+      comm:
+        ipv4_address: 1.1.1.2
+    volumes:
+      - ./local_configs/gobgp/r01.conf:/etc/gobgp/gobgp.conf
+  r02:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: r02
+    restart: always
+    networks:
+      openbmp:
+      r02:
+        ipv4_address: 11.0.1.100
+      comm:
+        ipv4_address: 1.1.1.3
+    volumes:
+      - ./local_configs/gobgp/r02.conf:/etc/gobgp/gobgp.conf
+
+networks:
+  r01:
+    ipam:
+      driver: default
+      config:
+        - subnet: 11.0.0.0/24
+  r02:
+    ipam:
+      driver: default
+      config:
+        - subnet: 11.0.1.0/24
+  comm:
+    ipam:
+      driver: default
+      config:
+        - subnet: 1.1.1.0/24
+  openbmp:
+    ipam:
+      driver: default
+      config:
+        - subnet: 20.0.0.0/24

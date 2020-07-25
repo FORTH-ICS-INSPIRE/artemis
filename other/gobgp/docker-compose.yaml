@@ -9,14 +9,14 @@ services:
     networks:
       openbmp:
         ipv4_address: 20.0.0.100
-    #    volumes:
-    #      - ./local_configs/openbmp/openbmpd.conf:/usr/etc/openbmp/openbmpd.conf
     environment:
       KAFKA_FQDN: openbmp-kafka
+    working_dir: /root
     entrypoint: ["sh", "-c"]
-    command: ["/wait-for openbmp-kafka:9092 -t 0 && sed -i \"s;-l /var/log/openbmpd.log;;\" /usr/sbin/run && /usr/sbin/run"]
+    command: ["wait-for openbmp-kafka:9092 -t 0 && sed -i \"s;-l /var/log/openbmpd.log;;\" /usr/sbin/run && /usr/sbin/run"]
     volumes:
-      - ./wait-for:/wait-for
+      - ./scripts/wait-for:/usr/bin/wait-for
+      - ./local_configs/openbmp/openbmpd.conf:/usr/etc/openbmp/openbmpd.conf
   openbmp-kafka:
     image: openbmp/kafka:latest
     container_name: openbmp-kafka
@@ -26,8 +26,6 @@ services:
       openbmp:
     environment:
       KAFKA_FQDN: openbmp-kafka
-  #    entrypoint: ["sh", "-c"]
-  #    command: ["sed -i \"s;> /var/log/kafka.log;;\" /usr/sbin/run && /usr/sbin/run"]
   bgpstream:
     image: caida/bgpstream:latest
     container_name: bgpstream
@@ -38,11 +36,16 @@ services:
     networks:
       openbmp:
     environment:
-      KAFKA_FQDN: openbmp-kafka
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
+    working_dir: /root
     entrypoint: ["sh", "-c"]
-    command: ["./wait-for openbmp-kafka:9092 -t 0 && bgpreader -d kafka -o brokers=openbmp-kafka:9092 -o topic=openbmp.bmp_raw"]
+#    command: ["wait-for ${KAFKA_HOST}:${KAFKA_PORT} -t 0 && bgpreader -d kafka -o brokers=${KAFKA_HOST}:${KAFKA_PORT} -o topic=${KAFKA_TOPIC} -l"]
+    command: ["wait-for ${KAFKA_HOST}:${KAFKA_PORT} -t 0 && python3 -u pybgpstream.py"]
     volumes:
-      - ./wait-for:/wait-for
+      - ./scripts/wait-for:/usr/bin/wait-for
+      - ./scripts/pybgpstream.py:/root/pybgpstream.py
   r01:
     image: gobgp:latest
     build:
@@ -52,8 +55,6 @@ services:
     restart: always
     networks:
       openbmp:
-      r01:
-        ipv4_address: 11.0.0.100
       comm:
         ipv4_address: 1.1.1.2
     volumes:
@@ -67,24 +68,28 @@ services:
     restart: always
     networks:
       openbmp:
-      r02:
-        ipv4_address: 11.0.1.100
       comm:
         ipv4_address: 1.1.1.3
     volumes:
       - ./local_configs/gobgp/r02.conf:/etc/gobgp/gobgp.conf
+  r03:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: r03
+    restart: always
+    networks:
+      openbmp:
+      comm:
+        ipv4_address: 1.1.1.4
+    working_dir: /root
+    entrypoint: ["./traffic.sh"]
+    volumes:
+      - ./local_configs/gobgp/r03.conf:/etc/gobgp/gobgp.conf
+      - ./scripts/traffic.sh:/root/traffic.sh
 
 networks:
-  r01:
-    ipam:
-      driver: default
-      config:
-        - subnet: 11.0.0.0/24
-  r02:
-    ipam:
-      driver: default
-      config:
-        - subnet: 11.0.1.0/24
   comm:
     ipam:
       driver: default

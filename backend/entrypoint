@@ -1,5 +1,5 @@
 #!/bin/bash
-make -j 4
+make -j
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
 ./wait-for ${MON_SUPERVISOR_HOST}:${MON_SUPERVISOR_PORT} -t 0

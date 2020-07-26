@@ -1,4 +1,3 @@
-import argparse
 import os
 
 import pytricia
@@ -33,7 +32,9 @@ class ArtemisHandler(BaseHandler):
     """Custom Artemis Handler to send BGP Update messages to a RabbitMQ exchange
     """
 
-    def __init__(self, connection, prefixes_file, autoconf=False):
+    def __init__(
+        self, connection, prefixes_file="/root/monitor_prefixes.json", autoconf=False
+    ):
         super(ArtemisHandler, self).__init__()
         # RabbitMQ
         self.connection = connection
@@ -88,7 +89,7 @@ class ArtemisHandler(BaseHandler):
 
         if msg_type == 0:  # route monitoring message
             redis.set(
-                "yabmp_seen_bgp_update",
+                "bmp_seen_bgp_update",
                 "1",
                 ex=int(
                     os.getenv(
@@ -118,7 +119,7 @@ class ArtemisHandler(BaseHandler):
                     try:
                         if prefix in self.prefix_tree[ip_version]:
                             msg = {
-                                "service": "yaBMP|{}".format(peer_host),
+                                "service": "BMP|{}".format(peer_host),
                                 "type": msg_type,
                                 "prefix": prefix,
                                 "path": path,
@@ -135,7 +136,7 @@ class ArtemisHandler(BaseHandler):
                     try:
                         if prefix in self.prefix_tree[ip_version]:
                             msg = {
-                                "service": "yaBMP|",
+                                "service": "BMP|",
                                 "type": msg_type,
                                 "prefix": prefix,
                                 "path": [],
@@ -214,34 +215,30 @@ class ArtemisHandler(BaseHandler):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="YaBMP Server")
-    parser.add_argument(
-        "-p",
-        "--prefixes",
-        type=str,
-        dest="prefixes_file",
-        default=None,
-        help="Prefix(es) to be monitored (json file with prefix list)",
-    )
-    parser.add_argument(
-        "-a",
-        "--autoconf",
-        dest="autoconf",
-        action="store_true",
-        help="Use the feed from this local route collector to build the configuration",
-    )
-
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(description="BMP Server")
+    # parser.add_argument(
+    #     "-p",
+    #     "--prefixes",
+    #     type=str,
+    #     dest="prefixes_file",
+    #     default=None,
+    #     help="Prefix(es) to be monitored (json file with prefix list)",
+    # )
+    # parser.add_argument(
+    #     "-a",
+    #     "--autoconf",
+    #     dest="autoconf",
+    #     action="store_true",
+    #     help="Use the feed from this local route collector to build the configuration",
+    # )
+    #
+    # args = parser.parse_args()
     ping_redis(redis)
 
-    log.info(
-        "Starting YaBMP for {} (auto-conf: {})".format(
-            args.prefixes_file, args.autoconf
-        )
-    )
+    log.info("Starting BMP")
     try:
         with Connection(RABBITMQ_URI) as connection:
-            handler = ArtemisHandler(connection, args.prefixes_file, args.autoconf)
+            handler = ArtemisHandler(connection)
             service.prepare_service(handler=handler)
     except RuntimeError:
         log.exception("exception")

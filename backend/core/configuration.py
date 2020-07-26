@@ -91,7 +91,7 @@ class Configuration:
                 "bgpstreamhist",
                 "bgpstreamlive",
                 "bgpstreamkafka",
-                "yabmp",
+                "bmp",
             }
             self.available_ris = {
                 "rrc01",
@@ -1170,7 +1170,7 @@ class Configuration:
                             raise ArtemisError(
                                 "invalid-bgpostreamhist-autoconf-flag", info["autoconf"]
                             )
-                elif key == "yabmp":
+                elif key == "bmp":
                     pass  # TODO
 
         @staticmethod

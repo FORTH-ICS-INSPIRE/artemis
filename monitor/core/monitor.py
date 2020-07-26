@@ -144,7 +144,7 @@ class Monitor:
                     "__keyspace@0__:bgpstreamlive_seen_bgp_update",
                     "__keyspace@0__:exabgp_seen_bgp_update",
                     "__keyspace@0__:bgpstreamkafka_seen_bgp_update",
-                    "__keyspace@0__:yabmp_seen_bgp_update",
+                    "__keyspace@0__:bmp_seen_bgp_update",
                 ]
                 for pubsub_mon_channel in self.redis_pubsub_mon_channels:
                     self.redis_pubsub.psubscribe(
@@ -233,6 +233,7 @@ class Monitor:
             self.init_bgpstreamhist_instance()
             self.init_bgpstreamlive_instance()
             self.init_bgpstreamkafka_instance()
+            self.init_bmp_instance()
             log.info("All configured monitoring instances initiated.")
 
             log.info("Monitor initiated, configured and running.")
@@ -334,20 +335,19 @@ class Monitor:
                 )
 
         @exception_handler(log)
-        def init_yabmp_instance(self):
-            if "yabmp" in self.monitors:
+        def init_bmp_instance(self):
+            if "bmp" in self.monitors:
                 log.debug(
-                    "starting {} for {}".format(
-                        self.monitors["yabmp"], self.prefix_file
-                    )
+                    "starting {} for {}".format(self.monitors["bmp"], self.prefix_file)
                 )
-                _cmd = [PY_BIN, "taps/yabmp.py", "--prefixes", self.prefix_file]
-                if "autoconf" in self.monitors["yabmp"]:
+                # _cmd = [PY_BIN, "taps/bmp.py", "--prefixes", self.prefix_file]
+                _cmd = [PY_BIN, "taps/bmp.py"]
+                if "autoconf" in self.monitors["bmp"]:
                     _cmd.append("-a")
                 p = Popen(_cmd, shell=False)
-                self.process_ids.append(("[yabmp] {}".format(self.prefix_file), p))
+                self.process_ids.append(("[bmp] {}".format(self.prefix_file), p))
                 self.redis.set(
-                    "yabmp_seen_bgp_update",
+                    "bmp_seen_bgp_update",
                     "1",
                     ex=os.getenv(
                         "MON_TIMEOUT_LAST_BGP_UPDATE",

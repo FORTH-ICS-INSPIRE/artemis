@@ -11,7 +11,7 @@ RUN apk update && apk add --no-cache postgresql-dev git libffi-dev cmake libssh
 RUN git clone -b v0.7.0 --depth 1 https://github.com/rtrlib/rtrlib.git
 WORKDIR /root/rtrlib
 RUN cmake -D CMAKE_BUILD_TYPE=Release .
-RUN make -j 4 && make install
+RUN make -j && make install
 WORKDIR /root
 
 COPY requirements.txt /root/

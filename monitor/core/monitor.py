@@ -144,6 +144,7 @@ class Monitor:
                     "__keyspace@0__:bgpstreamlive_seen_bgp_update",
                     "__keyspace@0__:exabgp_seen_bgp_update",
                     "__keyspace@0__:bgpstreamkafka_seen_bgp_update",
+                    "__keyspace@0__:yabmp_seen_bgp_update",
                 ]
                 for pubsub_mon_channel in self.redis_pubsub_mon_channels:
                     self.redis_pubsub.psubscribe(
@@ -329,6 +330,28 @@ class Monitor:
                             "MON_TIMEOUT_LAST_BGP_UPDATE",
                             DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
                         )
+                    ),
+                )
+
+        @exception_handler(log)
+        def init_yabmp_instance(self):
+            if "yabmp" in self.monitors:
+                log.debug(
+                    "starting {} for {}".format(
+                        self.monitors["yabmp"], self.prefix_file
+                    )
+                )
+                _cmd = [PY_BIN, "taps/yabmp.py", "--prefixes", self.prefix_file]
+                if "autoconf" in self.monitors["yabmp"]:
+                    _cmd.append("-a")
+                p = Popen(_cmd, shell=False)
+                self.process_ids.append(("[yabmp] {}".format(self.prefix_file), p))
+                self.redis.set(
+                    "yabmp_seen_bgp_update",
+                    "1",
+                    ex=os.getenv(
+                        "MON_TIMEOUT_LAST_BGP_UPDATE",
+                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
                     ),
                 )
 

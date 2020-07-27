@@ -1,0 +1,22 @@
+prefixes:
+  16_prefix: &16_prefix
+  - 10.0.0.0/16
+asns:
+  16_origin: &16_origin 1
+  16_upstream: &16_upstream 2
+rules:
+- prefixes:
+  - *16_prefix
+  origin_asns:
+  - *16_origin
+  neighbors:
+  - *16_upstream
+  mitigation: manual
+
+autoignore:
+  non_important_prefixes:
+    prefixes:
+    - *16_prefix
+    thres_num_peers_seen: 2
+    thres_num_ases_infected: 5
+    interval: 10

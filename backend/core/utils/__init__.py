@@ -16,6 +16,7 @@ from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
 from kombu import serialization
 
+BULK_TIMER = float(os.getenv("BULK_TIMER", 1))
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
 BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
 MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST")

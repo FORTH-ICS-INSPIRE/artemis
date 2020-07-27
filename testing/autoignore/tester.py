@@ -1,5 +1,4 @@
 import datetime
-import hashlib
 import os
 import re
 import socket
@@ -15,7 +14,19 @@ from kombu import Queue
 from kombu import serialization
 from kombu import uuid
 from kombu.utils.compat import nested
-from rtrlib import RTRManager
+
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+)
+BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
+BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
+BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
+    BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
+)
 
 serialization.register(
     "ujson",
@@ -31,7 +42,7 @@ serialization.register(
 )
 
 
-class Tester:
+class AutoignoreTester:
     def __init__(self):
         self.time_now = int(time.time())
         self.initRedis()
@@ -51,7 +62,7 @@ class Tester:
                 _password = os.getenv("DB_PASS", "Art3m1s")
 
                 db_conn = psycopg2.connect(
-                    application_name="rpki-tester",
+                    application_name="autoignore-tester",
                     dbname=_db_name,
                     user=_user,
                     host=_host,
@@ -105,11 +116,7 @@ class Tester:
             and isinstance(hijack_as, int)
             and isinstance(_type, str)
         )
-        return Tester.get_hash([prefix, hijack_as, _type])
-
-    @staticmethod
-    def get_hash(obj):
-        return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
+        return AutoignoreTester.get_hash([prefix, hijack_as, _type])
 
     @staticmethod
     def waitExchange(exchange, channel):
@@ -147,20 +154,7 @@ class Tester:
             event = json.loads(body)
 
         # distinguish between type of messages
-        if message.delivery_info["routing_key"] == "update-update":
-            expected = self.messages[self.curr_idx]["detection_update_response"]
-            assert self.redis.exists(event["key"]), "Monitor key not found in Redis"
-            if "peer_asn" in event:
-                assert self.redis.sismember(
-                    "peer-asns", event["peer_asn"]
-                ), "Monitor/Peer ASN not found in Redis"
-        elif message.delivery_info["routing_key"] == "update":
-            expected = self.messages[self.curr_idx]["detection_hijack_response"]
-            redis_hijack_key = Tester.redis_key(
-                event["prefix"], event["hijack_as"], event["type"]
-            )
-            assert self.redis.exists(redis_hijack_key), "Hijack key not found in Redis"
-        elif message.delivery_info["routing_key"] == "hijack-update":
+        if message.delivery_info["routing_key"] == "hijack-update":
             expected = self.messages[self.curr_idx]["database_hijack_response"]
             if event["active"]:
                 assert self.redis.sismember(
@@ -277,99 +271,45 @@ class Tester:
         print("Config RPC finished")
 
     def test(self):
-        """
-        Loads a test file that includes crafted bgp updates as
-        input and expected messages as output.
-        """
-        RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
-        RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
-        RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
-        RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
-        RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
-            RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
-        )
-        RPKI_VALIDATOR_HOST = os.getenv("RPKI_VALIDATOR_HOST", "routinator")
-        RPKI_VALIDATOR_PORT = os.getenv("RPKI_VALIDATOR_PORT", 3323)
-
-        # check RPKI RTR manager connectivity
-        while True:
-            try:
-                rtrmanager = RTRManager(RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT)
-                rtrmanager.start()
-                print(
-                    "Connected to RPKI VALIDATOR '{}:{}'".format(
-                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                    )
-                )
-                rtrmanager.stop()
-                break
-            except Exception:
-                print(
-                    "Could not connect to RPKI VALIDATOR '{}:{}'".format(
-                        RPKI_VALIDATOR_HOST, RPKI_VALIDATOR_PORT
-                    )
-                )
-                print("Retrying in 30 seconds...")
-                time.sleep(30)
-
-        # exchanges
-        self.update_exchange = Exchange(
-            "bgp-update", type="direct", durable=False, delivery_mode=1
-        )
-
-        self.hijack_exchange = Exchange(
-            "hijack-update", type="direct", durable=False, delivery_mode=1
-        )
-
-        self.pg_amq_bridge = Exchange(
-            "amq.direct", type="direct", durable=True, delivery_mode=1
-        )
-
-        # queues
-        self.update_queue = Queue(
-            "detection-testing",
-            exchange=self.pg_amq_bridge,
-            routing_key="update-update",
-            durable=False,
-            auto_delete=True,
-            max_priority=1,
-            consumer_arguments={"x-priority": 1},
-        )
-
-        self.hijack_queue = Queue(
-            "hijack-testing",
-            exchange=self.hijack_exchange,
-            routing_key="update",
-            durable=False,
-            auto_delete=True,
-            max_priority=1,
-            consumer_arguments={"x-priority": 1},
-        )
-
-        self.hijack_db_queue = Queue(
-            "hijack-db-testing",
-            exchange=self.pg_amq_bridge,
-            routing_key="hijack-update",
-            durable=False,
-            auto_delete=True,
-            max_priority=1,
-            consumer_arguments={"x-priority": 1},
-        )
-
         with Connection(RABBITMQ_URI) as connection:
+            # exchanges
+            self.update_exchange = Exchange(
+                "bgp-update", type="direct", durable=False, delivery_mode=1
+            )
+
+            self.pg_amq_bridge = Exchange(
+                "amq.direct", type="direct", durable=True, delivery_mode=1
+            )
+
+            # queues
+            self.update_queue = Queue(
+                "detection-testing",
+                exchange=self.pg_amq_bridge,
+                routing_key="update-update",
+                durable=False,
+                auto_delete=True,
+                max_priority=1,
+                consumer_arguments={"x-priority": 1},
+            )
+
+            self.hijack_db_queue = Queue(
+                "hijack-db-testing",
+                exchange=self.pg_amq_bridge,
+                routing_key="hijack-update",
+                durable=False,
+                auto_delete=True,
+                max_priority=1,
+                consumer_arguments={"x-priority": 1},
+            )
+
             print("Waiting for pg_amq exchange..")
-            Tester.waitExchange(self.pg_amq_bridge, connection.default_channel)
-            print("Waiting for hijack exchange..")
-            Tester.waitExchange(self.hijack_exchange, connection.default_channel)
+            AutoignoreTester.waitExchange(
+                self.pg_amq_bridge, connection.default_channel
+            )
             print("Waiting for update exchange..")
-            Tester.waitExchange(self.update_exchange, connection.default_channel)
-
-            self.supervisor.supervisor.startAllProcesses()
-
-            # print(
-            #     "Sleeping for 60 seconds to allow the RTR server to populate its db..."
-            # )
-            # time.sleep(60)
+            AutoignoreTester.waitExchange(
+                self.update_exchange, connection.default_channel
+            )
 
             # query database for the states of the processes
             db_con = self.getDbConnection()
@@ -383,19 +323,27 @@ class Tester:
                 for entry in entries:
                     running_modules.add(entry[0])
                 db_con.commit()
-                print("Running modules: {}".format(running_modules))
-                print("{}/6 modules are running.".format(len(running_modules)))
+                print("[+] Running modules: {}".format(running_modules))
+                print(
+                    "[+] {}/6 modules are running. Re-executing query...".format(
+                        len(running_modules)
+                    )
+                )
                 time.sleep(1)
 
-            Tester.config_request_rpc(connection)
+            AutoignoreTester.config_request_rpc(connection)
 
-            time.sleep(10)
+            time.sleep(5)
+
+            db_cur.close()
+            db_con.close()
 
             for testfile in os.listdir("testfiles/"):
                 self.clear()
 
                 self.curr_test = testfile
                 self.messages = {}
+
                 # load test
                 with open("testfiles/{}".format(testfile), "r") as f:
                     self.messages = json.load(f)
@@ -404,20 +352,10 @@ class Tester:
 
                 with nested(
                     connection.Consumer(
-                        self.hijack_queue,
-                        callbacks=[self.validate_message],
-                        accept=["ujson"],
-                    ),
-                    connection.Consumer(
-                        self.update_queue,
-                        callbacks=[self.validate_message],
-                        accept=["ujson", "txtjson"],
-                    ),
-                    connection.Consumer(
                         self.hijack_db_queue,
                         callbacks=[self.validate_message],
                         accept=["ujson", "txtjson"],
-                    ),
+                    )
                 ):
                     send_cnt = 0
                     # send and validate all messages in the messages.json file
@@ -429,25 +367,39 @@ class Tester:
                         while self.curr_idx != send_cnt:
                             time.sleep(0.1)
                             try:
-                                connection.drain_events(timeout=10)
+                                connection.drain_events(timeout=60)
                             except socket.timeout:
                                 # avoid infinite loop by timeout
                                 assert False, "Consumer timeout"
+                        # sleep for at least 20 seconds between messages so that we check that the ignore mechanism
+                        # is not triggered by mistake
+                        if send_cnt < send_len:
+                            print(
+                                "[+] Sleeping for 20 seconds to ensure auto-ignore works correctly"
+                            )
+                            time.sleep(20)
 
             connection.close()
 
+        print("[+] Sleeping for 5 seconds...")
         time.sleep(5)
+        print("[+] Instructing all processes to stop...")
         self.supervisor.supervisor.stopAllProcesses()
 
+        self.waitProcess("autoignore", 0)  # 0 STOPPED
         self.waitProcess("listener", 0)  # 0 STOPPED
         self.waitProcess("clock", 0)  # 0 STOPPED
-        self.waitProcess("detection", 0)  # 0 STOPPED
-        self.waitProcess("mitigation", 0)  # 0 STOPPED
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED
+        self.waitProcess("detection", 0)  # 0 STOPPED
+        print(
+            "[+] All processes (listener, clock, conf, db, detection, autoignore and observer) are stopped."
+        )
 
 
 if __name__ == "__main__":
-    obj = Tester()
-    obj.test()
+    print("[+] Starting")
+    autoignore_tester = AutoignoreTester()
+    autoignore_tester.test()
+    print("[+] Exiting")

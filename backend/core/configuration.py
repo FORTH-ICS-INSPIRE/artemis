@@ -76,14 +76,20 @@ class Configuration:
             self.connection = connection
             self.file = "/etc/artemis/config.yaml"
             self.correlation_id = None
-            self.sections = {"prefixes", "asns", "monitors", "rules"}
-            self.supported_fields = {
+            self.sections = {"prefixes", "asns", "monitors", "rules", "autoignore"}
+            self.rule_supported_fields = {
                 "prefixes",
                 "policies",
                 "origin_asns",
                 "neighbors",
                 "mitigation",
                 "community_annotations",
+            }
+            self.autoignore_supported_fields = {
+                "thres_num_peers_seen",
+                "thres_num_ases_infected",
+                "interval",
+                "prefixes",
             }
             self.supported_monitors = {
                 "riperis",
@@ -1055,7 +1061,7 @@ class Configuration:
         def __check_rules(self, _rules):
             for rule in _rules:
                 for field in rule:
-                    if field not in self.supported_fields:
+                    if field not in self.rule_supported_fields:
                         log.warning(
                             "unsupported field found {} in {}".format(field, rule)
                         )
@@ -1179,6 +1185,36 @@ class Configuration:
                     if not isinstance(asn, int):
                         raise ArtemisError("invalid-asn", asn)
 
+        def __check_autoignore(self, _autoignore_rules):
+            for rule_key, rule in _autoignore_rules.items():
+                for field in rule:
+                    if field not in self.autoignore_supported_fields:
+                        log.warning(
+                            "unsupported field found {} in {}".format(field, rule)
+                        )
+                if "prefixes" not in rule:
+                    raise ArtemisError("no-prefixes-in-autoignore-rule", rule_key)
+                rule["prefixes"] = flatten(rule["prefixes"])
+                for prefix in rule["prefixes"]:
+                    if translate_rfc2622(prefix, just_match=True):
+                        continue
+                    try:
+                        str2ip(prefix)
+                    except Exception:
+                        raise ArtemisError("invalid-prefix", prefix)
+                field = None
+                try:
+                    for field in [
+                        "thres_num_peers_seen",
+                        "thres_num_ases_infected",
+                        "interval",
+                    ]:
+                        rule[field] = int(rule.get(field, 0))
+                except Exception:
+                    raise ArtemisError(
+                        "invalid-value-for-{}".format(field), rule.get(field, 0)
+                    )
+
         def check(self, data: Text) -> Dict:
             """
             Checks if all sections and fields are defined correctly
@@ -1196,12 +1232,13 @@ class Configuration:
             data["asns"] = {k: flatten(v) for k, v in data.get("asns", {}).items()}
             data["monitors"] = data.get("monitors", {})
             data["rules"] = data.get("rules", [])
+            data["autoignore"] = data.get("autoignore", {})
 
             Configuration.Worker.__check_prefixes(data["prefixes"])
             self.__check_rules(data["rules"])
             self.__check_monitors(data["monitors"])
             Configuration.Worker.__check_asns(data["asns"])
-
+            self.__check_autoignore(data["autoignore"])
             return data
 
         def _update_local_config_file(self) -> NoReturn:

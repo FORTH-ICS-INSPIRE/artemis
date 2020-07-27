@@ -1,0 +1,48 @@
+version: '3'
+services:
+  r01:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./
+    container_name: r01
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.2
+    volumes:
+      - ./local_configs/gobgp/r01.conf:/etc/gobgp/gobgp.conf
+  r02:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./
+    container_name: r02
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.3
+    volumes:
+      - ./local_configs/gobgp/r02.conf:/etc/gobgp/gobgp.conf
+  r03:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./
+    container_name: r03
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.4
+    working_dir: /root
+    entrypoint: ["./traffic.sh"]
+    volumes:
+      - ./local_configs/gobgp/r03.conf:/etc/gobgp/gobgp.conf
+      - ./scripts/traffic.sh:/root/traffic.sh
+
+networks:
+  comm:
+    ipam:
+      driver: default
+      config:
+        - subnet: 1.1.1.0/24

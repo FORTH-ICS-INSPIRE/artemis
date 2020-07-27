@@ -148,9 +148,7 @@ class ArtemisHandler(BaseHandler):
                                 "timestamp": timestamp,
                                 "peer_asn": peer_asn,
                             }
-                            log.info("before: {}".format(msg))
                             messages += normalize_msg_path(msg)
-                            log.info("after: {}".format(messages))
                     except RuntimeError:
                         log.exception("exception")
             for msg in messages:

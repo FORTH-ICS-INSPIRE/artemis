@@ -340,8 +340,7 @@ class Monitor:
                 log.debug(
                     "starting {} for {}".format(self.monitors["bmp"], self.prefix_file)
                 )
-                # _cmd = [PY_BIN, "taps/bmp.py", "--prefixes", self.prefix_file]
-                _cmd = [PY_BIN, "taps/bmp.py"]
+                _cmd = [PY_BIN, "taps/bmp.py", "--prefixes", self.prefix_file]
                 if "autoconf" in self.monitors["bmp"]:
                     _cmd.append("-a")
                 p = Popen(_cmd, shell=False)

@@ -1,4 +1,6 @@
+import argparse
 import os
+import sys
 
 import pytricia
 import redis
@@ -215,30 +217,31 @@ class ArtemisHandler(BaseHandler):
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description="BMP Server")
-    # parser.add_argument(
-    #     "-p",
-    #     "--prefixes",
-    #     type=str,
-    #     dest="prefixes_file",
-    #     default=None,
-    #     help="Prefix(es) to be monitored (json file with prefix list)",
-    # )
-    # parser.add_argument(
-    #     "-a",
-    #     "--autoconf",
-    #     dest="autoconf",
-    #     action="store_true",
-    #     help="Use the feed from this local route collector to build the configuration",
-    # )
-    #
-    # args = parser.parse_args()
+    parser = argparse.ArgumentParser(description="BMP Server")
+    parser.add_argument(
+        "-p",
+        "--prefixes",
+        type=str,
+        dest="prefixes_file",
+        default=None,
+        help="Prefix(es) to be monitored (json file with prefix list)",
+    )
+    parser.add_argument(
+        "-a",
+        "--autoconf",
+        dest="autoconf",
+        action="store_true",
+        help="Use the feed from this local route collector to build the configuration",
+    )
+
+    args = parser.parse_args()
     ping_redis(redis)
 
     log.info("Starting BMP")
     try:
         with Connection(RABBITMQ_URI) as connection:
             handler = ArtemisHandler(connection)
+            sys.argv = [sys.argv[0]]  # remove args for bmp
             service.prepare_service(handler=handler)
     except RuntimeError:
         log.exception("exception")

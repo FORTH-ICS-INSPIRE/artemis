@@ -87,7 +87,7 @@ class ArtemisHandler(BaseHandler):
         if msg_type in [4, 5, 6]:
             return
         peer_asn = recv_msg[0]["as"]
-        timestamp = recv_msg[0]["time"][0]
+        timestamp = float(recv_msg[0]["time"][0])
 
         if msg_type == 0:  # route monitoring message
             redis.set(
@@ -110,6 +110,8 @@ class ArtemisHandler(BaseHandler):
                 for t, val in attr.get(bgp_cons.BGPTYPE_AS_PATH, [])
                 if t == bgp_cons.AS_SEQUENCE
             ]
+            if len(path) == 1:
+                path = path[0]
             communities = [
                 {"asn": int(comm.split(":")[0]), "value": int(comm.split(":")[1])}
                 for comm in attr.get(bgp_cons.BGPTYPE_COMMUNITIES, [])
@@ -138,7 +140,7 @@ class ArtemisHandler(BaseHandler):
                     try:
                         if prefix in self.prefix_tree[ip_version]:
                             msg = {
-                                "service": "BMP|",
+                                "service": "BMP|{}".format(peer_host),
                                 "type": msg_type,
                                 "prefix": prefix,
                                 "path": [],
@@ -146,12 +148,14 @@ class ArtemisHandler(BaseHandler):
                                 "timestamp": timestamp,
                                 "peer_asn": peer_asn,
                             }
+                            log.info("before: {}".format(msg))
                             messages += normalize_msg_path(msg)
+                            log.info("after: {}".format(messages))
                     except RuntimeError:
                         log.exception("exception")
             for msg in messages:
                 try:
-                    if mformat_validator.validate(msg):
+                    if self.validator.validate(msg):
                         key_generator(msg)
                         log.debug(msg)
                         with Producer(self.connection) as producer:

@@ -14,4 +14,3 @@ socketIO-client-nexus==0.7.6
 ujson==1.35
 websocket-client==0.57.0
 wheel==0.34.2
-yabmp==0.2.0

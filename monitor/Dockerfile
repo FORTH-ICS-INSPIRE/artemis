@@ -10,7 +10,8 @@ WORKDIR /root
 
 COPY requirements.txt ./requirements.txt
 RUN pip3 --no-cache-dir install -r requirements.txt && \
-    pip3 install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49
+    pip3 install git+https://github.com/supervisor/supervisor@a0ee8f1026c929ae4d9fc84741924414e8008f49 && \
+    pip3 install git+https://github.com/slowr/yabmp
 
 RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/

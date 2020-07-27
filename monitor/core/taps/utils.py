@@ -182,6 +182,7 @@ class mformat_validator:
 
         for func in self.valid_generator():
             if not func():
+                log.info("error at {}".format(func))
                 return False
 
         return True

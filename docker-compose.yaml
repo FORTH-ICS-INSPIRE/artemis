@@ -67,6 +67,8 @@ services:
             - artemis
         expose:
             - ${MON_SUPERVISOR_PORT}
+        ports:
+            - 20000:20000
         environment:
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -169,7 +171,7 @@ services:
             - "80:80"
             - "443:443"
             # uncomment for BMP Server
-            - "20000:20000"
+#            - "20000:20000"
         volumes:
             # comment after Step 2 of README
             - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf

@@ -34,6 +34,8 @@ from webapp.render.views.errors_view import errors
 from webapp.render.views.main_view import main
 from webapp.utils.path import get_app_base_path
 
+ARTEMIS_WEB_HOST = os.getenv("ARTEMIS_WEB_HOST", "localhost")
+
 app = Flask(
     __name__,
     instance_path=get_app_base_path(),
@@ -47,7 +49,8 @@ app = Flask(
 csp = {
     "default-src": "'self'",
     "script-src": "'self'",
-    "connect-src": ["'self'", "stat.ripe.net"],
+    # connect-src self doesn't work for wss. Ticket at https://bugs.webkit.org/show_bug.cgi?id=201591
+    "connect-src": ["'self'", "stat.ripe.net", "wss://{}".format(ARTEMIS_WEB_HOST)],
     "style-src": [
         "'self'",
         "'unsafe-inline'",

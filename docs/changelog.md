@@ -1,6 +1,11 @@
 # Changelog
 
-## [UNRELEASED] (latest) - YYYY-MM-DD
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## master (latest) - YYYY-MM-DD
 ### Added
 - Redirection to login page when session is expired (#404)
 - Support RADIUS integration for user authentication (#409)
@@ -136,7 +141,6 @@
 For old versions you need to replace the name from webapp_logger to artemis_logger in these two files under your local_configs/frontend folder.
 - :rotating_light: Changed helm chart labels to support multiple releases per namespace and this breaks helm upgrades.
 To migrate to the new version you need to deploy a new installation and migrate the Persistent Volumes Claims (PVC) to the new release by attaching them on the current Persistent Volumes.
-
 
 ## [1.3.0] (Arktos) - 2019-09-12
 ### Added
@@ -395,26 +399,11 @@ time mitigation started, peer ASes that saw announcements/withdrawals, BGP updat
 * Support for running multiple detector instances
 * Optional support for Kubernetes setups (single physical machine)
 
-# TEMPLATE FOR NEW RELEASES
-## [RELEASE_VERSION] (NAME) - YYYY-MM-DD
-### Added
-- TBD (Added a new feature)
-
-### Changed
-- TBD (Changed existing functionality)
-
-### Fixed
-- TBD (bug-fix)
-
-### Removed
-- TBD (removed a feature)
-
-### Deprecated
-- TBD (soon-to-be removed feature)
-
-### Security
-- TBD (addressing vulnerability)
-
-## ACKS
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+[1.5.0]: https://github.com/FORTH-ICS-INSPIRE/artemis/compare/1.4.0...1.5.0
+[1.4.0]: https://github.com/FORTH-ICS-INSPIRE/artemis/compare/1.3.1...1.4.0
+[1.3.1]: https://github.com/FORTH-ICS-INSPIRE/artemis/compare/1.3.0...1.3.1
+[1.3.0]: https://github.com/FORTH-ICS-INSPIRE/artemis/compare/1.2.0...1.3.0
+[1.2.0]: https://github.com/FORTH-ICS-INSPIRE/artemis/compare/1.1.1...1.2.0
+[1.1.1]: https://github.com/FORTH-ICS-INSPIRE/artemis/compare/1.1.0...1.1.1
+[1.1.0]: https://github.com/FORTH-ICS-INSPIRE/artemis/compare/1.0.0...1.1.0
+[1.0.0]: https://github.com/FORTH-ICS-INSPIRE/artemis/releases/tag/1.0.0

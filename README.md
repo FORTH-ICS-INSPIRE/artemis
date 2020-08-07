@@ -68,7 +68,7 @@ and Internet2 (a major US R&E backbone network). Several other network operators
 
 ## Features
 
-For a detailed list of supported features please check the [CHANGELOG](CHANGELOG.md) file
+For a detailed list of supported features please check the [CHANGELOG](docs/changelog.md) file
 (sections: "Added"). The following main features are supported:
 
 * Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS, via:
@@ -192,7 +192,7 @@ If you need to contact us about a bug, an issue or a question you have; you can 
 
 ## Versioning
 
-Please check [this file](CHANGELOG.md).
+Please check [this file](docs/changelog.md).
 
 ## Authors and Contributors
 

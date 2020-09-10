@@ -1,5 +1,5 @@
-CFLAGS := $(shell python3.6m-config --cflags)
-LDFLAGS := $(shell python3.6m-config --ldflags)
+CFLAGS := $(shell python3m-config --cflags)
+LDFLAGS := $(shell python3m-config --ldflags)
 FLAGS := -Os -shared -fPIC
 CC := gcc
 CPY := cython

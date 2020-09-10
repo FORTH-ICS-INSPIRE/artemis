@@ -193,6 +193,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: testEnv
+       - name: AUTO_RECOVER_PROCESS_STATE
+         valueFrom:
+           configMapKeyRef:
+             name: { { .Release.Name } }-configmap
+             key: autoRecoverProcessState
         image: inspiregroup/artemis-backend:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: backend

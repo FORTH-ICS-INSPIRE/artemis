@@ -60,6 +60,7 @@ rpkiValidatorEnabled: false
 rpkiValidatorHost: routinator
 rpkiValidatorPort: 3323
 testEnv: false
+autoRecoverProcessState: true
 
 # services
 svc:

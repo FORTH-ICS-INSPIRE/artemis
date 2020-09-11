@@ -369,15 +369,15 @@ class Tester:
             db_cur = db_con.cursor()
             query = "SELECT name FROM process_states WHERE running=True"
             running_modules = set()
-            # wait until all 6 modules are running
-            while len(running_modules) < 6:
+            # wait until all 5 modules are running
+            while len(running_modules) < 5:
                 db_cur.execute(query)
                 entries = db_cur.fetchall()
                 for entry in entries:
                     running_modules.add(entry[0])
                 db_con.commit()
                 print("Running modules: {}".format(running_modules))
-                print("{}/6 modules are running.".format(len(running_modules)))
+                print("{}/5 modules are running.".format(len(running_modules)))
                 time.sleep(1)
 
             Tester.config_request_rpc(connection)
@@ -435,7 +435,6 @@ class Tester:
         self.waitProcess("listener", 0)  # 0 STOPPED
         self.waitProcess("clock", 0)  # 0 STOPPED
         self.waitProcess("detection", 0)  # 0 STOPPED
-        self.waitProcess("mitigation", 0)  # 0 STOPPED
         self.waitProcess("configuration", 0)  # 0 STOPPED
         self.waitProcess("database", 0)  # 0 STOPPED
         self.waitProcess("observer", 0)  # 0 STOPPED

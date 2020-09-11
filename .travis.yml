@@ -97,7 +97,7 @@ jobs:
     after_failure:
     - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
-    if: fork = false
+    if: fork = false && false
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:

@@ -7,9 +7,10 @@
 - Support for GRAPHQL_URI to be set via environment variables, or to take a lazy approach and set HASURA_HOST and HASURA_PORT env variables
 - Flag to override BGPStream timestamp (#415)
 - Hijack alert auto-ignore mechanism for alerts of limited impact/visibility (#373)
+- Env variable to invoke intended process states recovery mechanism
 
 ### Changed
-- TBD (Changed existing functionality)
+- Backend Makefile to use currently installed python version
 
 ### Fixed
 - Deleting user also deletes the role mapping (#412)

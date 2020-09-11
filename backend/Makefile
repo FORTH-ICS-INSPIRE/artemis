@@ -1,5 +1,6 @@
-CFLAGS := $(shell python3m-config --cflags)
-LDFLAGS := $(shell python3m-config --ldflags)
+PYTHONVERSION := $(python3 -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $1"."$2}')
+CFLAGS := $(shell python$(PYTHONVERSION)m-config --cflags)
+LDFLAGS := $(shell python$(PYTHONVERSION)m-config --ldflags)
 FLAGS := -Os -shared -fPIC
 CC := gcc
 CPY := cython

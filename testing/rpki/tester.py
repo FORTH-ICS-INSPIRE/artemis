@@ -364,13 +364,6 @@ class Tester:
             print("Waiting for update exchange..")
             Tester.waitExchange(self.update_exchange, connection.default_channel)
 
-            self.supervisor.supervisor.startAllProcesses()
-
-            # print(
-            #     "Sleeping for 60 seconds to allow the RTR server to populate its db..."
-            # )
-            # time.sleep(60)
-
             # query database for the states of the processes
             db_con = self.getDbConnection()
             db_cur = db_con.cursor()

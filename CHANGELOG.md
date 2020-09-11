@@ -8,6 +8,7 @@
 - Flag to override BGPStream timestamp (#415)
 - Hijack alert auto-ignore mechanism for alerts of limited impact/visibility (#373)
 - Env variable to invoke intended process states recovery mechanism
+- Reinstated RPKI tests for PRs
 
 ### Changed
 - TBD (Changed existing functionality)

@@ -458,7 +458,7 @@ class Database:
             ]
 
         def set_modules_to_intended_state(self):
-            if not AUTO_RECOVER_PROCESS_STATE:
+            if AUTO_RECOVER_PROCESS_STATE != "true":
                 return
             try:
                 query = "SELECT name, running FROM intended_process_states"

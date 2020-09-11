@@ -4,8 +4,8 @@ LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 WORKDIR /root
 
 RUN apk add --no-cache openssl && \
-    wget https://dl.google.com/closure-compiler/compiler-latest.tar.gz && \
-    tar -xzvf compiler-latest.tar.gz
+    wget https://dl.google.com/closure-compiler/compiler-20200719.tar.gz && \
+    tar -xzvf compiler-20200719.tar.gz
 
 COPY ./webapp/render/static/js/custom/ /root/
 COPY ./minify-js.sh /root/

@@ -10,10 +10,12 @@
 - Env variable to invoke intended process states recovery mechanism
 
 ### Changed
-- Backend Makefile to use currently installed python version
+- TBD (Changed existing functionality)
 
 ### Fixed
 - Deleting user also deletes the role mapping (#412)
+- Backend Makefile to use currently installed python version
+- Frontend Makefile to use specific closure compiler version
 
 ### Removed
 - TBD (removed a feature)

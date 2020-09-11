@@ -1,5 +1,6 @@
-CFLAGS := $(shell python3.6m-config --cflags)
-LDFLAGS := $(shell python3.6m-config --ldflags)
+PYTHONVERSION := $(shell python -c "import sys;t='{v[0]}.{v[1]}'.format(v=list(sys.version_info[:2]));sys.stdout.write(t)")
+CFLAGS := $(shell python$(PYTHONVERSION)m-config --cflags)
+LDFLAGS := $(shell python$(PYTHONVERSION)m-config --ldflags)
 FLAGS := -Os -shared -fPIC
 CC := gcc
 CPY := cython

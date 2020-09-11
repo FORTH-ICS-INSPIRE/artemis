@@ -14,6 +14,7 @@ services:
             - ${REDIS_PORT}
         environment:
             ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
+            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}

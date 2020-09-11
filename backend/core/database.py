@@ -14,6 +14,7 @@ from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from utils import AUTO_RECOVER_PROCESS_STATE
 from utils import BACKEND_SUPERVISOR_URI
 from utils import DB_HOST
 from utils import DB_NAME
@@ -457,6 +458,8 @@ class Database:
             ]
 
         def set_modules_to_intended_state(self):
+            if AUTO_RECOVER_PROCESS_STATE != "true":
+                return
             try:
                 query = "SELECT name, running FROM intended_process_states"
 

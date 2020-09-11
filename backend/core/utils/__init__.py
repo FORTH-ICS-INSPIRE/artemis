@@ -89,6 +89,7 @@ if GRAPHQL_URI is None:
     )
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
 GUI_ENABLED = os.getenv("GUI_ENABLED", "true")
+AUTO_RECOVER_PROCESS_STATE = os.getenv("AUTO_RECOVER_PROCESS_STATE", "true")
 
 PROCESS_STATES_LOADING_MUTATION = """
     mutation updateProcessStates($name: String, $loading: Boolean) {

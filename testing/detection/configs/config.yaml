@@ -1,6 +1,9 @@
 prefixes:
     8_prefix: &8_prefix
         - 10.0.0.0/8
+    9_prefixes: &9_prefixes
+      - 10.0.0.0/9
+      - 10.128.0.0/9
     16_prefix: &16_prefix
         - 10.0.0.0/16
     24_prefix_1: &24_prefix_1
@@ -73,6 +76,7 @@ asns:
 rules:
 - prefixes:
   - *8_prefix
+  - *9_prefixes
   origin_asns:
   - *8_origin
   neighbors:

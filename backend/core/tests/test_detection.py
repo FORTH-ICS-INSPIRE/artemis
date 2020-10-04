@@ -71,6 +71,14 @@ class BGPHandlerTester(unittest.TestCase):
                 "mitigation": ["manual"],
                 "community_annotations": [],
             },
+            {
+                "prefixes": ["6.0.0.0/24", "6.0.0.0/25"],
+                "origin_asns": [1],
+                "neighbors": [2],
+                "mitigation": ["manual"],
+                "policies": [],
+                "community_annotations": [],
+            },
         ]
         self.worker.init_detection()
 
@@ -318,6 +326,80 @@ class BGPHandlerTester(unittest.TestCase):
         self.worker.handle_bgp_update(message)
 
         self.assertFalse(mock_commit_hijack.called)
+
+    @patch("detection.Detection.Worker.gen_implicit_withdrawal")
+    @patch("detection.Detection.Worker.commit_hijack")
+    def test_gen_implicit_withdrawal_exact_prefix(
+        self, mock_commit_hijack, mock_gen_implicit_withdrawal
+    ):
+        hijack_message = {
+            "key": "1",
+            "timestamp": 1,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [4, 3, 2, 100],
+            "prefix": "6.0.0.0/24",
+            "peer_asn": 4,
+        }
+        self.worker.handle_bgp_update(hijack_message)
+
+        self.assertTrue(mock_commit_hijack.called)
+        self.assertEqual(mock_commit_hijack.call_args[0][1], 100)
+        self.assertEqual(mock_commit_hijack.call_args[0][2], ["E", "0", "-", "-"])
+
+        exact_mitigation_message = {
+            "key": "2",
+            "timestamp": 2,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [4, 3, 2, 1],
+            "prefix": "6.0.0.0/24",
+            "peer_asn": 4,
+        }
+        self.worker.handle_bgp_update(exact_mitigation_message)
+
+        self.assertTrue(mock_gen_implicit_withdrawal.called)
+
+    @patch("detection.Detection.Worker.gen_implicit_withdrawal")
+    @patch("detection.Detection.Worker.commit_hijack")
+    def test_gen_implicit_withdrawal_sub_prefix(
+        self, mock_commit_hijack, mock_gen_implicit_withdrawal
+    ):
+        hijack_message = {
+            "key": "1",
+            "timestamp": 1,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [4, 3, 2, 100],
+            "prefix": "6.0.0.0/24",
+            "peer_asn": 4,
+        }
+        self.worker.handle_bgp_update(hijack_message)
+
+        self.assertTrue(mock_commit_hijack.called)
+        self.assertEqual(mock_commit_hijack.call_args[0][1], 100)
+        self.assertEqual(mock_commit_hijack.call_args[0][2], ["E", "0", "-", "-"])
+
+        sub_mitigation_message = {
+            "key": "2",
+            "timestamp": 2,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [4, 3, 2, 1],
+            "prefix": "6.0.0.0/25",
+            "peer_asn": 4,
+        }
+        self.worker.handle_bgp_update(sub_mitigation_message)
+
+        self.assertTrue(mock_gen_implicit_withdrawal.called)
 
 
 if __name__ == "__main__":

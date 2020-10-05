@@ -71,6 +71,14 @@ class BGPHandlerTester(unittest.TestCase):
                 "mitigation": ["manual"],
                 "community_annotations": [],
             },
+            {
+                "prefixes": ["6.0.0.0/24", "6.0.0.0/25"],
+                "origin_asns": [1],
+                "neighbors": [2],
+                "mitigation": ["manual"],
+                "policies": [],
+                "community_annotations": [],
+            },
         ]
         self.worker.init_detection()
 
@@ -318,6 +326,76 @@ class BGPHandlerTester(unittest.TestCase):
         self.worker.handle_bgp_update(message)
 
         self.assertFalse(mock_commit_hijack.called)
+
+    @patch("detection.Detection.Worker.producer")
+    def test_gen_implicit_withdrawal_exact_prefix(self, mock_producer):
+        def side_effect(value):
+            if value == "prefix_6.0.0.0/24_peer_4_hijacks":
+                return True
+            return False
+
+        message = {
+            "key": "2",
+            "timestamp": 2,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [4, 3, 2, 1],
+            "prefix": "6.0.0.0/24",
+            "peer_asn": 4,
+        }
+        self.worker.redis.exists = MagicMock(side_effect=side_effect)
+        self.worker.gen_implicit_withdrawal(message)
+
+        self.assertTrue(mock_producer.publish.called)
+        withdraw_msg = {
+            "service": "implicit-withdrawal",
+            "type": "W",
+            "prefix": "6.0.0.0/24",
+            "path": [],
+            "orig_path": {"triggering_bgp_update": message},
+            "communities": [],
+            "timestamp": message["timestamp"] + 1,
+            "peer_asn": 4,
+        }
+        for key, value in withdraw_msg.items():
+            self.assertEqual(mock_producer.publish.call_args[0][0][key], value)
+
+    @patch("detection.Detection.Worker.producer")
+    def test_gen_implicit_withdrawal_sub_prefix(self, mock_producer):
+        def side_effect(value):
+            if value == "prefix_6.0.0.0/24_peer_4_hijacks":
+                return True
+            return False
+
+        message = {
+            "key": "2",
+            "timestamp": 2,
+            "orig_path": [],
+            "communities": [],
+            "service": "a",
+            "type": "A",
+            "path": [4, 3, 2, 1],
+            "prefix": "6.0.0.0/25",
+            "peer_asn": 4,
+        }
+        self.worker.redis.exists = MagicMock(side_effect=side_effect)
+        self.worker.gen_implicit_withdrawal(message)
+
+        self.assertTrue(mock_producer.publish.called)
+        withdraw_msg = {
+            "service": "implicit-withdrawal",
+            "type": "W",
+            "prefix": "6.0.0.0/24",
+            "path": [],
+            "orig_path": {"triggering_bgp_update": message},
+            "communities": [],
+            "timestamp": message["timestamp"] + 1,
+            "peer_asn": 4,
+        }
+        for key, value in withdraw_msg.items():
+            self.assertEqual(mock_producer.publish.call_args[0][0][key], value)
 
 
 if __name__ == "__main__":

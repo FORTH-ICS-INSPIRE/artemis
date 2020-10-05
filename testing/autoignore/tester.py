@@ -143,7 +143,7 @@ class AutoignoreTester:
         print(
             '\033[92mTest "{}" - Receiving Batch #{} - Type {} - Remaining {}'.format(
                 self.curr_test,
-                self.curr_idx,
+                self.curr_idx + 1,
                 message.delivery_info["routing_key"],
                 self.expected_messages - 1,
             )

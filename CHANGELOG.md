@@ -9,6 +9,7 @@
 - Hijack alert auto-ignore mechanism for alerts of limited impact/visibility (#373)
 - Env variable to invoke intended process states recovery mechanism
 - Reinstated RPKI tests for PRs
+- Implicit withdrawals are now generated also on correct (direct) subprefix routing
 
 ### Changed
 - TBD (Changed existing functionality)
@@ -17,6 +18,7 @@
 - Deleting user also deletes the role mapping (#412)
 - Backend Makefile to use currently installed python version
 - Frontend Makefile to use specific closure compiler version
+- Minor opt fix in Redis RTT calls in DB
 
 ### Removed
 - TBD (removed a feature)

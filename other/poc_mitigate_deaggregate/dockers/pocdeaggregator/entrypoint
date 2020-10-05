@@ -1,0 +1,7 @@
+#!/bin/bash
+
+./wait-for exabgp:179 -t 0
+./wait-for r02:179 -t 0
+./wait-for r03:179 -t 0
+
+python -u poc_mitigate_deaggregate.py

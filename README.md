@@ -1,3 +1,4 @@
+[![Documentation Status](https://readthedocs.org/projects/bgpartemis/badge/?version=latest)](https://bgpartemis.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis.svg?branch=master)](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis)
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)

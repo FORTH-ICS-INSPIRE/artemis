@@ -4,3 +4,4 @@ mkdocs-bootstrap4==0.1.4
 mkdocs-git-committers-plugin==0.1.10
 mkdocs-material==5.5.3
 mkdocs-material-extensions==1.0
+pymdown-extensions==8.0.1

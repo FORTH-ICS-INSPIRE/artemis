@@ -43,6 +43,7 @@ Clock, listener/supervisor and observer micro-services are auxiliary, and take c
    ```
    sudo apt-get update
    ```
+
 2. **(For rootless installation look below)** If not already installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce) to install the latest version of the docker tool for managing containers, and [here](https://docs.docker.com/compose/install/#install-compose) to install the docker-compose tool for supporting multi-container Docker applications.
 
    In production, we have used the following versions successfully:
@@ -52,6 +53,7 @@ Clock, listener/supervisor and observer micro-services are auxiliary, and take c
    $ docker-compose -v
    docker-compose version 1.20.0, build ca8d3c6
    ```
+
 3. If you would like to run docker without using sudo, please create a docker group, if not existing:
    ```
    sudo groupadd docker
@@ -66,6 +68,7 @@ Clock, listener/supervisor and observer micro-services are auxiliary, and take c
    ```
    sudo apt-get install ntp
    ```
+
 5. Install git for downloading ARTEMIS:
    ```
    sudo apt-get install git
@@ -74,14 +77,15 @@ Clock, listener/supervisor and observer micro-services are auxiliary, and take c
    ```
    git clone ...
    ```
-6. The docker-compose utility is configured to pull the latest **stable** released images that are built remotely on [docker cloud](https://cloud.docker.com/). Run the following:
-```
-cd artemis
-docker-compose pull
-```
-to trigger this.
 
-No further installation/building actions are required on your side at this point.
+6. The docker-compose utility is configured to pull the latest **stable** released images that are built remotely on [docker cloud](https://cloud.docker.com/). Run the following:
+    ```
+    cd artemis
+    docker-compose pull
+    ```
+    to trigger this.
+
+    No further installation/building actions are required on your side at this point.
 
 ### Rootless Docker
 

@@ -2,6 +2,7 @@
 
 ARTEMIS is a locally deployed real-time BGP prefix hijacking monitoring, detection and mitigation tool.
 When the IP address of the server on which ARTEMIS is running is affected by a hijack (e.g., routing to blackholes, etc.), the connectivity with the external (publicly available) monitors such as RIPE RIS, RouteViews and CAIDA BMP feeders might be hindered, rendering ARTEMIS "blind". We recommend the following countermeasures against this scenario:
+
 1. Connect ARTEMIS also to a local monitor, using e.g., its exaBGP interface. This will ensure that even if the public monitors cannot be reached, information about BGP updates reaching your network will still reach ARTEMIS (for example, this might detect malicious BGP sub-prefix hijacks on the prefix where ARTEMIS itself is running).
 2. Deploy redundant instances of ARTEMIS running in at least two different (disjoint) prefixes, to lower the probability of such an event happening.
 3. Use private (or in general, internal) IPs for reaching ARTEMIS and connecting to a local monitor. The public-facing interfaces are primarily needed for communicating with external monitors, as well as serving the frontend content to ARTEMIS users.

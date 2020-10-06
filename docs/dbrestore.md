@@ -3,6 +3,7 @@ In case you encounter any issues please contact the ARTEMIS team. Feel free to e
 ATTENTION: First, check that [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/other/db/data/restore.sql) has the correct credentials, db name and db.tar location. Volume mappings exist already in the [docker-compose file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L123) (for backup and current data, as well as db configuration and scripts).
 
 Then, follow the next steps:
+
 1. shutdown ARTEMIS
    ```
    docker-compose down

@@ -1,4 +1,5 @@
 Table of Contents
+
 * [BGP hijack information](#bgp-hijack-information)
 * [Classification of hijacks](#classification-of-hijacks)
 * [Hijack states](#hijack-states)
@@ -61,12 +62,14 @@ In general, we classify hijack events according to the 3D taxonomy that we descr
 
 ### Prefix dimension
 How a hijacker manipulates a prefix. Can be:
+
 * **Sub-prefix (S)** hijack: the attacker announces a sub-prefix of a configured super-prefix.
 * **Exact-prefix (E)** hijack: the attacker announces a prefix that matches exactly a configured prefix (*note that the E dimension alone does not indicate a hijack!*).
 * **sQuatting (Q)** hijack: the attacker announces a prefix that is not supposed to be seen on the public Internet control plane.
 
 ### (AS-)Path dimension
 How a hijacker manipulates the path to a prefix. Can be:
+
 * **Type-0 (0)** hijack: the attacker announces a path with an illegal origin.
 * **Type-1 (1)** hijack: the attacker announces a path with a legal origin, but illegal first hop.
 * **Type-N (N)** hijack: the attacker fakes a link deep in the path (N=2: the 2nd hop is illegal, N=3: the 3rd hop is illegal, etc.)
@@ -76,6 +79,7 @@ Currently, ARTEMIS issues '-' for Type-N/U attacks (not supported).
 
 ### Data plane dimension
 How an attacker manipulates the traffic leading to a prefix. Can be:
+
 * **Blackholing (B)** hijack: the attacker drops packets en-route.
 * **Imposture (I)** hijack: the attacker impersonates the services of a victim.
 * **Man-in-the-Middle (M)** hijack: the attacker intercepts (and potentially alters) traffic en-route.
@@ -84,6 +88,7 @@ Currently, ARTEMIS issues '-' for these types of attacks (control-plane tool).
 
 ### Policy dimension
 How an attacker manipulates BGP policies related to a prefix. Can be:
+
 * **Route leak due to no-export violation (L)** hijack: the attacker announces a no-export route to another (non-monitor) AS.
 
 Currently, besides 'L' (no-export violations), ARTEMIS issues '-' for other types of policy violations.
@@ -95,6 +100,7 @@ In general, any potential hijack can be represented as a combination of the afor
 Prefix | Path | Data plane | Policy
 ```
 ARTEMIS currently detects the following combinations:
+
 * **S|0|-|-**: sub-prefix announced by illegal origin.
 * **S|0|-|L**: sub-prefix announced by illegal origin and no-export policy violation.
 * **S|1|-|-**: sub-prefix announced by seemingly legal origin, but with an illegal first hop.
@@ -165,6 +171,7 @@ The VIEWER use can see the status of a hijack but cannot execute any actions (e.
 **UNDER CONSTRUCTION! HELP FROM OPERATORS IS NEEDED TO FILL IN THIS SECTION!!!**
 
 ### Example 1: S|0|-|- hijack with manual mitigation
+
 1. Operator configures ARTEMIS rule:
    TBD
 2. ARTEMIS receives a BGP update of the form:

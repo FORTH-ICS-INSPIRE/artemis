@@ -53,6 +53,7 @@ It includes 2 bar gauges that show the number of hijacks detected originating fr
 
 # Extending the dashboards/building your own
 To extend a dashboard, a user needs to be first logged-in. Once logged-in, the user selects the dashboard they want to extend. Due to the way that Grafana dashboards were provisioned (see [this page](https://grafana.com/docs/administration/provisioning/)) changes on the existing dashboards cannot be made and saved. However Grafana provides the option of exporting provisioned dashboards in JSON format. Thus, it is suggested to save a provisioned dashboard with a new name and work on the new one for experimentation:
+
 * To save an existing dashboard with a new name select the "Dashboard Settings" icon :gear: and on the left side of the new page select "Save As...". Select a new name and save.
 * Each vizualisation plugin is rendered using data from ARTEMIS PostgreSQL. To inspect and/or modify a query move the cursor to the title of the plugin, click the small bottom arrow and select Edit. Remember you need to be logged-in to make changes.
 * The query that renders the data is shown in the first section called queries. On the top of this section you can see the datasource which is defined in Grafana datasources and the actual query. Depending on the complexity of the query a user can go for the guided mode or the raw query mode and those can be swapped using the ✏️ icon. A recent presentation showing how datasources are added and dashboard are created can be found [here](https://youtu.be/-xlchgoqkqY?t=648).

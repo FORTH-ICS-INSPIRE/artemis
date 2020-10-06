@@ -14,6 +14,7 @@ privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
 can be neutralized within a minute!
 
 Depending on the preferences of the user, ARTEMIS can be used in 3 basic modes according to the combination of enabled micro-services in the user interface:
+
 1. Passive monitor (monitoring enabled)
 2. Passive detector (monitoring + detection enabled)
 3. Active joint detector and user-triggered mitigator (monitoring + detection + mitigation enabled)

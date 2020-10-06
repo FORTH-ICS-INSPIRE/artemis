@@ -10,6 +10,7 @@ used for routing messages (RPC, pub/sub, etc.) between different micro-services
 within and across containers, interfacing with the MBUS between message producers and consumers.
 
 In a nutshell, we have the following micro-services:
+
 * Configuration
 * Monitoring
 * Detection
@@ -285,6 +286,7 @@ rabbitmq          | 2019-02-27 09:01:11.411 [info] <0.763.0> connection <0.763.0
 ```
 
 Extra services that you can use with ARTEMIS are:
+
 * exabgp: local exaBGP monitor
 * grafana: visual interfaces/dashboards; please check [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Grafana-Dashboards-Timeseries)
 
@@ -323,6 +325,7 @@ reasons).
 
 ## User account actions (ADMIN-VIEWER)
 Currently the current account-specific actions are supported:
+
 * Password change at:
 ```
 https://<ARTEMIS_HOST>/actions/password_change
@@ -398,6 +401,7 @@ rules:
 Optionally the user can accompany the configuration with comments.
 
 Note that the colors of the controllable modules are as follows:
+
 * red: the micro-service is off (due to administrative action).
 * yellow: the micro-service is (re)loading due to a configuration change (or upon boot).
 * green: the micro-service is up and running, ready to operate (and its configuration has been loaded).
@@ -414,6 +418,7 @@ After being successfully logged-in to ARTEMIS, you will be redirected to the fol
 https://<ARTEMIS_HOST>/overview
 ```
 Here you can view info about:
+
 * your last login information (email address, time and IP address)
 * the system status (status of micro-services and uptime information). In particular, colors mean the following:
   * red: the micro-service is off (due to administrative action or because it has failed).
@@ -465,6 +470,7 @@ For information on the fields, state and actions please check [[Hijacks, States 
 You can use the embedded mouse-hover tooltip for more information on the fields, states and actions. *Note: since the underlying data might change live, we recommend deactivating "live update" (button on the top right of the page) in case you would like to examine the content of a mouse-hover (e.g., related to a certain ASN) without it disappearing upon change. Remember to activate it again after the check!*
 
 Regarding the Hijacks table, the following auxiliary actions are supported:
+
 * Select and perform actions on multiple hijacks using the control above the table (Apply/Clear).
 * (De)activate "Live Update" via the button at the top right of the page.
 * Select past time threshold for viewing Hijacks, based on their Time Detected field using the controls at the top left of the page (Past 1h,..,Custom).
@@ -571,6 +577,7 @@ exaBGP will require properly setting the ebgp-multihop attribute on your router,
 ## Replaying history
 ARTEMIS can optionally replay historical records downloaded via tools like BGPStream.
 The following steps need to be done for ARTEMIS to replay these records in a streaming fashion:
+
 * Set the .env variable "HISTORIC" to true and restart ARTEMIS.
 * Collect the files with the BGP updates in a csv directory. Each file should have the following bgpstream-compatible format:
   ```

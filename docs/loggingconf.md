@@ -47,6 +47,7 @@ slack_handler:
         propagate: no
 ```
 Then, you can attach them to the already defined loggers based on their purpose. For example, backend loggers include:
+
 * artemis_logger: Output of all (backend) services.
 * mail_logger: Triggered on new hijack events (targeted information to avoid spamming for mail services - **only** triggered on hijack events). For its current use, check [this line](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/core/detection.py#L969).
 * hijack_logger: Triggered for every hijack update (not only on first trigger). Be careful to avoid being overwhelmed with messages in case you attach a handler to it! Useful for monitoring the progress of a hijack in terms of incoming BGP updates.
@@ -55,6 +56,7 @@ Then, you can attach them to the already defined loggers based on their purpose.
 *Note that you should attach a logger you would like to use. For example, after you configure the smtps log handler in lines [32-50](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/logging.yaml#L32-L50) and optionally adding your custom formatter after line [5](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/logging.yaml#L5), you should add the smtps_handler to the mail_logger handlers [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/logging.yaml#L85).*
 
 In general, the logging.yaml files, besides auxiliary information, contain 3 sections that you can adjust according to your logging needs:
+
 * **formatters**, which define *the format* of a log message and are used in handlers
 * **handlers**, which define *how* a log message should be handled (e.g., at which level of criticality)
 * **loggers**, which define *which handlers* should be used and at *which level* of criticality

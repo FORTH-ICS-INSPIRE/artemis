@@ -1,0 +1,37 @@
+site_name: Artemis Docs
+nav:
+  - Home: index.md
+  - Overview: overview.md
+  - Getting Started:
+      - 'First Steps': gettingstarted.md
+      - 'UI Overview': uioverview.md
+      - 'Best Practices': bestpractices.md
+      - Architecture: architecture.md
+  - Configuration:
+      - Basic: basicconf.md
+      - 'Environment Variables': envvars.md
+      - Frontend: frontendconf.md
+      - Logging: loggingconf.md
+      - LDAP: ldapconf.md
+      - 'RPKI Validation': rpkivalidconf.md
+  - Details:
+      - 'BGP Update Information': bgpupdateinfo.md
+      - 'Hijack Information': hijackinfo.md
+      - Redis: redisinfo.md
+  - Advanced:
+      - 'Auto-Configuration': autoconfiguration.md
+      - 'Custom Tap': customtap.md
+      - 'Community Annotations': commannotations.md
+      - 'Database restore': dbrestore.md
+      - 'Decoupling Microservices': decouplingmicroservices.md
+      - 'Grafana Dashboard': grafanadash.md
+      - Vagrant: vagrant.md
+  - Kubernetes: kubernetes.md
+  - APIs:
+      - GraphQL: graphqlapi.md
+  - FAQ: faq.md
+  - Changelog: changelog.md
+theme:
+  name: material
+markdown_extensions:
+  - mdx_truly_sane_lists

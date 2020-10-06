@@ -65,4 +65,4 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 
 ## System Architecture
 
-![Architecture](images/artemis_system_overview.png)
+![Architecture](images/artemis_system_overview.jpg)

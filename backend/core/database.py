@@ -10,7 +10,6 @@ import redis
 import ujson as json
 from kombu import Connection
 from kombu import Consumer
-from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
@@ -40,7 +39,9 @@ from utils import signal_loading
 from utils import translate_asn_range
 from utils import translate_rfc2622
 from utils import WITHDRAWN_HIJACK_THRESHOLD
-from utils.tool import DB
+from utils.db_util import DB
+from utils.rabbitmq_util import create_exchange
+from utils.rabbitmq_util import create_queue
 
 # import os
 
@@ -97,6 +98,7 @@ class Database:
 
     class Worker(ConsumerProducerMixin):
         def __init__(self, connection):
+            self.module_name = "database"
             self.connection = connection
             self.prefix_tree = None
             self.monitored_prefixes = set()
@@ -180,188 +182,121 @@ class Database:
             self.bootstrap_redis()
 
             # EXCHANGES
-            self.config_exchange = Exchange(
-                "config",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
+            self.config_exchange = create_exchange("config", connection)
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
             )
-            self.update_exchange = Exchange(
-                "bgp-update",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
+            self.hijack_exchange = create_exchange(
+                "hijack-update", connection, declare=True
             )
-            self.update_exchange.declare()
-
-            self.hijack_exchange = Exchange(
-                "hijack-update",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
+            self.hijack_hashing = create_exchange(
+                "hijack-hashing", connection, "x-consistent-hash", declare=True
             )
-            self.hijack_exchange.declare()
-
-            self.hijack_hashing = Exchange(
-                "hijack-hashing",
-                channel=connection,
-                type="x-consistent-hash",
-                durable=False,
-                delivery_mode=1,
-            )
-            self.hijack_hashing.declare()
-
-            self.handled_exchange = Exchange(
-                "handled-update", type="direct", durable=False, delivery_mode=1
-            )
-            self.db_clock_exchange = Exchange(
-                "db-clock", type="direct", durable=False, delivery_mode=1
-            )
-            self.mitigation_exchange = Exchange(
-                "mitigation", type="direct", durable=False, delivery_mode=1
-            )
+            self.handled_exchange = create_exchange("handled-update", connection)
+            self.db_clock_exchange = create_exchange("db-clock", connection)
+            self.mitigation_exchange = create_exchange("mitigation", connection)
 
             # QUEUES
-            self.update_queue = Queue(
-                "db-bgp-update",
+            self.update_queue = create_queue(
+                self.module_name,
                 exchange=self.update_exchange,
                 routing_key="update",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
             )
-            self.withdraw_queue = Queue(
-                "db-withdraw-update",
+            self.withdraw_queue = create_queue(
+                self.module_name,
                 exchange=self.update_exchange,
                 routing_key="withdraw",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
             )
-
-            self.hijack_queue = Queue(
-                "db-hijack-update-{}".format(uuid()),
+            self.hijack_queue = create_queue(
+                self.module_name,
                 exchange=self.hijack_hashing,
                 routing_key="1",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
+                random=True,
             )
-
-            self.hijack_ongoing_request_queue = Queue(
-                "db-hijack-request-ongoing",
+            self.hijack_ongoing_request_queue = create_queue(
+                self.module_name,
                 exchange=self.hijack_exchange,
                 routing_key="ongoing-request",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
             )
-            self.hijack_outdate_queue = Queue(
-                "db-hijack-outdate",
+            self.hijack_outdate_queue = create_queue(
+                self.module_name,
                 exchange=self.hijack_exchange,
                 routing_key="outdate",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
             )
-            self.hijack_resolve_queue = Queue(
-                "db-hijack-resolve",
+            self.hijack_resolve_queue = create_queue(
+                self.module_name,
                 exchange=self.hijack_exchange,
                 routing_key="resolve",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                priority=2,
             )
-            self.hijack_ignore_queue = Queue(
-                "db-hijack-ignored",
+            self.hijack_ignore_queue = create_queue(
+                self.module_name,
                 exchange=self.hijack_exchange,
                 routing_key="ignore",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                priority=2,
             )
-            self.handled_queue = Queue(
-                "db-handled-update",
+            self.handled_queue = create_queue(
+                self.module_name,
                 exchange=self.handled_exchange,
                 routing_key="update",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
             )
-            self.config_queue = Queue(
-                "db-config-notify",
+            self.config_queue = create_queue(
+                self.module_name,
                 exchange=self.config_exchange,
                 routing_key="notify",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                priority=2,
             )
-            self.db_clock_queue = Queue(
-                "db-clock-{}".format(uuid()),
+            self.db_clock_queue = create_queue(
+                self.module_name,
                 exchange=self.db_clock_exchange,
                 routing_key="pulse",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 3},
+                priority=2,
+                random=True,
             )
-            self.mitigate_queue = Queue(
-                "db-mitigation-start",
+            self.mitigate_queue = create_queue(
+                self.module_name,
                 exchange=self.mitigation_exchange,
                 routing_key="mit-start",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                priority=2,
             )
+            self.hijack_seen_queue = create_queue(
+                self.module_name,
+                exchange=self.hijack_exchange,
+                routing_key="seen",
+                priority=2,
+            )
+            self.hijack_delete_queue = create_queue(
+                self.module_name,
+                exchange=self.hijack_exchange,
+                routing_key="delete",
+                priority=2,
+            )
+
+            # RPC QUEUES
             self.hijack_comment_queue = Queue(
-                "db-hijack-comment",
+                "database.rpc.hijack-comment",
                 durable=False,
                 auto_delete=True,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
-            self.hijack_seen_queue = Queue(
-                "db-hijack-seen",
-                exchange=self.hijack_exchange,
-                routing_key="seen",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
-            )
             self.hijack_multiple_action_queue = Queue(
-                "db-hijack-multiple-action",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
-            )
-            self.hijack_delete_queue = Queue(
-                "db-hijack-delete",
-                exchange=self.hijack_exchange,
-                routing_key="delete",
+                "database.rpc.hijack-multiple-action",
                 durable=False,
                 auto_delete=True,
                 max_priority=2,
                 consumer_arguments={"x-priority": 2},
             )
 
-            signal_loading("database", True)
+            signal_loading(self.module_name, True)
             self.config_request_rpc()
-            signal_loading("database", False)
+            signal_loading(self.module_name, False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -490,13 +425,13 @@ class Database:
             self.producer.publish(
                 "",
                 exchange="",
-                routing_key="config-request-queue",
+                routing_key="configuration.rpc.request",
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        "config-request-queue",
+                        "configuration.rpc.request",
                         durable=False,
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},
@@ -762,7 +697,7 @@ class Database:
 
         def handle_config_notify(self, message):
             message.ack()
-            signal_loading("database", True)
+            signal_loading(self.module_name, True)
             log.info("Reconfiguring database due to conf update...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -789,11 +724,11 @@ class Database:
                 log.exception("{}".format(config))
 
             log.info("Database initiated, configured and running.")
-            signal_loading("database", False)
+            signal_loading(self.module_name, False)
 
         def handle_config_request_reply(self, message):
             message.ack()
-            signal_loading("database", True)
+            signal_loading(self.module_name, True)
             log.info("Configuring database for the first time...")
 
             log.debug("Message: {}\npayload: {}".format(message, message.payload))
@@ -827,7 +762,7 @@ class Database:
             self.set_modules_to_intended_state()
 
             log.info("Database initiated, configured and running.")
-            signal_loading("database", False)
+            signal_loading(self.module_name, False)
 
         def handle_hijack_ongoing_request(self, message):
             message.ack()

@@ -126,13 +126,13 @@ class BGPStreamHist:
                                                             producer.publish(
                                                                 msg,
                                                                 exchange="",
-                                                                routing_key="conf-autoconf-update-queue",
+                                                                routing_key="configuration.rpc.autoconf-update",
                                                                 reply_to=callback_queue.name,
                                                                 correlation_id=correlation_id,
                                                                 retry=True,
                                                                 declare=[
                                                                     Queue(
-                                                                        "conf-autoconf-update-queue",
+                                                                        "configuration.rpc.autoconf-update",
                                                                         durable=False,
                                                                         max_priority=4,
                                                                         consumer_arguments={

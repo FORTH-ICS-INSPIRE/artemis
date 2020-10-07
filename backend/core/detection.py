@@ -16,7 +16,6 @@ import redis
 import ujson as json
 from kombu import Connection
 from kombu import Consumer
-from kombu import Exchange
 from kombu import Queue
 from kombu import serialization
 from kombu import uuid
@@ -42,6 +41,8 @@ from utils import signal_loading
 from utils import TEST_ENV
 from utils import translate_asn_range
 from utils import translate_rfc2622
+from utils.rabbitmq_util import create_exchange
+from utils.rabbitmq_util import create_queue
 
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
@@ -125,6 +126,7 @@ class Detection:
         """
 
         def __init__(self, connection: Connection) -> NoReturn:
+            self.module_name = "detection"
             self.connection = connection
             self.timestamp = -1
             self.rules = None
@@ -133,83 +135,41 @@ class Detection:
             self.correlation_id = None
 
             # EXCHANGES
-            self.update_exchange = Exchange(
-                "bgp-update",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
             )
-            self.update_exchange.declare()
-
-            self.hijack_exchange = Exchange(
-                "hijack-update",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
+            self.hijack_exchange = create_exchange(
+                "hijack-update", connection, declare=True
             )
-            self.hijack_exchange.declare()
-
-            self.hijack_hashing = Exchange(
-                "hijack-hashing",
-                channel=connection,
-                type="x-consistent-hash",
-                durable=False,
-                delivery_mode=1,
+            self.hijack_hashing = create_exchange(
+                "hijack-hashing", connection, "x-consistent-hash", declare=True
             )
-            self.hijack_hashing.declare()
-
-            self.handled_exchange = Exchange(
-                "handled-update",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
-            )
-
-            self.config_exchange = Exchange(
-                "config",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
-            )
-
-            self.pg_amq_bridge = Exchange(
-                "amq.direct", type="direct", durable=True, delivery_mode=1
-            )
+            self.handled_exchange = create_exchange("handled-update", connection)
+            self.config_exchange = create_exchange("config", connection)
+            self.pg_amq_bridge = create_exchange("amq.direct", connection)
 
             # QUEUES
-            self.update_queue = Queue(
-                "detection-update-update",
+            self.update_queue = create_queue(
+                self.module_name,
                 exchange=self.pg_amq_bridge,
                 routing_key="update-insert",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
             )
-            self.hijack_ongoing_queue = Queue(
-                "detection-hijack-ongoing",
+            self.hijack_ongoing_queue = create_queue(
+                self.module_name,
                 exchange=self.hijack_exchange,
                 routing_key="ongoing",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
+                priority=1,
             )
-            self.config_queue = Queue(
-                "detection-config-notify-{}".format(uuid()),
+            self.config_queue = create_queue(
+                self.module_name,
                 exchange=self.config_exchange,
                 routing_key="notify",
-                durable=False,
-                auto_delete=True,
-                max_priority=3,
-                consumer_arguments={"x-priority": 3},
+                priority=3,
+                random=True,
             )
 
-            signal_loading("detection", True)
+            signal_loading(self.module_name, True)
 
             setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
             if TEST_ENV == "true":
@@ -245,7 +205,7 @@ class Detection:
 
             self.config_request_rpc()
             log.info("started")
-            signal_loading("detection", False)
+            signal_loading(self.module_name, False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
@@ -288,7 +248,7 @@ class Detection:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading("detection", True)
+            signal_loading(self.module_name, True)
             try:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
@@ -306,7 +266,7 @@ class Detection:
             except Exception:
                 log.exception("Exception")
             finally:
-                signal_loading("detection", False)
+                signal_loading(self.module_name, False)
 
         def config_request_rpc(self) -> NoReturn:
             """
@@ -325,13 +285,13 @@ class Detection:
             self.producer.publish(
                 "",
                 exchange="",
-                routing_key="config-request-queue",
+                routing_key="configuration.rpc.request",
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        "config-request-queue",
+                        "configuration.rpc.request",
                         durable=False,
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},

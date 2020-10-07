@@ -1,4 +1,4 @@
 #!/bin/bash
-make -j 4
+make -j
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 supervisord -n

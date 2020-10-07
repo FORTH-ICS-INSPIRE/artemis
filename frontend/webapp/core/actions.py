@@ -83,7 +83,7 @@ class Learn_hijack_rule:
                         "action": action,
                     },
                     exchange="",
-                    routing_key="conf-hijack-learn-rule-queue",
+                    routing_key="configuration.rpc.hijack-learn-rule",
                     retry=True,
                     declare=[callback_queue],
                     reply_to=callback_queue.name,
@@ -132,7 +132,7 @@ class Comment_hijack:
                 producer.publish(
                     {"key": hijack_key, "comment": comment},
                     exchange="",
-                    routing_key="db-hijack-comment",
+                    routing_key="database.rpc.hijack-comment",
                     retry=True,
                     declare=[callback_queue],
                     reply_to=callback_queue.name,
@@ -177,7 +177,7 @@ class Submit_new_config:
                     producer.publish(
                         {"config": new_config, "comment": comment},
                         exchange="",
-                        routing_key="config-modify-queue",
+                        routing_key="configuration.rpc.modify",
                         serializer="yaml",
                         retry=True,
                         declare=[callback_queue],
@@ -229,7 +229,7 @@ class Load_as_sets:
                 producer.publish(
                     {},
                     exchange="",
-                    routing_key="conf-load-as-sets-queue",
+                    routing_key="configuration.rpc.load-as-sets",
                     retry=True,
                     declare=[callback_queue],
                     reply_to=callback_queue.name,
@@ -283,7 +283,7 @@ class Hijacks_multiple_action:
                 producer.publish(
                     {"keys": hijack_keys, "action": action},
                     exchange="",
-                    routing_key="db-hijack-multiple-action",
+                    routing_key="database.rpc.hijack-multiple-action",
                     retry=True,
                     declare=[callback_queue],
                     reply_to=callback_queue.name,

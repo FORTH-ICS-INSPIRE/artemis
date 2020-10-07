@@ -11,5 +11,6 @@ RUN pip --no-cache-dir install -r requirements.txt
 COPY entrypoint /root/
 COPY wait-for /root/
 COPY poc_mitigate_deaggregate.py /root/
+COPY init.py /root/
 
 ENTRYPOINT ["./entrypoint"]

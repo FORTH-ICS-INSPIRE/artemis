@@ -1,4 +1,1 @@
 ipaddress==1.0.23
-socketIO-client==0.7.2
-socketIO-client-nexus==0.7.6
-ujson==1.35

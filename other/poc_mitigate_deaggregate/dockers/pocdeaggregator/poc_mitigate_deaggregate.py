@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 import argparse
+import json
 import logging
-import time
 from ipaddress import ip_network as str2ip
 
-import ujson as json
-from socketIO_client import BaseNamespace
-from socketIO_client import SocketIO
+EXA_COMMAND_LIST_FILE = "exa_mitigation_commands.json"
 
 
 def get_logger():
@@ -27,14 +25,6 @@ parser.add_argument(
     help="hijack event information",
     required=True,
 )
-parser.add_argument(
-    "-e",
-    "--exahost",
-    dest="exa_host",
-    type=str,
-    help="ExaBGP host (optional)",
-    default=None,
-)
 args = parser.parse_args()
 
 log = get_logger()
@@ -45,7 +35,6 @@ log = get_logger()
 # }
 try:
     info_hijack = json.loads(args.info_hijack)
-    # TODO: use proper logger!
     log.info("Preparing to mitigate via deaggregation hijack {}".format(info_hijack))
     hijacked_prefix = str2ip(info_hijack["prefix"])
     hijacked_prefix_len = hijacked_prefix.prefixlen
@@ -53,25 +42,13 @@ try:
     if hijacked_prefix.version == 6:
         deagg_len_threshold = 64
     if hijacked_prefix_len < deagg_len_threshold:
-        subnets = list(hijacked_prefix.subnets())
+        subnets = list(map(str, list(hijacked_prefix.subnets())))
         log.info("Subnets to announce: {}".format(subnets))
-        # TODO: send BGP message via exaBGP
-        if args.exa_host is not None:
-            sio = SocketIO("http://" + args.exa_host, namespace=BaseNamespace)
-            for subnet in subnets:
-                msg = {
-                    "type": "A",
-                    # TODO: make this configurable
-                    "communities": [],
-                    "timestamp": float(time.time()),
-                    # TODO: make this configurable
-                    "path": [],
-                    "prefix": subnet,
-                    # TODO: make this configurable
-                    "peer_asn": None,
-                }
-                sio.emit(msg)
-            sio.disconnect()
+        exa_command_list = []
+        for subnet in subnets:
+            exa_command_list.append("announce route {} next-hop self".format(subnet))
+        with open(EXA_COMMAND_LIST_FILE, "w") as f:
+            json.dump(exa_command_list, f)
     else:
         log.info(
             "Cannot deaggregate a prefix more specific than /{}".format(

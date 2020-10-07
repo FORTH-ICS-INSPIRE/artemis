@@ -7,21 +7,27 @@ services:
     container_name: pocdeaggregator
     restart: always
     depends_on:
-      - exabgp
+      - exabgpmitigate
       - r02
       - r03
     networks:
       comm:
         ipv4_address: 1.1.1.11
-  exabgp:
+    volumes:
+      - ./dockers/pocdeaggregator/init.py:/root/init.py
+      - ./dockers/pocdeaggregator/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+      - ./configs/exabgp/exa_mitigation_commands.json:/root/exa_mitigation_commands.json
+  exabgpmitigate:
     image: mavromat/exabgp-monitor:latest
-    container_name: exabgp
+    container_name: exabgpmitigate
     restart: always
     networks:
       comm:
         ipv4_address: 1.1.1.10
     volumes:
       - ./configs/exabgp/exabgp.conf:/home/config/exabgp.conf
+      - ./configs/exabgp/exa_mitigation_commands.json:/home/config/exa_mitigation_commands.json
+      - ./configs/exabgp/exa_bgp_send.py:/opt/exabgp/run/exa_bgp_send.py
   r02:
     image: gobgp:latest
     build:

@@ -3,7 +3,7 @@ This is a Proof of Concept (PoC) implementation of a mitigation setup to be used
 We include a script that receives the information of the hijack (id + prefix), and upon
 execution advertises the two subnets of the prefix performing deaggregation.
 
-The setup is as follows:
+## Setup architecture
 
 ```
  ----------------          -------------          -------------
@@ -12,8 +12,8 @@ The setup is as follows:
 |      exa       | ------ | r03 (goBGP) | ------ | r04 (goBGP) |
 |    1.1.1.11    |        |   1.1.1.13  |        |  1.1.1.14   |
  ----------------          -------------          -------------
-        |                                  eBGP        | |
-     ARTEMIS                     ----------------------- | eBGP
+        |                                  eBGP        | | eBGP
+     ARTEMIS                     ----------------------- |
         |                        |                       |
  --------------          --------------          --------------
 | ExaBGP Deagg |        |    PEER AS   |        |  HIJACKER AS |
@@ -23,26 +23,31 @@ The setup is as follows:
  --------------          --------------          --------------
 ```
 
-The steps are as follows:
-1. The hijacker AS (AS65006) announces prefix 192.168.0.0/16 whose legal origin is AS65002.
-2. ARTEMIS detects the hijack using its feed from AS65003 via the ExaBGP monitor.
-3. ARTEMIS mitigates the hijack by deaggregating the hijacked prefix and announcing the new
+## Hijack mitigation steps
+1. AS65002 announces prefix 192.168.0.0/16 legally.
+2. The hijacker AS (AS65006) announces prefix 192.168.0.0/16 whose legal origin is AS65002.
+3. ARTEMIS detects the hijack using its feed from AS65003 via the ExaBGP monitor.
+4. ARTEMIS mitigates the hijack (by order of the user) by deaggregating the hijacked prefix and announcing the new
 BGP updates via PEER AS AS65005.
 
-The setup configuration is as follows:
-in `docker-compose.yaml`, edit volumes to point to the PoC's files:
-```
-version: '3'
-services:
-    backend:
+## How to run
+
+1. In `docker-compose.yaml`, edit volumes to point to the PoC's files:
+
+    ```
+    version: '3'
+    services:
+      backend:
         ...
         volumes:
-            - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
-            - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
-            - ./backend/supervisor.d/:/etc/supervisor/conf.d/
-```
+          - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
+          - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+          - ./backend/supervisor.d/:/etc/supervisor/conf.d/
+      ...
+    ```
 
-The setup command is as follows:
-```
-docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml up -d
-```
+2. Run the following command and check the ARTEMIS UI:
+
+   ```
+   docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml up -d
+   ```

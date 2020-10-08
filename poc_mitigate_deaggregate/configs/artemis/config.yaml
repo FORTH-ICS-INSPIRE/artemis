@@ -17,6 +17,8 @@ asns:
 rules:
 - prefixes:
     - *super_prefix
+    - *sub_prefix_1
+    - *sub_prefix_2
   origin_asns:
     - *origin
   neighbors:

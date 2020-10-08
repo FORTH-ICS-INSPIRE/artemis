@@ -559,8 +559,9 @@ class Database:
 
                     # register the monitor/peer ASN from whom we learned this BGP update
                     self.redis.sadd("peer-asns", msg_["peer_asn"])
-                    if self.redis.scard("peer-asns") != self.monitor_peers:
-                        self.monitor_peers = self.redis.scard("peer-asns")
+                    redis_peer_asns = self.redis.scard("peer-asns")
+                    if redis_peer_asns != self.monitor_peers:
+                        self.monitor_peers = redis_peer_asns
                         self.wo_db.execute(
                             "UPDATE stats SET monitor_peers=%s;", (self.monitor_peers,)
                         )

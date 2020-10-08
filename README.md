@@ -1,3 +1,4 @@
+[![Documentation Status](https://readthedocs.org/projects/bgpartemis/badge/?version=latest)](https://bgpartemis.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis.svg?branch=master)](https://travis-ci.org/FORTH-ICS-INSPIRE/artemis)
 [![CodeFactor](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis/badge)](https://www.codefactor.io/repository/github/forth-ics-inspire/artemis)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
@@ -13,7 +14,20 @@
 <img src="docs/images/artemis_logo.png" style="margin-bottom: 15px;"/>
 </p>
 
+#
+
+ARTEMIS is an open-source tool, that implements a defense approach against BGP prefix hijacking attacks.
+It is (a) based on accurate and fast detection operated by the AS itself, by leveraging the pervasiveness of publicly
+available BGP monitoring services, and it (b) enables flexible and fast mitigation of hijacking events.
+Compared to existing approaches/tools, ARTEMIS combines characteristics desirable to network operators such as
+comprehensiveness, accuracy, speed, privacy, and flexibility. With the ARTEMIS approach, prefix hijacking can be
+neutralized within a minute!
+
+Read more at [bgpartemis.org](http://bgpartemis.org/) and the [docs](https://bgpartemis.readthedocs.io/en/latest/).
+
+
 ![](overview.gif)
+
 
 Table of Contents
   * [General](#general)
@@ -40,15 +54,6 @@ Table of Contents
 
 ## General
 
-ARTEMIS is an open-soure tool, that implements a defense approach against BGP prefix hijacking attacks.
-It is (a) based on accurate and fast detection operated by the AS itself,
-by leveraging the pervasiveness of publicly available BGP monitoring
-services, and it (b) enables flexible and fast mitigation of hijacking events.
-Compared to existing approaches/tools, ARTEMIS combines characteristics
-desirable to network operators such as comprehensiveness, accuracy, speed,
-privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
-can be neutralized within a minute!
-
 Depending on the preferences of the user, ARTEMIS can be used in 3 basic modes according to the combination of enabled micro-services in the user interface:
 1. Passive monitor (monitoring enabled)
 2. Passive detector (monitoring + detection enabled)
@@ -68,7 +73,7 @@ and Internet2 (a major US R&E backbone network). Several other network operators
 
 ## Features
 
-For a detailed list of supported features please check the [CHANGELOG](CHANGELOG.md) file
+For a detailed list of supported features please check the [CHANGELOG](docs/changelog.md) file
 (sections: "Added"). The following main features are supported:
 
 * Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS, via:
@@ -99,9 +104,11 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 * Modularity/extensibility by design.
 * CI/CD (Travis CI, Codecov).
 
+Read more at [bgpartemis.org](http://bgpartemis.org/) and the [docs](https://bgpartemis.readthedocs.io/en/latest/).
+
 ## System Architecture
 
-![Architecture](docs/images/artemis_system_overview.png)
+![Architecture](docs/images/artemis_system_overview.jpg)
 
 ## Getting Started
 
@@ -109,12 +116,12 @@ ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine using the `docker-compose` utility.
 For instructions on how to set up ARTEMIS
-in a Kubernetes environment, please check the related [Wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Kubernetes-Deployment).
+in a Kubernetes environment, please check the related [Wiki page](https://bgpartemis.readthedocs.io/en/latest/kubernetes/).
 
 ## Minimum Technical Requirements
 
 * CPU: 4 cores (note that needed CPU cores depend on the number of separate processes, e.g., detectors or database modules you spawn)
-* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#memory-requirements) for more details)
+* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements) for more details)
 * HDD: 50 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
 * NETWORK: 1 public-facing network interface (optionally: one internal interface for connection with local route collectors)
 * OS: Ubuntu Linux 16.04+ (other Linux distributions will work too)
@@ -132,9 +139,9 @@ sudo ./other/ufw_setup.sh
 
 ## How to Install and Setup
 
-To download and install the required software packages, please follow steps 1 through 6 described in [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#install-packages).
+To download and install the required software packages, please follow steps 1 through 6 described in [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/overview/#install-packages).
 
-To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#setup-tool).
+To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool).
 
 *Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation; please check out [this Wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Setup-an-ARTEMIS-VM-in-1-minute) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
 
@@ -145,7 +152,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    ```
    docker-compose up -d
    ```
-   *Please consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#starting-artemis) if you need to activate additional services.*
+   *Please consult [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/overview/#starting-artemis) if you need to activate additional services.*
 
 5. Visit web UI and configure ARTEMIS:
 
@@ -157,7 +164,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    https://<ARTEMIS_HOST>/admin/system
    ```
    you can:
-   1. edit the basic configuration file of ARTEMIS that serves as the ground truth for detecting BGP hijacks (consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file) first)
+   1. edit the basic configuration file of ARTEMIS that serves as the ground truth for detecting BGP hijacks (consult [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/basicconf/) first)
    2. control the monitoring, detection and mitigation modules.
 
 6. Stop ARTEMIS (optional)
@@ -192,11 +199,15 @@ If you need to contact us about a bug, an issue or a question you have; you can 
 
 ## Versioning
 
-Please check [this file](CHANGELOG.md).
+Please check [this file](docs/changelog.md).
 
 ## Authors and Contributors
 
 Please check [this file](AUTHORS.md).
+
+## Documentation
+
+Read more at [bgpartemis.org](http://bgpartemis.org/) and the [docs](https://bgpartemis.readthedocs.io/en/latest/).
 
 ## License
 

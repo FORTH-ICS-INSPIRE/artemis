@@ -9,11 +9,13 @@ the [Center for Applied Internet Data Analysis (CAIDA)](https://www.caida.org) a
 San Diego.
 
 The authors/developers of ARTEMIS are:
+
 * Dimitrios Mavrommatis, FORTH-ICS
 * Petros Gigis, FORTH-ICS
 * Vasileios Kotronis, FORTH-ICS
 
 ARTEMIS project members are:
+
 * Dimitrios Mavrommatis, FORTH-ICS (lead developer - backend)
 * Petros Gigis, FORTH-ICS (lead developer - frontend)
 * Vasileios Kotronis, FORTH-ICS (development coordinator, researcher/engineer)

@@ -1173,8 +1173,14 @@ class Detection:
             """
             # log.debug('{}'.format(monitor_event['key']))
             prefix = monitor_event["prefix"]
+            super_prefix = ipaddress.ip_network(prefix).supernet()
             peer_asn = monitor_event["peer_asn"]
-            if self.redis.exists("prefix_{}_peer_{}_hijacks".format(prefix, peer_asn)):
+            # if the the update's prefix matched exactly or is directly more specific than an originally hijacked prefix
+            if self.redis.exists(
+                "prefix_{}_peer_{}_hijacks".format(prefix, peer_asn)
+            ) or self.redis.exists(
+                "prefix_{}_peer_{}_hijacks".format(super_prefix, peer_asn)
+            ):
                 # generate implicit withdrawal
                 withdraw_msg = {
                     "service": "implicit-withdrawal",
@@ -1186,6 +1192,12 @@ class Detection:
                     "timestamp": monitor_event["timestamp"] + 1,
                     "peer_asn": peer_asn,
                 }
+                if not self.redis.exists(
+                    "prefix_{}_peer_{}_hijacks".format(prefix, peer_asn)
+                ) and self.redis.exists(
+                    "prefix_{}_peer_{}_hijacks".format(super_prefix, peer_asn)
+                ):
+                    withdraw_msg["prefix"] = str(super_prefix)
                 key_generator(withdraw_msg)
                 self.producer.publish(
                     withdraw_msg,

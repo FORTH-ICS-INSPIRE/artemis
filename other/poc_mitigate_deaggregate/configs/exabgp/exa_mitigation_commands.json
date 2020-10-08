@@ -1,1 +1,0 @@
-["announce route 192.168.0.0/17 next-hop self", "announce route 192.168.128.0/17 next-hop self"]

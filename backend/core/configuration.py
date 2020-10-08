@@ -1149,7 +1149,8 @@ class Configuration:
                     for entry in info:
                         if "ip" not in entry and "port" not in entry:
                             raise ArtemisError("invalid-exabgp-info", entry)
-                        if entry["ip"] != "exabgp":
+                        # container service IPs will start as follows
+                        if not entry["ip"].startswith("exabgp"):
                             try:
                                 str2ip(entry["ip"])
                             except Exception:

@@ -4,15 +4,23 @@ import json
 import logging
 from ipaddress import ip_network as str2ip
 
-EXA_COMMAND_LIST_FILE = "exa_mitigation_commands.json"
+from socketIO_client import BaseNamespace
+from socketIO_client import SocketIO
 
 
-def get_logger():
-    logging_format = (
-        "%(module)s - %(asctime)s - %(levelname)s @ %(funcName)s: %(message)s"
-    )
-    logging.basicConfig(format=logging_format, level=logging.INFO)
-    return logging
+EXA_ROUTE_COMMAND_HOST = "exabgproutecommander:5000"
+
+
+log = logging.getLogger("artemis")
+log.setLevel(logging.DEBUG)
+# create a file handler
+handler = logging.FileHandler("/var/log/artemis/mitigation.log")
+handler.setLevel(logging.DEBUG)
+# create a logging format
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+# add the handlers to the logger
+log.addHandler(handler)
 
 
 # Sample call: python poc_mitigate_deaggregate.py -i '{"key":"123","prefix":"10.0.0.0/23"}'
@@ -26,8 +34,6 @@ parser.add_argument(
     required=True,
 )
 args = parser.parse_args()
-
-log = get_logger()
 
 # info_hijack = {
 #     "key": <hijack_key>,
@@ -44,11 +50,12 @@ try:
     if hijacked_prefix_len < deagg_len_threshold:
         subnets = list(map(str, list(hijacked_prefix.subnets())))
         log.info("Subnets to announce: {}".format(subnets))
-        exa_command_list = []
         for subnet in subnets:
-            exa_command_list.append("announce route {} next-hop self".format(subnet))
-        with open(EXA_COMMAND_LIST_FILE, "w") as f:
-            json.dump(exa_command_list, f)
+            exa_command = "announce route {} next-hop self".format(subnet)
+            sio = SocketIO("http://" + EXA_ROUTE_COMMAND_HOST, namespace=BaseNamespace)
+            sio.connect()
+            sio.emit("route_command", {"command": exa_command})
+            sio.disconnect()
     else:
         log.info(
             "Cannot deaggregate a prefix more specific than /{}".format(

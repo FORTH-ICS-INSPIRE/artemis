@@ -1,6 +1,0 @@
-#!/bin/bash
-
-./wait-for r02:179 -t 0
-./wait-for r03:179 -t 0
-
-python -u init.py

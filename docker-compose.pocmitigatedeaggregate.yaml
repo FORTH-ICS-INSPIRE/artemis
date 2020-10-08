@@ -1,0 +1,78 @@
+version: '3'
+services:
+  exabgpmonitor:
+    image: mavromat/exabgp-monitor:latest
+    container_name: exabgpmonitor
+    restart: always
+    networks:
+      artemis:
+      comm:
+        ipv4_address: 1.1.1.11
+    volumes:
+      - ./poc_mitigate_deaggregate/configs/exabgp/monitor.conf:/home/config/exabgp.conf
+  exabgproutecommander:
+    image: mavromat/exabgp-monitor:latest
+    container_name: exabgproutecommander
+    restart: always
+    networks:
+      artemis:
+      comm:
+        ipv4_address: 1.1.1.12
+    volumes:
+      - ./poc_mitigate_deaggregate/configs/exabgp/routecommander.conf:/home/config/exabgp.conf
+      - ./poc_mitigate_deaggregate/route_command_server.py:/opt/exabgp/run/route_command_server.py
+  r03:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./poc_mitigate_deaggregate/dockers/gobgp
+    container_name: r03
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.13
+    volumes:
+      - ./poc_mitigate_deaggregate/configs/gobgp/r03.conf:/etc/gobgp/gobgp.conf
+  r04:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./poc_mitigate_deaggregate/dockers/gobgp
+    container_name: r04
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.14
+    volumes:
+      - ./poc_mitigate_deaggregate/configs/gobgp/r04.conf:/etc/gobgp/gobgp.conf
+  r05:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./poc_mitigate_deaggregate/dockers/gobgp
+    container_name: r05
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.15
+    volumes:
+      - ./poc_mitigate_deaggregate/configs/gobgp/r05.conf:/etc/gobgp/gobgp.conf
+  r06:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./poc_mitigate_deaggregate/dockers/gobgp
+    container_name: r06
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.16
+    volumes:
+      - ./poc_mitigate_deaggregate/configs/gobgp/r06.conf:/etc/gobgp/gobgp.conf
+
+networks:
+  comm:
+    ipam:
+      driver: default
+      config:
+        - subnet: 1.1.1.0/24

@@ -10,6 +10,7 @@ services:
         ipv4_address: 1.1.1.11
     volumes:
       - ./poc_mitigate_deaggregate/configs/exabgp/monitor.conf:/home/config/exabgp.conf
+      - ./poc_mitigate_deaggregate/custom_exa_entrypoint.sh:/home/entrypoint.sh
   exabgproutecommander:
     image: mavromat/exabgp-monitor:latest
     container_name: exabgproutecommander
@@ -21,6 +22,7 @@ services:
     volumes:
       - ./poc_mitigate_deaggregate/configs/exabgp/routecommander.conf:/home/config/exabgp.conf
       - ./poc_mitigate_deaggregate/route_command_server.py:/opt/exabgp/run/route_command_server.py
+      - ./poc_mitigate_deaggregate/custom_exa_entrypoint.sh:/home/entrypoint.sh
   r03:
     image: gobgp:latest
     build:

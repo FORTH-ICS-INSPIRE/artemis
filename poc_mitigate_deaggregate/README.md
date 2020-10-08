@@ -51,3 +51,10 @@ BGP updates via PEER AS AS65005.
    ```
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml up -d
    ```
+3. Connect to `r06` and  announce the hijacked prefix:
+
+   ```
+   docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r06 sh
+   gobgp global rib add 192.168.0.0/16
+   ```
+4. Observe the hijack in ARTEMIS and initiate the mitigation action.

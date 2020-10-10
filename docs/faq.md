@@ -2,7 +2,7 @@
 
 ## ARTEMIS observed and notified a new hijack alert. What should I do next?
 
-A sample workflow would be: 1) Verify hijack locally (e.g., by checking whether another team announced something that was not planned in case the origin is legal), 2) Check possible mitigation countermeasures (such as contacting the upstreams of the offending AS for filtering). **Request to community: please extend this workflow with your favorite flavor! How do you deal with such alerts in practice?
+A sample workflow would be: 1) Verify hijack locally (e.g., by checking whether another team announced something that was not planned in case the origin is legal), 2) Check possible mitigation countermeasures (such as contacting the upstreams of the offending AS for filtering). **Request to community: please extend this workflow with your favorite flavor! How do you deal with such alerts in practice?**
 
 ## How do I enable selective logging of BGP hijacks, based on certain attributes?
 
@@ -62,7 +62,7 @@ Yes! Please consult [this wiki section](https://github.com/FORTH-ICS-INSPIRE/art
 
 ## My network policies are very complex! Can you help me build the configuration file?
 
-Typically we do not provide case-by-case consultation (since we provide the open-source tool, but not a paid consultation service), but we have built an auto-configuration feature that will help you a lot, essentially taking care of keeping up-to-date with all your local changes! Please follow [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Auto-configuration-via-trusted-local-feeds). *Note: this feature is experimental/bleeding edge, and is not yet a part of an official ARTEMIS release.
+Typically we do not provide case-by-case consultation (since we provide the open-source tool, but not a paid consultation service), but we have built an auto-configuration feature that will help you a lot, essentially taking care of keeping up-to-date with all your local changes! Please follow [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Auto-configuration-via-trusted-local-feeds). *Note: this feature is experimental/bleeding edge, and is not yet a part of an official ARTEMIS release.*
 
 ## How can I check the RPKI status of my hijacked prefixes?
 
@@ -71,3 +71,13 @@ Please check [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/
 ## I have a private BMP feed in `kafka`, and would like to export it to ARTEMIS. How can I do this?
 
 Please check [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Private-BMP-feeds-using-bgpstream).
+
+## I am not receiving updates and my error log contains messages like `Failure when receiving data from the peer (56)` or `parse_ripe_ris: RIPE RIS Server closed connection. Restarting socket in 60 seconds`
+
+Some users may experience issues receiving updates for a range of reasons, and error messages like this point to a network problem.
+
+If you can see errors with receiving data or downloading resources within your docker logs, the following steps my help you uncover the source of your issue.
+
+1. Verify that you can download the updates from your Host OS. If you can’t, remedy this issue. Your host firewall, or docker host may not be correctly configured. It is also possible that the resource you are trying to access may genuinely be unavailable at this time.
+2. Verify whether you can retrieve the downloads from a basic Docker container. You could use the ‘curlimages/curl’ image if you do not have another locally (e.g. `docker run -i -t curlimages/curl:latest curl <url>`). If you can, your Docker environment is working and your issue is likely to be configuration. You may want to recreate your Artemis containers (`docker-compose down`, `docker-compose up -d`) and try again.
+3. Check the MTU on your Docker/Host and ensure they are consistent. If your host has an MTU that is lower than the Docker MTU, you may have issues with packet fragmentation which in turn can cause download failures.

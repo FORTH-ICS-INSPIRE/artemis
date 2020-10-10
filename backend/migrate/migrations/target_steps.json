@@ -125,6 +125,12 @@
             "db_version": "21",
             "description": "Add loading column in process_states table",
             "file": "migration_21.sql"
+        },
+        "22": {
+            "id": "22",
+            "db_version": "22",
+            "description": "Creation of new dataplane_msms table and view_dataplane_msms view",
+            "file": "migration_22.sql"
         }
     }
 }

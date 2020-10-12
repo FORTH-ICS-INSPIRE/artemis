@@ -20,6 +20,7 @@ jobs:
     - python -m pip install -r backend/requirements.txt
     - pre-commit install
     script:
+    - echo $TRAVIS_REPO_SLUG
     - pre-commit run --all-files
   - name: MigrationCheck
     install: []

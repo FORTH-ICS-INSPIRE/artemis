@@ -196,18 +196,15 @@ jobs:
     if: fork = true
     name: TestCafe
     install: [ ]
-    before_script:
-    - sed -i "s/inspiregroup\///g" docker-compose.yaml
     script:
     - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
     after_failure:
-      - docker-compose -f docker-compose.testcafe.yaml logs
+    - docker-compose -f docker-compose.testcafe.yaml logs
   - name: TestDetection
     if: fork = true
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - sed -i "s/inspiregroup\///g" docker-compose.yaml
     - docker build -t artemis_detection_testing testing/detection
     - docker-compose -f docker-compose.testdetection.yaml up -d
     script:
@@ -222,7 +219,6 @@ jobs:
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - sed -i "s/inspiregroup\///g" docker-compose.yaml
     - docker build -t artemis_autoconf_testing testing/autoconf
     - docker-compose -f docker-compose.testautoconf.yaml up -d
     script:
@@ -236,18 +232,16 @@ jobs:
     if: type == pull_request && fork = true
     install: [ ]
     before_script:
-    - sed -i "s/inspiregroup\///g" docker-compose.yaml
     - docker build -t artemis_benchmark testing/benchmark
     - docker-compose -f docker-compose.benchmark.yaml up -d
     script:
-      - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
-        -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
+    - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
+      -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
   - name: TestAutoignore
     if: fork = true
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - sed -i "s/inspiregroup\///g" docker-compose.yaml
     - docker build -t artemis_autoignore_testing testing/autoignore
     - docker-compose -f docker-compose.testautoignore.yaml up -d
     script:
@@ -262,7 +256,6 @@ jobs:
     install:
     - pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - sed -i "s/inspiregroup\///g" docker-compose.yaml
     - mkdir -p local_configs/routinator/tals
     - sudo chown -R 1012:1012 local_configs/routinator/tals
     - mkdir -p local_configs/routinator/rpki-repo
@@ -282,12 +275,14 @@ jobs:
   - name: ZAP Baseline (Passive)
     if: fork = true
     before_script:
-      - sed -i "s/inspiregroup\///g" docker-compose.yaml
-      - docker pull ictu/zap2docker-weekly
-      - docker-compose up -d
+    - sed -i "s/image\:\sinspiregroup\/artemis-backend:\${SYSTEM_VERSION}/image\: artemis_backend\\n        build\: .\/backend\//g" docker-compose.yaml
+    - sed -i "s/image\:\sinspiregroup\/artemis-frontend:\${SYSTEM_VERSION}/image\: artemis_frontend\\n        build\: .\/frontend\//g" docker-compose.yaml
+    - sed -i "s/image\:\sinspiregroup\/artemis-monitor:\${SYSTEM_VERSION}/image\: artemis_monitor\\n        build\: .\/monitor\//g" docker-compose.yaml
+    - docker pull ictu/zap2docker-weekly
+    - docker-compose up -d
     script:
-      - sleep 15
-      - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-baseline.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"' || true
+    - sleep 15
+    - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-baseline.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"' || true
 
 notifications:
   slack:

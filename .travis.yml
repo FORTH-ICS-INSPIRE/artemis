@@ -7,7 +7,7 @@ env:
   global:
   - DOCKER_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
     == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
-  - IS_FORK=$(if [ "$TRAVIS_REPO_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "fork"; fi)
+  - IS_FORK=$(if [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "fork"; fi)
 branches:
   only:
     - master
@@ -20,7 +20,7 @@ jobs:
     - python -m pip install -r backend/requirements.txt
     - pre-commit install
     script:
-    - echo $TRAVIS_REPO_SLUG
+    - echo $TRAVIS_PULL_REQUEST_SLUG
     - pre-commit run --all-files
   - name: MigrationCheck
     install: []

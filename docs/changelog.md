@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Env variable to invoke intended process states recovery mechanism
 - Reinstated RPKI tests for PRs
 - Implicit withdrawals are now generated also on correct (direct) subprefix routing
+- Support for fork PRs in travis CI/CD builds and tests
+- New dataplane-related table and view (pings and traceroutes)
 
 ### Changed
 - TBD (Changed existing functionality)

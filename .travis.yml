@@ -35,52 +35,36 @@ jobs:
     after_failure:
       - docker-compose logs postgres
   - stage: build and push containers
-    if: fork = false
     name: backend
     install: []
     before_script:
-    - docker pull inspiregroup/artemis-backend:latest
-    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
-    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - fork || docker pull inspiregroup/artemis-backend:latest
+    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
+    - fork || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/
-    - docker push inspiregroup/artemis-backend:${DOCKER_TAG}
+    - fork || docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/
+    - fork || docker push inspiregroup/artemis-backend:${DOCKER_TAG}
+    - fork && docker build -t artemis-backend:${DOCKER_TAG} backend/
   - name: frontend
-    if: fork = false
     install: []
     before_script:
-    - docker pull inspiregroup/artemis-frontend:latest
-    - docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
-    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - fork || docker pull inspiregroup/artemis-frontend:latest
+    - fork || docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
+    - fork || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
-    - docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - fork || docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - fork || docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - fork && docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:${DOCKER_TAG} frontend/
   - name: monitor
-    if: fork = false
     install: []
     before_script:
-    - docker pull inspiregroup/artemis-monitor:latest
-    - docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
-    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - fork || docker pull inspiregroup/artemis-monitor:latest
+    - fork || docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
+    - fork || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
-    - docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
-  - stage: build local fork containers
-    if: fork = true
-    name: backend
-    install: []
-    script:
-    - docker build -t artemis-backend:${DOCKER_TAG} backend/
-  - name: frontend
-    if: fork = true
-    install: [ ]
-    script:
-    - docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:${DOCKER_TAG} frontend/
-  - name: monitor
-    if: fork = true
-    install: [ ]
-    script:
-    - docker build -t artemis-monitor:${DOCKER_TAG} monitor/
+    - fork || docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
+    - fork || docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
+    - fork && docker build -t artemis-monitor:${DOCKER_TAG} monitor/
   - stage: run tests
     if: fork = false
     name: TestCafe

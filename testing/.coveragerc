@@ -2,6 +2,8 @@
 omit =
     */tests/*
     */utils/*
+    */observer.py
+    */listener.py
 
 [report]
 exclude_lines =

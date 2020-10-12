@@ -22,7 +22,7 @@ jobs:
       script:
         - echo $TRAVIS_PULL_REQUEST_SLUG
         - SKIP=unittest pre-commit run --all-files
-        - PYTHONPATH=./backend/core pytest --cov=backend
+        - PYTHONPATH=./backend/core pytest --cov=backend --cov-config=testing/.coveragerc
       after_success:
         - codecov
     - name: MigrationCheck

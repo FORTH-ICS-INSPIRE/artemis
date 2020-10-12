@@ -216,6 +216,36 @@
         "update_permissions": [],
         "delete_permissions": [],
         "event_triggers": []
+      },
+      {
+        "table": "view_dataplane_msms",
+        "object_relationships": [],
+        "array_relationships": [],
+        "insert_permissions": [],
+        "select_permissions": [
+          {
+            "role": "user",
+            "comment": null,
+            "permission": {
+              "allow_aggregations": true,
+              "columns": [
+                "hijack_key",
+                "valid_origin_as",
+                "hijack_as",
+                "dst_addr",
+                "msm_type",
+                "msm_id",
+                "msm_link",
+                "responding",
+                "hijacked"
+              ],
+              "filter": {}
+            }
+          }
+        ],
+        "update_permissions": [],
+        "delete_permissions": [],
+        "event_triggers": []
       }
     ],
     "query_templates": [],

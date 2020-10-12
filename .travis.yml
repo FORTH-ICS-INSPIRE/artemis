@@ -16,7 +16,7 @@ jobs:
     - stage: checks
       name: PreCommitCheck
       install:
-        - python -m pip install pre-commit pytest pytest-cov codecov
+        - python -m pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
         - python -m pip install -r backend/requirements.txt
         - pre-commit install
       script:
@@ -24,6 +24,7 @@ jobs:
         - SKIP=unittest pre-commit run --all-files
         - PYTHONPATH=./backend/core pytest --cov=backend --cov-config=testing/.coveragerc
       after_success:
+        - coverage xml --rcfile testing/.coveragerc
         - codecov
     - name: MigrationCheck
       install: []

@@ -7,6 +7,7 @@ env:
   global:
   - DOCKER_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
     == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
+  - IS_FORK=$(if [ "$TRAVIS_REPO_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "fork"; fi)
 branches:
   only:
     - master
@@ -38,84 +39,84 @@ jobs:
     name: backend
     install: []
     before_script:
-    - fork || docker pull inspiregroup/artemis-backend:latest
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
-    - fork || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true
+    - $IS_FORK || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - fork || docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/
-    - fork || docker push inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork && docker build -t artemis-backend:${DOCKER_TAG} backend/
+    - $IS_FORK || docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/
+    - $IS_FORK || docker push inspiregroup/artemis-backend:${DOCKER_TAG}
+    - $IS_FORK && docker build -t artemis-backend:${DOCKER_TAG} backend/
   - name: frontend
     install: []
     before_script:
-    - fork || docker pull inspiregroup/artemis-frontend:latest
-    - fork || docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
-    - fork || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - $IS_FORK || docker pull inspiregroup/artemis-frontend:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true
+    - $IS_FORK || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - fork || docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
-    - fork || docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
-    - fork && docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:${DOCKER_TAG} frontend/
+    - $IS_FORK || docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/
+    - $IS_FORK || docker push inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - $IS_FORK && docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:${DOCKER_TAG} frontend/
   - name: monitor
     install: []
     before_script:
-    - fork || docker pull inspiregroup/artemis-monitor:latest
-    - fork || docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
-    - fork || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - $IS_FORK || docker pull inspiregroup/artemis-monitor:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true
+    - $IS_FORK || echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
     script:
-    - fork || docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
-    - fork || docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
-    - fork && docker build -t artemis-monitor:${DOCKER_TAG} monitor/
+    - $IS_FORK || docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/
+    - $IS_FORK || docker push inspiregroup/artemis-monitor:${DOCKER_TAG}
+    - $IS_FORK && docker build -t artemis-monitor:${DOCKER_TAG} monitor/
   - stage: run tests
     name: TestCafe
     install: []
     before_script:
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork || docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
-    - fork || docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
-    - fork || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - fork || docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
-    - fork || docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - $IS_FORK || docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - $IS_FORK || docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
+    - $IS_FORK || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - $IS_FORK || docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
+    - $IS_FORK || docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
     script:
     - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
     after_failure:
     - docker-compose -f docker-compose.testcafe.yaml logs
   - name: TestDetection
     install:
-    - pip install coverage==4.5.4 codecov==2.1.0
+    - $IS_FORK || pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - $IS_FORK || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_detection_testing testing/detection
     - docker-compose -f docker-compose.testdetection.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
     after_success:
-    - sh convert_coverage.sh
-    - codecov
+    - $IS_FORK || sh convert_coverage.sh
+    - $IS_FORK || codecov
     after_failure:
     - docker-compose -f docker-compose.testdetection.yaml logs
   - name: TestAutoconf
     if: false
     install:
-    - pip install coverage==4.5.4 codecov==2.1.0
+    - $IS_FORK || pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - $IS_FORK || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_autoconf_testing testing/autoconf
     - docker-compose -f docker-compose.testautoconf.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
     after_success:
-    - sh convert_coverage.sh
-    - codecov
+    - $IS_FORK || sh convert_coverage.sh
+    - $IS_FORK || codecov
     after_failure:
     - docker-compose -f docker-compose.testautoconf.yaml logs
   - name: Benchmark
-    if: type == pull_request
+    if: type == pull_request && fork = false
     install: []
     before_script:
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_benchmark testing/benchmark
     - docker-compose -f docker-compose.benchmark.yaml up -d
     script:
@@ -123,25 +124,25 @@ jobs:
       -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
   - name: TestAutoignore
     install:
-    - pip install coverage==4.5.4 codecov==2.1.0
+    - $IS_FORK || pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - $IS_FORK || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - docker build -t artemis_autoignore_testing testing/autoignore
     - docker-compose -f docker-compose.testautoignore.yaml up -d
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoignore_testing
     after_success:
-    - sh convert_coverage.sh
-    - codecov
+    - $IS_FORK || sh convert_coverage.sh
+    - $IS_FORK || codecov
     after_failure:
     - docker-compose -f docker-compose.testautoignore.yaml logs
   - name: TestRPKI
     install:
-    - pip install coverage==4.5.4 codecov==2.1.0
+    - $IS_FORK || pip install coverage==4.5.4 codecov==2.1.0
     before_script:
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - $IS_FORK || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
     - mkdir -p local_configs/routinator/tals
     - sudo chown -R 1012:1012 local_configs/routinator/tals
     - mkdir -p local_configs/routinator/rpki-repo
@@ -154,22 +155,22 @@ jobs:
     script:
     - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
     after_success:
-    - sh convert_coverage.sh
-    - codecov
+    - $IS_FORK || sh convert_coverage.sh
+    - $IS_FORK || codecov
     after_failure:
     - docker-compose -f docker-compose.testrpki.yaml logs
   - name: ZAP Baseline (Passive)
     before_script:
     - docker pull ictu/zap2docker-weekly
-    - fork || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
-    - fork || docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
-    - fork || docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
-    - fork || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
-    - fork || docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
-    - fork || docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
-    - fork && sed -i "s/image\:\sinspiregroup\/artemis-backend:\${SYSTEM_VERSION}/image\: artemis_backend\\n        build\:\ \.\/backend\//g" docker-compose.yaml
-    - fork && sed -i "s/image\:\sinspiregroup\/artemis-frontend:\${SYSTEM_VERSION}/image\: artemis_frontend\\n        build\:\ \.\/frontend\//g" docker-compose.yaml
-    - fork && sed -i "s/image\:\sinspiregroup\/artemis-monitor:\${SYSTEM_VERSION}/image\: artemis_monitor\\n        build\:\ \.\/monitor\//g" docker-compose.yaml
+    - $IS_FORK || docker pull inspiregroup/artemis-backend:${DOCKER_TAG}
+    - $IS_FORK || docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}
+    - $IS_FORK || docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}
+    - $IS_FORK || docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest
+    - $IS_FORK || docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest
+    - $IS_FORK || docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest
+    - $IS_FORK && sed -i "s/image\:\sinspiregroup\/artemis-backend:\${SYSTEM_VERSION}/image\: artemis_backend\\n        build\:\ \.\/backend\//g" docker-compose.yaml
+    - $IS_FORK && sed -i "s/image\:\sinspiregroup\/artemis-frontend:\${SYSTEM_VERSION}/image\: artemis_frontend\\n        build\:\ \.\/frontend\//g" docker-compose.yaml
+    - $IS_FORK && sed -i "s/image\:\sinspiregroup\/artemis-monitor:\${SYSTEM_VERSION}/image\: artemis_monitor\\n        build\:\ \.\/monitor\//g" docker-compose.yaml
     - docker-compose up -d
     script:
     - sleep 15

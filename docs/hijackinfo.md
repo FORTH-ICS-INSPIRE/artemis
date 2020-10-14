@@ -73,6 +73,7 @@ How a hijacker manipulates the path to a prefix. Can be:
 * **Type-0 (0)** hijack: the attacker announces a path with an illegal origin.
 * **Type-1 (1)** hijack: the attacker announces a path with a legal origin, but illegal first hop.
 * **Type-N (N)** hijack: the attacker fakes a link deep in the path (N=2: the 2nd hop is illegal, N=3: the 3rd hop is illegal, etc.)
+* **Type-P (P)** hijack: the attacker fakes a prepend sequence pattern in the AS-path (not related to type-N hijack; pattern can be an entire sequence of hops)
 * **Type-U (U)** hijack: the attacker does not change the path at all (can be combined with a sub-prefix hijack).
 
 Currently, ARTEMIS issues '-' for Type-N/U attacks (not supported).
@@ -105,11 +106,13 @@ ARTEMIS currently detects the following combinations:
 * **S|0|-|L**: sub-prefix announced by illegal origin and no-export policy violation.
 * **S|1|-|-**: sub-prefix announced by seemingly legal origin, but with an illegal first hop.
 * **S|1|-|L**: sub-prefix announced by seemingly legal origin, but with an illegal first hop and no-export policy violation.
+* **S|P|-|-**: sub-prefix announced by seemingly legal origin, but with an illegal hop pattern.
 * **S|-|-|-**: not S|0|- or S|1|-, potential type-N or type-U hijack.
 * **S|-|-|L**: not S|0|- or S|1|-, potential type-N or type-U hijack and no-export policy violation.
 * **E|0|-|-**: exact-prefix announced by illegal origin.
 * **E|0|-|-|L**: exact-prefix announced by illegal origin and no-export policy violation.
 * **E|1|-|-**: exact-prefix announced by seemingly legal origin, but with an illegal first hop.
+* **E|P|-|-**: exact-prefix announced by seemingly legal origin, but with an illegal hop pattern.
 * **E|1|-|L**: exact-prefix announced by seemingly legal origin, but with an illegal first hop and no-export policy violation.
 * **Q|0|-|-**: squatting hijack (is always '0' on the path dimension since any origin is illegal).
 * **Q|0|-|L**: squatting hijack (is always '0' on the path dimension since any origin is illegal) and no-export policy violation.

@@ -183,6 +183,23 @@ The list of the ASNs of the neighbors of the aforementioned networks (owning the
 
 Note that if you want neighbor checks to be wildcarded, you can simply omit this section; however, you will not receive hijack alerts involving fake first hops since in this case, all first hops are considered legal.
 
+## Prepend sequence matching
+The pattern (seen as a prepend sequence of AS-hops) that legal origin ASes are allowed to use to advertise
+their prefixes. Essentially it is the part of the path beyond the origin AS that the user/operator knows
+about and uses for policy differentiation. Example:
+
+   ```
+   prepend_seq:
+     - [..., other_AS, origin],
+     - [..., other_AS, origin],
+     - ...
+   ```
+
+*Note: this rule configuration cannot be combined with `neighbors`, please use one or the other. Moreover,
+it cannot be combined with `no-export` policies, please use one or the other.*
+
+See [this issue](https://github.com/FORTH-ICS-INSPIRE/artemis/issues/443) for more details.
+
 ### Mitigation
 The action that you want to do when you press "Mitigate" in a hijack view page. By default it is set to "manual" (even if you omit this section), which resorts to essentially nothing (ARTEMIS as a passive monitoring and detection tool). However, you can also set here the location of a script that runs the code you need, with the following requirements:
 
@@ -295,6 +312,25 @@ Sample BGP update triggering a hijack alert:
 Sample legal BGP update:
 
     [..., ASN_B, ASN_A]: prefix_A
+
+#### Legal origin, fake prepend sequence pattern (+exact-prefix): E|P|-|-
+Rule:
+
+    - prefixes:
+        - prefix_A
+      origin_asns:
+        - ASN_A
+      prepend_seq:
+        - [ASN_C, ASN_B]
+      mitigation: manual
+
+Sample BGP update triggering a hijack alert:
+
+    [..., ASN_D, ASN_A]: prefix_A
+
+Sample legal BGP update:
+
+    [..., ASN_C, ASN_B, ASN_A]: prefix_A
 
 #### Sub-prefix: S|<code>&ast;</code>|-|-
 Rule:

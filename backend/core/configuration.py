@@ -82,6 +82,7 @@ class Configuration:
                 "policies",
                 "origin_asns",
                 "neighbors",
+                "prepend_seq",
                 "mitigation",
                 "community_annotations",
             }
@@ -1076,9 +1077,12 @@ class Configuration:
                 rule["origin_asns"] = flatten(rule.get("origin_asns", []))
                 if rule["origin_asns"] == ["*"]:
                     rule["origin_asns"] = [-1]
+                if "neighbors" in rule and "prepend_seq" in rule:
+                    raise ArtemisError("neighbors-prepend_seq-mutually-exclusive", "")
                 rule["neighbors"] = flatten(rule.get("neighbors", []))
                 if rule["neighbors"] == ["*"]:
                     rule["neighbors"] = [-1]
+                rule["prepend_seq"] = list(map(flatten, rule.get("prepend_seq", [])))
                 rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
                 rule["policies"] = flatten(rule.get("policies", []))
                 rule["community_annotations"] = rule.get("community_annotations", [])

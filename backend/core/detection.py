@@ -48,12 +48,14 @@ HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "L"],
     ["S", "1", "-", "-"],
     ["S", "1", "-", "L"],
+    ["S", "P", "-", "-"],
     ["S", "-", "-", "-"],
     ["S", "-", "-", "L"],
     ["E", "0", "-", "-"],
     ["E", "0", "-", "L"],
     ["E", "1", "-", "-"],
     ["E", "1", "-", "L"],
+    ["E", "P", "-", "-"],
     ["E", "-", "-", "L"],
     ["Q", "0", "-", "-"],
     ["Q", "0", "-", "L"],
@@ -395,6 +397,7 @@ class Detection:
                     conf_obj = {
                         "origin_asns": rule["origin_asns"],
                         "neighbors": rule["neighbors"],
+                        "prepend_seq": rule.get("prepend_seq", []),
                         "policies": set(rule["policies"]),
                         "community_annotations": rule["community_annotations"],
                     }
@@ -463,6 +466,8 @@ class Detection:
             is_hijack = False
 
             if monitor_event["type"] == "A":
+                # save the original path as-is to preserve patterns (if needed)
+                monitor_event["orig_path"] = monitor_event["path"][::]
                 monitor_event["path"] = Detection.Worker.__clean_as_path(
                     monitor_event["path"]
                 )
@@ -717,6 +722,7 @@ class Detection:
                 yield self.detect_path_type_0_hijack
                 if path_len > 1:
                     yield self.detect_path_type_1_hijack
+                    yield self.detect_path_type_P_hijack
                     if path_len > 2:
                         yield self.detect_path_type_N_hijack
             yield self.detect_path_type_U_hijack
@@ -818,6 +824,75 @@ class Detection:
             ):
                 return (-1, "-")
             return (first_neighbor_asn, "1")
+
+        @exception_handler(log)
+        def detect_path_type_P_hijack(
+            self,
+            monitor_event: Dict,
+            prefix_node: Dict,
+            prefix_node_conf: Dict,
+            *args,
+            **kwargs
+        ) -> Tuple[int, str]:
+            """
+            Type-P hijack detection.
+            In case there is a type-P hijack (i.e. no pattern matches
+            an incoming BGP update), it returns a tuple with the
+            potential hijacker AS plus the hijack type (P).
+            The potential hijacker is the first AS that differs in the
+            most specific (best matching) pattern, starting from the origin
+            AS.
+            """
+            if "orig_path" not in monitor_event:
+                return (-1, "-")
+            orig_path = monitor_event["orig_path"]
+            pattern_matched = False
+            pattern_hijacker = -1
+            best_match_length = 0
+            if len(prefix_node_conf["prepend_seq"]) > 0:
+                for conf_seq in prefix_node_conf["prepend_seq"]:
+                    if len(orig_path) >= len(conf_seq) + 1:
+                        # isolate the monitor event pattern that
+                        # should be matched to the configured pattern
+                        # (excluding the origin which is the very first hop
+                        # of the incoming AS-path)
+                        monitor_event_seq = orig_path[
+                            len(orig_path) - len(conf_seq) - 1 : -1
+                        ]
+                        if monitor_event_seq == conf_seq:
+                            # patterns match, break (no hijack of type P)
+                            pattern_matched = True
+                            break
+                        else:
+                            # calculate the actual differences in the current pattern;
+                            # this creates a list of elements with values 0 on matched
+                            # elements and !0 otherwise
+                            pattern_diffs = [
+                                observed_as - conf_as
+                                for observed_as, conf_as in zip(
+                                    monitor_event_seq, conf_seq
+                                )
+                            ]
+                            this_best_match_length = 0
+                            # after reversing the pattern difference sequence (i.e., start with
+                            # origin), find the greatest length of consecutive 0s (i.e., non-differences/matches)
+                            for diff in pattern_diffs[::-1]:
+                                if diff == 0:
+                                    # match found, continue increasing the best match length
+                                    this_best_match_length += 1
+                                else:
+                                    # first difference, break here and register the length
+                                    break
+                            # update the best matching length for all patterns found till now
+                            best_match_length = max(
+                                best_match_length, this_best_match_length
+                            )
+            # no hijack (either pattern matching achieved or no configured pattern provided)
+            if len(prefix_node_conf["prepend_seq"]) == 0 or pattern_matched:
+                return (-1, "-")
+            # the hijacker is the first AS that breaks the most specific (best matching) pattern
+            pattern_hijacker = orig_path[len(orig_path) - best_match_length - 2]
+            return (pattern_hijacker, "P")
 
         @exception_handler(log)
         def detect_path_type_N_hijack(

@@ -39,6 +39,7 @@ mapHelpText_system['field_hijack_type'] = `The type of the hijack in 4 dimension
 <li>[Prefix] "Q" → Squatting hijack</li>
 <li>[Path] "0" → Type-0 hijack</li>
 <li>[Path] "1" → Type-1 hijack</li>
+<li>[Path] "P" → Type-P hijack</li>
 <li>[Path] "-" → Type-N or Type-U hijack (N/A)</li>
 <li>[Data plane] "-" → Blackholing, Imposture or MitM hijack (N/A)</li>
 <li>[Policy] "L" → Route Leak due to no-export policy violation</li>

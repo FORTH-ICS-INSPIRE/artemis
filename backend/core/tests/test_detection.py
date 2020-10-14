@@ -537,7 +537,7 @@ class BGPHandlerTester(unittest.TestCase):
                 "prefixes": ["10.0.0.0/24"],
                 "origin_asns": [1],
                 "neighbors": [],
-                "prepend_seq": [[4, 4, 4, 3, 2, 1, 1]],
+                "prepend_seq": [[4, 4, 4, 3, 2, 1], [4, 4, 4, 3, 2, 1, 1]],
                 "mitigation": ["manual"],
                 "policies": [],
                 "community_annotations": [],

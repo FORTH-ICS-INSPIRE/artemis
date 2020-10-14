@@ -836,6 +836,12 @@ class Detection:
         ) -> Tuple[int, str]:
             """
             Type-P hijack detection.
+            In case there is a type-P hijack (i.e. no pattern matches
+            an incoming BGP update), it returns a tuple with the
+            potential hijacker AS plus the hijack type (P).
+            The potential hijacker is the first AS that differs in the
+            most specific (best matching) pattern, starting from the origin
+            AS.
             """
             if "orig_path" not in monitor_event:
                 return (-1, "-")
@@ -843,16 +849,24 @@ class Detection:
             pattern_matched = False
             pattern_hijacker = -1
             best_match_length = 0
-            if len(prefix_node_conf["prepend_seq"]):
+            if len(prefix_node_conf["prepend_seq"]) > 0:
                 for conf_seq in prefix_node_conf["prepend_seq"]:
                     if len(orig_path) >= len(conf_seq) + 1:
+                        # isolate the monitor event pattern that
+                        # should be matched to the configured pattern
+                        # (excluding the origin which is the very first hop
+                        # of the incoming AS-path)
                         monitor_event_seq = orig_path[
                             len(orig_path) - len(conf_seq) - 1 : -1
                         ]
                         if monitor_event_seq == conf_seq:
+                            # patterns match, break (no hijack of type P)
                             pattern_matched = True
                             break
                         else:
+                            # calculate the actual differences in the current pattern;
+                            # this creates a list of elements with values 0 on matched
+                            # elements and !0 otherwise
                             pattern_diffs = list(
                                 map(
                                     lambda x: monitor_event_seq[x] - conf_seq[x],
@@ -860,16 +874,23 @@ class Detection:
                                 )
                             )
                             this_best_match_length = 0
+                            # after reversing the pattern difference sequence (i.e., start with
+                            # origin), find the greatest length of consecutive 0s (i.e., non-differences/matches)
                             for diff in pattern_diffs[::-1]:
                                 if diff == 0:
+                                    # match found, continue increasing the best match length
                                     this_best_match_length += 1
                                 else:
+                                    # first difference, break here and register the length
                                     break
+                            # update the best matching length for all patterns found till now
                             best_match_length = max(
                                 best_match_length, this_best_match_length
                             )
+            # no hijack (either pattern matching achieved or no configured pattern provided)
             if len(prefix_node_conf["prepend_seq"]) == 0 or pattern_matched:
                 return (-1, "-")
+            # the hijacker is the first AS that breaks the most specific (best matching) pattern
             pattern_hijacker = orig_path[len(orig_path) - best_match_length - 2]
             return (pattern_hijacker, "P")
 

@@ -1082,7 +1082,7 @@ class Configuration:
                 rule["neighbors"] = flatten(rule.get("neighbors", []))
                 if rule["neighbors"] == ["*"]:
                     rule["neighbors"] = [-1]
-                rule["prepend_seq"] = flatten(rule.get("prepend_seq", []))
+                rule["prepend_seq"] = list(map(flatten, rule.get("prepend_seq", [])))
                 rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
                 rule["policies"] = flatten(rule.get("policies", []))
                 rule["community_annotations"] = rule.get("community_annotations", [])

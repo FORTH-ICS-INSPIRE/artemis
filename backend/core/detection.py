@@ -867,12 +867,12 @@ class Detection:
                             # calculate the actual differences in the current pattern;
                             # this creates a list of elements with values 0 on matched
                             # elements and !0 otherwise
-                            pattern_diffs = list(
-                                map(
-                                    lambda x: monitor_event_seq[x] - conf_seq[x],
-                                    range(len(conf_seq)),
+                            pattern_diffs = [
+                                observed_as - conf_as
+                                for observed_as, conf_as in zip(
+                                    monitor_event_seq, conf_seq
                                 )
-                            )
+                            ]
                             this_best_match_length = 0
                             # after reversing the pattern difference sequence (i.e., start with
                             # origin), find the greatest length of consecutive 0s (i.e., non-differences/matches)

@@ -20,6 +20,7 @@ nav:
             -   Redis: redisinfo.md
     -   Advanced:
             -   'Auto-Configuration': autoconfiguration.md
+            -   'Auto-Mitigation': automitigation.md
             -   'Custom Tap': customtap.md
             -   'Community Annotations': commannotations.md
             -   'Database restore': dbrestore.md

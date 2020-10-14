@@ -183,17 +183,20 @@ The list of the ASNs of the neighbors of the aforementioned networks (owning the
 
 Note that if you want neighbor checks to be wildcarded, you can simply omit this section; however, you will not receive hijack alerts involving fake first hops since in this case, all first hops are considered legal.
 
-## Prepend sequence matching
+### Prepend sequence matching
 The pattern (seen as a prepend sequence of AS-hops) that legal origin ASes are allowed to use to advertise
 their prefixes. Essentially it is the part of the path beyond the origin AS that the user/operator knows
 about and uses for policy differentiation. Example:
 
    ```
    prepend_seq:
-     - [..., other_AS, origin],
-     - [..., other_AS, origin],
+     - [..., AS_2, AS_1],
+     - [..., AS_4, AS_3],
      - ...
    ```
+The sequence is matched after properly matching the origin of the AS-path of a BGP update. If the
+origin is e.g., `AS_0`, then legit BGP updates should contain paths of the form `..., AS_2, AS_1, AS_0`
+or `..., AS_4, AS_3, AS_0` towards the configured prefix.
 
 *Note: this rule configuration cannot be combined with `neighbors`, please use one or the other. Moreover,
 it cannot be combined with `no-export` policies, please use one or the other.*

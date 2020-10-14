@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New dataplane-related table and view (pings and traceroutes)
 - PoC mitigation mechanism and setup (deaggregation)
 - Coverage for unit tests
+- AS Path pre-pending sequence matching support in configuration
 
 ### Changed
 - TBD (Changed existing functionality)

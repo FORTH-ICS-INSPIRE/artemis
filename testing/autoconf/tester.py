@@ -45,6 +45,7 @@ class AutoconfTester:
         self.supervisor = ServerProxy(
             "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
         )
+        self.config_notify_received = False
 
     def getDbConnection(self):
         """
@@ -186,11 +187,16 @@ class AutoconfTester:
                 except socket.timeout:
                     # avoid infinite loop by timeout
                     assert self.autoconf_goahead, "[-] Autoconf consumer timeout"
+                assert self.autoconf_goahead, "[-] Autoconf consumer timeout"
                 print("[+] Concluded autoconf RPC")
-                try:
-                    conn.drain_events(timeout=10)
-                except socket.timeout:
-                    # avoid infinite loop by timeout
+                if not self.config_notify_received:
+                    try:
+                        conn.drain_events(timeout=10)
+                    except socket.timeout:
+                        # avoid infinite loop by timeout
+                        assert (
+                            self.config_notify_received
+                        ), "[-] Config notify consumer timeout"
                     assert (
                         self.config_notify_received
                     ), "[-] Config notify consumer timeout"

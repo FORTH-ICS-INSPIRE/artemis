@@ -18,17 +18,23 @@ The workflow to enable auto-configuration via trusted local feeds is the followi
         asns: {}
         rules: []
 
-3. Since you have enabled the `autoconf` flag in exabgp, all prefix originations of the form:
+3. Since you have enabled the `autoconf` flag in exabgp, all BGP updates which are received on the
+associated feed and are of the form ("A" meaning announcement):
 
-        Prefix: [Origin_ASN] ("A")
+        Prefix: [..., Origin_ASN] ("A")
 
-    (even with path prepending) will be processed by ARTEMIS as legal advertisements. Note that prefix originations from other ASNs (i.e., with hop-count on the prepending-clean path more than 1) will be ignored, so that only your origins are actually registered. Withdrawals of the prefix will result in its removal from the configuration (together with its associated rules).
+    (even with path prepending) will be processed by ARTEMIS as legal advertisements.
+    Withdrawals of the prefix will result in its removal from the configuration (together with its associated rules).
 
-    **Important: if you are using a route collector to send your routes to ARTEMIS (recommended), please configure the corresponding session to strip the ASN of the collector, in case it is sth different than your origin(s) (eBGP)**.
+    **Important: All announcements on the trusted feed will result in ARTEMIS treating them as
+    ground truth; please make sure that you perform the needed filtering before propagating such
+    BGP updates to ARTEMIS. For example, if you are using a route collector to send your routes to ARTEMIS (recommended),
+    please configure the corresponding session to strip the ASN of the collector,
+    in case it is sth different than your origin(s) (eBGP)**.
 
 4. After, e.g., the following sample BGP update reaches ARTEMIS coming from your trusted RC:
 
-        192.168.1.0/24: [1] ("A")
+        192.168.1.0/24: [..., 1] ("A")
 
     The configuration will be auto-populated as follows:
 
@@ -127,7 +133,6 @@ The workflow to enable auto-configuration via trusted local feeds is the followi
         ip community-list standard selforig permit 1:1
 
         ...
-
 
     Having configured this in your BGP configuration, the neighbor info is propagated also to ARTEMIS. After, e.g., the following sample BGP update reaches ARTEMIS coming from your trusted RC:
 

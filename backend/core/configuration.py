@@ -847,10 +847,7 @@ class Configuration:
                     }
 
                     # learned rule asns
-                    as_path = Configuration.Worker.__clean_as_path(bgp_update["path"])
-                    if len(as_path) > 1:
-                        # ignore, since this is not a self-network origination, but sth transit
-                        return (None, None, None)
+                    as_path = bgp_update["path"]
                     origin_asn = None
                     neighbor = None
                     asns = set()

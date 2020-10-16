@@ -12,7 +12,6 @@ from kombu import Queue
 from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from utils import clean_as_path
 from utils import get_logger
 from utils import key_generator
 from utils import load_json
@@ -96,20 +95,14 @@ class BGPStreamHist:
                                                         key_generator(msg)
                                                         log.debug(msg)
                                                         if self.autoconf:
-                                                            if str(our_prefix) in [
-                                                                "0.0.0.0/0",
-                                                                "::/0",
-                                                            ]:
-                                                                if msg["type"] == "A":
-                                                                    as_path = clean_as_path(
-                                                                        msg["path"]
-                                                                    )
-                                                                    if len(as_path) > 1:
-                                                                        # ignore, since this is not a self-network origination, but sth transit
-                                                                        break
-                                                                elif msg["type"] == "W":
-                                                                    # ignore irrelevant withdrawals
-                                                                    break
+                                                            if (
+                                                                str(our_prefix)
+                                                                in ["0.0.0.0/0", "::/0"]
+                                                                and msg["type"] == "W"
+                                                            ):
+                                                                # ignore irrelevant withdrawals
+                                                                # not matching configured prefixes
+                                                                break
                                                             self.autoconf_goahead = (
                                                                 False
                                                             )

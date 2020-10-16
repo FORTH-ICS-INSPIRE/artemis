@@ -18,7 +18,6 @@ import ruamel.yaml
 import ujson as json
 from kombu import Connection
 from kombu import Consumer
-from kombu import Exchange
 from kombu import Queue
 from kombu.mixins import ConsumerProducerMixin
 from utils import ArtemisError
@@ -34,6 +33,7 @@ from utils import translate_as_set
 from utils import translate_asn_range
 from utils import translate_rfc2622
 from utils import update_aliased_list
+from utils.rabbitmq_util import create_exchange
 from yaml import load as yload
 
 log = get_logger()
@@ -73,6 +73,7 @@ class Configuration:
         """
 
         def __init__(self, connection: Connection) -> NoReturn:
+            self.module_name = "configuration"
             self.connection = connection
             self.file = "/etc/artemis/config.yaml"
             self.correlation_id = None
@@ -137,42 +138,35 @@ class Configuration:
             ping_redis(self.redis)
 
             # EXCHANGES
-            self.config_exchange = Exchange(
-                "config",
-                type="direct",
-                channel=connection,
-                durable=False,
-                delivery_mode=1,
-            )
-            self.config_exchange.declare()
+            self.config_exchange = create_exchange("config", connection, declare=True)
 
-            # QUEUES
+            # RPC QUEUES
             self.config_modify_queue = Queue(
-                "config-modify-queue",
+                "configuration.rpc.modify",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
             self.config_request_queue = Queue(
-                "config-request-queue",
+                "configuration.rpc.request",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
             self.hijack_learn_rule_queue = Queue(
-                "conf-hijack-learn-rule-queue",
+                "configuration.rpc.hijack-learn-rule",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
             self.load_as_sets_queue = Queue(
-                "conf-load-as-sets-queue",
+                "configuration.rpc.load-as-sets",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
             )
             self.autoconf_update_queue = Queue(
-                "conf-autoconf-update-queue",
+                "configuration.rpc.autoconf-update",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
@@ -225,7 +219,7 @@ class Configuration:
             """
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading("configuration", True)
+            signal_loading(self.module_name, True)
             try:
                 raw_ = message.payload
 
@@ -314,7 +308,7 @@ class Configuration:
             except Exception:
                 log.exception("exception")
             finally:
-                signal_loading("configuration", False)
+                signal_loading(self.module_name, False)
 
         def handle_config_request(self, message: Dict) -> NoReturn:
             """

@@ -1,12 +1,12 @@
 import time
 
 from kombu import Connection
-from kombu import Exchange
 from kombu import Producer
 from utils import BULK_TIMER
 from utils import get_logger
 from utils import RABBITMQ_URI
 from utils import signal_loading
+from utils.rabbitmq_util import create_exchange
 
 log = get_logger()
 
@@ -28,24 +28,20 @@ class Scheduler:
 
     class Worker:
         def __init__(self, connection):
+            self.module_name = "clock"
             self.clock = 0.0
             self.connection = connection
             # Time in secs to gather entries to perform a bulk operation
             self.time_to_wait_bulk = BULK_TIMER
             self.correlation_id = None
 
-            self.db_clock_exchange = Exchange(
-                "db-clock",
-                type="direct",
-                channel=connection,
-                durable=False,
-                delivery_mode=1,
+            self.db_clock_exchange = create_exchange(
+                "db-clock", connection, declare=True
             )
-            self.db_clock_exchange.declare()
 
-            signal_loading("clock", True)
+            signal_loading(self.module_name, True)
             log.info("started")
-            signal_loading("clock", False)
+            signal_loading(self.module_name, False)
             self._db_clock_send()
 
         def _db_clock_send(self):

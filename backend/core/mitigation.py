@@ -6,7 +6,6 @@ import pytricia
 import ujson as json
 from kombu import Connection
 from kombu import Consumer
-from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
@@ -15,6 +14,8 @@ from utils import get_logger
 from utils import RABBITMQ_URI
 from utils import signal_loading
 from utils import translate_rfc2622
+from utils.rabbitmq_util import create_exchange
+from utils.rabbitmq_util import create_queue
 
 log = get_logger()
 
@@ -45,6 +46,7 @@ class Mitigation:
 
     class Worker(ConsumerProducerMixin):
         def __init__(self, connection):
+            self.module_name = "mitigation"
             self.connection = connection
             self.timestamp = -1
             self.rules = None
@@ -52,41 +54,28 @@ class Mitigation:
             self.correlation_id = None
 
             # EXCHANGES
-            self.mitigation_exchange = Exchange(
-                "mitigation",
-                channel=connection,
-                type="direct",
-                durable=False,
-                delivery_mode=1,
+            self.mitigation_exchange = create_exchange(
+                "mitigation", connection, declare=True
             )
-            self.mitigation_exchange.declare()
-            self.config_exchange = Exchange(
-                "config", type="direct", durable=False, delivery_mode=1
-            )
+            self.config_exchange = create_exchange("config", connection)
 
             # QUEUES
-            self.config_queue = Queue(
-                "mitigation-config-notify",
+            self.config_queue = create_queue(
+                self.module_name,
                 exchange=self.config_exchange,
                 routing_key="notify",
-                durable=False,
-                auto_delete=True,
-                max_priority=3,
-                consumer_arguments={"x-priority": 3},
+                priority=3,
             )
-            self.mitigate_queue = Queue(
-                "mitigation-mitigate",
+            self.mitigate_queue = create_queue(
+                self.module_name,
                 exchange=self.mitigation_exchange,
                 routing_key="mitigate",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                priority=2,
             )
 
-            signal_loading("mitigation", True)
+            signal_loading(self.module_name, True)
             self.config_request_rpc()
-            signal_loading("mitigation", False)
+            signal_loading(self.module_name, False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -107,7 +96,7 @@ class Mitigation:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading("mitigation", True)
+            signal_loading(self.module_name, True)
             try:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
@@ -117,7 +106,7 @@ class Mitigation:
             except Exception:
                 log.exception("Exception")
             finally:
-                signal_loading("mitigation", False)
+                signal_loading(self.module_name, False)
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
@@ -132,13 +121,13 @@ class Mitigation:
             self.producer.publish(
                 "",
                 exchange="",
-                routing_key="config-request-queue",
+                routing_key="configuration.rpc.request",
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        "config-request-queue",
+                        "configuration.rpc.request",
                         durable=False,
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},

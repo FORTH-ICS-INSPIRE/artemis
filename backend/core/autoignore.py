@@ -6,7 +6,6 @@ import pytricia
 import redis
 from kombu import Connection
 from kombu import Consumer
-from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
@@ -25,7 +24,9 @@ from utils import redis_key
 from utils import REDIS_PORT
 from utils import signal_loading
 from utils import translate_rfc2622
-from utils.tool import DB
+from utils.db_util import DB
+from utils.rabbitmq_util import create_exchange
+from utils.rabbitmq_util import create_queue
 
 log = get_logger()
 
@@ -58,6 +59,7 @@ class AutoIgnoreChecker:
 
     class Worker(ConsumerProducerMixin):
         def __init__(self, connection):
+            self.module_name = "autoignore"
             self.connection = connection
             self.prefix_tree = None
             self.autoignore_rules = None
@@ -88,28 +90,23 @@ class AutoIgnoreChecker:
             )
 
             # EXCHANGES
-            self.config_exchange = Exchange(
-                "config", type="direct", durable=False, delivery_mode=1
-            )
+            self.config_exchange = create_exchange("config", connection)
 
             # QUEUES
-            self.config_queue = Queue(
-                "autoignore-config-notify",
+            self.config_queue = create_queue(
+                self.module_name,
                 exchange=self.config_exchange,
                 routing_key="notify",
-                durable=False,
-                auto_delete=True,
-                max_priority=3,
-                consumer_arguments={"x-priority": 3},
+                priority=3,
             )
 
             # redis db
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
 
-            signal_loading("autoignore", True)
+            signal_loading(self.module_name, True)
             self.config_request_rpc()
-            signal_loading("autoignore", False)
+            signal_loading(self.module_name, False)
 
         def get_consumers(self, Consumer, channel):
             return [
@@ -124,7 +121,7 @@ class AutoIgnoreChecker:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading("autoignore", True)
+            signal_loading(self.module_name, True)
             try:
                 config = message.payload
                 if config["timestamp"] > self.timestamp:
@@ -135,7 +132,7 @@ class AutoIgnoreChecker:
             except Exception:
                 log.exception("Exception")
             finally:
-                signal_loading("autoignore", False)
+                signal_loading(self.module_name, False)
 
         def config_request_rpc(self):
             self.correlation_id = uuid()
@@ -150,13 +147,13 @@ class AutoIgnoreChecker:
             self.producer.publish(
                 "",
                 exchange="",
-                routing_key="config-request-queue",
+                routing_key="configuration.rpc.request",
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        "config-request-queue",
+                        "configuration.rpc.request",
                         durable=False,
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},
@@ -177,7 +174,7 @@ class AutoIgnoreChecker:
 
         def handle_config_request_reply(self, message):
             message.ack()
-            signal_loading("autoignore", True)
+            signal_loading(self.module_name, True)
             log.debug("message: {}\npayload: {}".format(message, message.payload))
             if self.correlation_id == message.properties["correlation_id"]:
                 config = message.payload
@@ -186,7 +183,7 @@ class AutoIgnoreChecker:
                     self.autoignore_rules = config.get("autoignore", [])
                     self.build_prefix_tree()
                     self.set_rule_timers()
-            signal_loading("autoignore", False)
+            signal_loading(self.module_name, False)
 
         def build_prefix_tree(self):
             log.info("Starting building autoignore prefix tree...")

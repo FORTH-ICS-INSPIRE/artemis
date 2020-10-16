@@ -254,13 +254,13 @@ class Tester:
             producer.publish(
                 "",
                 exchange="",
-                routing_key="config-request-queue",
+                routing_key="configuration.rpc.request",
                 reply_to=callback_queue.name,
                 correlation_id=correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        "config-request-queue",
+                        "configuration.rpc.request",
                         durable=False,
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},
@@ -552,7 +552,7 @@ class Helper:
             producer.publish(
                 {"key": hijack_key, "comment": comment},
                 exchange="",
-                routing_key="db-hijack-comment",
+                routing_key="database.rpc.hijack-comment",
                 retry=True,
                 declare=[callback_queue],
                 reply_to=callback_queue.name,
@@ -586,7 +586,7 @@ class Helper:
                 producer.publish(
                     {"config": new_config, "comment": comment},
                     exchange="",
-                    routing_key="config-modify-queue",
+                    routing_key="configuration.rpc.modify",
                     serializer="yaml",
                     retry=True,
                     declare=[callback_queue],
@@ -655,7 +655,7 @@ class Helper:
             producer.publish(
                 {"keys": hijack_keys, "action": action},
                 exchange="",
-                routing_key="db-hijack-multiple-action",
+                routing_key="database.rpc.hijack-multiple-action",
                 retry=True,
                 declare=[callback_queue],
                 reply_to=callback_queue.name,
@@ -690,7 +690,7 @@ class Helper:
             producer.publish(
                 {},
                 exchange="",
-                routing_key="conf-load-as-sets-queue",
+                routing_key="configuration.rpc.load-as-sets",
                 retry=True,
                 declare=[callback_queue],
                 reply_to=callback_queue.name,

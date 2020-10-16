@@ -253,13 +253,13 @@ class Tester:
             producer.publish(
                 "",
                 exchange="",
-                routing_key="config-request-queue",
+                routing_key="configuration.rpc.request",
                 reply_to=callback_queue.name,
                 correlation_id=correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        "config-request-queue",
+                        "configuration.rpc.request",
                         durable=False,
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},

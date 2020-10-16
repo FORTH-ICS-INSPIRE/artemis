@@ -102,7 +102,7 @@ class Observer:
                         producer.publish(
                             content,
                             exchange="",
-                            routing_key="config-modify-queue",
+                            routing_key="configuration.rpc.modify",
                             serializer="yaml",
                             retry=True,
                             declare=[callback_queue],

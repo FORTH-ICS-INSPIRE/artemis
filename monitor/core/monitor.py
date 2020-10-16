@@ -7,7 +7,6 @@ import pytricia
 import redis
 from kombu import Connection
 from kombu import Consumer
-from kombu import Exchange
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
@@ -22,6 +21,8 @@ from utils import REDIS_PORT
 from utils import search_worst_prefix
 from utils import signal_loading
 from utils import translate_rfc2622
+from utils.rabbitmq_util import create_exchange
+from utils.rabbitmq_util import create_queue
 
 log = get_logger()
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
@@ -56,6 +57,7 @@ class Monitor:
 
     class Worker(ConsumerProducerMixin):
         def __init__(self, connection):
+            self.module_name = "monitor"
             self.connection = connection
             self.timestamp = -1
             self.prefix_tree = None
@@ -70,29 +72,24 @@ class Monitor:
             self.correlation_id = None
 
             # EXCHANGES
-            self.config_exchange = Exchange(
-                "config", type="direct", durable=False, delivery_mode=1
-            )
+            self.config_exchange = create_exchange("config", connection)
 
             # QUEUES
-            self.config_queue = Queue(
-                "monitor-config-notify",
+            self.config_queue = create_queue(
+                self.module_name,
                 exchange=self.config_exchange,
                 routing_key="notify",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
+                priority=2,
             )
 
-            signal_loading("monitor", True)
+            signal_loading(self.module_name, True)
             self.config_request_rpc()
 
             # setup Redis monitor listeners
             self.setup_redis_mon_listeners()
 
             log.info("started")
-            signal_loading("monitor", False)
+            signal_loading(self.module_name, False)
 
         def setup_redis_mon_listeners(self):
             def redis_event_handler(msg):
@@ -168,7 +165,7 @@ class Monitor:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading("monitor", True)
+            signal_loading(self.module_name, True)
             try:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
@@ -179,7 +176,7 @@ class Monitor:
             except Exception:
                 log.exception("Exception")
             finally:
-                signal_loading("monitor", False)
+                signal_loading(self.module_name, False)
 
         def start_monitors(self):
             log.info("Initiating monitor...")
@@ -262,13 +259,13 @@ class Monitor:
             self.producer.publish(
                 "",
                 exchange="",
-                routing_key="config-request-queue",
+                routing_key="configuration.rpc.request",
                 reply_to=callback_queue.name,
                 correlation_id=self.correlation_id,
                 retry=True,
                 declare=[
                     Queue(
-                        "config-request-queue",
+                        "configuration.rpc.request",
                         durable=False,
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},

@@ -5,8 +5,11 @@ import time
 import _pybgpstream
 import redis
 from kombu import Connection
+from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
+from kombu import Queue
+from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from utils import get_logger
@@ -27,158 +30,229 @@ redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 
 
-def run_bgpstream(
-    prefixes_file=None,
-    kafka_host=None,
-    kafka_port=None,
-    kafka_topic="openbmp.bmp_raw",
-    start=0,
-    end=0,
-):
-    """
-    Retrieve all records related to a list of prefixes
-    https://bgpstream.caida.org/docs/api/pybgpstream/_pybgpstream.html
+class BGPStreamKafka:
+    def __init__(
+        self,
+        prefixes_file=None,
+        kafka_host=None,
+        kafka_port=None,
+        kafka_topic="openbmp.bmp_raw",
+        start=0,
+        end=0,
+        autoconf=False,
+    ):
+        self.prefixes = load_json(prefixes_file)
+        assert self.prefixes is not None
+        self.kafka_host = kafka_host
+        self.kafka_port = kafka_port
+        self.kafka_topic = kafka_topic
+        self.start = start
+        self.end = end
+        self.autoconf = autoconf
+        self.autoconf_goahead = False
 
-    :param prefixes_file: <str> input prefix json
-    :param kafka_host: <str> kafka host
-    :param kafka_port: <int> kafka_port
-    :param kafka_topic: <str> kafka topic
-    :param start: <int> start timestamp in UNIX epochs
-    :param end: <int> end timestamp in UNIX epochs (if 0 --> "live mode")
+    def handle_autoconf_update_goahead_reply(self, message):
+        message.ack()
+        self.autoconf_goahead = True
 
-    :return: -
-    """
+    def run_bgpstream(self):
+        """
+        Retrieve all records related to a list of prefixes
+        https://bgpstream.caida.org/docs/api/pybgpstream/_pybgpstream.html
 
-    prefixes = load_json(prefixes_file)
-    assert prefixes is not None
+        :param prefixes_file: <str> input prefix json
+        :param kafka_host: <str> kafka host
+        :param kafka_port: <int> kafka_port
+        :param kafka_topic: <str> kafka topic
+        :param start: <int> start timestamp in UNIX epochs
+        :param end: <int> end timestamp in UNIX epochs (if 0 --> "live mode")
 
-    # create a new bgpstream instance and a reusable bgprecord instance
-    stream = _pybgpstream.BGPStream()
+        :return: -
+        """
 
-    # set kafka data interface
-    stream.set_data_interface("kafka")
+        # add /0 if autoconf
+        if self.autoconf:
+            self.prefixes.append("0.0.0.0/0")
+            self.prefixes.append("::/0")
 
-    # set host connection details
-    stream.set_data_interface_option(
-        "kafka", "brokers", "{}:{}".format(kafka_host, kafka_port)
-    )
+        # create a new bgpstream instance and a reusable bgprecord instance
+        stream = _pybgpstream.BGPStream()
 
-    # set topic
-    stream.set_data_interface_option("kafka", "topic", kafka_topic)
+        # set kafka data interface
+        stream.set_data_interface("kafka")
 
-    # filter prefixes
-    for prefix in prefixes:
-        stream.add_filter("prefix", prefix)
-
-    # filter record type
-    stream.add_filter("record-type", "updates")
-
-    # filter based on timing (if end=0 --> live mode)
-    stream.add_interval_filter(start, end)
-
-    # set live mode
-    stream.set_live_mode()
-
-    # start the stream
-    stream.start()
-
-    with Connection(RABBITMQ_URI) as connection:
-        exchange = Exchange(
-            "bgp-update", channel=connection, type="direct", durable=False
+        # set host connection details
+        stream.set_data_interface_option(
+            "kafka", "brokers", "{}:{}".format(self.kafka_host, self.kafka_port)
         )
-        exchange.declare()
-        producer = Producer(connection)
-        validator = mformat_validator()
-        while True:
-            # get next record
-            try:
-                rec = stream.get_next_record()
-            except BaseException:
-                continue
-            if (rec.status != "valid") or (rec.type != "update"):
-                continue
 
-            # get next element
-            try:
-                elem = rec.get_next_elem()
-            except BaseException:
-                continue
+        # set topic
+        stream.set_data_interface_option("kafka", "topic", self.kafka_topic)
 
-            while elem:
-                if elem.type in {"A", "W"}:
-                    redis.set(
-                        "bgpstreamkafka_seen_bgp_update",
-                        "1",
-                        ex=int(
-                            os.getenv(
-                                "MON_TIMEOUT_LAST_BGP_UPDATE",
-                                DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                            )
-                        ),
-                    )
-                    this_prefix = str(elem.fields["prefix"])
-                    service = "bgpstreamkafka|{}".format(str(rec.collector))
-                    type_ = elem.type
-                    if type_ == "A":
-                        as_path = elem.fields["as-path"].split(" ")
-                        communities = [
-                            {
-                                "asn": int(comm.split(":")[0]),
-                                "value": int(comm.split(":")[1]),
-                            }
-                            for comm in elem.fields["communities"]
-                        ]
-                    else:
-                        as_path = []
-                        communities = []
-                    timestamp = float(rec.time)
-                    if timestamp == 0:
-                        timestamp = time.time()
-                        log.debug("fixed timestamp: {}".format(timestamp))
+        # filter prefixes
+        for prefix in self.prefixes:
+            stream.add_filter("prefix", prefix)
 
-                    peer_asn = elem.peer_asn
+        # filter record type
+        stream.add_filter("record-type", "updates")
 
-                    for prefix in prefixes:
-                        base_ip, mask_length = this_prefix.split("/")
-                        our_prefix = IPNetwork(prefix)
-                        if (
-                            IPAddress(base_ip) in our_prefix
-                            and int(mask_length) >= our_prefix.prefixlen
-                        ):
-                            msg = {
-                                "type": type_,
-                                "timestamp": timestamp,
-                                "path": as_path,
-                                "service": service,
-                                "communities": communities,
-                                "prefix": this_prefix,
-                                "peer_asn": peer_asn,
-                            }
-                            try:
-                                if validator.validate(msg):
-                                    msgs = normalize_msg_path(msg)
-                                    for msg in msgs:
-                                        key_generator(msg)
-                                        log.debug(msg)
-                                        producer.publish(
-                                            msg,
-                                            exchange=exchange,
-                                            routing_key="update",
-                                            serializer="ujson",
-                                        )
-                                else:
-                                    log.warning(
-                                        "Invalid format message: {}".format(msg)
-                                    )
-                            except BaseException:
-                                log.exception(
-                                    "Error when normalizing BGP message: {}".format(msg)
-                                )
-                            break
+        # filter based on timing (if end=0 --> live mode)
+        stream.add_interval_filter(self.start, self.end)
+
+        # set live mode
+        stream.set_live_mode()
+
+        # start the stream
+        stream.start()
+
+        with Connection(RABBITMQ_URI) as connection:
+            exchange = Exchange(
+                "bgp-update", channel=connection, type="direct", durable=False
+            )
+            exchange.declare()
+            producer = Producer(connection)
+            validator = mformat_validator()
+            while True:
+                # get next record
+                try:
+                    rec = stream.get_next_record()
+                except BaseException:
+                    continue
+                if (rec.status != "valid") or (rec.type != "update"):
+                    continue
+
+                # get next element
                 try:
                     elem = rec.get_next_elem()
                 except BaseException:
                     continue
+
+                while elem:
+                    if elem.type in {"A", "W"}:
+                        redis.set(
+                            "bgpstreamkafka_seen_bgp_update",
+                            "1",
+                            ex=int(
+                                os.getenv(
+                                    "MON_TIMEOUT_LAST_BGP_UPDATE",
+                                    DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
+                                )
+                            ),
+                        )
+                        this_prefix = str(elem.fields["prefix"])
+                        service = "bgpstreamkafka|{}".format(str(rec.collector))
+                        type_ = elem.type
+                        if type_ == "A":
+                            as_path = elem.fields["as-path"].split(" ")
+                            communities = [
+                                {
+                                    "asn": int(comm.split(":")[0]),
+                                    "value": int(comm.split(":")[1]),
+                                }
+                                for comm in elem.fields["communities"]
+                            ]
+                        else:
+                            as_path = []
+                            communities = []
+                        timestamp = float(rec.time)
+                        if timestamp == 0:
+                            timestamp = time.time()
+                            log.debug("fixed timestamp: {}".format(timestamp))
+
+                        peer_asn = elem.peer_asn
+
+                        for prefix in self.prefixes:
+                            base_ip, mask_length = this_prefix.split("/")
+                            our_prefix = IPNetwork(prefix)
+                            if (
+                                IPAddress(base_ip) in our_prefix
+                                and int(mask_length) >= our_prefix.prefixlen
+                            ):
+                                msg = {
+                                    "type": type_,
+                                    "timestamp": timestamp,
+                                    "path": as_path,
+                                    "service": service,
+                                    "communities": communities,
+                                    "prefix": this_prefix,
+                                    "peer_asn": peer_asn,
+                                }
+                                try:
+                                    if validator.validate(msg):
+                                        msgs = normalize_msg_path(msg)
+                                        for msg in msgs:
+                                            key_generator(msg)
+                                            log.debug(msg)
+                                            if self.autoconf:
+                                                if (
+                                                    str(our_prefix)
+                                                    in ["0.0.0.0/0", "::/0"]
+                                                    and msg["type"] == "W"
+                                                ):
+                                                    # ignore irrelevant withdrawals
+                                                    # not matching configured prefixes
+                                                    break
+                                                self.autoconf_goahead = False
+                                                correlation_id = uuid()
+                                                callback_queue = Queue(
+                                                    uuid(),
+                                                    durable=False,
+                                                    auto_delete=True,
+                                                    max_priority=4,
+                                                    consumer_arguments={
+                                                        "x-priority": 4
+                                                    },
+                                                )
+                                                producer.publish(
+                                                    msg,
+                                                    exchange="",
+                                                    routing_key="configuration.rpc.autoconf-update",
+                                                    reply_to=callback_queue.name,
+                                                    correlation_id=correlation_id,
+                                                    retry=True,
+                                                    declare=[
+                                                        Queue(
+                                                            "configuration.rpc.autoconf-update",
+                                                            durable=False,
+                                                            max_priority=4,
+                                                            consumer_arguments={
+                                                                "x-priority": 4
+                                                            },
+                                                        ),
+                                                        callback_queue,
+                                                    ],
+                                                    priority=4,
+                                                    serializer="ujson",
+                                                )
+                                                with Consumer(
+                                                    connection,
+                                                    on_message=self.handle_autoconf_update_goahead_reply,
+                                                    queues=[callback_queue],
+                                                    accept=["ujson"],
+                                                ):
+                                                    while not self.autoconf_goahead:
+                                                        connection.drain_events()
+                                            producer.publish(
+                                                msg,
+                                                exchange=exchange,
+                                                routing_key="update",
+                                                serializer="ujson",
+                                            )
+                                    else:
+                                        log.warning(
+                                            "Invalid format message: {}".format(msg)
+                                        )
+                                except BaseException:
+                                    log.exception(
+                                        "Error when normalizing BGP message: {}".format(
+                                            msg
+                                        )
+                                    )
+                                break
+                    try:
+                        elem = rec.get_next_elem()
+                    except BaseException:
+                        continue
 
 
 if __name__ == "__main__":
@@ -204,6 +278,13 @@ if __name__ == "__main__":
         default="openbmp.bmp_raw",
         help="kafka topic",
     )
+    parser.add_argument(
+        "-a",
+        "--autoconf",
+        dest="autoconf",
+        action="store_true",
+        help="Use the feed from this kafka BMP route collector to build the configuration",
+    )
 
     args = parser.parse_args()
 
@@ -218,14 +299,16 @@ if __name__ == "__main__":
         start_time = 0
 
     try:
-        run_bgpstream(
+        bgpstreamkafka_instance = BGPStreamKafka(
             args.prefixes_file,
             args.kafka_host,
             int(args.kafka_port),
             args.kafka_topic,
-            start=start_time,
-            end=0,
+            start_time,
+            0,
+            args.autoconf,
         )
+        bgpstreamkafka_instance.run_bgpstream()
     except Exception:
         log.exception("exception")
     except KeyboardInterrupt:

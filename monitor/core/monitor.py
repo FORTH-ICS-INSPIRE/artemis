@@ -445,21 +445,21 @@ class Monitor:
                         self.monitors["bgpstreamkafka"], self.prefix_file
                     )
                 )
-                p = Popen(
-                    [
-                        PY_BIN,
-                        "taps/bgpstreamkafka.py",
-                        "--prefixes",
-                        self.prefix_file,
-                        "--kafka_host",
-                        str(self.monitors["bgpstreamkafka"]["host"]),
-                        "--kafka_port",
-                        str(self.monitors["bgpstreamkafka"]["port"]),
-                        "--kafka_topic",
-                        str(self.monitors["bgpstreamkafka"]["topic"]),
-                    ],
-                    shell=False,
-                )
+                bgpstreamkafka_cmd = [
+                    PY_BIN,
+                    "taps/bgpstreamkafka.py",
+                    "--prefixes",
+                    self.prefix_file,
+                    "--kafka_host",
+                    str(self.monitors["bgpstreamkafka"]["host"]),
+                    "--kafka_port",
+                    str(self.monitors["bgpstreamkafka"]["port"]),
+                    "--kafka_topic",
+                    str(self.monitors["bgpstreamkafka"]["topic"]),
+                ]
+                if "autoconf" in self.monitors["bgpstreamkafka"]:
+                    bgpstreamkafka_cmd.append("-a")
+                p = Popen(bgpstreamkafka_cmd, shell=False)
                 self.process_ids.append(
                     (
                         "[bgpstreamkafka] {} {} {} {}".format(

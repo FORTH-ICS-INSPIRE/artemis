@@ -1140,6 +1140,15 @@ class Configuration:
                         raise ArtemisError(
                             "invalid-bgpstreamkakfa-configuration", list(info.keys())
                         )
+                    if "autoconf" in info:
+                        if info["autoconf"] == "true":
+                            info["autoconf"] = True
+                        elif info["autoconf"] == "false":
+                            del info["autoconf"]
+                        else:
+                            raise ArtemisError(
+                                "invalid-bgpstreamkafka-autoconf-flag", info["autoconf"]
+                            )
                 elif key == "exabgp":
                     for entry in info:
                         if "ip" not in entry and "port" not in entry:
@@ -1169,7 +1178,7 @@ class Configuration:
                             del info["autoconf"]
                         else:
                             raise ArtemisError(
-                                "invalid-bgpostreamhist-autoconf-flag", info["autoconf"]
+                                "invalid-bgpstreamhist-autoconf-flag", info["autoconf"]
                             )
 
         @staticmethod

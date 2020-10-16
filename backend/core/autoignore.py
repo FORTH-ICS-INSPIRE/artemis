@@ -4,29 +4,29 @@ from threading import Timer
 
 import pytricia
 import redis
+from artemis_utils import DB_HOST
+from artemis_utils import DB_NAME
+from artemis_utils import DB_PASS
+from artemis_utils import DB_PORT
+from artemis_utils import DB_USER
+from artemis_utils import get_ip_version
+from artemis_utils import get_logger
+from artemis_utils import ping_redis
+from artemis_utils import purge_redis_eph_pers_keys
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import REDIS_HOST
+from artemis_utils import redis_key
+from artemis_utils import REDIS_PORT
+from artemis_utils import signal_loading
+from artemis_utils import translate_rfc2622
+from artemis_utils.db_util import DB
+from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
-from utils import DB_HOST
-from utils import DB_NAME
-from utils import DB_PASS
-from utils import DB_PORT
-from utils import DB_USER
-from utils import get_ip_version
-from utils import get_logger
-from utils import ping_redis
-from utils import purge_redis_eph_pers_keys
-from utils import RABBITMQ_URI
-from utils import REDIS_HOST
-from utils import redis_key
-from utils import REDIS_PORT
-from utils import signal_loading
-from utils import translate_rfc2622
-from utils.db_util import DB
-from utils.rabbitmq_util import create_exchange
-from utils.rabbitmq_util import create_queue
 
 log = get_logger()
 

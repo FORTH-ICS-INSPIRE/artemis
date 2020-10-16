@@ -4,6 +4,13 @@ import glob
 import time
 
 import ujson as json
+from artemis_utils import clean_as_path
+from artemis_utils import get_logger
+from artemis_utils import key_generator
+from artemis_utils import load_json
+from artemis_utils import mformat_validator
+from artemis_utils import normalize_msg_path
+from artemis_utils import RABBITMQ_URI
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -12,13 +19,6 @@ from kombu import Queue
 from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from utils import clean_as_path
-from utils import get_logger
-from utils import key_generator
-from utils import load_json
-from utils import mformat_validator
-from utils import normalize_msg_path
-from utils import RABBITMQ_URI
 
 log = get_logger()
 

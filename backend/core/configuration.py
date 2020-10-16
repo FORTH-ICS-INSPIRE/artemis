@@ -16,24 +16,24 @@ from typing import Union
 import redis
 import ruamel.yaml
 import ujson as json
+from artemis_utils import ArtemisError
+from artemis_utils import flatten
+from artemis_utils import get_logger
+from artemis_utils import ping_redis
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import REDIS_HOST
+from artemis_utils import redis_key
+from artemis_utils import REDIS_PORT
+from artemis_utils import signal_loading
+from artemis_utils import translate_as_set
+from artemis_utils import translate_asn_range
+from artemis_utils import translate_rfc2622
+from artemis_utils import update_aliased_list
+from artemis_utils.rabbitmq_util import create_exchange
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
 from kombu.mixins import ConsumerProducerMixin
-from utils import ArtemisError
-from utils import flatten
-from utils import get_logger
-from utils import ping_redis
-from utils import RABBITMQ_URI
-from utils import REDIS_HOST
-from utils import redis_key
-from utils import REDIS_PORT
-from utils import signal_loading
-from utils import translate_as_set
-from utils import translate_asn_range
-from utils import translate_rfc2622
-from utils import update_aliased_list
-from utils.rabbitmq_util import create_exchange
 from yaml import load as yload
 
 log = get_logger()

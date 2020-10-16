@@ -1,3 +1,4 @@
+artemis_utils==1.0.1
 Cython==0.29.14
 gql==0.4.0
 ipaddress==1.0.23

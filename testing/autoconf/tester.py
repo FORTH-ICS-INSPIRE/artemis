@@ -181,7 +181,6 @@ class AutoconfTester:
                     serializer="ujson",
                 )
                 print("[+] Sent message '{}'".format(msg))
-                conn.drain_events()
                 try:
                     conn.drain_events(timeout=10)
                 except socket.timeout:
@@ -358,15 +357,20 @@ class AutoconfTester:
 
             connection.close()
 
-        print("[+] Sleeping for 5 seconds...")
-        time.sleep(5)
+        print("[+] Sleeping for 30 seconds...")
+        time.sleep(30)
         print("[+] Instructing all processes to stop...")
         self.supervisor.supervisor.stopAllProcesses()
 
+        print("[+] Waiting for listener to stop...")
         self.waitProcess("listener", 0)  # 0 STOPPED
+        print("[+] Waiting for clock to stop...")
         self.waitProcess("clock", 0)  # 0 STOPPED
+        print("[+] Waiting for configuration to stop...")
         self.waitProcess("configuration", 0)  # 0 STOPPED
+        print("[+] Waiting for database to stop...")
         self.waitProcess("database", 0)  # 0 STOPPED
+        print("[+] Waiting for observer to stop...")
         self.waitProcess("observer", 0)  # 0 STOPPED
         print("[+] All processes (listener, clock, conf, db and observer) are stopped.")
 

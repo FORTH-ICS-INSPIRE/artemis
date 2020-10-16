@@ -22,13 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AS Path pre-pending sequence matching support in configuration
 
 ### Changed
-- TBD (Changed existing functionality)
+- Refactor: Changed exchange / queue names
 
 ### Fixed
 - Deleting user also deletes the role mapping (#412)
 - Backend Makefile to use currently installed python version
 - Frontend Makefile to use specific closure compiler version
 - Minor opt fix in Redis RTT calls in DB
+- Observer fix (RMQ connection establishment) to deal with threading issues
 
 ### Removed
 - TBD (removed a feature)

@@ -1136,7 +1136,9 @@ class Configuration:
                     if not info or not set(info).issubset(self.available_bgpstreamlive):
                         raise ArtemisError("invalid-bgpstreamlive-project", info)
                 elif key == "bgpstreamkafka":
-                    if not set(info.keys()).issubset(self.required_bgpstreamkafka):
+                    if not set(info.keys() - set(["autoconf"])).issubset(
+                        self.required_bgpstreamkafka
+                    ):
                         raise ArtemisError(
                             "invalid-bgpstreamkakfa-configuration", list(info.keys())
                         )

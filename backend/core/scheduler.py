@@ -1,12 +1,12 @@
 import time
 
+from artemis_utils import BULK_TIMER
+from artemis_utils import get_logger
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import signal_loading
+from artemis_utils.rabbitmq_util import create_exchange
 from kombu import Connection
 from kombu import Producer
-from utils import BULK_TIMER
-from utils import get_logger
-from utils import RABBITMQ_URI
-from utils import signal_loading
-from utils.rabbitmq_util import create_exchange
 
 log = get_logger()
 

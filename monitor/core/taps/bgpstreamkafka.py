@@ -4,20 +4,20 @@ import time
 
 import _pybgpstream
 import redis
+from artemis_utils import get_logger
+from artemis_utils import key_generator
+from artemis_utils import load_json
+from artemis_utils import mformat_validator
+from artemis_utils import normalize_msg_path
+from artemis_utils import ping_redis
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import REDIS_HOST
+from artemis_utils import REDIS_PORT
 from kombu import Connection
 from kombu import Exchange
 from kombu import Producer
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from utils import get_logger
-from utils import key_generator
-from utils import load_json
-from utils import mformat_validator
-from utils import normalize_msg_path
-from utils import ping_redis
-from utils import RABBITMQ_URI
-from utils import REDIS_HOST
-from utils import REDIS_PORT
 
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 

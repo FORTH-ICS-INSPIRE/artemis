@@ -4,18 +4,18 @@ import time
 
 import pytricia
 import ujson as json
+from artemis_utils import get_ip_version
+from artemis_utils import get_logger
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import signal_loading
+from artemis_utils import translate_rfc2622
+from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
-from utils import get_ip_version
-from utils import get_logger
-from utils import RABBITMQ_URI
-from utils import signal_loading
-from utils import translate_rfc2622
-from utils.rabbitmq_util import create_exchange
-from utils.rabbitmq_util import create_queue
 
 log = get_logger()
 

@@ -3,6 +3,16 @@ import os
 import signal
 
 import redis
+from artemis_utils import clean_as_path
+from artemis_utils import get_logger
+from artemis_utils import key_generator
+from artemis_utils import load_json
+from artemis_utils import mformat_validator
+from artemis_utils import normalize_msg_path
+from artemis_utils import ping_redis
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import REDIS_HOST
+from artemis_utils import REDIS_PORT
 from kombu import Connection
 from kombu import Consumer
 from kombu import Exchange
@@ -13,16 +23,6 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 from socketIO_client import BaseNamespace
 from socketIO_client import SocketIO
-from utils import clean_as_path
-from utils import get_logger
-from utils import key_generator
-from utils import load_json
-from utils import mformat_validator
-from utils import normalize_msg_path
-from utils import ping_redis
-from utils import RABBITMQ_URI
-from utils import REDIS_HOST
-from utils import REDIS_PORT
 
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)

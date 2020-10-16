@@ -3,15 +3,15 @@ import signal
 import time
 
 import ujson as json
+from artemis_utils import get_logger
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import signal_loading
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer
 from kombu import Queue
 from kombu import serialization
 from kombu import uuid
-from utils import get_logger
-from utils import RABBITMQ_URI
-from utils import signal_loading
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer as WatchObserver
 

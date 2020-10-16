@@ -2,7 +2,8 @@
 import time
 
 import psycopg2.extras
-from utils import get_logger
+
+from . import get_logger
 
 ISOLEVEL = psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
 

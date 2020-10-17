@@ -1185,6 +1185,9 @@ class Configuration:
             Raises custom exceptions in case a field or section
             is misdefined.
             """
+            if data is None or not isinstance(data, dict):
+                raise ArtemisError("invalid-data", data)
+
             for section in data:
                 if section not in self.sections:
                     raise ArtemisError("invalid-section", section)

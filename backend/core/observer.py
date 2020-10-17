@@ -40,13 +40,14 @@ class Observer:
         filename = "config.yaml"
 
         try:
-            event_handler = self.Handler(dirname, filename)
-            observer.schedule(event_handler, dirname, recursive=False)
-            observer.start()
-            log.info("started")
-            self.should_stop = False
-            while not self.should_stop:
-                time.sleep(5)
+            with Connection(RABBITMQ_URI) as connection:
+                event_handler = self.Handler(dirname, filename, connection)
+                observer.schedule(event_handler, dirname, recursive=False)
+                observer.start()
+                log.info("started")
+                self.should_stop = False
+                while not self.should_stop:
+                    time.sleep(5)
         except Exception:
             log.exception("exception")
         finally:
@@ -58,8 +59,9 @@ class Observer:
         self.should_stop = True
 
     class Handler(FileSystemEventHandler):
-        def __init__(self, d, fn):
+        def __init__(self, d, fn, connection):
             super().__init__()
+            self.connection = connection
             self.correlation_id = None
             signal_loading("observer", True)
             self.response = None
@@ -72,7 +74,7 @@ class Observer:
             finally:
                 signal_loading("observer", False)
 
-        def rpc_on_response(self, message):
+        def on_response(self, message):
             message.ack()
             if message.properties["correlation_id"] == self.correlation_id:
                 self.response = message.payload
@@ -96,27 +98,26 @@ class Observer:
                         max_priority=4,
                         consumer_arguments={"x-priority": 4},
                     )
-                    with Connection(RABBITMQ_URI) as connection:
-                        with Producer(connection) as producer:
-                            producer.publish(
-                                content,
-                                exchange="",
-                                routing_key="configuration.rpc.modify",
-                                serializer="yaml",
-                                retry=True,
-                                declare=[callback_queue],
-                                reply_to=callback_queue.name,
-                                correlation_id=self.correlation_id,
-                                priority=4,
-                            )
-                        with Consumer(
-                            connection,
-                            on_message=self.rpc_on_response,
-                            queues=[callback_queue],
-                            accept=["ujson"],
-                        ):
-                            while self.response is None:
-                                connection.drain_events()
+                    with Producer(self.connection) as producer:
+                        producer.publish(
+                            content,
+                            exchange="",
+                            routing_key="configuration.rpc.modify",
+                            serializer="yaml",
+                            retry=True,
+                            declare=[callback_queue],
+                            reply_to=callback_queue.name,
+                            correlation_id=self.correlation_id,
+                            priority=4,
+                        )
+                    with Consumer(
+                        self.connection,
+                        on_message=self.on_response,
+                        queues=[callback_queue],
+                        accept=["ujson"],
+                    ):
+                        while self.response is None:
+                            self.connection.drain_events()
 
                     if self.response["status"] == "accepted":
                         text = "new configuration accepted:\n{}".format(changes)

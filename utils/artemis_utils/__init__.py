@@ -1,11 +1,16 @@
+import copy
 import hashlib
 import logging.config
 import logging.handlers
 import os
 import re
 import time
+from datetime import datetime
+from datetime import timedelta
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
+from typing import List
+from typing import Tuple
 from xmlrpc.client import ServerProxy
 
 import requests
@@ -278,6 +283,16 @@ def flatten(items, seqtypes=(list, tuple)):
     return res
 
 
+def load_json(filename):
+    json_obj = None
+    try:
+        with open(filename, "r") as f:
+            json_obj = json.load(f)
+    except Exception:
+        return None
+    return json_obj
+
+
 class ArtemisError(Exception):
     def __init__(self, _type, _where):
         self.type = _type
@@ -501,6 +516,7 @@ def translate_as_set(as_set_id, just_match=False):
     :param <bool> just_match: check only if the as_set name has matched instead of translating
     :return: the list of ASes that are present in the set
     """
+    as_set = ""
     as_set_match = re.match(RIPE_ASSET_REGEX, as_set_id)
     if as_set_match:
         if just_match:
@@ -583,6 +599,172 @@ def ping_redis(redis_instance, timeout=5):
         except Exception:
             log.error("retrying redis ping in {} seconds...".format(timeout))
             time.sleep(timeout)
+
+
+def decompose_path(path):
+
+    # first do an ultra-fast check if the path is a normal one
+    # (simple sequence of ASNs)
+    str_path = " ".join(map(str, path))
+    if "{" not in str_path and "[" not in str_path and "(" not in str_path:
+        return [path]
+
+    # otherwise, check how to decompose
+    decomposed_paths = []
+    for hop in path:
+        hop = str(hop)
+        # AS-sets
+        if "{" in hop:
+            decomposed_hops = hop.lstrip("{").rstrip("}").split(",")
+        # AS Confederation Set
+        elif "[" in hop:
+            decomposed_hops = hop.lstrip("[").rstrip("]").split(",")
+        # AS Sequence Set
+        elif "(" in hop or ")" in hop:
+            decomposed_hops = hop.lstrip("(").rstrip(")").split(",")
+        # simple ASN
+        else:
+            decomposed_hops = [hop]
+        new_paths = []
+        if not decomposed_paths:
+            for dec_hop in decomposed_hops:
+                new_paths.append([dec_hop])
+        else:
+            for prev_path in decomposed_paths:
+                if "(" in hop or ")" in hop:
+                    new_path = prev_path + decomposed_hops
+                    new_paths.append(new_path)
+                else:
+                    for dec_hop in decomposed_hops:
+                        new_path = prev_path + [dec_hop]
+                        new_paths.append(new_path)
+        decomposed_paths = new_paths
+    return decomposed_paths
+
+
+def normalize_msg_path(msg):
+    msgs = []
+    path = msg["path"]
+    msg["orig_path"] = None
+    if isinstance(path, list):
+        dec_paths = decompose_path(path)
+        if not dec_paths:
+            msg["path"] = []
+            msgs = [msg]
+        elif len(dec_paths) == 1:
+            msg["path"] = list(map(int, dec_paths[0]))
+            msgs = [msg]
+        else:
+            for dec_path in dec_paths:
+                copied_msg = copy.deepcopy(msg)
+                copied_msg["path"] = list(map(int, dec_path))
+                copied_msg["orig_path"] = path
+                msgs.append(copied_msg)
+    else:
+        msgs = [msg]
+
+    return msgs
+
+
+class mformat_validator:
+
+    mformat_fields = [
+        "service",
+        "type",
+        "prefix",
+        "path",
+        "communities",
+        "timestamp",
+        "peer_asn",
+    ]
+    type_values = {"A", "W"}
+    community_keys = {"asn", "value"}
+
+    optional_fields_init = {"communities": []}
+
+    def validate(self, msg):
+        self.msg = msg
+        if not self.valid_dict():
+            return False
+
+        self.add_optional_fields()
+
+        for func in self.valid_generator():
+            if not func():
+                return False
+
+        return True
+
+    def valid_dict(self):
+        if not isinstance(self.msg, dict):
+            return False
+        return True
+
+    def add_optional_fields(self):
+        for field in self.optional_fields_init:
+            if field not in self.msg:
+                self.msg[field] = self.optional_fields_init[field]
+
+    def valid_fields(self):
+        if any(field not in self.msg for field in self.mformat_fields):
+            return False
+        return True
+
+    def valid_prefix(self):
+        try:
+            str2ip(self.msg["prefix"])
+        except BaseException:
+            return False
+        return True
+
+    def valid_service(self):
+        if not isinstance(self.msg["service"], str):
+            return False
+        return True
+
+    def valid_type(self):
+        if self.msg["type"] not in self.type_values:
+            return False
+        return True
+
+    def valid_path(self):
+        if self.msg["type"] == "A" and not isinstance(self.msg["path"], list):
+            return False
+        return True
+
+    def valid_communities(self):
+        if not isinstance(self.msg["communities"], list):
+            return False
+        for comm in self.msg["communities"]:
+            if not isinstance(comm, dict):
+                return False
+            if self.community_keys - set(comm.keys()):
+                return False
+        return True
+
+    def valid_timestamp(self):
+        if not isinstance(self.msg["timestamp"], float):
+            return False
+        if HISTORIC == "false" and datetime.utcfromtimestamp(
+            self.msg["timestamp"]
+        ) < datetime.utcnow() - timedelta(hours=1, minutes=30):
+            return False
+        return True
+
+    def valid_peer_asn(self):
+        if not isinstance(self.msg["peer_asn"], int):
+            return False
+        return True
+
+    def valid_generator(self):
+        yield self.valid_fields
+        yield self.valid_prefix
+        yield self.valid_service
+        yield self.valid_type
+        yield self.valid_path
+        yield self.valid_communities
+        yield self.valid_timestamp
+        yield self.valid_peer_asn
 
 
 def search_worst_prefix(prefix, pyt_tree):
@@ -669,3 +851,46 @@ def signal_loading(module, status=False):
 
     except Exception:
         log.exception("exception")
+
+
+def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
+    """
+    Method to remove prepending ASs from AS path.
+    """
+    last_add = None
+    new_seq = []
+    for x in seq:
+        if last_add != x:
+            last_add = x
+            new_seq.append(x)
+
+    is_loopy = False
+    if len(set(seq)) != len(new_seq):
+        is_loopy = True
+    return new_seq, is_loopy
+
+
+def __clean_loops(seq: List[int]) -> List[int]:
+    """
+    Method to remove loops from AS path.
+    """
+    # use inverse direction to clean loops in the path of the traffic
+    seq_inv = seq[::-1]
+    new_seq_inv = []
+    for x in seq_inv:
+        if x not in new_seq_inv:
+            new_seq_inv.append(x)
+        else:
+            x_index = new_seq_inv.index(x)
+            new_seq_inv = new_seq_inv[: x_index + 1]
+    return new_seq_inv[::-1]
+
+
+def clean_as_path(path: List[int]) -> List[int]:
+    """
+    Method for loop and prepending removal.
+    """
+    (clean_path, is_loopy) = __remove_prepending(path)
+    if is_loopy:
+        clean_path = __clean_loops(clean_path)
+    return clean_path

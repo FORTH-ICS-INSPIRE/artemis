@@ -14,6 +14,7 @@ from typing import Tuple
 import pytricia
 import redis
 import ujson as json
+from artemis_utils import clean_as_path
 from artemis_utils import exception_handler
 from artemis_utils import flatten
 from artemis_utils import get_hash
@@ -428,9 +429,7 @@ class Detection:
             if monitor_event["type"] == "A":
                 # save the original path as-is to preserve patterns (if needed)
                 monitor_event["orig_path"] = monitor_event["path"][::]
-                monitor_event["path"] = Detection.Worker.__clean_as_path(
-                    monitor_event["path"]
-                )
+                monitor_event["path"] = clean_as_path(monitor_event["path"])
 
                 ip_version = get_ip_version(monitor_event["prefix"])
                 if monitor_event["prefix"] in self.prefix_tree[ip_version]:
@@ -613,50 +612,6 @@ class Detection:
                     priority=0,
                     serializer="ujson",
                 )
-
-        @staticmethod
-        def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
-            """
-            Static method to remove prepending ASs from AS path.
-            """
-            last_add = None
-            new_seq = []
-            for x in seq:
-                if last_add != x:
-                    last_add = x
-                    new_seq.append(x)
-
-            is_loopy = False
-            if len(set(seq)) != len(new_seq):
-                is_loopy = True
-                # raise Exception('Routing Loop: {}'.format(seq))
-            return (new_seq, is_loopy)
-
-        @staticmethod
-        def __clean_loops(seq: List[int]) -> List[int]:
-            """
-            Static method that remove loops from AS path.
-            """
-            # use inverse direction to clean loops in the path of the traffic
-            seq_inv = seq[::-1]
-            new_seq_inv = []
-            for x in seq_inv:
-                if x not in new_seq_inv:
-                    new_seq_inv.append(x)
-                else:
-                    x_index = new_seq_inv.index(x)
-                    new_seq_inv = new_seq_inv[: x_index + 1]
-            return new_seq_inv[::-1]
-
-        @staticmethod
-        def __clean_as_path(path: List[int]) -> List[int]:
-            """
-            Static wrapper method for loop and prepending removal.
-            """
-            (clean_as_path, is_loopy) = Detection.Worker.__remove_prepending(path)
-            if is_loopy:
-                clean_as_path = Detection.Worker.__clean_loops(clean_as_path)
-            return clean_as_path
 
         def __hijack_dimension_checker_gen(self) -> Callable:
             """

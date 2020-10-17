@@ -10,13 +10,13 @@ from typing import NoReturn
 from typing import Optional
 from typing import Text
 from typing import TextIO
-from typing import Tuple
 from typing import Union
 
 import redis
 import ruamel.yaml
 import ujson as json
 from artemis_utils import ArtemisError
+from artemis_utils import clean_as_path
 from artemis_utils import flatten
 from artemis_utils import get_logger
 from artemis_utils import ping_redis
@@ -754,49 +754,6 @@ class Configuration:
                     priority=4,
                     serializer="ujson",
                 )
-
-        @staticmethod
-        def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
-            """
-            Static method to remove prepending ASs from AS path.
-            """
-            last_add = None
-            new_seq = []
-            for x in seq:
-                if last_add != x:
-                    last_add = x
-                    new_seq.append(x)
-
-            is_loopy = False
-            if len(set(seq)) != len(new_seq):
-                is_loopy = True
-            return (new_seq, is_loopy)
-
-        @staticmethod
-        def __clean_loops(seq: List[int]) -> List[int]:
-            """
-            Static method that remove loops from AS path.
-            """
-            # use inverse direction to clean loops in the path of the traffic
-            seq_inv = seq[::-1]
-            new_seq_inv = []
-            for x in seq_inv:
-                if x not in new_seq_inv:
-                    new_seq_inv.append(x)
-                else:
-                    x_index = new_seq_inv.index(x)
-                    new_seq_inv = new_seq_inv[: x_index + 1]
-            return new_seq_inv[::-1]
-
-        @staticmethod
-        def __clean_as_path(path: List[int]) -> List[int]:
-            """
-            Static wrapper method for loop and prepending removal.
-            """
-            (clean_as_path, is_loopy) = Configuration.Worker.__remove_prepending(path)
-            if is_loopy:
-                clean_as_path = Configuration.Worker.__clean_loops(clean_as_path)
-            return clean_as_path
 
         def translate_bgp_update_to_dicts(self, bgp_update):
             """

@@ -1,8 +1,8 @@
 import difflib
+import json
 import signal
 import time
 
-import ujson as json
 from artemis_utils import get_logger
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import signal_loading

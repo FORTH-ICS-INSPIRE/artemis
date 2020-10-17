@@ -26,7 +26,7 @@ monitors:
         topic: '^openbmp.router--.+.peer-as--.+.bmp_raw'
         autoconf: "true"
     bgpstreamhist:
-        dir: "/tmp/csv_dir"
+        dir: "./csv_dir"
         autoconf: "true"
 asns:
     origins: &origins
@@ -92,7 +92,7 @@ class ConfigurationTester(unittest.TestCase):
 
         self.assertTrue("bgpstreamhist" in self.worker.data["monitors"])
         self.assertEqual(
-            self.worker.data["monitors"]["bgpstreamhist"]["dir"], "/tmp/csv_dir"
+            self.worker.data["monitors"]["bgpstreamhist"]["dir"], "./csv_dir"
         )
         self.assertEqual(
             self.worker.data["monitors"]["bgpstreamhist"]["autoconf"], True

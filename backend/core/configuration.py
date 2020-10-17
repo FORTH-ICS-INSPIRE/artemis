@@ -16,7 +16,6 @@ import redis
 import ruamel.yaml
 import ujson as json
 from artemis_utils import ArtemisError
-from artemis_utils import clean_as_path
 from artemis_utils import flatten
 from artemis_utils import get_logger
 from artemis_utils import ping_redis

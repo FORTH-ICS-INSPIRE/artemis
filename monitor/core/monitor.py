@@ -5,24 +5,24 @@ from subprocess import Popen
 
 import pytricia
 import redis
+from artemis_utils import dump_json
+from artemis_utils import exception_handler
+from artemis_utils import get_ip_version
+from artemis_utils import get_logger
+from artemis_utils import ping_redis
+from artemis_utils import RABBITMQ_URI
+from artemis_utils import REDIS_HOST
+from artemis_utils import REDIS_PORT
+from artemis_utils import search_worst_prefix
+from artemis_utils import signal_loading
+from artemis_utils import translate_rfc2622
+from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
 from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
-from utils import dump_json
-from utils import exception_handler
-from utils import get_ip_version
-from utils import get_logger
-from utils import ping_redis
-from utils import RABBITMQ_URI
-from utils import REDIS_HOST
-from utils import REDIS_PORT
-from utils import search_worst_prefix
-from utils import signal_loading
-from utils import translate_rfc2622
-from utils.rabbitmq_util import create_exchange
-from utils.rabbitmq_util import create_queue
 
 log = get_logger()
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60

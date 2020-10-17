@@ -9,6 +9,8 @@ from datetime import datetime
 from datetime import timedelta
 from ipaddress import ip_network as str2ip
 from logging.handlers import SMTPHandler
+from typing import List
+from typing import Tuple
 from xmlrpc.client import ServerProxy
 
 import requests
@@ -851,7 +853,7 @@ def signal_loading(module, status=False):
         log.exception("exception")
 
 
-def __remove_prepending(seq):
+def __remove_prepending(seq: List[int]) -> Tuple[List[int], bool]:
     """
     Method to remove prepending ASs from AS path.
     """
@@ -868,7 +870,7 @@ def __remove_prepending(seq):
     return new_seq, is_loopy
 
 
-def __clean_loops(seq):
+def __clean_loops(seq: List[int]) -> List[int]:
     """
     Method to remove loops from AS path.
     """
@@ -884,7 +886,7 @@ def __clean_loops(seq):
     return new_seq_inv[::-1]
 
 
-def clean_as_path(path):
+def clean_as_path(path: List[int]) -> List[int]:
     """
     Method for loop and prepending removal.
     """

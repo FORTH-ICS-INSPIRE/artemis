@@ -62,6 +62,7 @@ class Monitor:
             self.timestamp = -1
             self.prefix_tree = None
             self.process_ids = []
+            self.autoconf_process_ids = {}
             self.rules = None
             self.prefixes = set()
             self.prefix_file = "/root/monitor_prefixes.json"
@@ -127,6 +128,8 @@ class Monitor:
                         # start it
                         if proc_id_to_terminate:
                             self.process_ids.remove(proc_id_to_terminate)
+                            if proc_id_to_terminate[0] in self.autoconf_process_ids:
+                                del self.autoconf_process_ids[proc_id_to_terminate[0]]
                             init_mon_instance = getattr(
                                 self, "init_{}_instance".format(monitor_to_restart)
                             )
@@ -183,10 +186,16 @@ class Monitor:
 
             for proc_id in self.process_ids:
                 try:
-                    proc_id[1].terminate()
+                    if not proc_id[0] in self.autoconf_process_ids:
+                        proc_id[1].terminate()
                 except ProcessLookupError:
                     log.exception("process terminate")
             self.process_ids.clear()
+            # reinstate info on autoconf taps since they are not supposed to be killed on monitor restart
+            for proc_name in self.autoconf_process_ids:
+                self.process_ids.append(
+                    (proc_name, self.autoconf_process_ids[proc_name])
+                )
             self.prefixes.clear()
 
             log.info("Starting building monitor prefix tree...")
@@ -315,9 +324,8 @@ class Monitor:
                     ],
                     shell=False,
                 )
-                self.process_ids.append(
-                    ("[ris] {} {}".format(rrcs, self.prefix_file), p)
-                )
+                proc_name = "[ris] {} {}".format(rrcs, self.prefix_file)
+                self.process_ids.append((proc_name, p))
                 self.redis.set(
                     "ris_seen_bgp_update",
                     "1",
@@ -349,17 +357,29 @@ class Monitor:
                         "--host",
                         exabgp_monitor_str,
                     ]
+                    proc_name = "[exabgp] {} {}".format(
+                        exabgp_monitor_str, self.prefix_file
+                    )
                     if "autoconf" in exabgp_monitor:
                         exabgp_cmd.append("-a")
+                        # if autoconf monitor and is already running, let it run and return
+                        if proc_name in self.autoconf_process_ids:
+                            return
+                    # if autoconf is disabled but an autoconf process is running, kill it first
+                    elif proc_name in self.autoconf_process_ids:
+                        try:
+                            self.autoconf_process_ids[proc_name].terminate()
+                        except ProcessLookupError:
+                            log.exception("process terminate")
+                        finally:
+                            del self.autoconf_process_ids[proc_name]
+                            self.process_ids.remove(
+                                (proc_name, self.autoconf_process_ids[proc_name])
+                            )
                     p = Popen(exabgp_cmd, shell=False)
-                    self.process_ids.append(
-                        (
-                            "[exabgp] {} {}".format(
-                                exabgp_monitor_str, self.prefix_file
-                            ),
-                            p,
-                        )
-                    )
+                    self.process_ids.append((proc_name, p))
+                    if "autoconf" in exabgp_monitor:
+                        self.autoconf_process_ids[proc_name] = p
                     self.redis.set(
                         "exabgp_seen_bgp_update",
                         "1",
@@ -388,17 +408,29 @@ class Monitor:
                     "--dir",
                     bgpstreamhist_dir,
                 ]
+                proc_name = "[bgpstreamhist] {} {}".format(
+                    bgpstreamhist_dir, self.prefix_file
+                )
                 if "autoconf" in self.monitors["bgpstreamhist"]:
                     bgpstreamhist_cmd.append("-a")
+                    # if autoconf monitor and is already running, let it run and return
+                    if proc_name in self.autoconf_process_ids:
+                        return
+                # if autoconf is disabled but an autoconf process is running, kill it first
+                elif proc_name in self.autoconf_process_ids:
+                    try:
+                        self.autoconf_process_ids[proc_name].terminate()
+                    except ProcessLookupError:
+                        log.exception("process terminate")
+                    finally:
+                        del self.autoconf_process_ids[proc_name]
+                        self.process_ids.remove(
+                            (proc_name, self.autoconf_process_ids[proc_name])
+                        )
                 p = Popen(bgpstreamhist_cmd, shell=False)
-                self.process_ids.append(
-                    (
-                        "[bgpstreamhist] {} {}".format(
-                            bgpstreamhist_dir, self.prefix_file
-                        ),
-                        p,
-                    )
-                )
+                self.process_ids.append((proc_name, p))
+                if "autoconf" in self.monitors["bgpstreamhist"]:
+                    self.autoconf_process_ids[proc_name] = p
 
         @exception_handler(log)
         def init_bgpstreamlive_instance(self):
@@ -420,14 +452,10 @@ class Monitor:
                     ],
                     shell=False,
                 )
-                self.process_ids.append(
-                    (
-                        "[bgpstreamlive] {} {}".format(
-                            bgpstream_projects, self.prefix_file
-                        ),
-                        p,
-                    )
+                proc_name = "[bgpstreamlive] {} {}".format(
+                    bgpstream_projects, self.prefix_file
                 )
+                self.process_ids.append((proc_name, p))
                 self.redis.set(
                     "bgpstreamlive_seen_bgp_update",
                     "1",
@@ -457,20 +485,33 @@ class Monitor:
                     "--kafka_topic",
                     str(self.monitors["bgpstreamkafka"]["topic"]),
                 ]
+                proc_name = "[bgpstreamkafka] {} {} {} {}".format(
+                    self.monitors["bgpstreamkafka"]["host"],
+                    self.monitors["bgpstreamkafka"]["port"],
+                    self.monitors["bgpstreamkafka"]["topic"],
+                    self.prefix_file,
+                )
                 if "autoconf" in self.monitors["bgpstreamkafka"]:
                     bgpstreamkafka_cmd.append("-a")
+                    # if autoconf monitor and is already running, let it run and return
+                    if proc_name in self.autoconf_process_ids:
+                        return
+                # if autoconf is disabled but an autoconf process is running, kill it first
+                elif proc_name in self.autoconf_process_ids:
+                    try:
+                        self.autoconf_process_ids[proc_name].terminate()
+                    except ProcessLookupError:
+                        log.exception("process terminate")
+                    finally:
+                        del self.autoconf_process_ids[proc_name]
+                        self.process_ids.remove(
+                            (proc_name, self.autoconf_process_ids[proc_name])
+                        )
                 p = Popen(bgpstreamkafka_cmd, shell=False)
-                self.process_ids.append(
-                    (
-                        "[bgpstreamkafka] {} {} {} {}".format(
-                            self.monitors["bgpstreamkafka"]["host"],
-                            self.monitors["bgpstreamkafka"]["port"],
-                            self.monitors["bgpstreamkafka"]["topic"],
-                            self.prefix_file,
-                        ),
-                        p,
-                    )
-                )
+                self.process_ids.append((proc_name, p))
+                if "autoconf" in self.monitors["bgpstreamkafka"]:
+                    self.autoconf_process_ids[proc_name] = p
+
                 self.redis.set(
                     "bgpstreamkafka_seen_bgp_update",
                     "1",

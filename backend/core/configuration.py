@@ -1,4 +1,5 @@
 import copy
+import os
 import re
 import signal
 import time
@@ -75,6 +76,7 @@ class Configuration:
             self.module_name = "configuration"
             self.connection = connection
             self.file = "/etc/artemis/config.yaml"
+            self.temp_file = "/etc/artemis/config.yaml.tmp"
             self.correlation_id = None
             self.sections = {"prefixes", "asns", "monitors", "rules", "autoignore"}
             self.rule_supported_fields = {
@@ -274,11 +276,7 @@ class Configuration:
                             Loader=ruamel.yaml.RoundTripLoader,
                             preserve_quotes=True,
                         )
-                        ruamel.yaml.dump(yaml_conf, Dumper=ruamel.yaml.RoundTripDumper)
-                        with open(self.file, "w") as f:
-                            ruamel.yaml.dump(
-                                yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
-                            )
+                        self._write_conf_via_tmp_file(yaml_conf)
 
                     # reply back to the sender with a configuration accepted
                     # message.
@@ -738,8 +736,7 @@ class Configuration:
 
             if raw["action"] == "approve" and ok:
                 # store the new configuration to file
-                with open(self.file, "w") as f:
-                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+                self._write_conf_via_tmp_file(yaml_conf)
 
             if raw["action"] in ["show", "approve"]:
                 # reply back to the sender with the extra yaml configuration
@@ -882,10 +879,8 @@ class Configuration:
                 )
                 if ok:
                     # store the new configuration to file
-                    with open(self.file, "w") as f:
-                        ruamel.yaml.dump(
-                            yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
-                        )
+                    self._write_conf_via_tmp_file(yaml_conf)
+
             except Exception:
                 log.exception("exception")
             finally:
@@ -968,8 +963,7 @@ class Configuration:
             )
             # as-sets were resolved, update configuration
             if (not error) and done_as_set_translations:
-                with open(self.file, "w") as f:
-                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+                self._write_conf_via_tmp_file(yaml_conf)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False
@@ -1213,6 +1207,11 @@ class Configuration:
             """
             with open(self.file, "w") as f:
                 f.write(self.data["raw_config"])
+
+        def _write_conf_via_tmp_file(self, yaml_conf) -> NoReturn:
+            with open(self.temp_file, "w") as f:
+                ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+            os.rename(self.temp_file, self.file)
 
 
 def run():

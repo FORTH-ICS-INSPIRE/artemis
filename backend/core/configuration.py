@@ -30,6 +30,7 @@ from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
 from artemis_utils import update_aliased_list
 from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
@@ -141,6 +142,15 @@ class Configuration:
             # EXCHANGES
             self.config_exchange = create_exchange("config", connection, declare=True)
 
+            # QUEUES
+            self.autoconf_update_queue = create_queue(
+                self.module_name,
+                exchange=self.config_exchange,
+                routing_key="autoconf-update",
+                priority=4,
+                random=True,
+            )
+
             # RPC QUEUES
             self.config_modify_queue = Queue(
                 "configuration.rpc.modify",
@@ -162,12 +172,6 @@ class Configuration:
             )
             self.load_as_sets_queue = Queue(
                 "configuration.rpc.load-as-sets",
-                durable=False,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
-            self.autoconf_update_queue = Queue(
-                "configuration.rpc.autoconf-update",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
@@ -857,15 +861,6 @@ class Configuration:
                 bgp_update = message.payload
                 # if you have seen the exact same update before, do nothing
                 if self.redis.get(bgp_update["key"]):
-                    self.producer.publish(
-                        "",
-                        exchange="",
-                        routing_key=message.properties["reply_to"],
-                        correlation_id=message.properties["correlation_id"],
-                        retry=True,
-                        priority=4,
-                        serializer="ujson",
-                    )
                     return
 
                 (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
@@ -883,16 +878,6 @@ class Configuration:
 
             except Exception:
                 log.exception("exception")
-            finally:
-                self.producer.publish(
-                    "",
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    retry=True,
-                    priority=4,
-                    serializer="ujson",
-                )
 
         def handle_load_as_sets(self, message):
             """

@@ -12,12 +12,11 @@ from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
+from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Consumer
-from kombu import Exchange
 from kombu import Producer
-from kombu import Queue
-from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from socketIO_client import BaseNamespace
@@ -31,6 +30,7 @@ DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 class ExaBGP:
     def __init__(self, prefixes_file, host, autoconf=False):
         self.host = host
+        self.module_name = "exabgp|{}".format(host)
         self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
         self.autoconf = autoconf
@@ -47,10 +47,17 @@ class ExaBGP:
     def start(self):
         with Connection(RABBITMQ_URI) as connection:
             self.connection = connection
-            self.update_exchange = Exchange(
-                "bgp-update", channel=connection, type="direct", durable=False
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
             )
-            self.update_exchange.declare()
+            self.config_exchange = create_exchange("config", connection, declare=True)
+            self.config_queue = create_queue(
+                self.module_name,
+                exchange=self.config_exchange,
+                routing_key="notify",
+                priority=3,
+                random=True,
+            )
             validator = mformat_validator()
             # add /0 if autoconf
             if self.autoconf:
@@ -105,41 +112,18 @@ class ExaBGP:
                                                         # not matching configured prefixes
                                                         continue
                                                     self.autoconf_goahead = False
-                                                    correlation_id = uuid()
-                                                    callback_queue = Queue(
-                                                        uuid(),
-                                                        durable=False,
-                                                        auto_delete=True,
-                                                        max_priority=4,
-                                                        consumer_arguments={
-                                                            "x-priority": 4
-                                                        },
-                                                    )
                                                     producer.publish(
                                                         msg,
-                                                        exchange="",
-                                                        routing_key="configuration.rpc.autoconf-update",
-                                                        reply_to=callback_queue.name,
-                                                        correlation_id=correlation_id,
+                                                        exchange=self.config_exchange,
+                                                        routing_key="autoconf-update",
                                                         retry=True,
-                                                        declare=[
-                                                            Queue(
-                                                                "configuration.rpc.autoconf-update",
-                                                                durable=False,
-                                                                max_priority=4,
-                                                                consumer_arguments={
-                                                                    "x-priority": 4
-                                                                },
-                                                            ),
-                                                            callback_queue,
-                                                        ],
                                                         priority=4,
                                                         serializer="ujson",
                                                     )
                                                     with Consumer(
                                                         connection,
                                                         on_message=self.handle_autoconf_update_goahead_reply,
-                                                        queues=[callback_queue],
+                                                        queues=[self.config_queue],
                                                         accept=["ujson"],
                                                     ):
                                                         while not self.autoconf_goahead:

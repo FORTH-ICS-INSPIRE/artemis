@@ -102,7 +102,7 @@ class BGPStreamHist:
                                                             ):
                                                                 # ignore irrelevant withdrawals
                                                                 # not matching configured prefixes
-                                                                break
+                                                                continue
                                                             self.autoconf_goahead = (
                                                                 False
                                                             )

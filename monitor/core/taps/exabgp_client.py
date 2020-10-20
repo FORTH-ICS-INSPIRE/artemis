@@ -103,7 +103,7 @@ class ExaBGP:
                                                     ):
                                                         # ignore irrelevant withdrawals
                                                         # not matching configured prefixes
-                                                        break
+                                                        continue
                                                     self.autoconf_goahead = False
                                                     correlation_id = uuid()
                                                     callback_queue = Queue(

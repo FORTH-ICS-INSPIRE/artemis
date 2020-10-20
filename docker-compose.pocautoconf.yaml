@@ -1,0 +1,44 @@
+version: '3'
+services:
+  exabgpmonitor:
+    image: mavromat/exabgp-monitor:latest
+    container_name: exabgpmonitor
+    restart: always
+    networks:
+      artemis:
+      comm:
+        ipv4_address: 1.1.1.11
+    volumes:
+      - ./poc_autoconf/configs/exabgp/monitor.conf:/home/config/exabgp.conf
+      - ./poc_autoconf/custom_exa_entrypoint.sh:/home/entrypoint.sh
+  r03:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./poc_autoconf/dockers/gobgp
+    container_name: r03
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.13
+    volumes:
+      - ./poc_autoconf/configs/gobgp/r03.conf:/etc/gobgp/gobgp.conf
+  r04:
+    image: gobgp:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./poc_autoconf/dockers/gobgp
+    container_name: r04
+    restart: always
+    networks:
+      comm:
+        ipv4_address: 1.1.1.14
+    volumes:
+      - ./poc_autoconf/configs/gobgp/r04.conf:/etc/gobgp/gobgp.conf
+
+networks:
+  comm:
+    ipam:
+      driver: default
+      config:
+        - subnet: 1.1.1.0/24

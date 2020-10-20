@@ -42,7 +42,7 @@ BGP updates via PEER AS AS65005.
         volumes:
           - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
           - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
-          - ./backend/supervisor.d/:/etc/supervisor/conf.d/
+          ...
       ...
     ```
 

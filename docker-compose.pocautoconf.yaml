@@ -35,6 +35,7 @@ services:
         ipv4_address: 1.1.1.14
     volumes:
       - ./poc_autoconf/configs/gobgp/r04.conf:/etc/gobgp/gobgp.conf
+      - ./poc_autoconf/add_routes.sh:/add_routes.sh
 
 networks:
   comm:

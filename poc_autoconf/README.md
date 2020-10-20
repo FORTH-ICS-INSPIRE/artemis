@@ -52,3 +52,17 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r04 sh
    gobgp global rib del 192.168.0.0/16
    ```
+
+5. For stress-testing, create 1000 routes of the form 192.$i.$j.0/24 where i in (1 .. 10) and j in (1 .. 100):
+
+   ```
+   docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r04 sh
+   ./add_routes.sh
+   ```
+
+6. 4. Check in the UI that the configuration has been updated. You can repeat this to see all corresponding withdrawals:
+
+   ```
+   docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r04 sh
+   gobgp global del all
+   ```

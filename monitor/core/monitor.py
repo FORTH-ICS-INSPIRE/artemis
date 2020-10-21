@@ -239,6 +239,10 @@ class Monitor:
             self.init_bgpstreamlive_instance()
             self.init_bgpstreamkafka_instance()
             log.info("All configured monitoring instances initiated.")
+            log.info("Running instances...")
+            log.info(self.process_ids)
+            log.info("Autoconf instances...")
+            log.info(self.autoconf_process_ids)
 
             log.info("Monitor initiated, configured and running.")
 

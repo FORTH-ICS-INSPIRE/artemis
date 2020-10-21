@@ -11,7 +11,9 @@ from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
 from artemis_utils import RABBITMQ_URI
 from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
+from kombu import Consumer
 from kombu import Producer
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -21,6 +23,7 @@ log = get_logger()
 
 class BGPStreamHist:
     def __init__(self, prefixes_file=None, input_dir=None, autoconf=False):
+        self.module_name = "bgpstreamhist|{}".format(input_dir)
         # use /0 if autoconf
         if autoconf:
             self.prefixes = ["0.0.0.0/0", "::/0"]
@@ -31,6 +34,12 @@ class BGPStreamHist:
         self.autoconf = autoconf
         self.update_exchange = None
         self.config_exchange = None
+        self.config_queue = None
+        self.autoconf_goahead = False
+
+    def handle_autoconf_update_goahead_reply(self, message):
+        message.ack()
+        self.autoconf_goahead = True
 
     def parse_bgpstreamhist_csvs(self):
         with Connection(RABBITMQ_URI) as connection:
@@ -38,6 +47,13 @@ class BGPStreamHist:
                 "bgp-update", connection, declare=True
             )
             self.config_exchange = create_exchange("config", connection, declare=True)
+            self.config_queue = create_queue(
+                self.module_name,
+                exchange=self.config_exchange,
+                routing_key="notify",
+                priority=3,
+                random=True,
+            )
             producer = Producer(connection)
             validator = mformat_validator()
             for csv_file in glob.glob("{}/*.csv".format(self.input_dir)):
@@ -88,6 +104,9 @@ class BGPStreamHist:
                                                         key_generator(msg)
                                                         log.debug(msg)
                                                         if self.autoconf:
+                                                            self.autoconf_goahead = (
+                                                                False
+                                                            )
                                                             producer.publish(
                                                                 msg,
                                                                 exchange=self.config_exchange,
@@ -96,6 +115,18 @@ class BGPStreamHist:
                                                                 priority=4,
                                                                 serializer="ujson",
                                                             )
+                                                            with Consumer(
+                                                                connection,
+                                                                on_message=self.handle_autoconf_update_goahead_reply,
+                                                                queues=[
+                                                                    self.config_queue
+                                                                ],
+                                                                accept=["ujson"],
+                                                            ):
+                                                                while (
+                                                                    not self.autoconf_goahead
+                                                                ):
+                                                                    connection.drain_events()
                                                         else:
                                                             producer.publish(
                                                                 msg,

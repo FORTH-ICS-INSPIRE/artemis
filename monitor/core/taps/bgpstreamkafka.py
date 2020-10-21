@@ -14,7 +14,9 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
+from kombu import Consumer
 from kombu import Producer
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -46,6 +48,9 @@ class BGPStreamKafka:
         :param start: <int> start timestamp in UNIX epochs
         :param end: <int> end timestamp in UNIX epochs (if 0 --> "live mode")
         """
+        self.module_name = "bgpstreamkafka|{}|{}|{}".format(
+            kafka_host, kafka_port, kafka_topic
+        )
         # use /0 if autoconf
         if autoconf:
             self.prefixes = ["0.0.0.0/0", "::/0"]
@@ -58,6 +63,11 @@ class BGPStreamKafka:
         self.start = start
         self.end = end
         self.autoconf = autoconf
+        self.autoconf_goahead = False
+
+    def handle_autoconf_update_goahead_reply(self, message):
+        message.ack()
+        self.autoconf_goahead = True
 
     def run_bgpstream(self):
         """
@@ -98,6 +108,13 @@ class BGPStreamKafka:
         with Connection(RABBITMQ_URI) as connection:
             update_exchange = create_exchange("bgp-update", connection, declare=True)
             config_exchange = create_exchange("config", connection, declare=True)
+            config_queue = create_queue(
+                self.module_name,
+                exchange=config_exchange,
+                routing_key="notify",
+                priority=3,
+                random=True,
+            )
             producer = Producer(connection)
             validator = mformat_validator()
             while True:
@@ -172,6 +189,7 @@ class BGPStreamKafka:
                                             key_generator(msg)
                                             log.debug(msg)
                                             if self.autoconf:
+                                                self.autoconf_goahead = False
                                                 producer.publish(
                                                     msg,
                                                     exchange=config_exchange,
@@ -180,6 +198,14 @@ class BGPStreamKafka:
                                                     priority=4,
                                                     serializer="ujson",
                                                 )
+                                                with Consumer(
+                                                    connection,
+                                                    on_message=self.handle_autoconf_update_goahead_reply,
+                                                    queues=[config_queue],
+                                                    accept=["ujson"],
+                                                ):
+                                                    while not self.autoconf_goahead:
+                                                        connection.drain_events()
                                             else:
                                                 producer.publish(
                                                     msg,

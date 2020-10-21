@@ -10,12 +10,9 @@ from artemis_utils import load_json
 from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
 from artemis_utils import RABBITMQ_URI
+from artemis_utils.rabbitmq_util import create_exchange
 from kombu import Connection
-from kombu import Consumer
-from kombu import Exchange
 from kombu import Producer
-from kombu import Queue
-from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
@@ -24,27 +21,23 @@ log = get_logger()
 
 class BGPStreamHist:
     def __init__(self, prefixes_file=None, input_dir=None, autoconf=False):
-        self.prefixes = load_json(prefixes_file)
+        # use /0 if autoconf
+        if autoconf:
+            self.prefixes = ["0.0.0.0/0", "::/0"]
+        else:
+            self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
         self.input_dir = input_dir
         self.autoconf = autoconf
-        self.autoconf_goahead = False
-
-    def handle_autoconf_update_goahead_reply(self, message):
-        message.ack()
-        self.autoconf_goahead = True
+        self.update_exchange = None
+        self.config_exchange = None
 
     def parse_bgpstreamhist_csvs(self):
-        # add /0 if autoconf
-        if self.autoconf:
-            self.prefixes.append("0.0.0.0/0")
-            self.prefixes.append("::/0")
-
         with Connection(RABBITMQ_URI) as connection:
-            self.update_exchange = Exchange(
-                "bgp-update", channel=connection, type="direct", durable=False
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
             )
-            self.update_exchange.declare()
+            self.config_exchange = create_exchange("config", connection, declare=True)
             producer = Producer(connection)
             validator = mformat_validator()
             for csv_file in glob.glob("{}/*.csv".format(self.input_dir)):
@@ -95,65 +88,22 @@ class BGPStreamHist:
                                                         key_generator(msg)
                                                         log.debug(msg)
                                                         if self.autoconf:
-                                                            if (
-                                                                str(our_prefix)
-                                                                in ["0.0.0.0/0", "::/0"]
-                                                                and msg["type"] == "W"
-                                                            ):
-                                                                # ignore irrelevant withdrawals
-                                                                # not matching configured prefixes
-                                                                continue
-                                                            self.autoconf_goahead = (
-                                                                False
-                                                            )
-                                                            correlation_id = uuid()
-                                                            callback_queue = Queue(
-                                                                uuid(),
-                                                                durable=False,
-                                                                auto_delete=True,
-                                                                max_priority=4,
-                                                                consumer_arguments={
-                                                                    "x-priority": 4
-                                                                },
-                                                            )
                                                             producer.publish(
                                                                 msg,
-                                                                exchange="",
-                                                                routing_key="configuration.rpc.autoconf-update",
-                                                                reply_to=callback_queue.name,
-                                                                correlation_id=correlation_id,
+                                                                exchange=self.config_exchange,
+                                                                routing_key="autoconf-update",
                                                                 retry=True,
-                                                                declare=[
-                                                                    Queue(
-                                                                        "configuration.rpc.autoconf-update",
-                                                                        durable=False,
-                                                                        max_priority=4,
-                                                                        consumer_arguments={
-                                                                            "x-priority": 4
-                                                                        },
-                                                                    ),
-                                                                    callback_queue,
-                                                                ],
                                                                 priority=4,
                                                                 serializer="ujson",
                                                             )
-                                                            with Consumer(
-                                                                connection,
-                                                                on_message=self.handle_autoconf_update_goahead_reply,
-                                                                queues=[callback_queue],
-                                                                accept=["ujson"],
-                                                            ):
-                                                                while (
-                                                                    not self.autoconf_goahead
-                                                                ):
-                                                                    connection.drain_events()
-                                                        producer.publish(
-                                                            msg,
-                                                            exchange=self.update_exchange,
-                                                            routing_key="update",
-                                                            serializer="ujson",
-                                                        )
-                                                        time.sleep(0.1)
+                                                        else:
+                                                            producer.publish(
+                                                                msg,
+                                                                exchange=self.update_exchange,
+                                                                routing_key="update",
+                                                                serializer="ujson",
+                                                            )
+                                                            time.sleep(0.01)
                                                 else:
                                                     log.warning(
                                                         "Invalid format message: {}".format(

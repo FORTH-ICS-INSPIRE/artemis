@@ -13,9 +13,7 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
-from kombu import Consumer
 from kombu import Producer
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -30,19 +28,20 @@ DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 class ExaBGP:
     def __init__(self, prefixes_file, host, autoconf=False):
         self.host = host
-        self.module_name = "exabgp|{}".format(host)
-        self.prefixes = load_json(prefixes_file)
+        # use /0 if autoconf
+        if autoconf:
+            self.prefixes = ["0.0.0.0/0", "::/0"]
+        else:
+            self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
         self.autoconf = autoconf
-        self.autoconf_goahead = False
         self.sio = None
+        self.connection = None
+        self.update_exchange = None
+        self.config_exchange = None
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-
-    def handle_autoconf_update_goahead_reply(self, message):
-        message.ack()
-        self.autoconf_goahead = True
 
     def start(self):
         with Connection(RABBITMQ_URI) as connection:
@@ -51,18 +50,7 @@ class ExaBGP:
                 "bgp-update", connection, declare=True
             )
             self.config_exchange = create_exchange("config", connection, declare=True)
-            self.config_queue = create_queue(
-                self.module_name,
-                exchange=self.config_exchange,
-                routing_key="notify",
-                priority=3,
-                random=True,
-            )
             validator = mformat_validator()
-            # add /0 if autoconf
-            if self.autoconf:
-                self.prefixes.append("0.0.0.0/0")
-                self.prefixes.append("::/0")
 
             try:
                 self.sio = SocketIO("http://" + self.host, namespace=BaseNamespace)
@@ -103,15 +91,6 @@ class ExaBGP:
                                                 key_generator(msg)
                                                 log.debug(msg)
                                                 if self.autoconf:
-                                                    if (
-                                                        str(our_prefix)
-                                                        in ["0.0.0.0/0", "::/0"]
-                                                        and msg["type"] == "W"
-                                                    ):
-                                                        # ignore irrelevant withdrawals
-                                                        # not matching configured prefixes
-                                                        continue
-                                                    self.autoconf_goahead = False
                                                     producer.publish(
                                                         msg,
                                                         exchange=self.config_exchange,
@@ -120,20 +99,13 @@ class ExaBGP:
                                                         priority=4,
                                                         serializer="ujson",
                                                     )
-                                                    with Consumer(
-                                                        connection,
-                                                        on_message=self.handle_autoconf_update_goahead_reply,
-                                                        queues=[self.config_queue],
-                                                        accept=["ujson"],
-                                                    ):
-                                                        while not self.autoconf_goahead:
-                                                            connection.drain_events()
-                                                producer.publish(
-                                                    msg,
-                                                    exchange=self.update_exchange,
-                                                    routing_key="update",
-                                                    serializer="ujson",
-                                                )
+                                                else:
+                                                    producer.publish(
+                                                        msg,
+                                                        exchange=self.update_exchange,
+                                                        routing_key="update",
+                                                        serializer="ujson",
+                                                    )
                                     else:
                                         log.warning(
                                             "Invalid format message: {}".format(msg)

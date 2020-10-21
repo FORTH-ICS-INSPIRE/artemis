@@ -13,12 +13,9 @@ from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
+from artemis_utils.rabbitmq_util import create_exchange
 from kombu import Connection
-from kombu import Consumer
-from kombu import Exchange
 from kombu import Producer
-from kombu import Queue
-from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
@@ -41,7 +38,19 @@ class BGPStreamKafka:
         end=0,
         autoconf=False,
     ):
-        self.prefixes = load_json(prefixes_file)
+        """
+        :param prefixes_file: <str> input prefix json
+        :param kafka_host: <str> kafka host
+        :param kafka_port: <int> kafka_port
+        :param kafka_topic: <str> kafka topic
+        :param start: <int> start timestamp in UNIX epochs
+        :param end: <int> end timestamp in UNIX epochs (if 0 --> "live mode")
+        """
+        # use /0 if autoconf
+        if autoconf:
+            self.prefixes = ["0.0.0.0/0", "::/0"]
+        else:
+            self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
         self.kafka_host = kafka_host
         self.kafka_port = kafka_port
@@ -49,31 +58,12 @@ class BGPStreamKafka:
         self.start = start
         self.end = end
         self.autoconf = autoconf
-        self.autoconf_goahead = False
-
-    def handle_autoconf_update_goahead_reply(self, message):
-        message.ack()
-        self.autoconf_goahead = True
 
     def run_bgpstream(self):
         """
         Retrieve all records related to a list of prefixes
         https://bgpstream.caida.org/docs/api/pybgpstream/_pybgpstream.html
-
-        :param prefixes_file: <str> input prefix json
-        :param kafka_host: <str> kafka host
-        :param kafka_port: <int> kafka_port
-        :param kafka_topic: <str> kafka topic
-        :param start: <int> start timestamp in UNIX epochs
-        :param end: <int> end timestamp in UNIX epochs (if 0 --> "live mode")
-
-        :return: -
         """
-
-        # add /0 if autoconf
-        if self.autoconf:
-            self.prefixes.append("0.0.0.0/0")
-            self.prefixes.append("::/0")
 
         # create a new bgpstream instance and a reusable bgprecord instance
         stream = _pybgpstream.BGPStream()
@@ -106,10 +96,8 @@ class BGPStreamKafka:
         stream.start()
 
         with Connection(RABBITMQ_URI) as connection:
-            exchange = Exchange(
-                "bgp-update", channel=connection, type="direct", durable=False
-            )
-            exchange.declare()
+            update_exchange = create_exchange("bgp-update", connection, declare=True)
+            config_exchange = create_exchange("config", connection, declare=True)
             producer = Producer(connection)
             validator = mformat_validator()
             while True:
@@ -184,60 +172,21 @@ class BGPStreamKafka:
                                             key_generator(msg)
                                             log.debug(msg)
                                             if self.autoconf:
-                                                if (
-                                                    str(our_prefix)
-                                                    in ["0.0.0.0/0", "::/0"]
-                                                    and msg["type"] == "W"
-                                                ):
-                                                    # ignore irrelevant withdrawals
-                                                    # not matching configured prefixes
-                                                    continue
-                                                self.autoconf_goahead = False
-                                                correlation_id = uuid()
-                                                callback_queue = Queue(
-                                                    uuid(),
-                                                    durable=False,
-                                                    auto_delete=True,
-                                                    max_priority=4,
-                                                    consumer_arguments={
-                                                        "x-priority": 4
-                                                    },
-                                                )
                                                 producer.publish(
                                                     msg,
-                                                    exchange="",
-                                                    routing_key="configuration.rpc.autoconf-update",
-                                                    reply_to=callback_queue.name,
-                                                    correlation_id=correlation_id,
+                                                    exchange=config_exchange,
+                                                    routing_key="autoconf-update",
                                                     retry=True,
-                                                    declare=[
-                                                        Queue(
-                                                            "configuration.rpc.autoconf-update",
-                                                            durable=False,
-                                                            max_priority=4,
-                                                            consumer_arguments={
-                                                                "x-priority": 4
-                                                            },
-                                                        ),
-                                                        callback_queue,
-                                                    ],
                                                     priority=4,
                                                     serializer="ujson",
                                                 )
-                                                with Consumer(
-                                                    connection,
-                                                    on_message=self.handle_autoconf_update_goahead_reply,
-                                                    queues=[callback_queue],
-                                                    accept=["ujson"],
-                                                ):
-                                                    while not self.autoconf_goahead:
-                                                        connection.drain_events()
-                                            producer.publish(
-                                                msg,
-                                                exchange=exchange,
-                                                routing_key="update",
-                                                serializer="ujson",
-                                            )
+                                            else:
+                                                producer.publish(
+                                                    msg,
+                                                    exchange=update_exchange,
+                                                    routing_key="update",
+                                                    serializer="ujson",
+                                                )
                                     else:
                                         log.warning(
                                             "Invalid format message: {}".format(msg)

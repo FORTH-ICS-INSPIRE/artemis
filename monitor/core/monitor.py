@@ -246,6 +246,8 @@ class Monitor:
             if self.flag:
                 for proc_id in self.process_ids:
                     try:
+                        if proc_id[0] in self.autoconf_process_ids:
+                            del self.autoconf_process_ids[proc_id[0]]
                         proc_id[1].terminate()
                     except ProcessLookupError:
                         log.exception("process terminate")
@@ -388,6 +390,18 @@ class Monitor:
                             DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
                         ),
                     )
+            else:
+                for proc_name in self.autoconf_process_ids:
+                    if proc_name.startswith("[exabgp]"):
+                        try:
+                            self.autoconf_process_ids[proc_name].terminate()
+                        except ProcessLookupError:
+                            log.exception("process terminate")
+                        finally:
+                            del self.autoconf_process_ids[proc_name]
+                            self.process_ids.remove(
+                                (proc_name, self.autoconf_process_ids[proc_name])
+                            )
 
         @exception_handler(log)
         def init_bgpstreamhist_instance(self):
@@ -431,6 +445,18 @@ class Monitor:
                 self.process_ids.append((proc_name, p))
                 if "autoconf" in self.monitors["bgpstreamhist"]:
                     self.autoconf_process_ids[proc_name] = p
+            else:
+                for proc_name in self.autoconf_process_ids:
+                    if proc_name.startswith("[bgpstreamhist]"):
+                        try:
+                            self.autoconf_process_ids[proc_name].terminate()
+                        except ProcessLookupError:
+                            log.exception("process terminate")
+                        finally:
+                            del self.autoconf_process_ids[proc_name]
+                            self.process_ids.remove(
+                                (proc_name, self.autoconf_process_ids[proc_name])
+                            )
 
         @exception_handler(log)
         def init_bgpstreamlive_instance(self):
@@ -520,6 +546,18 @@ class Monitor:
                         DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
                     ),
                 )
+            else:
+                for proc_name in self.autoconf_process_ids:
+                    if proc_name.startswith("[bgpstreamkafka]"):
+                        try:
+                            self.autoconf_process_ids[proc_name].terminate()
+                        except ProcessLookupError:
+                            log.exception("process terminate")
+                        finally:
+                            del self.autoconf_process_ids[proc_name]
+                            self.process_ids.remove(
+                                (proc_name, self.autoconf_process_ids[proc_name])
+                            )
 
 
 def run():

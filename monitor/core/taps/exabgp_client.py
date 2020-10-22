@@ -36,6 +36,7 @@ class ExaBGP:
     def __init__(self, prefixes_file, host, autoconf=False):
         self.module_name = "exabgp|{}".format(host)
         self.host = host
+        self.should_stop = False
         # use /0 if autoconf
         if autoconf:
             self.prefixes = ["0.0.0.0/0", "::/0"]
@@ -61,15 +62,18 @@ class ExaBGP:
         it sends buffered autoconf messages to configuration for processing
         :return:
         """
+        if self.should_stop and len(self.autoconf_updates) == 0:
+            return
         self.autoconf_timer_thread = Timer(
             interval=1, function=self.send_autoconf_updates
         )
         self.autoconf_timer_thread.start()
 
     def send_autoconf_updates(self):
+        if len(self.autoconf_updates) == 0:
+            self.setup_autoconf_update_timer()
+            return
         try:
-            if len(self.autoconf_updates) == 0:
-                return
             autoconf_updates_to_send = self.autoconf_updates[:MAX_AUTOCONF_UPDATES]
             log.info(
                 "About to send {} autoconf updates".format(
@@ -207,6 +211,7 @@ class ExaBGP:
         log.info("Exiting ExaBGP")
         if self.sio is not None:
             self.sio.disconnect()
+        self.should_stop = True
         log.info("ExaBGP exited")
 
 

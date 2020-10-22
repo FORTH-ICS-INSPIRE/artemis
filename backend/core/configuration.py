@@ -571,31 +571,26 @@ class Configuration:
             return (existing_rules_found, rule_extension_needed)
 
         def translate_learn_rule_dicts_to_yaml_conf(
-            self, rule_prefix, rule_asns, rules, withdrawal=False
+            self, yaml_conf, rule_prefix, rule_asns, rules, withdrawal=False
         ):
             """
             Translates the dicts from translate_learn_rule_msg_to_dicts
             function into yaml configuration,
             preserving the order and comments of the current file
+            (edits the yaml_conf in-place)
+            :param yaml_conf: <dict>
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
             :param rules: <list><dict>
             :param withdrawal: <bool>
-            :return: (<dict>, <bool>)
+            :return: (<str>, <bool>)
             """
 
             if (withdrawal and not rule_prefix) or (
                 not withdrawal and (not rule_prefix or not rule_asns or not rules)
             ):
-                return ("problem with rule installation", False)
-            yaml_conf = None
+                return "problem with rule installation", False
             try:
-                with open(self.file, "r") as f:
-                    raw = f.read()
-                yaml_conf = ruamel.yaml.load(
-                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
-                )
-
                 if rule_prefix and withdrawal:
                     rules_to_be_deleted = []
                     for existing_rule in yaml_conf["rules"]:
@@ -630,7 +625,7 @@ class Configuration:
                     for prefix_anchor in rule_prefix.values():
                         if prefix_anchor in yaml_conf["prefixes"]:
                             del yaml_conf["prefixes"][prefix_anchor]
-                    return (yaml_conf, True)
+                    return "ok", True
 
                 # create prefix anchors
                 created_prefix_anchors = self.get_created_prefix_anchors_from_new_rule(
@@ -706,7 +701,7 @@ class Configuration:
                     "problem with rule installation; exception during yaml processing",
                     False,
                 )
-            return (yaml_conf, True)
+            return "ok", True
 
         def handle_hijack_learn_rule_request(self, message):
             """
@@ -723,26 +718,40 @@ class Configuration:
             :return: -
             """
             message.ack()
-            raw = message.payload
-            log.debug("payload: {}".format(raw))
+            payload = message.payload
+            log.debug("payload: {}".format(payload))
+
+            # load initial YAML configuration from file
+            with open(self.file, "r") as f:
+                raw = f.read()
+                yaml_conf = ruamel.yaml.load(
+                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                )
+
+            # translate the BGP update information into ARTEMIS conf primitives
             (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
-                raw
+                payload
             )
-            (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                rule_prefix, rule_asns, rules
+
+            # create the actual ARTEMIS configuration (use copy in case the conf creation fails)
+            yaml_conf_clone = copy.deepcopy(yaml_conf)
+            msg, ok = self.translate_learn_rule_dicts_to_yaml_conf(
+                yaml_conf_clone, rule_prefix, rule_asns, rules
             )
             if ok:
+                # update running configuration
+                yaml_conf = copy.deepcopy(yaml_conf_clone)
                 yaml_conf_str = ruamel.yaml.dump(
                     yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
                 )
             else:
-                yaml_conf_str = yaml_conf
+                yaml_conf_str = msg
 
-            if raw["action"] == "approve" and ok:
+            if payload["action"] == "approve" and ok:
                 # store the new configuration to file
                 self._write_conf_via_tmp_file(yaml_conf)
 
-            if raw["action"] in ["show", "approve"]:
+            if payload["action"] in ["show", "approve"]:
                 # reply back to the sender with the extra yaml configuration
                 # message.
                 self.producer.publish(
@@ -755,7 +764,8 @@ class Configuration:
                     serializer="ujson",
                 )
 
-        def translate_bgp_update_to_dicts(self, bgp_update):
+        @staticmethod
+        def translate_bgp_update_to_dicts(bgp_update):
             """
             Translates a BGP update message payload
             into ARTEMIS-compatible dictionaries
@@ -843,14 +853,14 @@ class Configuration:
 
             except Exception:
                 log.exception("{}".format(bgp_update))
-                return (None, None, None)
+                return None, None, None
 
-            return (rule_prefix, rule_asns, rules)
+            return rule_prefix, rule_asns, rules
 
         def handle_autoconf_updates(self, message):
             """
-            Receives a "autoconf-update" message, translates the corresponding
-            BGP update into ARTEMIS configuration and rewrites the configuration
+            Receives a "autoconf-update" message batch, translates the corresponding
+            BGP updates into ARTEMIS configuration and rewrites the configuration
             :param message:
             :return:
             """
@@ -858,22 +868,52 @@ class Configuration:
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
 
             try:
-                bgp_update = message.payload
-                # if you have seen the exact same update before, do nothing
-                if self.redis.get(bgp_update["key"]):
-                    return
+                bgp_updates = message.payload
+                if not isinstance(bgp_updates, list):
+                    bgp_updates = [bgp_updates]
 
-                (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
-                    bgp_update
-                )
-                withdrawal = False
-                if bgp_update["type"] == "W":
-                    withdrawal = True
-                (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                    rule_prefix, rule_asns, rules, withdrawal=withdrawal
-                )
-                if ok:
-                    # store the new configuration to file
+                # load initial YAML configuration from file
+                with open(self.file, "r") as f:
+                    raw = f.read()
+                    yaml_conf = ruamel.yaml.load(
+                        raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                    )
+
+                # process the autoconf updates
+                conf_needs_update = False
+                for bgp_update in bgp_updates:
+                    # if you have seen the exact same update before, do nothing
+                    if self.redis.get(bgp_update["key"]):
+                        return
+
+                    # translate the BGP update information into ARTEMIS conf primitives
+                    (
+                        rule_prefix,
+                        rule_asns,
+                        rules,
+                    ) = self.translate_bgp_update_to_dicts(bgp_update)
+
+                    # check if withdrawal (which may mean prefix/rule removal)
+                    withdrawal = False
+                    if bgp_update["type"] == "W":
+                        withdrawal = True
+
+                    # create the actual ARTEMIS configuration (use copy in case the conf creation fails)
+                    yaml_conf_clone = copy.deepcopy(yaml_conf)
+                    msg, ok = self.translate_learn_rule_dicts_to_yaml_conf(
+                        yaml_conf_clone,
+                        rule_prefix,
+                        rule_asns,
+                        rules,
+                        withdrawal=withdrawal,
+                    )
+                    if ok:
+                        # update running configuration
+                        yaml_conf = copy.deepcopy(yaml_conf_clone)
+                        conf_needs_update = True
+
+                # store the updated configuration to file
+                if conf_needs_update:
                     self._write_conf_via_tmp_file(yaml_conf)
 
             except Exception:

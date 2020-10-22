@@ -203,11 +203,11 @@ class ExaBGP:
             except Exception:
                 log.exception("exception")
 
-    def exit(self, **kwargs):
+    def exit(self, signum, frame):
         log.info("Exiting ExaBGP")
         if self.sio is not None:
             self.sio.disconnect()
-            self.sio.wait()
+        log.info("ExaBGP exited")
 
 
 if __name__ == "__main__":

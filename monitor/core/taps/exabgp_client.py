@@ -66,6 +66,8 @@ class ExaBGP:
         """
         if self.should_stop and len(self.autoconf_updates) == 0:
             log.info("ExaBGP exited normally")
+            if self.connection is not None:
+                self.connection.release()
             redis.set("exabgp_{}_running".format(self.host), 0)
             return
         self.autoconf_timer_thread = Timer(
@@ -85,6 +87,8 @@ class ExaBGP:
                 )
             )
             self.autoconf_goahead = False
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
             with Producer(self.connection) as producer:
                 producer.publish(
                     autoconf_updates_to_send,
@@ -97,6 +101,8 @@ class ExaBGP:
             for i in range(len(autoconf_updates_to_send)):
                 del self.autoconf_updates[0]
             log.info("{} autoconf updates remain".format(len(self.autoconf_updates)))
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
             with Consumer(
                 self.connection,
                 on_message=self.handle_autoconf_update_goahead_reply,
@@ -105,6 +111,8 @@ class ExaBGP:
             ):
                 while not self.autoconf_goahead:
                     try:
+                        if self.connection is None:
+                            self.connection = Connection(RABBITMQ_URI)
                         self.connection.drain_events(
                             timeout=MAX_AUTOCONF_NOTIFY_TIMEOUT
                         )
@@ -142,6 +150,8 @@ class ExaBGP:
                 start_wait_time += 1
                 if start_wait_time >= MAX_START_WAIT_TIME:
                     log.info("ExaBGP exited while waiting to start")
+                    if self.connection is not None:
+                        self.connection.release()
                     return
 
             if self.autoconf:

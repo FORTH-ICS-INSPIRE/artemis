@@ -2,6 +2,7 @@ import argparse
 import os
 import signal
 import socket
+import time
 from threading import Timer
 
 import redis
@@ -30,6 +31,7 @@ DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 AUTOCONF_INTERVAL = 1
 MAX_AUTOCONF_UPDATES = 20
 MAX_AUTOCONF_NOTIFY_TIMEOUT = 60
+MAX_START_WAIT_TIME = 60
 
 
 class ExaBGP:
@@ -63,6 +65,8 @@ class ExaBGP:
         :return:
         """
         if self.should_stop and len(self.autoconf_updates) == 0:
+            log.info("ExaBGP exited normally")
+            redis.set("exabgp_{}_running".format(self.host), 0)
             return
         self.autoconf_timer_thread = Timer(
             interval=1, function=self.send_autoconf_updates
@@ -130,6 +134,15 @@ class ExaBGP:
                 priority=3,
                 random=True,
             )
+
+            # wait until go-ahead from potentially running previous tap
+            start_wait_time = 0
+            while redis.getset("exabgp_{}_running".format(self.host), 1) == b"1":
+                time.sleep(1)
+                start_wait_time += 1
+                if start_wait_time >= MAX_START_WAIT_TIME:
+                    log.info("ExaBGP exited while waiting to start")
+                    return
 
             if self.autoconf:
                 if self.autoconf_timer_thread is not None:
@@ -211,8 +224,9 @@ class ExaBGP:
         log.info("Exiting ExaBGP")
         if self.sio is not None:
             self.sio.disconnect()
+            self.sio.wait()
         self.should_stop = True
-        log.info("ExaBGP exited")
+        log.info("ExaBGP scheduled to exit...")
 
 
 if __name__ == "__main__":

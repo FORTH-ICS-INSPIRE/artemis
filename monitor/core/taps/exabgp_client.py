@@ -1,6 +1,8 @@
 import argparse
 import os
 import signal
+import socket
+from threading import Timer
 
 import redis
 from artemis_utils import get_logger
@@ -25,6 +27,9 @@ from socketIO_client import SocketIO
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
+AUTOCONF_INTERVAL = 1
+MAX_AUTOCONF_UPDATES = 20
+MAX_AUTOCONF_NOTIFY_TIMEOUT = 60
 
 
 class ExaBGP:
@@ -37,16 +42,71 @@ class ExaBGP:
         else:
             self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
-        self.autoconf = autoconf
         self.sio = None
         self.connection = None
         self.update_exchange = None
         self.config_exchange = None
         self.config_queue = None
+        self.autoconf = autoconf
         self.autoconf_goahead = False
+        self.autoconf_timer_thread = None
+        self.autoconf_updates = []
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def setup_autoconf_update_timer(self):
+        """
+        Timer for autoconf update message send. Periodically (every 1 second),
+        it sends buffered autoconf messages to configuration for processing
+        :return:
+        """
+        self.autoconf_timer_thread = Timer(
+            interval=1, function=self.send_autoconf_updates
+        )
+        self.autoconf_timer_thread.start()
+
+    def send_autoconf_updates(self):
+        try:
+            if len(self.autoconf_updates) == 0:
+                return
+            autoconf_updates_to_send = self.autoconf_updates[:MAX_AUTOCONF_UPDATES]
+            log.info(
+                "About to send {} autoconf updates".format(
+                    len(autoconf_updates_to_send)
+                )
+            )
+            self.autoconf_goahead = False
+            with Producer(self.connection) as producer:
+                producer.publish(
+                    autoconf_updates_to_send,
+                    exchange=self.config_exchange,
+                    routing_key="autoconf-update",
+                    retry=True,
+                    priority=4,
+                    serializer="ujson",
+                )
+            for i in range(len(autoconf_updates_to_send)):
+                del self.autoconf_updates[0]
+            log.info("{} autoconf updates remain".format(len(self.autoconf_updates)))
+            with Consumer(
+                self.connection,
+                on_message=self.handle_autoconf_update_goahead_reply,
+                queues=[self.config_queue],
+                accept=["ujson"],
+            ):
+                while not self.autoconf_goahead:
+                    try:
+                        self.connection.drain_events(
+                            timeout=MAX_AUTOCONF_NOTIFY_TIMEOUT
+                        )
+                    except socket.timeout:
+                        log.error("autoconf timeout")
+                        break
+        except Exception:
+            log.exception("exception")
+        finally:
+            self.setup_autoconf_update_timer()
 
     def handle_autoconf_update_goahead_reply(self, message):
         message.ack()
@@ -66,6 +126,12 @@ class ExaBGP:
                 priority=3,
                 random=True,
             )
+
+            if self.autoconf:
+                if self.autoconf_timer_thread is not None:
+                    self.autoconf_timer_thread.cancel()
+                self.setup_autoconf_update_timer()
+
             validator = mformat_validator()
 
             try:
@@ -101,30 +167,14 @@ class ExaBGP:
                             ):
                                 try:
                                     if validator.validate(msg):
-                                        with Producer(connection) as producer:
-                                            msgs = normalize_msg_path(msg)
-                                            for msg in msgs:
-                                                key_generator(msg)
-                                                log.debug(msg)
-                                                if self.autoconf:
-                                                    self.autoconf_goahead = False
-                                                    producer.publish(
-                                                        msg,
-                                                        exchange=self.config_exchange,
-                                                        routing_key="autoconf-update",
-                                                        retry=True,
-                                                        priority=4,
-                                                        serializer="ujson",
-                                                    )
-                                                    with Consumer(
-                                                        connection,
-                                                        on_message=self.handle_autoconf_update_goahead_reply,
-                                                        queues=[self.config_queue],
-                                                        accept=["ujson"],
-                                                    ):
-                                                        while not self.autoconf_goahead:
-                                                            connection.drain_events()
-                                                else:
+                                        msgs = normalize_msg_path(msg)
+                                        for msg in msgs:
+                                            key_generator(msg)
+                                            log.debug(msg)
+                                            if self.autoconf:
+                                                self.autoconf_updates.append(msg)
+                                            else:
+                                                with Producer(connection) as producer:
                                                     producer.publish(
                                                         msg,
                                                         exchange=self.update_exchange,

@@ -2,6 +2,7 @@ import argparse
 import csv
 import glob
 import time
+from threading import Timer
 
 import ujson as json
 from artemis_utils import get_logger
@@ -11,14 +12,14 @@ from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
 from artemis_utils import RABBITMQ_URI
 from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
-from kombu import Consumer
 from kombu import Producer
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
 log = get_logger()
+AUTOCONF_INTERVAL = 1
+MAX_AUTOCONF_UPDATES = 100
 
 
 class BGPStreamHist:
@@ -31,15 +32,56 @@ class BGPStreamHist:
             self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
         self.input_dir = input_dir
-        self.autoconf = autoconf
+        self.connection = None
         self.update_exchange = None
         self.config_exchange = None
         self.config_queue = None
-        self.autoconf_goahead = False
+        self.autoconf = autoconf
+        self.autoconf_timer_thread = None
+        self.autoconf_updates = []
 
-    def handle_autoconf_update_goahead_reply(self, message):
-        message.ack()
-        self.autoconf_goahead = True
+    def setup_autoconf_update_timer(self):
+        """
+        Timer for autoconf update message send. Periodically (every 1 second),
+        it sends buffered autoconf messages to configuration for processing
+        :return:
+        """
+        self.autoconf_timer_thread = Timer(
+            interval=1, function=self.send_autoconf_updates
+        )
+        self.autoconf_timer_thread.start()
+
+    def send_autoconf_updates(self):
+        if len(self.autoconf_updates) == 0:
+            self.setup_autoconf_update_timer()
+            return
+        try:
+            autoconf_updates_to_send = self.autoconf_updates[:MAX_AUTOCONF_UPDATES]
+            log.info(
+                "About to send {} autoconf updates".format(
+                    len(autoconf_updates_to_send)
+                )
+            )
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
+            with Producer(self.connection) as producer:
+                producer.publish(
+                    autoconf_updates_to_send,
+                    exchange=self.config_exchange,
+                    routing_key="autoconf-update",
+                    retry=True,
+                    priority=4,
+                    serializer="ujson",
+                )
+            for i in range(len(autoconf_updates_to_send)):
+                del self.autoconf_updates[0]
+            log.info("{} autoconf updates remain".format(len(self.autoconf_updates)))
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
+        except Exception:
+            log.exception("exception")
+        finally:
+            self.setup_autoconf_update_timer()
 
     def parse_bgpstreamhist_csvs(self):
         with Connection(RABBITMQ_URI) as connection:
@@ -47,14 +89,13 @@ class BGPStreamHist:
                 "bgp-update", connection, declare=True
             )
             self.config_exchange = create_exchange("config", connection, declare=True)
-            self.config_queue = create_queue(
-                self.module_name,
-                exchange=self.config_exchange,
-                routing_key="notify",
-                priority=3,
-                random=True,
-            )
             producer = Producer(connection)
+
+            if self.autoconf:
+                if self.autoconf_timer_thread is not None:
+                    self.autoconf_timer_thread.cancel()
+                self.setup_autoconf_update_timer()
+
             validator = mformat_validator()
             for csv_file in glob.glob("{}/*.csv".format(self.input_dir)):
                 try:
@@ -104,29 +145,9 @@ class BGPStreamHist:
                                                         key_generator(msg)
                                                         log.debug(msg)
                                                         if self.autoconf:
-                                                            self.autoconf_goahead = (
-                                                                False
+                                                            self.autoconf_updates.append(
+                                                                msg
                                                             )
-                                                            producer.publish(
-                                                                msg,
-                                                                exchange=self.config_exchange,
-                                                                routing_key="autoconf-update",
-                                                                retry=True,
-                                                                priority=4,
-                                                                serializer="ujson",
-                                                            )
-                                                            with Consumer(
-                                                                connection,
-                                                                on_message=self.handle_autoconf_update_goahead_reply,
-                                                                queues=[
-                                                                    self.config_queue
-                                                                ],
-                                                                accept=["ujson"],
-                                                            ):
-                                                                while (
-                                                                    not self.autoconf_goahead
-                                                                ):
-                                                                    connection.drain_events()
                                                         else:
                                                             producer.publish(
                                                                 msg,

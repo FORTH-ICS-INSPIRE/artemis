@@ -1,6 +1,7 @@
 import argparse
 import os
 import time
+from threading import Timer
 
 import _pybgpstream
 import redis
@@ -14,9 +15,7 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
-from kombu import Consumer
 from kombu import Producer
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -27,6 +26,8 @@ START_TIME_OFFSET = 3600  # seconds
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
+AUTOCONF_INTERVAL = 1
+MAX_AUTOCONF_UPDATES = 100
 
 
 class BGPStreamKafka:
@@ -51,6 +52,7 @@ class BGPStreamKafka:
         self.module_name = "bgpstreamkafka|{}|{}|{}".format(
             kafka_host, kafka_port, kafka_topic
         )
+        self.connection = None
         # use /0 if autoconf
         if autoconf:
             self.prefixes = ["0.0.0.0/0", "::/0"]
@@ -62,12 +64,54 @@ class BGPStreamKafka:
         self.kafka_topic = kafka_topic
         self.start = start
         self.end = end
+        self.update_exchange = None
+        self.config_exchange = None
         self.autoconf = autoconf
-        self.autoconf_goahead = False
+        self.autoconf_timer_thread = None
+        self.autoconf_updates = []
 
-    def handle_autoconf_update_goahead_reply(self, message):
-        message.ack()
-        self.autoconf_goahead = True
+    def setup_autoconf_update_timer(self):
+        """
+        Timer for autoconf update message send. Periodically (every 1 second),
+        it sends buffered autoconf messages to configuration for processing
+        :return:
+        """
+        self.autoconf_timer_thread = Timer(
+            interval=1, function=self.send_autoconf_updates
+        )
+        self.autoconf_timer_thread.start()
+
+    def send_autoconf_updates(self):
+        if len(self.autoconf_updates) == 0:
+            self.setup_autoconf_update_timer()
+            return
+        try:
+            autoconf_updates_to_send = self.autoconf_updates[:MAX_AUTOCONF_UPDATES]
+            log.info(
+                "About to send {} autoconf updates".format(
+                    len(autoconf_updates_to_send)
+                )
+            )
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
+            with Producer(self.connection) as producer:
+                producer.publish(
+                    autoconf_updates_to_send,
+                    exchange=self.config_exchange,
+                    routing_key="autoconf-update",
+                    retry=True,
+                    priority=4,
+                    serializer="ujson",
+                )
+            for i in range(len(autoconf_updates_to_send)):
+                del self.autoconf_updates[0]
+            log.info("{} autoconf updates remain".format(len(self.autoconf_updates)))
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
+        except Exception:
+            log.exception("exception")
+        finally:
+            self.setup_autoconf_update_timer()
 
     def run_bgpstream(self):
         """
@@ -106,16 +150,17 @@ class BGPStreamKafka:
         stream.start()
 
         with Connection(RABBITMQ_URI) as connection:
-            update_exchange = create_exchange("bgp-update", connection, declare=True)
-            config_exchange = create_exchange("config", connection, declare=True)
-            config_queue = create_queue(
-                self.module_name,
-                exchange=config_exchange,
-                routing_key="notify",
-                priority=3,
-                random=True,
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
             )
+            self.config_exchange = create_exchange("config", connection, declare=True)
             producer = Producer(connection)
+
+            if self.autoconf:
+                if self.autoconf_timer_thread is not None:
+                    self.autoconf_timer_thread.cancel()
+                self.setup_autoconf_update_timer()
+
             validator = mformat_validator()
             while True:
                 # get next record
@@ -189,27 +234,11 @@ class BGPStreamKafka:
                                             key_generator(msg)
                                             log.debug(msg)
                                             if self.autoconf:
-                                                self.autoconf_goahead = False
-                                                producer.publish(
-                                                    msg,
-                                                    exchange=config_exchange,
-                                                    routing_key="autoconf-update",
-                                                    retry=True,
-                                                    priority=4,
-                                                    serializer="ujson",
-                                                )
-                                                with Consumer(
-                                                    connection,
-                                                    on_message=self.handle_autoconf_update_goahead_reply,
-                                                    queues=[config_queue],
-                                                    accept=["ujson"],
-                                                ):
-                                                    while not self.autoconf_goahead:
-                                                        connection.drain_events()
+                                                self.autoconf_updates.append(msg)
                                             else:
                                                 producer.publish(
                                                     msg,
-                                                    exchange=update_exchange,
+                                                    exchange=self.update_exchange,
                                                     routing_key="update",
                                                     serializer="ujson",
                                                 )

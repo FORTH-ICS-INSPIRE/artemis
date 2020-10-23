@@ -15,7 +15,6 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Producer
 from netaddr import IPAddress
@@ -48,7 +47,6 @@ class ExaBGP:
         self.config_exchange = None
         self.config_queue = None
         self.autoconf = autoconf
-        self.autoconf_goahead = False
         self.autoconf_timer_thread = None
         self.autoconf_updates = []
         signal.signal(signal.SIGTERM, self.exit)
@@ -105,10 +103,6 @@ class ExaBGP:
         finally:
             self.setup_autoconf_update_timer()
 
-    def handle_autoconf_update_goahead_reply(self, message):
-        message.ack()
-        self.autoconf_goahead = True
-
     def start(self):
         with Connection(RABBITMQ_URI) as connection:
             self.connection = connection
@@ -116,13 +110,6 @@ class ExaBGP:
                 "bgp-update", connection, declare=True
             )
             self.config_exchange = create_exchange("config", connection, declare=True)
-            self.config_queue = create_queue(
-                self.module_name,
-                exchange=self.config_exchange,
-                routing_key="notify",
-                priority=3,
-                random=True,
-            )
 
             # wait until go-ahead from potentially running previous tap
             start_wait_time = 0

@@ -437,14 +437,17 @@ class Configuration:
 
             return (rule_prefix, rule_asns, rules)
 
-        def get_created_prefix_anchors_from_new_rule(self, yaml_conf, rule_prefix):
+        @staticmethod
+        def get_created_prefix_anchors_from_new_rule(yaml_conf, rule_prefix):
             created_prefix_anchors = set()
+            all_prefixes_exist = True
             try:
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
                     if "prefixes" not in yaml_conf:
                         yaml_conf["prefixes"] = ruamel.yaml.comments.CommentedMap()
                     if prefix_anchor not in yaml_conf["prefixes"]:
+                        all_prefixes_exist = False
                         yaml_conf["prefixes"][
                             prefix_anchor
                         ] = ruamel.yaml.comments.CommentedSeq()
@@ -455,17 +458,20 @@ class Configuration:
                     )
             except Exception:
                 log.exception("exception")
-                return set()
-            return created_prefix_anchors
+                return set(), False
+            return created_prefix_anchors, all_prefixes_exist
 
-        def get_created_asn_anchors_from_new_rule(self, yaml_conf, rule_asns):
+        @staticmethod
+        def get_created_asn_anchors_from_new_rule(yaml_conf, rule_asns):
             created_asn_anchors = set()
+            all_asns_exist = True
             try:
                 for asn in sorted(rule_asns):
                     asn_anchor = rule_asns[asn]
                     if "asns" not in yaml_conf:
                         yaml_conf["asns"] = ruamel.yaml.comments.CommentedMap()
                     if asn_anchor not in yaml_conf["asns"]:
+                        all_asns_exist = False
                         yaml_conf["asns"][
                             asn_anchor
                         ] = ruamel.yaml.comments.CommentedSeq()
@@ -476,11 +482,11 @@ class Configuration:
                     )
             except Exception:
                 log.exception("exception")
-            return created_asn_anchors
+                return set(), False
+            return created_asn_anchors, all_asns_exist
 
-        def get_existing_rules_from_new_rule(
-            self, yaml_conf, rule_prefix, rule_asns, rule
-        ):
+        @staticmethod
+        def get_existing_rules_from_new_rule(yaml_conf, rule_prefix, rule_asns, rule):
             try:
                 # calculate origin asns for the new rule (int format)
                 new_rule_origin_asns = set()
@@ -628,23 +634,29 @@ class Configuration:
                     return "ok", True
 
                 # create prefix anchors
-                created_prefix_anchors = self.get_created_prefix_anchors_from_new_rule(
+                created_prefix_anchors, prefixes_exist = Configuration.Worker.get_created_prefix_anchors_from_new_rule(
                     yaml_conf, rule_prefix
                 )
 
                 # create asn anchors
-                created_asn_anchors = self.get_created_asn_anchors_from_new_rule(
+                created_asn_anchors, asns_exist = Configuration.Worker.get_created_asn_anchors_from_new_rule(
                     yaml_conf, rule_asns
                 )
 
                 # append rules
                 for rule in rules:
-                    (
-                        existing_rules_found,
-                        rule_update_needed,
-                    ) = self.get_existing_rules_from_new_rule(
-                        yaml_conf, rule_prefix, rule_asns, rule
-                    )
+                    # declare new rules directly for non-existent prefixes (optimization)
+                    if prefixes_exist:
+                        (
+                            existing_rules_found,
+                            rule_update_needed,
+                        ) = Configuration.Worker.get_existing_rules_from_new_rule(
+                            yaml_conf, rule_prefix, rule_asns, rule
+                        )
+                    else:
+                        existing_rules_found = []
+                        rule_update_needed = False
+
                     # if no existing rule, make a new one
                     if not existing_rules_found:
                         rule_map = ruamel.yaml.comments.CommentedMap()

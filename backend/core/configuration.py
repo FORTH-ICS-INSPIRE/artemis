@@ -898,9 +898,16 @@ class Configuration:
 
                 # process the autoconf updates
                 conf_needs_update = False
+                updates_processed = True
                 for bgp_update in bgp_updates:
                     # if you have seen the exact same update before, do nothing
                     if self.redis.get(bgp_update["key"]):
+                        return
+                    if self.redis.exists(
+                        "autoconf-update-keys-to-process"
+                    ) and not self.redis.sismember(
+                        "autoconf-update-keys-to-process", bgp_update["key"]
+                    ):
                         return
 
                     # translate the BGP update information into ARTEMIS conf primitives
@@ -928,11 +935,23 @@ class Configuration:
                         log.error(rules)
                         # cancel operation, write nothing (this is done for optimization, even if we miss some updates)
                         conf_needs_update = False
+                        updates_processed = False
                         break
 
                 # store the updated configuration to file
                 if conf_needs_update:
                     self._write_conf_via_tmp_file(yaml_conf)
+
+                # acknowledge the processing of autoconf BGP updates using redis
+                if updates_processed and self.redis.exists(
+                    "autoconf-update-keys-to-process"
+                ):
+                    for bgp_update in bgp_updates:
+                        redis_pipeline = self.redis.pipeline()
+                        redis_pipeline.srem(
+                            "autoconf-update-keys-to-process", bgp_update["key"]
+                        )
+                        redis_pipeline.execute()
 
             except Exception:
                 log.exception("exception")

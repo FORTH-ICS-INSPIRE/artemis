@@ -25,7 +25,7 @@ from socketIO_client import SocketIO
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
-AUTOCONF_INTERVAL = 1
+AUTOCONF_INTERVAL = 10
 MAX_AUTOCONF_UPDATES = 100
 MAX_START_WAIT_TIME = 60
 
@@ -48,40 +48,59 @@ class ExaBGP:
         self.config_queue = None
         self.autoconf = autoconf
         self.autoconf_timer_thread = None
-        self.autoconf_updates = []
+        self.autoconf_updates = {}
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def setup_autoconf_update_timer(self):
         """
-        Timer for autoconf update message send. Periodically (every 1 second),
+        Timer for autoconf update message send. Periodically (every AUTOCONF_INTERVAL seconds),
         it sends buffered autoconf messages to configuration for processing
         :return:
         """
-        if self.should_stop and len(self.autoconf_updates) == 0:
+        autoconf_update_keys_to_process = set(
+            map(
+                lambda x: x.decode("ascii"),
+                redis.smembers("autoconf-update-keys-to-process"),
+            )
+        )
+        if self.should_stop and len(autoconf_update_keys_to_process) == 0:
+            if self.sio is not None:
+                self.sio.disconnect()
+                self.sio.wait()
             log.info("ExaBGP exited normally")
             if self.connection is not None:
                 self.connection.release()
             redis.set("exabgp_{}_running".format(self.host), 0)
             return
         self.autoconf_timer_thread = Timer(
-            interval=1, function=self.send_autoconf_updates
+            interval=AUTOCONF_INTERVAL, function=self.send_autoconf_updates
         )
         self.autoconf_timer_thread.start()
 
     def send_autoconf_updates(self):
-        if len(self.autoconf_updates) == 0:
+        autoconf_update_keys_to_process = set(
+            map(
+                lambda x: x.decode("ascii"),
+                redis.smembers("autoconf-update-keys-to-process"),
+            )
+        )
+        if len(autoconf_update_keys_to_process) == 0:
             self.setup_autoconf_update_timer()
             return
         try:
-            autoconf_updates_to_send = self.autoconf_updates[:MAX_AUTOCONF_UPDATES]
+            autoconf_updates_keys_to_send = list(autoconf_update_keys_to_process)[
+                :MAX_AUTOCONF_UPDATES
+            ]
+            autoconf_updates_to_send = []
+            for update_key in autoconf_updates_keys_to_send:
+                autoconf_updates_to_send.append(self.autoconf_updates[update_key])
             log.info(
-                "About to send {} autoconf updates".format(
+                "Sending {} autoconf updates to configuration".format(
                     len(autoconf_updates_to_send)
                 )
             )
-            self.autoconf_goahead = False
             if self.connection is None:
                 self.connection = Connection(RABBITMQ_URI)
             with Producer(self.connection) as producer:
@@ -93,9 +112,6 @@ class ExaBGP:
                     priority=4,
                     serializer="ujson",
                 )
-            for i in range(len(autoconf_updates_to_send)):
-                del self.autoconf_updates[0]
-            log.info("{} autoconf updates remain".format(len(self.autoconf_updates)))
             if self.connection is None:
                 self.connection = Connection(RABBITMQ_URI)
         except Exception:
@@ -167,7 +183,14 @@ class ExaBGP:
                                             key_generator(msg)
                                             log.debug(msg)
                                             if self.autoconf:
-                                                self.autoconf_updates.append(msg)
+                                                self.autoconf_updates[msg["key"]] = msg
+                                                # mark the autoconf BGP updates for configuration processing in redis
+                                                redis_pipeline = redis.pipeline()
+                                                redis_pipeline.sadd(
+                                                    "autoconf-update-keys-to-process",
+                                                    msg["key"],
+                                                )
+                                                redis_pipeline.execute()
                                             else:
                                                 with Producer(connection) as producer:
                                                     producer.publish(
@@ -200,7 +223,13 @@ class ExaBGP:
 
     def exit(self, signum, frame):
         log.info("Exiting ExaBGP")
-        if self.sio is not None:
+        autoconf_update_keys_to_process = set(
+            map(
+                lambda x: x.decode("ascii"),
+                redis.smembers("autoconf-update-keys-to-process"),
+            )
+        )
+        if self.sio is not None and len(autoconf_update_keys_to_process) == 0:
             self.sio.disconnect()
             self.sio.wait()
         self.should_stop = True

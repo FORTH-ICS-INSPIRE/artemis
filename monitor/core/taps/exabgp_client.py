@@ -1,7 +1,6 @@
 import argparse
 import os
 import signal
-import socket
 import time
 from threading import Timer
 
@@ -18,7 +17,6 @@ from artemis_utils import REDIS_PORT
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
-from kombu import Consumer
 from kombu import Producer
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -29,8 +27,7 @@ log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 AUTOCONF_INTERVAL = 1
-MAX_AUTOCONF_UPDATES = 20
-MAX_AUTOCONF_NOTIFY_TIMEOUT = 60
+MAX_AUTOCONF_UPDATES = 100
 MAX_START_WAIT_TIME = 60
 
 
@@ -103,22 +100,6 @@ class ExaBGP:
             log.info("{} autoconf updates remain".format(len(self.autoconf_updates)))
             if self.connection is None:
                 self.connection = Connection(RABBITMQ_URI)
-            with Consumer(
-                self.connection,
-                on_message=self.handle_autoconf_update_goahead_reply,
-                queues=[self.config_queue],
-                accept=["ujson"],
-            ):
-                while not self.autoconf_goahead:
-                    try:
-                        if self.connection is None:
-                            self.connection = Connection(RABBITMQ_URI)
-                        self.connection.drain_events(
-                            timeout=MAX_AUTOCONF_NOTIFY_TIMEOUT
-                        )
-                    except socket.timeout:
-                        log.error("autoconf timeout")
-                        break
         except Exception:
             log.exception("exception")
         finally:

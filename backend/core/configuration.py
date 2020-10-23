@@ -230,10 +230,12 @@ class Configuration:
 
                 # Case received config from Frontend with comment
                 comment = None
+                from_frontend = False
                 if isinstance(raw_, dict) and "comment" in raw_:
                     comment = raw_["comment"]
                     del raw_["comment"]
                     raw = raw_["config"]
+                    from_frontend = True
                 else:
                     raw = raw_
 
@@ -257,7 +259,10 @@ class Configuration:
                     new_data_str = json.dumps(new_data, sort_keys=True)
                     if prev_data_str != new_data_str:
                         self.data = data
-                        self._update_local_config_file()
+                        # the following needs to take place only if conf came from frontend
+                        # otherwise the file is already updated to the latest version!
+                        if from_frontend:
+                            self._update_local_config_file()
                         if comment:
                             self.data["comment"] = comment
 
@@ -911,18 +916,19 @@ class Configuration:
                         withdrawal = True
 
                     # create the actual ARTEMIS configuration (use copy in case the conf creation fails)
-                    yaml_conf_clone = copy.deepcopy(yaml_conf)
                     msg, ok = self.translate_learn_rule_dicts_to_yaml_conf(
-                        yaml_conf_clone,
-                        rule_prefix,
-                        rule_asns,
-                        rules,
-                        withdrawal=withdrawal,
+                        yaml_conf, rule_prefix, rule_asns, rules, withdrawal=withdrawal
                     )
                     if ok:
                         # update running configuration
-                        yaml_conf = copy.deepcopy(yaml_conf_clone)
                         conf_needs_update = True
+                    else:
+                        log.error("!!!PROBLEM with rule autoconf installation !!!!!")
+                        log.error(msg)
+                        log.error(rules)
+                        # cancel operation, write nothing (this is done for optimization, even if we miss some updates)
+                        conf_needs_update = False
+                        break
 
                 # store the updated configuration to file
                 if conf_needs_update:

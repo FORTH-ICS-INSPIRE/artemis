@@ -932,7 +932,14 @@ class Configuration:
                     else:
                         log.error("!!!PROBLEM with rule autoconf installation !!!!!")
                         log.error(msg)
-                        log.error(rules)
+                        log.error(bgp_update)
+                        # remove erroneous update from circulation
+                        if self.redis.exists("autoconf-update-keys-to-process"):
+                            redis_pipeline = self.redis.pipeline()
+                            redis_pipeline.srem(
+                                "autoconf-update-keys-to-process", bgp_update["key"]
+                            )
+                            redis_pipeline.execute()
                         # cancel operation, write nothing (this is done for optimization, even if we miss some updates)
                         conf_needs_update = False
                         updates_processed = False

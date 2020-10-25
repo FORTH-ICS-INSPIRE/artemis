@@ -1,8 +1,0 @@
-prefixes: {}
-monitors:
-  exabgp:
-  - ip: exabgpmonitor
-    port: 5000
-    autoconf: "true"
-asns: {}
-rules: []

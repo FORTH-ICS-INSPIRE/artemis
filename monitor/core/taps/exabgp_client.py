@@ -81,14 +81,14 @@ class ExaBGP:
         self.autoconf_timer_thread.start()
 
     def send_autoconf_updates(self):
+        # clean up unneeded updates stored in RAM (with thread-safe access)
+        lock.acquire()
         autoconf_update_keys_to_process = set(
             map(
                 lambda x: x.decode("ascii"),
                 redis.smembers("autoconf-update-keys-to-process"),
             )
         )
-        # clean up unneeded updates stored in RAM (with thread-safe access)
-        lock.acquire()
         try:
             keys_to_remove = (
                 set(self.autoconf_updates.keys()) - autoconf_update_keys_to_process
@@ -99,16 +99,19 @@ class ExaBGP:
             log.exception("exception")
         finally:
             lock.release()
+
         if len(autoconf_update_keys_to_process) == 0:
             self.previous_redis_autoconf_updates_counter = 0
             self.setup_autoconf_update_timer()
             return
+
         # check if configuration is overwhelmed; if yes, back off to reduce aggressiveness
         if self.previous_redis_autoconf_updates_counter == len(
             autoconf_update_keys_to_process
         ):
             self.setup_autoconf_update_timer()
             return
+
         try:
             autoconf_updates_keys_to_send = list(autoconf_update_keys_to_process)[
                 :MAX_AUTOCONF_UPDATES

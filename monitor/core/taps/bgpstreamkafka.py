@@ -1,7 +1,6 @@
 import argparse
 import os
 import time
-from threading import Timer
 
 import _pybgpstream
 import redis
@@ -26,8 +25,6 @@ START_TIME_OFFSET = 3600  # seconds
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
-AUTOCONF_INTERVAL = 1
-MAX_AUTOCONF_UPDATES = 100
 
 
 class BGPStreamKafka:
@@ -39,7 +36,6 @@ class BGPStreamKafka:
         kafka_topic="openbmp.bmp_raw",
         start=0,
         end=0,
-        autoconf=False,
     ):
         """
         :param prefixes_file: <str> input prefix json
@@ -53,11 +49,7 @@ class BGPStreamKafka:
             kafka_host, kafka_port, kafka_topic
         )
         self.connection = None
-        # use /0 if autoconf
-        if autoconf:
-            self.prefixes = ["0.0.0.0/0", "::/0"]
-        else:
-            self.prefixes = load_json(prefixes_file)
+        self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
         self.kafka_host = kafka_host
         self.kafka_port = kafka_port
@@ -65,53 +57,6 @@ class BGPStreamKafka:
         self.start = start
         self.end = end
         self.update_exchange = None
-        self.config_exchange = None
-        self.autoconf = autoconf
-        self.autoconf_timer_thread = None
-        self.autoconf_updates = []
-
-    def setup_autoconf_update_timer(self):
-        """
-        Timer for autoconf update message send. Periodically (every 1 second),
-        it sends buffered autoconf messages to configuration for processing
-        :return:
-        """
-        self.autoconf_timer_thread = Timer(
-            interval=1, function=self.send_autoconf_updates
-        )
-        self.autoconf_timer_thread.start()
-
-    def send_autoconf_updates(self):
-        if len(self.autoconf_updates) == 0:
-            self.setup_autoconf_update_timer()
-            return
-        try:
-            autoconf_updates_to_send = self.autoconf_updates[:MAX_AUTOCONF_UPDATES]
-            log.info(
-                "About to send {} autoconf updates".format(
-                    len(autoconf_updates_to_send)
-                )
-            )
-            if self.connection is None:
-                self.connection = Connection(RABBITMQ_URI)
-            with Producer(self.connection) as producer:
-                producer.publish(
-                    autoconf_updates_to_send,
-                    exchange=self.config_exchange,
-                    routing_key="autoconf-update",
-                    retry=True,
-                    priority=4,
-                    serializer="ujson",
-                )
-            for i in range(len(autoconf_updates_to_send)):
-                del self.autoconf_updates[0]
-            log.info("{} autoconf updates remain".format(len(self.autoconf_updates)))
-            if self.connection is None:
-                self.connection = Connection(RABBITMQ_URI)
-        except Exception:
-            log.exception("exception")
-        finally:
-            self.setup_autoconf_update_timer()
 
     def run_bgpstream(self):
         """
@@ -153,14 +98,7 @@ class BGPStreamKafka:
             self.update_exchange = create_exchange(
                 "bgp-update", connection, declare=True
             )
-            self.config_exchange = create_exchange("config", connection, declare=True)
             producer = Producer(connection)
-
-            if self.autoconf:
-                if self.autoconf_timer_thread is not None:
-                    self.autoconf_timer_thread.cancel()
-                self.setup_autoconf_update_timer()
-
             validator = mformat_validator()
             while True:
                 # get next record
@@ -233,15 +171,12 @@ class BGPStreamKafka:
                                         for msg in msgs:
                                             key_generator(msg)
                                             log.debug(msg)
-                                            if self.autoconf:
-                                                self.autoconf_updates.append(msg)
-                                            else:
-                                                producer.publish(
-                                                    msg,
-                                                    exchange=self.update_exchange,
-                                                    routing_key="update",
-                                                    serializer="ujson",
-                                                )
+                                            producer.publish(
+                                                msg,
+                                                exchange=self.update_exchange,
+                                                routing_key="update",
+                                                serializer="ujson",
+                                            )
                                     else:
                                         log.warning(
                                             "Invalid format message: {}".format(msg)
@@ -282,13 +217,6 @@ if __name__ == "__main__":
         default="openbmp.bmp_raw",
         help="kafka topic",
     )
-    parser.add_argument(
-        "-a",
-        "--autoconf",
-        dest="autoconf",
-        action="store_true",
-        help="Use the feed from this kafka BMP route collector to build the configuration",
-    )
 
     args = parser.parse_args()
 
@@ -310,7 +238,6 @@ if __name__ == "__main__":
             args.kafka_topic,
             start_time,
             0,
-            args.autoconf,
         )
         bgpstreamkafka_instance.run_bgpstream()
     except Exception:

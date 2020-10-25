@@ -388,8 +388,6 @@ class Monitor:
                     "--dir",
                     bgpstreamhist_dir,
                 ]
-                if "autoconf" in self.monitors["bgpstreamhist"]:
-                    bgpstreamhist_cmd.append("-a")
                 p = Popen(bgpstreamhist_cmd, shell=False)
                 self.process_ids.append(
                     (
@@ -457,8 +455,6 @@ class Monitor:
                     "--kafka_topic",
                     str(self.monitors["bgpstreamkafka"]["topic"]),
                 ]
-                if "autoconf" in self.monitors["bgpstreamkafka"]:
-                    bgpstreamkafka_cmd.append("-a")
                 p = Popen(bgpstreamkafka_cmd, shell=False)
                 self.process_ids.append(
                     (

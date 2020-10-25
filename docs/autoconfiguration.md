@@ -3,6 +3,7 @@
 The workflow to enable auto-configuration via trusted local feeds (over exaBGP) is the following:
 
 1. First, connect ARTEMIS exabgp container with your local feed, following the steps in [this wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
+*Note that only exaBGP monitoring can be current used for auto-configuration.*
 
 2. Then, you may start with a minimal configuration file as follows:
 
@@ -173,29 +174,3 @@ associated feed and are of the form ("A" meaning announcement):
           mitigation: manual
 
     Note that withdrawals will result in prefix and rule deletion (but ASNs are preserved for future use).
-
-## Historical BGP updates
-**You can use auto-configuration also with historical BGP updates, as follows:**
-
-    prefixes: {}
-    monitors:
-        ...
-        bgpstreamhist:
-            dir: /tmp/csv_dir
-            autoconf: "true"
-    asns: {}
-    rules: []
-
-## BMP feeds
-**You can use auto-configuration also with [`bgpstreamkafka` BMP feeds](https://bgpartemis.readthedocs.io/en/latest/bgpstreambmp/), as follows:**
-
-    prefixes: {}
-    monitors:
-        ...
-    bgpstreamkafka:
-        host: <YOUR_KAFKA_CONTAINER_HOST>
-        port: <YOUR_KAFKA_PORT>
-        topic: <YOUR_DESIRED_TOPIC>
-        autoconf: "true"
-    asns: {}
-    rules: []

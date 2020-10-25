@@ -27,7 +27,6 @@ redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 AUTOCONF_INTERVAL = 10
 MAX_AUTOCONF_UPDATES = 100
-MAX_START_WAIT_TIME = 10 * 60
 
 
 class ExaBGP:
@@ -68,10 +67,10 @@ class ExaBGP:
         if self.should_stop and len(autoconf_update_keys_to_process) == 0:
             if self.sio is not None:
                 self.sio.disconnect()
-            log.info("ExaBGP exited normally")
             if self.connection is not None:
                 self.connection.release()
             redis.set("exabgp_{}_running".format(self.host), 0)
+            log.info("ExaBGP exited")
             return
         self.autoconf_timer_thread = Timer(
             interval=AUTOCONF_INTERVAL, function=self.send_autoconf_updates
@@ -127,15 +126,11 @@ class ExaBGP:
             self.config_exchange = create_exchange("config", connection, declare=True)
 
             # wait until go-ahead from potentially running previous tap
-            start_wait_time = 0
             while redis.getset("exabgp_{}_running".format(self.host), 1) == b"1":
-                if start_wait_time >= MAX_START_WAIT_TIME:
-                    log.info("ExaBGP exited while waiting to start")
-                    if self.connection is not None:
-                        self.connection.release()
-                    return
                 time.sleep(1)
-                start_wait_time += 1
+                if self.should_stop:
+                    log.info("ExaBGP exited")
+                    return
 
             if self.autoconf:
                 if self.autoconf_timer_thread is not None:
@@ -222,7 +217,6 @@ class ExaBGP:
 
     def exit(self, signum, frame):
         log.info("Exiting ExaBGP")
-        autoconf_update_keys_to_process = set()
         if self.autoconf:
             autoconf_update_keys_to_process = set(
                 map(
@@ -230,11 +224,20 @@ class ExaBGP:
                     redis.smembers("autoconf-update-keys-to-process"),
                 )
             )
-        # finish with sio now if there are not any pending autoconf updates
-        if self.sio is not None and len(autoconf_update_keys_to_process) == 0:
-            self.sio.disconnect()
+
+            if len(autoconf_update_keys_to_process) == 0:
+                # finish with sio now if there are not any pending autoconf updates
+                if self.sio is not None:
+                    self.sio.disconnect()
+                log.info("ExaBGP scheduled to exit...")
+        else:
+            if self.sio is not None:
+                self.sio.disconnect()
+            if self.connection is not None:
+                self.connection.release()
+            redis.set("exabgp_{}_running".format(self.host), 0)
+            log.info("ExaBGP exited")
         self.should_stop = True
-        log.info("ExaBGP scheduled to exit...")
 
 
 if __name__ == "__main__":

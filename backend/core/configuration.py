@@ -1156,21 +1156,10 @@ class Configuration:
                     if not info or not set(info).issubset(self.available_bgpstreamlive):
                         raise ArtemisError("invalid-bgpstreamlive-project", info)
                 elif key == "bgpstreamkafka":
-                    if not set(info.keys() - set(["autoconf"])).issubset(
-                        self.required_bgpstreamkafka
-                    ):
+                    if not set(info.keys()).issubset(self.required_bgpstreamkafka):
                         raise ArtemisError(
                             "invalid-bgpstreamkakfa-configuration", list(info.keys())
                         )
-                    if "autoconf" in info:
-                        if info["autoconf"] == "true":
-                            info["autoconf"] = True
-                        elif info["autoconf"] == "false":
-                            del info["autoconf"]
-                        else:
-                            raise ArtemisError(
-                                "invalid-bgpstreamkafka-autoconf-flag", info["autoconf"]
-                            )
                 elif key == "exabgp":
                     for entry in info:
                         if "ip" not in entry and "port" not in entry:
@@ -1193,15 +1182,8 @@ class Configuration:
                                     "invalid-exabgp-autoconf-flag", entry["autoconf"]
                                 )
                 elif key == "bgpstreamhist":
-                    if "dir" in info and "autoconf" in info:
-                        if info["autoconf"] == "true":
-                            info["autoconf"] = True
-                        elif info["autoconf"] == "false":
-                            del info["autoconf"]
-                        else:
-                            raise ArtemisError(
-                                "invalid-bgpstreamhist-autoconf-flag", info["autoconf"]
-                            )
+                    if not isinstance(info, str) or not os.path.exists(info):
+                        raise ArtemisError("invalid-bgpstreamhist-dir", info)
 
         @staticmethod
         def __check_asns(_asns):

@@ -24,10 +24,7 @@ monitors:
         host: bmp.bgpstream.caida.org
         port: 9092
         topic: '^openbmp.router--.+.peer-as--.+.bmp_raw'
-        autoconf: "true"
-    bgpstreamhist:
-        dir: "./csv_dir"
-        autoconf: "true"
+    bgpstreamhist: "./"
 asns:
     origins: &origins
     - 1
@@ -81,9 +78,6 @@ class ConfigurationTester(unittest.TestCase):
             self.worker.data["monitors"]["bgpstreamkafka"]["topic"],
             "^openbmp.router--.+.peer-as--.+.bmp_raw",
         )
-        self.assertEqual(
-            self.worker.data["monitors"]["bgpstreamkafka"]["autoconf"], True
-        )
 
         self.assertTrue("exabgp" in self.worker.data["monitors"])
         self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["ip"], "exabgp")
@@ -91,12 +85,7 @@ class ConfigurationTester(unittest.TestCase):
         self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["autoconf"], True)
 
         self.assertTrue("bgpstreamhist" in self.worker.data["monitors"])
-        self.assertEqual(
-            self.worker.data["monitors"]["bgpstreamhist"]["dir"], "./csv_dir"
-        )
-        self.assertEqual(
-            self.worker.data["monitors"]["bgpstreamhist"]["autoconf"], True
-        )
+        self.assertEqual(self.worker.data["monitors"]["bgpstreamhist"], "./")
 
     def test_asns(self):
         self.assertEqual(set(self.worker.data["asns"]["origins"]), set([1]))

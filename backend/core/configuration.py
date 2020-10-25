@@ -1,6 +1,7 @@
 import copy
 import os
 import re
+import shutil
 import signal
 import time
 from io import StringIO
@@ -1280,6 +1281,7 @@ class Configuration:
         def _write_conf_via_tmp_file(self, yaml_conf) -> NoReturn:
             with open(self.temp_file, "w") as f:
                 ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+            shutil.copymode(self.file, self.temp_file)
             os.rename(self.temp_file, self.file)
 
 

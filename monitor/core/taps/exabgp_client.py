@@ -2,6 +2,7 @@ import argparse
 import os
 import signal
 import time
+from threading import Lock
 from threading import Timer
 
 import redis
@@ -24,6 +25,7 @@ from socketIO_client import SocketIO
 
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+lock = Lock()
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 AUTOCONF_INTERVAL = 10
 MAX_AUTOCONF_UPDATES = 100
@@ -48,6 +50,7 @@ class ExaBGP:
         self.autoconf = autoconf
         self.autoconf_timer_thread = None
         self.autoconf_updates = {}
+        self.previous_redis_autoconf_updates_counter = 0
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
@@ -84,7 +87,26 @@ class ExaBGP:
                 redis.smembers("autoconf-update-keys-to-process"),
             )
         )
+        # clean up unneeded updates stored in RAM (with thread-safe access)
+        lock.acquire()
+        try:
+            keys_to_remove = (
+                set(self.autoconf_updates.keys()) - autoconf_update_keys_to_process
+            )
+            for key in keys_to_remove:
+                del self.autoconf_updates[key]
+        except Exception:
+            log.exception("exception")
+        finally:
+            lock.release()
         if len(autoconf_update_keys_to_process) == 0:
+            self.previous_redis_autoconf_updates_counter = 0
+            self.setup_autoconf_update_timer()
+            return
+        # check if configuration is overwhelmed; if yes, back off to reduce aggressiveness
+        if self.previous_redis_autoconf_updates_counter == len(
+            autoconf_update_keys_to_process
+        ):
             self.setup_autoconf_update_timer()
             return
         try:
@@ -115,6 +137,9 @@ class ExaBGP:
         except Exception:
             log.exception("exception")
         finally:
+            self.previous_redis_autoconf_updates_counter = len(
+                autoconf_update_keys_to_process
+            )
             self.setup_autoconf_update_timer()
 
     def start(self):
@@ -177,14 +202,24 @@ class ExaBGP:
                                             key_generator(msg)
                                             log.debug(msg)
                                             if self.autoconf:
-                                                self.autoconf_updates[msg["key"]] = msg
-                                                # mark the autoconf BGP updates for configuration processing in redis
-                                                redis_pipeline = redis.pipeline()
-                                                redis_pipeline.sadd(
-                                                    "autoconf-update-keys-to-process",
-                                                    msg["key"],
-                                                )
-                                                redis_pipeline.execute()
+                                                # thread-safe access to update dict
+                                                lock.acquire()
+                                                try:
+                                                    self.autoconf_updates[
+                                                        msg["key"]
+                                                    ] = msg
+                                                    # mark the autoconf BGP updates for configuration
+                                                    # processing in redis
+                                                    redis_pipeline = redis.pipeline()
+                                                    redis_pipeline.sadd(
+                                                        "autoconf-update-keys-to-process",
+                                                        msg["key"],
+                                                    )
+                                                    redis_pipeline.execute()
+                                                except Exception:
+                                                    log.exception("exception")
+                                                finally:
+                                                    lock.release()
                                             else:
                                                 with Producer(connection) as producer:
                                                     producer.publish(

@@ -235,11 +235,16 @@ class Monitor:
 
         def stop(self):
             if self.flag:
+                proc_ids_terminated = []
                 for proc_id in self.process_ids:
                     try:
                         proc_id[1].terminate()
                     except ProcessLookupError:
                         log.exception("process terminate")
+                    finally:
+                        proc_ids_terminated.append(proc_id)
+                for proc_id in proc_ids_terminated:
+                    self.process_ids.remove(proc_id)
                 self.flag = False
                 self.rules = None
                 self.monitors = None

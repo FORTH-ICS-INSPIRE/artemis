@@ -247,6 +247,10 @@ class ExaBGP:
 
                 self.sio.on("exa_message", exabgp_msg)
                 self.sio.emit("exa_subscribe", {"prefixes": self.prefixes})
+                route_refresh_command_v4 = "announce route-refresh ipv4 unicast"
+                self.sio.emit("route_command", {"command": route_refresh_command_v4})
+                route_refresh_command_v6 = "announce route-refresh ipv6 unicast"
+                self.sio.emit("route_command", {"command": route_refresh_command_v6})
                 self.sio.wait()
             except KeyboardInterrupt:
                 self.exit()

@@ -586,7 +586,14 @@ exaBGP will require properly setting the ebgp-multihop attribute on your router,
 Some useful options are the following:
 
    ```
-   md5-password <md5-secret>; # within the neighbor section to set up md5 passwords
+   # within the neighbor section to set up md5 passwords
+   md5-password <md5-secret>;
+
+   # within the neighbor section to set up both v4 and  v6 advertisements
+   family {
+        ipv4 unicast;
+        ipv6 unicast;
+   }
 
    # the following section goes before the neighbor section to add a route refresh capability
    # needed to retrieve all prefixes from neighbor routers on monitor startup

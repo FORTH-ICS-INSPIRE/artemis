@@ -43,14 +43,14 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
 
    ```
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r04 sh
-   gobgp global rib add 192.168.0.0/16
+   gobgp global rib add 192.168.0.0/16 -a ipv4
    ```
 
 4. Check in the UI that the configuration has been updated. You can repeat this to see a corresponding withdrawal:
 
    ```
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r04 sh
-   gobgp global rib del 192.168.0.0/16
+   gobgp global rib del 192.168.0.0/16 -a ipv4
    ```
 
 5. For stress-testing, create 1000 routes of the form 192.$i.$j.0/24 where i in (1 .. 10) and j in (1 .. 100):
@@ -64,5 +64,6 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
 
    ```
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r04 sh
-   gobgp global del all
+   gobgp global del all -a ipv4
+   gobgp global del all -a ipv6
    ```

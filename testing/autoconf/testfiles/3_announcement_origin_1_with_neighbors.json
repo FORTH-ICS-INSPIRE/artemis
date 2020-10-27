@@ -9,7 +9,8 @@
       4, 2, 1, 1, 1
     ],
     "prefix": "192.168.1.0/24",
-    "peer_asn": 4
+    "peer_asn": 4,
+    "learn_neighbors": true
   },
   "configuration": {
     "prefixes": {

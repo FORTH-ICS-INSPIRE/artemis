@@ -20,6 +20,7 @@ monitors:
     - ip: exabgp # this will automatically be resolved to the exabgp container's IP
       port: 5000 # default port
       autoconf: "true"
+      learn_neighbors: "true"
     bgpstreamkafka:
         host: bmp.bgpstream.caida.org
         port: 9092
@@ -83,6 +84,9 @@ class ConfigurationTester(unittest.TestCase):
         self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["ip"], "exabgp")
         self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["port"], 5000)
         self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["autoconf"], True)
+        self.assertEqual(
+            self.worker.data["monitors"]["exabgp"][0]["learn_neighbors"], True
+        )
 
         self.assertTrue("bgpstreamhist" in self.worker.data["monitors"])
         self.assertEqual(self.worker.data["monitors"]["bgpstreamhist"], "./")

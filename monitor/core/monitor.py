@@ -356,6 +356,8 @@ class Monitor:
                     ]
                     if "autoconf" in exabgp_monitor:
                         exabgp_cmd.append("-a")
+                    if "learn_neighbors" in exabgp_monitor:
+                        exabgp_cmd.append("-n")
                     p = Popen(exabgp_cmd, shell=False)
                     self.process_ids.append(
                         (

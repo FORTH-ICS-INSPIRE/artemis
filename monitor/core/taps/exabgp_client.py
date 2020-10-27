@@ -32,7 +32,7 @@ MAX_AUTOCONF_UPDATES = 100
 
 
 class ExaBGP:
-    def __init__(self, prefixes_file, host, autoconf=False):
+    def __init__(self, prefixes_file, host, autoconf=False, learn_neighbors=False):
         self.module_name = "exabgp|{}".format(host)
         self.host = host
         self.should_stop = False
@@ -50,6 +50,7 @@ class ExaBGP:
         self.autoconf = autoconf
         self.autoconf_timer_thread = None
         self.autoconf_updates = {}
+        self.learn_neighbors = learn_neighbors
         self.previous_redis_autoconf_updates_counter = 0
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
@@ -208,6 +209,8 @@ class ExaBGP:
                                                 # thread-safe access to update dict
                                                 lock.acquire()
                                                 try:
+                                                    if self.learn_neighbors:
+                                                        msg["learn_neighbors"] = True
                                                     self.autoconf_updates[
                                                         msg["key"]
                                                     ] = msg
@@ -307,17 +310,24 @@ if __name__ == "__main__":
         action="store_true",
         help="Use the feed from this local route collector to build the configuration",
     )
+    parser.add_argument(
+        "-n",
+        "--learn_neighbors",
+        dest="learn_neighbors",
+        action="store_true",
+        help="Use the community feed from this local route collector to learn neighbors",
+    )
 
     args = parser.parse_args()
     ping_redis(redis)
 
     log.info(
-        "Starting ExaBGP on {} for {} (auto-conf: {})".format(
-            args.host, args.prefixes_file, args.autoconf
+        "Starting ExaBGP on {} for {} (auto-conf: {}, learn-neighbors: {})".format(
+            args.host, args.prefixes_file, args.autoconf, args.learn_neighbors
         )
     )
     try:
-        exa = ExaBGP(args.prefixes_file, args.host, args.autoconf)
+        exa = ExaBGP(args.prefixes_file, args.host, args.autoconf, args.learn_neighbors)
         exa.start()
     except BaseException:
         log.exception("exception")

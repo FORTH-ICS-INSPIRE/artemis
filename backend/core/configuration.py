@@ -784,10 +784,11 @@ class Configuration:
                 )
 
         @staticmethod
-        def translate_bgp_update_to_dicts(bgp_update):
+        def translate_bgp_update_to_dicts(bgp_update, learn_neighbors=False):
             """
             Translates a BGP update message payload
             into ARTEMIS-compatible dictionaries
+            :param learn_neighbors: <boolean> to determine if we should learn neighbors out of this update
             :param bgp_update: {
                 "prefix": <str>,
                 "key": <str>,
@@ -835,7 +836,7 @@ class Configuration:
                         origin_asn = as_path[-1]
                         asns.add(origin_asn)
                     neighbors = set()
-                    if "communities" in bgp_update:
+                    if "communities" in bgp_update and learn_neighbors:
                         for community in bgp_update["communities"]:
                             asn = int(community["asn"])
                             value = int(community["value"])
@@ -916,13 +917,20 @@ class Configuration:
                         "autoconf-update-keys-to-process", bgp_update["key"]
                     ):
                         return
-
+                    learn_neighbors = False
+                    if (
+                        "learn_neighbors" in bgp_update
+                        and bgp_update["learn_neighbors"]
+                    ):
+                        learn_neighbors = True
                     # translate the BGP update information into ARTEMIS conf primitives
                     (
                         rule_prefix,
                         rule_asns,
                         rules,
-                    ) = self.translate_bgp_update_to_dicts(bgp_update)
+                    ) = self.translate_bgp_update_to_dicts(
+                        bgp_update, learn_neighbors=learn_neighbors
+                    )
 
                     # check if withdrawal (which may mean prefix/rule removal)
                     withdrawal = False
@@ -1198,6 +1206,21 @@ class Configuration:
                             else:
                                 raise ArtemisError(
                                     "invalid-exabgp-autoconf-flag", entry["autoconf"]
+                                )
+                        if "learn_neighbors" in entry:
+                            if not entry["autoconf"]:
+                                raise ArtemisError(
+                                    "invalid-exabgp-missing-autoconf-for-learn_neighbors",
+                                    entry["learn_neighbors"],
+                                )
+                            if entry["learn_neighbors"] == "true":
+                                entry["learn_neighbors"] = True
+                            elif entry["learn_neighbors"] == "false":
+                                del entry["learn_neighbors"]
+                            else:
+                                raise ArtemisError(
+                                    "invalid-exabgp-learn_neighbors-flag",
+                                    entry["learn_neighbors"],
                                 )
                 elif key == "bgpstreamhist":
                     if not isinstance(info, str) or not os.path.exists(info):

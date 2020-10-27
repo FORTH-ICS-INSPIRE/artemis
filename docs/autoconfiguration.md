@@ -67,6 +67,18 @@ associated feed and are of the form ("A" meaning announcement):
 
      If you also want ARTEMIS to cover `*|1|-|*` hijacks, you need to signal it with your neighbor information. To do this, we recommend to set communities in your route maps signaling the asns (e.g., peer groups) to which you propagate the announcements coming from your own network (and not from other peers, customers or upstreams).
 
+     First, you need to enable neighbor learning in the configuration:
+
+     ```
+     ...
+     exabgp:
+       - ip: exabgp   # this will automatically be resolved to the exabgp container's IP
+         port: 5000   # default port
+         autoconf: "true"
+         learn_neighbors: "true"
+     ...
+     ```
+
      To help you with this, we provide the following route-map configuration example that implements the requested functionality:
 
         ...
@@ -155,6 +167,7 @@ associated feed and are of the form ("A" meaning announcement):
           - ip: exabgp   # this will automatically be resolved to the exabgp container's IP
             port: 5000   # default port
             autoconf: "true"
+            learn_neighbors: "true"
         asns:
           AUTOCONF_AS_1: &AUTOCONF_AS_1
           - 1

@@ -649,19 +649,6 @@ The following steps need to be done for ARTEMIS to replay these records in a str
   ```
 * Activate monitoring and other modules if required
 
-*Note: you can also use historical BGP updates to automatically build your configuration file, as described [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Auto-configuration-via-trusted-local-feeds), using a sample configuration file:
-```
-prefixes: {}
-monitors:
-    ...
-    bgpstreamhist:
-        dir: /tmp/csv_dir
-        autoconf: "true"
-asns: {}
-rules: []
-```
-and replaying BGP updates with legal origins and community-annotated neighbors.
-
 ## GraphQL API
 Please check [[GraphQL API]].
 

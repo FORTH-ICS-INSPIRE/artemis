@@ -883,7 +883,8 @@ class Configuration:
             :param message:
             :return:
             """
-            message.ack()
+            if not message.acknowledged:
+                message.ack()
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
 
             try:

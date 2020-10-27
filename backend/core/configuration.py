@@ -1208,7 +1208,7 @@ class Configuration:
                                     "invalid-exabgp-autoconf-flag", entry["autoconf"]
                                 )
                         if "learn_neighbors" in entry:
-                            if not entry["autoconf"]:
+                            if "autoconf" not in entry:
                                 raise ArtemisError(
                                     "invalid-exabgp-missing-autoconf-for-learn_neighbors",
                                     entry["learn_neighbors"],

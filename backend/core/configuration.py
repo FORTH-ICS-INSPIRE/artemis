@@ -1,4 +1,5 @@
 import copy
+import difflib
 import os
 import re
 import shutil
@@ -897,6 +898,10 @@ class Configuration:
                         raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
                     )
 
+                # save initial file content to ensure that it has not changed while processing
+                with open(self.file, "r") as f:
+                    initial_content = f.readlines()
+
                 # process the autoconf updates
                 conf_needs_update = False
                 updates_processed = True
@@ -948,6 +953,19 @@ class Configuration:
 
                 # store the updated configuration to file
                 if conf_needs_update:
+                    # check final file content to ensure that it has not changed while processing
+                    with open(self.file, "r") as f:
+                        final_content = f.readlines()
+                    changes = "".join(
+                        difflib.unified_diff(initial_content, final_content)
+                    )
+                    if changes:
+                        log.info(
+                            "Configuration file changed while processing autoconf updates, "
+                            "re-running autoconf to avoid overwrites"
+                        )
+                        self.handle_autoconf_updates(message)
+                        return
                     self._write_conf_via_tmp_file(yaml_conf)
 
                 # acknowledge the processing of autoconf BGP updates using redis
@@ -960,7 +978,6 @@ class Configuration:
                             "autoconf-update-keys-to-process", bgp_update["key"]
                         )
                         redis_pipeline.execute()
-
             except Exception:
                 log.exception("exception")
 

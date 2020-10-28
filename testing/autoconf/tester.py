@@ -39,12 +39,12 @@ serialization.register(
 class AutoconfTester:
     def __init__(self):
         self.time_now = int(time.time())
-        self.autoconf_goahead = False
         self.proceed_to_next_test = True
         self.expected_configuration = None
         self.supervisor = ServerProxy(
             "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
         )
+        self.config_notify_received = False
 
     def getDbConnection(self):
         """
@@ -136,58 +136,25 @@ class AutoconfTester:
         """
         Publish next custom BGP update via the autoconf RPC.
         """
-        correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            channel=conn.default_channel,
-            durable=False,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
-        )
 
         with nested(
             conn.Consumer(
                 on_message=self.handle_config_notify,
                 queues=[self.config_queue],
                 accept=["ujson"],
-            ),
-            conn.Consumer(
-                on_message=self.handle_autoconf_update_goahead_reply,
-                queues=[callback_queue],
-                accept=["ujson"],
-            ),
+            )
         ):
-            self.autoconf_goahead = False
             with conn.Producer() as producer:
                 print("[+] Sending message '{}'".format(msg))
                 producer.publish(
                     msg,
-                    exchange="",
-                    routing_key="configuration.rpc.autoconf-update",
-                    reply_to=callback_queue.name,
-                    correlation_id=correlation_id,
+                    exchange=self.config_exchange,
+                    routing_key="autoconf-update",
                     retry=True,
-                    declare=[
-                        Queue(
-                            "configuration.rpc.autoconf-update",
-                            durable=False,
-                            max_priority=4,
-                            consumer_arguments={"x-priority": 4},
-                        ),
-                        callback_queue,
-                    ],
                     priority=4,
                     serializer="ujson",
                 )
                 print("[+] Sent message '{}'".format(msg))
-                conn.drain_events()
-                try:
-                    conn.drain_events(timeout=10)
-                except socket.timeout:
-                    # avoid infinite loop by timeout
-                    assert self.autoconf_goahead, "[-] Autoconf consumer timeout"
-                print("[+] Concluded autoconf RPC")
                 try:
                     conn.drain_events(timeout=10)
                 except socket.timeout:
@@ -195,7 +162,8 @@ class AutoconfTester:
                     assert (
                         self.config_notify_received
                     ), "[-] Config notify consumer timeout"
-                print("[+] Async received config notify")
+                assert self.config_notify_received, "[-] Config notify consumer timeout"
+            print("[+] Async received config notify")
 
     def handle_config_notify(self, msg):
         """
@@ -271,13 +239,6 @@ class AutoconfTester:
                                 )
                             )
         self.config_notify_received = True
-
-    def handle_autoconf_update_goahead_reply(self, msg):
-        """
-        Receive autoconf RPC reply and proceed
-        """
-        msg.ack()
-        self.autoconf_goahead = True
 
     def test(self):
         with Connection(RABBITMQ_URI) as connection:

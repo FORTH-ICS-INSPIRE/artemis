@@ -109,8 +109,8 @@ These changes should be sufficient to have artemis running rootless on `https://
 
 ### Setup Tool
 
-1. Edit environment variables in .env file (especially the security-related variables); please check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Environment-variables) for more information on the env variables.
-A comprehensive list of environment variables and their exact use can be found at [[Environment variables]],
+1. Edit environment variables in .env file (especially the security-related variables); please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/envvars/) for more information on the env variables.
+A comprehensive list of environment variables and their exact use can be found at [Environment variables](https://bgpartemis.readthedocs.io/en/latest/envvars/),
 detailing all variables used in the .env file used for ARTEMIS system setup (non-hijack-related).
 
 2. It is important that before starting ARTEMIS, you should setup secure access to the web application
@@ -243,7 +243,7 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    ```
    **NOTE: For security reasons, we highly recommend replacing the default certificates, as well as restricting access to the nginx server.**
 
-5. Setup logging and access to ARTEMIS logs, by checking the corresponding wiki page [[ARTEMIS logging]].
+5. Setup logging and access to ARTEMIS logs, by checking the corresponding [docs page](https://bgpartemis.readthedocs.io/en/latest/loggingconf/).
 
 You do not need to modify any other setup files and variables for now.
 Optionally, you may edit the file:
@@ -251,7 +251,7 @@ Optionally, you may edit the file:
 local_configs/frontend/webapp.cfg
 ```
 to circumvent other default parameters used in the frontend.
-These parameters and their explanation can be found at [[Additional frontend env variables]].
+These parameters and their explanation can be found at [Additional frontend env variables](https://bgpartemis.readthedocs.io/en/latest/frontendconf/).
 
 ## Starting ARTEMIS
 You can now start ARTEMIS as a multi-container application by running:
@@ -273,7 +273,7 @@ docker-compose logs
 docker-compose -f ... logs
 ```
 **The addition of a -f flag after the logs keyword will provide you running logs.
-Checking them is important to see if something went wrong. Consult also [[ARTEMIS-logging]]**.
+Checking them is important to see if something went wrong. Consult also [ARTEMIS-logging](https://bgpartemis.readthedocs.io/en/latest/loggingconf/)**.
 If everything went ok you will see an output as follows (may differ if you open up the UI in parallel):
 ```
 rabbitmq          | 2019-02-27 09:01:11.342 [info] <0.738.0> accepting AMQP connection <0.738.0> (172.21.0.4:43494 -> 172.21.0.2:5672)
@@ -288,7 +288,7 @@ rabbitmq          | 2019-02-27 09:01:11.411 [info] <0.763.0> connection <0.763.0
 Extra services that you can use with ARTEMIS are:
 
 * exabgp: local exaBGP monitor
-* grafana: visual interfaces/dashboards; please check [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Grafana-Dashboards-Timeseries)
+* grafana: visual interfaces/dashboards; please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/grafanadash/)
 
 *Note that while the bleeding-edge backend, monitor and frontend code is available in the repository, docker-compose is configured to pull the latest **stable** released images that are built remotely on [docker cloud](https://cloud.docker.com/). Optionally, you can run ARTEMIS with your own local code copy by uncommenting the following lines in docker-compose.yaml:*
 ```
@@ -337,7 +337,7 @@ https://<ARTEMIS_HOST>/admin/system
 ```
 Here the ADMIN may switch the Monitor, Detection and Mitigation micro-services of ARTEMIS on and off,
 as well as edit the configuration. The configuration file has the following (yaml) format (**please check
-[this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file) for details on the different sections**; note that reserved words are marked in bold):
+[this page](https://bgpartemis.readthedocs.io/en/latest/basicconf/) for details on the different sections**; note that reserved words are marked in bold):
 
 ```
 #
@@ -441,7 +441,7 @@ All BGP updates captured by the monitoring system in real-time can be seen here:
 ```
 https://<ARTEMIS_HOST>/main/bgpupdates/
 ```
-For information on the fields, please check [[BGP update information]].
+For information on the fields, please check [BGP update information](https://bgpartemis.readthedocs.io/en/latest/bgpupdateinfo/).
 
 You can use the embedded mouse-hover tooltip for more information on the fields.
 *Note: since the underlying data might change live, we recommend deactivating "live update" (button on the top right of the page) in case you would like to examine the content of a mouse-hover (e.g., related to a certain ASN) without it disappearing upon change. Remember to activate it again after the check!*
@@ -465,7 +465,7 @@ Specific hijacks can be examined by pressing "View" under the "More" tab, redire
 ```
 https://<ARTEMIS_HOST>/main/hijack?key=....
 ```
-For information on the fields, state and actions please check [[Hijacks, States and Actions]].
+For information on the fields, state and actions please check [Hijacks, States and Actions](https://bgpartemis.readthedocs.io/en/latest/hijackinfo/).
 
 You can use the embedded mouse-hover tooltip for more information on the fields, states and actions. *Note: since the underlying data might change live, we recommend deactivating "live update" (button on the top right of the page) in case you would like to examine the content of a mouse-hover (e.g., related to a certain ASN) without it disappearing upon change. Remember to activate it again after the check!*
 
@@ -516,6 +516,9 @@ docker-compose restart monitor
 ```
 
 ## Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
+
+### Configuration
+
 Change the following source mapping from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.exabgp.yaml#L11) to:
 ```
 - ./local_configs/monitor/exabgp.conf:/home/config/exabgp.conf
@@ -564,15 +567,40 @@ monitors:
       port: 5000 # default port
 ...
 ```
-**NOTE: We strongly recommend the use of eBGP instead of iBGP sessions between the
+### Notes
+
+1. We strongly recommend the use of eBGP instead of iBGP sessions between the
 exaBGP monitor and the local router(s), in order to have information that can be better
-used by the detection system. Since the exaBGP container is one layer behind the networking
+used by the detection system.
+
+2. Since the exaBGP container is one layer behind the networking
 stack of the ARTEMIS host, establishing a successful eBGP connection between your router and
 exaBGP will require properly setting the ebgp-multihop attribute on your router, e.g.,**
-```
->router bgp <my_as>
->neighbor <exabgp_public_ip> ebgp-multihop 2 # if the router is one physical hop away
-```
+
+   ```
+   >router bgp <my_as>
+   >neighbor <exabgp_public_ip> ebgp-multihop 2 # if the router is one physical hop away
+   ```
+
+3. For all options on how to properly configure exaBGP, please visit [this page](https://manpages.debian.org/testing/exabgp/exabgp.conf.5.en.html).
+Some useful options are the following:
+
+   ```
+   # within the neighbor section to set up md5 passwords
+   md5-password <md5-secret>;
+
+   # within the neighbor section to set up both v4 and  v6 advertisements
+   family {
+        ipv4 unicast;
+        ipv6 unicast;
+   }
+
+   # the following section goes before the neighbor section to add a route refresh capability
+   # needed to retrieve all prefixes from neighbor routers on monitor startup
+   capability {
+       route-refresh enable;
+   }
+   ```
 
 ## Replaying history
 ARTEMIS can optionally replay historical records downloaded via tools like BGPStream.
@@ -621,21 +649,8 @@ The following steps need to be done for ARTEMIS to replay these records in a str
   ```
 * Activate monitoring and other modules if required
 
-*Note: you can also use historical BGP updates to automatically build your configuration file, as described [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Auto-configuration-via-trusted-local-feeds), using a sample configuration file:
-```
-prefixes: {}
-monitors:
-    ...
-    bgpstreamhist:
-        dir: /tmp/csv_dir
-        autoconf: "true"
-asns: {}
-rules: []
-```
-and replaying BGP updates with legal origins and community-annotated neighbors.
-
 ## GraphQL API
-Please check [[GraphQL API]].
+Please check [GraphQL API](https://bgpartemis.readthedocs.io/en/latest/graphqlapi/).
 
 ## Configuring backups
 
@@ -645,7 +660,7 @@ DB_BACKUP=true
 ```
 The DB will then be regularly backed up (daily) in folder postgres-data-backup.
 
-Restoring a backed up DB: Please check [[Restoring DB from backup]].
+Restoring a backed up DB: Please check [Restoring DB from backup](https://bgpartemis.readthedocs.io/en/latest/dbrestore/).
 
 ## Auto-clean non-hijack BGP Updates
 
@@ -674,55 +689,85 @@ docker-compose down
 respectively.
 
 ## Upgrading ARTEMIS to a new version
+
+### Main steps
+
 Before upgrading, we recommend that you ensure that there is a recent (at most a day old) backup db.tar of the database under postgres-data-backup.
 Then, do the following:
-```
-docker-compose -f ... down
-## pull the latest release (if auto-merge fails, please resolve local conflicts; one way would be to use `git stash` before pulling and `git stash pop` afterwards, and then resolve any conflicts)
-git pull origin master
-```
-This will pull the latest master code and will correctly
-set docker-compose.yaml versions.
-Make sure you have copied the default configs directories under local_configs and have updated the source volume mappings accordingly; check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml) carefully for `local_configs` mappings. A sample folder structure for local_configs is the following:
-```
-$ tree local_configs
-local_configs
-├── backend
-│   ├── config.yaml
-│   ├── logging.yaml
-│   └── supervisor.d
-│       └── services.conf
-├── frontend
-│   ├── certs
-│   │   ├── cert.pem
-│   │   └── key.pem
-│   ├── config.py
-│   ├── __init__.py
-│   ├── logging.yaml
-│   ├── nginx.conf
-│   └── webapp.cfg
-└── monitor
-    ├── exabgp.conf
-    ├── logging.yaml
-    └── supervisor.d
-        └── services.conf
-```
 
-**Make sure that you also do a**
-```
-docker-compose -f ... pull
-```
-**to ensure that you are not running an outdated version of the tool.**
+1. Make sure you have copied the default configs directories under local_configs and have updated the source volume mappings accordingly; check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml) carefully for `local_configs` mappings. A sample folder structure for local_configs is the following:
 
-You are all set!
+   ```
+   $ tree local_configs
+   local_configs
+   ├── backend
+   │   ├── config.yaml
+   │   ├── logging.yaml
+   │   └── supervisor.d
+   │       └── services.conf
+   ├── frontend
+   │   ├── certs
+   │   │   ├── cert.pem
+   │   │   └── key.pem
+   │   ├── config.py
+   │   ├── __init__.py
+   │   ├── logging.yaml
+   │   ├── nginx.conf
+   │   └── webapp.cfg
+   └── monitor
+       ├── exabgp.conf
+       ├── logging.yaml
+       └── supervisor.d
+           └── services.conf
+   ```
 
-**ATTENTION: To work on a specific release the master code and the release version need to be compatible.
-Therefore, if you do not want to have access to the latest code, but work on a previous stable release, you need to do:**
+2. Deactivate current running instance:
+
+   ```
+   docker-compose -f ... down
+   ```
+
+3. Stash any local changes that should not conflict with upstream
+
+   ```
+   git stash
+   ```
+
+4. Checkout the master  branch
+
+   ```
+   git checkout master
+   ```
+
+5. Pull most recent code (including .env, versions, etc.)
+
+   ```
+   git pull origin master
+   ```
+
+6. Re-apply local changes (if auto-merge fails, resolve any conflicts)
+
+   ```
+   git stash pop
+   ```
+
+7. **Make sure that you also do a**
+   ```
+   docker-compose -f ... pull
+   ```
+   **to ensure that you are not running an outdated version of the tool's containers.**
+
+You are all set! Now you can boot ARTEMIS (`docker-compose -f ... up -d`).
+
+### Notes
+
+To work on a specific release the master code and the release version need to be compatible.
+Therefore, if you do not want to have access to the latest code, but work on a previous stable release, you need to do:
 ```
 git checkout tags/<release_id>
 ```
-**This will automatically set the
-SYSTEM_VERSION in the .env file to "release-XXXX", and sync the DB_VERSION. Always upgrade, never downgrade! A `docker-compose pull` will still be required.**
+instead of step 5. This will automatically set the
+SYSTEM_VERSION in the .env file to "release-XXXX", and sync the DB_VERSION. Always upgrade, never downgrade! A `docker-compose ... pull` will still be required.
 
 Note that to avoid merge conflicts in general,
 we recommend decoupling your local configurations from the upstream changes.
@@ -768,7 +813,7 @@ If something fails, please contact the ARTEMIS team.
 The following [file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/testing/messages.json) needs to be updated. Details to follow.
 
 ## Kubernetes deployment
-Please check [[Kubernetes Deployment]].
+Please check [Kubernetes Deployment](https://bgpartemis.readthedocs.io/en/latest/kubernetes/).
 
 ## Memory requirements
 * 4G for the base version of ARTEMIS (one database module, one monitor, one detector, one mitigator), with an "average" configuration of some 100s of prefixes/rules. Note though that this may vary depending on the form of the conf file: e.g., if you have 100s of prefixes *and* 100s of rules *and* 10s of ASNs per rule, these are essentially stored in the form of an (efficient) cross-product in RAM: 100x100x10 ~ 1 mil ~ 1GB requirements per module that uses them.
@@ -781,10 +826,10 @@ number of rules and ASNs per prefix (O(1)), you will need: 4 GB (base) + 3 x 2 x
 Therefore, with the "latest" ARTEMIS version users should be able to run ARTEMIS with a 10+G machine with no problem,
 assuming an average O(1K-10K)-elements configuration file and the default numbers of modules (1 monitor/detector/mitigator/database). Note that the incoming load of BGP updates stored in memory may also strain the RAM a bit, this is why we keep the 4G as the absolutely basic requirement and add upon it depending on the user's configuration.
 
-**ATTENTION: use [RFC2622 operators](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file#prefixes) wisely, while they are easy to express they may represent billions of prefixes underneath!**
+**ATTENTION: use [RFC2622 operators](https://bgpartemis.readthedocs.io/en/latest/basicconf/#prefixes) wisely, while they are easy to express they may represent billions of prefixes underneath!**
 
 ## Screenshots
-Please check [[UI-how-to-and-screenshots]].
+Please check [UI-how-to-and-screenshots](https://bgpartemis.readthedocs.io/en/latest/uioverview/).
 
 ## Issues and Fixes
 * IPv4 DNS resolvers

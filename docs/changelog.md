@@ -20,9 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PoC mitigation mechanism and setup (deaggregation)
 - Coverage for unit tests
 - AS Path pre-pending sequence matching support in configuration
+- Docs pages
 
 ### Changed
 - Refactor: Changed exchange / queue names
+- Heavily refactored and improved exaBGP-based auto-configuration for speed/scale
 
 ### Fixed
 - Deleting user also deletes the role mapping (#412)
@@ -32,10 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Observer fix (RMQ connection establishment) to deal with threading issues
 
 ### Removed
-- TBD (removed a feature)
+- Autoconf support in historical BGPStream (due to deprecation)
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- Wiki pages
 
 ### Security
 - TBD (addressing vulnerability)

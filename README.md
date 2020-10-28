@@ -94,7 +94,7 @@ For a detailed list of supported features please check the [CHANGELOG](docs/chan
 * Configuration file editable by the operator (directly or via the UI),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * Support for both IPv4 and IPv6 prefixes (millions of routed prefixes depending on your resources).
-* Support for both mobile and desktop environments (UI): [sample screenshots](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/UI-how-to-and-screenshots).
+* Support for both mobile and desktop environments (UI): [sample screenshots](https://bgpartemis.readthedocs.io/en/latest/uioverview/).
 * Support for `docker-compose` (local single-server deployment) and `Kubernetes` (helm charts).
 * Support for multiple modes of operation (passive monitor/detector, active mitigator, etc.).
 * Support for historical BGP update replaying.
@@ -116,7 +116,7 @@ ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine using the `docker-compose` utility.
 For instructions on how to set up ARTEMIS
-in a Kubernetes environment, please check the related [Wiki page](https://bgpartemis.readthedocs.io/en/latest/kubernetes/).
+in a Kubernetes environment, please check the related [docs page](https://bgpartemis.readthedocs.io/en/latest/kubernetes/).
 
 ## Minimum Technical Requirements
 
@@ -139,11 +139,11 @@ sudo ./other/ufw_setup.sh
 
 ## How to Install and Setup
 
-To download and install the required software packages, please follow steps 1 through 6 described in [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/overview/#install-packages).
+To download and install the required software packages, please follow steps 1 through 6 described in [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#install-packages).
 
-To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool).
+To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool).
 
-*Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation; please check out [this Wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Setup-an-ARTEMIS-VM-in-1-minute) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
+*Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation; please check out [this docs page](https://bgpartemis.readthedocs.io/en/latest/vagrant/) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
 
 ## How to Run and Configure
 
@@ -152,7 +152,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    ```
    docker-compose up -d
    ```
-   *Please consult [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/overview/#starting-artemis) if you need to activate additional services.*
+   *Please consult [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#starting-artemis) if you need to activate additional services.*
 
 5. Visit web UI and configure ARTEMIS:
 
@@ -164,7 +164,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    https://<ARTEMIS_HOST>/admin/system
    ```
    you can:
-   1. edit the basic configuration file of ARTEMIS that serves as the ground truth for detecting BGP hijacks (consult [this Wiki section](https://bgpartemis.readthedocs.io/en/latest/basicconf/) first)
+   1. edit the basic configuration file of ARTEMIS that serves as the ground truth for detecting BGP hijacks (consult [this docs section](https://bgpartemis.readthedocs.io/en/latest/basicconf/) first)
    2. control the monitoring, detection and mitigation modules.
 
 6. Stop ARTEMIS (optional)
@@ -173,7 +173,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    docker-compose stop
    ```
 
-**Note: We highly recommend going through the detailed wiki instructions before using ARTEMIS for the first time.** You can further use several other microservices orthogonal to ARTEMIS (like `grafana` and `routinator`) by using the main ARTEMIS `docker-compose` yaml plus the additional yamls:
+**Note: We highly recommend going through the detailed docs instructions before using ARTEMIS for the first time.** You can further use several other microservices orthogonal to ARTEMIS (like `grafana` and `routinator`) by using the main ARTEMIS `docker-compose` yaml plus the additional yamls:
 ```
 docker-compose -f docker-compose.yaml -f docker-compose.<other_service>.yaml -... <up>/<down>/...
 ```

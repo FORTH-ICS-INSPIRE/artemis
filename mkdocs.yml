@@ -26,6 +26,7 @@ nav:
             -   'Database restore': dbrestore.md
             -   'Decoupling Microservices': decouplingmicroservices.md
             -   'Grafana Dashboard': grafanadash.md
+            -   'Private BMP feeds': bgpstreambmp.md
             -   Vagrant: vagrant.md
     -   Kubernetes: kubernetes.md
     -   APIs:

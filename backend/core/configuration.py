@@ -1,5 +1,8 @@
 import copy
+import difflib
+import os
 import re
+import shutil
 import signal
 import time
 from io import StringIO
@@ -16,7 +19,6 @@ import redis
 import ruamel.yaml
 import ujson as json
 from artemis_utils import ArtemisError
-from artemis_utils import clean_as_path
 from artemis_utils import flatten
 from artemis_utils import get_logger
 from artemis_utils import ping_redis
@@ -30,6 +32,7 @@ from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
 from artemis_utils import update_aliased_list
 from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
@@ -76,6 +79,7 @@ class Configuration:
             self.module_name = "configuration"
             self.connection = connection
             self.file = "/etc/artemis/config.yaml"
+            self.temp_file = "/etc/artemis/config.yaml.tmp"
             self.correlation_id = None
             self.sections = {"prefixes", "asns", "monitors", "rules", "autoignore"}
             self.rule_supported_fields = {
@@ -140,6 +144,15 @@ class Configuration:
             # EXCHANGES
             self.config_exchange = create_exchange("config", connection, declare=True)
 
+            # QUEUES
+            self.autoconf_update_queue = create_queue(
+                self.module_name,
+                exchange=self.config_exchange,
+                routing_key="autoconf-update",
+                priority=4,
+                random=True,
+            )
+
             # RPC QUEUES
             self.config_modify_queue = Queue(
                 "configuration.rpc.modify",
@@ -161,12 +174,6 @@ class Configuration:
             )
             self.load_as_sets_queue = Queue(
                 "configuration.rpc.load-as-sets",
-                durable=False,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
-            self.autoconf_update_queue = Queue(
-                "configuration.rpc.autoconf-update",
                 durable=False,
                 max_priority=4,
                 consumer_arguments={"x-priority": 4},
@@ -225,10 +232,12 @@ class Configuration:
 
                 # Case received config from Frontend with comment
                 comment = None
+                from_frontend = False
                 if isinstance(raw_, dict) and "comment" in raw_:
                     comment = raw_["comment"]
                     del raw_["comment"]
                     raw = raw_["config"]
+                    from_frontend = True
                 else:
                     raw = raw_
 
@@ -252,7 +261,10 @@ class Configuration:
                     new_data_str = json.dumps(new_data, sort_keys=True)
                     if prev_data_str != new_data_str:
                         self.data = data
-                        self._update_local_config_file()
+                        # the following needs to take place only if conf came from frontend
+                        # otherwise the file is already updated to the latest version!
+                        if from_frontend:
+                            self._update_local_config_file()
                         if comment:
                             self.data["comment"] = comment
 
@@ -275,11 +287,7 @@ class Configuration:
                             Loader=ruamel.yaml.RoundTripLoader,
                             preserve_quotes=True,
                         )
-                        ruamel.yaml.dump(yaml_conf, Dumper=ruamel.yaml.RoundTripDumper)
-                        with open(self.file, "w") as f:
-                            ruamel.yaml.dump(
-                                yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
-                            )
+                        self._write_conf_via_tmp_file(yaml_conf)
 
                     # reply back to the sender with a configuration accepted
                     # message.
@@ -436,14 +444,17 @@ class Configuration:
 
             return (rule_prefix, rule_asns, rules)
 
-        def get_created_prefix_anchors_from_new_rule(self, yaml_conf, rule_prefix):
+        @staticmethod
+        def get_created_prefix_anchors_from_new_rule(yaml_conf, rule_prefix):
             created_prefix_anchors = set()
+            all_prefixes_exist = True
             try:
                 for prefix in rule_prefix:
                     prefix_anchor = rule_prefix[prefix]
                     if "prefixes" not in yaml_conf:
                         yaml_conf["prefixes"] = ruamel.yaml.comments.CommentedMap()
                     if prefix_anchor not in yaml_conf["prefixes"]:
+                        all_prefixes_exist = False
                         yaml_conf["prefixes"][
                             prefix_anchor
                         ] = ruamel.yaml.comments.CommentedSeq()
@@ -454,17 +465,20 @@ class Configuration:
                     )
             except Exception:
                 log.exception("exception")
-                return set()
-            return created_prefix_anchors
+                return set(), False
+            return created_prefix_anchors, all_prefixes_exist
 
-        def get_created_asn_anchors_from_new_rule(self, yaml_conf, rule_asns):
+        @staticmethod
+        def get_created_asn_anchors_from_new_rule(yaml_conf, rule_asns):
             created_asn_anchors = set()
+            all_asns_exist = True
             try:
                 for asn in sorted(rule_asns):
                     asn_anchor = rule_asns[asn]
                     if "asns" not in yaml_conf:
                         yaml_conf["asns"] = ruamel.yaml.comments.CommentedMap()
                     if asn_anchor not in yaml_conf["asns"]:
+                        all_asns_exist = False
                         yaml_conf["asns"][
                             asn_anchor
                         ] = ruamel.yaml.comments.CommentedSeq()
@@ -475,11 +489,11 @@ class Configuration:
                     )
             except Exception:
                 log.exception("exception")
-            return created_asn_anchors
+                return set(), False
+            return created_asn_anchors, all_asns_exist
 
-        def get_existing_rules_from_new_rule(
-            self, yaml_conf, rule_prefix, rule_asns, rule
-        ):
+        @staticmethod
+        def get_existing_rules_from_new_rule(yaml_conf, rule_prefix, rule_asns, rule):
             try:
                 # calculate origin asns for the new rule (int format)
                 new_rule_origin_asns = set()
@@ -570,31 +584,26 @@ class Configuration:
             return (existing_rules_found, rule_extension_needed)
 
         def translate_learn_rule_dicts_to_yaml_conf(
-            self, rule_prefix, rule_asns, rules, withdrawal=False
+            self, yaml_conf, rule_prefix, rule_asns, rules, withdrawal=False
         ):
             """
             Translates the dicts from translate_learn_rule_msg_to_dicts
             function into yaml configuration,
             preserving the order and comments of the current file
+            (edits the yaml_conf in-place)
+            :param yaml_conf: <dict>
             :param rule_prefix: <str>
             :param rule_asns: <list><int>
             :param rules: <list><dict>
             :param withdrawal: <bool>
-            :return: (<dict>, <bool>)
+            :return: (<str>, <bool>)
             """
 
             if (withdrawal and not rule_prefix) or (
                 not withdrawal and (not rule_prefix or not rule_asns or not rules)
             ):
-                return ("problem with rule installation", False)
-            yaml_conf = None
+                return "problem with rule installation", False
             try:
-                with open(self.file, "r") as f:
-                    raw = f.read()
-                yaml_conf = ruamel.yaml.load(
-                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
-                )
-
                 if rule_prefix and withdrawal:
                     rules_to_be_deleted = []
                     for existing_rule in yaml_conf["rules"]:
@@ -629,26 +638,32 @@ class Configuration:
                     for prefix_anchor in rule_prefix.values():
                         if prefix_anchor in yaml_conf["prefixes"]:
                             del yaml_conf["prefixes"][prefix_anchor]
-                    return (yaml_conf, True)
+                    return "ok", True
 
                 # create prefix anchors
-                created_prefix_anchors = self.get_created_prefix_anchors_from_new_rule(
+                created_prefix_anchors, prefixes_exist = Configuration.Worker.get_created_prefix_anchors_from_new_rule(
                     yaml_conf, rule_prefix
                 )
 
                 # create asn anchors
-                created_asn_anchors = self.get_created_asn_anchors_from_new_rule(
+                created_asn_anchors, asns_exist = Configuration.Worker.get_created_asn_anchors_from_new_rule(
                     yaml_conf, rule_asns
                 )
 
                 # append rules
                 for rule in rules:
-                    (
-                        existing_rules_found,
-                        rule_update_needed,
-                    ) = self.get_existing_rules_from_new_rule(
-                        yaml_conf, rule_prefix, rule_asns, rule
-                    )
+                    # declare new rules directly for non-existent prefixes (optimization)
+                    if prefixes_exist:
+                        (
+                            existing_rules_found,
+                            rule_update_needed,
+                        ) = Configuration.Worker.get_existing_rules_from_new_rule(
+                            yaml_conf, rule_prefix, rule_asns, rule
+                        )
+                    else:
+                        existing_rules_found = []
+                        rule_update_needed = False
+
                     # if no existing rule, make a new one
                     if not existing_rules_found:
                         rule_map = ruamel.yaml.comments.CommentedMap()
@@ -705,7 +720,7 @@ class Configuration:
                     "problem with rule installation; exception during yaml processing",
                     False,
                 )
-            return (yaml_conf, True)
+            return "ok", True
 
         def handle_hijack_learn_rule_request(self, message):
             """
@@ -722,27 +737,40 @@ class Configuration:
             :return: -
             """
             message.ack()
-            raw = message.payload
-            log.debug("payload: {}".format(raw))
+            payload = message.payload
+            log.debug("payload: {}".format(payload))
+
+            # load initial YAML configuration from file
+            with open(self.file, "r") as f:
+                raw = f.read()
+                yaml_conf = ruamel.yaml.load(
+                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                )
+
+            # translate the BGP update information into ARTEMIS conf primitives
             (rule_prefix, rule_asns, rules) = self.translate_learn_rule_msg_to_dicts(
-                raw
+                payload
             )
-            (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                rule_prefix, rule_asns, rules
+
+            # create the actual ARTEMIS configuration (use copy in case the conf creation fails)
+            yaml_conf_clone = copy.deepcopy(yaml_conf)
+            msg, ok = self.translate_learn_rule_dicts_to_yaml_conf(
+                yaml_conf_clone, rule_prefix, rule_asns, rules
             )
             if ok:
+                # update running configuration
+                yaml_conf = copy.deepcopy(yaml_conf_clone)
                 yaml_conf_str = ruamel.yaml.dump(
                     yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
                 )
             else:
-                yaml_conf_str = yaml_conf
+                yaml_conf_str = msg
 
-            if raw["action"] == "approve" and ok:
+            if payload["action"] == "approve" and ok:
                 # store the new configuration to file
-                with open(self.file, "w") as f:
-                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+                self._write_conf_via_tmp_file(yaml_conf)
 
-            if raw["action"] in ["show", "approve"]:
+            if payload["action"] in ["show", "approve"]:
                 # reply back to the sender with the extra yaml configuration
                 # message.
                 self.producer.publish(
@@ -755,10 +783,12 @@ class Configuration:
                     serializer="ujson",
                 )
 
-        def translate_bgp_update_to_dicts(self, bgp_update):
+        @staticmethod
+        def translate_bgp_update_to_dicts(bgp_update, learn_neighbors=False):
             """
             Translates a BGP update message payload
             into ARTEMIS-compatible dictionaries
+            :param learn_neighbors: <boolean> to determine if we should learn neighbors out of this update
             :param bgp_update: {
                 "prefix": <str>,
                 "key": <str>,
@@ -798,10 +828,7 @@ class Configuration:
                     }
 
                     # learned rule asns
-                    as_path = clean_as_path(bgp_update["path"])
-                    if len(as_path) > 1:
-                        # ignore, since this is not a self-network origination, but sth transit
-                        return (None, None, None)
+                    as_path = bgp_update["path"]
                     origin_asn = None
                     neighbor = None
                     asns = set()
@@ -809,7 +836,7 @@ class Configuration:
                         origin_asn = as_path[-1]
                         asns.add(origin_asn)
                     neighbors = set()
-                    if "communities" in bgp_update:
+                    if "communities" in bgp_update and learn_neighbors:
                         for community in bgp_update["communities"]:
                             asn = int(community["asn"])
                             value = int(community["value"])
@@ -846,62 +873,122 @@ class Configuration:
 
             except Exception:
                 log.exception("{}".format(bgp_update))
-                return (None, None, None)
+                return None, None, None
 
-            return (rule_prefix, rule_asns, rules)
+            return rule_prefix, rule_asns, rules
 
         def handle_autoconf_updates(self, message):
             """
-            Receives a "autoconf-update" message, translates the corresponding
-            BGP update into ARTEMIS configuration and rewrites the configuration
+            Receives a "autoconf-update" message batch, translates the corresponding
+            BGP updates into ARTEMIS configuration and rewrites the configuration
             :param message:
             :return:
             """
-            message.ack()
+            if not message.acknowledged:
+                message.ack()
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
 
             try:
-                bgp_update = message.payload
-                # if you have seen the exact same update before, do nothing
-                if self.redis.get(bgp_update["key"]):
-                    self.producer.publish(
-                        "",
-                        exchange="",
-                        routing_key=message.properties["reply_to"],
-                        correlation_id=message.properties["correlation_id"],
-                        retry=True,
-                        priority=4,
-                        serializer="ujson",
-                    )
-                    return
+                bgp_updates = message.payload
+                if not isinstance(bgp_updates, list):
+                    bgp_updates = [bgp_updates]
 
-                (rule_prefix, rule_asns, rules) = self.translate_bgp_update_to_dicts(
-                    bgp_update
-                )
-                withdrawal = False
-                if bgp_update["type"] == "W":
-                    withdrawal = True
-                (yaml_conf, ok) = self.translate_learn_rule_dicts_to_yaml_conf(
-                    rule_prefix, rule_asns, rules, withdrawal=withdrawal
-                )
-                if ok:
-                    # store the new configuration to file
-                    with open(self.file, "w") as f:
-                        ruamel.yaml.dump(
-                            yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper
+                # load initial YAML configuration from file
+                with open(self.file, "r") as f:
+                    raw = f.read()
+                    yaml_conf = ruamel.yaml.load(
+                        raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                    )
+
+                # save initial file content to ensure that it has not changed while processing
+                with open(self.file, "r") as f:
+                    initial_content = f.readlines()
+
+                # process the autoconf updates
+                conf_needs_update = False
+                updates_processed = True
+                for bgp_update in bgp_updates:
+                    # if you have seen the exact same update before, do nothing
+                    if self.redis.get(bgp_update["key"]):
+                        return
+                    if self.redis.exists(
+                        "autoconf-update-keys-to-process"
+                    ) and not self.redis.sismember(
+                        "autoconf-update-keys-to-process", bgp_update["key"]
+                    ):
+                        return
+                    learn_neighbors = False
+                    if (
+                        "learn_neighbors" in bgp_update
+                        and bgp_update["learn_neighbors"]
+                    ):
+                        learn_neighbors = True
+                    # translate the BGP update information into ARTEMIS conf primitives
+                    (
+                        rule_prefix,
+                        rule_asns,
+                        rules,
+                    ) = self.translate_bgp_update_to_dicts(
+                        bgp_update, learn_neighbors=learn_neighbors
+                    )
+
+                    # check if withdrawal (which may mean prefix/rule removal)
+                    withdrawal = False
+                    if bgp_update["type"] == "W":
+                        withdrawal = True
+
+                    # create the actual ARTEMIS configuration (use copy in case the conf creation fails)
+                    msg, ok = self.translate_learn_rule_dicts_to_yaml_conf(
+                        yaml_conf, rule_prefix, rule_asns, rules, withdrawal=withdrawal
+                    )
+                    if ok:
+                        # update running configuration
+                        conf_needs_update = True
+                    else:
+                        log.error("!!!PROBLEM with rule autoconf installation !!!!!")
+                        log.error(msg)
+                        log.error(bgp_update)
+                        # remove erroneous update from circulation
+                        if self.redis.exists("autoconf-update-keys-to-process"):
+                            redis_pipeline = self.redis.pipeline()
+                            redis_pipeline.srem(
+                                "autoconf-update-keys-to-process", bgp_update["key"]
+                            )
+                            redis_pipeline.execute()
+                        # cancel operation, write nothing (this is done for optimization, even if we miss some updates)
+                        conf_needs_update = False
+                        updates_processed = False
+                        break
+
+                # store the updated configuration to file
+                if conf_needs_update:
+                    # check final file content to ensure that it has not changed while processing
+                    with open(self.file, "r") as f:
+                        final_content = f.readlines()
+                    changes = "".join(
+                        difflib.unified_diff(initial_content, final_content)
+                    )
+                    if changes:
+                        log.info(
+                            "Configuration file changed while processing autoconf updates, "
+                            "re-running autoconf to avoid overwrites"
                         )
+                        self.handle_autoconf_updates(message)
+                        return
+                    self._write_conf_via_tmp_file(yaml_conf)
+
+                # acknowledge the processing of autoconf BGP updates using redis
+                if updates_processed and self.redis.exists(
+                    "autoconf-update-keys-to-process"
+                ):
+                    for bgp_update in bgp_updates:
+                        redis_pipeline = self.redis.pipeline()
+                        redis_pipeline.srem(
+                            "autoconf-update-keys-to-process", bgp_update["key"]
+                        )
+                        redis_pipeline.execute()
             except Exception:
                 log.exception("exception")
-            finally:
-                self.producer.publish(
-                    "",
-                    exchange="",
-                    routing_key=message.properties["reply_to"],
-                    correlation_id=message.properties["correlation_id"],
-                    retry=True,
-                    priority=4,
-                    serializer="ujson",
-                )
 
         def handle_load_as_sets(self, message):
             """
@@ -972,8 +1059,7 @@ class Configuration:
             )
             # as-sets were resolved, update configuration
             if (not error) and done_as_set_translations:
-                with open(self.file, "w") as f:
-                    ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+                self._write_conf_via_tmp_file(yaml_conf)
 
         def parse(
             self, raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False
@@ -1121,16 +1207,24 @@ class Configuration:
                                 raise ArtemisError(
                                     "invalid-exabgp-autoconf-flag", entry["autoconf"]
                                 )
+                        if "learn_neighbors" in entry:
+                            if "autoconf" not in entry:
+                                raise ArtemisError(
+                                    "invalid-exabgp-missing-autoconf-for-learn_neighbors",
+                                    entry["learn_neighbors"],
+                                )
+                            if entry["learn_neighbors"] == "true":
+                                entry["learn_neighbors"] = True
+                            elif entry["learn_neighbors"] == "false":
+                                del entry["learn_neighbors"]
+                            else:
+                                raise ArtemisError(
+                                    "invalid-exabgp-learn_neighbors-flag",
+                                    entry["learn_neighbors"],
+                                )
                 elif key == "bgpstreamhist":
-                    if "dir" in info and "autoconf" in info:
-                        if info["autoconf"] == "true":
-                            info["autoconf"] = True
-                        elif info["autoconf"] == "false":
-                            del info["autoconf"]
-                        else:
-                            raise ArtemisError(
-                                "invalid-bgpostreamhist-autoconf-flag", info["autoconf"]
-                            )
+                    if not isinstance(info, str) or not os.path.exists(info):
+                        raise ArtemisError("invalid-bgpstreamhist-dir", info)
 
         @staticmethod
         def __check_asns(_asns):
@@ -1178,6 +1272,9 @@ class Configuration:
             Raises custom exceptions in case a field or section
             is misdefined.
             """
+            if data is None or not isinstance(data, dict):
+                raise ArtemisError("invalid-data", data)
+
             for section in data:
                 if section not in self.sections:
                     raise ArtemisError("invalid-section", section)
@@ -1203,6 +1300,12 @@ class Configuration:
             """
             with open(self.file, "w") as f:
                 f.write(self.data["raw_config"])
+
+        def _write_conf_via_tmp_file(self, yaml_conf) -> NoReturn:
+            with open(self.temp_file, "w") as f:
+                ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+            shutil.copymode(self.file, self.temp_file)
+            os.rename(self.temp_file, self.file)
 
 
 def run():

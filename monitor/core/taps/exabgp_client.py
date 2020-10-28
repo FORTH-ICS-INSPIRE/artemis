@@ -1,9 +1,11 @@
 import argparse
 import os
 import signal
+import time
+from threading import Lock
+from threading import Timer
 
 import redis
-from artemis_utils import clean_as_path
 from artemis_utils import get_logger
 from artemis_utils import key_generator
 from artemis_utils import load_json
@@ -13,12 +15,9 @@ from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
+from artemis_utils.rabbitmq_util import create_exchange
 from kombu import Connection
-from kombu import Consumer
-from kombu import Exchange
 from kombu import Producer
-from kombu import Queue
-from kombu import uuid
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from socketIO_client import BaseNamespace
@@ -26,37 +25,148 @@ from socketIO_client import SocketIO
 
 log = get_logger()
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+lock = Lock()
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
+AUTOCONF_INTERVAL = 10
+MAX_AUTOCONF_UPDATES = 100
 
 
 class ExaBGP:
-    def __init__(self, prefixes_file, host, autoconf=False):
+    def __init__(self, prefixes_file, host, autoconf=False, learn_neighbors=False):
+        self.module_name = "exabgp|{}".format(host)
         self.host = host
-        self.prefixes = load_json(prefixes_file)
+        self.should_stop = False
+        # use /0 if autoconf
+        if autoconf:
+            self.prefixes = ["0.0.0.0/0", "::/0"]
+        else:
+            self.prefixes = load_json(prefixes_file)
         assert self.prefixes is not None
-        self.autoconf = autoconf
-        self.autoconf_goahead = False
         self.sio = None
+        self.connection = None
+        self.update_exchange = None
+        self.config_exchange = None
+        self.config_queue = None
+        self.autoconf = autoconf
+        self.autoconf_timer_thread = None
+        self.autoconf_updates = {}
+        self.learn_neighbors = learn_neighbors
+        self.previous_redis_autoconf_updates_counter = 0
         signal.signal(signal.SIGTERM, self.exit)
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-    def handle_autoconf_update_goahead_reply(self, message):
-        message.ack()
-        self.autoconf_goahead = True
+    def setup_autoconf_update_timer(self):
+        """
+        Timer for autoconf update message send. Periodically (every AUTOCONF_INTERVAL seconds),
+        it sends buffered autoconf messages to configuration for processing
+        :return:
+        """
+        autoconf_update_keys_to_process = set(
+            map(
+                lambda x: x.decode("ascii"),
+                redis.smembers("autoconf-update-keys-to-process"),
+            )
+        )
+        if self.should_stop and len(autoconf_update_keys_to_process) == 0:
+            if self.sio is not None:
+                self.sio.disconnect()
+            if self.connection is not None:
+                self.connection.release()
+            redis.set("exabgp_{}_running".format(self.host), 0)
+            log.info("ExaBGP exited")
+            return
+        self.autoconf_timer_thread = Timer(
+            interval=AUTOCONF_INTERVAL, function=self.send_autoconf_updates
+        )
+        self.autoconf_timer_thread.start()
+
+    def send_autoconf_updates(self):
+        # clean up unneeded updates stored in RAM (with thread-safe access)
+        lock.acquire()
+        autoconf_update_keys_to_process = set(
+            map(
+                lambda x: x.decode("ascii"),
+                redis.smembers("autoconf-update-keys-to-process"),
+            )
+        )
+        try:
+            keys_to_remove = (
+                set(self.autoconf_updates.keys()) - autoconf_update_keys_to_process
+            )
+            for key in keys_to_remove:
+                del self.autoconf_updates[key]
+        except Exception:
+            log.exception("exception")
+        finally:
+            lock.release()
+
+        if len(autoconf_update_keys_to_process) == 0:
+            self.previous_redis_autoconf_updates_counter = 0
+            self.setup_autoconf_update_timer()
+            return
+
+        # check if configuration is overwhelmed; if yes, back off to reduce aggressiveness
+        if self.previous_redis_autoconf_updates_counter == len(
+            autoconf_update_keys_to_process
+        ):
+            self.setup_autoconf_update_timer()
+            return
+
+        try:
+            autoconf_updates_keys_to_send = list(autoconf_update_keys_to_process)[
+                :MAX_AUTOCONF_UPDATES
+            ]
+            autoconf_updates_to_send = []
+            for update_key in autoconf_updates_keys_to_send:
+                autoconf_updates_to_send.append(self.autoconf_updates[update_key])
+            log.info(
+                "Sending {} autoconf updates to configuration".format(
+                    len(autoconf_updates_to_send)
+                )
+            )
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
+            with Producer(self.connection) as producer:
+                producer.publish(
+                    autoconf_updates_to_send,
+                    exchange=self.config_exchange,
+                    routing_key="autoconf-update",
+                    retry=True,
+                    priority=4,
+                    serializer="ujson",
+                )
+            if self.connection is None:
+                self.connection = Connection(RABBITMQ_URI)
+        except Exception:
+            log.exception("exception")
+        finally:
+            self.previous_redis_autoconf_updates_counter = len(
+                autoconf_update_keys_to_process
+            )
+            self.setup_autoconf_update_timer()
 
     def start(self):
         with Connection(RABBITMQ_URI) as connection:
             self.connection = connection
-            self.update_exchange = Exchange(
-                "bgp-update", channel=connection, type="direct", durable=False
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
             )
-            self.update_exchange.declare()
-            validator = mformat_validator()
-            # add /0 if autoconf
+            self.config_exchange = create_exchange("config", connection, declare=True)
+
+            # wait until go-ahead from potentially running previous tap
+            while redis.getset("exabgp_{}_running".format(self.host), 1) == b"1":
+                time.sleep(1)
+                if self.should_stop:
+                    log.info("ExaBGP exited")
+                    return
+
             if self.autoconf:
-                self.prefixes.append("0.0.0.0/0")
-                self.prefixes.append("::/0")
+                if self.autoconf_timer_thread is not None:
+                    self.autoconf_timer_thread.cancel()
+                self.setup_autoconf_update_timer()
+
+            validator = mformat_validator()
 
             try:
                 self.sio = SocketIO("http://" + self.host, namespace=BaseNamespace)
@@ -91,72 +201,39 @@ class ExaBGP:
                             ):
                                 try:
                                     if validator.validate(msg):
-                                        with Producer(connection) as producer:
-                                            msgs = normalize_msg_path(msg)
-                                            for msg in msgs:
-                                                key_generator(msg)
-                                                log.debug(msg)
-                                                if self.autoconf:
-                                                    if str(our_prefix) in [
-                                                        "0.0.0.0/0",
-                                                        "::/0",
-                                                    ]:
-                                                        if msg["type"] == "A":
-                                                            as_path = clean_as_path(
-                                                                msg["path"]
-                                                            )
-                                                            if len(as_path) > 1:
-                                                                # ignore, since this is not a self-network origination, but sth transit
-                                                                break
-                                                        elif msg["type"] == "W":
-                                                            # ignore irrelevant withdrawals
-                                                            break
-                                                    self.autoconf_goahead = False
-                                                    correlation_id = uuid()
-                                                    callback_queue = Queue(
-                                                        uuid(),
-                                                        durable=False,
-                                                        auto_delete=True,
-                                                        max_priority=4,
-                                                        consumer_arguments={
-                                                            "x-priority": 4
-                                                        },
+                                        msgs = normalize_msg_path(msg)
+                                        for msg in msgs:
+                                            key_generator(msg)
+                                            log.debug(msg)
+                                            if self.autoconf:
+                                                # thread-safe access to update dict
+                                                lock.acquire()
+                                                try:
+                                                    if self.learn_neighbors:
+                                                        msg["learn_neighbors"] = True
+                                                    self.autoconf_updates[
+                                                        msg["key"]
+                                                    ] = msg
+                                                    # mark the autoconf BGP updates for configuration
+                                                    # processing in redis
+                                                    redis_pipeline = redis.pipeline()
+                                                    redis_pipeline.sadd(
+                                                        "autoconf-update-keys-to-process",
+                                                        msg["key"],
                                                     )
+                                                    redis_pipeline.execute()
+                                                except Exception:
+                                                    log.exception("exception")
+                                                finally:
+                                                    lock.release()
+                                            else:
+                                                with Producer(connection) as producer:
                                                     producer.publish(
                                                         msg,
-                                                        exchange="",
-                                                        routing_key="configuration.rpc.autoconf-update",
-                                                        reply_to=callback_queue.name,
-                                                        correlation_id=correlation_id,
-                                                        retry=True,
-                                                        declare=[
-                                                            Queue(
-                                                                "configuration.rpc.autoconf-update",
-                                                                durable=False,
-                                                                max_priority=4,
-                                                                consumer_arguments={
-                                                                    "x-priority": 4
-                                                                },
-                                                            ),
-                                                            callback_queue,
-                                                        ],
-                                                        priority=4,
+                                                        exchange=self.update_exchange,
+                                                        routing_key="update",
                                                         serializer="ujson",
                                                     )
-                                                    with Consumer(
-                                                        connection,
-                                                        on_message=self.handle_autoconf_update_goahead_reply,
-                                                        queues=[callback_queue],
-                                                        accept=["ujson"],
-                                                    ):
-                                                        while not self.autoconf_goahead:
-                                                            connection.drain_events()
-                                                producer.publish(
-                                                    msg,
-                                                    exchange=self.update_exchange,
-                                                    routing_key="update",
-                                                    serializer="ujson",
-                                                )
                                     else:
                                         log.warning(
                                             "Invalid format message: {}".format(msg)
@@ -173,17 +250,39 @@ class ExaBGP:
 
                 self.sio.on("exa_message", exabgp_msg)
                 self.sio.emit("exa_subscribe", {"prefixes": self.prefixes})
+                route_refresh_command_v4 = "announce route-refresh ipv4 unicast"
+                self.sio.emit("route_command", {"command": route_refresh_command_v4})
+                route_refresh_command_v6 = "announce route-refresh ipv6 unicast"
+                self.sio.emit("route_command", {"command": route_refresh_command_v6})
                 self.sio.wait()
             except KeyboardInterrupt:
                 self.exit()
             except Exception:
                 log.exception("exception")
 
-    def exit(self, **kwargs):
+    def exit(self, signum, frame):
         log.info("Exiting ExaBGP")
-        if self.sio is not None:
-            self.sio.disconnect()
-            self.sio.wait()
+        if self.autoconf:
+            autoconf_update_keys_to_process = set(
+                map(
+                    lambda x: x.decode("ascii"),
+                    redis.smembers("autoconf-update-keys-to-process"),
+                )
+            )
+
+            if len(autoconf_update_keys_to_process) == 0:
+                # finish with sio now if there are not any pending autoconf updates
+                if self.sio is not None:
+                    self.sio.disconnect()
+                log.info("ExaBGP scheduled to exit...")
+        else:
+            if self.sio is not None:
+                self.sio.disconnect()
+            if self.connection is not None:
+                self.connection.release()
+            redis.set("exabgp_{}_running".format(self.host), 0)
+            log.info("ExaBGP exited")
+        self.should_stop = True
 
 
 if __name__ == "__main__":
@@ -211,17 +310,24 @@ if __name__ == "__main__":
         action="store_true",
         help="Use the feed from this local route collector to build the configuration",
     )
+    parser.add_argument(
+        "-n",
+        "--learn_neighbors",
+        dest="learn_neighbors",
+        action="store_true",
+        help="Use the community feed from this local route collector to learn neighbors",
+    )
 
     args = parser.parse_args()
     ping_redis(redis)
 
     log.info(
-        "Starting ExaBGP on {} for {} (auto-conf: {})".format(
-            args.host, args.prefixes_file, args.autoconf
+        "Starting ExaBGP on {} for {} (auto-conf: {}, learn-neighbors: {})".format(
+            args.host, args.prefixes_file, args.autoconf, args.learn_neighbors
         )
     )
     try:
-        exa = ExaBGP(args.prefixes_file, args.host, args.autoconf)
+        exa = ExaBGP(args.prefixes_file, args.host, args.autoconf, args.learn_neighbors)
         exa.start()
     except BaseException:
         log.exception("exception")

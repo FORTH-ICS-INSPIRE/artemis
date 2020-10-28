@@ -63,7 +63,7 @@ In general, the logging.yaml files, besides auxiliary information, contain 3 sec
 
 For a useful tutorial on logging using yaml configurations and how to use them in Python, we refer the user to [this tutorial](https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/).
 
-For further log customization, please check the following env variables [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Environment-variables):
+For further log customization, please check the following env variables [here](https://bgpartemis.readthedocs.io/en/latest/envvars/):
 ```
 HIJACK_LOG_FILTER # for logging hijacks only with a certain community payload
 HIJACK_LOG_FIELDS # for selecting which hijack fields to show in the logs

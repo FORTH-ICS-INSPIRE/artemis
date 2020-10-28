@@ -144,7 +144,7 @@ SECURITY_PASSWORD_SALT=06a4b397fc7045eac527c2aec3ff46cee5ce30016c760f238c26e7990
 ```
 
 ## Community log filter
-Custom log filter for logging on syslog (or email or other logs) only hijacks with a certain annotation, see [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Community-Annotations):
+Custom log filter for logging on syslog (or email or other logs) only hijacks with a certain annotation, see [this page](https://bgpartemis.readthedocs.io/en/latest/commannotations/):
 ```
 HIJACK_LOG_FILTER=[{"community_annotation":"critical"},{"community_annotation":"NA"}]
 ```

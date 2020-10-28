@@ -54,7 +54,7 @@ Table of Contents
       Text written by the user (accompanies the hijack event).
     * **Related BGP Updates**:
       Table with the BGP updates (both announcements and withdrawals) that are related to the hijack event (information
-      is the same as [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/BGP-update-information)).
+      is the same as [here](https://bgpartemis.readthedocs.io/en/latest/bgpupdateinfo/)).
     * **Community Annotation**: The user-defined annotation of the hijack according to the communities of hijacked BGP updates.
 
 ## Classification of hijacks
@@ -159,7 +159,7 @@ Upon viewing a selected hijack event, the ADMIN user can execute the following a
   The hijack may have finished or not, but the user chooses to ignore it. It sets an ongoing or under mitigation hijack
   to ignored state. An ignore action is an implicit confirmation of the hijack event as a false positive (sets
   "acknowledge" to false). If the hijack is in withdrawn or outdated state already, it is appended as another state
-  tag. **Note 1: We have introduced a mechanism to "learn" the prefix(es), ASN(s) and rule(s) pertaining to an ongoing hijack that is to be ignored. In particular, we show the configuration diff to the user (ADMIN), before applying any changes, and the user may choose to approve the changes or ignore them. This mechanism applies only to ongoing (e.g., not outdated or withdrawn) hijacks. Note 2: We have introduced a mechanism to "auto-ignore" a hijack alert in case its impact (infected ASes) and visibility (seen peers) remain under user-specified thresholds for a user-specified period of time. For more details, check [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Auto-ignoring-hijack-alerts).**
+  tag. **Note 1: We have introduced a mechanism to "learn" the prefix(es), ASN(s) and rule(s) pertaining to an ongoing hijack that is to be ignored. In particular, we show the configuration diff to the user (ADMIN), before applying any changes, and the user may choose to approve the changes or ignore them. This mechanism applies only to ongoing (e.g., not outdated or withdrawn) hijacks. Note 2: We have introduced a mechanism to "auto-ignore" a hijack alert in case its impact (infected ASes) and visibility (seen peers) remain under user-specified thresholds for a user-specified period of time. For more details, check [this page](https://bgpartemis.readthedocs.io/en/latest/basicconf/#autoignore).**
 * **Acknowledge**:
   Mark the hijack as a true positive (orthogonal to the other actions). When it is set to false it is considered a
   false positive until mitigated, resolved or marked explicitly. Note that acknowledging a hijack does not change any

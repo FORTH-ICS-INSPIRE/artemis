@@ -4,7 +4,7 @@ The ARTEMIS configuration file (config.yaml) is written in YAML (for an ultra-fa
     backend/configs
 
 but we highly advise you to copy the default file to the local_configs/backend location and update the volume mapping in
-[docker-compose.yaml](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28). Detailed instructions on the exact steps can be found [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#configuring-artemis). The local location of your file should eventually be:
+[docker-compose.yaml](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28). Detailed instructions on the exact steps can be found [here](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool). The local location of your file should eventually be:
 
     local_configs/backend/config.yaml
 
@@ -74,13 +74,13 @@ Means: "select all available RRCs from RouteViews, RIPE RIS and Caida projects".
     - ip: ip_to_exabgp_N
       port: port_N
 
-Means: "receive feed from the N exaBGP monitors configured on these IPs and ports" (default IP="exabgp", default port=5000). To configure exaBGP sessions with your local routers please consult this [wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
+Means: "receive feed from the N exaBGP monitors configured on these IPs and ports" (default IP="exabgp", default port=5000). To configure exaBGP sessions with your local routers please consult this [docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
 
 ### Historical BGPStream records
 
     bgpstreamhist: csv_dir_with_formatted_BGP_updates
 
-Means: "replay all recorded BGP updates found in all .csv files in this directory". W.r.t. the format of the updates in the files, please consult this [wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#replaying-history).
+Means: "replay all recorded BGP updates found in all .csv files in this directory". W.r.t. the format of the updates in the files, please consult this [docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#replaying-history).
 
 ## Full example
 
@@ -100,7 +100,7 @@ Means: "replay all recorded BGP updates found in all .csv files in this director
 
 You can comment any monitor you do not want to be used.
 
-For additional private BMP feeds based on bgpstreamlive and Kafka, please check [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Private-BMP-feeds-using-bgpstream).
+For additional private BMP feeds based on bgpstreamlive and Kafka, please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/bgpstreambmp/).
 
 ## ASNs
 This section contains all declared ARTEMIS ASNs. You can create ASN references by prefixing them with "&", which you can later access using the "*" prefix. You can reference both single ASNs as well as lists of ASNs.
@@ -263,7 +263,7 @@ ARTEMIS triggers an alert on the 4th hijack dimension (policies), since this mea
 are considered benign (the neighbor is allowed to export the route to a passive monitoring service). **NOTE: since this is a new feature, we would appreciate feedback on how it should work in different operational environments.** You can also omit this section, if not of interest to your setup.
 
 ### Community annotations
-The community annotations applying to possible hijacks to which this rule applies. Please check [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Community-Annotations) for more information.
+The community annotations applying to possible hijacks to which this rule applies. Please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/commannotations/) for more information.
 
 Full example (except for community annotations, which is an experimental feature):
 

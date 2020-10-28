@@ -10,11 +10,11 @@ When the IP address of the server on which ARTEMIS is running is affected by a h
 
 ## Auto-cleaning
 
-Use the `DB_AUTOCLEAN` env variable to automatically clean up benign BGP updates more than e.g., 24 hours old (units: hours), see [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Environment-variables). This will also clean up unprocessed BGP updates that were generated from the monitor when the detector was OFF, or excess updates that arose during severe load periods and overwhelmed the detector.
+Use the `DB_AUTOCLEAN` env variable to automatically clean up benign BGP updates more than e.g., 24 hours old (units: hours), see [this page](https://bgpartemis.readthedocs.io/en/latest/envvars/). This will also clean up unprocessed BGP updates that were generated from the monitor when the detector was OFF, or excess updates that arose during severe load periods and overwhelmed the detector.
 
 ## Excess load: Use multiple detectors/db access modules
 
-See [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#invoking-multiple-detectorsdb-clients-optional). However pay also attention to the RAM requirements of the extra modules (see [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#memory-requirements))
+See [this page](https://bgpartemis.readthedocs.io/en/latest/overview/#invoking-multiple-detectorsdb-clients-optional). However pay also attention to the RAM requirements of the extra modules (see [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements))
 
 ## Dormant hijacks
 
@@ -22,18 +22,18 @@ By default ARTEMIS will consider all unresolved/unignored/non-withdrawn/non-outd
 
 ## Custom logging
 
-* You can set hijack logging filtering (depending on which communities are associated with the BGP hijack updates) using the `HIJACK_LOG_FILTER` env variable. For details, please check [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Community-Annotations).
+* You can set hijack logging filtering (depending on which communities are associated with the BGP hijack updates) using the `HIJACK_LOG_FILTER` env variable. For details, please check [this page](https://bgpartemis.readthedocs.io/en/latest/commannotations/).
 * You can select which fields of a hijack to log using the `HIJACK_LOG_FIELDS` env variable. The default fields are: `["prefix","hijack_as","type","time_started","time_last","peers_seen","configured_prefix","timestamp_of_config","asns_inf","time_detected","key","community_annotation","end_tag","hijack_url"]`.
-* You can select the frequency of the alerts to see in the logging system by proper selection of the mail or hijack log handlers. Please check [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/ARTEMIS-logging).
+* You can select the frequency of the alerts to see in the logging system by proper selection of the mail or hijack log handlers. Please check [this page](https://bgpartemis.readthedocs.io/en/latest/loggingconf/).
 
 ## Configuration
 
-Please check [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file).
+Please check [this page](https://bgpartemis.readthedocs.io/en/latest/basicconf/).
 
 ## Kubernetes
 
-We support Kubernetes besides docker-compose! Please check [this page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Kubernetes-Deployment).
+We support Kubernetes besides docker-compose! Please check [this page](https://bgpartemis.readthedocs.io/en/latest/kubernetes/).
 
 ## Connecting ARTEMIS frontend to LDAP
 
-Please check instructions [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/LDAP).
+Please check instructions [here](https://bgpartemis.readthedocs.io/en/latest/ldapconf/).

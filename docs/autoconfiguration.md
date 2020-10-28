@@ -1,8 +1,12 @@
+## Full example setup
+
+For a Proof of Concept (PoC), please check [this directory](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/poc_autoconf).
+
 ## ExaBGP workflow
 
 The workflow to enable auto-configuration via trusted local feeds (over exaBGP) is the following:
 
-1. First, connect ARTEMIS exabgp container with your local feed, following the steps in [this wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
+1. First, connect ARTEMIS exabgp container with your local feed, following the steps in [this doc section](https://bgpartemis.readthedocs.io/en/latest/overview/#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
 
 2. Then, you may start with a minimal configuration file as follows:
 
@@ -63,7 +67,7 @@ associated feed and are of the form ("A" meaning announcement):
           - *AUTOCONF_AS_1
           mitigation: manual
 
-5. The aforementioned process does not need any more configuration on your side besides setting up the eBGP session between your RC and ARTEMIS; however it populates rules to cover `*|0|-|*` hijacks.
+5. [OPTIONAL] The aforementioned process does not need any more configuration on your side besides setting up the eBGP session between your RC and ARTEMIS; however it populates rules to cover `*|0|-|*` hijacks.
 
      If you also want ARTEMIS to cover `*|1|-|*` hijacks, you need to signal it with your neighbor information. To do this, we recommend to set communities in your route maps signaling the asns (e.g., peer groups) to which you propagate the announcements coming from your own network (and not from other peers, customers or upstreams).
 
@@ -192,3 +196,5 @@ associated feed and are of the form ("A" meaning announcement):
 1. Only exaBGP monitoring can be current used for auto-configuration.
 
 2. Please use only one source of autoconf ground truth at a time.
+
+3. We currently do not offer as-path pattern auto-generation, for more information on this front please check [this issue](https://github.com/FORTH-ICS-INSPIRE/artemis/issues/461).

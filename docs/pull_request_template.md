@@ -8,7 +8,7 @@ What component(s) does this PR affect?
 - [ ] Back-End (Database, Detection/Configuration/etc. Microservices)
 - [ ] Front-End (Flask, API, UI, etc)
 - [ ] Monitor (RIPE RIS, BGPStream RV/RIS/CAIDA, etc.)
-- [ ] Docs (incl. wiki)
+- [ ] Docs
 - [ ] Build System
 
 <!-- [Optional] Please elaborate on the affected component(s) here: -->
@@ -18,7 +18,7 @@ Does the PR require changes on other components? If yes, please mark the compone
 - [ ] Back-End (Database, Detection/Configuration/etc. Microservices)
 - [ ] Front-End (Flask, API, UI, etc)
 - [ ] Monitor (RIPE RIS, BGPStream RV/RIS/CAIDA, etc.)
-- [ ] Docs (incl. wiki)
+- [ ] Docs
 - [ ] Build System
 
 <!-- [Optional] Please elaborate on the component(s) requiring changes here: -->

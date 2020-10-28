@@ -4,12 +4,12 @@ ARTEMIS is built as a multi-container Docker application.
 The following instructions will get you a containerized
 copy of the ARTEMIS tool up and running on your local machine using the `docker-compose` utility.
 For instructions on how to set up ARTEMIS
-in a Kubernetes environment, please check the related [Wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Kubernetes-Deployment).
+in a Kubernetes environment, please check the related [docs page](https://bgpartemis.readthedocs.io/en/latest/kubernetes/).
 
 ## Minimum Technical Requirements
 
 * CPU: 4 cores (note that needed CPU cores depend on the number of separate processes, e.g., detectors or database modules you spawn)
-* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#memory-requirements) for more details)
+* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements) for more details)
 * HDD: 50 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
 * NETWORK: 1 public-facing network interface (optionally: one internal interface for connection with local route collectors)
 * OS: Ubuntu Linux 16.04+ (other Linux distributions will work too)
@@ -27,11 +27,11 @@ sudo ./other/ufw_setup.sh
 
 ## How to Install and Setup
 
-To download and install the required software packages, please follow steps 1 through 6 described in [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#install-packages).
+To download and install the required software packages, please follow steps 1 through 6 described in [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#install-packages).
 
-To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#setup-tool).
+To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool).
 
-*Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation; please check out [this Wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Setup-an-ARTEMIS-VM-in-1-minute) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
+*Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation; please check out [this docs page](https://bgpartemis.readthedocs.io/en/latest/vagrant/) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
 
 ## How to Run and Configure
 
@@ -41,7 +41,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    docker-compose up -d
    ```
 
-   *Please consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#starting-artemis) if you need to activate additional services.*
+   *Please consult [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#starting-artemis) if you need to activate additional services.*
 
 2. Visit web UI and configure ARTEMIS:
 
@@ -57,7 +57,7 @@ To setup the tool (as well as https access to it via the web application), pleas
 
    you can:
 
-   1. edit the basic configuration file of ARTEMIS that serves as the ground truth for detecting BGP hijacks (consult [this Wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Configuration-file) first)
+   1. edit the basic configuration file of ARTEMIS that serves as the ground truth for detecting BGP hijacks (consult [this docs section](https://bgpartemis.readthedocs.io/en/latest/basicconf/) first)
    2. control the monitoring, detection and mitigation modules.
 
 3. Stop ARTEMIS (optional)
@@ -66,7 +66,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    docker-compose stop
    ```
 
-**Note: We highly recommend going through the detailed wiki instructions before using ARTEMIS for the first time.** You can further use several other microservices orthogonal to ARTEMIS (like `grafana` and `routinator`) by using the main ARTEMIS `docker-compose` yaml plus the additional yamls:
+**Note: We highly recommend going through the detailed docs instructions before using ARTEMIS for the first time.** You can further use several other microservices orthogonal to ARTEMIS (like `grafana` and `routinator`) by using the main ARTEMIS `docker-compose` yaml plus the additional yamls:
 
 ```
 docker-compose -f docker-compose.yaml -f docker-compose.<other_service>.yaml -... <up>/<down>/...

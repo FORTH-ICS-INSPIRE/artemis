@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PoC mitigation mechanism and setup (deaggregation)
 - Coverage for unit tests
 - AS Path pre-pending sequence matching support in configuration
+- Docs pages
 
 ### Changed
 - Refactor: Changed exchange / queue names
@@ -36,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Autoconf support in historical BGPStream (due to deprecation)
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- Wiki pages
 
 ### Security
 - TBD (addressing vulnerability)

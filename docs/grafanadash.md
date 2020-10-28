@@ -1,4 +1,4 @@
-*Many thanks to [Leonidas Poulopoulos](https://github.com/leopoul) for his contributions to this wiki page and ARTEMIS Grafana support!*
+*Many thanks to [Leonidas Poulopoulos](https://github.com/leopoul) for his contributions to this docs page and ARTEMIS Grafana support!*
 
 # What is Grafana?
 Grafana is an analytics platform that allows for querying, visualising, alerting on and understanding metrics. It comes with an increasing variety of visualisation plugins that range from graphs, to heatmaps, to tables, to maps and supports multiple datasources like InfluxDB, Prometheus, Elasticsearch, MySQL, PostgreSQL, etc. More information about the supported plugins can be found [here](https://grafana.com/grafana/plugins).

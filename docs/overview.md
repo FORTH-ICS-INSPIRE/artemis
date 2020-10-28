@@ -516,6 +516,9 @@ docker-compose restart monitor
 ```
 
 ## Receiving BGP feed from local router/route reflector/BGP monitor via exaBGP
+
+### Configuration
+
 Change the following source mapping from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.exabgp.yaml#L11) to:
 ```
 - ./local_configs/monitor/exabgp.conf:/home/config/exabgp.conf
@@ -564,15 +567,40 @@ monitors:
       port: 5000 # default port
 ...
 ```
-**NOTE: We strongly recommend the use of eBGP instead of iBGP sessions between the
+### Notes
+
+1. We strongly recommend the use of eBGP instead of iBGP sessions between the
 exaBGP monitor and the local router(s), in order to have information that can be better
-used by the detection system. Since the exaBGP container is one layer behind the networking
+used by the detection system.
+
+2. Since the exaBGP container is one layer behind the networking
 stack of the ARTEMIS host, establishing a successful eBGP connection between your router and
 exaBGP will require properly setting the ebgp-multihop attribute on your router, e.g.,**
-```
->router bgp <my_as>
->neighbor <exabgp_public_ip> ebgp-multihop 2 # if the router is one physical hop away
-```
+
+   ```
+   >router bgp <my_as>
+   >neighbor <exabgp_public_ip> ebgp-multihop 2 # if the router is one physical hop away
+   ```
+
+3. For all options on how to properly configure exaBGP, please visit [this page](https://manpages.debian.org/testing/exabgp/exabgp.conf.5.en.html).
+Some useful options are the following:
+
+   ```
+   # within the neighbor section to set up md5 passwords
+   md5-password <md5-secret>;
+
+   # within the neighbor section to set up both v4 and  v6 advertisements
+   family {
+        ipv4 unicast;
+        ipv6 unicast;
+   }
+
+   # the following section goes before the neighbor section to add a route refresh capability
+   # needed to retrieve all prefixes from neighbor routers on monitor startup
+   capability {
+       route-refresh enable;
+   }
+   ```
 
 ## Replaying history
 ARTEMIS can optionally replay historical records downloaded via tools like BGPStream.
@@ -620,19 +648,6 @@ The following steps need to be done for ARTEMIS to replay these records in a str
     bgpstreamhist: /tmp/csv_dir
   ```
 * Activate monitoring and other modules if required
-
-*Note: you can also use historical BGP updates to automatically build your configuration file, as described [here](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Auto-configuration-via-trusted-local-feeds), using a sample configuration file:
-```
-prefixes: {}
-monitors:
-    ...
-    bgpstreamhist:
-        dir: /tmp/csv_dir
-        autoconf: "true"
-asns: {}
-rules: []
-```
-and replaying BGP updates with legal origins and community-annotated neighbors.
 
 ## GraphQL API
 Please check [[GraphQL API]].

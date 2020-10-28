@@ -142,6 +142,21 @@ jobs:
         - if [ ! $IS_FORK ]; then codecov; fi
       after_failure:
         - docker-compose -f docker-compose.testautoignore.yaml logs
+    - name: TestAutoconf
+      install:
+        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-backend:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest; fi
+        - docker build -t artemis_autoconf_testing testing/autoconf
+        - docker-compose -f docker-compose.testautoconf.yaml up -d
+      script:
+        - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
+      after_success:
+        - if [ ! $IS_FORK ]; then sh convert_coverage.sh; fi
+        - if [ ! $IS_FORK ]; then codecov; fi
+      after_failure:
+        - docker-compose -f docker-compose.testautoconf.yaml logs
     - name: TestRPKI
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi

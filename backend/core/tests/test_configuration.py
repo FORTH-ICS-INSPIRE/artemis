@@ -10,6 +10,22 @@ prefixes:
     prefix_1: &prefix_1
     - 10.0.0.0/8
     - 10.1.0.0/16
+monitors:
+    riperis: [''] # by default this uses all available monitors
+    bgpstreamlive:
+    - routeviews
+    - ris
+    - caida
+    exabgp:
+    - ip: exabgp # this will automatically be resolved to the exabgp container's IP
+      port: 5000 # default port
+      autoconf: "true"
+      learn_neighbors: "true"
+    bgpstreamkafka:
+        host: bmp.bgpstream.caida.org
+        port: 9092
+        topic: '^openbmp.router--.+.peer-as--.+.bmp_raw'
+    bgpstreamhist: "./"
 asns:
     origins: &origins
     - 1
@@ -47,6 +63,33 @@ class ConfigurationTester(unittest.TestCase):
             set(self.worker.data["prefixes"]["prefix_1"]),
             set(["10.0.0.0/8", "10.1.0.0/16"]),
         )
+
+    def test_monitors(self):
+        self.assertTrue("riperis" in self.worker.data["monitors"])
+
+        self.assertTrue("bgpstreamlive" in self.worker.data["monitors"])
+
+        self.assertTrue("bgpstreamkafka" in self.worker.data["monitors"])
+        self.assertEqual(
+            self.worker.data["monitors"]["bgpstreamkafka"]["host"],
+            "bmp.bgpstream.caida.org",
+        )
+        self.assertEqual(self.worker.data["monitors"]["bgpstreamkafka"]["port"], 9092)
+        self.assertEqual(
+            self.worker.data["monitors"]["bgpstreamkafka"]["topic"],
+            "^openbmp.router--.+.peer-as--.+.bmp_raw",
+        )
+
+        self.assertTrue("exabgp" in self.worker.data["monitors"])
+        self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["ip"], "exabgp")
+        self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["port"], 5000)
+        self.assertEqual(self.worker.data["monitors"]["exabgp"][0]["autoconf"], True)
+        self.assertEqual(
+            self.worker.data["monitors"]["exabgp"][0]["learn_neighbors"], True
+        )
+
+        self.assertTrue("bgpstreamhist" in self.worker.data["monitors"])
+        self.assertEqual(self.worker.data["monitors"]["bgpstreamhist"], "./")
 
     def test_asns(self):
         self.assertEqual(set(self.worker.data["asns"]["origins"]), set([1]))

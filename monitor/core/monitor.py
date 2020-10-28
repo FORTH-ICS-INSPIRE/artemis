@@ -235,11 +235,16 @@ class Monitor:
 
         def stop(self):
             if self.flag:
+                proc_ids_terminated = []
                 for proc_id in self.process_ids:
                     try:
                         proc_id[1].terminate()
                     except ProcessLookupError:
                         log.exception("process terminate")
+                    finally:
+                        proc_ids_terminated.append(proc_id)
+                for proc_id in proc_ids_terminated:
+                    self.process_ids.remove(proc_id)
                 self.flag = False
                 self.rules = None
                 self.monitors = None
@@ -351,6 +356,8 @@ class Monitor:
                     ]
                     if "autoconf" in exabgp_monitor:
                         exabgp_cmd.append("-a")
+                    if "learn_neighbors" in exabgp_monitor:
+                        exabgp_cmd.append("-n")
                     p = Popen(exabgp_cmd, shell=False)
                     self.process_ids.append(
                         (
@@ -388,8 +395,6 @@ class Monitor:
                     "--dir",
                     bgpstreamhist_dir,
                 ]
-                if "autoconf" in self.monitors["bgpstreamhist"]:
-                    bgpstreamhist_cmd.append("-a")
                 p = Popen(bgpstreamhist_cmd, shell=False)
                 self.process_ids.append(
                     (
@@ -445,21 +450,19 @@ class Monitor:
                         self.monitors["bgpstreamkafka"], self.prefix_file
                     )
                 )
-                p = Popen(
-                    [
-                        PY_BIN,
-                        "taps/bgpstreamkafka.py",
-                        "--prefixes",
-                        self.prefix_file,
-                        "--kafka_host",
-                        str(self.monitors["bgpstreamkafka"]["host"]),
-                        "--kafka_port",
-                        str(self.monitors["bgpstreamkafka"]["port"]),
-                        "--kafka_topic",
-                        str(self.monitors["bgpstreamkafka"]["topic"]),
-                    ],
-                    shell=False,
-                )
+                bgpstreamkafka_cmd = [
+                    PY_BIN,
+                    "taps/bgpstreamkafka.py",
+                    "--prefixes",
+                    self.prefix_file,
+                    "--kafka_host",
+                    str(self.monitors["bgpstreamkafka"]["host"]),
+                    "--kafka_port",
+                    str(self.monitors["bgpstreamkafka"]["port"]),
+                    "--kafka_topic",
+                    str(self.monitors["bgpstreamkafka"]["topic"]),
+                ]
+                p = Popen(bgpstreamkafka_cmd, shell=False)
                 self.process_ids.append(
                     (
                         "[bgpstreamkafka] {} {} {} {}".format(

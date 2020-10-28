@@ -1,4 +1,6 @@
-The workflow to enable auto-configuration via trusted local feeds is the following:
+## ExaBGP workflow
+
+The workflow to enable auto-configuration via trusted local feeds (over exaBGP) is the following:
 
 1. First, connect ARTEMIS exabgp container with your local feed, following the steps in [this wiki section](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
 
@@ -18,17 +20,23 @@ The workflow to enable auto-configuration via trusted local feeds is the followi
         asns: {}
         rules: []
 
-3. Since you have enabled the `autoconf` flag in exabgp, all prefix originations of the form:
+3. Since you have enabled the `autoconf` flag in exabgp, all BGP updates which are received on the
+associated feed and are of the form ("A" meaning announcement):
 
-        Prefix: [Origin_ASN] ("A")
+        Prefix: [..., Origin_ASN] ("A")
 
-    (even with path prepending) will be processed by ARTEMIS as legal advertisements. Note that prefix originations from other ASNs (i.e., with hop-count on the prepending-clean path more than 1) will be ignored, so that only your origins are actually registered. Withdrawals of the prefix will result in its removal from the configuration (together with its associated rules).
+    (even with path prepending) will be processed by ARTEMIS as legal advertisements.
+    Withdrawals of the prefix will result in its removal from the configuration (together with its associated rules).
 
-    **Important: if you are using a route collector to send your routes to ARTEMIS (recommended), please configure the corresponding session to strip the ASN of the collector, in case it is sth different than your origin(s) (eBGP)**.
+    **Important: All announcements on the trusted feed will result in ARTEMIS treating them as
+    ground truth; please make sure that you perform the needed filtering before propagating such
+    BGP updates to ARTEMIS. For example, if you are using a route collector to send your routes to ARTEMIS (recommended),
+    please configure the corresponding session to strip the ASN of the collector,
+    in case it is sth different than your origin(s) (eBGP)**.
 
 4. After, e.g., the following sample BGP update reaches ARTEMIS coming from your trusted RC:
 
-        192.168.1.0/24: [1] ("A")
+        192.168.1.0/24: [..., 1] ("A")
 
     The configuration will be auto-populated as follows:
 
@@ -58,6 +66,18 @@ The workflow to enable auto-configuration via trusted local feeds is the followi
 5. The aforementioned process does not need any more configuration on your side besides setting up the eBGP session between your RC and ARTEMIS; however it populates rules to cover `*|0|-|*` hijacks.
 
      If you also want ARTEMIS to cover `*|1|-|*` hijacks, you need to signal it with your neighbor information. To do this, we recommend to set communities in your route maps signaling the asns (e.g., peer groups) to which you propagate the announcements coming from your own network (and not from other peers, customers or upstreams).
+
+     First, you need to enable neighbor learning in the configuration:
+
+     ```
+     ...
+     exabgp:
+       - ip: exabgp   # this will automatically be resolved to the exabgp container's IP
+         port: 5000   # default port
+         autoconf: "true"
+         learn_neighbors: "true"
+     ...
+     ```
 
      To help you with this, we provide the following route-map configuration example that implements the requested functionality:
 
@@ -128,7 +148,6 @@ The workflow to enable auto-configuration via trusted local feeds is the followi
 
         ...
 
-
     Having configured this in your BGP configuration, the neighbor info is propagated also to ARTEMIS. After, e.g., the following sample BGP update reaches ARTEMIS coming from your trusted RC:
 
         192.168.1.0/24: [1] ("A"), communities: 1:3 1:4
@@ -148,6 +167,7 @@ The workflow to enable auto-configuration via trusted local feeds is the followi
           - ip: exabgp   # this will automatically be resolved to the exabgp container's IP
             port: 5000   # default port
             autoconf: "true"
+            learn_neighbors: "true"
         asns:
           AUTOCONF_AS_1: &AUTOCONF_AS_1
           - 1
@@ -167,13 +187,8 @@ The workflow to enable auto-configuration via trusted local feeds is the followi
 
     Note that withdrawals will result in prefix and rule deletion (but ASNs are preserved for future use).
 
-    **Note that you can use auto-configuration also with historical BGP updates, as follows:**
+## Notes
 
-        prefixes: {}
-        monitors:
-            ...
-            bgpstreamhist:
-                dir: /tmp/csv_dir
-                autoconf: "true"
-        asns: {}
-        rules: []
+1. Only exaBGP monitoring can be current used for auto-configuration.
+
+2. Please use only one source of autoconf ground truth at a time.

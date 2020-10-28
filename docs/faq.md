@@ -62,7 +62,7 @@ Yes! Please consult [this wiki section](https://github.com/FORTH-ICS-INSPIRE/art
 
 ## My network policies are very complex! Can you help me build the configuration file?
 
-Typically we do not provide case-by-case consultation (since we provide the open-source tool, but not a paid consultation service), but we have built an auto-configuration feature that will help you a lot, essentially taking care of keeping up-to-date with all your local changes! Please follow [this wiki page](https://github.com/FORTH-ICS-INSPIRE/artemis/wiki/Auto-configuration-via-trusted-local-feeds). *Note: this feature is experimental/bleeding edge, and is not yet a part of an official ARTEMIS release.*
+Typically we do not provide case-by-case consultation (since we provide the open-source tool, but not a paid consultation service), but we have built an auto-configuration feature that will help you a lot, essentially taking care of keeping up-to-date with all your local changes! Please follow [this wiki page](https://bgpartemis.readthedocs.io/en/latest/autoconfiguration/).
 
 ## How can I check the RPKI status of my hijacked prefixes?
 

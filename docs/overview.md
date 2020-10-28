@@ -689,55 +689,85 @@ docker-compose down
 respectively.
 
 ## Upgrading ARTEMIS to a new version
+
+### Main steps
+
 Before upgrading, we recommend that you ensure that there is a recent (at most a day old) backup db.tar of the database under postgres-data-backup.
 Then, do the following:
-```
-docker-compose -f ... down
-## pull the latest release (if auto-merge fails, please resolve local conflicts; one way would be to use `git stash` before pulling and `git stash pop` afterwards, and then resolve any conflicts)
-git pull origin master
-```
-This will pull the latest master code and will correctly
-set docker-compose.yaml versions.
-Make sure you have copied the default configs directories under local_configs and have updated the source volume mappings accordingly; check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml) carefully for `local_configs` mappings. A sample folder structure for local_configs is the following:
-```
-$ tree local_configs
-local_configs
-├── backend
-│   ├── config.yaml
-│   ├── logging.yaml
-│   └── supervisor.d
-│       └── services.conf
-├── frontend
-│   ├── certs
-│   │   ├── cert.pem
-│   │   └── key.pem
-│   ├── config.py
-│   ├── __init__.py
-│   ├── logging.yaml
-│   ├── nginx.conf
-│   └── webapp.cfg
-└── monitor
-    ├── exabgp.conf
-    ├── logging.yaml
-    └── supervisor.d
-        └── services.conf
-```
 
-**Make sure that you also do a**
-```
-docker-compose -f ... pull
-```
-**to ensure that you are not running an outdated version of the tool.**
+1. Make sure you have copied the default configs directories under local_configs and have updated the source volume mappings accordingly; check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml) carefully for `local_configs` mappings. A sample folder structure for local_configs is the following:
 
-You are all set!
+   ```
+   $ tree local_configs
+   local_configs
+   ├── backend
+   │   ├── config.yaml
+   │   ├── logging.yaml
+   │   └── supervisor.d
+   │       └── services.conf
+   ├── frontend
+   │   ├── certs
+   │   │   ├── cert.pem
+   │   │   └── key.pem
+   │   ├── config.py
+   │   ├── __init__.py
+   │   ├── logging.yaml
+   │   ├── nginx.conf
+   │   └── webapp.cfg
+   └── monitor
+       ├── exabgp.conf
+       ├── logging.yaml
+       └── supervisor.d
+           └── services.conf
+   ```
 
-**ATTENTION: To work on a specific release the master code and the release version need to be compatible.
-Therefore, if you do not want to have access to the latest code, but work on a previous stable release, you need to do:**
+2. Deactivate current running instance:
+
+   ```
+   docker-compose -f ... down
+   ```
+
+3. Stash any local changes that should not conflict with upstream
+
+   ```
+   git stash
+   ```
+
+4. Checkout the master  branch
+
+   ```
+   git checkout master
+   ```
+
+5. Pull most recent code (including .env, versions, etc.)
+
+   ```
+   git pull origin master
+   ```
+
+6. Re-apply local changes (if auto-merge fails, resolve any conflicts)
+
+   ```
+   git stash pop
+   ```
+
+7. **Make sure that you also do a**
+   ```
+   docker-compose -f ... pull
+   ```
+   **to ensure that you are not running an outdated version of the tool's containers.**
+
+You are all set! Now you can boot ARTEMIS (`docker-compose -f ... up -d`).
+
+### Notes
+
+To work on a specific release the master code and the release version need to be compatible.
+Therefore, if you do not want to have access to the latest code, but work on a previous stable release, you need to do:
 ```
 git checkout tags/<release_id>
 ```
-**This will automatically set the
-SYSTEM_VERSION in the .env file to "release-XXXX", and sync the DB_VERSION. Always upgrade, never downgrade! A `docker-compose pull` will still be required.**
+instead of step 5. This will automatically set the
+SYSTEM_VERSION in the .env file to "release-XXXX", and sync the DB_VERSION. Always upgrade, never downgrade! A `docker-compose ... pull` will still be required.
 
 Note that to avoid merge conflicts in general,
 we recommend decoupling your local configurations from the upstream changes.

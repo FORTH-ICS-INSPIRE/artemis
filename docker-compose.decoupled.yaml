@@ -7,274 +7,285 @@ services:
         restart: always
         depends_on:
             - rabbitmq
-            - postgres
+#            - postgres
             - redis
-            - configuration
-            - prefixtree
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./monitor-services/riperistap/configs/:/etc/artemis/
-    bgpstreamlivetap:
-        image: artemis_bgpstreamlivetap
-        build: ./monitor-services/bgpstreamlivetap
-        container_name: bgpstreamlivetap
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-            - prefixtree
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./monitor-services/bgpstreamlivetap/configs/:/etc/artemis/
-    bgpstreamkafkatap:
-        image: artemis_bgpstreamkafkatap
-        build: ./monitor-services/bgpstreamkafkatap
-        container_name: bgpstreamkafkatap
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-            - prefixtree
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./monitor-services/bgpstreamkafkatap/configs/:/etc/artemis/
-    bgpstreamhisttap:
-        image: artemis_bgpstreamhisttap
-        build: ./monitor-services/bgpstreamhisttap
-        container_name: bgpstreamhisttap
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-            - prefixtree
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./monitor-services/bgpstreamhisttap/configs/:/etc/artemis/
-    exabgptap:
-        image: artemis_exabgptap
-        build: ./monitor-services/exabgptap
-        container_name: exabgptap
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-            - prefixtree
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./monitor-services/exabgptap/configs/:/etc/artemis/
-    configuration:
-        image: artemis_configuration
-        build: ./backend-services/configuration
-        container_name: configuration
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - fileobserver
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/configuration/configs/:/etc/artemis/
-    detection:
-        image: artemis_detection
-        build: ./backend-services/detection
-        container_name: detection
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-            - prefixtree
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/detection/configs/:/etc/artemis/
-    mitigation:
-        image: artemis_mitigation
-        build: ./backend-services/mitigation
-        container_name: mitigation
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-            - detection
-            - prefixtree
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/mitigation/configs/:/etc/artemis/
-    fileobserver:
-        image: artemis_fileobserver
-        build: ./backend-services/fileobserver
-        container_name: fileobserver
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/fileobserver/configs/:/etc/artemis/
-    notifier:
-        image: artemis_notifier
-        build: ./backend-services/notifier
-        container_name: notifier
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-            - detection
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/notifier/configs/:/etc/artemis/
-    database:
-        image: artemis_database
-        build: ./backend-services/database
-        container_name: database
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-        networks:
-          - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/database/configs/:/etc/artemis/
-    prefixtree:
-        image: artemis_prefixtree
-        build: ./backend-services/prefixtree
-        container_name: prefixtree
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - configuration
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/prefixtree/configs/:/etc/artemis/
-    redis:
-        image: artemis_redis
-        build: ./backend-services/redis
-        container_name: redis
-        restart: always
-        networks:
-            - artemis
-        # TODO: env variables, ports
-        volumes:
-            - ./backend-services/redis/configs/:/etc/artemis/
-    frontend:
-        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
-        container_name: frontend
-        restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - postgrest
-            - database
-            - monitor
-        networks:
-            - artemis
+#            - configuration
+#            - prefixtree
         expose:
-            - ${WEBAPP_PORT}
+            - ${REST_PORT}
+        ports:
+            - "3000:3000"
+        networks:
+            - artemis
         environment:
-            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            API_HOST: ${API_HOST}
-            API_PORT: ${API_PORT}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            SYSTEM_VERSION: ${SYSTEM_VERSION}
-            BIND_IP: ${BIND_IP}
-            WEBAPP_PORT: ${WEBAPP_PORT}
-            USER_ROOT_USERNAME: ${ADMIN_USER}
-            USER_ROOT_PASSWORD: ${ADMIN_PASS}
-            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
-            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
-            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
-            JS_VERSION: ${JS_VERSION}
-            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
-            # for backwards compatibility
-            SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: ${REST_PORT}
         volumes:
-            # uncomment to run from source code  (only if you build from source)
-            # - ./frontend/:/root/
-            # comment after Step 2 of README
-            - ./frontend/webapp/configs/:/etc/artemis/
-            # uncomment after Step 2 of README
-            # - ./local_configs/frontend/:/etc/artemis/
-            - ./frontend/db/:/etc/webapp/db/
-    nginx:
-        image: nginx:1.17-alpine
-        container_name: nginx
+            - ./monitor-services/riperistap/configs/:/etc/artemis/
+#    bgpstreamlivetap:
+#        image: artemis_bgpstreamlivetap
+#        build: ./monitor-services/bgpstreamlivetap
+#        container_name: bgpstreamlivetap
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#            - prefixtree
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./monitor-services/bgpstreamlivetap/configs/:/etc/artemis/
+#    bgpstreamkafkatap:
+#        image: artemis_bgpstreamkafkatap
+#        build: ./monitor-services/bgpstreamkafkatap
+#        container_name: bgpstreamkafkatap
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#            - prefixtree
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./monitor-services/bgpstreamkafkatap/configs/:/etc/artemis/
+#    bgpstreamhisttap:
+#        image: artemis_bgpstreamhisttap
+#        build: ./monitor-services/bgpstreamhisttap
+#        container_name: bgpstreamhisttap
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#            - prefixtree
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./monitor-services/bgpstreamhisttap/configs/:/etc/artemis/
+#    exabgptap:
+#        image: artemis_exabgptap
+#        build: ./monitor-services/exabgptap
+#        container_name: exabgptap
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#            - prefixtree
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./monitor-services/exabgptap/configs/:/etc/artemis/
+#    configuration:
+#        image: artemis_configuration
+#        build: ./backend-services/configuration
+#        container_name: configuration
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - fileobserver
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./backend-services/configuration/configs/:/etc/artemis/
+#    detection:
+#        image: artemis_detection
+#        build: ./backend-services/detection
+#        container_name: detection
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#            - prefixtree
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./backend-services/detection/configs/:/etc/artemis/
+#    mitigation:
+#        image: artemis_mitigation
+#        build: ./backend-services/mitigation
+#        container_name: mitigation
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#            - detection
+#            - prefixtree
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./backend-services/mitigation/configs/:/etc/artemis/
+#    fileobserver:
+#        image: artemis_fileobserver
+#        build: ./backend-services/fileobserver
+#        container_name: fileobserver
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./backend-services/fileobserver/configs/:/etc/artemis/
+#    notifier:
+#        image: artemis_notifier
+#        build: ./backend-services/notifier
+#        container_name: notifier
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#            - detection
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./backend-services/notifier/configs/:/etc/artemis/
+#    database:
+#        image: artemis_database
+#        build: ./backend-services/database
+#        container_name: database
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#        networks:
+#          - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./backend-services/database/configs/:/etc/artemis/
+#    prefixtree:
+#        image: artemis_prefixtree
+#        build: ./backend-services/prefixtree
+#        container_name: prefixtree
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - redis
+#            - configuration
+#        networks:
+#            - artemis
+#        # TODO: env variables, ports
+#        volumes:
+#            - ./backend-services/prefixtree/configs/:/etc/artemis/
+    redis:
+        image: redis:latest
+        container_name: redis
         restart: always
-        depends_on:
-            - frontend
-            - postgrest
         networks:
             - artemis
-        ports:
-            # uncomment both lines for rootless
-            # - "8080:8080"
-            # - "8443:8443"
-            # comment both lines when running rootless
-            - "80:80"
-            - "443:443"
+        expose:
+            - ${REDIS_PORT}
         volumes:
-            # comment after Step 2 of README
-            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
-            # uncomment after Step 2 of README
-            # - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
-            # comment after Step 2 of README
-            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
-            # uncomment after Step 2 of README
-            # - ./local_configs/frontend/certs/:/etc/nginx/certs/
+            - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
+#    frontend:
+#        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
+#        container_name: frontend
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#            - postgres
+#            - postgrest
+#            - database
+#            - monitor
+#        networks:
+#            - artemis
+#        expose:
+#            - ${WEBAPP_PORT}
+#        environment:
+#            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
+#            RABBITMQ_USER: ${RABBITMQ_USER}
+#            RABBITMQ_PASS: ${RABBITMQ_PASS}
+#            RABBITMQ_HOST: ${RABBITMQ_HOST}
+#            RABBITMQ_PORT: ${RABBITMQ_PORT}
+#            DB_HOST: ${DB_HOST}
+#            DB_PORT: ${DB_PORT}
+#            API_HOST: ${API_HOST}
+#            API_PORT: ${API_PORT}
+#            HASURA_HOST: ${HASURA_HOST}
+#            HASURA_PORT: ${HASURA_PORT}
+#            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+#            SYSTEM_VERSION: ${SYSTEM_VERSION}
+#            BIND_IP: ${BIND_IP}
+#            WEBAPP_PORT: ${WEBAPP_PORT}
+#            USER_ROOT_USERNAME: ${ADMIN_USER}
+#            USER_ROOT_PASSWORD: ${ADMIN_PASS}
+#            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
+#            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+#            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
+#            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
+#            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
+#            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+#            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
+#            JS_VERSION: ${JS_VERSION}
+#            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
+#            # for backwards compatibility
+#            SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
+#            SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
+#            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+#        volumes:
+#            # uncomment to run from source code  (only if you build from source)
+#            # - ./frontend/:/root/
+#            # comment after Step 2 of README
+#            - ./frontend/webapp/configs/:/etc/artemis/
+#            # uncomment after Step 2 of README
+#            # - ./local_configs/frontend/:/etc/artemis/
+#            - ./frontend/db/:/etc/webapp/db/
+#    nginx:
+#        image: nginx:1.17-alpine
+#        container_name: nginx
+#        restart: always
+#        depends_on:
+#            - frontend
+#            - postgrest
+#        networks:
+#            - artemis
+#        ports:
+#            # uncomment both lines for rootless
+#            # - "8080:8080"
+#            # - "8443:8443"
+#            # comment both lines when running rootless
+#            - "80:80"
+#            - "443:443"
+#        volumes:
+#            # comment after Step 2 of README
+#            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
+#            # uncomment after Step 2 of README
+#            # - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
+#            # comment after Step 2 of README
+#            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+#            # uncomment after Step 2 of README
+#            # - ./local_configs/frontend/certs/:/etc/nginx/certs/
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq
@@ -290,80 +301,80 @@ services:
             RABBITMQ_IO_THREAD_POOL_SIZE: ${RABBITMQ_IO_THREAD_POOL_SIZE:-128}
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
-    postgres:
-        image: timescale/timescaledb:1.1.0-pg10
-        container_name: postgres
-        restart: always
-        networks:
-            - artemis
-        expose:
-            - ${DB_PORT}
-        environment:
-            POSTGRES_DB: ${DB_NAME}
-            POSTGRES_USER: ${DB_USER}
-            POSTGRES_PASSWORD: ${DB_PASS}
-            DB_BACKUP: ${DB_BACKUP}
-            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
-            DB_HIJACK_DORMANT: ${DB_HIJACK_DORMANT}
-        volumes:
-            - ./postgres-data-current:/var/lib/postgresql/data
-            - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
-            - ./postgres-data-backup/:/tmp/
-            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
-            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
-            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
-        entrypoint: ["./postgres-entrypoint.sh"]
-    postgrest:
-        image: postgrest/postgrest:v7.0.0
-        container_name: postgrest
-        restart: always
-        depends_on:
-            - postgres
-        networks:
-            - artemis
-        expose:
-            - ${API_PORT}
-        environment:
-            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=postgrest
-            PGRST_DB_SCHEMA: ${DB_SCHEMA}
-            PGRST_DB_ANON_ROLE: ${DB_USER}
-    pg-amqp-bridge:
-        image: subzerocloud/pg-amqp-bridge:0.0.6
-        container_name: pg-amqp-bridge
-        restart: always
-        depends_on:
-            - postgres
-            - database
-            - rabbitmq
-        networks:
-            - artemis
-        environment:
-            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=pg-amqp-bridge
-            - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
-            - BRIDGE_CHANNELS=events:amq.direct
-            # - RUST_LOG=debug
-            # - RUST_BACKTRACE=1
-        volumes:
-            - ./backend-services/database/wait-for:/root/wait-for
-        command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
-    graphql:
-        image: hasura/graphql-engine:v1.1.0
-        container_name: graphql
-        restart: always
-        depends_on:
-            - postgres
-        networks:
-            - artemis
-        expose:
-            - ${HASURA_PORT}
-        environment:
-            HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=graphql
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_GUI}
-            HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'
-        command:
-            - graphql-engine
-            - serve
+#    postgres:
+#        image: timescale/timescaledb:1.1.0-pg10
+#        container_name: postgres
+#        restart: always
+#        networks:
+#            - artemis
+#        expose:
+#            - ${DB_PORT}
+#        environment:
+#            POSTGRES_DB: ${DB_NAME}
+#            POSTGRES_USER: ${DB_USER}
+#            POSTGRES_PASSWORD: ${DB_PASS}
+#            DB_BACKUP: ${DB_BACKUP}
+#            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
+#            DB_HIJACK_DORMANT: ${DB_HIJACK_DORMANT}
+#        volumes:
+#            - ./postgres-data-current:/var/lib/postgresql/data
+#            - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
+#            - ./postgres-data-backup/:/tmp/
+#            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+#            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
+#            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
+#        entrypoint: ["./postgres-entrypoint.sh"]
+#    postgrest:
+#        image: postgrest/postgrest:v7.0.0
+#        container_name: postgrest
+#        restart: always
+#        depends_on:
+#            - postgres
+#        networks:
+#            - artemis
+#        expose:
+#            - ${API_PORT}
+#        environment:
+#            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=postgrest
+#            PGRST_DB_SCHEMA: ${DB_SCHEMA}
+#            PGRST_DB_ANON_ROLE: ${DB_USER}
+#    pg-amqp-bridge:
+#        image: subzerocloud/pg-amqp-bridge:0.0.6
+#        container_name: pg-amqp-bridge
+#        restart: always
+#        depends_on:
+#            - postgres
+#            - database
+#            - rabbitmq
+#        networks:
+#            - artemis
+#        environment:
+#            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=pg-amqp-bridge
+#            - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+#            - BRIDGE_CHANNELS=events:amq.direct
+#            # - RUST_LOG=debug
+#            # - RUST_BACKTRACE=1
+#        volumes:
+#            - ./backend-services/database/wait-for:/root/wait-for
+#        command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
+#    graphql:
+#        image: hasura/graphql-engine:v1.1.0
+#        container_name: graphql
+#        restart: always
+#        depends_on:
+#            - postgres
+#        networks:
+#            - artemis
+#        expose:
+#            - ${HASURA_PORT}
+#        environment:
+#            HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=graphql
+#            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+#            HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_GUI}
+#            HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'
+#        command:
+#            - graphql-engine
+#            - serve
 
 networks:
     artemis:

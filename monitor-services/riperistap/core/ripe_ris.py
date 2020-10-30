@@ -31,21 +31,21 @@ update_types = ["announcements", "withdrawals"]
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 # TODO: add the following in utils
-REST_PORT = os.getenv("REST_PORT", 3000)
+REST_PORT = 3000
 tap = None
 thread = None
 
 
-def configure_tap(args):
+def configure_tap(prefixes, hosts):
     global tap
     if tap is None:
-        tap = RipeRisTap(args)
+        tap = RipeRisTap(prefixes, hosts)
     elif tap.is_running():
         stop_tap()
-        tap = RipeRisTap(args)
+        tap = RipeRisTap(prefixes, hosts)
         start_tap()
     else:
-        tap = RipeRisTap(args)
+        tap = RipeRisTap(prefixes, hosts)
 
 
 def start_tap():
@@ -65,9 +65,7 @@ def start_tap():
 def stop_tap():
     global tap
     global thread
-    if tap is None:
-        log.error("attempting to stop unconfigured tap")
-    elif tap.is_running:
+    if tap is not None and tap.is_running:
         tap.stop()
         thread.join()
 
@@ -76,6 +74,25 @@ class ConfigHandler(RequestHandler):
     def post(self):
         try:
             # receive configuration monitors and rules
+            # sample request body
+            """
+            {
+                ...
+                "monitors": {
+                    ...
+                    "riperis": ["."]
+                    ...
+                },
+                ...
+                "rules": [
+                    {
+                        "prefixes": ["192.168.1.0/24"]
+                        ...
+                    },
+                    ...
+                ]
+            }
+            """
             msg = json.loads(self.request.body)
             monitors = msg.get("monitors", {})
             rules = msg.get("rules", [])
@@ -83,10 +100,13 @@ class ConfigHandler(RequestHandler):
             # check if "riperis" is configured at all
             if "riperis" not in monitors:
                 stop_tap()
+                self.write({"success": True, "message": "tap not in configuration"})
                 return
 
             # calculate ripe ris hosts
             hosts = set(monitors["riperis"])
+            if hosts == set("."):
+                hosts = set()
 
             # calculate all configured prefixes
             prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
@@ -107,29 +127,43 @@ class ConfigHandler(RequestHandler):
             # configure the tap
             if prefixes:
                 configure_tap(prefixes, hosts)
+                self.write({"success": True, "message": "configured"})
+            else:
+                self.write({"success": True, "message": "no prefixes in configuration"})
 
         except Exception:
             log.exception("Exception")
+            self.write({"success": False, "message": "error during tap configuration"})
 
 
 class ControlHandler(RequestHandler):
     def post(self):
         try:
+            # sample request body
+            """
+            {
+                "command": "start/stop"
+            }
+            """
+            global tap
             msg = json.loads(self.request.body)
             command = msg["command"]
             # start/stop tap
-            if command == "on":
+            if command == "start":
                 start_tap()
-            elif command == "off":
+                self.write({"success": True, "message": "command applied"})
+            elif command == "stop":
                 stop_tap()
+                self.write({"success": True, "message": "command applied"})
             else:
-                log.error("unknown tap control command")
+                self.write({"success": False, "message": "unknown command"})
         except Exception:
             log.exception("Exception")
+            self.write({"success": False, "message": "error during control"})
 
 
 class HealthHandler(RequestHandler):
-    def post(self):
+    def get(self):
         # report on thread running or not
         global tap
         status = "stopped"
@@ -243,9 +277,10 @@ class RipeRisTap:
                                             )
                             except Exception:
                                 log.exception("exception message {}".format(data))
-                        log.warning(
-                            "Iterator ran out of data; the connection will be retried"
-                        )
+                        if not self._running:
+                            log.warning(
+                                "Iterator ran out of data; the connection will be retried"
+                            )
                     except Exception:
                         log.info(
                             "RIPE RIS Server closed connection. Restarting socket in 60seconds.."

@@ -111,8 +111,6 @@ class ConfigHandler(RequestHandler):
 class RipeRisTap:
     def __init__(self, **kwargs):
         self._running = False
-        self.prefixes = kwargs["prefixes"]
-        self.hosts = kwargs["hosts"]
         log.info(self.hosts)
         log.info(self.prefixes)
 
@@ -192,7 +190,7 @@ class RipeRisTap:
                                                 )
                                                 for norm_path_msg in norm_path_msgs:
                                                     key_generator(norm_path_msg)
-                                                    log.info(norm_path_msg)
+                                                    log.debug(norm_path_msg)
                                                     producer.publish(
                                                         norm_path_msg,
                                                         exchange=update_exchange,

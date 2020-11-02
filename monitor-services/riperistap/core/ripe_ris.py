@@ -70,11 +70,8 @@ def configure_ripe_ris(msg):
                     prefixes.add(worst_prefix)
 
         # configure the data_task
-        if prefixes:
-            configure_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
-            return {"success": True, "message": "configured"}
-        else:
-            return {"success": True, "message": "no prefixes in configuration"}
+        configure_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
+        return {"success": True, "message": "configured"}
 
     except Exception:
         log.exception("Exception")

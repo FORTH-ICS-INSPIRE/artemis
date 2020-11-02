@@ -1,0 +1,136 @@
+{
+    "migrations": {
+        "1": {
+            "id": "1",
+            "db_version": "1",
+            "description": "Add version and alter hijack table with seen (BOOLEAN) field.",
+            "file": "migration_1.sql"
+            },
+        "2": {
+            "id": "2",
+            "db_version": "2",
+            "description": "Add withdrawn fields, alter json fields to array[].",
+            "file": "migration_2.sql"
+            },
+        "3": {
+            "id": "3",
+            "db_version": "3",
+            "description": "Hasura introduction.",
+            "file": "migration_3.sql"
+            },
+        "4": {
+            "id": "4",
+            "db_version": "4",
+            "description": "Database indexes",
+            "file": "migration_4.sql"
+            },
+        "5": {
+            "id": "5",
+            "db_version": "5",
+            "description": "PG to AMQ function",
+            "file": "migration_5.sql"
+            },
+        "6": {
+            "id": "6",
+            "db_version": "6",
+            "description": "Outdated field added and db constraints revised",
+            "file": "migration_6.sql"
+            },
+        "7": {
+            "id": "7",
+            "db_version": "7",
+            "description": "Expanded hijacks type field from 1 to 5 characters and migrated S,0,1,Q hijacks",
+            "file": "migration_7.sql"
+            },
+        "8": {
+            "id": "8",
+            "db_version": "8",
+            "description": "Added indexes in table: hijacks",
+            "file": "migration_8.sql"
+        },
+        "9": {
+            "id": "9",
+            "db_version": "9",
+            "description": "Expanded hijacks type field from 5 to 7 characters to support policy dimension and migrated hijacks",
+            "file": "migration_9.sql"
+        },
+        "10": {
+            "id": "10",
+            "db_version": "10",
+            "description": "Added the view_db_details view",
+            "file": "migration_10.sql"
+        },
+        "11": {
+            "id": "11",
+            "db_version": "11",
+            "description": "Added dormant flag field into hijacks table",
+            "file": "migration_11.sql"
+        },
+        "12": {
+            "id": "12",
+            "db_version": "12",
+            "description": "Dropped unneeded config_data column from configs table",
+            "file": "migration_12.sql"
+        },
+        "13": {
+            "id": "13",
+            "db_version": "13",
+            "description": "Added stats table initialized with monitored_prefixes column",
+            "file": "migration_13.sql"
+        },
+        "14": {
+            "id": "14",
+            "db_version": "14",
+            "description": "Added configured_prefixes column in stats table and re-initialized stats table",
+            "file": "migration_14.sql"
+        },
+        "15": {
+            "id": "15",
+            "db_version": "15",
+            "description": "Drop view_stats and create view view_index_all_stats",
+            "file": "migration_15.sql"
+        },
+        "16": {
+            "id": "16",
+            "db_version": "16",
+            "description": "Added monitor_peers column in stats table and re-initialized stats table",
+            "file": "migration_16.sql"
+        },
+        "17": {
+            "id": "17",
+            "db_version": "17",
+            "description": "Added community_annotation column in hijacks table",
+            "file": "migration_17.sql"
+        },
+        "18": {
+            "id": "18",
+            "db_version": "18",
+            "description": "Added intended process states table in db",
+            "file": "migration_18.sql"
+        },
+        "19": {
+            "id": "19",
+            "db_version": "19",
+            "description": "Added rpki_status column in hijacks table",
+            "file": "migration_19.sql"
+        },
+        "20": {
+            "id": "20",
+            "db_version": "20",
+            "description": "Remove trigger by default",
+            "file": "migration_20.sql"
+        },
+        "21": {
+            "id": "21",
+            "db_version": "21",
+            "description": "Add loading column in process_states table",
+            "file": "migration_21.sql"
+        },
+        "22": {
+            "id": "22",
+            "db_version": "22",
+            "description": "Creation of new dataplane_msms table and view_dataplane_msms view",
+            "file": "migration_22.sql"
+        }
+    }
+}

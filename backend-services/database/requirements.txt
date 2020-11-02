@@ -1,4 +1,4 @@
-artemis_utils==1.0.2
+artemis_utils==1.0.3
 cffi==1.13.2
 Cython==0.29.14
 enum34==1.1.6
@@ -10,6 +10,8 @@ psycopg2==2.8.4
 pytricia==1.0.0
 PyYAML==5.3
 redis==3.4.0
+requests==2.22.0
 ruamel.yaml==0.16.5
 six==1.13.0
+tornado==6.0.4
 ujson==1.35

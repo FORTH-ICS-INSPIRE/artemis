@@ -29,6 +29,7 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
+from artemis_utils import signal_loading
 from artemis_utils import start_data_task
 from artemis_utils import translate_as_set
 from artemis_utils import translate_asn_range
@@ -46,6 +47,7 @@ from tornado.web import RequestHandler
 from yaml import load as yload
 
 log = get_logger()
+MODULE_NAME = "configuration"
 # TODO: add the following in utils
 REST_PORT = 3000
 
@@ -66,6 +68,7 @@ class ConfigHandler(RequestHandler):
         https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/config.yaml
         """
         try:
+            signal_loading(MODULE_NAME, True)
             msg = json.loads(self.request.body)
             type_ = msg["type"]
             raw_ = msg["content"]
@@ -136,6 +139,8 @@ class ConfigHandler(RequestHandler):
         except Exception:
             log.exception("exception")
             self.write({"success": False, "message": "unknown error"})
+        finally:
+            signal_loading(MODULE_NAME, False)
 
 
 class Configuration:
@@ -171,17 +176,12 @@ class Configuration:
             log.info("stopped")
             self._running = False
 
-    def exit(self, signum, frame):
-        if self.worker:
-            self.worker.should_stop = True
-
     class Worker(ConsumerProducerMixin):
         """
         RabbitMQ Consumer/Producer for this Service.
         """
 
         def __init__(self, connection: Connection) -> NoReturn:
-            self.module_name = "configuration"
             self.connection = connection
             self.file = "/etc/artemis/config.yaml"
             self.temp_file = "/etc/artemis/config.yaml.tmp"
@@ -239,9 +239,15 @@ class Configuration:
             self.required_bgpstreamkafka = {"host", "port", "topic"}
 
             # reads and parses initial configuration file
-            with open(self.file, "r") as f:
-                raw = f.read()
-                self.data, _flag, _error = self.parse(raw, yaml=True)
+            signal_loading(MODULE_NAME, True)
+            try:
+                with open(self.file, "r") as f:
+                    raw = f.read()
+                    self.data, _flag, _error = self.parse(raw, yaml=True)
+            except Exception:
+                log.exception("exception")
+            finally:
+                signal_loading(MODULE_NAME, False)
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
@@ -251,7 +257,7 @@ class Configuration:
 
             # QUEUES
             self.autoconf_update_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.config_exchange,
                 routing_key="autoconf-update",
                 priority=4,
@@ -1315,6 +1321,8 @@ if __name__ == "__main__":
     configure_data_task(Configuration)
     # configuration should start in any case
     start_data_task()
+    while not artemis_utils.data_task.is_running():
+        time.sleep(1)
     app = make_app()
     app.listen(REST_PORT)
     log.info("Listening to port {}".format(REST_PORT))

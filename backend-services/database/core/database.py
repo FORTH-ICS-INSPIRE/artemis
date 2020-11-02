@@ -1,15 +1,19 @@
 import datetime
 import logging
 import os
-import signal
 import time
-from xmlrpc.client import ServerProxy
+from threading import Lock
+from threading import Timer
 
+import artemis_utils
 import pytricia
 import redis
+import requests
 import ujson as json
 from artemis_utils import AUTO_RECOVER_PROCESS_STATE
-from artemis_utils import BACKEND_SUPERVISOR_URI
+from artemis_utils import BULK_TIMER
+from artemis_utils import configure_data_task
+from artemis_utils import ControlHandler
 from artemis_utils import DB_HOST
 from artemis_utils import DB_NAME
 from artemis_utils import DB_PASS
@@ -19,10 +23,9 @@ from artemis_utils import flatten
 from artemis_utils import get_hash
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
+from artemis_utils import HealthHandler
 from artemis_utils import hijack_log_field_formatter
 from artemis_utils import HISTORIC
-from artemis_utils import ModulesState
-from artemis_utils import MON_SUPERVISOR_URI
 from artemis_utils import ping_redis
 from artemis_utils import purge_redis_eph_pers_keys
 from artemis_utils import RABBITMQ_URI
@@ -31,6 +34,7 @@ from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
 from artemis_utils import signal_loading
+from artemis_utils import start_data_task
 from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
 from artemis_utils import WITHDRAWN_HIJACK_THRESHOLD
@@ -38,13 +42,14 @@ from artemis_utils.db_util import DB
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
-from kombu import Consumer
 from kombu import Queue
-from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from tornado.ioloop import IOLoop
+from tornado.web import Application
+from tornado.web import RequestHandler
 
-# import os
-
+lock = Lock()
+MODULE_NAME = "database"
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
@@ -56,6 +61,10 @@ try:
 except Exception:
     log.exception("exception")
     hij_log_filter = []
+
+# TODO: add the following in utils
+REST_PORT = 3000
+CONFIGURATION_HOST = "configuration"
 
 
 class HijackLogFilter(logging.Filter):
@@ -73,32 +82,93 @@ mail_log.addFilter(HijackLogFilter())
 hij_log.addFilter(HijackLogFilter())
 
 
+def configure_database(msg):
+    signal_loading(MODULE_NAME, True)
+    config = msg
+    try:
+        if config["timestamp"] > artemis_utils.data_task.worker.timestamp:
+            if "timestamp" in config:
+                del config["timestamp"]
+            raw_config = ""
+            if "raw_config" in config:
+                raw_config = config["raw_config"]
+                del config["raw_config"]
+            comment = ""
+            if "comment" in config:
+                comment = config["comment"]
+                del config["comment"]
+            config_hash = get_hash(raw_config)
+            latest_config_in_db_hash = (
+                artemis_utils.data_task.worker.retrieve_most_recent_config_hash()
+            )
+            if config_hash != latest_config_in_db_hash:
+                artemis_utils.data_task.worker.save_config(
+                    config_hash, config, raw_config, comment
+                )
+                configure_data_task(Database)
+            else:
+                log.debug("database config is up-to-date")
+            return {"success": True, "message": "configured"}
+    except Exception:
+        log.exception("{}".format(config))
+        return {"success": False, "message": "error during data_task configuration"}
+    finally:
+        signal_loading(MODULE_NAME, False)
+
+
+class ConfigHandler(RequestHandler):
+    def post(self):
+        try:
+            msg = json.loads(self.request.body)
+            self.write(configure_database(msg))
+        except Exception:
+            self.write(
+                {"success": False, "message": "error during data_task configuration"}
+            )
+
+
 class Database:
+    """
+    Database Service.
+    """
+
     def __init__(self):
+        self._running = False
         self.worker = None
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def is_running(self):
+        return self._running
+
+    def stop(self):
+        if self.worker:
+            if self.worker.bulk_timer_thread:
+                self.worker.bulk_timer_thread.cancel()
+                self.worker.bulk_timer_thread.join()
+            self.worker.should_stop = True
+        else:
+            self._running = False
 
     def run(self):
+        """
+        Entry function for this service that runs a RabbitMQ worker through Kombu.
+        """
         try:
             with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
+                self._running = True
                 self.worker.run()
         except Exception:
             log.exception("exception")
         finally:
             log.info("stopped")
-
-    def exit(self, signum, frame):
-        if self.worker:
-            self.worker.ro_db.close()
-            self.worker.wo_db.close()
-            self.worker.should_stop = True
+            self._running = False
 
     class Worker(ConsumerProducerMixin):
+        """
+        RabbitMQ Consumer/Producer for this Service.
+        """
+
         def __init__(self, connection):
-            self.module_name = "database"
             self.connection = connection
             self.prefix_tree = None
             self.monitored_prefixes = set()
@@ -111,6 +181,7 @@ class Database:
             self.handled_bgp_entries = set()
             self.outdate_hijacks = set()
             self.insert_hijacks_entries = {}
+            self.bulk_timer_thread = None
 
             # DB variables
             self.ro_db = DB(
@@ -136,42 +207,45 @@ class Database:
             try:
                 self.wo_db.execute("TRUNCATE table process_states")
 
-                query = (
-                    "INSERT INTO process_states (name, running) "
-                    "VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running"
-                )
+                # TODO: implement this with no supervisor!
+                # query = (
+                #     "INSERT INTO process_states (name, running) "
+                #     "VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running"
+                # )
 
-                for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
-                    if not ctx:
-                        continue
-                    server = ServerProxy(ctx)
-                    processes = [
-                        (x["name"], x["state"] == 20)
-                        for x in server.supervisor.getAllProcessInfo()
-                        if x["name"] != "listener"
-                    ]
-                    self.wo_db.execute_batch(query, processes)
+                # for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                #     if not ctx:
+                #         continue
+                #     server = ServerProxy(ctx)
+                #     processes = [
+                #         (x["name"], x["state"] == 20)
+                #         for x in server.supervisor.getAllProcessInfo()
+                #         if x["name"] != "listener"
+                #     ]
+                #     self.wo_db.execute_batch(query, processes)
 
             except Exception:
                 log.exception("exception")
 
             try:
-                query = (
-                    "INSERT INTO intended_process_states (name, running) "
-                    "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
-                )
+                pass
+                # TODO: implement this with no supervisor!
+                # query = (
+                #     "INSERT INTO intended_process_states (name, running) "
+                #     "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+                # )
 
-                for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
-                    if not ctx:
-                        continue
-                    server = ServerProxy(ctx)
-                    processes = [
-                        (x["group"], False)
-                        for x in server.supervisor.getAllProcessInfo()
-                        if x["group"] in ["monitor", "detection", "mitigation"]
-                    ]
-
-                    self.wo_db.execute_batch(query, processes)
+                # for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
+                #     if not ctx:
+                #         continue
+                #     server = ServerProxy(ctx)
+                #     processes = [
+                #         (x["group"], False)
+                #         for x in server.supervisor.getAllProcessInfo()
+                #         if x["group"] in ["monitor", "detection", "mitigation"]
+                #     ]
+                #
+                #     self.wo_db.execute_batch(query, processes)
 
             except Exception:
                 log.exception("exception")
@@ -182,7 +256,6 @@ class Database:
             self.bootstrap_redis()
 
             # EXCHANGES
-            self.config_exchange = create_exchange("config", connection)
             self.update_exchange = create_exchange(
                 "bgp-update", connection, declare=True
             )
@@ -193,86 +266,72 @@ class Database:
                 "hijack-hashing", connection, "x-consistent-hash", declare=True
             )
             self.handled_exchange = create_exchange("handled-update", connection)
-            self.db_clock_exchange = create_exchange("db-clock", connection)
             self.mitigation_exchange = create_exchange("mitigation", connection)
 
             # QUEUES
             self.update_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.update_exchange,
                 routing_key="update",
                 priority=1,
             )
             self.withdraw_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.update_exchange,
                 routing_key="withdraw",
                 priority=1,
             )
             self.hijack_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_hashing,
                 routing_key="1",
                 priority=1,
                 random=True,
             )
             self.hijack_ongoing_request_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_exchange,
                 routing_key="ongoing-request",
                 priority=1,
             )
             self.hijack_outdate_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_exchange,
                 routing_key="outdate",
                 priority=1,
             )
             self.hijack_resolve_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_exchange,
                 routing_key="resolve",
                 priority=2,
             )
             self.hijack_ignore_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_exchange,
                 routing_key="ignore",
                 priority=2,
             )
             self.handled_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.handled_exchange,
                 routing_key="update",
                 priority=1,
             )
-            self.config_queue = create_queue(
-                self.module_name,
-                exchange=self.config_exchange,
-                routing_key="notify",
-                priority=2,
-            )
-            self.db_clock_queue = create_queue(
-                self.module_name,
-                exchange=self.db_clock_exchange,
-                routing_key="pulse",
-                priority=2,
-                random=True,
-            )
             self.mitigate_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.mitigation_exchange,
                 routing_key="mit-start",
                 priority=2,
             )
             self.hijack_seen_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_exchange,
                 routing_key="seen",
                 priority=2,
             )
             self.hijack_delete_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_exchange,
                 routing_key="delete",
                 priority=2,
@@ -294,18 +353,11 @@ class Database:
                 consumer_arguments={"x-priority": 2},
             )
 
-            signal_loading(self.module_name, True)
-            self.config_request_rpc()
-            signal_loading(self.module_name, False)
+            self.set_modules_to_intended_state()
+            self.setup_bulk_update_timer()
 
         def get_consumers(self, Consumer, channel):
             return [
-                Consumer(
-                    queues=[self.config_queue],
-                    on_message=self.handle_config_notify,
-                    prefetch_count=1,
-                    accept=["ujson"],
-                ),
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
@@ -322,12 +374,6 @@ class Database:
                     queues=[self.withdraw_queue],
                     on_message=self.handle_withdraw_update,
                     prefetch_count=100,
-                    accept=["ujson"],
-                ),
-                Consumer(
-                    queues=[self.db_clock_queue],
-                    on_message=self._scheduler_instruction,
-                    prefetch_count=1,
                     accept=["ujson"],
                 ),
                 Consumer(
@@ -392,63 +438,37 @@ class Database:
                 ),
             ]
 
+        def setup_bulk_update_timer(self):
+            """
+            Timer for bulk operations (replaces deprecated db clock)
+            """
+            self.bulk_timer_thread = Timer(
+                interval=BULK_TIMER, function=self._update_bulk
+            )
+            self.bulk_timer_thread.start()
+
         def set_modules_to_intended_state(self):
             if AUTO_RECOVER_PROCESS_STATE != "true":
                 return
             try:
-                query = "SELECT name, running FROM intended_process_states"
+                pass
+                # TODO: make this work without supervisor!
+                # query = "SELECT name, running FROM intended_process_states"
+                #
+                # entries = self.ro_db.execute(query)
 
-                entries = self.ro_db.execute(query)
-                modules_state = ModulesState()
-                for entry in entries:
-                    # entry[0] --> module name, entry[1] --> intended state
-                    # start only intended modules (after making sure they are stopped
-                    # to avoid stale entries)
-                    if entry[1]:
-                        log.info("Setting {} to start state.".format(entry[0]))
-                        modules_state.call(entry[0], "stop")
-                        time.sleep(1)
-                        modules_state.call(entry[0], "start")
+                # modules_state = ModulesState()
+                # for entry in entries:
+                #     # entry[0] --> module name, entry[1] --> intended state
+                #     # start only intended modules (after making sure they are stopped
+                #     # to avoid stale entries)
+                #     if entry[1]:
+                #         log.info("Setting {} to start state.".format(entry[0]))
+                #         modules_state.call(entry[0], "stop")
+                #         time.sleep(1)
+                #         modules_state.call(entry[0], "start")
             except Exception:
                 log.exception("exception")
-
-        def config_request_rpc(self):
-            self.correlation_id = uuid()
-            callback_queue = Queue(
-                uuid(),
-                durable=False,
-                auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
-
-            self.producer.publish(
-                "",
-                exchange="",
-                routing_key="configuration.rpc.request",
-                reply_to=callback_queue.name,
-                correlation_id=self.correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "configuration.rpc.request",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="ujson",
-            )
-            with Consumer(
-                self.connection,
-                on_message=self.handle_config_request_reply,
-                queues=[callback_queue],
-                accept=["ujson"],
-            ):
-                while self.rules is None:
-                    self.connection.drain_events()
 
         def handle_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -490,7 +510,10 @@ class Database:
                         json.dumps(msg_["orig_path"]),  # orig_path
                     )
                     # insert all types of BGP updates
+                    # thread-safe access to update dict
+                    lock.acquire()
                     self.insert_bgp_entries.append(value)
+                    lock.release()
 
                     # register the monitor/peer ASN from whom we learned this BGP update
                     self.redis.sadd("peer-asns", msg_["peer_asn"])
@@ -509,6 +532,7 @@ class Database:
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             message.ack()
             msg_ = message.payload
+            lock.acquire()
             try:
                 # update hijacks based on withdrawal messages
                 value = (
@@ -520,6 +544,8 @@ class Database:
                 self.handle_bgp_withdrawals.add(value)
             except Exception:
                 log.exception("{}".format(msg_))
+            finally:
+                lock.release()
 
         def handle_hijack_outdate(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
@@ -534,8 +560,10 @@ class Database:
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             message.ack()
             msg_ = message.payload
+            lock.acquire()
             try:
                 key = msg_["key"]  # persistent hijack key
+
                 if key not in self.insert_hijacks_entries:
                     # log.info('key {} at {}'.format(key, os.getpid()))
                     self.insert_hijacks_entries[key] = {}
@@ -607,15 +635,20 @@ class Database:
                     ]
             except Exception:
                 log.exception("{}".format(msg_))
+            finally:
+                lock.release()
 
         def handle_handled_bgp_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))
             message.ack()
+            lock.acquire()
             try:
                 key_ = (message.payload,)
                 self.handled_bgp_entries.add(key_)
             except Exception:
                 log.exception("{}".format(message))
+            finally:
+                lock.release()
 
         def build_prefix_tree(self):
             log.info("Starting building database prefix tree...")
@@ -694,75 +727,6 @@ class Database:
             if prefix in self.prefix_tree[ip_version]:
                 return self.prefix_tree[ip_version].get_key(prefix)
             return None
-
-        def handle_config_notify(self, message):
-            message.ack()
-            signal_loading(self.module_name, True)
-            log.info("Reconfiguring database due to conf update...")
-
-            log.debug("Message: {}\npayload: {}".format(message, message.payload))
-            config = message.payload
-            try:
-                if config["timestamp"] > self.timestamp:
-                    self.timestamp = config["timestamp"]
-                    self.rules = config.get("rules", [])
-                    self.build_prefix_tree()
-                    if "timestamp" in config:
-                        del config["timestamp"]
-                    raw_config = ""
-                    if "raw_config" in config:
-                        raw_config = config["raw_config"]
-                        del config["raw_config"]
-                    comment = ""
-                    if "comment" in config:
-                        comment = config["comment"]
-                        del config["comment"]
-
-                    config_hash = get_hash(raw_config)
-                    self._save_config(config_hash, config, raw_config, comment)
-            except Exception:
-                log.exception("{}".format(config))
-
-            log.info("Database initiated, configured and running.")
-            signal_loading(self.module_name, False)
-
-        def handle_config_request_reply(self, message):
-            message.ack()
-            signal_loading(self.module_name, True)
-            log.info("Configuring database for the first time...")
-
-            log.debug("Message: {}\npayload: {}".format(message, message.payload))
-            config = message.payload
-            try:
-                if self.correlation_id == message.properties["correlation_id"]:
-                    if config["timestamp"] > self.timestamp:
-                        self.timestamp = config["timestamp"]
-                        self.rules = config.get("rules", [])
-                        self.build_prefix_tree()
-                        if "timestamp" in config:
-                            del config["timestamp"]
-                        raw_config = ""
-                        if "raw_config" in config:
-                            raw_config = config["raw_config"]
-                            del config["raw_config"]
-                        comment = ""
-                        if "comment" in config:
-                            comment = config["comment"]
-                            del config["comment"]
-                        config_hash = get_hash(raw_config)
-                        latest_config_in_db_hash = (
-                            self._retrieve_most_recent_config_hash()
-                        )
-                        if config_hash != latest_config_in_db_hash:
-                            self._save_config(config_hash, config, raw_config, comment)
-                        else:
-                            log.debug("database config is up-to-date")
-            except Exception:
-                log.exception("{}".format(config))
-            self.set_modules_to_intended_state()
-
-            log.info("Database initiated, configured and running.")
-            signal_loading(self.module_name, False)
 
         def handle_hijack_ongoing_request(self, message):
             message.ack()
@@ -1621,6 +1585,7 @@ class Database:
                 log.exception("")
 
         def _update_bulk(self):
+            lock.acquire()
             inserts, updates, hijacks, withdrawals = (
                 self._insert_bgp_updates(),
                 self._update_bgp_updates(),
@@ -1639,6 +1604,8 @@ class Database:
                 str_ += "Withdrawals Handled: {}".format(withdrawals)
             if str_ != "":
                 log.debug("{}".format(str_))
+            lock.release()
+            self.setup_bulk_update_timer()
 
         def _scheduler_instruction(self, message):
             message.ack()
@@ -1652,7 +1619,7 @@ class Database:
                     "Received uknown instruction from scheduler: {}".format(msg_)
                 )
 
-        def _save_config(self, config_hash, yaml_config, raw_config, comment):
+        def save_config(self, config_hash, yaml_config, raw_config, comment):
             try:
                 log.debug("Config Store..")
                 query = (
@@ -1665,7 +1632,7 @@ class Database:
             except Exception:
                 log.exception("failed to save config in db")
 
-        def _retrieve_most_recent_config_hash(self):
+        def retrieve_most_recent_config_hash(self):
             try:
                 hash_ = self.ro_db.execute(
                     "SELECT key from configs ORDER BY time_modified DESC LIMIT 1",
@@ -1679,10 +1646,27 @@ class Database:
             return None
 
 
-def run():
-    service = Database()
-    service.run()
+def make_app():
+    return Application(
+        [
+            ("/config", ConfigHandler),
+            ("/control", ControlHandler),
+            ("/health", HealthHandler),
+        ]
+    )
 
 
 if __name__ == "__main__":
-    run()
+    # database should be configured in any case
+    configure_data_task(Database)
+    # database should start in any case
+    start_data_task()
+    while not artemis_utils.data_task.is_running():
+        time.sleep(1)
+    r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+    conf_res = configure_database(r.json())
+    assert conf_res["success"], conf_res["message"]
+    app = make_app()
+    app.listen(REST_PORT)
+    log.info("Listening to port {}".format(REST_PORT))
+    IOLoop.current().start()

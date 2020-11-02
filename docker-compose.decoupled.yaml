@@ -13,6 +13,8 @@ services:
 #            - prefixtree
         expose:
             - 3000
+        ports:
+            - "3001:3000"
         networks:
             - artemis
         environment:
@@ -103,7 +105,7 @@ services:
         expose:
             - 3000
         ports:
-            - "3000:3000"
+            - "3002:3000"
         networks:
             - artemis
         environment:

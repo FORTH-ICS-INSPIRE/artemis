@@ -95,6 +95,8 @@ class ConfigHandler(RequestHandler):
 class RipeRisTap:
     def __init__(self, **kwargs):
         self._running = False
+        self.prefixes = kwargs["prefixes"]
+        self.hosts = kwargs["hosts"]
 
     def is_running(self):
         return self._running

@@ -4,6 +4,7 @@ import logging.config
 import logging.handlers
 import os
 import re
+import threading
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -20,6 +21,7 @@ from gql import Client
 from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
 from kombu import serialization
+from tornado.web import RequestHandler
 
 BULK_TIMER = float(os.getenv("BULK_TIMER", 1))
 BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
@@ -108,6 +110,9 @@ PROCESS_STATES_LOADING_MUTATION = """
     }
 """
 
+# global vars for data tasks and corresponding RMQ threads in containers
+data_task = None
+data_task_thread = None
 
 serialization.register(
     "ujson",
@@ -894,3 +899,75 @@ def clean_as_path(path: List[int]) -> List[int]:
     if is_loopy:
         clean_path = __clean_loops(clean_path)
     return clean_path
+
+
+def configure_data_task(data_task_class, **kwargs):
+    global data_task
+    if data_task is None:
+        data_task = data_task_class(**kwargs)
+    elif data_task.is_running():
+        stop_data_task()
+        data_task = data_task_class(**kwargs)
+        start_data_task()
+    else:
+        data_task = data_task_class(**kwargs)
+
+
+def start_data_task():
+    global data_task
+    global data_task_thread
+    if data_task is None:
+        log.error("attempting to start unconfigured data task")
+        return
+    if data_task.is_running():
+        log.info("data task is already running")
+        return
+    data_task_thread = threading.Thread(target=data_task.run)
+    data_task_thread.start()
+    log.info("data task started")
+
+
+def stop_data_task():
+    global data_task
+    global data_task_thread
+    if data_task is not None and data_task_thread is not None and data_task.is_running:
+        data_task.stop()
+        data_task_thread.join()
+
+
+class ControlHandler(RequestHandler):
+    def post(self):
+        try:
+            # sample request body
+            """
+            {
+                "command": "start/stop"
+            }
+            """
+            global data_task
+            msg = json.loads(self.request.body)
+            command = msg["command"]
+            # start/stop data_task
+            if command == "start":
+                start_data_task()
+                self.write({"success": True, "message": "command applied"})
+            elif command == "stop":
+                stop_data_task()
+                self.write({"success": True, "message": "command applied"})
+            else:
+                self.write({"success": False, "message": "unknown command"})
+        except Exception:
+            log.exception("Exception")
+            self.write({"success": False, "message": "error during control"})
+
+
+class HealthHandler(RequestHandler):
+    def get(self):
+        # report on data_task_thread running or not
+        global data_task
+        status = "stopped"
+        if data_task is None:
+            status = "unconfigured"
+        elif data_task.is_running():
+            status = "running"
+        self.write({"status": status})

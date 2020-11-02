@@ -1,5 +1,4 @@
 import os
-import threading
 import time
 from copy import deepcopy
 
@@ -7,8 +6,11 @@ import pytricia
 import redis
 import requests
 import ujson as json
+from artemis_utils import configure_data_task
+from artemis_utils import ControlHandler
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
+from artemis_utils import HealthHandler
 from artemis_utils import key_generator
 from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
@@ -17,6 +19,7 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
+from artemis_utils import stop_data_task
 from artemis_utils import translate_rfc2622
 from artemis_utils.rabbitmq_util import create_exchange
 from kombu import Connection
@@ -32,44 +35,9 @@ redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 # TODO: add the following in utils
 REST_PORT = 3000
-tap = None
-thread = None
 
 
-def configure_tap(prefixes, hosts):
-    global tap
-    if tap is None:
-        tap = RipeRisTap(prefixes, hosts)
-    elif tap.is_running():
-        stop_tap()
-        tap = RipeRisTap(prefixes, hosts)
-        start_tap()
-    else:
-        tap = RipeRisTap(prefixes, hosts)
-
-
-def start_tap():
-    global tap
-    global thread
-    if tap is None:
-        log.error("attempting to start unconfigured tap")
-        return
-    if tap.is_running():
-        log.info("tap is already running")
-        return
-    thread = threading.Thread(target=tap.run)
-    thread.start()
-    log.info("tap started")
-
-
-def stop_tap():
-    global tap
-    global thread
-    if tap is not None and tap.is_running:
-        tap.stop()
-        thread.join()
-
-
+# this function differs per container (pertains to how it is configured)
 class ConfigHandler(RequestHandler):
     def post(self):
         try:
@@ -99,8 +67,10 @@ class ConfigHandler(RequestHandler):
 
             # check if "riperis" is configured at all
             if "riperis" not in monitors:
-                stop_tap()
-                self.write({"success": True, "message": "tap not in configuration"})
+                stop_data_task()
+                self.write(
+                    {"success": True, "message": "data_task not in configuration"}
+                )
                 return
 
             # calculate ripe ris hosts
@@ -124,61 +94,27 @@ class ConfigHandler(RequestHandler):
                     if worst_prefix:
                         prefixes.add(worst_prefix)
 
-            # configure the tap
+            # configure the data_task
             if prefixes:
-                configure_tap(prefixes, hosts)
+                configure_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
                 self.write({"success": True, "message": "configured"})
             else:
                 self.write({"success": True, "message": "no prefixes in configuration"})
 
         except Exception:
             log.exception("Exception")
-            self.write({"success": False, "message": "error during tap configuration"})
-
-
-class ControlHandler(RequestHandler):
-    def post(self):
-        try:
-            # sample request body
-            """
-            {
-                "command": "start/stop"
-            }
-            """
-            global tap
-            msg = json.loads(self.request.body)
-            command = msg["command"]
-            # start/stop tap
-            if command == "start":
-                start_tap()
-                self.write({"success": True, "message": "command applied"})
-            elif command == "stop":
-                stop_tap()
-                self.write({"success": True, "message": "command applied"})
-            else:
-                self.write({"success": False, "message": "unknown command"})
-        except Exception:
-            log.exception("Exception")
-            self.write({"success": False, "message": "error during control"})
-
-
-class HealthHandler(RequestHandler):
-    def get(self):
-        # report on thread running or not
-        global tap
-        status = "stopped"
-        if tap is None:
-            status = "unconfigured"
-        elif tap.is_running():
-            status = "running"
-        self.write({"status": status})
+            self.write(
+                {"success": False, "message": "error during data_task configuration"}
+            )
 
 
 class RipeRisTap:
-    def __init__(self, prefixes, hosts):
+    def __init__(self, **kwargs):
         self._running = False
-        self.prefixes = prefixes
-        self.hosts = hosts
+        self.prefixes = kwargs["prefixes"]
+        self.hosts = kwargs["hosts"]
+        log.info(self.hosts)
+        log.info(self.prefixes)
 
     def is_running(self):
         return self._running
@@ -256,7 +192,7 @@ class RipeRisTap:
                                                 )
                                                 for norm_path_msg in norm_path_msgs:
                                                     key_generator(norm_path_msg)
-                                                    log.debug(norm_path_msg)
+                                                    log.info(norm_path_msg)
                                                     producer.publish(
                                                         norm_path_msg,
                                                         exchange=update_exchange,

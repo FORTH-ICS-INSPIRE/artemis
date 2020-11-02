@@ -1,6 +1,6 @@
 # general
 guiEnabled: true
-systemVersion: latest
+systemVersion: release-1.6.0
 historic: false
 replicaCount: 1
 # redis

@@ -9,12 +9,10 @@ services:
             - rabbitmq
             - postgres
             - redis
-#            - configuration
+            - configuration
 #            - prefixtree
         expose:
             - 3000
-        ports:
-            - "3000:3000"
         networks:
             - artemis
         environment:
@@ -27,6 +25,7 @@ services:
             REST_PORT: ${REST_PORT}
         volumes:
             - ./monitor-services/riperistap/configs/:/etc/artemis/
+            - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
 #    bgpstreamlivetap:
 #        image: artemis_bgpstreamlivetap
 #        build: ./monitor-services/bgpstreamlivetap
@@ -91,21 +90,33 @@ services:
 #        # TODO: env variables, ports
 #        volumes:
 #            - ./monitor-services/exabgptap/configs/:/etc/artemis/
-#    configuration:
-#        image: artemis_configuration
-#        build: ./backend-services/configuration
-#        container_name: configuration
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#            - fileobserver
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./backend-services/configuration/configs/:/etc/artemis/
+    configuration:
+        image: artemis_configuration
+        build: ./backend-services/configuration
+        container_name: configuration
+        restart: always
+        depends_on:
+            - rabbitmq
+            - postgres
+            - redis
+            #- fileobserver
+        expose:
+            - 3000
+        ports:
+            - "3000:3000"
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: ${REST_PORT}
+        volumes:
+            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
 #    detection:
 #        image: artemis_detection
 #        build: ./backend-services/detection

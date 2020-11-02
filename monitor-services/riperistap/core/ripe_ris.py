@@ -37,72 +37,55 @@ DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 REST_PORT = 3000
 
 
-# this function differs per container (pertains to how it is configured)
+def configure_ripe_ris(msg):
+    try:
+        monitors = msg.get("monitors", {})
+        rules = msg.get("rules", [])
+
+        # check if "riperis" is configured at all
+        if "riperis" not in monitors:
+            stop_data_task()
+            return {"success": True, "message": "data_task not in configuration"}
+
+        # calculate ripe ris hosts
+        hosts = set(monitors["riperis"])
+        if hosts == set("."):
+            hosts = set()
+
+        # calculate all configured prefixes
+        prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
+        for rule in rules:
+            for prefix in rule["prefixes"]:
+                for translated_prefix in translate_rfc2622(prefix):
+                    ip_version = get_ip_version(translated_prefix)
+                    prefix_tree[ip_version].insert(translated_prefix, "")
+
+        # only keep super prefixes for monitoring
+        prefixes = set()
+        for ip_version in prefix_tree:
+            for prefix in prefix_tree[ip_version]:
+                worst_prefix = search_worst_prefix(prefix, prefix_tree[ip_version])
+                if worst_prefix:
+                    prefixes.add(worst_prefix)
+
+        # configure the data_task
+        if prefixes:
+            configure_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
+            return {"success": True, "message": "configured"}
+        else:
+            return {"success": True, "message": "no prefixes in configuration"}
+
+    except Exception:
+        log.exception("Exception")
+        return {"success": False, "message": "error during data_task configuration"}
+
+
 class ConfigHandler(RequestHandler):
     def post(self):
         try:
-            # receive configuration monitors and rules
-            # sample request body
-            """
-            {
-                ...
-                "monitors": {
-                    ...
-                    "riperis": ["."]
-                    ...
-                },
-                ...
-                "rules": [
-                    {
-                        "prefixes": ["192.168.1.0/24"]
-                        ...
-                    },
-                    ...
-                ]
-            }
-            """
             msg = json.loads(self.request.body)
-            monitors = msg.get("monitors", {})
-            rules = msg.get("rules", [])
-
-            # check if "riperis" is configured at all
-            if "riperis" not in monitors:
-                stop_data_task()
-                self.write(
-                    {"success": True, "message": "data_task not in configuration"}
-                )
-                return
-
-            # calculate ripe ris hosts
-            hosts = set(monitors["riperis"])
-            if hosts == set("."):
-                hosts = set()
-
-            # calculate all configured prefixes
-            prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
-            for rule in rules:
-                for prefix in rule["prefixes"]:
-                    for translated_prefix in translate_rfc2622(prefix):
-                        ip_version = get_ip_version(translated_prefix)
-                        prefix_tree[ip_version].insert(translated_prefix, "")
-
-            # only keep super prefixes for monitoring
-            prefixes = set()
-            for ip_version in prefix_tree:
-                for prefix in prefix_tree[ip_version]:
-                    worst_prefix = search_worst_prefix(prefix, prefix_tree[ip_version])
-                    if worst_prefix:
-                        prefixes.add(worst_prefix)
-
-            # configure the data_task
-            if prefixes:
-                configure_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
-                self.write({"success": True, "message": "configured"})
-            else:
-                self.write({"success": True, "message": "no prefixes in configuration"})
-
+            self.write(configure_ripe_ris(msg))
         except Exception:
-            log.exception("Exception")
             self.write(
                 {"success": False, "message": "error during data_task configuration"}
             )
@@ -111,8 +94,6 @@ class ConfigHandler(RequestHandler):
 class RipeRisTap:
     def __init__(self, **kwargs):
         self._running = False
-        log.info(self.hosts)
-        log.info(self.prefixes)
 
     def is_running(self):
         return self._running
@@ -320,6 +301,10 @@ def make_app():
 
 
 if __name__ == "__main__":
+    # ask for initial configuration
+    r = requests.get("configuration:3000/config")
+    conf_res = configure_ripe_ris(r.json())
+    assert conf_res["success"], conf_res["message"]
     app = make_app()
     app.listen(REST_PORT)
     IOLoop.current().start()

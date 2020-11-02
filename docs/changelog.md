@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for fork PRs in travis CI/CD builds and tests
 - New dataplane-related table and view (pings and traceroutes)
 - PoC mitigation mechanism and setup (deaggregation)
+- PoC auto-configuration mechanism and setup
 - Coverage for unit tests
 - AS Path pre-pending sequence matching support in configuration
 - Docs pages
@@ -57,9 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 - Wiki pages
-
-### Security
-- TBD (addressing vulnerability)
 
 ## [1.5.0] (Aeolus) - 2020-05-24
 ### Added

@@ -14,13 +14,13 @@ from typing import Text
 from typing import TextIO
 from typing import Union
 
+import artemis_utils
 import redis
 import ruamel.yaml
 import ujson as json
 from artemis_utils import ArtemisError
 from artemis_utils import configure_data_task
 from artemis_utils import ControlHandler
-from artemis_utils import data_task
 from artemis_utils import flatten
 from artemis_utils import get_logger
 from artemis_utils import HealthHandler
@@ -55,8 +55,7 @@ class ConfigHandler(RequestHandler):
         """
         simply provides the configuration to the requester
         """
-        global data_task
-        self.write(data_task.worker.data)
+        self.write(artemis_utils.data_task.worker.data)
 
     def post(self):
         """
@@ -67,7 +66,6 @@ class ConfigHandler(RequestHandler):
         https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/config.yaml
         """
         try:
-            global data_task
             msg = json.loads(self.request.body)
             type_ = msg["type"]
             raw_ = msg["content"]
@@ -83,14 +81,16 @@ class ConfigHandler(RequestHandler):
                 raw = raw_
 
             # if nothing is configured, configure
-            if data_task is None:
-                data_task = Configuration()
+            if artemis_utils.data_task is None:
+                artemis_utils.data_task = Configuration()
 
             if type_ == "yaml":
                 stream = StringIO("".join(raw))
-                data, _flag, _error = data_task.worker.parse(stream, yaml=True)
+                data, _flag, _error = artemis_utils.data_task.worker.parse(
+                    stream, yaml=True
+                )
             else:
-                data, _flag, _error = data_task.worker.parse(raw)
+                data, _flag, _error = artemis_utils.data_task.worker.parse(raw)
 
             # _flag is True or False depending if the new configuration was
             # accepted or not.
@@ -100,30 +100,30 @@ class ConfigHandler(RequestHandler):
                 # change to sth better
                 prev_data = copy.deepcopy(data)
                 del prev_data["timestamp"]
-                new_data = copy.deepcopy(data_task.worker.data)
+                new_data = copy.deepcopy(artemis_utils.data_task.worker.data)
                 del new_data["timestamp"]
                 prev_data_str = json.dumps(prev_data, sort_keys=True)
                 new_data_str = json.dumps(new_data, sort_keys=True)
                 if prev_data_str != new_data_str:
-                    data_task.worker.data = data
+                    artemis_utils.data_task.worker.data = data
                     # the following needs to take place only if conf came from frontend
                     # otherwise the file is already updated to the latest version!
                     if from_frontend:
-                        data_task.worker.update_local_config_file()
+                        artemis_utils.data_task.worker.update_local_config_file()
                     if comment:
-                        data_task.worker.data["comment"] = comment
+                        artemis_utils.data_task.worker.data["comment"] = comment
 
                     # TODO: configure all other services with the new config
                     # Remove the comment to avoid marking config as different
                     if "comment" in self.data:
-                        del data_task.worker.data["comment"]
+                        del artemis_utils.data_task.worker.data["comment"]
                     # after accepting/writing, format new configuration correctly
-                    with open(data_task.worker.file, "r") as f:
+                    with open(artemis_utils.data_task.worker.file, "r") as f:
                         raw = f.read()
                     yaml_conf = ruamel.yaml.load(
                         raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
                     )
-                    data_task.worker.write_conf_via_tmp_file(yaml_conf)
+                    artemis_utils.data_task.worker.write_conf_via_tmp_file(yaml_conf)
 
                 # reply back to the sender with a configuration accepted
                 # message.
@@ -160,10 +160,10 @@ class Configuration:
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
+        self._running = True
         try:
             with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
-                self._running = True
                 self.worker.run()
         except Exception:
             log.exception("exception")
@@ -1315,11 +1315,7 @@ if __name__ == "__main__":
     configure_data_task(Configuration)
     # configuration should start in any case
     start_data_task()
-    global data_task
-    assert data_task.is_running()
-    assert data_task.worker is not None
-    # the following works only if the initial configuration is correct
-    assert "prefixes" in data_task.worker.data
     app = make_app()
     app.listen(REST_PORT)
+    log.info("Listening to port {}".format(REST_PORT))
     IOLoop.current().start()

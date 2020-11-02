@@ -307,4 +307,5 @@ if __name__ == "__main__":
     assert conf_res["success"], conf_res["message"]
     app = make_app()
     app.listen(REST_PORT)
+    log.info("Listening to port {}".format(REST_PORT))
     IOLoop.current().start()

@@ -35,6 +35,7 @@ redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 # TODO: add the following in utils
 REST_PORT = 3000
+CONFIGURATION_HOST = "configuration"
 
 
 def configure_ripe_ris(msg):
@@ -302,7 +303,7 @@ def make_app():
 
 if __name__ == "__main__":
     # ask for initial configuration
-    r = requests.get("configuration:3000/config")
+    r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
     conf_res = configure_ripe_ris(r.json())
     assert conf_res["success"], conf_res["message"]
     app = make_app()

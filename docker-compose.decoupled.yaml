@@ -10,7 +10,7 @@ services:
             - postgres
             - redis
             - configuration
-#            - prefixtree
+            - prefixtree
         expose:
             - 3000
         ports:
@@ -29,6 +29,7 @@ services:
             RIS_ID: ${RIS_ID}
         volumes:
             - ./monitor-services/riperistap/configs/:/etc/artemis/
+            - ./monitor-services/riperistap/entrypoint:/root/entrypoint
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
 #    bgpstreamlivetap:
 #        image: artemis_bgpstreamlivetap
@@ -103,6 +104,7 @@ services:
             - rabbitmq
             - postgres
             - redis
+            - graphql
             #- fileobserver
         expose:
             - 3000
@@ -111,6 +113,9 @@ services:
         networks:
             - artemis
         environment:
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -120,6 +125,7 @@ services:
             REST_PORT: ${REST_PORT}
         volumes:
             - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
 #    detection:
 #        image: artemis_detection
@@ -194,6 +200,8 @@ services:
             - postgres
             - redis
             - configuration
+            - prefixtree
+            - graphql
         expose:
             - 3000
         ports:
@@ -223,6 +231,7 @@ services:
             HISTORIC: ${HISTORIC}
         volumes:
             - ./backend-services/database/configs/:/etc/artemis/
+            - ./backend-services/database/entrypoint:/root/entrypoint
             - ./backend-services/database/core/database.py:/root/core/database.py
     prefixtree:
         image: artemis_prefixtree
@@ -232,6 +241,7 @@ services:
         depends_on:
             - rabbitmq
             - configuration
+            - graphql
         expose:
             - 3000
         ports:
@@ -239,6 +249,9 @@ services:
         networks:
             - artemis
         environment:
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -246,6 +259,7 @@ services:
             REST_PORT: ${REST_PORT}
         volumes:
             - ./backend-services/prefixtree/configs/:/etc/artemis/
+            - ./backend-services/prefixtree/entrypoint:/root/entrypoint
             - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
     redis:
         image: redis:latest

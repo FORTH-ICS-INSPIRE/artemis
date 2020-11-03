@@ -1,4 +1,6 @@
 import time
+from typing import Dict
+from typing import List
 from typing import NoReturn
 
 import artemis_utils.rest_util
@@ -13,17 +15,25 @@ from artemis_utils import search_worst_prefix
 from artemis_utils import signal_loading
 from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
+from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from artemis_utils.rest_util import ControlHandler
 from artemis_utils.rest_util import HealthHandler
 from artemis_utils.rest_util import setup_data_task
 from artemis_utils.rest_util import start_data_task
 from kombu import Connection
+from kombu import Consumer
+from kombu import serialization
 from kombu.mixins import ConsumerProducerMixin
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
 
 log = get_logger()
+# additional serializer for pg-amqp messages
+serialization.register(
+    "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
+)
 MODULE_NAME = "prefixtree"
 # TODO: add the following in utils
 REST_PORT = 3000
@@ -204,6 +214,13 @@ class PrefixTree:
             log.info("stopped")
             self._running = False
 
+    def find_prefix_node(self, prefix):
+        ip_version = get_ip_version(prefix)
+        prefix_node = None
+        if prefix in self.prefix_tree[ip_version]:
+            prefix_node = self.prefix_tree[ip_version][prefix]
+        return prefix_node
+
     class Worker(ConsumerProducerMixin):
         """
         RabbitMQ Consumer/Producer for this Service.
@@ -213,8 +230,97 @@ class PrefixTree:
             self.connection = connection
             # TODO: exchanges and queues
 
-        def get_consumers(self, Consumer, channel):
-            return []
+            # EXCHANGES
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
+            )
+            self.pg_amq_bridge = create_exchange("amq.direct", connection)
+
+            # QUEUES
+            self.update_queue = create_queue(
+                MODULE_NAME,
+                exchange=self.update_exchange,
+                routing_key="update",
+                priority=1,
+            )
+            self.pg_amq_update_queue = create_queue(
+                MODULE_NAME,
+                exchange=self.pg_amq_bridge,
+                routing_key="update-insert",
+                priority=1,
+            )
+
+        def get_consumers(
+            self, Consumer: Consumer, channel: Connection
+        ) -> List[Consumer]:
+            return [
+                Consumer(
+                    queues=[self.update_queue],
+                    on_message=self.handle_bgp_update,
+                    prefetch_count=100,
+                    accept=["ujson"],
+                ),
+                Consumer(
+                    queues=[self.pg_amq_update_queue],
+                    on_message=self.handle_stored_bgp_update,
+                    prefetch_count=100,
+                    accept=["ujson", "txtjson"],
+                ),
+            ]
+
+        def handle_bgp_update(self, message: Dict) -> NoReturn:
+            """
+            Callback function that annotates an incoming bgp update with the associated
+            configuration node (otherwise it discards it).
+            """
+            message.ack()
+            bgp_update = message.payload
+            try:
+                prefix_node = artemis_utils.rest_util.data_task.find_prefix_node(
+                    bgp_update["prefix"]
+                )
+                if prefix_node:
+                    bgp_update["prefix_node"] = prefix_node
+                    self.producer.publish(
+                        bgp_update,
+                        exchange=self.update_exchange,
+                        routing_key="update-with-prefix-node",
+                        serializer="ujson",
+                    )
+                else:
+                    log.error(
+                        "unconfigured BGP update received '{}'".format(bgp_update)
+                    )
+            except Exception:
+                log.exception("exception")
+
+        def handle_stored_bgp_update(self, message: Dict) -> NoReturn:
+            """
+            Callback function that annotates an incoming (stored) bgp update with the associated
+            configuration node (otherwise it discards it).
+            """
+            message.ack()
+            bgp_update = message.payload
+            try:
+                prefix_node = artemis_utils.rest_util.data_task.find_prefix_node(
+                    bgp_update["prefix"]
+                )
+                if prefix_node:
+                    bgp_update["prefix_node"] = prefix_node
+                    self.producer.publish(
+                        bgp_update,
+                        exchange=self.update_exchange,
+                        routing_key="stored-update-with-prefix-node",
+                        serializer="ujson",
+                    )
+                else:
+                    log.error(
+                        "unconfigured stored BGP update received '{}'".format(
+                            bgp_update
+                        )
+                    )
+            except Exception:
+                log.exception("exception")
 
 
 def make_app():

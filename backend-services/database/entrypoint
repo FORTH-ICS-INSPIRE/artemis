@@ -5,6 +5,7 @@ make -j
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
 ./wait-for ${HASURA_HOST}:${HASURA_PORT} -t 0
 ./wait-for configuration:3000 -t 0
+./wait-for prefixtree:3000 -t 0
 
 version=$(PGPASSWORD=$DB_PASS psql postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME} -c "select version from db_details;" -tA)
 

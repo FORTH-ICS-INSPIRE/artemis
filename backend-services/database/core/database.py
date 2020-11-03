@@ -6,7 +6,6 @@ from threading import Lock
 from threading import Timer
 
 import artemis_utils.rest_util
-import pytricia
 import redis
 import requests
 import ujson as json
@@ -17,9 +16,7 @@ from artemis_utils import DB_NAME
 from artemis_utils import DB_PASS
 from artemis_utils import DB_PORT
 from artemis_utils import DB_USER
-from artemis_utils import flatten
 from artemis_utils import get_hash
-from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import hijack_log_field_formatter
 from artemis_utils import HISTORIC
@@ -29,10 +26,7 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
-from artemis_utils import search_worst_prefix
 from artemis_utils import signal_loading
-from artemis_utils import translate_asn_range
-from artemis_utils import translate_rfc2622
 from artemis_utils import WITHDRAWN_HIJACK_THRESHOLD
 from artemis_utils.db_util import DB
 from artemis_utils.rabbitmq_util import create_exchange
@@ -65,6 +59,7 @@ except Exception:
 # TODO: add the following in utils
 REST_PORT = 3000
 CONFIGURATION_HOST = "configuration"
+PREFIXTREE_HOST = "prefixtree"
 
 
 class HijackLogFilter(logging.Filter):
@@ -87,6 +82,7 @@ def configure_database(msg):
     config = msg
     try:
         if config["timestamp"] > artemis_utils.rest_util.data_task.config_timestamp:
+            artemis_utils.rest_util.data_task.config_timestamp = config["timestamp"]
             if "timestamp" in config:
                 del config["timestamp"]
             raw_config = ""
@@ -107,6 +103,22 @@ def configure_database(msg):
                 )
             else:
                 log.debug("database config is up-to-date")
+
+            # now that the conf is changed, get and store additional stats from prefixtree
+            r = requests.get(
+                "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
+            )
+            artemis_utils.rest_util.data_task.monitored_prefixes = set(
+                r.json()["monitored_prefixes"]
+            )
+            r = requests.get(
+                "http://{}:{}/configuredPrefixCount".format(PREFIXTREE_HOST, REST_PORT)
+            )
+            artemis_utils.rest_util.data_task.configured_prefix_count = r.json()[
+                "configured_prefix_count"
+            ]
+            artemis_utils.rest_util.data_task.store_stats()
+
             return {"success": True, "message": "configured"}
     except Exception:
         log.exception("{}".format(config))
@@ -116,9 +128,13 @@ def configure_database(msg):
 
 
 class ConfigHandler(RequestHandler):
+    """
+    REST request handler for configuration.
+    """
+
     def post(self):
         """
-        Cofnigures database and responds with a success message.
+        Configures database and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         try:
@@ -139,6 +155,8 @@ class Database:
         self._running = False
         self.worker = None
         self.config_timestamp = -1
+        self.monitored_prefixes = set()
+        self.configured_prefix_count = 0
 
         # DB variables
         self.ro_db = DB(
@@ -215,6 +233,15 @@ class Database:
         except Exception:
             log.exception("failed to save config in db")
 
+    def store_stats(self):
+        try:
+            artemis_utils.rest_util.data_task.wo_db.execute(
+                "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
+                (len(self.monitored_prefixes), self.configured_prefix_count),
+            )
+        except Exception:
+            log.exception("exception")
+
     class Worker(ConsumerProducerMixin):
         """
         RabbitMQ Consumer/Producer for this Service.
@@ -222,14 +249,7 @@ class Database:
 
         def __init__(self, connection):
             self.connection = connection
-            self.prefix_tree = None
-            # TODO: get those from prefix tree via REST
-            self.monitored_prefixes = set()
-            # TODO: get those from prefix tree via REST
-            self.configured_prefix_count = 0
             self.monitor_peers = 0
-            # TODO: remove rules since the needed info will be acquired from prefix tree via REST
-            self.rules = None
             self.insert_bgp_entries = []
             self.handle_bgp_withdrawals = set()
             self.handled_bgp_entries = set()
@@ -513,9 +533,8 @@ class Database:
             # timestamp, hijack_key, handled, matched_prefix, orig_path
 
             if not self.redis.getset(msg_["key"], "1"):
-                best_match = (
-                    self.find_best_prefix_match(msg_["prefix"]),
-                )  # matched_prefix
+                best_match = None  # matched_prefix
+                # TODO: extract best match from message!
 
                 if not best_match:
                     return
@@ -684,84 +703,6 @@ class Database:
                 log.exception("{}".format(message))
             finally:
                 lock.release()
-
-        def build_prefix_tree(self):
-            log.info("Starting building database prefix tree...")
-            self.prefix_tree = {
-                "v4": pytricia.PyTricia(32),
-                "v6": pytricia.PyTricia(128),
-            }
-            raw_prefix_count = 0
-            for rule in self.rules:
-                try:
-                    rule_translated_origin_asn_set = set()
-                    for asn in rule["origin_asns"]:
-                        this_translated_asn_list = flatten(translate_asn_range(asn))
-                        rule_translated_origin_asn_set.update(
-                            set(this_translated_asn_list)
-                        )
-                    rule["origin_asns"] = list(rule_translated_origin_asn_set)
-                    rule_translated_neighbor_set = set()
-                    for asn in rule["neighbors"]:
-                        this_translated_asn_list = flatten(translate_asn_range(asn))
-                        rule_translated_neighbor_set.update(
-                            set(this_translated_asn_list)
-                        )
-                    rule["neighbors"] = list(rule_translated_neighbor_set)
-                    conf_obj = {
-                        "origin_asns": rule["origin_asns"],
-                        "neighbors": rule["neighbors"],
-                    }
-                    for prefix in rule["prefixes"]:
-                        for translated_prefix in translate_rfc2622(prefix):
-                            ip_version = get_ip_version(translated_prefix)
-                            if self.prefix_tree[ip_version].has_key(translated_prefix):
-                                node = self.prefix_tree[ip_version][translated_prefix]
-                            else:
-                                node = {
-                                    "prefix": translated_prefix,
-                                    "data": {"confs": []},
-                                }
-                                self.prefix_tree[ip_version].insert(
-                                    translated_prefix, node
-                                )
-                            node["data"]["confs"].append(conf_obj)
-                            raw_prefix_count += 1
-                except Exception:
-                    log.exception("Exception")
-            log.info(
-                "{} prefixes integrated in database prefix tree in total".format(
-                    raw_prefix_count
-                )
-            )
-            log.info("Finished building database prefix tree.")
-
-            # calculate the monitored and configured prefixes
-            log.info("Calculating configured and monitored prefixes in database...")
-            self.monitored_prefixes = set()
-            self.configured_prefix_count = 0
-            for ip_version in self.prefix_tree:
-                for prefix in self.prefix_tree[ip_version]:
-                    self.configured_prefix_count += 1
-                    monitored_prefix = search_worst_prefix(
-                        prefix, self.prefix_tree[ip_version]
-                    )
-                    if monitored_prefix:
-                        self.monitored_prefixes.add(monitored_prefix)
-            try:
-                artemis_utils.rest_util.data_task.wo_db.execute(
-                    "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
-                    (len(self.monitored_prefixes), self.configured_prefix_count),
-                )
-            except Exception:
-                log.exception("exception")
-            log.info("Calculated configured and monitored prefixes in database.")
-
-        def find_best_prefix_match(self, prefix):
-            ip_version = get_ip_version(prefix)
-            if prefix in self.prefix_tree[ip_version]:
-                return self.prefix_tree[ip_version].get_key(prefix)
-            return None
 
         def handle_hijack_ongoing_request(self, message):
             message.ack()
@@ -1671,7 +1612,7 @@ if __name__ == "__main__":
     # database should be initiated in any case
     setup_data_task(Database)
 
-    # get initial configuration
+    # get and store initial configuration from configuration
     r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
     conf_res = configure_database(r.json())
     assert conf_res["success"], conf_res["message"]

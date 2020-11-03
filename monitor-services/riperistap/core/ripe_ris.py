@@ -15,8 +15,6 @@ from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
-from artemis_utils import search_worst_prefix
-from artemis_utils import translate_rfc2622
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rest_util import ControlHandler
 from artemis_utils.rest_util import HealthHandler
@@ -35,13 +33,20 @@ redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 # TODO: add the following in utils
 REST_PORT = 3000
-CONFIGURATION_HOST = "configuration"
+PREFIXTREE_HOST = "prefixtree"
 
 
-def configure_ripe_ris(msg):
+def configure_ripe_ris():
     try:
-        monitors = msg.get("monitors", {})
-        rules = msg.get("rules", [])
+        # get monitors
+        r = requests.get("http://{}:{}/monitors".format(PREFIXTREE_HOST, REST_PORT))
+        monitors = r.json()["monitors"]
+
+        # get monitored prefixes
+        r = requests.get(
+            "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
+        )
+        prefixes = set(r.json()["monitored_prefixes"])
 
         # check if "riperis" is configured at all
         if "riperis" not in monitors:
@@ -53,28 +58,10 @@ def configure_ripe_ris(msg):
         if hosts == set("."):
             hosts = set()
 
-        # TODO: get this info from prefix tree
-        # calculate all configured prefixes
-        prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
-        for rule in rules:
-            for prefix in rule["prefixes"]:
-                for translated_prefix in translate_rfc2622(prefix):
-                    ip_version = get_ip_version(translated_prefix)
-                    prefix_tree[ip_version].insert(translated_prefix, "")
-
-        # only keep super prefixes for monitoring
-        prefixes = set()
-        for ip_version in prefix_tree:
-            for prefix in prefix_tree[ip_version]:
-                worst_prefix = search_worst_prefix(prefix, prefix_tree[ip_version])
-                if worst_prefix:
-                    prefixes.add(worst_prefix)
-
         # setup the data task
         setup_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
 
         return {"success": True, "message": "configured"}
-
     except Exception:
         log.exception("Exception")
         return {"success": False, "message": "error during data_task configuration"}
@@ -87,23 +74,13 @@ class ConfigHandler(RequestHandler):
 
     def post(self):
         """
-        POST configuration.
-        Sample request body
-        {
-            ...
-            "monitors": {
-                ...
-            },
-            ...
-            "rules": [
-                ...
-            ]
-        }
+        Handler for posted configuration from configuration.
+        Note that for performance reasons the eventual needed elements
+        are collected from the prefix tree service.
         :return: {"success": True|False, "message": <message>}
         """
         try:
-            msg = json.loads(self.request.body)
-            self.write(configure_ripe_ris(msg))
+            self.write(configure_ripe_ris())
         except Exception:
             self.write(
                 {"success": False, "message": "error during data_task configuration"}
@@ -325,9 +302,8 @@ def make_app():
 
 
 if __name__ == "__main__":
-    # get initial configuration
-    r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
-    conf_res = configure_ripe_ris(r.json())
+    # get initial monitors and prefixes from prefixtree
+    conf_res = configure_ripe_ris()
     assert conf_res["success"], conf_res["message"]
 
     # create REST worker

@@ -256,19 +256,19 @@ class PrefixTree:
             return [
                 Consumer(
                     queues=[self.update_queue],
-                    on_message=self.handle_bgp_update,
+                    on_message=self.annotate_bgp_update,
                     prefetch_count=100,
                     accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.pg_amq_update_queue],
-                    on_message=self.handle_stored_bgp_update,
+                    on_message=self.annotate_stored_bgp_update,
                     prefetch_count=100,
                     accept=["ujson", "txtjson"],
                 ),
             ]
 
-        def handle_bgp_update(self, message: Dict) -> NoReturn:
+        def annotate_bgp_update(self, message: Dict) -> NoReturn:
             """
             Callback function that annotates an incoming bgp update with the associated
             configuration node (otherwise it discards it).
@@ -294,7 +294,7 @@ class PrefixTree:
             except Exception:
                 log.exception("exception")
 
-        def handle_stored_bgp_update(self, message: Dict) -> NoReturn:
+        def annotate_stored_bgp_update(self, message: Dict) -> NoReturn:
             """
             Callback function that annotates an incoming (stored) bgp update with the associated
             configuration node (otherwise it discards it).

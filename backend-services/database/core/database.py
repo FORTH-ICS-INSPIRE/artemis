@@ -327,7 +327,7 @@ class Database:
             self.update_queue = create_queue(
                 MODULE_NAME,
                 exchange=self.update_exchange,
-                routing_key="update",
+                routing_key="update-with-prefix-node",
                 priority=1,
             )
             self.withdraw_queue = create_queue(
@@ -533,9 +533,7 @@ class Database:
             # timestamp, hijack_key, handled, matched_prefix, orig_path
 
             if not self.redis.getset(msg_["key"], "1"):
-                best_match = None  # matched_prefix
-                # TODO: extract best match from message!
-
+                best_match = message["prefix_node"]["prefix"]  # matched_prefix
                 if not best_match:
                     return
 

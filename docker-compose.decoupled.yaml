@@ -221,25 +221,32 @@ services:
             REST_PORT: ${REST_PORT}
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
             HISTORIC: ${HISTORIC}
-        # TODO: env variables, ports
         volumes:
             - ./backend-services/database/configs/:/etc/artemis/
             - ./backend-services/database/core/database.py:/root/core/database.py
-#    prefixtree:
-#        image: artemis_prefixtree
-#        build: ./backend-services/prefixtree
-#        container_name: prefixtree
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#            - configuration
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./backend-services/prefixtree/configs/:/etc/artemis/
+    prefixtree:
+        image: artemis_prefixtree
+        build: ./backend-services/prefixtree
+        container_name: prefixtree
+        restart: always
+        depends_on:
+            - rabbitmq
+            - configuration
+        expose:
+            - 3000
+        ports:
+            - "3004:3000"
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: ${REST_PORT}
+        volumes:
+            - ./backend-services/prefixtree/configs/:/etc/artemis/
+            - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
     redis:
         image: redis:latest
         container_name: redis

@@ -228,7 +228,6 @@ class PrefixTree:
 
         def __init__(self, connection: Connection) -> NoReturn:
             self.connection = connection
-            # TODO: exchanges and queues
 
             # EXCHANGES
             self.update_exchange = create_exchange(

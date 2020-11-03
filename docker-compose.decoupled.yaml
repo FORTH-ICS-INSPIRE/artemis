@@ -174,22 +174,32 @@ services:
 #        # TODO: env variables, ports
 #        volumes:
 #            - ./backend-services/fileobserver/configs/:/etc/artemis/
-#    notifier:
-#        image: artemis_notifier
-#        build: ./backend-services/notifier
-#        container_name: notifier
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#            - configuration
-#            - detection
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./backend-services/notifier/configs/:/etc/artemis/
+    notifier:
+        image: artemis_notifier
+        build: ./backend-services/notifier
+        container_name: notifier
+        restart: always
+        depends_on:
+            - rabbitmq
+            - graphql
+        expose:
+            - 3000
+        ports:
+            - "3005:3000"
+        networks:
+            - artemis
+        environment:
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: ${REST_PORT}
+        volumes:
+            - ./backend-services/notifier/configs/:/etc/artemis/
     database:
         image: artemis_database
         build: ./backend-services/database

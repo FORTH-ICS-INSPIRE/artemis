@@ -6,11 +6,8 @@ import pytricia
 import redis
 import requests
 import ujson as json
-from artemis_utils import configure_data_task
-from artemis_utils import ControlHandler
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import HealthHandler
 from artemis_utils import key_generator
 from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
@@ -19,9 +16,12 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
-from artemis_utils import stop_data_task
 from artemis_utils import translate_rfc2622
 from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rest_util import ControlHandler
+from artemis_utils.rest_util import HealthHandler
+from artemis_utils.rest_util import setup_data_task
+from artemis_utils.rest_util import stop_data_task
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
@@ -53,6 +53,7 @@ def configure_ripe_ris(msg):
         if hosts == set("."):
             hosts = set()
 
+        # TODO: get this info from prefix tree
         # calculate all configured prefixes
         prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
         for rule in rules:
@@ -69,8 +70,9 @@ def configure_ripe_ris(msg):
                 if worst_prefix:
                     prefixes.add(worst_prefix)
 
-        # configure the data_task
-        configure_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
+        # setup the data task
+        setup_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
+
         return {"success": True, "message": "configured"}
 
     except Exception:
@@ -79,7 +81,26 @@ def configure_ripe_ris(msg):
 
 
 class ConfigHandler(RequestHandler):
+    """
+    REST request handler for configuration.
+    """
+
     def post(self):
+        """
+        POST configuration.
+        Sample request body
+        {
+            ...
+            "monitors": {
+                ...
+            },
+            ...
+            "rules": [
+                ...
+            ]
+        }
+        :return: {"success": True|False, "message": <message>}
+        """
         try:
             msg = json.loads(self.request.body)
             self.write(configure_ripe_ris(msg))
@@ -104,6 +125,7 @@ class RipeRisTap:
     def run(self):
         self._running = True
         ping_redis(redis)
+        # TODO: import ON_TIMEOUT_LAST_BGP_UPDATE from utils
         redis.set(
             "ris_seen_bgp_update",
             "1",
@@ -120,6 +142,7 @@ class RipeRisTap:
                 ip_version = get_ip_version(prefix)
                 prefix_tree[ip_version].insert(prefix, "")
 
+            # TODO: import RIS_ID from utils
             ris_suffix = os.getenv("RIS_ID", "my_as")
 
             validator = mformat_validator()
@@ -154,6 +177,7 @@ class RipeRisTap:
                                         msg, prefix_tree
                                     )
                                     for norm_ris_msg in norm_ris_msgs:
+                                        # TODO: import ON_TIMEOUT_LAST_BGP_UPDATE from utils
                                         redis.set(
                                             "ris_seen_bgp_update",
                                             "1",
@@ -301,10 +325,12 @@ def make_app():
 
 
 if __name__ == "__main__":
-    # ask for initial configuration
+    # get initial configuration
     r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
     conf_res = configure_ripe_ris(r.json())
     assert conf_res["success"], conf_res["message"]
+
+    # create REST worker
     app = make_app()
     app.listen(REST_PORT)
     log.info("Listening to port {}".format(REST_PORT))

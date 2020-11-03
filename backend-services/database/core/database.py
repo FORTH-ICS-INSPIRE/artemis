@@ -5,15 +5,13 @@ import time
 from threading import Lock
 from threading import Timer
 
-import artemis_utils
+import artemis_utils.rest_util
 import pytricia
 import redis
 import requests
 import ujson as json
 from artemis_utils import AUTO_RECOVER_PROCESS_STATE
 from artemis_utils import BULK_TIMER
-from artemis_utils import configure_data_task
-from artemis_utils import ControlHandler
 from artemis_utils import DB_HOST
 from artemis_utils import DB_NAME
 from artemis_utils import DB_PASS
@@ -23,7 +21,6 @@ from artemis_utils import flatten
 from artemis_utils import get_hash
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import HealthHandler
 from artemis_utils import hijack_log_field_formatter
 from artemis_utils import HISTORIC
 from artemis_utils import ping_redis
@@ -34,13 +31,16 @@ from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
 from artemis_utils import signal_loading
-from artemis_utils import start_data_task
 from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
 from artemis_utils import WITHDRAWN_HIJACK_THRESHOLD
 from artemis_utils.db_util import DB
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.rest_util import ControlHandler
+from artemis_utils.rest_util import HealthHandler
+from artemis_utils.rest_util import setup_data_task
+from artemis_utils.rest_util import start_data_task
 from kombu import Connection
 from kombu import Queue
 from kombu.mixins import ConsumerProducerMixin
@@ -86,7 +86,7 @@ def configure_database(msg):
     signal_loading(MODULE_NAME, True)
     config = msg
     try:
-        if config["timestamp"] > artemis_utils.data_task.worker.timestamp:
+        if config["timestamp"] > artemis_utils.rest_util.data_task.config_timestamp:
             if "timestamp" in config:
                 del config["timestamp"]
             raw_config = ""
@@ -99,13 +99,12 @@ def configure_database(msg):
                 del config["comment"]
             config_hash = get_hash(raw_config)
             latest_config_in_db_hash = (
-                artemis_utils.data_task.worker.retrieve_most_recent_config_hash()
+                artemis_utils.rest_util.data_task.retrieve_most_recent_config_hash()
             )
             if config_hash != latest_config_in_db_hash:
-                artemis_utils.data_task.worker.save_config(
+                artemis_utils.rest_util.data_task.save_config(
                     config_hash, config, raw_config, comment
                 )
-                configure_data_task(Database)
             else:
                 log.debug("database config is up-to-date")
             return {"success": True, "message": "configured"}
@@ -118,6 +117,10 @@ def configure_database(msg):
 
 class ConfigHandler(RequestHandler):
     def post(self):
+        """
+        Cofnigures database and responds with a success message.
+        :return: {"success": True | False, "message": < message >}
+        """
         try:
             msg = json.loads(self.request.body)
             self.write(configure_database(msg))
@@ -135,6 +138,28 @@ class Database:
     def __init__(self):
         self._running = False
         self.worker = None
+        self.config_timestamp = -1
+
+        # DB variables
+        self.ro_db = DB(
+            application_name="backend-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
+        self.wo_db = DB(
+            application_name="backend-write",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+        )
 
     def is_running(self):
         return self._running
@@ -163,6 +188,33 @@ class Database:
             log.info("stopped")
             self._running = False
 
+    def retrieve_most_recent_config_hash(self):
+        try:
+            log.debug("Config Retrieve..")
+            hash_ = self.ro_db.execute(
+                "SELECT key from configs ORDER BY time_modified DESC LIMIT 1",
+                fetch_one=True,
+            )
+
+            if isinstance(hash_, tuple):
+                return hash_[0]
+        except Exception:
+            log.exception("failed to retrieved most recent config hash in db")
+        return None
+
+    def save_config(self, config_hash, yaml_config, raw_config, comment):
+        try:
+            log.debug("Config Store..")
+            query = (
+                "INSERT INTO configs (key, raw_config, time_modified, comment)"
+                "VALUES (%s, %s, %s, %s);"
+            )
+            self.wo_db.execute(
+                query, (config_hash, raw_config, datetime.datetime.now(), comment)
+            )
+        except Exception:
+            log.exception("failed to save config in db")
+
     class Worker(ConsumerProducerMixin):
         """
         RabbitMQ Consumer/Producer for this Service.
@@ -171,11 +223,13 @@ class Database:
         def __init__(self, connection):
             self.connection = connection
             self.prefix_tree = None
+            # TODO: get those from prefix tree via REST
             self.monitored_prefixes = set()
+            # TODO: get those from prefix tree via REST
             self.configured_prefix_count = 0
             self.monitor_peers = 0
+            # TODO: remove rules since the needed info will be acquired from prefix tree via REST
             self.rules = None
-            self.timestamp = -1
             self.insert_bgp_entries = []
             self.handle_bgp_withdrawals = set()
             self.handled_bgp_entries = set()
@@ -183,29 +237,10 @@ class Database:
             self.insert_hijacks_entries = {}
             self.bulk_timer_thread = None
 
-            # DB variables
-            self.ro_db = DB(
-                application_name="backend-readonly",
-                user=DB_USER,
-                password=DB_PASS,
-                host=DB_HOST,
-                port=DB_PORT,
-                database=DB_NAME,
-                reconnect=True,
-                autocommit=True,
-                readonly=True,
-            )
-            self.wo_db = DB(
-                application_name="backend-write",
-                user=DB_USER,
-                password=DB_PASS,
-                host=DB_HOST,
-                port=DB_PORT,
-                database=DB_NAME,
-            )
-
             try:
-                self.wo_db.execute("TRUNCATE table process_states")
+                artemis_utils.rest_util.data_task.wo_db.execute(
+                    "TRUNCATE table process_states"
+                )
 
                 # TODO: implement this with no supervisor!
                 # query = (
@@ -222,7 +257,7 @@ class Database:
                 #         for x in server.supervisor.getAllProcessInfo()
                 #         if x["name"] != "listener"
                 #     ]
-                #     self.wo_db.execute_batch(query, processes)
+                #     artemis_utils.rest_util.data_task.wo_db.execute_batch(query, processes)
 
             except Exception:
                 log.exception("exception")
@@ -245,7 +280,7 @@ class Database:
                 #         if x["group"] in ["monitor", "detection", "mitigation"]
                 #     ]
                 #
-                #     self.wo_db.execute_batch(query, processes)
+                #     artemis_utils.rest_util.data_task.wo_db.execute_batch(query, processes)
 
             except Exception:
                 log.exception("exception")
@@ -455,7 +490,7 @@ class Database:
                 # TODO: make this work without supervisor!
                 # query = "SELECT name, running FROM intended_process_states"
                 #
-                # entries = self.ro_db.execute(query)
+                # entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
 
                 # modules_state = ModulesState()
                 # for entry in entries:
@@ -520,7 +555,7 @@ class Database:
                     redis_peer_asns = self.redis.scard("peer-asns")
                     if redis_peer_asns != self.monitor_peers:
                         self.monitor_peers = redis_peer_asns
-                        self.wo_db.execute(
+                        artemis_utils.rest_util.data_task.wo_db.execute(
                             "UPDATE stats SET monitor_peers=%s;", (self.monitor_peers,)
                         )
                 except Exception:
@@ -714,7 +749,7 @@ class Database:
                     if monitored_prefix:
                         self.monitored_prefixes.add(monitored_prefix)
             try:
-                self.wo_db.execute(
+                artemis_utils.rest_util.data_task.wo_db.execute(
                     "UPDATE stats SET monitored_prefixes=%s, configured_prefixes=%s;",
                     (len(self.monitored_prefixes), self.configured_prefix_count),
                 )
@@ -745,7 +780,7 @@ class Database:
                         "WHERE h.active = true AND b.handled=true"
                     )
 
-                    entries = self.ro_db.execute(query)
+                    entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
 
                     for entry in entries:
                         results.append(
@@ -792,7 +827,7 @@ class Database:
                     "FROM hijacks WHERE active = true"
                 )
 
-                entries = self.ro_db.execute(query)
+                entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
@@ -814,7 +849,11 @@ class Database:
 
                     subquery = "SELECT key FROM bgp_updates WHERE %s = ANY(hijack_key);"
 
-                    subentries = set(self.ro_db.execute(subquery, (entry[4],)))
+                    subentries = set(
+                        artemis_utils.rest_util.data_task.ro_db.execute(
+                            subquery, (entry[4],)
+                        )
+                    )
                     subentries = set(map(lambda x: x[0], subentries))
                     log.debug(
                         "Adding bgpupdate_keys: {} for {} and {}".format(
@@ -837,7 +876,7 @@ class Database:
                     "ORDER BY timestamp ASC"
                 )
 
-                entries = self.ro_db.execute(query)
+                entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
@@ -857,7 +896,7 @@ class Database:
                     "AND bgp_updates.handled = true"
                 )
 
-                entries = self.ro_db.execute(query)
+                entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
@@ -888,7 +927,7 @@ class Database:
 
                 # bootstrap seen monitor peers
                 query = "SELECT DISTINCT peer_asn FROM bgp_updates"
-                entries = self.ro_db.execute(query)
+                entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
 
                 redis_pipeline = self.redis.pipeline()
                 for entry in entries:
@@ -896,7 +935,7 @@ class Database:
                 redis_pipeline.execute()
                 self.monitor_peers = self.redis.scard("peer-asns")
 
-                self.wo_db.execute(
+                artemis_utils.rest_util.data_task.wo_db.execute(
                     "UPDATE stats SET monitor_peers=%s;", (self.monitor_peers,)
                 )
 
@@ -915,7 +954,7 @@ class Database:
                 if self.redis.sismember("persistent-keys", raw["key"]):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
 
-                self.wo_db.execute(
+                artemis_utils.rest_util.data_task.wo_db.execute(
                     "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
                     (datetime.datetime.now(), raw["key"]),
                 )
@@ -938,7 +977,9 @@ class Database:
                 log.debug(
                     "redis-entry for {}: {}".format(redis_hijack_key, redis_hijack)
                 )
-                self.wo_db.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
+                artemis_utils.rest_util.data_task.wo_db.execute(
+                    "DELETE FROM hijacks WHERE key=%s;", (raw["key"],)
+                )
                 if redis_hijack and json.loads(redis_hijack).get("bgpupdate_keys", []):
                     log.debug("deleting hijack using cache for bgp updates")
                     redis_hijack = json.loads(redis_hijack)
@@ -947,21 +988,21 @@ class Database:
                             redis_hijack["bgpupdate_keys"], redis_hijack_key
                         )
                     )
-                    self.wo_db.execute(
+                    artemis_utils.rest_util.data_task.wo_db.execute(
                         "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
                         (raw["key"], list(redis_hijack["bgpupdate_keys"])),
                     )
-                    self.wo_db.execute(
+                    artemis_utils.rest_util.data_task.wo_db.execute(
                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
                         (raw["key"], list(redis_hijack["bgpupdate_keys"])),
                     )
                 else:
                     log.debug("deleting hijack by querying bgp updates database")
-                    self.wo_db.execute(
+                    artemis_utils.rest_util.data_task.wo_db.execute(
                         "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1 AND handled = true;",
                         (raw["key"],),
                     )
-                    self.wo_db.execute(
+                    artemis_utils.rest_util.data_task.wo_db.execute(
                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE %s = ANY(hijack_key) AND handled = true;",
                         (raw["key"], raw["key"]),
                     )
@@ -974,7 +1015,7 @@ class Database:
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-                self.wo_db.execute(
+                artemis_utils.rest_util.data_task.wo_db.execute(
                     "UPDATE hijacks SET mitigation_started=%s, seen=true, under_mitigation=true WHERE key=%s;",
                     (datetime.datetime.fromtimestamp(raw["time"]), raw["key"]),
                 )
@@ -992,7 +1033,7 @@ class Database:
                 # if ongoing, clear redis
                 if self.redis.sismember("persistent-keys", raw["key"]):
                     purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
-                self.wo_db.execute(
+                artemis_utils.rest_util.data_task.wo_db.execute(
                     "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;",
                     (raw["key"],),
                 )
@@ -1004,7 +1045,7 @@ class Database:
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-                self.wo_db.execute(
+                artemis_utils.rest_util.data_task.wo_db.execute(
                     "UPDATE hijacks SET comment=%s WHERE key=%s;",
                     (raw["comment"], raw["key"]),
                 )
@@ -1035,7 +1076,7 @@ class Database:
             raw = message.payload
             log.debug("payload: {}".format(raw))
             try:
-                self.wo_db.execute(
+                artemis_utils.rest_util.data_task.wo_db.execute(
                     "UPDATE hijacks SET seen=%s WHERE key=%s;",
                     (raw["state"], raw["key"]),
                 )
@@ -1089,7 +1130,7 @@ class Database:
             else:
                 for hijack_key in raw["keys"]:
                     try:
-                        entries = self.ro_db.execute(
+                        entries = artemis_utils.rest_util.data_task.ro_db.execute(
                             "SELECT prefix, hijack_as, type FROM hijacks WHERE key = %s;",
                             (hijack_key,),
                         )
@@ -1102,21 +1143,25 @@ class Database:
                                 entry[2],  # prefix  # hijack_as  # type
                             )
                             if seen_action:
-                                self.wo_db.execute(query, (hijack_key,))
+                                artemis_utils.rest_util.data_task.wo_db.execute(
+                                    query, (hijack_key,)
+                                )
                             elif ignore_action:
                                 # if ongoing, clear redis
                                 if self.redis.sismember("persistent-keys", hijack_key):
                                     purge_redis_eph_pers_keys(
                                         self.redis, redis_hijack_key, hijack_key
                                     )
-                                self.wo_db.execute(query, (hijack_key,))
+                                artemis_utils.rest_util.data_task.wo_db.execute(
+                                    query, (hijack_key,)
+                                )
                             elif resolve_action:
                                 # if ongoing, clear redis
                                 if self.redis.sismember("persistent-keys", hijack_key):
                                     purge_redis_eph_pers_keys(
                                         self.redis, redis_hijack_key, hijack_key
                                     )
-                                self.wo_db.execute(
+                                artemis_utils.rest_util.data_task.wo_db.execute(
                                     query, (datetime.datetime.now(), hijack_key)
                                 )
                             elif delete_action:
@@ -1130,7 +1175,9 @@ class Database:
                                         redis_hijack_key, redis_hijack
                                     )
                                 )
-                                self.wo_db.execute(query, (hijack_key,))
+                                artemis_utils.rest_util.data_task.wo_db.execute(
+                                    query, (hijack_key,)
+                                )
                                 if redis_hijack and json.loads(redis_hijack).get(
                                     "bgpupdate_keys", []
                                 ):
@@ -1143,14 +1190,14 @@ class Database:
                                             redis_hijack["bgpupdate_keys"], redis_hijack
                                         )
                                     )
-                                    self.wo_db.execute(
+                                    artemis_utils.rest_util.data_task.wo_db.execute(
                                         "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
                                         (
                                             hijack_key,
                                             list(redis_hijack["bgpupdate_keys"]),
                                         ),
                                     )
-                                    self.wo_db.execute(
+                                    artemis_utils.rest_util.data_task.wo_db.execute(
                                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
                                         (
                                             hijack_key,
@@ -1161,11 +1208,11 @@ class Database:
                                     log.debug(
                                         "deleting hijack by querying bgp updates database"
                                     )
-                                    self.wo_db.execute(
+                                    artemis_utils.rest_util.data_task.wo_db.execute(
                                         "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1 AND handled = true;",
                                         (hijack_key,),
                                     )
-                                    self.wo_db.execute(
+                                    artemis_utils.rest_util.data_task.wo_db.execute(
                                         "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE %s = ANY(hijack_key) AND handled = true;",
                                         (hijack_key, hijack_key),
                                     )
@@ -1208,7 +1255,7 @@ class Database:
                     "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
                     "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s"
                 )
-                self.wo_db.execute_values(
+                artemis_utils.rest_util.data_task.wo_db.execute_values(
                     query, self.insert_bgp_entries, page_size=1000
                 )
             except Exception:
@@ -1242,7 +1289,7 @@ class Database:
                 try:
                     # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3:
                     # key
-                    entries = self.ro_db.execute(
+                    entries = artemis_utils.rest_util.data_task.ro_db.execute(
                         query, (withdrawal[0], timestamp_thres, withdrawal[1])
                     )
 
@@ -1302,7 +1349,7 @@ class Database:
                                 purge_redis_eph_pers_keys(
                                     self.redis, redis_hijack_key, entry[2]
                                 )
-                                self.wo_db.execute(
+                                artemis_utils.rest_util.data_task.wo_db.execute(
                                     "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, "
                                     "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
                                     (timestamp, entry[1], timestamp, entry[2]),
@@ -1337,7 +1384,7 @@ class Database:
                                     )
                             else:
                                 # add withdrawal to hijack
-                                self.wo_db.execute(
+                                artemis_utils.rest_util.data_task.wo_db.execute(
                                     "UPDATE hijacks SET peers_withdrawn=%s, time_last=%s, dormant=false WHERE key=%s;",
                                     (entry[1], timestamp, entry[2]),
                                 )
@@ -1377,7 +1424,7 @@ class Database:
                     "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) "
                     "FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
                 )
-                self.wo_db.execute_values(
+                artemis_utils.rest_util.data_task.wo_db.execute_values(
                     query, list(update_hijack_withdrawals_parallel), page_size=1000
                 )
 
@@ -1386,7 +1433,7 @@ class Database:
                     "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
                     "WHERE bgp_updates.key=%s"
                 )
-                self.wo_db.execute_batch(
+                artemis_utils.rest_util.data_task.wo_db.execute_batch(
                     query, list(update_hijack_withdrawals_serial), page_size=1000
                 )
                 update_hijack_withdrawals_parallel.clear()
@@ -1394,7 +1441,7 @@ class Database:
                 update_hijack_withdrawals_dict.clear()
 
                 query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
-                self.wo_db.execute_values(
+                artemis_utils.rest_util.data_task.wo_db.execute_values(
                     query, list(update_normal_withdrawals), page_size=1000
                 )
             except Exception:
@@ -1438,7 +1485,7 @@ class Database:
                         "ORDER BY wit_time DESC, hij.key LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) "
                         "AS removed WHERE hijacks.key=removed.key"
                     )
-                    self.wo_db.execute_values(
+                    artemis_utils.rest_util.data_task.wo_db.execute_values(
                         query, list(update_bgp_entries), page_size=1000
                     )
                     update_bgp_entries_dict = {}
@@ -1468,13 +1515,13 @@ class Database:
 
                     # execute parallel execute values query
                     query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
-                    self.wo_db.execute_values(
+                    artemis_utils.rest_util.data_task.wo_db.execute_values(
                         query, list(update_bgp_entries_parallel), page_size=1000
                     )
 
                     # execute serial execute_batch query
                     query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
-                    self.wo_db.execute_batch(
+                    artemis_utils.rest_util.data_task.wo_db.execute_batch(
                         query, list(update_bgp_entries_serial), page_size=1000
                     )
                     update_bgp_entries_parallel.clear()
@@ -1491,7 +1538,7 @@ class Database:
             if self.handled_bgp_entries:
                 try:
                     query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
-                    self.wo_db.execute_values(
+                    artemis_utils.rest_util.data_task.wo_db.execute_values(
                         query, self.handled_bgp_entries, page_size=1000
                     )
                 except Exception:
@@ -1563,7 +1610,9 @@ class Database:
                     )
                     values.append(entry)
 
-                self.wo_db.execute_values(query, values, page_size=1000)
+                artemis_utils.rest_util.data_task.wo_db.execute_values(
+                    query, values, page_size=1000
+                )
             except Exception:
                 log.exception("exception")
                 return -1
@@ -1577,7 +1626,7 @@ class Database:
                 return
             try:
                 query = "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
-                self.wo_db.execute_values(
+                artemis_utils.rest_util.data_task.wo_db.execute_values(
                     query, list(self.outdate_hijacks), page_size=1000
                 )
                 self.outdate_hijacks.clear()
@@ -1607,44 +1656,6 @@ class Database:
             lock.release()
             self.setup_bulk_update_timer()
 
-        def _scheduler_instruction(self, message):
-            message.ack()
-            msg_ = message.payload
-            if msg_["op"] == "bulk_operation":
-                self._update_bulk()
-            # elif msg_["op"] == "send_unhandled":
-            #     self._retrieve_unhandled(msg_["amount"])
-            else:
-                log.warning(
-                    "Received uknown instruction from scheduler: {}".format(msg_)
-                )
-
-        def save_config(self, config_hash, yaml_config, raw_config, comment):
-            try:
-                log.debug("Config Store..")
-                query = (
-                    "INSERT INTO configs (key, raw_config, time_modified, comment)"
-                    "VALUES (%s, %s, %s, %s);"
-                )
-                self.wo_db.execute(
-                    query, (config_hash, raw_config, datetime.datetime.now(), comment)
-                )
-            except Exception:
-                log.exception("failed to save config in db")
-
-        def retrieve_most_recent_config_hash(self):
-            try:
-                hash_ = self.ro_db.execute(
-                    "SELECT key from configs ORDER BY time_modified DESC LIMIT 1",
-                    fetch_one=True,
-                )
-
-                if isinstance(hash_, tuple):
-                    return hash_[0]
-            except Exception:
-                log.exception("failed to retrieved most recent config hash in db")
-            return None
-
 
 def make_app():
     return Application(
@@ -1657,15 +1668,20 @@ def make_app():
 
 
 if __name__ == "__main__":
-    # database should be configured in any case
-    configure_data_task(Database)
-    # database should start in any case
-    start_data_task()
-    while not artemis_utils.data_task.is_running():
-        time.sleep(1)
+    # database should be initiated in any case
+    setup_data_task(Database)
+
+    # get initial configuration
     r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
     conf_res = configure_database(r.json())
     assert conf_res["success"], conf_res["message"]
+
+    # database should start in any case
+    start_data_task()
+    while not artemis_utils.rest_util.data_task.is_running():
+        time.sleep(1)
+
+    # create REST worker
     app = make_app()
     app.listen(REST_PORT)
     log.info("Listening to port {}".format(REST_PORT))

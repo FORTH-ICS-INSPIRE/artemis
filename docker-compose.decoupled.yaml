@@ -26,6 +26,7 @@ services:
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: ${REST_PORT}
+            RIS_ID: ${RIS_ID}
         volumes:
             - ./monitor-services/riperistap/configs/:/etc/artemis/
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
@@ -365,27 +366,27 @@ services:
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         entrypoint: ["./postgres-entrypoint.sh"]
-#    postgrest:
-#        image: postgrest/postgrest:v7.0.0
-#        container_name: postgrest
-#        restart: always
-#        depends_on:
-#            - postgres
-#        networks:
-#            - artemis
-#        expose:
-#            - ${API_PORT}
-#        environment:
-#            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=postgrest
-#            PGRST_DB_SCHEMA: ${DB_SCHEMA}
-#            PGRST_DB_ANON_ROLE: ${DB_USER}
+    postgrest:
+        image: postgrest/postgrest:v7.0.0
+        container_name: postgrest
+        restart: always
+        depends_on:
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - ${API_PORT}
+        environment:
+            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=postgrest
+            PGRST_DB_SCHEMA: ${DB_SCHEMA}
+            PGRST_DB_ANON_ROLE: ${DB_USER}
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
         restart: always
         depends_on:
+            - database
             - postgres
-#            - database
             - rabbitmq
         networks:
             - artemis

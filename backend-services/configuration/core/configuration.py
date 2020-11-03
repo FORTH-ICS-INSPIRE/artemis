@@ -14,29 +14,29 @@ from typing import Text
 from typing import TextIO
 from typing import Union
 
-import artemis_utils
+import artemis_utils.rest_util
 import redis
 import ruamel.yaml
 import ujson as json
 from artemis_utils import ArtemisError
-from artemis_utils import configure_data_task
-from artemis_utils import ControlHandler
 from artemis_utils import flatten
 from artemis_utils import get_logger
-from artemis_utils import HealthHandler
 from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
 from artemis_utils import signal_loading
-from artemis_utils import start_data_task
 from artemis_utils import translate_as_set
 from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
 from artemis_utils import update_aliased_list
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.rest_util import ControlHandler
+from artemis_utils.rest_util import HealthHandler
+from artemis_utils.rest_util import setup_data_task
+from artemis_utils.rest_util import start_data_task
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
@@ -55,9 +55,9 @@ REST_PORT = 3000
 class ConfigHandler(RequestHandler):
     def get(self):
         """
-        simply provides the configuration to the requester
+        Simply provides the configuration (in the form of a JSON dict) to the requester
         """
-        self.write(artemis_utils.data_task.worker.data)
+        self.write(artemis_utils.rest_util.data_task.worker.data)
 
     def post(self):
         """
@@ -66,6 +66,7 @@ class ConfigHandler(RequestHandler):
         or rejected and notifies all services if new
         configuration is used.
         https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/config.yaml
+        :return: {"success": True|False, "message": <message>}
         """
         try:
             signal_loading(MODULE_NAME, True)
@@ -83,17 +84,15 @@ class ConfigHandler(RequestHandler):
             else:
                 raw = raw_
 
-            # if nothing is configured, configure
-            if artemis_utils.data_task is None:
-                artemis_utils.data_task = Configuration()
-
             if type_ == "yaml":
                 stream = StringIO("".join(raw))
-                data, _flag, _error = artemis_utils.data_task.worker.parse(
+                data, _flag, _error = artemis_utils.rest_util.data_task.worker.parse(
                     stream, yaml=True
                 )
             else:
-                data, _flag, _error = artemis_utils.data_task.worker.parse(raw)
+                data, _flag, _error = artemis_utils.rest_util.data_task.worker.parse(
+                    raw
+                )
 
             # _flag is True or False depending if the new configuration was
             # accepted or not.
@@ -103,30 +102,35 @@ class ConfigHandler(RequestHandler):
                 # change to sth better
                 prev_data = copy.deepcopy(data)
                 del prev_data["timestamp"]
-                new_data = copy.deepcopy(artemis_utils.data_task.worker.data)
+                new_data = copy.deepcopy(artemis_utils.rest_util.data_task.worker.data)
                 del new_data["timestamp"]
                 prev_data_str = json.dumps(prev_data, sort_keys=True)
                 new_data_str = json.dumps(new_data, sort_keys=True)
                 if prev_data_str != new_data_str:
-                    artemis_utils.data_task.worker.data = data
+                    artemis_utils.rest_util.data_task.worker.data = data
                     # the following needs to take place only if conf came from frontend
                     # otherwise the file is already updated to the latest version!
                     if from_frontend:
-                        artemis_utils.data_task.worker.update_local_config_file()
+                        artemis_utils.rest_util.data_task.worker.update_local_config_file()
                     if comment:
-                        artemis_utils.data_task.worker.data["comment"] = comment
+                        artemis_utils.rest_util.data_task.worker.data[
+                            "comment"
+                        ] = comment
 
                     # TODO: configure all other services with the new config
+
                     # Remove the comment to avoid marking config as different
                     if "comment" in self.data:
-                        del artemis_utils.data_task.worker.data["comment"]
+                        del artemis_utils.rest_util.data_task.worker.data["comment"]
                     # after accepting/writing, format new configuration correctly
-                    with open(artemis_utils.data_task.worker.file, "r") as f:
+                    with open(artemis_utils.rest_util.data_task.worker.file, "r") as f:
                         raw = f.read()
                     yaml_conf = ruamel.yaml.load(
                         raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
                     )
-                    artemis_utils.data_task.worker.write_conf_via_tmp_file(yaml_conf)
+                    artemis_utils.rest_util.data_task.worker.write_conf_via_tmp_file(
+                        yaml_conf
+                    )
 
                 # reply back to the sender with a configuration accepted
                 # message.
@@ -1317,12 +1321,15 @@ def make_app():
 
 
 if __name__ == "__main__":
-    # configuration should be configured in any case
-    configure_data_task(Configuration)
+    # configuration should be initiated in any case
+    setup_data_task(Configuration)
+
     # configuration should start in any case
     start_data_task()
-    while not artemis_utils.data_task.is_running():
+    while not artemis_utils.rest_util.data_task.is_running():
         time.sleep(1)
+
+    # create REST worker
     app = make_app()
     app.listen(REST_PORT)
     log.info("Listening to port {}".format(REST_PORT))

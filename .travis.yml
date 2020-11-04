@@ -65,6 +65,10 @@ jobs:
       install: [ ]
       script:
         - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/fileobserver
+    - name: detection
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/detection
 #    - stage: build and push containers
 #      name: backend
 #      install: []

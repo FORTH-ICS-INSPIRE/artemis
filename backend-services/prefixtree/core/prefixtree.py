@@ -1,4 +1,5 @@
 import time
+from threading import Lock
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -30,6 +31,7 @@ from tornado.web import Application
 from tornado.web import RequestHandler
 
 log = get_logger()
+lock = Lock()
 # additional serializer for pg-amqp messages
 serialization.register(
     "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
@@ -45,12 +47,9 @@ def configure_prefixtree(msg):
     config = msg
 
     if config["timestamp"] > artemis_utils.rest_util.data_task.config_timestamp:
-        artemis_utils.rest_util.data_task.monitors = msg.get("monitors", {})
+        monitors = msg.get("monitors", {})
 
-        artemis_utils.rest_util.data_task.prefix_tree = {
-            "v4": pytricia.PyTricia(32),
-            "v6": pytricia.PyTricia(128),
-        }
+        prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
         rules = config.get("rules", [])
         try:
             for rule in rules:
@@ -75,33 +74,36 @@ def configure_prefixtree(msg):
                 for prefix in rule["prefixes"]:
                     for translated_prefix in translate_rfc2622(prefix):
                         ip_version = get_ip_version(translated_prefix)
-                        if artemis_utils.rest_util.data_task.prefix_tree[
-                            ip_version
-                        ].has_key(translated_prefix):
-                            node = artemis_utils.rest_util.data_task.prefix_tree[
-                                ip_version
-                            ][translated_prefix]
+                        if prefix_tree[ip_version].has_key(translated_prefix):
+                            node = prefix_tree[ip_version][translated_prefix]
                         else:
                             node = {"prefix": translated_prefix, "data": {"confs": []}}
-                            artemis_utils.rest_util.data_task.prefix_tree[
-                                ip_version
-                            ].insert(translated_prefix, node)
+                            prefix_tree[ip_version].insert(translated_prefix, node)
                         node["data"]["confs"].append(conf_obj)
 
             # calculate the monitored and configured prefixes
-            artemis_utils.rest_util.data_task.monitored_prefixes = set()
-            artemis_utils.rest_util.data_task.configured_prefix_count = 0
-            for ip_version in artemis_utils.rest_util.data_task.prefix_tree:
-                for prefix in artemis_utils.rest_util.data_task.prefix_tree[ip_version]:
-                    artemis_utils.rest_util.data_task.configured_prefix_count += 1
+            configured_prefix_count = 0
+            monitored_prefixes = set()
+            for ip_version in prefix_tree:
+                for prefix in prefix_tree[ip_version]:
+                    configured_prefix_count += 1
                     monitored_prefix = search_worst_prefix(
-                        prefix,
-                        artemis_utils.rest_util.data_task.prefix_tree[ip_version],
+                        prefix, prefix_tree[ip_version]
                     )
                     if monitored_prefix:
-                        artemis_utils.rest_util.data_task.monitored_prefixes.add(
-                            monitored_prefix
-                        )
+                        monitored_prefixes.add(monitored_prefix)
+
+            # thread-safe setting of prefix tree
+            lock.acquire()
+            artemis_utils.rest_util.data_task.prefix_tree = prefix_tree
+            lock.release()
+
+            # rest of the related primitives
+            artemis_utils.rest_util.data_task.monitors = monitors
+            artemis_utils.rest_util.data_task.monitored_prefixes = monitored_prefixes
+            artemis_utils.rest_util.data_task.configured_prefix_count = (
+                configured_prefix_count
+            )
 
             signal_loading(MODULE_NAME, False)
             return {"success": True, "message": "configured"}
@@ -217,8 +219,11 @@ class PrefixTree:
     def find_prefix_node(self, prefix):
         ip_version = get_ip_version(prefix)
         prefix_node = None
+        # thread-safe access to prefix tree
+        lock.acquire()
         if prefix in self.prefix_tree[ip_version]:
             prefix_node = self.prefix_tree[ip_version][prefix]
+        lock.release()
         return prefix_node
 
     class Worker(ConsumerProducerMixin):

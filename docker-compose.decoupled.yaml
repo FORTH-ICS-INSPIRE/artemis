@@ -162,20 +162,30 @@ services:
 #        # TODO: env variables, ports
 #        volumes:
 #            - ./backend-services/mitigation/configs/:/etc/artemis/
-#    fileobserver:
-#        image: artemis_fileobserver
-#        build: ./backend-services/fileobserver
-#        container_name: fileobserver
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./backend-services/fileobserver/configs/:/etc/artemis/
+    fileobserver:
+        image: artemis_fileobserver
+        build: ./backend-services/fileobserver
+        container_name: fileobserver
+        restart: always
+        depends_on:
+            - postgres
+            - graphql
+            - database
+        expose:
+            - 3000
+        ports:
+            - "3006:3000"
+        networks:
+            - artemis
+        environment:
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            REST_PORT: ${REST_PORT}
+        volumes:
+            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
+            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     notifier:
         image: artemis_notifier
         build: ./backend-services/notifier

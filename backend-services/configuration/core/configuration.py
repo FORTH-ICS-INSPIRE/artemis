@@ -6,6 +6,7 @@ import shutil
 import time
 from io import StringIO
 from ipaddress import ip_network as str2ip
+from threading import Lock
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -47,6 +48,7 @@ from tornado.web import RequestHandler
 from yaml import load as yload
 
 log = get_logger()
+lock = Lock()
 MODULE_NAME = "configuration"
 # TODO: add the following in utils
 REST_PORT = 3000
@@ -66,8 +68,15 @@ class ConfigHandler(RequestHandler):
         or rejected and notifies all services if new
         configuration is used.
         https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/config.yaml
+        sample request body:
+        {
+            "type": <yaml|json>,
+            "content": <list|dict>
+        }
         :return: {"success": True|False, "message": <message>}
         """
+        # TODO: check if we need locks in other parts of the code for this service
+        lock.acquire()
         try:
             signal_loading(MODULE_NAME, True)
             msg = json.loads(self.request.body)
@@ -120,7 +129,7 @@ class ConfigHandler(RequestHandler):
                     # TODO: configure all other services with the new config
 
                     # Remove the comment to avoid marking config as different
-                    if "comment" in self.data:
+                    if "comment" in artemis_utils.rest_util.data_task.worker.data:
                         del artemis_utils.rest_util.data_task.worker.data["comment"]
                     # after accepting/writing, format new configuration correctly
                     with open(artemis_utils.rest_util.data_task.worker.file, "r") as f:
@@ -145,6 +154,7 @@ class ConfigHandler(RequestHandler):
             self.write({"success": False, "message": "unknown error"})
         finally:
             signal_loading(MODULE_NAME, False)
+            lock.release()
 
 
 class Configuration:
@@ -269,12 +279,6 @@ class Configuration:
             )
 
             # RPC QUEUES
-            self.config_request_queue = Queue(
-                "configuration.rpc.request",
-                durable=False,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
             self.hijack_learn_rule_queue = Queue(
                 "configuration.rpc.hijack-learn-rule",
                 durable=False,
@@ -295,12 +299,6 @@ class Configuration:
         ) -> List[Consumer]:
             return [
                 Consumer(
-                    queues=[self.config_request_queue],
-                    on_message=self.handle_config_request,
-                    prefetch_count=1,
-                    accept=["ujson"],
-                ),
-                Consumer(
                     queues=[self.hijack_learn_rule_queue],
                     on_message=self.handle_hijack_learn_rule_request,
                     prefetch_count=1,
@@ -319,23 +317,6 @@ class Configuration:
                     accept=["ujson"],
                 ),
             ]
-
-        def handle_config_request(self, message: Dict) -> NoReturn:
-            """
-            Handles all config requests from other Services
-            by replying back with the current configuration.
-            """
-            message.ack()
-            log.debug("message: {}\npayload: {}".format(message, message.payload))
-            self.producer.publish(
-                self.data,
-                exchange="",
-                routing_key=message.properties["reply_to"],
-                correlation_id=message.properties["correlation_id"],
-                retry=True,
-                priority=4,
-                serializer="ujson",
-            )
 
         def translate_learn_rule_msg_to_dicts(self, raw):
             """

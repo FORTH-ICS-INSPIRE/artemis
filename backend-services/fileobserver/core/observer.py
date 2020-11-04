@@ -3,6 +3,7 @@ import time
 
 import artemis_utils.rest_util
 import requests
+import ujson as json
 from artemis_utils import get_logger
 from artemis_utils import signal_loading
 from artemis_utils.rest_util import ControlHandler
@@ -106,7 +107,7 @@ class FileObserver:
                 try:
                     r = requests.post(
                         url="http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT),
-                        data={"type": "yaml", "content": content},
+                        data=json.dumps({"type": "yaml", "content": content}),
                     )
                     response = r.json()
 

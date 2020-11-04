@@ -1,69 +1,79 @@
 import difflib
-import json
-import signal
 import time
 
+import artemis_utils.rest_util
+import requests
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
 from artemis_utils import signal_loading
-from kombu import Connection
-from kombu import Consumer
-from kombu import Producer
-from kombu import Queue
-from kombu import serialization
-from kombu import uuid
+from artemis_utils.rest_util import ControlHandler
+from artemis_utils.rest_util import HealthHandler
+from artemis_utils.rest_util import setup_data_task
+from artemis_utils.rest_util import start_data_task
+from tornado.ioloop import IOLoop
+from tornado.web import Application
+from tornado.web import RequestHandler
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer as WatchObserver
 
 log = get_logger()
-
-serialization.register(
-    "ujson",
-    json.dumps,
-    json.loads,
-    content_type="application/x-ujson",
-    content_encoding="utf-8",
-)
+MODULE_NAME = "fileobserver"
+# TODO: add the following in utils
+CONFIGURATION_HOST = "configuration"
+REST_PORT = 3000
 
 
-class Observer:
+class ConfigHandler(RequestHandler):
+    """
+    REST request handler for configuration.
+    """
+
+    def post(self):
+        """
+        Configures fileobserver and responds with a success message.
+        :return: {"success": True | False, "message": < message >}
+        """
+        self.write({"success": True, "message": "configured"})
+
+
+class FileObserver:
+    """
+    FileObserver Service.
+    """
+
     def __init__(self):
-        self.worker = None
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+        self._running = False
+
+    def is_running(self):
+        return self._running
+
+    def stop(self):
+        self._running = False
 
     def run(self):
+        self._running = True
         observer = WatchObserver()
-
         dirname = "/etc/artemis"
         filename = "config.yaml"
 
         try:
-            with Connection(RABBITMQ_URI) as connection:
-                event_handler = self.Handler(dirname, filename, connection)
-                observer.schedule(event_handler, dirname, recursive=False)
-                observer.start()
-                log.info("started")
-                self.should_stop = False
-                while not self.should_stop:
-                    time.sleep(5)
+            event_handler = self.Handler(dirname, filename)
+            observer.schedule(event_handler, dirname, recursive=False)
+            observer.start()
+            log.info("started")
+            while self._running:
+                time.sleep(5)
         except Exception:
             log.exception("exception")
         finally:
             observer.stop()
             observer.join()
             log.info("stopped")
-
-    def exit(self, signum, frame):
-        self.should_stop = True
+            self._running = False
 
     class Handler(FileSystemEventHandler):
-        def __init__(self, d, fn, connection):
+        def __init__(self, d, fn):
             super().__init__()
-            self.connection = connection
-            self.correlation_id = None
-            signal_loading("observer", True)
+            signal_loading(MODULE_NAME, True)
             self.response = None
             self.path = "{}/{}".format(d, fn)
             try:
@@ -72,12 +82,7 @@ class Observer:
             except Exception:
                 log.exception("exception")
             finally:
-                signal_loading("observer", False)
-
-        def on_response(self, message):
-            message.ack()
-            if message.properties["correlation_id"] == self.correlation_id:
-                self.response = message.payload
+                signal_loading(MODULE_NAME, False)
 
         def on_modified(self, event):
             if event.is_directory:
@@ -96,52 +101,50 @@ class Observer:
         def check_changes(self):
             with open(self.path, "r") as f:
                 content = f.readlines()
-            # Taken any action here when a file is modified.
             changes = "".join(difflib.unified_diff(self.content, content))
             if changes:
-                self.response = None
-                self.correlation_id = uuid()
-                callback_queue = Queue(
-                    uuid(),
-                    durable=False,
-                    auto_delete=True,
-                    max_priority=4,
-                    consumer_arguments={"x-priority": 4},
-                )
-                with Producer(self.connection) as producer:
-                    producer.publish(
-                        content,
-                        exchange="",
-                        routing_key="configuration.rpc.modify",
-                        serializer="yaml",
-                        retry=True,
-                        declare=[callback_queue],
-                        reply_to=callback_queue.name,
-                        correlation_id=self.correlation_id,
-                        priority=4,
+                try:
+                    r = requests.post(
+                        url="http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT),
+                        data={"type": "yaml", "content": content},
                     )
-                with Consumer(
-                    self.connection,
-                    on_message=self.on_response,
-                    queues=[callback_queue],
-                    accept=["ujson"],
-                ):
-                    while self.response is None:
-                        self.connection.drain_events()
+                    response = r.json()
 
-                if self.response["status"] == "accepted":
-                    text = "new configuration accepted:\n{}".format(changes)
-                    log.info(text)
-                    self.content = content
-                else:
-                    log.error("invalid configuration:\n{}".format(content))
-                self.response = None
+                    if response["success"]:
+                        text = "new configuration accepted:\n{}".format(changes)
+                        log.info(text)
+                        self.content = content
+                    else:
+                        log.error(
+                            "invalid configuration due to error '{}':\n{}".format(
+                                response["message"], content
+                            )
+                        )
+                except Exception:
+                    log.exception("exception")
 
 
-def run():
-    service = Observer()
-    service.run()
+def make_app():
+    return Application(
+        [
+            ("/config", ConfigHandler),
+            ("/control", ControlHandler),
+            ("/health", HealthHandler),
+        ]
+    )
 
 
 if __name__ == "__main__":
-    run()
+    # fileobserver should be initiated in any case
+    setup_data_task(FileObserver)
+
+    # fileobserver should start in any case
+    start_data_task()
+    while not artemis_utils.rest_util.data_task.is_running():
+        time.sleep(1)
+
+    # create REST worker
+    app = make_app()
+    app.listen(REST_PORT)
+    log.info("Listening to port {}".format(REST_PORT))
+    IOLoop.current().start()

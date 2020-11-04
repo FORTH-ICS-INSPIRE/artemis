@@ -77,7 +77,11 @@ def configure_prefixtree(msg):
                         if prefix_tree[ip_version].has_key(translated_prefix):
                             node = prefix_tree[ip_version][translated_prefix]
                         else:
-                            node = {"prefix": translated_prefix, "data": {"confs": []}}
+                            node = {
+                                "prefix": translated_prefix,
+                                "data": {"confs": []},
+                                "timestamp": config["timestamp"],
+                            }
                             prefix_tree[ip_version].insert(translated_prefix, node)
                         node["data"]["confs"].append(conf_obj)
 
@@ -104,6 +108,7 @@ def configure_prefixtree(msg):
             artemis_utils.rest_util.data_task.configured_prefix_count = (
                 configured_prefix_count
             )
+            artemis_utils.rest_util.data_task.config_timestamp = config["timestamp"]
 
             signal_loading(MODULE_NAME, False)
             return {"success": True, "message": "configured"}
@@ -238,6 +243,9 @@ class PrefixTree:
             self.update_exchange = create_exchange(
                 "bgp-update", connection, declare=True
             )
+            self.hijack_exchange = create_exchange(
+                "hijack-update", connection, declare=True
+            )
             self.pg_amq_bridge = create_exchange("amq.direct", connection)
 
             # QUEUES
@@ -245,6 +253,12 @@ class PrefixTree:
                 MODULE_NAME,
                 exchange=self.update_exchange,
                 routing_key="update",
+                priority=1,
+            )
+            self.hijack_ongoing_queue = create_queue(
+                MODULE_NAME,
+                exchange=self.hijack_exchange,
+                routing_key="ongoing",
                 priority=1,
             )
             self.pg_amq_update_queue = create_queue(
@@ -261,6 +275,12 @@ class PrefixTree:
                 Consumer(
                     queues=[self.update_queue],
                     on_message=self.annotate_bgp_update,
+                    prefetch_count=100,
+                    accept=["ujson"],
+                ),
+                Consumer(
+                    queues=[self.hijack_ongoing_queue],
+                    on_message=self.annotate_ongoing_hijack_updates,
                     prefetch_count=100,
                     accept=["ujson"],
                 ),
@@ -325,6 +345,36 @@ class PrefixTree:
                     )
             except Exception:
                 log.exception("exception")
+
+        def annotate_ongoing_hijack_updates(self, message: Dict) -> NoReturn:
+            """
+            Callback function that annotates incoming ongoing hijack updates with the associated
+            configuration nodes (otherwise it discards them).
+            """
+            message.ack()
+            bgp_updates = []
+            for bgp_update in message.payload:
+                try:
+                    prefix_node = artemis_utils.rest_util.data_task.find_prefix_node(
+                        bgp_update["prefix"]
+                    )
+                    if prefix_node:
+                        bgp_update["prefix_node"] = prefix_node
+                        bgp_updates.append(bgp_update)
+                    else:
+                        log.error(
+                            "unconfigured stored BGP update received '{}'".format(
+                                bgp_update
+                            )
+                        )
+                except Exception:
+                    log.exception("exception")
+            self.producer.publish(
+                bgp_updates,
+                exchange=self.update_exchange,
+                routing_key="ongoing-with-prefix-node",
+                serializer="ujson",
+            )
 
 
 def make_app():

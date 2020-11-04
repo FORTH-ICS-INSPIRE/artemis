@@ -8,6 +8,7 @@ from typing import NoReturn
 import artemis_utils.rest_util
 import ujson as json
 from artemis_utils import get_logger
+from artemis_utils import hijack_log_field_formatter
 from artemis_utils import RABBITMQ_URI
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
@@ -153,7 +154,7 @@ class Notifier:
             message.ack()
             hij_log_msg = message.payload
             hij_log.info(
-                "{}".format(json.dumps(hij_log_msg)),
+                "{}".format(json.dumps(hijack_log_field_formatter(hij_log_msg))),
                 extra={
                     "community_annotation": hij_log_msg.get(
                         "community_annotation", "NA"
@@ -169,7 +170,7 @@ class Notifier:
             message.ack()
             mail_log_msg = message.payload
             mail_log.info(
-                "{}".format(json.dumps(mail_log_msg)),
+                "{}".format(json.dumps(hijack_log_field_formatter(mail_log_msg))),
                 extra={
                     "community_annotation": mail_log_msg.get(
                         "community_annotation", "NA"

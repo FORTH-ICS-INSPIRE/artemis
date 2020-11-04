@@ -16,7 +16,6 @@ from artemis_utils import DB_PORT
 from artemis_utils import DB_USER
 from artemis_utils import get_hash
 from artemis_utils import get_logger
-from artemis_utils import hijack_log_field_formatter
 from artemis_utils import HISTORIC
 from artemis_utils import ping_redis
 from artemis_utils import purge_redis_eph_pers_keys
@@ -75,6 +74,10 @@ def configure_database(msg):
             if config_hash != latest_config_in_db_hash:
                 artemis_utils.rest_util.data_task.save_config(
                     config_hash, config, raw_config, comment
+                )
+                # configuration changed, resend ongoing hijacks to detection for checking
+                artemis_utils.rest_util.data_task.worker.handle_hijack_ongoing_request(
+                    {}
                 )
             else:
                 log.debug("database config is up-to-date")
@@ -681,57 +684,52 @@ class Database:
                 lock.release()
 
         def handle_hijack_ongoing_request(self, message):
-            message.ack()
-            timestamp = message.payload
+            if not isinstance(message, dict):
+                message.ack()
+            try:
+                results = []
+                query = (
+                    "SELECT b.key, b.prefix, b.origin_as, b.as_path, b.type, b.peer_asn, "
+                    "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, h.type "
+                    "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
+                    "WHERE h.active = true AND b.handled=true"
+                )
 
-            # need redis to handle future case of multiple db processes
-            last_timestamp = self.redis.get("last_handled_timestamp")
-            if not last_timestamp or timestamp > float(last_timestamp):
-                self.redis.set("last_handled_timestamp", timestamp)
-                try:
-                    results = []
-                    query = (
-                        "SELECT b.key, b.prefix, b.origin_as, b.as_path, b.type, b.peer_asn, "
-                        "b.communities, b.timestamp, b.service, b.matched_prefix, h.key, h.hijack_as, h.type "
-                        "FROM hijacks AS h LEFT JOIN bgp_updates AS b ON (h.key = ANY(b.hijack_key)) "
-                        "WHERE h.active = true AND b.handled=true"
+                entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
+
+                for entry in entries:
+                    results.append(
+                        {
+                            "key": entry[0],  # key
+                            "prefix": entry[1],  # prefix
+                            "origin_as": entry[2],  # origin ASN
+                            "path": entry[3],  # as_path
+                            "type": entry[4],  # type
+                            "peer_asn": entry[5],  # peer_asn
+                            "communities": entry[6],  # communities
+                            "timestamp": entry[7].timestamp(),  # timestamp
+                            "service": entry[8],  # service
+                            "matched_prefix": entry[9],  # configured prefix
+                            "hij_key": entry[10],
+                            "hijack_as": entry[11],
+                            "hij_type": entry[12],
+                        }
                     )
 
-                    entries = artemis_utils.rest_util.data_task.ro_db.execute(query)
-
-                    for entry in entries:
-                        results.append(
-                            {
-                                "key": entry[0],  # key
-                                "prefix": entry[1],  # prefix
-                                "origin_as": entry[2],  # origin ASN
-                                "path": entry[3],  # as_path
-                                "type": entry[4],  # type
-                                "peer_asn": entry[5],  # peer_asn
-                                "communities": entry[6],  # communities
-                                "timestamp": entry[7].timestamp(),  # timestamp
-                                "service": entry[8],  # service
-                                "matched_prefix": entry[9],  # configured prefix
-                                "hij_key": entry[10],
-                                "hijack_as": entry[11],
-                                "hij_type": entry[12],
-                            }
+                if results:
+                    for result_bucket in [
+                        results[i : i + 10] for i in range(0, len(results), 10)
+                    ]:
+                        self.producer.publish(
+                            result_bucket,
+                            exchange=self.hijack_exchange,
+                            routing_key="ongoing",
+                            retry=False,
+                            priority=1,
+                            serializer="ujson",
                         )
-
-                    if results:
-                        for result_bucket in [
-                            results[i : i + 10] for i in range(0, len(results), 10)
-                        ]:
-                            self.producer.publish(
-                                result_bucket,
-                                exchange=self.hijack_exchange,
-                                routing_key="ongoing",
-                                retry=False,
-                                priority=1,
-                                serializer="ujson",
-                            )
-                except Exception:
-                    log.exception("exception")
+            except Exception:
+                log.exception("exception")
 
         def bootstrap_redis(self):
             try:
@@ -1275,7 +1273,7 @@ class Database:
                                 log.debug("withdrawn hijack {}".format(entry))
                                 if hijack:
                                     self.producer.publish(
-                                        hijack_log_field_formatter(hijack),
+                                        hijack,
                                         exchange=self.hijack_notification_exchange,
                                         routing_key="mail-log",
                                         retry=False,
@@ -1283,7 +1281,7 @@ class Database:
                                         serializer="ujson",
                                     )
                                     self.producer.publish(
-                                        hijack_log_field_formatter(hijack),
+                                        hijack,
                                         exchange=self.hijack_notification_exchange,
                                         routing_key="hij-log",
                                         retry=False,

@@ -1,8 +1,5 @@
 import ipaddress
-import logging
-import os
 import re
-import signal
 import time
 from datetime import datetime
 from typing import Callable
@@ -11,17 +8,14 @@ from typing import List
 from typing import NoReturn
 from typing import Tuple
 
-import pytricia
 import redis
 import ujson as json
 from artemis_utils import clean_as_path
 from artemis_utils import exception_handler
-from artemis_utils import flatten
 from artemis_utils import get_hash
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import get_rpki_val_result
-from artemis_utils import hijack_log_field_formatter
 from artemis_utils import key_generator
 from artemis_utils import ping_redis
 from artemis_utils import purge_redis_eph_pers_keys
@@ -34,16 +28,17 @@ from artemis_utils import RPKI_VALIDATOR_HOST
 from artemis_utils import RPKI_VALIDATOR_PORT
 from artemis_utils import signal_loading
 from artemis_utils import TEST_ENV
-from artemis_utils import translate_asn_range
-from artemis_utils import translate_rfc2622
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.rest_util import ControlHandler
+from artemis_utils.rest_util import HealthHandler
+from artemis_utils.rest_util import setup_data_task
 from kombu import Connection
 from kombu import Consumer
-from kombu import Queue
-from kombu import serialization
-from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
+from tornado.ioloop import IOLoop
+from tornado.web import Application
+from tornado.web import RequestHandler
 
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
@@ -62,35 +57,24 @@ HIJACK_DIM_COMBINATIONS = [
     ["Q", "0", "-", "-"],
     ["Q", "0", "-", "L"],
 ]
+MODULE_NAME = "detection"
 
 log = get_logger()
-hij_log = logging.getLogger("hijack_logger")
-mail_log = logging.getLogger("mail_logger")
-try:
-    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER", "[]"))
-except Exception:
-    log.exception("exception")
-    hij_log_filter = []
+# TODO: add the following in utils
+REST_PORT = 3000
 
 
-class HijackLogFilter(logging.Filter):
-    def filter(self, rec):
-        if not hij_log_filter:
-            return True
-        for filter_entry in hij_log_filter:
-            for filter_entry_key in filter_entry:
-                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
-                    return True
-        return False
+class ConfigHandler(RequestHandler):
+    """
+    REST request handler for configuration.
+    """
 
-
-mail_log.addFilter(HijackLogFilter())
-hij_log.addFilter(HijackLogFilter())
-
-# additional serializer for pg-amqp messages
-serialization.register(
-    "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
-)
+    def post(self):
+        """
+        Configures notifier and responds with a success message.
+        :return: {"success": True | False, "message": < message >}
+        """
+        self.write({"success": True, "message": "configured"})
 
 
 class Detection:
@@ -99,15 +83,23 @@ class Detection:
     """
 
     def __init__(self):
+        self._running = False
         self.worker = None
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
+    def is_running(self):
+        return self._running
+
+    def stop(self):
+        if self.worker:
+            self.worker.should_stop = True
+        else:
+            self._running = False
 
     def run(self) -> NoReturn:
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
+        self._running = True
         try:
             with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
@@ -116,10 +108,7 @@ class Detection:
             log.exception("exception")
         finally:
             log.info("stopped")
-
-    def exit(self, signum, frame):
-        if self.worker:
-            self.worker.should_stop = True
+            self._running = False
 
     class Worker(ConsumerProducerMixin):
         """
@@ -127,13 +116,7 @@ class Detection:
         """
 
         def __init__(self, connection: Connection) -> NoReturn:
-            self.module_name = "detection"
             self.connection = connection
-            self.timestamp = -1
-            self.rules = None
-            self.prefix_tree = None
-            self.mon_num = 1
-            self.correlation_id = None
 
             # EXCHANGES
             self.update_exchange = create_exchange(
@@ -146,31 +129,25 @@ class Detection:
                 "hijack-hashing", connection, "x-consistent-hash", declare=True
             )
             self.handled_exchange = create_exchange("handled-update", connection)
-            self.config_exchange = create_exchange("config", connection)
-            self.pg_amq_bridge = create_exchange("amq.direct", connection)
+            self.hijack_notification_exchange = create_exchange(
+                "hijack-notification", connection, declare=True
+            )
 
             # QUEUES
             self.update_queue = create_queue(
-                self.module_name,
-                exchange=self.pg_amq_bridge,
-                routing_key="update-insert",
+                MODULE_NAME,
+                exchange=self.update_exchange,
+                routing_key="stored-update-with-prefix-node",
                 priority=1,
             )
             self.hijack_ongoing_queue = create_queue(
-                self.module_name,
+                MODULE_NAME,
                 exchange=self.hijack_exchange,
-                routing_key="ongoing",
+                routing_key="ongoing-with-prefix-node",
                 priority=1,
             )
-            self.config_queue = create_queue(
-                self.module_name,
-                exchange=self.config_exchange,
-                routing_key="notify",
-                priority=3,
-                random=True,
-            )
 
-            signal_loading(self.module_name, True)
+            signal_loading(MODULE_NAME, True)
 
             setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
             if TEST_ENV == "true":
@@ -204,25 +181,18 @@ class Detection:
                         log.info("Retrying RTR connection in 30 seconds...")
                         time.sleep(30)
 
-            self.config_request_rpc()
             log.info("started")
-            signal_loading(self.module_name, False)
+            signal_loading(MODULE_NAME, False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
         ) -> List[Consumer]:
             return [
                 Consumer(
-                    queues=[self.config_queue],
-                    on_message=self.handle_config_notify,
-                    prefetch_count=1,
-                    accept=["ujson"],
-                ),
-                Consumer(
                     queues=[self.update_queue],
                     on_message=self.handle_bgp_update,
                     prefetch_count=100,
-                    accept=["ujson", "txtjson"],
+                    accept=["ujson"],
                 ),
                 Consumer(
                     queues=[self.hijack_ongoing_queue],
@@ -234,159 +204,12 @@ class Detection:
 
         def on_consume_ready(self, connection, channel, consumers, **kwargs):
             self.producer.publish(
-                self.timestamp,
+                "",
                 exchange=self.hijack_exchange,
                 routing_key="ongoing-request",
                 priority=1,
                 serializer="ujson",
             )
-
-        def handle_config_notify(self, message: Dict) -> NoReturn:
-            """
-            Consumer for Config-Notify messages that come
-            from the configuration service.
-            Upon arrival this service updates its running configuration.
-            """
-            message.ack()
-            log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading(self.module_name, True)
-            try:
-                raw = message.payload
-                if raw["timestamp"] > self.timestamp:
-                    self.timestamp = raw["timestamp"]
-                    self.rules = raw.get("rules", [])
-                    self.init_detection()
-                    # Request ongoing hijacks from DB
-                    self.producer.publish(
-                        self.timestamp,
-                        exchange=self.hijack_exchange,
-                        routing_key="ongoing-request",
-                        priority=1,
-                        serializer="ujson",
-                    )
-            except Exception:
-                log.exception("Exception")
-            finally:
-                signal_loading(self.module_name, False)
-
-        def config_request_rpc(self) -> NoReturn:
-            """
-            Initial RPC of this service to request the configuration.
-            The RPC is blocked until the configuration service replies back.
-            """
-            self.correlation_id = uuid()
-            callback_queue = Queue(
-                uuid(),
-                durable=False,
-                auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
-
-            self.producer.publish(
-                "",
-                exchange="",
-                routing_key="configuration.rpc.request",
-                reply_to=callback_queue.name,
-                correlation_id=self.correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "configuration.rpc.request",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="ujson",
-            )
-            with Consumer(
-                self.connection,
-                on_message=self.handle_config_request_reply,
-                queues=[callback_queue],
-                accept=["ujson"],
-            ):
-                while self.rules is None:
-                    self.connection.drain_events()
-            log.debug("{}".format(self.rules))
-
-        def handle_config_request_reply(self, message: Dict):
-            """
-            Callback function for the config request RPC.
-            Updates running configuration upon receiving a new configuration.
-            """
-            message.ack()
-            log.debug("message: {}\npayload: {}".format(message, message.payload))
-            if self.correlation_id == message.properties["correlation_id"]:
-                raw = message.payload
-                if raw["timestamp"] > self.timestamp:
-                    self.timestamp = raw["timestamp"]
-                    self.rules = raw.get("rules", [])
-                    self.init_detection()
-
-        def init_detection(self) -> NoReturn:
-            """
-            Updates rules everytime it receives a new configuration.
-            """
-            log.info("Initiating detection...")
-
-            log.info("Starting building detection prefix tree...")
-            self.prefix_tree = {
-                "v4": pytricia.PyTricia(32),
-                "v6": pytricia.PyTricia(128),
-            }
-            raw_prefix_count = 0
-            for rule in self.rules:
-                try:
-                    rule_translated_origin_asn_set = set()
-                    for asn in rule["origin_asns"]:
-                        this_translated_asn_list = flatten(translate_asn_range(asn))
-                        rule_translated_origin_asn_set.update(
-                            set(this_translated_asn_list)
-                        )
-                    rule["origin_asns"] = list(rule_translated_origin_asn_set)
-                    rule_translated_neighbor_set = set()
-                    for asn in rule["neighbors"]:
-                        this_translated_asn_list = flatten(translate_asn_range(asn))
-                        rule_translated_neighbor_set.update(
-                            set(this_translated_asn_list)
-                        )
-                    rule["neighbors"] = list(rule_translated_neighbor_set)
-
-                    conf_obj = {
-                        "origin_asns": rule["origin_asns"],
-                        "neighbors": rule["neighbors"],
-                        "prepend_seq": rule.get("prepend_seq", []),
-                        "policies": set(rule["policies"]),
-                        "community_annotations": rule["community_annotations"],
-                    }
-                    for prefix in rule["prefixes"]:
-                        for translated_prefix in translate_rfc2622(prefix):
-                            ip_version = get_ip_version(translated_prefix)
-                            if self.prefix_tree[ip_version].has_key(translated_prefix):
-                                node = self.prefix_tree[ip_version][translated_prefix]
-                            else:
-                                node = {
-                                    "prefix": translated_prefix,
-                                    "data": {"confs": []},
-                                }
-                                self.prefix_tree[ip_version].insert(
-                                    translated_prefix, node
-                                )
-                            node["data"]["confs"].append(conf_obj)
-                            raw_prefix_count += 1
-                except Exception:
-                    log.exception("Exception")
-            log.info(
-                "{} prefixes integrated in detection prefix tree in total".format(
-                    raw_prefix_count
-                )
-            )
-            log.info("Finished building detection prefix tree.")
-
-            log.info("Detection initiated, configured and running.")
 
         def handle_ongoing_hijacks(self, message: Dict) -> NoReturn:
             """
@@ -402,7 +225,6 @@ class Detection:
             Callback function that runs the main logic of
             detecting hijacks for every bgp update.
             """
-            # log.debug('{}'.format(message))
             if isinstance(message, dict):
                 monitor_event = message
             else:
@@ -431,9 +253,8 @@ class Detection:
                 monitor_event["orig_path"] = monitor_event["path"][::]
                 monitor_event["path"] = clean_as_path(monitor_event["path"])
 
-                ip_version = get_ip_version(monitor_event["prefix"])
-                if monitor_event["prefix"] in self.prefix_tree[ip_version]:
-                    prefix_node = self.prefix_tree[ip_version][monitor_event["prefix"]]
+                if "prefix_node" in monitor_event:
+                    prefix_node = monitor_event["prefix_node"]
                     monitor_event["matched_prefix"] = prefix_node["prefix"]
 
                     final_hij_dimensions = [
@@ -520,6 +341,10 @@ class Detection:
                             self.commit_hijack(monitor_event, hijacker, hij_dimensions)
                         except Exception:
                             log.exception("exception")
+                else:
+                    log.error(
+                        "unconfigured BGP update received '{}'".format(monitor_event)
+                    )
 
                 outdated_hijack = None
                 if not is_hijack and "hij_key" in monitor_event:
@@ -573,28 +398,21 @@ class Detection:
                     try:
                         outdated_hijack = json.loads(outdated_hijack)
                         outdated_hijack["end_tag"] = "outdated"
-                        mail_log.info(
-                            "{}".format(
-                                json.dumps(
-                                    hijack_log_field_formatter(outdated_hijack),
-                                    indent=4,
-                                )
-                            ),
-                            extra={
-                                "community_annotation": outdated_hijack.get(
-                                    "community_annotation", "NA"
-                                )
-                            },
+                        self.producer.publish(
+                            outdated_hijack,
+                            exchange=self.hijack_notification_exchange,
+                            routing_key="mail-log",
+                            retry=False,
+                            priority=1,
+                            serializer="ujson",
                         )
-                        hij_log.info(
-                            "{}".format(
-                                json.dumps(hijack_log_field_formatter(outdated_hijack))
-                            ),
-                            extra={
-                                "community_annotation": outdated_hijack.get(
-                                    "community_annotation", "NA"
-                                )
-                            },
+                        self.producer.publish(
+                            outdated_hijack,
+                            exchange=self.hijack_notification_exchange,
+                            routing_key="hij-log",
+                            retry=False,
+                            priority=1,
+                            serializer="ujson",
                         )
                     except Exception:
                         log.exception("exception")
@@ -920,7 +738,7 @@ class Detection:
                 "peers_seen": {monitor_event["peer_asn"]},
                 "monitor_keys": {monitor_event["key"]},
                 "configured_prefix": monitor_event["matched_prefix"],
-                "timestamp_of_config": self.timestamp,
+                "timestamp_of_config": monitor_event["prefix_node"]["timestamp"],
                 "end_tag": None,
                 "outdated_parent": None,
                 "rpki_status": "NA",
@@ -1046,15 +864,13 @@ class Detection:
                     redis_pipeline.sadd("persistent-keys", hijack_value["key"])
                     result = hijack_value
                     self.comm_annotate_hijack(monitor_event, result)
-                    mail_log.info(
-                        "{}".format(
-                            json.dumps(hijack_log_field_formatter(result), indent=4)
-                        ),
-                        extra={
-                            "community_annotation": result.get(
-                                "community_annotation", "NA"
-                            )
-                        },
+                    self.producer.publish(
+                        result,
+                        exchange=self.hijack_notification_exchange,
+                        routing_key="mail-log",
+                        retry=False,
+                        priority=1,
+                        serializer="ujson",
                     )
                 redis_pipeline.set(redis_hijack_key, json.dumps(result))
 
@@ -1090,11 +906,13 @@ class Detection:
                 # publish hijack
                 self.publish_hijack_fun(result, redis_hijack_key)
 
-                hij_log.info(
-                    "{}".format(json.dumps(hijack_log_field_formatter(result))),
-                    extra={
-                        "community_annotation": result.get("community_annotation", "NA")
-                    },
+                self.producer.publish(
+                    result,
+                    exchange=self.hijack_notification_exchange,
+                    routing_key="hij-log",
+                    retry=False,
+                    priority=1,
+                    serializer="ujson",
                 )
 
                 # unlock, by pushing back the token (at most one other process
@@ -1209,9 +1027,8 @@ class Detection:
                     community = "{}:{}".format(comm_as_value[0], comm_as_value[1])
                     bgp_update_communities.add(community)
 
-                ip_version = get_ip_version(monitor_event["prefix"])
-                if monitor_event["prefix"] in self.prefix_tree[ip_version]:
-                    prefix_node = self.prefix_tree[ip_version][monitor_event["prefix"]]
+                if "prefix_node" in monitor_event:
+                    prefix_node = monitor_event["prefix_node"]
                     for item in prefix_node["data"]["confs"]:
                         annotations = []
                         for annotation_element in item.get("community_annotations", []):
@@ -1236,14 +1053,30 @@ class Detection:
                                             hijack["community_annotation"]
                                         ):
                                             hijack["community_annotation"] = annotation
+                else:
+                    log.error(
+                        "unconfigured BGP update received '{}'".format(monitor_event)
+                    )
             except Exception:
                 log.exception("exception")
 
 
-def run():
-    service = Detection()
-    service.run()
+def make_app():
+    return Application(
+        [
+            ("/config", ConfigHandler),
+            ("/control", ControlHandler),
+            ("/health", HealthHandler),
+        ]
+    )
 
 
 if __name__ == "__main__":
-    run()
+    # detection should be initiated in any case
+    setup_data_task(Detection)
+
+    # create REST worker
+    app = make_app()
+    app.listen(REST_PORT)
+    log.info("Listening to port {}".format(REST_PORT))
+    IOLoop.current().start()

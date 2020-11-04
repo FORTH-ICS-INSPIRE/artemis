@@ -17,6 +17,7 @@ from typing import Union
 
 import artemis_utils.rest_util
 import redis
+import requests
 import ruamel.yaml
 import ujson as json
 from artemis_utils import ArtemisError
@@ -52,6 +53,7 @@ lock = Lock()
 MODULE_NAME = "configuration"
 # TODO: add the following in utils
 REST_PORT = 3000
+DATABASE_HOST = "database"
 
 
 class ConfigHandler(RequestHandler):
@@ -127,6 +129,10 @@ class ConfigHandler(RequestHandler):
                         ] = comment
 
                     # TODO: configure all other services with the new config
+                    requests.post(
+                        url="http://{}:{}/config".format(DATABASE_HOST, REST_PORT),
+                        data=json.dumps(artemis_utils.rest_util.data_task.worker.data),
+                    )
 
                     # Remove the comment to avoid marking config as different
                     if "comment" in artemis_utils.rest_util.data_task.worker.data:
@@ -262,6 +268,11 @@ class Configuration:
                 log.exception("exception")
             finally:
                 signal_loading(MODULE_NAME, False)
+            # TODO: configure all other services with the new config
+            requests.post(
+                url="http://{}:{}/config".format(DATABASE_HOST, REST_PORT),
+                data=json.dumps(self.data),
+            )
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)

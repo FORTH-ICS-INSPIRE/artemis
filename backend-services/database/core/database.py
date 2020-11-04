@@ -5,7 +5,6 @@ from threading import Timer
 
 import artemis_utils.rest_util
 import redis
-import requests
 import ujson as json
 from artemis_utils import AUTO_RECOVER_PROCESS_STATE
 from artemis_utils import BULK_TIMER
@@ -38,6 +37,8 @@ from kombu.mixins import ConsumerProducerMixin
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
+
+# import requests
 
 lock = Lock()
 MODULE_NAME = "database"
@@ -83,19 +84,20 @@ def configure_database(msg):
                 log.debug("database config is up-to-date")
 
             # now that the conf is changed, get and store additional stats from prefixtree
-            r = requests.get(
-                "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
-            )
-            artemis_utils.rest_util.data_task.monitored_prefixes = set(
-                r.json()["monitored_prefixes"]
-            )
-            r = requests.get(
-                "http://{}:{}/configuredPrefixCount".format(PREFIXTREE_HOST, REST_PORT)
-            )
-            artemis_utils.rest_util.data_task.configured_prefix_count = r.json()[
-                "configured_prefix_count"
-            ]
-            artemis_utils.rest_util.data_task.store_stats()
+            # TODO: reactivate this when certain that the pefixtree service is up
+            # r = requests.get(
+            #     "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
+            # )
+            # artemis_utils.rest_util.data_task.monitored_prefixes = set(
+            #     r.json()["monitored_prefixes"]
+            # )
+            # r = requests.get(
+            #     "http://{}:{}/configuredPrefixCount".format(PREFIXTREE_HOST, REST_PORT)
+            # )
+            # artemis_utils.rest_util.data_task.configured_prefix_count = r.json()[
+            #     "configured_prefix_count"
+            # ]
+            # artemis_utils.rest_util.data_task.store_stats()
 
             return {"success": True, "message": "configured"}
     except Exception:

@@ -43,6 +43,10 @@ services:
 #            - redis
 #            - configuration
 #            - prefixtree
+#        expose:
+#            - 3000
+#        ports:
+#            - "3002:3000"
 #        networks:
 #            - artemis
 #        # TODO: env variables, ports
@@ -59,6 +63,10 @@ services:
 #            - redis
 #            - configuration
 #            - prefixtree
+#        expose:
+#            - 3000
+#        ports:
+#            - "3003:3000"
 #        networks:
 #            - artemis
 #        # TODO: env variables, ports
@@ -75,6 +83,10 @@ services:
 #            - redis
 #            - configuration
 #            - prefixtree
+#        expose:
+#            - 3000
+#        ports:
+#            - "3004:3000"
 #        networks:
 #            - artemis
 #        # TODO: env variables, ports
@@ -91,6 +103,10 @@ services:
 #            - redis
 #            - configuration
 #            - prefixtree
+#        expose:
+#            - 3000
+#        ports:
+#            - "3005:3000"
 #        networks:
 #            - artemis
 #        # TODO: env variables, ports
@@ -111,7 +127,7 @@ services:
         expose:
             - 3000
         ports:
-            - "3002:3000"
+            - "3006:3000"
         networks:
             - artemis
         environment:
@@ -129,22 +145,44 @@ services:
             - ./backend-services/configuration/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
-#    detection:
-#        image: artemis_detection
-#        build: ./backend-services/detection
-#        container_name: detection
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#            - configuration
-#            - prefixtree
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./backend-services/detection/configs/:/etc/artemis/
+    detection:
+        image: artemis_detection
+        build: ./backend-services/detection
+        container_name: detection
+        restart: always
+        depends_on:
+            - rabbitmq
+            - postgres
+            - redis
+            - notifier
+            - graphql
+            - database
+            - configuration
+            - prefixtree
+        expose:
+            - 3000
+        ports:
+            - "3007:3000"
+        networks:
+            - artemis
+        environment:
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: ${REST_PORT}
+            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
+            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
+            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+        volumes:
+            - ./backend-services/detection/configs/:/etc/artemis/
+            - ./backend-services/detection/entrypoint:/root/entrypoint
+            - ./backend-services/detection/core/detection.py:/root/core/detection.py
 #    mitigation:
 #        image: artemis_mitigation
 #        build: ./backend-services/mitigation
@@ -157,6 +195,10 @@ services:
 #            - configuration
 #            - detection
 #            - prefixtree
+#        expose:
+#            - 3000
+#        ports:
+#            - "3008:3000"
 #        networks:
 #            - artemis
 #        # TODO: env variables, ports
@@ -174,7 +216,7 @@ services:
         expose:
             - 3000
         ports:
-            - "3006:3000"
+            - "3009:3000"
         networks:
             - artemis
         environment:
@@ -199,7 +241,7 @@ services:
         expose:
             - 3000
         ports:
-            - "3005:3000"
+            - "3010:3000"
         networks:
             - artemis
         environment:
@@ -229,7 +271,7 @@ services:
         expose:
             - 3000
         ports:
-            - "3003:3000"
+            - "3011:3000"
         networks:
           - artemis
         environment:
@@ -270,7 +312,7 @@ services:
         expose:
             - 3000
         ports:
-            - "3004:3000"
+            - "3012:3000"
         networks:
             - artemis
         environment:

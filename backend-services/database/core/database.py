@@ -1,6 +1,4 @@
 import datetime
-import logging
-import os
 import time
 from threading import Lock
 from threading import Timer
@@ -48,33 +46,10 @@ log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
 
-hij_log = logging.getLogger("hijack_logger")
-mail_log = logging.getLogger("mail_logger")
-try:
-    hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER", "[]"))
-except Exception:
-    log.exception("exception")
-    hij_log_filter = []
-
 # TODO: add the following in utils
 REST_PORT = 3000
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
-
-
-class HijackLogFilter(logging.Filter):
-    def filter(self, rec):
-        if not hij_log_filter:
-            return True
-        for filter_entry in hij_log_filter:
-            for filter_entry_key in filter_entry:
-                if rec.__dict__[filter_entry_key] == filter_entry[filter_entry_key]:
-                    return True
-        return False
-
-
-mail_log.addFilter(HijackLogFilter())
-hij_log.addFilter(HijackLogFilter())
 
 
 def configure_database(msg):
@@ -322,6 +297,9 @@ class Database:
             )
             self.handled_exchange = create_exchange("handled-update", connection)
             self.mitigation_exchange = create_exchange("mitigation", connection)
+            self.hijack_notification_exchange = create_exchange(
+                "hijack-notification", connection, declare=True
+            )
 
             # QUEUES
             self.update_queue = create_queue(
@@ -1296,30 +1274,21 @@ class Database:
 
                                 log.debug("withdrawn hijack {}".format(entry))
                                 if hijack:
-                                    mail_log.info(
-                                        "{}".format(
-                                            json.dumps(
-                                                hijack_log_field_formatter(hijack),
-                                                indent=4,
-                                            )
-                                        ),
-                                        extra={
-                                            "community_annotation": hijack.get(
-                                                "community_annotation", "NA"
-                                            )
-                                        },
+                                    self.producer.publish(
+                                        hijack_log_field_formatter(hijack),
+                                        exchange=self.hijack_notification_exchange,
+                                        routing_key="mail-log",
+                                        retry=False,
+                                        priority=1,
+                                        serializer="ujson",
                                     )
-                                    hij_log.info(
-                                        "{}".format(
-                                            json.dumps(
-                                                hijack_log_field_formatter(hijack)
-                                            )
-                                        ),
-                                        extra={
-                                            "community_annotation": hijack.get(
-                                                "community_annotation", "NA"
-                                            )
-                                        },
+                                    self.producer.publish(
+                                        hijack_log_field_formatter(hijack),
+                                        exchange=self.hijack_notification_exchange,
+                                        routing_key="hij-log",
+                                        retry=False,
+                                        priority=1,
+                                        serializer="ujson",
                                     )
                             else:
                                 # add withdrawal to hijack
@@ -1609,11 +1578,6 @@ def make_app():
 if __name__ == "__main__":
     # database should be initiated in any case
     setup_data_task(Database)
-
-    # get and store initial configuration from configuration
-    r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
-    conf_res = configure_database(r.json())
-    assert conf_res["success"], conf_res["message"]
 
     # database should start in any case
     start_data_task()

@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from typing import Dict
 from typing import List
 from typing import NoReturn
 
@@ -8,6 +9,8 @@ import artemis_utils.rest_util
 import ujson as json
 from artemis_utils import get_logger
 from artemis_utils import RABBITMQ_URI
+from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq_util import create_queue
 from artemis_utils.rest_util import ControlHandler
 from artemis_utils.rest_util import HealthHandler
 from artemis_utils.rest_util import setup_data_task
@@ -104,11 +107,77 @@ class Notifier:
 
             # TODO: exchanges and queues
 
+            # EXCHANGES
+            self.hijack_notification_exchange = create_exchange(
+                "hijack-notification", connection, declare=True
+            )
+
+            # QUEUES
+            self.hij_log_queue = create_queue(
+                MODULE_NAME,
+                exchange=self.hijack_notification_exchange,
+                routing_key="hij-log",
+                priority=1,
+            )
+            self.mail_log_queue = create_queue(
+                MODULE_NAME,
+                exchange=self.hijack_notification_exchange,
+                routing_key="mail-log",
+                priority=1,
+            )
+
         def get_consumers(
             self, Consumer: Consumer, channel: Connection
         ) -> List[Consumer]:
             # TODO: consumers
-            return []
+            return [
+                Consumer(
+                    queues=[self.hij_log_queue],
+                    on_message=self.handle_hij_log,
+                    prefetch_count=100,
+                    accept=["ujson"],
+                ),
+                Consumer(
+                    queues=[self.mail_log_queue],
+                    on_message=self.handle_mail_log,
+                    prefetch_count=100,
+                    accept=["ujson"],
+                ),
+            ]
+
+        @staticmethod
+        def handle_hij_log(message: Dict) -> NoReturn:
+            """
+            Callback function that generates a hijack log
+            """
+            message.ack()
+            hij_log_msg = message.payload
+            hij_log.info(
+                "{}".format(json.dumps(hij_log_msg)),
+                extra={
+                    "community_annotation": hij_log_msg.get(
+                        "community_annotation", "NA"
+                    )
+                },
+            )
+
+        @staticmethod
+        def handle_mail_log(message: Dict) -> NoReturn:
+            """
+            Callback function that generates a mail log
+            """
+            message.ack()
+            mail_log_msg = message.payload
+            mail_log.info(
+                "{}".format(json.dumps(mail_log_msg)),
+                extra={
+                    "community_annotation": mail_log_msg.get(
+                        "community_annotation", "NA"
+                    )
+                },
+            )
+
+        # TODO: encapsulate auto-ignore functionality
 
 
 def make_app():

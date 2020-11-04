@@ -2,5 +2,6 @@
 make -j
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${REDIS_HOST}:${REDIS_PORT} -t 0
+./wait-for database:3000 -t 0
 # TODO: use translated cython files instead of the scripts themselves
 /usr/local/bin/python /root/core/configuration.py

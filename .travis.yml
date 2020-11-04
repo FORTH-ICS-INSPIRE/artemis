@@ -40,6 +40,27 @@ jobs:
         - docker-compose logs postgres
       after_failure:
         - docker-compose logs postgres
+    - stage: build containers (test, no push)
+      name: riperistap
+      install: []
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) monitor-services/riperistap
+    - name: configuration
+      install: []
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/configuration
+    - name: database
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/database
+    - name: notifier
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/notifier
+    - name: prefixtree
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/prefixtree
 #    - stage: build and push containers
 #      name: backend
 #      install: []

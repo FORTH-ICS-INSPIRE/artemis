@@ -9,6 +9,7 @@ services:
             - rabbitmq
             - postgres
             - redis
+            - database
             - configuration
             - prefixtree
         expose:
@@ -105,6 +106,7 @@ services:
             - postgres
             - redis
             - graphql
+            - database
             #- fileobserver
         expose:
             - 3000
@@ -182,6 +184,8 @@ services:
         depends_on:
             - rabbitmq
             - graphql
+            - postgres
+            - database
         expose:
             - 3000
         ports:
@@ -200,6 +204,8 @@ services:
             REST_PORT: ${REST_PORT}
         volumes:
             - ./backend-services/notifier/configs/:/etc/artemis/
+            - ./backend-services/notifier/entrypoint:/root/entrypoint
+            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
     database:
         image: artemis_database
         build: ./backend-services/database
@@ -209,8 +215,6 @@ services:
             - rabbitmq
             - postgres
             - redis
-            - configuration
-            - prefixtree
             - graphql
         expose:
             - 3000
@@ -252,6 +256,7 @@ services:
             - rabbitmq
             - configuration
             - graphql
+            - database
         expose:
             - 3000
         ports:

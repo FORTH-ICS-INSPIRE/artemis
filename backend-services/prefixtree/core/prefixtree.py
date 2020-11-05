@@ -6,6 +6,7 @@ from typing import NoReturn
 
 import artemis_utils.rest_util
 import pytricia
+import requests
 import ujson as json
 from artemis_utils import flatten
 from artemis_utils import get_ip_version
@@ -42,13 +43,12 @@ CONFIGURATION_HOST = "configuration"
 
 def configure_prefixtree(msg):
     config = msg
+    try:
+        if config["timestamp"] > artemis_utils.rest_util.data_task.config_timestamp:
+            monitors = msg.get("monitors", {})
 
-    if config["timestamp"] > artemis_utils.rest_util.data_task.config_timestamp:
-        monitors = msg.get("monitors", {})
-
-        prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
-        rules = config.get("rules", [])
-        try:
+            prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
+            rules = config.get("rules", [])
             for rule in rules:
                 rule_translated_origin_asn_set = set()
                 for asn in rule["origin_asns"]:
@@ -108,9 +108,8 @@ def configure_prefixtree(msg):
             artemis_utils.rest_util.data_task.config_timestamp = config["timestamp"]
 
             return {"success": True, "message": "configured"}
-        except Exception:
-            log.exception("{}".format(config))
-            return {"success": False, "message": "error during data_task configuration"}
+    except Exception:
+        return {"success": False, "message": "error during data_task configuration"}
 
 
 class ConfigHandler(RequestHandler):
@@ -186,8 +185,8 @@ class PrefixTree:
     def __init__(self):
         self._running = False
         self.worker = None
-        self.prefix_tree = None
-        self.monitors = None
+        self.prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
+        self.monitors = {}
         self.monitored_prefixes = set()
         self.configured_prefix_count = 0
         self.config_timestamp = -1
@@ -205,10 +204,10 @@ class PrefixTree:
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
-        self._running = True
         try:
             with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
+                self._running = True
                 self.worker.run()
         except Exception:
             log.exception("exception")
@@ -388,6 +387,18 @@ def make_app():
 if __name__ == "__main__":
     # prefixtree should be initiated in any case
     setup_data_task(PrefixTree)
+
+    # try to get configuration upon start (it is OK if it fails, will get it from POST)
+    # (this is needed because service may restart while configuration is running)
+    try:
+        r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+        conf_res = configure_prefixtree(r.json())
+        if not conf_res["success"]:
+            log.info(
+                "could not get configuration upon startup, will get via POST later"
+            )
+    except Exception:
+        log.info("could not get configuration upon startup, will get via POST later")
 
     # prefixtree should start in any case
     start_data_task()

@@ -43,6 +43,7 @@ MODULE_NAME = "database"
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
+CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
 # TODO: add the following in utils
 REST_PORT = 3000
@@ -95,7 +96,6 @@ def configure_database(msg):
 
             return {"success": True, "message": "configured"}
     except Exception:
-        log.exception("{}".format(config))
         return {"success": False, "message": "error during data_task configuration"}
 
 
@@ -1550,6 +1550,18 @@ if __name__ == "__main__":
     start_data_task()
     while not artemis_utils.rest_util.data_task.is_running():
         time.sleep(1)
+
+    # try to get configuration upon start (it is OK if it fails, will get it from POST)
+    # (this is needed because service may restart while configuration is running)
+    try:
+        r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+        conf_res = configure_database(r.json())
+        if not conf_res["success"]:
+            log.info(
+                "could not get configuration upon startup, will get via POST later"
+            )
+    except Exception:
+        log.info("could not get configuration upon startup, will get via POST later")
 
     # create REST worker
     app = make_app()

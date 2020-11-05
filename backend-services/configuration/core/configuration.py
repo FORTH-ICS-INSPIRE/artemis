@@ -179,10 +179,10 @@ class Configuration:
         """
         Entry function for this service that runs a RabbitMQ worker through Kombu.
         """
-        self._running = True
         try:
             with Connection(RABBITMQ_URI) as connection:
                 self.worker = self.Worker(connection)
+                self._running = True
                 self.worker.run()
         except Exception:
             log.exception("exception")
@@ -207,6 +207,8 @@ class Configuration:
         """
         RabbitMQ Consumer/Producer for this Service.
         """
+
+        # TODO: (optional refactoring/beautification): move non-worker functions to main class
 
         def __init__(self, connection: Connection) -> NoReturn:
             self.connection = connection
@@ -272,9 +274,6 @@ class Configuration:
                     self.data, _flag, _error = self.parse(raw, yaml=True)
             except Exception:
                 log.exception("exception")
-
-            # configure all other services with the new config
-            artemis_utils.rest_util.data_task.post_configuration_to_other_services()
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)
@@ -1322,6 +1321,9 @@ if __name__ == "__main__":
     start_data_task()
     while not artemis_utils.rest_util.data_task.is_running():
         time.sleep(1)
+
+    # configure all other services with the current config
+    artemis_utils.rest_util.data_task.post_configuration_to_other_services()
 
     # create REST worker
     app = make_app()

@@ -63,7 +63,6 @@ def configure_ripe_ris():
 
         return {"success": True, "message": "configured"}
     except Exception:
-        log.exception("Exception")
         return {"success": False, "message": "error during data_task configuration"}
 
 
@@ -302,6 +301,12 @@ def make_app():
 
 
 if __name__ == "__main__":
+    # try to get configuration upon start (it is OK if it fails, will get it from POST)
+    # (this is needed because service may restart while configuration is running)
+    conf_res = configure_ripe_ris()
+    if not conf_res["success"]:
+        log.info("could not get configuration upon startup, will get via POST later")
+
     # create REST worker
     app = make_app()
     app.listen(REST_PORT)

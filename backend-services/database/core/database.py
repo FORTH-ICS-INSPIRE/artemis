@@ -550,9 +550,11 @@ class Database:
             message.ack()
             try:
                 raw = message.payload
+                lock.acquire()
                 self.outdate_hijacks.add((raw["persistent_hijack_key"],))
             except Exception:
                 log.exception("{}".format(message))
+                lock.release()
 
         def handle_hijack_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))

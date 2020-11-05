@@ -236,6 +236,7 @@ services:
             - ./backend-services/notifier/configs/:/etc/artemis/
             - ./backend-services/notifier/entrypoint:/root/entrypoint
             - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
+            - ./utils/:/root/utils/
 #    database:
 #        image: artemis_database
 #        build: ./backend-services/database
@@ -303,6 +304,7 @@ services:
             - ./backend-services/prefixtree/configs/:/etc/artemis/
             - ./backend-services/prefixtree/entrypoint:/root/entrypoint
             - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
+            - ./utils/:/root/utils/
     redis:
         image: redis:latest
         container_name: redis

@@ -483,7 +483,7 @@ class Database:
             # timestamp, hijack_key, handled, matched_prefix, orig_path
 
             if not self.redis.getset(msg_["key"], "1"):
-                best_match = message["prefix_node"]["prefix"]  # matched_prefix
+                best_match = msg_["prefix_node"]["prefix"]  # matched_prefix
                 if not best_match:
                     return
 

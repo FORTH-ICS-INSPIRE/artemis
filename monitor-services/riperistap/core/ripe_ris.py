@@ -55,7 +55,7 @@ def configure_ripe_ris():
 
         # calculate ripe ris hosts
         hosts = set(monitors["riperis"])
-        if hosts == set("."):
+        if hosts == set([""]):
             hosts = set()
 
         # setup the data task
@@ -101,7 +101,6 @@ class RipeRisTap:
     def run(self):
         self._running = True
         ping_redis(redis)
-        # TODO: import ON_TIMEOUT_LAST_BGP_UPDATE from utils
         redis.set(
             "ris_seen_bgp_update",
             "1",
@@ -118,7 +117,6 @@ class RipeRisTap:
                 ip_version = get_ip_version(prefix)
                 prefix_tree[ip_version].insert(prefix, "")
 
-            # TODO: import RIS_ID from utils
             ris_suffix = os.getenv("RIS_ID", "my_as")
 
             validator = mformat_validator()
@@ -153,7 +151,6 @@ class RipeRisTap:
                                         msg, prefix_tree
                                     )
                                     for norm_ris_msg in norm_ris_msgs:
-                                        # TODO: import ON_TIMEOUT_LAST_BGP_UPDATE from utils
                                         redis.set(
                                             "ris_seen_bgp_update",
                                             "1",

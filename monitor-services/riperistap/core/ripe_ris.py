@@ -31,9 +31,9 @@ update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
+PREFIXTREE_HOST = "prefixtree"
 # TODO: add the following in utils
 REST_PORT = 3000
-PREFIXTREE_HOST = "prefixtree"
 
 
 def configure_ripe_ris():
@@ -302,10 +302,6 @@ def make_app():
 
 
 if __name__ == "__main__":
-    # get initial monitors and prefixes from prefixtree
-    conf_res = configure_ripe_ris()
-    assert conf_res["success"], conf_res["message"]
-
     # create REST worker
     app = make_app()
     app.listen(REST_PORT)

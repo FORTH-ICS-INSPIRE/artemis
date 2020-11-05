@@ -7,10 +7,7 @@ services:
         restart: always
         depends_on:
             - rabbitmq
-            - postgres
             - redis
-            - database
-            - configuration
             - prefixtree
         expose:
             - 3000
@@ -118,12 +115,14 @@ services:
         container_name: configuration
         restart: always
         depends_on:
-            - rabbitmq
-            - postgres
-            - redis
-            - graphql
             - database
-            - fileobserver
+            - detection
+            - notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+            - riperistap
         expose:
             - 3000
         ports:
@@ -131,9 +130,6 @@ services:
         networks:
             - artemis
         environment:
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -152,13 +148,7 @@ services:
         restart: always
         depends_on:
             - rabbitmq
-            - postgres
             - redis
-            - notifier
-            - graphql
-            - database
-            - configuration
-            - prefixtree
         expose:
             - 3000
         ports:
@@ -166,9 +156,6 @@ services:
         networks:
             - artemis
         environment:
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -210,9 +197,7 @@ services:
         container_name: fileobserver
         restart: always
         depends_on:
-            - postgres
-            - graphql
-            - database
+            - configuration
         expose:
             - 3000
         ports:
@@ -220,9 +205,6 @@ services:
         networks:
             - artemis
         environment:
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             REST_PORT: ${REST_PORT}
         volumes:
             - ./backend-services/configuration/configs/:/etc/artemis/
@@ -235,9 +217,6 @@ services:
         restart: always
         depends_on:
             - rabbitmq
-            - graphql
-            - postgres
-            - database
         expose:
             - 3000
         ports:
@@ -245,9 +224,6 @@ services:
         networks:
             - artemis
         environment:
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -306,9 +282,6 @@ services:
         restart: always
         depends_on:
             - rabbitmq
-            - configuration
-            - graphql
-            - database
         expose:
             - 3000
         ports:
@@ -316,9 +289,6 @@ services:
         networks:
             - artemis
         environment:
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}

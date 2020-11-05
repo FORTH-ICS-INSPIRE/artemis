@@ -26,7 +26,6 @@ from artemis_utils import REDIS_PORT
 from artemis_utils import RPKI_VALIDATOR_ENABLED
 from artemis_utils import RPKI_VALIDATOR_HOST
 from artemis_utils import RPKI_VALIDATOR_PORT
-from artemis_utils import signal_loading
 from artemis_utils import TEST_ENV
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
@@ -147,8 +146,6 @@ class Detection:
                 priority=1,
             )
 
-            signal_loading(MODULE_NAME, True)
-
             setattr(self, "publish_hijack_fun", self.publish_hijack_result_production)
             if TEST_ENV == "true":
                 setattr(self, "publish_hijack_fun", self.publish_hijack_result_test)
@@ -182,7 +179,6 @@ class Detection:
                         time.sleep(30)
 
             log.info("started")
-            signal_loading(MODULE_NAME, False)
 
         def get_consumers(
             self, Consumer: Consumer, channel: Connection

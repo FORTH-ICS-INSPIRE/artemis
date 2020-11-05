@@ -6,14 +6,12 @@ from typing import NoReturn
 
 import artemis_utils.rest_util
 import pytricia
-import requests
 import ujson as json
 from artemis_utils import flatten
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import search_worst_prefix
-from artemis_utils import signal_loading
 from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
 from artemis_utils.rabbitmq_util import create_exchange
@@ -43,7 +41,6 @@ CONFIGURATION_HOST = "configuration"
 
 
 def configure_prefixtree(msg):
-    signal_loading(MODULE_NAME, True)
     config = msg
 
     if config["timestamp"] > artemis_utils.rest_util.data_task.config_timestamp:
@@ -110,11 +107,9 @@ def configure_prefixtree(msg):
             )
             artemis_utils.rest_util.data_task.config_timestamp = config["timestamp"]
 
-            signal_loading(MODULE_NAME, False)
             return {"success": True, "message": "configured"}
         except Exception:
             log.exception("{}".format(config))
-            signal_loading(MODULE_NAME, False)
             return {"success": False, "message": "error during data_task configuration"}
 
 
@@ -393,11 +388,6 @@ def make_app():
 if __name__ == "__main__":
     # prefixtree should be initiated in any case
     setup_data_task(PrefixTree)
-
-    # get initial configuration
-    r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
-    conf_res = configure_prefixtree(r.json())
-    assert conf_res["success"], conf_res["message"]
 
     # prefixtree should start in any case
     start_data_task()

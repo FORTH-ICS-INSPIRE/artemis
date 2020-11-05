@@ -5,7 +5,6 @@ import artemis_utils.rest_util
 import requests
 import ujson as json
 from artemis_utils import get_logger
-from artemis_utils import signal_loading
 from artemis_utils.rest_util import ControlHandler
 from artemis_utils.rest_util import HealthHandler
 from artemis_utils.rest_util import setup_data_task
@@ -74,7 +73,6 @@ class FileObserver:
     class Handler(FileSystemEventHandler):
         def __init__(self, d, fn):
             super().__init__()
-            signal_loading(MODULE_NAME, True)
             self.response = None
             self.path = "{}/{}".format(d, fn)
             try:
@@ -82,8 +80,6 @@ class FileObserver:
                     self.content = f.readlines()
             except Exception:
                 log.exception("exception")
-            finally:
-                signal_loading(MODULE_NAME, False)
 
         def on_modified(self, event):
             if event.is_directory:

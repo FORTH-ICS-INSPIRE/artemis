@@ -28,7 +28,6 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
-from artemis_utils import signal_loading
 from artemis_utils import translate_as_set
 from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
@@ -51,9 +50,9 @@ from yaml import load as yload
 log = get_logger()
 lock = Lock()
 MODULE_NAME = "configuration"
+OTHER_SERVICES = ["prefixtree", "database", "detection", "notifier", "riperistap"]
 # TODO: add the following in utils
 REST_PORT = 3000
-DATABASE_HOST = "database"
 
 
 class ConfigHandler(RequestHandler):
@@ -80,7 +79,6 @@ class ConfigHandler(RequestHandler):
         # TODO: check if we need locks in other parts of the code for this service
         lock.acquire()
         try:
-            signal_loading(MODULE_NAME, True)
             msg = json.loads(self.request.body)
             type_ = msg["type"]
             raw_ = msg["content"]
@@ -128,11 +126,8 @@ class ConfigHandler(RequestHandler):
                             "comment"
                         ] = comment
 
-                    # TODO: configure all other services with the new config
-                    requests.post(
-                        url="http://{}:{}/config".format(DATABASE_HOST, REST_PORT),
-                        data=json.dumps(artemis_utils.rest_util.data_task.worker.data),
-                    )
+                    # configure all other services with the new config
+                    artemis_utils.rest_util.data_task.post_configuration_to_other_services()
 
                     # Remove the comment to avoid marking config as different
                     if "comment" in artemis_utils.rest_util.data_task.worker.data:
@@ -159,7 +154,6 @@ class ConfigHandler(RequestHandler):
             log.exception("exception")
             self.write({"success": False, "message": "unknown error"})
         finally:
-            signal_loading(MODULE_NAME, False)
             lock.release()
 
 
@@ -195,6 +189,19 @@ class Configuration:
         finally:
             log.info("stopped")
             self._running = False
+
+    def post_configuration_to_other_services(self):
+        for service in OTHER_SERVICES:
+            try:
+                r = requests.post(
+                    url="http://{}:{}/config".format(service, REST_PORT),
+                    data=json.dumps(self.worker.data),
+                )
+                response = r.json()
+                assert response["success"]
+            except Exception:
+                log.exception("exception")
+                log.error("could not configure service '{}'".format(service))
 
     class Worker(ConsumerProducerMixin):
         """
@@ -259,20 +266,15 @@ class Configuration:
             self.required_bgpstreamkafka = {"host", "port", "topic"}
 
             # reads and parses initial configuration file
-            signal_loading(MODULE_NAME, True)
             try:
                 with open(self.file, "r") as f:
                     raw = f.read()
                     self.data, _flag, _error = self.parse(raw, yaml=True)
             except Exception:
                 log.exception("exception")
-            finally:
-                signal_loading(MODULE_NAME, False)
-            # TODO: configure all other services with the new config
-            requests.post(
-                url="http://{}:{}/config".format(DATABASE_HOST, REST_PORT),
-                data=json.dumps(self.data),
-            )
+
+            # configure all other services with the new config
+            artemis_utils.rest_util.data_task.post_configuration_to_other_services()
 
             self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
             ping_redis(self.redis)

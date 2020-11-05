@@ -5,6 +5,7 @@ from threading import Timer
 
 import artemis_utils.rest_util
 import redis
+import requests
 import ujson as json
 from artemis_utils import AUTO_RECOVER_PROCESS_STATE
 from artemis_utils import BULK_TIMER
@@ -22,7 +23,6 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
-from artemis_utils import signal_loading
 from artemis_utils import WITHDRAWN_HIJACK_THRESHOLD
 from artemis_utils.db_util import DB
 from artemis_utils.rabbitmq_util import create_exchange
@@ -38,22 +38,17 @@ from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
 
-# import requests
-
 lock = Lock()
 MODULE_NAME = "database"
 log = get_logger()
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
-
+PREFIXTREE_HOST = "prefixtree"
 # TODO: add the following in utils
 REST_PORT = 3000
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
 
 
 def configure_database(msg):
-    signal_loading(MODULE_NAME, True)
     config = msg
     try:
         if config["timestamp"] > artemis_utils.rest_util.data_task.config_timestamp:
@@ -84,27 +79,24 @@ def configure_database(msg):
                 log.debug("database config is up-to-date")
 
             # now that the conf is changed, get and store additional stats from prefixtree
-            # TODO: reactivate this when certain that the pefixtree service is up
-            # r = requests.get(
-            #     "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
-            # )
-            # artemis_utils.rest_util.data_task.monitored_prefixes = set(
-            #     r.json()["monitored_prefixes"]
-            # )
-            # r = requests.get(
-            #     "http://{}:{}/configuredPrefixCount".format(PREFIXTREE_HOST, REST_PORT)
-            # )
-            # artemis_utils.rest_util.data_task.configured_prefix_count = r.json()[
-            #     "configured_prefix_count"
-            # ]
-            # artemis_utils.rest_util.data_task.store_stats()
+            r = requests.get(
+                "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
+            )
+            artemis_utils.rest_util.data_task.monitored_prefixes = set(
+                r.json()["monitored_prefixes"]
+            )
+            r = requests.get(
+                "http://{}:{}/configuredPrefixCount".format(PREFIXTREE_HOST, REST_PORT)
+            )
+            artemis_utils.rest_util.data_task.configured_prefix_count = r.json()[
+                "configured_prefix_count"
+            ]
+            artemis_utils.rest_util.data_task.store_stats()
 
             return {"success": True, "message": "configured"}
     except Exception:
         log.exception("{}".format(config))
         return {"success": False, "message": "error during data_task configuration"}
-    finally:
-        signal_loading(MODULE_NAME, False)
 
 
 class ConfigHandler(RequestHandler):
@@ -236,31 +228,6 @@ class Database:
             self.outdate_hijacks = set()
             self.insert_hijacks_entries = {}
             self.bulk_timer_thread = None
-
-            try:
-                artemis_utils.rest_util.data_task.wo_db.execute(
-                    "TRUNCATE table process_states"
-                )
-
-                # TODO: implement this with no supervisor!
-                # query = (
-                #     "INSERT INTO process_states (name, running) "
-                #     "VALUES (%s, %s) ON CONFLICT(name) DO UPDATE SET running = excluded.running"
-                # )
-
-                # for ctx in {BACKEND_SUPERVISOR_URI, MON_SUPERVISOR_URI}:
-                #     if not ctx:
-                #         continue
-                #     server = ServerProxy(ctx)
-                #     processes = [
-                #         (x["name"], x["state"] == 20)
-                #         for x in server.supervisor.getAllProcessInfo()
-                #         if x["name"] != "listener"
-                #     ]
-                #     artemis_utils.rest_util.data_task.wo_db.execute_batch(query, processes)
-
-            except Exception:
-                log.exception("exception")
 
             try:
                 pass

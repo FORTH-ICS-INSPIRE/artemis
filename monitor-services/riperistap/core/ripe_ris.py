@@ -111,7 +111,7 @@ class RipeRisTap:
             ),
         )
         with Connection(RABBITMQ_URI) as connection:
-            update_exchange = create_exchange("bgp-update", connection, declare=True)
+            update_exchange = create_exchange("bgp-update", connection)
             prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
             for prefix in self.prefixes:
                 ip_version = get_ip_version(prefix)

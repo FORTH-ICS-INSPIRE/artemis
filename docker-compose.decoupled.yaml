@@ -147,6 +147,8 @@ services:
         container_name: detection
         restart: always
         depends_on:
+            - notifier
+            - prefixtree
             - rabbitmq
             - redis
         expose:
@@ -240,6 +242,8 @@ services:
         container_name: database
         restart: always
         depends_on:
+            - notifier
+            - prefixtree
             - rabbitmq
             - postgres
             - redis

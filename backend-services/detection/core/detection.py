@@ -118,8 +118,12 @@ class Detection:
             self.connection = connection
 
             # EXCHANGES
-            self.update_exchange = create_exchange("bgp-update", connection)
-            self.hijack_exchange = create_exchange("hijack-update", connection)
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
+            )
+            self.hijack_exchange = create_exchange(
+                "hijack-update", connection, declare=True
+            )
             self.hijack_hashing = create_exchange(
                 "hijack-hashing", connection, "x-consistent-hash", declare=True
             )

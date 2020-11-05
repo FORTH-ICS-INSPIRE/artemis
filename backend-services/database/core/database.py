@@ -258,8 +258,12 @@ class Database:
             self.bootstrap_redis()
 
             # EXCHANGES
-            self.update_exchange = create_exchange("bgp-update", connection)
-            self.hijack_exchange = create_exchange("hijack-update", connection)
+            self.update_exchange = create_exchange(
+                "bgp-update", connection, declare=True
+            )
+            self.hijack_exchange = create_exchange(
+                "hijack-update", connection, declare=True
+            )
             self.hijack_hashing = create_exchange(
                 "hijack-hashing", connection, "x-consistent-hash", declare=True
             )
@@ -479,11 +483,11 @@ class Database:
             # timestamp, hijack_key, handled, matched_prefix, orig_path
 
             if not self.redis.getset(msg_["key"], "1"):
-                best_match = msg_["prefix_node"]["prefix"]  # matched_prefix
-                if not best_match:
-                    return
-
                 try:
+                    best_match = msg_["prefix_node"]["prefix"]  # matched_prefix
+                    if not best_match:
+                        return
+
                     origin_as = -1
                     if len(msg_["path"]) >= 1:
                         origin_as = msg_["path"][-1]
@@ -523,8 +527,9 @@ class Database:
                         )
                 except Exception:
                     log.exception("{}".format(msg_))
-            # reset timer each time we hit the same BGP update
-            self.redis.expire(msg_["key"], 2 * 60 * 60)
+                finally:
+                    # reset timer each time we hit the same BGP update
+                    self.redis.expire(msg_["key"], 2 * 60 * 60)
 
         def handle_withdraw_update(self, message):
             # log.debug('message: {}\npayload: {}'.format(message, message.payload))

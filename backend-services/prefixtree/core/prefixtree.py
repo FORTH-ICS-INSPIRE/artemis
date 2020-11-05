@@ -29,16 +29,23 @@ from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
 
+# logger
 log = get_logger()
-lock = Lock()
+
+# tornado/service object locks
+prefix_tree_lock = Lock()
+monitors_lock = Lock()
+stats_lock = Lock()
+
 # additional serializer for pg-amqp messages
 serialization.register(
     "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
 )
+
+# TODO: get the following from env
 MODULE_NAME = "prefixtree"
-# TODO: add the following in utils
-REST_PORT = 3000
 CONFIGURATION_HOST = "configuration"
+REST_PORT = 3000
 
 
 def configure_prefixtree(msg):
@@ -94,17 +101,20 @@ def configure_prefixtree(msg):
                     if monitored_prefix:
                         monitored_prefixes.add(monitored_prefix)
 
-            # thread-safe setting of prefix tree
-            lock.acquire()
+            prefix_tree_lock.acquire()
             artemis_utils.rest_util.data_task.prefix_tree = prefix_tree
-            lock.release()
+            prefix_tree_lock.release()
 
-            # rest of the related primitives
+            monitors_lock.acquire()
             artemis_utils.rest_util.data_task.monitors = monitors
+            monitors_lock.release()
+
+            stats_lock.acquire()
             artemis_utils.rest_util.data_task.monitored_prefixes = monitored_prefixes
             artemis_utils.rest_util.data_task.configured_prefix_count = (
                 configured_prefix_count
             )
+            stats_lock.release()
             artemis_utils.rest_util.data_task.config_timestamp = config["timestamp"]
 
             return {"success": True, "message": "configured"}
@@ -140,7 +150,9 @@ class MonitorHandler(RequestHandler):
         """
         Simply provides the configured monitors (in the form of a JSON dict) to the requester
         """
+        monitors_lock.acquire()
         self.write({"monitors": artemis_utils.rest_util.data_task.monitors})
+        monitors_lock.release()
 
 
 class ConfiguredPrefixCountHandler(RequestHandler):
@@ -152,11 +164,13 @@ class ConfiguredPrefixCountHandler(RequestHandler):
         """
         Simply provides the configured prefix count (in the form of a JSON dict) to the requester
         """
+        stats_lock.acquire()
         self.write(
             {
                 "configured_prefix_count": artemis_utils.rest_util.data_task.configured_prefix_count
             }
         )
+        stats_lock.release()
 
 
 class MonitoredPrefixesHandler(RequestHandler):
@@ -168,6 +182,7 @@ class MonitoredPrefixesHandler(RequestHandler):
         """
         Simply provides the monitored prefixes (in the form of a JSON dict) to the requester
         """
+        stats_lock.acquire()
         self.write(
             {
                 "monitored_prefixes": list(
@@ -175,6 +190,7 @@ class MonitoredPrefixesHandler(RequestHandler):
                 )
             }
         )
+        stats_lock.release()
 
 
 class PrefixTree:
@@ -218,11 +234,11 @@ class PrefixTree:
     def find_prefix_node(self, prefix):
         ip_version = get_ip_version(prefix)
         prefix_node = None
-        # thread-safe access to prefix tree
-        lock.acquire()
+        # thread-safe access to prefix tree (can be changed by tornado config request handler)
+        prefix_tree_lock.acquire()
         if prefix in self.prefix_tree[ip_version]:
             prefix_node = self.prefix_tree[ip_version][prefix]
-        lock.release()
+        prefix_tree_lock.release()
         return prefix_node
 
     class Worker(ConsumerProducerMixin):

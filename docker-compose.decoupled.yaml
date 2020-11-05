@@ -6,9 +6,9 @@ services:
         container_name: riperistap
         restart: always
         depends_on:
+            - prefixtree
             - rabbitmq
             - redis
-            - prefixtree
         expose:
             - 3000
         ports:
@@ -242,12 +242,12 @@ services:
         container_name: database
         restart: always
         depends_on:
+            - graphql
             - notifier
+            - postgres
             - prefixtree
             - rabbitmq
-            - postgres
             - redis
-            - graphql
         expose:
             - 3000
         ports:
@@ -285,6 +285,7 @@ services:
         container_name: prefixtree
         restart: always
         depends_on:
+            - pg-amqp-bridge
             - rabbitmq
         expose:
             - 3000
@@ -318,11 +319,11 @@ services:
         container_name: frontend
         restart: always
         depends_on:
-            - rabbitmq
-            - postgres
-            - postgrest
             - database
             - graphql
+            - postgres
+            - postgrest
+            - rabbitmq
         networks:
             - artemis
         expose:
@@ -432,7 +433,6 @@ services:
         container_name: pg-amqp-bridge
         restart: always
         depends_on:
-            - database
             - postgres
             - rabbitmq
         networks:

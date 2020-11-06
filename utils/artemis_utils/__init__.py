@@ -749,6 +749,8 @@ class mformat_validator:
             self.msg["timestamp"]
         ) < datetime.utcnow() - timedelta(hours=1, minutes=30):
             return False
+        if datetime.utcfromtimestamp(self.msg["timestamp"]) > datetime.utcnow():
+            return False
         return True
 
     def valid_peer_asn(self):

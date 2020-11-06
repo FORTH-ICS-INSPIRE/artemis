@@ -212,31 +212,31 @@ services:
 #            - ./backend-services/configuration/configs/:/etc/artemis/
 #            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
 #            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
-    notifier:
-        image: artemis_notifier
-        build: ./backend-services/notifier
-        container_name: notifier
-        restart: always
-        depends_on:
-            - rabbitmq
-        expose:
-            - 3000
-        ports:
-            - "3010:3000"
-        networks:
-            - artemis
-        environment:
-            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REST_PORT: ${REST_PORT}
-        volumes:
-            - ./backend-services/notifier/configs/:/etc/artemis/
-            - ./backend-services/notifier/entrypoint:/root/entrypoint
-            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
-            - ./utils/:/root/utils/
+#    notifier:
+#        image: artemis_notifier
+#        build: ./backend-services/notifier
+#        container_name: notifier
+#        restart: always
+#        depends_on:
+#            - rabbitmq
+#        expose:
+#            - 3000
+#        ports:
+#            - "3010:3000"
+#        networks:
+#            - artemis
+#        environment:
+#            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+#            RABBITMQ_USER: ${RABBITMQ_USER}
+#            RABBITMQ_PASS: ${RABBITMQ_PASS}
+#            RABBITMQ_HOST: ${RABBITMQ_HOST}
+#            RABBITMQ_PORT: ${RABBITMQ_PORT}
+#            REST_PORT: ${REST_PORT}
+#        volumes:
+#            - ./backend-services/notifier/configs/:/etc/artemis/
+#            - ./backend-services/notifier/entrypoint:/root/entrypoint
+#            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
+#            - ./utils/:/root/utils/
 #    database:
 #        image: artemis_database
 #        build: ./backend-services/database

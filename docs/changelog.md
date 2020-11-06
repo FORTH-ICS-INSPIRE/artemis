@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TBD (Changed existing functionality)
 
 ### Fixed
-- TBD (bug-fix)
+- Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)
 
 ### Removed
 - TBD (removed a feature)

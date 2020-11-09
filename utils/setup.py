@@ -8,7 +8,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setuptools.setup(
     name="artemis_utils",
-    version="1.0.4",
+    version="1.0.5",
     author="Dimitrios Mavrommatis, Vassileios Kotronis",
     author_email="jim.mavrommatis@gmail.com, biece89@gmail.com",
     description="ARTEMIS utility modules",

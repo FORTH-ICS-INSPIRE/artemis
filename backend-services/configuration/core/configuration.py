@@ -1186,9 +1186,7 @@ class Configuration:
         # initialize shared memory
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
-        self.shared_memory_manager_dict[
-            "data_worker_running"
-        ] = "/etc/artemis/config.yaml"
+        self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["config_file"] = "/etc/artemis/config.yaml"
         self.shared_memory_manager_dict[
             "tmp_config_file"
@@ -1250,14 +1248,18 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
 
         # EXCHANGES
         self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
+        self.command_exchange = create_exchange("command", connection, declare=True)
 
         # QUEUES
         self.autoconf_update_queue = create_queue(
             MODULE_NAME,
             exchange=self.autoconf_exchange,
-            routing_key="autoconf-update",
+            routing_key="update",
             priority=4,
             random=True,
+        )
+        self.stop_queue = create_queue(
+            MODULE_NAME, exchange=self.command_exchange, routing_key="stop", priority=1
         )
 
         log.info("data worker initiated")
@@ -1269,7 +1271,13 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                 on_message=self.handle_autoconf_updates,
                 prefetch_count=1,
                 accept=["ujson"],
-            )
+            ),
+            Consumer(
+                queues=[self.stop_queue],
+                on_message=self.stop_consumer_loop,
+                prefetch_count=100,
+                accept=["ujson"],
+            ),
         ]
 
     def handle_autoconf_updates(self, message):
@@ -1377,6 +1385,13 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                     redis_pipeline.execute()
         except Exception:
             log.exception("exception")
+
+    def stop_consumer_loop(self, message: Dict) -> NoReturn:
+        """
+        Callback function that stop the current consumer loop
+        """
+        message.ack()
+        self.should_stop = True
 
 
 if __name__ == "__main__":

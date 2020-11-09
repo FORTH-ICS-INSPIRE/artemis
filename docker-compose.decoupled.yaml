@@ -109,38 +109,38 @@ services:
 #        # TODO: env variables, ports
 #        volumes:
 #            - ./monitor-services/exabgptap/configs/:/etc/artemis/
-#    configuration:
-#        image: artemis_configuration
-#        build: ./backend-services/configuration
-#        container_name: configuration
-#        restart: always
-#        depends_on:
-#            - database
-#            - detection
-#            - notifier
-#            - postgres
-#            - prefixtree
-#            - rabbitmq
-#            - redis
-#            - riperistap
-#        expose:
-#            - 3000
-#        ports:
-#            - "3006:3000"
-#        networks:
-#            - artemis
-#        environment:
-#            RABBITMQ_USER: ${RABBITMQ_USER}
-#            RABBITMQ_PASS: ${RABBITMQ_PASS}
-#            RABBITMQ_HOST: ${RABBITMQ_HOST}
-#            RABBITMQ_PORT: ${RABBITMQ_PORT}
-#            REDIS_HOST: ${REDIS_HOST}
-#            REDIS_PORT: ${REDIS_PORT}
-#            REST_PORT: ${REST_PORT}
-#        volumes:
-#            - ./backend-services/configuration/configs/:/etc/artemis/
-#            - ./backend-services/configuration/entrypoint:/root/entrypoint
-#            - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
+    configuration:
+        image: artemis_configuration
+        build: ./backend-services/configuration
+        container_name: configuration
+        restart: always
+        depends_on:
+            #- database
+            #- detection
+            #- notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+            #- riperistap
+        expose:
+            - 3000
+        ports:
+            - "3006:3000"
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: ${REST_PORT}
+        volumes:
+            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/configuration/entrypoint:/root/entrypoint
+            - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
 #    detection:
 #        image: artemis_detection
 #        build: ./backend-services/detection

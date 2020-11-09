@@ -18,6 +18,6 @@ COPY entrypoint hasura_init.json Makefile wait-for ./
 COPY migrate ./migrate
 COPY core ./core
 
-RUN make clean && make -j
+#RUN make clean && make -j
 
 ENTRYPOINT ["./entrypoint"]

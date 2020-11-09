@@ -73,6 +73,7 @@ class ConfigHandler(RequestHandler):
         Configures notifier and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
+        # TODO: request ongoing hijacks again
         self.write({"success": True, "message": "configured"})
 
 

@@ -237,49 +237,49 @@ services:
 #            - ./backend-services/notifier/entrypoint:/root/entrypoint
 #            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
 #            - ./utils/:/root/utils/
-#    database:
-#        image: artemis_database
-#        build: ./backend-services/database
-#        container_name: database
-#        restart: always
-#        depends_on:
-#            - graphql
-#            - notifier
-#            - postgres
-#            - prefixtree
-#            - rabbitmq
-#            - redis
-#        expose:
-#            - 3000
-#        ports:
-#            - "3011:3000"
-#        networks:
-#          - artemis
-#        environment:
-#            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
-#            DB_USER: ${DB_USER}
-#            DB_PASS: ${DB_PASS}
-#            DB_HOST: ${DB_HOST}
-#            DB_PORT: ${DB_PORT}
-#            DB_NAME: ${DB_NAME}
-#            DB_VERSION: ${DB_VERSION}
-#            HASURA_HOST: ${HASURA_HOST}
-#            HASURA_PORT: ${HASURA_PORT}
-#            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-#            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-#            RABBITMQ_USER: ${RABBITMQ_USER}
-#            RABBITMQ_PASS: ${RABBITMQ_PASS}
-#            RABBITMQ_HOST: ${RABBITMQ_HOST}
-#            RABBITMQ_PORT: ${RABBITMQ_PORT}
-#            REDIS_HOST: ${REDIS_HOST}
-#            REDIS_PORT: ${REDIS_PORT}
-#            REST_PORT: ${REST_PORT}
-#            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
-#            HISTORIC: ${HISTORIC}
-#        volumes:
-#            - ./backend-services/database/configs/:/etc/artemis/
-#            - ./backend-services/database/entrypoint:/root/entrypoint
-#            - ./backend-services/database/core/database.py:/root/core/database.py
+    database:
+        image: artemis_database
+        build: ./backend-services/database
+        container_name: database
+        restart: always
+        depends_on:
+            - graphql
+            #- notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        ports:
+            - "3011:3000"
+        networks:
+          - artemis
+        environment:
+            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            DB_VERSION: ${DB_VERSION}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: ${REST_PORT}
+            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
+            HISTORIC: ${HISTORIC}
+        volumes:
+            - ./backend-services/database/configs/:/etc/artemis/
+            - ./backend-services/database/entrypoint:/root/entrypoint
+            - ./backend-services/database/core/database.py:/root/core/database.py
     prefixtree:
         image: artemis_prefixtree
         build: ./backend-services/prefixtree

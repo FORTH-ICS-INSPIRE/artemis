@@ -130,13 +130,14 @@ services:
         networks:
             - artemis
         environment:
+            MODULE_NAME: configuration
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
-            REST_PORT: ${REST_PORT}
+            REST_PORT: 3000
         volumes:
             - ./backend-services/configuration/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
@@ -193,25 +194,27 @@ services:
 #        # TODO: env variables, ports
 #        volumes:
 #            - ./backend-services/mitigation/configs/:/etc/artemis/
-#    fileobserver:
-#        image: artemis_fileobserver
-#        build: ./backend-services/fileobserver
-#        container_name: fileobserver
-#        restart: always
-#        depends_on:
-#            - configuration
-#        expose:
-#            - 3000
-#        ports:
-#            - "3009:3000"
-#        networks:
-#            - artemis
-#        environment:
-#            REST_PORT: ${REST_PORT}
-#        volumes:
-#            - ./backend-services/configuration/configs/:/etc/artemis/
-#            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
-#            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
+    fileobserver:
+        image: artemis_fileobserver
+        build: ./backend-services/fileobserver
+        container_name: fileobserver
+        restart: always
+        depends_on:
+            - configuration
+        expose:
+            - 3000
+        ports:
+            - "3009:3000"
+        networks:
+            - artemis
+        environment:
+            CONFIGURATION_HOST: configuration
+            MODULE_NAME: fileobserver
+            REST_PORT: 3000
+        volumes:
+            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
+            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
 #    notifier:
 #        image: artemis_notifier
 #        build: ./backend-services/notifier
@@ -256,7 +259,7 @@ services:
         networks:
           - artemis
         environment:
-            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
+            CONFIGURATION_HOST: configuration
             DB_USER: ${DB_USER}
             DB_PASS: ${DB_PASS}
             DB_HOST: ${DB_HOST}
@@ -267,13 +270,15 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            MODULE_NAME: database
+            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
-            REST_PORT: ${REST_PORT}
+            REST_PORT: 3000
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
             HISTORIC: ${HISTORIC}
         volumes:
@@ -295,11 +300,13 @@ services:
         networks:
             - artemis
         environment:
+            CONFIGURATION_HOST: configuration
+            MODULE_NAME: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REST_PORT: ${REST_PORT}
+            REST_PORT: 3000
         volumes:
             - ./backend-services/prefixtree/configs/:/etc/artemis/
             - ./backend-services/prefixtree/entrypoint:/root/entrypoint

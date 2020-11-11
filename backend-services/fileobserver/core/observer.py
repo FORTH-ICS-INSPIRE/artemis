@@ -1,25 +1,27 @@
 import difflib
+import multiprocessing as mp
+import os
 import time
 
-import artemis_utils.rest_util
 import requests
 import ujson as json
 from artemis_utils import get_logger
-from artemis_utils.rest_util import ControlHandler
-from artemis_utils.rest_util import HealthHandler
-from artemis_utils.rest_util import setup_data_task
-from artemis_utils.rest_util import start_data_task
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer as WatchObserver
 
+# logger
 log = get_logger()
-MODULE_NAME = "fileobserver"
-# TODO: add the following in utils
-CONFIGURATION_HOST = "configuration"
-REST_PORT = 3000
+
+# shared memory object locks
+shared_memory_locks = {"data_worker": mp.Lock()}
+
+# global vars
+MODULE_NAME = os.getenv("MODULE_NAME", "fileobserver")
+CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
+REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 class ConfigHandler(RequestHandler):
@@ -29,96 +31,211 @@ class ConfigHandler(RequestHandler):
 
     def post(self):
         """
-        Configures fileobserver and responds with a success message.
+        Pesudo-configures fileobserver and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         self.write({"success": True, "message": "configured"})
 
 
-class FileObserver:
+class HealthHandler(RequestHandler):
     """
-    FileObserver Service.
+    REST request handler for health checks.
     """
 
-    def __init__(self):
-        self._running = False
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
 
-    def is_running(self):
-        return self._running
+    def get(self):
+        """
+        Extract the status of a service via a GET request.
+        :return: {"status" : <unconfigured|running|stopped>}
+        """
+        status = "stopped"
+        shared_memory_locks["data_worker"].acquire()
+        if self.shared_memory_manager_dict["data_worker_running"]:
+            status = "running"
+        shared_memory_locks["data_worker"].release()
+        self.write({"status": status})
 
-    def stop(self):
-        self._running = False
 
-    def run(self):
-        self._running = True
+class ControlHandler(RequestHandler):
+    """
+    REST request handler for control commands.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def start_data_worker(self):
+        shared_memory_locks["data_worker"].acquire()
+        if self.shared_memory_manager_dict["data_worker_running"]:
+            log.info("data worker already running")
+            shared_memory_locks["data_worker"].release()
+            return "already running"
+        shared_memory_locks["data_worker"].release()
+        mp.Process(target=self.run_data_worker_process).start()
+        return "instructed to start"
+
+    def run_data_worker_process(self):
+        shared_memory_locks["data_worker"].acquire()
         observer = WatchObserver()
-        dirname = "/etc/artemis"
-        filename = "config.yaml"
-
         try:
-            event_handler = self.Handler(dirname, filename)
-            observer.schedule(event_handler, dirname, recursive=False)
+            event_handler = Handler(
+                self.shared_memory_manager_dict["dirname"],
+                self.shared_memory_manager_dict["filename"],
+            )
+            observer.schedule(
+                event_handler,
+                self.shared_memory_manager_dict["dirname"],
+                recursive=False,
+            )
             observer.start()
-            log.info("started")
-            while self._running:
+            self.shared_memory_manager_dict["data_worker_running"] = True
+            shared_memory_locks["data_worker"].release()
+            log.info("data worker started")
+            while True:
                 time.sleep(5)
+                shared_memory_locks["data_worker"].acquire()
+                if not self.shared_memory_manager_dict["data_worker_running"]:
+                    shared_memory_locks["data_worker"].release()
+                    break
+                shared_memory_locks["data_worker"].release()
         except Exception:
             log.exception("exception")
+            shared_memory_locks["data_worker"].release()
         finally:
             observer.stop()
             observer.join()
-            log.info("stopped")
-            self._running = False
+            shared_memory_locks["data_worker"].acquire()
+            self.shared_memory_manager_dict["data_worker_running"] = False
+            shared_memory_locks["data_worker"].release()
+            log.info("data worker stopped")
 
-    class Handler(FileSystemEventHandler):
-        def __init__(self, d, fn):
-            super().__init__()
-            self.response = None
-            self.path = "{}/{}".format(d, fn)
+    def stop_data_worker(self):
+        shared_memory_locks["data_worker"].acquire()
+        self.shared_memory_manager_dict["data_worker_running"] = False
+        shared_memory_locks["data_worker"].release()
+        message = "instructed to stop"
+        return message
+
+    def post(self):
+        """
+        Instruct a service to start or stop by posting a command.
+        Sample request body
+        {
+            "command": <start|stop>
+        }
+        :return: {"success": True|False, "message": <message>}
+        """
+        try:
+            msg = json.loads(self.request.body)
+            command = msg["command"]
+            # start/stop data_worker
+            if command == "start":
+                message = self.start_data_worker()
+                self.write({"success": True, "message": message})
+            elif command == "stop":
+                message = self.stop_data_worker()
+                self.write({"success": True, "message": message})
+            else:
+                self.write({"success": False, "message": "unknown command"})
+        except Exception:
+            log.exception("Exception")
+            self.write({"success": False, "message": "error during control"})
+
+
+class FileObserver:
+    """
+    FileObserver REST Service.
+    """
+
+    def __init__(self):
+        # initialize shared memory
+        shared_memory_manager = mp.Manager()
+        self.shared_memory_manager_dict = shared_memory_manager.dict()
+        self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["dirname"] = "/etc/artemis"
+        self.shared_memory_manager_dict["filename"] = "config.yaml"
+
+        log.info("service initiated")
+
+    def make_rest_app(self):
+        return Application(
+            [
+                (
+                    "/config",
+                    ConfigHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/control",
+                    ControlHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/health",
+                    HealthHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+            ]
+        )
+
+    def start_rest_app(self):
+        app = self.make_rest_app()
+        app.listen(REST_PORT)
+        log.info("REST worker started and listening to port {}".format(REST_PORT))
+        IOLoop.current().start()
+
+
+class Handler(FileSystemEventHandler):
+    def __init__(self, d, fn):
+        super().__init__()
+        self.response = None
+        self.path = "{}/{}".format(d, fn)
+        try:
+            with open(self.path, "r") as f:
+                self.content = f.readlines()
+        except Exception:
+            log.exception("exception")
+
+    def on_modified(self, event):
+        if event.is_directory:
+            return None
+
+        if event.src_path == self.path:
+            self.check_changes()
+
+    def on_moved(self, event):
+        if event.is_directory:
+            return None
+
+        if event.dest_path == self.path:
+            self.check_changes()
+
+    def check_changes(self):
+        with open(self.path, "r") as f:
+            content = f.readlines()
+        changes = "".join(difflib.unified_diff(self.content, content))
+        if changes:
             try:
-                with open(self.path, "r") as f:
-                    self.content = f.readlines()
+                r = requests.post(
+                    url="http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT),
+                    data=json.dumps({"type": "yaml", "content": content}),
+                )
+                response = r.json()
+
+                if response["success"]:
+                    text = "new configuration accepted:\n{}".format(changes)
+                    log.info(text)
+                    self.content = content
+                else:
+                    log.error(
+                        "invalid configuration due to error '{}':\n{}".format(
+                            response["message"], content
+                        )
+                    )
             except Exception:
                 log.exception("exception")
-
-        def on_modified(self, event):
-            if event.is_directory:
-                return None
-
-            if event.src_path == self.path:
-                self.check_changes()
-
-        def on_moved(self, event):
-            if event.is_directory:
-                return None
-
-            if event.dest_path == self.path:
-                self.check_changes()
-
-        def check_changes(self):
-            with open(self.path, "r") as f:
-                content = f.readlines()
-            changes = "".join(difflib.unified_diff(self.content, content))
-            if changes:
-                try:
-                    r = requests.post(
-                        url="http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT),
-                        data=json.dumps({"type": "yaml", "content": content}),
-                    )
-                    response = r.json()
-
-                    if response["success"]:
-                        text = "new configuration accepted:\n{}".format(changes)
-                        log.info(text)
-                        self.content = content
-                    else:
-                        log.error(
-                            "invalid configuration due to error '{}':\n{}".format(
-                                response["message"], content
-                            )
-                        )
-                except Exception:
-                    log.exception("exception")
 
 
 def make_app():
@@ -132,16 +249,8 @@ def make_app():
 
 
 if __name__ == "__main__":
-    # fileobserver should be initiated in any case
-    setup_data_task(FileObserver)
+    # initiate file observer service with REST
+    fileObserverService = FileObserver()
 
-    # fileobserver should start in any case
-    start_data_task()
-    while not artemis_utils.rest_util.data_task.is_running():
-        time.sleep(1)
-
-    # create REST worker
-    app = make_app()
-    app.listen(REST_PORT)
-    log.info("Listening to port {}".format(REST_PORT))
-    IOLoop.current().start()
+    # start REST within main process
+    fileObserverService.start_rest_app()

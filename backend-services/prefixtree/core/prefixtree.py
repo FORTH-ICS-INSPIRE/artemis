@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import os
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -44,10 +45,9 @@ shared_memory_locks = {
 
 # global vars
 # TODO: get the following from env
-MODULE_NAME = "prefixtree"
-CONFIGURATION_HOST = "configuration"
-LOCALHOST = "127.0.0.1"
-REST_PORT = 3000
+MODULE_NAME = os.getenv("MODULE_NAME", "prefixtree")
+CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
+REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 # TODO: move this to artemis-utils

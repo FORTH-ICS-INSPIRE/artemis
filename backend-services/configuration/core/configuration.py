@@ -49,10 +49,10 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 
 # global vars
-# TODO: get the following from env
-MODULE_NAME = "configuration"
+MODULE_NAME = os.getenv("MODULE_NAME", "configuration")
+# TODO get this from container env
 OTHER_SERVICES = ["prefixtree"]  # , "database", "detection", "notifier", "riperistap"]
-REST_PORT = 3000
+REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 def parse(raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False):
@@ -958,9 +958,8 @@ def configure_configuration(msg, shared_memory_manager_dict):
     shared_memory_locks["config_data"].acquire()
     ret_json = {}
     try:
-        _msg = json.loads(msg)
-        type_ = _msg["type"]
-        raw_ = _msg["content"]
+        type_ = msg["type"]
+        raw_ = msg["content"]
 
         # if received config from Frontend with comment
         comment = None

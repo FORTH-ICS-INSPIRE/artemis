@@ -1,5 +1,6 @@
 import datetime
 import multiprocessing as mp
+import os
 import threading
 import time
 from typing import Dict
@@ -48,11 +49,10 @@ shared_memory_locks = {
 # global vars
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
-# TODO: get the following from env
-MODULE_NAME = "database"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-REST_PORT = 3000
+MODULE_NAME = os.getenv("MODULE_NAME", "database")
+CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
+PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 def save_config(wo_db, config_hash, yaml_config, raw_config, comment):

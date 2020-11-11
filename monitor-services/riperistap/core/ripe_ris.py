@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import os
 import time
 from copy import deepcopy
@@ -16,53 +17,133 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rest_util import ControlHandler
-from artemis_utils.rest_util import HealthHandler
-from artemis_utils.rest_util import setup_data_task
-from artemis_utils.rest_util import stop_data_task
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
 
+# logger
 log = get_logger()
+
+# shared memory object locks
+shared_memory_locks = {
+    "data_worker": mp.Lock(),
+    "monitored_prefixes": mp.Lock(),
+    "hosts": mp.Lock(),
+}
+
+# global vars
 update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
-PREFIXTREE_HOST = "prefixtree"
-# TODO: add the following in utils
-REST_PORT = 3000
+MODULE_NAME = os.getenv("MODULE_NAME", "riperistap")
+CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
+PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
-def configure_ripe_ris():
+def start_data_worker(shared_memory_manager_dict):
+    shared_memory_locks["data_worker"].acquire()
+    if not shared_memory_manager_dict["data_worker_configured"]:
+        shared_memory_locks["data_worker"].release()
+        return "not configured, will not start"
+    if shared_memory_manager_dict["data_worker_running"]:
+        log.info("data worker already running")
+        shared_memory_locks["data_worker"].release()
+        return "already running"
+    shared_memory_locks["data_worker"].release()
+    mp.Process(
+        target=run_data_worker_process, args=(shared_memory_manager_dict,)
+    ).start()
+    return "instructed to start"
+
+
+def run_data_worker_process(shared_memory_manager_dict):
+    try:
+        with Connection(RABBITMQ_URI) as connection:
+            shared_memory_locks["data_worker"].acquire()
+            data_worker = RipeRisTapDataWorker(connection, shared_memory_manager_dict)
+            shared_memory_manager_dict["data_worker_should_run"] = True
+            shared_memory_manager_dict["data_worker_running"] = True
+            shared_memory_locks["data_worker"].release()
+            log.info("data worker started")
+            data_worker.run()
+    except Exception:
+        log.exception("exception")
+    finally:
+        shared_memory_locks["data_worker"].acquire()
+        shared_memory_manager_dict["data_worker_running"] = False
+        shared_memory_locks["data_worker"].release()
+        log.info("data worker stopped")
+
+
+def stop_data_worker(shared_memory_manager_dict):
+    shared_memory_locks["data_worker"].acquire()
+    shared_memory_manager_dict["data_worker_should_run"] = False
+    shared_memory_locks["data_worker"].release()
+    # make sure that data worker is stopped
+    while True:
+        shared_memory_locks["data_worker"].acquire()
+        if not shared_memory_manager_dict["data_worker_running"]:
+            shared_memory_locks["data_worker"].release()
+            break
+        shared_memory_locks["data_worker"].release()
+        time.sleep(1)
+    message = "instructed to stop"
+    return message
+
+
+def configure_ripe_ris(shared_memory_manager_dict):
     try:
         # get monitors
         r = requests.get("http://{}:{}/monitors".format(PREFIXTREE_HOST, REST_PORT))
         monitors = r.json()["monitors"]
 
+        # check if "riperis" is configured at all
+        if "riperis" not in monitors:
+            stop_msg = stop_data_worker(shared_memory_manager_dict)
+            log.info(stop_msg)
+            shared_memory_locks["data_worker"].acquire()
+            shared_memory_manager_dict["data_worker_configured"] = False
+            shared_memory_locks["data_worker"].release()
+            return {"success": True, "message": "data_task not in configuration"}
+
+        # make sure that data worker is stopped
+        stop_msg = stop_data_worker(shared_memory_manager_dict)
+        log.info(stop_msg)
+
         # get monitored prefixes
         r = requests.get(
             "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
         )
-        prefixes = set(r.json()["monitored_prefixes"])
-
-        # check if "riperis" is configured at all
-        if "riperis" not in monitors:
-            stop_data_task()
-            return {"success": True, "message": "data_task not in configuration"}
+        shared_memory_locks["monitored_prefixes"].acquire()
+        shared_memory_manager_dict["monitored_prefixes"] = set(
+            r.json()["monitored_prefixes"]
+        )
+        shared_memory_locks["monitored_prefixes"].release()
 
         # calculate ripe ris hosts
         hosts = set(monitors["riperis"])
         if hosts == set([""]):
             hosts = set()
+        shared_memory_locks["hosts"].acquire()
+        shared_memory_manager_dict["hosts"] = hosts
+        shared_memory_locks["hosts"].release()
 
-        # setup the data task
-        setup_data_task(RipeRisTap, prefixes=prefixes, hosts=hosts)
+        # signal that data worker is configured
+        shared_memory_locks["data_worker"].acquire()
+        shared_memory_manager_dict["data_worker_configured"] = True
+        shared_memory_locks["data_worker"].release()
+
+        # start the data worker
+        start_msg = start_data_worker(shared_memory_manager_dict)
+        log.info(start_msg)
 
         return {"success": True, "message": "configured"}
     except Exception:
+        log.exception("exception")
         return {"success": False, "message": "error during data_task configuration"}
 
 
@@ -70,6 +151,9 @@ class ConfigHandler(RequestHandler):
     """
     REST request handler for configuration.
     """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
 
     def post(self):
         """
@@ -79,27 +163,135 @@ class ConfigHandler(RequestHandler):
         :return: {"success": True|False, "message": <message>}
         """
         try:
-            self.write(configure_ripe_ris())
+            self.write(configure_ripe_ris(self.shared_memory_manager_dict))
         except Exception:
             self.write(
                 {"success": False, "message": "error during data_task configuration"}
             )
 
 
+class HealthHandler(RequestHandler):
+    """
+    REST request handler for health checks.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Extract the status of a service via a GET request.
+        :return: {"status" : <unconfigured|running|stopped>}
+        """
+        status = "stopped"
+        shared_memory_locks["data_worker"].acquire()
+        if self.shared_memory_manager_dict["data_worker_running"]:
+            status = "running"
+        elif not self.shared_memory_manager_dict["data_worker_configured"]:
+            status = "unconfigured"
+        shared_memory_locks["data_worker"].release()
+        self.write({"status": status})
+
+
+class ControlHandler(RequestHandler):
+    """
+    REST request handler for control commands.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def post(self):
+        """
+        Instruct a service to start or stop by posting a command.
+        Sample request body
+        {
+            "command": <start|stop>
+        }
+        :return: {"success": True|False, "message": <message>}
+        """
+        try:
+            msg = json.loads(self.request.body)
+            command = msg["command"]
+            # start/stop data_worker
+            if command == "start":
+                message = start_data_worker(self.shared_memory_manager_dict)
+                self.write({"success": True, "message": message})
+            elif command == "stop":
+                message = stop_data_worker(self.shared_memory_manager_dict)
+                self.write({"success": True, "message": message})
+            else:
+                self.write({"success": False, "message": "unknown command"})
+        except Exception:
+            log.exception("Exception")
+            self.write({"success": False, "message": "error during control"})
+
+
 class RipeRisTap:
-    def __init__(self, **kwargs):
-        self._running = False
-        self.prefixes = kwargs["prefixes"]
-        self.hosts = kwargs["hosts"]
+    """
+    RIPE RIS Tap REST Service.
+    """
 
-    def is_running(self):
-        return self._running
+    def __init__(self):
+        # initialize shared memory
+        shared_memory_manager = mp.Manager()
+        self.shared_memory_manager_dict = shared_memory_manager.dict()
+        self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["data_worker_should_run"] = False
+        self.shared_memory_manager_dict["data_worker_configured"] = False
+        self.shared_memory_manager_dict["monitored_prefixes"] = set()
+        self.shared_memory_manager_dict["hosts"] = set()
 
-    def stop(self):
-        self._running = False
+        log.info("service initiated")
+
+    def make_rest_app(self):
+        return Application(
+            [
+                (
+                    "/config",
+                    ConfigHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/control",
+                    ControlHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/health",
+                    HealthHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+            ]
+        )
+
+    def start_rest_app(self):
+        app = self.make_rest_app()
+        app.listen(REST_PORT)
+        log.info("REST worker started and listening to port {}".format(REST_PORT))
+        IOLoop.current().start()
+
+
+class RipeRisTapDataWorker:
+    """
+    RabbitMQ Producer for the Ripe RIS tap Service.
+    """
+
+    def __init__(self, connection, shared_memory_manager_dict):
+        self.connection = connection
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+        shared_memory_locks["monitored_prefixes"].acquire()
+        self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
+        shared_memory_locks["monitored_prefixes"].release()
+        shared_memory_locks["hosts"].acquire()
+        self.hosts = self.shared_memory_manager_dict["hosts"]
+        shared_memory_locks["hosts"].release()
+
+        # EXCHANGES
+        self.update_exchange = create_exchange("bgp-update", self.connection)
 
     def run(self):
-        self._running = True
+        # update redis
         ping_redis(redis)
         redis.set(
             "ris_seen_bgp_update",
@@ -110,95 +302,105 @@ class RipeRisTap:
                 )
             ),
         )
-        with Connection(RABBITMQ_URI) as connection:
-            update_exchange = create_exchange("bgp-update", connection)
-            prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
-            for prefix in self.prefixes:
-                ip_version = get_ip_version(prefix)
-                prefix_tree[ip_version].insert(prefix, "")
 
-            ris_suffix = os.getenv("RIS_ID", "my_as")
+        # build monitored prefix tree
+        prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
+        for prefix in self.prefixes:
+            ip_version = get_ip_version(prefix)
+            prefix_tree[ip_version].insert(prefix, "")
 
-            validator = mformat_validator()
-            with Producer(connection) as producer:
-                while self._running:
-                    try:
-                        events = requests.get(
-                            "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(
-                                ris_suffix
-                            ),
-                            stream=True,
-                            timeout=10,
-                        )
-                        # http://docs.python-requests.org/en/latest/user/advanced/#streaming-requests
-                        iterator = events.iter_lines()
-                        next(iterator)
-                        for data in iterator:
-                            if not self._running:
-                                break
-                            try:
-                                parsed = json.loads(data)
-                                msg = parsed["data"]
-                                if "type" in parsed and parsed["type"] == "ris_error":
-                                    log.error(msg)
-                                # also check if ris host is in the configuration
-                                elif (
-                                    "type" in msg
-                                    and msg["type"] == "UPDATE"
-                                    and (not self.hosts or msg["host"] in self.hosts)
-                                ):
-                                    norm_ris_msgs = self.normalize_ripe_ris(
-                                        msg, prefix_tree
-                                    )
-                                    for norm_ris_msg in norm_ris_msgs:
-                                        redis.set(
-                                            "ris_seen_bgp_update",
-                                            "1",
-                                            ex=int(
-                                                os.getenv(
-                                                    "MON_TIMEOUT_LAST_BGP_UPDATE",
-                                                    DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                                                )
-                                            ),
-                                        )
-                                        try:
-                                            if validator.validate(norm_ris_msg):
-                                                norm_path_msgs = normalize_msg_path(
-                                                    norm_ris_msg
-                                                )
-                                                for norm_path_msg in norm_path_msgs:
-                                                    key_generator(norm_path_msg)
-                                                    log.debug(norm_path_msg)
-                                                    producer.publish(
-                                                        norm_path_msg,
-                                                        exchange=update_exchange,
-                                                        routing_key="update",
-                                                        serializer="ujson",
-                                                    )
-                                            else:
-                                                log.warning(
-                                                    "Invalid format message: {}".format(
-                                                        msg
-                                                    )
-                                                )
-                                        except BaseException:
-                                            log.exception(
-                                                "Error when normalizing BGP message: {}".format(
-                                                    norm_ris_msg
-                                                )
+        # set RIS suffix on connection
+        ris_suffix = os.getenv("RIS_ID", "my_as")
+
+        # main loop to process BGP updates
+        validator = mformat_validator()
+        with Producer(self.connection) as producer:
+            while True:
+                shared_memory_locks["data_worker"].acquire()
+                if not self.shared_memory_manager_dict["data_worker_should_run"]:
+                    shared_memory_locks["data_worker"].release()
+                    break
+                shared_memory_locks["data_worker"].release()
+                try:
+                    events = requests.get(
+                        "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(
+                            ris_suffix
+                        ),
+                        stream=True,
+                        timeout=10,
+                    )
+                    # http://docs.python-requests.org/en/latest/user/advanced/#streaming-requests
+                    iterator = events.iter_lines()
+                    next(iterator)
+                    for data in iterator:
+                        shared_memory_locks["data_worker"].acquire()
+                        if not self.shared_memory_manager_dict[
+                            "data_worker_should_run"
+                        ]:
+                            shared_memory_locks["data_worker"].release()
+                            break
+                        shared_memory_locks["data_worker"].release()
+                        try:
+                            parsed = json.loads(data)
+                            msg = parsed["data"]
+                            if "type" in parsed and parsed["type"] == "ris_error":
+                                log.error(msg)
+                            # also check if ris host is in the configuration
+                            elif (
+                                "type" in msg
+                                and msg["type"] == "UPDATE"
+                                and (not self.hosts or msg["host"] in self.hosts)
+                            ):
+                                norm_ris_msgs = self.normalize_ripe_ris(
+                                    msg, prefix_tree
+                                )
+                                for norm_ris_msg in norm_ris_msgs:
+                                    redis.set(
+                                        "ris_seen_bgp_update",
+                                        "1",
+                                        ex=int(
+                                            os.getenv(
+                                                "MON_TIMEOUT_LAST_BGP_UPDATE",
+                                                DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
                                             )
-                            except Exception:
-                                log.exception("exception message {}".format(data))
-                        if not self._running:
-                            log.warning(
-                                "Iterator ran out of data; the connection will be retried"
-                            )
-                    except Exception:
-                        log.info(
-                            "RIPE RIS Server closed connection. Restarting socket in 60seconds.."
-                        )
-                        time.sleep(60)
+                                        ),
+                                    )
+                                    try:
+                                        if validator.validate(norm_ris_msg):
+                                            norm_path_msgs = normalize_msg_path(
+                                                norm_ris_msg
+                                            )
+                                            for norm_path_msg in norm_path_msgs:
+                                                key_generator(norm_path_msg)
+                                                log.debug(norm_path_msg)
+                                                producer.publish(
+                                                    norm_path_msg,
+                                                    exchange=self.update_exchange,
+                                                    routing_key="update",
+                                                    serializer="ujson",
+                                                )
+                                        else:
+                                            log.warning(
+                                                "Invalid format message: {}".format(msg)
+                                            )
+                                    except BaseException:
+                                        log.exception(
+                                            "Error when normalizing BGP message: {}".format(
+                                                norm_ris_msg
+                                            )
+                                        )
+                        except Exception:
+                            log.exception("exception message {}".format(data))
+                    log.warning(
+                        "Iterator ran out of data; the connection will be retried"
+                    )
+                except Exception:
+                    log.info(
+                        "RIPE RIS Server closed connection. Restarting socket in 60seconds.."
+                    )
+                    time.sleep(60)
 
+    # TODO: consider moving to utils
     @staticmethod
     def normalize_ripe_ris(msg, prefix_tree):
         msgs = []
@@ -287,25 +489,21 @@ class RipeRisTap:
         return msgs
 
 
-def make_app():
-    return Application(
-        [
-            ("/config", ConfigHandler),
-            ("/control", ControlHandler),
-            ("/health", HealthHandler),
-        ]
-    )
-
-
 if __name__ == "__main__":
+    # initiate Ripe RIS tap service with REST
+    ripeRisTapService = RipeRisTap()
+
     # try to get configuration upon start (it is OK if it fails, will get it from POST)
     # (this is needed because service may restart while configuration is running)
-    conf_res = configure_ripe_ris()
-    if not conf_res["success"]:
+    try:
+        r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+        conf_res = configure_ripe_ris(ripeRisTapService.shared_memory_manager_dict)
+        if not conf_res["success"]:
+            log.info(
+                "could not get configuration upon startup, will get via POST later"
+            )
+    except Exception:
         log.info("could not get configuration upon startup, will get via POST later")
 
-    # create REST worker
-    app = make_app()
-    app.listen(REST_PORT)
-    log.info("Listening to port {}".format(REST_PORT))
-    IOLoop.current().start()
+    # start REST within main process
+    ripeRisTapService.start_rest_app()

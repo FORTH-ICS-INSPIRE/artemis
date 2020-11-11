@@ -19,6 +19,6 @@ COPY ./configs/* /etc/artemis/
 COPY entrypoint Makefile wait-for ./
 COPY core ./core
 
-RUN make clean && make -j
+#RUN make clean && make -j
 
 ENTRYPOINT ["./entrypoint"]

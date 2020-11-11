@@ -1,34 +1,37 @@
 version: '3'
 services:
-#    riperistap:
-#        image: artemis_riperistap
-#        build: ./monitor-services/riperistap
-#        container_name: riperistap
-#        restart: always
-#        depends_on:
-#            - prefixtree
-#            - rabbitmq
-#            - redis
-#        expose:
-#            - 3000
-#        ports:
-#            - "3001:3000"
-#        networks:
-#            - artemis
-#        environment:
-#            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-#            RABBITMQ_USER: ${RABBITMQ_USER}
-#            RABBITMQ_PASS: ${RABBITMQ_PASS}
-#            RABBITMQ_HOST: ${RABBITMQ_HOST}
-#            RABBITMQ_PORT: ${RABBITMQ_PORT}
-#            REDIS_HOST: ${REDIS_HOST}
-#            REDIS_PORT: ${REDIS_PORT}
-#            REST_PORT: ${REST_PORT}
-#            RIS_ID: ${RIS_ID}
-#        volumes:
-#            - ./monitor-services/riperistap/configs/:/etc/artemis/
-#            - ./monitor-services/riperistap/entrypoint:/root/entrypoint
-#            - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
+    riperistap:
+        image: artemis_riperistap
+        build: ./monitor-services/riperistap
+        container_name: riperistap
+        restart: always
+        depends_on:
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        ports:
+            - "3001:3000"
+        networks:
+            - artemis
+        environment:
+            CONFIGURATION_HOST: configuration
+            MODULE_NAME: riperistap
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RIS_ID: ${RIS_ID}
+        volumes:
+            - ./monitor-services/riperistap/configs/:/etc/artemis/
+            - ./monitor-services/riperistap/entrypoint:/root/entrypoint
+            - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
 #    bgpstreamlivetap:
 #        image: artemis_bgpstreamlivetap
 #        build: ./monitor-services/bgpstreamlivetap
@@ -122,7 +125,7 @@ services:
             - prefixtree
             - rabbitmq
             - redis
-            #- riperistap
+            - riperistap
         expose:
             - 3000
         ports:
@@ -140,6 +143,7 @@ services:
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
+            RIPERISTAP_HOST: riperistap
         volumes:
             - ./backend-services/configuration/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
@@ -327,7 +331,7 @@ services:
             - prefixtree
             - configuration
             - fileobserver
-            #- riperistap
+            - riperistap
         networks:
             - artemis
         environment:
@@ -344,6 +348,7 @@ services:
             MODULE_NAME: autostarter
             PREFIXTREE_HOST: prefixtree
             REST_PORT: 3000
+            RIPERISTAP_HOST: riperistap
         volumes:
             - ./backend-services/autostarter/configs/:/etc/artemis/
             - ./backend-services/autostarter/entrypoint:/root/entrypoint

@@ -294,9 +294,9 @@ class MonitorHandler(RequestHandler):
         """
         Simply provides the configured monitors (in the form of a JSON dict) to the requester
         """
-        self.shared_memory_locks["monitors"].acquire()
+        shared_memory_locks["monitors"].acquire()
         self.write({"monitors": self.shared_memory_manager_dict["monitors"]})
-        self.shared_memory_locks["monitors"].release()
+        shared_memory_locks["monitors"].release()
 
 
 class ConfiguredPrefixCountHandler(RequestHandler):

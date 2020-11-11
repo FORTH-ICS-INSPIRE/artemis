@@ -1,12 +1,17 @@
 import logging
 
+import requests
 from flask_jwt_extended import create_access_token
 from flask_security import current_user
 from gql import Client
 from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
+from webapp.utils import CONFIGURATION_HOST
+from webapp.utils import DATABASE_HOST
+from webapp.utils import FILEOBSERVER_HOST
 from webapp.utils import GRAPHQL_URI
-
+from webapp.utils import PREFIXTREE_HOST
+from webapp.utils import REST_PORT
 
 log = logging.getLogger("artemis_logger")
 
@@ -31,6 +36,7 @@ mutation updateIntendedProcessStates($name: String, $running: Boolean) {
 """
 
 user_controlled_modules = ["monitor", "detection", "mitigation"]
+ALL_MODULES = [CONFIGURATION_HOST, DATABASE_HOST, FILEOBSERVER_HOST, PREFIXTREE_HOST]
 
 
 def display_time(seconds, granularity=2):
@@ -47,7 +53,6 @@ def display_time(seconds, granularity=2):
 
 
 class Modules_state:
-    # TODO: refactor this
     def __init__(self):
         pass
 
@@ -89,22 +94,13 @@ class Modules_state:
         #     log.exception("exception")
         return False
 
-    # TODO: refactor this
     def is_up_or_running(self, module):
-        # ctx = self.backend_server
-        # if module == "monitor":
-        #     ctx = self.mon_server
-        #
-        # try:
-        #     state = ctx.supervisor.getProcessInfo(module)["state"]
-        #     while state == 10:
-        #         time.sleep(0.5)
-        #         state = ctx.supervisor.getProcessInfo(module)["state"]
-        #     return state == 20
-        # except Exception:
-        #     log.exception("exception")
-        #     return False
-        return False
+        try:
+            r = requests.get("http://{}:{}/health".format(module, REST_PORT))
+            return r.json()["status"] == "running"
+        except Exception:
+            log.exception("exception")
+            return False
 
     # TODO: refactor this
     def is_any_up_or_running(self, module, up=True):
@@ -127,7 +123,7 @@ class Modules_state:
         # except Exception:
         #     log.exception("exception")
         #     return False
-        return True
+        return self.is_up_or_running("module")
 
     # TODO: refactor this
     def get_response_all(self):
@@ -142,6 +138,16 @@ class Modules_state:
         #             }
         #         else:
         #             ret_response[module["name"]] = {"status": "down", "uptime": "N/A"}
+        for module in ALL_MODULES:
+            try:
+                r = requests.get("http://{}:{}/health".format(module, REST_PORT))
+                ret_response["module"] = {
+                    "status": "up" if r.json()["status"] == "running" else "down",
+                    "uptime": "N/A",
+                }
+            except Exception:
+                log.exception("exception")
+                ret_response["module"] = {"status": "down", "uptime": "N/A"}
         return ret_response
 
     def get_response_formatted_all(self):

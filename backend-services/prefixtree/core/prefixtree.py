@@ -62,7 +62,7 @@ def pytricia_to_dict(pyt_tree):
 def dict_to_pytricia(dict_tree, size=32):
     pyt_tree = pytricia.PyTricia(size)
     for prefix in dict_tree:
-        pyt_tree[prefix] = dict_tree[prefix]
+        pyt_tree.insert(prefix, dict_tree[prefix])
     return pyt_tree
 
 
@@ -134,6 +134,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                 "v6": pytricia_to_dict(prefix_tree["v6"]),
             }
             shared_memory_manager_dict["prefix_tree"] = dict_prefix_tree
+            shared_memory_manager_dict["prefix_tree_recalculate"] = True
             shared_memory_locks["prefix_tree"].release()
 
             shared_memory_locks["monitors"].acquire()
@@ -356,6 +357,7 @@ class PrefixTree:
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["prefix_tree"] = {"v4": {}, "v6": {}}
+        self.shared_memory_manager_dict["prefix_tree_recalculate"] = True
         self.shared_memory_manager_dict["monitors"] = {}
         self.shared_memory_manager_dict["monitored_prefixes"] = set()
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
@@ -416,6 +418,22 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
     ) -> NoReturn:
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
+        self.prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
+        shared_memory_locks["prefix_tree"].acquire()
+        if self.shared_memory_manager_dict["prefix_tree_recalculate"]:
+            for ip_version in ["v4", "v6"]:
+                if ip_version == "v4":
+                    size = 32
+                else:
+                    size = 128
+                self.prefix_tree[ip_version] = dict_to_pytricia(
+                    self.shared_memory_manager_dict["prefix_tree"][ip_version], size
+                )
+                log.info(
+                    "{} pytricia tree parsed from configuration".format(ip_version)
+                )
+                self.shared_memory_manager_dict["prefix_tree_recalculate"] = False
+        shared_memory_locks["prefix_tree"].release()
 
         # EXCHANGES
         self.update_exchange = create_exchange("bgp-update", connection, declare=True)
@@ -484,17 +502,14 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         else:
             size = 128
         # need to turn to pytricia tree since this means that the tree has changed due to re-configuration
-        if isinstance(self.shared_memory_manager_dict["prefix_tree"][ip_version], dict):
-            self.shared_memory_manager_dict["prefix_tree"][
-                ip_version
-            ] = dict_to_pytricia(
+        if self.shared_memory_manager_dict["prefix_tree_recalculate"]:
+            self.prefix_tree[ip_version] = dict_to_pytricia(
                 self.shared_memory_manager_dict["prefix_tree"][ip_version], size
             )
             log.info("{} pytricia tree re-parsed from configuration".format(ip_version))
-        if prefix in self.shared_memory_manager_dict["prefix_tree"][ip_version]:
-            prefix_node = self.shared_memory_manager_dict["prefix_tree"][ip_version][
-                prefix
-            ]
+            self.shared_memory_manager_dict["prefix_tree_recalculate"] = False
+        if prefix in self.prefix_tree[ip_version]:
+            prefix_node = self.prefix_tree[ip_version][prefix]
         shared_memory_locks["prefix_tree"].release()
         return prefix_node
 

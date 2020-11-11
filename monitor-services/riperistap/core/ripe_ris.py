@@ -44,6 +44,9 @@ PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
+# TODO: introduce redis-based restart logic (if no data is received within certain time frame)
+
+
 def start_data_worker(shared_memory_manager_dict):
     shared_memory_locks["data_worker"].acquire()
     if not shared_memory_manager_dict["data_worker_configured"]:

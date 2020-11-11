@@ -322,69 +322,74 @@ services:
             - ${REDIS_PORT}
         volumes:
             - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
-#    frontend:
-#        image: artemis_frontend
-#        build: ./frontend
-#        container_name: frontend
-#        restart: always
-#        depends_on:
-#            - database
-#            - graphql
-#            - postgres
-#            - postgrest
-#            - rabbitmq
-#        networks:
-#            - artemis
-#        expose:
-#            - ${WEBAPP_PORT}
-#        environment:
-#            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
-#            RABBITMQ_USER: ${RABBITMQ_USER}
-#            RABBITMQ_PASS: ${RABBITMQ_PASS}
-#            RABBITMQ_HOST: ${RABBITMQ_HOST}
-#            RABBITMQ_PORT: ${RABBITMQ_PORT}
-#            DB_HOST: ${DB_HOST}
-#            DB_PORT: ${DB_PORT}
-#            API_HOST: ${API_HOST}
-#            API_PORT: ${API_PORT}
-#            HASURA_HOST: ${HASURA_HOST}
-#            HASURA_PORT: ${HASURA_PORT}
-#            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-#            SYSTEM_VERSION: ${SYSTEM_VERSION}
-#            BIND_IP: ${BIND_IP}
-#            WEBAPP_PORT: ${WEBAPP_PORT}
-#            USER_ROOT_USERNAME: ${ADMIN_USER}
-#            USER_ROOT_PASSWORD: ${ADMIN_PASS}
-#            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-#            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-#            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
-#            JS_VERSION: ${JS_VERSION}
-#            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
-#            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
-#        volumes:
-#            - ./frontend/:/root/
-#            - ./frontend/webapp/configs/:/etc/artemis/
-#            - ./frontend/db/:/etc/webapp/db/
-#    nginx:
-#        image: nginx:1.17-alpine
-#        container_name: nginx
-#        restart: always
-#        depends_on:
-#            - frontend
-#            - postgrest
-#        networks:
-#            - artemis
-#        ports:
-#            # uncomment both lines for rootless
-#            # - "8080:8080"
-#            # - "8443:8443"
-#            # comment both lines when running rootless
-#            - "80:80"
-#            - "443:443"
-#        volumes:
-#            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
-#            # comment after Step 2 of README
-#            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+    frontend:
+        image: artemis_frontend
+        build: ./frontend
+        container_name: frontend
+        restart: always
+        depends_on:
+            - database
+            - graphql
+            - postgres
+            - postgrest
+            - rabbitmq
+        networks:
+            - artemis
+        expose:
+            - ${WEBAPP_PORT}
+        environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
+            CONFIGURATION_HOST: configuration
+            DATABASE_HOST: database
+            FILEOBSERVER_HOST: fileobserver
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            API_HOST: ${API_HOST}
+            API_PORT: ${API_PORT}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            SYSTEM_VERSION: ${SYSTEM_VERSION}
+            BIND_IP: ${BIND_IP}
+            WEBAPP_PORT: ${WEBAPP_PORT}
+            USER_ROOT_USERNAME: ${ADMIN_USER}
+            USER_ROOT_PASSWORD: ${ADMIN_PASS}
+            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
+            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
+            JS_VERSION: ${JS_VERSION}
+            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
+            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+            REST_PORT: 3000
+        volumes:
+            - ./frontend/:/root/
+            - ./frontend/webapp/configs/:/etc/artemis/
+            - ./frontend/db/:/etc/webapp/db/
+    nginx:
+        image: nginx:1.17-alpine
+        container_name: nginx
+        restart: always
+        depends_on:
+            - frontend
+            - postgrest
+        networks:
+            - artemis
+        ports:
+            # uncomment both lines for rootless
+            # - "8080:8080"
+            # - "8443:8443"
+            # comment both lines when running rootless
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
+            # comment after Step 2 of README
+            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq

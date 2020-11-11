@@ -21,6 +21,11 @@ if GRAPHQL_URI is None:
         HASURA_HOST=HASURA_HOST, HASURA_PORT=HASURA_PORT
     )
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
+CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
+DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
+FILEOBSERVER_HOST = os.getenv("FILEOBSERVER_HOST", "fileobserver")
+PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 def flatten(items, seqtypes=(list, tuple)):

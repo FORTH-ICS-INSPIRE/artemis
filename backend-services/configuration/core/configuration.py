@@ -51,7 +51,7 @@ shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 # global vars
 MODULE_NAME = os.getenv("MODULE_NAME", "configuration")
 # TODO get this from container env
-OTHER_SERVICES = ["prefixtree"]  # , "database", "detection", "notifier", "riperistap"]
+OTHER_SERVICES = ["prefixtree", "database"]  # , "detection", "notifier", "riperistap"]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

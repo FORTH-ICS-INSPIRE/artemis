@@ -115,7 +115,7 @@ services:
         container_name: configuration
         restart: always
         depends_on:
-            #- database
+            - database
             #- detection
             #- notifier
             - postgres
@@ -130,7 +130,9 @@ services:
         networks:
             - artemis
         environment:
+            DATABASE_HOST: database
             MODULE_NAME: configuration
+            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -312,6 +314,40 @@ services:
             - ./backend-services/prefixtree/entrypoint:/root/entrypoint
             - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
             - ./utils/:/root/utils/
+    autostarter:
+        image: artemis_autostarter
+        build: ./backend-services/autostarter
+        container_name: autostarter
+        restart: always
+        depends_on:
+            - postgres
+            - database
+            #- detection
+            #- notifier
+            - prefixtree
+            - configuration
+            - fileobserver
+            #- riperistap
+        networks:
+            - artemis
+        environment:
+            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
+            CHECK_INTERVAL: 10
+            CONFIGURATION_HOST: configuration
+            DATABASE_HOST: database
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            FILEOBSERVER_HOST: fileobserver
+            MODULE_NAME: autostarter
+            PREFIXTREE_HOST: prefixtree
+            REST_PORT: 3000
+        volumes:
+            - ./backend-services/autostarter/configs/:/etc/artemis/
+            - ./backend-services/autostarter/entrypoint:/root/entrypoint
+            - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
     redis:
         image: redis:latest
         container_name: redis

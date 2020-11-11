@@ -3,8 +3,8 @@
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${REDIS_HOST}:${REDIS_PORT} -t 0
 # should wait for the following services so that it configures them when up
-./wait-for prefixtree:3000 -t 0
-#./wait-for database:3000 -t 0
+./wait-for ${DATABASE_HOST}:3000 -t 0
+./wait-for ${PREFIXTREE_HOST}:3000 -t 0
 #./wait-for riperistap:3000 -t 0
 #./wait-for notifier:3000 -t 0
 #./wait-for detection:3000 -t 0

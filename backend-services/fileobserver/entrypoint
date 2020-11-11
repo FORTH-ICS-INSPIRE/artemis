@@ -1,5 +1,5 @@
 #!/bin/bash
 #make -j
-./wait-for configuration:3000 -t 0
+./wait-for ${CONFIGURATION_HOST}:3000 -t 0
 # TODO: use translated cython files instead of the scripts themselves
 /usr/local/bin/python /root/core/observer.py

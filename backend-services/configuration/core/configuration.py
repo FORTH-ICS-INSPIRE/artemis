@@ -52,8 +52,9 @@ shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 MODULE_NAME = os.getenv("MODULE_NAME", "configuration")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
 RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
-OTHER_SERVICES = [PREFIXTREE_HOST, DATABASE_HOST, RIPERISTAP_HOST]
+OTHER_SERVICES = [PREFIXTREE_HOST, DATABASE_HOST, DETECTION_HOST, RIPERISTAP_HOST]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

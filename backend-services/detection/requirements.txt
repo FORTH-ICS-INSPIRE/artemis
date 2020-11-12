@@ -1,6 +1,6 @@
 artemis_utils==1.0.4
 cffi==1.13.2
-Cython==0.29.14
+#Cython==0.29.14
 enum34==1.1.6
 gql==0.4.0
 ipaddress==1.0.23

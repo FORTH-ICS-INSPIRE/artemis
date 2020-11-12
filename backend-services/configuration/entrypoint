@@ -6,5 +6,6 @@
 ./wait-for ${DATABASE_HOST}:${REST_PORT} -t 0
 ./wait-for ${PREFIXTREE_HOST}:${REST_PORT} -t 0
 ./wait-for ${RIPERISTAP_HOST}:${REST_PORT} -t 0
+./wait-for ${DETECTION_HOST}:${REST_PORT} -t 0
 # TODO: use translated cython files instead of the scripts themselves
 /usr/local/bin/python /root/core/configuration.py

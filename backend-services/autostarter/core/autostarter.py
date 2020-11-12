@@ -3,6 +3,7 @@ import time
 
 import requests
 import ujson as json
+from artemis_utils import AUTO_RECOVER_PROCESS_STATE
 from artemis_utils import DB_HOST
 from artemis_utils import DB_NAME
 from artemis_utils import DB_PASS
@@ -10,9 +11,6 @@ from artemis_utils import DB_PORT
 from artemis_utils import DB_USER
 from artemis_utils import get_logger
 from artemis_utils.db_util import DB
-
-# TODO: for user-controlled services, use this flag if the starter should set them
-# from artemis_utils import AUTO_RECOVER_PROCESS_STATE
 
 # logger
 log = get_logger()
@@ -22,6 +20,7 @@ CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 FILEOBSERVER_HOST = os.getenv("FILEOBSERVER_HOST", "fileobserver")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
 RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 ALWAYS_RUNNING_SERVICES = [
@@ -30,21 +29,34 @@ ALWAYS_RUNNING_SERVICES = [
     FILEOBSERVER_HOST,
     PREFIXTREE_HOST,
 ]
-USER_CONTROLLED_SERVICES = [RIPERISTAP_HOST]
+USER_CONTROLLED_SERVICES = [DETECTION_HOST, RIPERISTAP_HOST]
 
 
 def bootstrap_intended_services(wo_db):
-    query = (
-        "INSERT INTO intended_process_states (name, running) "
-        "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
-    )
-    services_with_status = []
-    for service in ALWAYS_RUNNING_SERVICES:
-        services_with_status.append((service, True))
-    # TODO: move to False after testing and let frontend set this at will
-    for service in USER_CONTROLLED_SERVICES:
-        services_with_status.append((service, True))
-    wo_db.execute_batch(query, services_with_status)
+    try:
+        query = (
+            "INSERT INTO intended_process_states (name, running) "
+            "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+        )
+        services_with_status = []
+        for service in ALWAYS_RUNNING_SERVICES:
+            services_with_status.append((service, True))
+        # TODO: move to False initialization after testing and let frontend set this at will
+        for service in USER_CONTROLLED_SERVICES:
+            services_with_status.append((service, True))
+        wo_db.execute_batch(query, services_with_status)
+        # if the user does not wish to auto-recover user-controlled processes on startup,
+        # initialize with False
+        if AUTO_RECOVER_PROCESS_STATE != "true":
+            for service in USER_CONTROLLED_SERVICES:
+                query = (
+                    "UPDATE intended_process_states "
+                    "SET running=false "
+                    "WHERE name=%s"
+                )
+                wo_db.execute(query, (service,))
+    except Exception:
+        log.exception("exception")
 
 
 def set_current_service_status(wo_db, service, running=False):
@@ -112,7 +124,7 @@ def check_and_control_services(ro_db, wo_db):
 
 if __name__ == "__main__":
     # DB variables
-    # TODO: check if we should do these calls with gql instead of DB queries
+    # TODO: optional: replace these calls with gql instead of DB queries
     ro_db = DB(
         application_name="autostarter-readonly",
         user=DB_USER,

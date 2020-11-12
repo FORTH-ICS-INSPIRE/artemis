@@ -1,8 +1,9 @@
 #!/bin/bash
-make -j
+#make -j
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${REDIS_HOST}:${REDIS_PORT} -t 0
-./wait-for notifier:3000 -t 0
-./wait-for prefixtree:3000 -t 0
+#./wait-for notifier:3000 -t 0
+./wait-for ${PREFIXTREE_HOST}:${REST_PORT} -t 0
+./wait-for ${DATABASE_HOST}:${REST_PORT} -t 0
 # TODO: use translated cython files instead of the scripts themselves
 /usr/local/bin/python /root/core/detection.py

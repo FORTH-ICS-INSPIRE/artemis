@@ -302,7 +302,6 @@ services:
         container_name: prefixtree
         restart: always
         depends_on:
-            - pg-amqp-bridge
             - rabbitmq
         expose:
             - 3000
@@ -495,6 +494,7 @@ services:
         restart: always
         depends_on:
             - postgres
+            - database
             - rabbitmq
         networks:
             - artemis

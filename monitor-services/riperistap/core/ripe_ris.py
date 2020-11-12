@@ -400,10 +400,11 @@ class RipeRisTapDataWorker:
                         "Iterator ran out of data; the connection will be retried"
                     )
                 except Exception:
+                    log.exception("exception")
                     log.info(
-                        "RIPE RIS Server closed connection. Restarting socket in 60seconds.."
+                        "RIPE RIS Server closed connection. Restarting socket in 10 seconds.."
                     )
-                    time.sleep(60)
+                    time.sleep(10)
 
     # TODO: consider moving to utils
     @staticmethod

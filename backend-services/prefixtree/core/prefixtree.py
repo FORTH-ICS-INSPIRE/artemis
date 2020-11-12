@@ -439,7 +439,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         self.hijack_exchange = create_exchange(
             "hijack-update", connection, declare=True
         )
-        self.pg_amq_bridge = create_exchange("amq.direct", connection, declare=True)
+        self.pg_amq_bridge = create_exchange("amq.direct", connection)
         self.command_exchange = create_exchange("command", connection, declare=True)
 
         # QUEUES

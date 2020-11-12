@@ -31,6 +31,10 @@ ALWAYS_RUNNING_SERVICES = [
 ]
 USER_CONTROLLED_SERVICES = [DETECTION_HOST, RIPERISTAP_HOST]
 
+# trigger queries
+DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
+CREATE_TRIGGER_QUERY = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
+
 
 def bootstrap_intended_services(wo_db):
     try:
@@ -116,6 +120,11 @@ def check_and_control_services(ro_db, wo_db):
                 response = r.json()
                 if not response["success"]:
                     raise Exception(response["message"])
+                # activate update trigger for prefix tree
+                if service == PREFIXTREE_HOST:
+                    wo_db.execute(
+                        "{}{}".format(DROP_TRIGGER_QUERY, CREATE_TRIGGER_QUERY)
+                    )
                 log.info("service '{}': '{}'".format(service, response["message"]))
             else:
                 log.info(
@@ -130,6 +139,9 @@ def check_and_control_services(ro_db, wo_db):
                 response = r.json()
                 if not response["success"]:
                     raise Exception(response["message"])
+                # deactivate update trigger for prefix tree
+                if service == PREFIXTREE_HOST:
+                    wo_db.execute("{}".format(DROP_TRIGGER_QUERY))
                 log.info("service '{}': '{}'".format(service, response["message"]))
         except Exception:
             log.exception("exception")

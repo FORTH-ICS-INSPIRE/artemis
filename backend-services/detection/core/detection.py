@@ -11,6 +11,7 @@ from typing import NoReturn
 from typing import Tuple
 
 import redis
+import requests
 import ujson as json
 from artemis_utils import clean_as_path
 from artemis_utils import exception_handler
@@ -47,6 +48,8 @@ shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
 MODULE_NAME = os.getenv("MODULE_NAME", "prefixtree")
+PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
@@ -65,6 +68,31 @@ HIJACK_DIM_COMBINATIONS = [
     ["Q", "0", "-", "-"],
     ["Q", "0", "-", "L"],
 ]
+DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
+
+
+def wait_data_worker_dependencies(data_worker_dependencies):
+    while True:
+        all_deps_met = True
+        for service in data_worker_dependencies:
+            try:
+                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                status = True if r.json()["status"] == "running" else False
+                if not status:
+                    all_deps_met = False
+                    break
+            except Exception:
+                all_deps_met = False
+                break
+        if all_deps_met:
+            log.info("needed data workers started: {}".format(data_worker_dependencies))
+            break
+        log.info(
+            "waiting for needed data workers to start: {}".format(
+                data_worker_dependencies
+            )
+        )
+        time.sleep(1)
 
 
 class ConfigHandler(RequestHandler):
@@ -246,6 +274,9 @@ class DetectionDataWorker(ConsumerProducerMixin):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
         self.rtrmanager = None
+
+        # wait for other needed data workers to start
+        wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
 
         # EXCHANGES
         self.update_exchange = create_exchange("bgp-update", connection, declare=True)

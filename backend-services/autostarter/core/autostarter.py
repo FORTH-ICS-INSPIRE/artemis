@@ -69,20 +69,33 @@ def set_current_service_status(wo_db, service, running=False):
 
 
 def check_and_control_services(ro_db, wo_db):
-    query = "SELECT name, running FROM intended_process_states"
-    entries = ro_db.execute(query)
+    intended_status_query = "SELECT name, running FROM intended_process_states"
+    intended_status_entries = ro_db.execute(intended_status_query)
+    intended_status_dict = {}
+    for service, intended_status in intended_status_entries:
+        intended_status_dict[service] = intended_status
 
-    for entry in entries:
+    stored_status_query = "SELECT name, running FROM process_states"
+    stored_status_entries = ro_db.execute(stored_status_query)
+    stored_status_dict = {}
+    for service, stored_status in stored_status_entries:
+        stored_status_dict[service] = stored_status
+
+    for service in intended_status_dict:
         try:
-            service = entry[0]
-            intended_status = entry[1]
+            intended_status = intended_status_dict[service]
             r = requests.get("http://{}:{}/health".format(service, REST_PORT))
             current_status = True if r.json()["status"] == "running" else False
+            # check if we need to update stored status
+            stored_status = None
+            if service in stored_status_dict:
+                stored_status = stored_status_dict[service]
+            if current_status != stored_status:
+                set_current_service_status(wo_db, service, running=current_status)
             # ATTENTION: if response status is unconfigured, then the actual intention is False
             intended_status = (
                 False if r.json()["status"] == "unconfigured" else intended_status
             )
-            set_current_service_status(wo_db, service, current_status)
             if intended_status == current_status:
                 # statuses match, do nothing
                 # log.info("service '{}' data worker is at the intended state '{}'".format(

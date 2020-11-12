@@ -119,7 +119,7 @@ services:
         restart: always
         depends_on:
             - database
-            #- detection
+            - detection
             #- notifier
             - postgres
             - prefixtree

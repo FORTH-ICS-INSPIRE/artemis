@@ -291,7 +291,9 @@ class RipeRisTapDataWorker:
         shared_memory_locks["hosts"].release()
 
         # EXCHANGES
-        self.update_exchange = create_exchange("bgp-update", self.connection)
+        self.update_exchange = create_exchange(
+            "bgp-update", self.connection, declare=True
+        )
 
     def run(self):
         # update redis

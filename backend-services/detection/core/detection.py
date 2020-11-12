@@ -82,7 +82,7 @@ class ConfigHandler(RequestHandler):
         """
         # request ongoing hijack updates for new config
         with Connection(RABBITMQ_URI) as connection:
-            hijack_exchange = create_exchange("hijack-update", connection)
+            hijack_exchange = create_exchange("hijack-update", connection, declare=True)
             producer = Producer(connection)
             producer.publish(
                 "",
@@ -233,30 +233,6 @@ class Detection:
         app.listen(REST_PORT)
         log.info("REST worker started and listening to port {}".format(REST_PORT))
         IOLoop.current().start()
-
-    def is_running(self):
-        return self._running
-
-    def stop(self):
-        if self.worker:
-            self.worker.should_stop = True
-        else:
-            self._running = False
-
-    def run(self) -> NoReturn:
-        """
-        Entry function for this service that runs a RabbitMQ worker through Kombu.
-        """
-        self._running = True
-        try:
-            with Connection(RABBITMQ_URI) as connection:
-                self.worker = self.Worker(connection)
-                self.worker.run()
-        except Exception:
-            log.exception("exception")
-        finally:
-            log.info("stopped")
-            self._running = False
 
 
 class DetectionDataWorker(ConsumerProducerMixin):

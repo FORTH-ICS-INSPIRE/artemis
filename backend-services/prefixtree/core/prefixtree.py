@@ -439,7 +439,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         self.hijack_exchange = create_exchange(
             "hijack-update", connection, declare=True
         )
-        self.pg_amq_bridge = create_exchange("amq.direct", connection)
+        self.pg_amq_bridge = create_exchange("amq.direct", connection, declare=True)
         self.command_exchange = create_exchange("command", connection, declare=True)
 
         # QUEUES
@@ -530,7 +530,8 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                     serializer="ujson",
                 )
             else:
-                log.error("unconfigured BGP update received '{}'".format(bgp_update))
+                # log.error("unconfigured BGP update received '{}'".format(bgp_update))
+                pass
         except Exception:
             log.exception("exception")
 
@@ -552,9 +553,10 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                     serializer="ujson",
                 )
             else:
-                log.error(
-                    "unconfigured stored BGP update received '{}'".format(bgp_update)
-                )
+                # log.error(
+                #     "unconfigured stored BGP update received '{}'".format(bgp_update)
+                # )
+                pass
         except Exception:
             log.exception("exception")
 
@@ -572,11 +574,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                     bgp_update["prefix_node"] = prefix_node
                     bgp_updates.append(bgp_update)
                 else:
-                    log.error(
-                        "unconfigured stored BGP update received '{}'".format(
-                            bgp_update
-                        )
-                    )
+                    # log.error(
+                    #     "unconfigured stored BGP update received '{}'".format(
+                    #         bgp_update
+                    #     )
+                    # )
+                    pass
             except Exception:
                 log.exception("exception")
         self.producer.publish(

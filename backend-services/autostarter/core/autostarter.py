@@ -102,10 +102,6 @@ def check_and_control_services(ro_db, wo_db):
             )
             if intended_status == current_status:
                 # statuses match, do nothing
-                # log.info("service '{}' data worker is at the intended state '{}'".format(
-                #     service,
-                #     r.json()["status"]
-                # ))
                 pass
             elif intended_status:
                 log.info(
@@ -144,7 +140,11 @@ def check_and_control_services(ro_db, wo_db):
                     wo_db.execute("{}".format(DROP_TRIGGER_QUERY))
                 log.info("service '{}': '{}'".format(service, response["message"]))
         except Exception:
-            log.exception("exception")
+            log.warning(
+                "could not properly check and control service '{}'. Will retry next round".format(
+                    service
+                )
+            )
 
 
 if __name__ == "__main__":

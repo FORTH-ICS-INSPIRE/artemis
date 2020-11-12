@@ -572,14 +572,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 prefix_node = self.find_prefix_node(bgp_update["prefix"])
                 if prefix_node:
                     bgp_update["prefix_node"] = prefix_node
-                    bgp_updates.append(bgp_update)
-                else:
-                    # log.error(
-                    #     "unconfigured stored BGP update received '{}'".format(
-                    #         bgp_update
-                    #     )
-                    # )
-                    pass
+                bgp_updates.append(bgp_update)
             except Exception:
                 log.exception("exception")
         self.producer.publish(

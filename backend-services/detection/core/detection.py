@@ -469,7 +469,12 @@ class DetectionDataWorker(ConsumerProducerMixin):
                     except Exception:
                         log.exception("exception")
             else:
-                log.error("unconfigured BGP update received '{}'".format(monitor_event))
+                if "hij_key" not in monitor_event:
+                    log.error(
+                        "unconfigured BGP update received '{}'".format(monitor_event)
+                    )
+                else:
+                    is_hijack = False
 
             outdated_hijack = None
             if not is_hijack and "hij_key" in monitor_event:

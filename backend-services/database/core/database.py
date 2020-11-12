@@ -632,12 +632,13 @@ class DatabaseDataWorker(ConsumerProducerMixin):
     def handle_hijack_outdate(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
+        shared_memory_locks["bulk_timer"].acquire()
         try:
             raw = message.payload
-            shared_memory_locks["bulk_timer"].acquire()
             self.outdate_hijacks.add((raw["persistent_hijack_key"],))
         except Exception:
             log.exception("{}".format(message))
+        finally:
             shared_memory_locks["bulk_timer"].release()
 
     def handle_hijack_update(self, message):

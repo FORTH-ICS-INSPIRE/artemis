@@ -584,7 +584,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 log.exception("exception")
         self.producer.publish(
             bgp_updates,
-            exchange=self.update_exchange,
+            exchange=self.hijack_exchange,
             routing_key="ongoing-with-prefix-node",
             serializer="ujson",
         )

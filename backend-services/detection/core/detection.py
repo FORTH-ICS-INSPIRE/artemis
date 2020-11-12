@@ -255,9 +255,11 @@ class DetectionDataWorker(ConsumerProducerMixin):
         self.hijack_hashing = create_exchange(
             "hijack-hashing", connection, "x-consistent-hash", declare=True
         )
-        self.handled_exchange = create_exchange("handled-update", connection)
+        self.handled_exchange = create_exchange(
+            "handled-update", connection, declare=True
+        )
         self.hijack_notification_exchange = create_exchange(
-            "hijack-notification", connection
+            "hijack-notification", connection, declare=True
         )
         self.command_exchange = create_exchange("command", connection, declare=True)
 

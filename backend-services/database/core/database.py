@@ -44,6 +44,7 @@ shared_memory_locks = {
     "monitored_prefixes": mp.Lock(),
     "configured_prefix_count": mp.Lock(),
     "config_timestamp": mp.Lock(),
+    "bulk_timer": mp.Lock(),
 }
 
 # global vars
@@ -363,7 +364,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         self.outdate_hijacks = set()
         self.insert_hijacks_entries = {}
         self.bulk_timer_thread = None
-        self.bulk_timer_thread_lock = threading.Lock()
 
         # DB variables
         self.ro_db = DB(
@@ -592,9 +592,9 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 )
                 # insert all types of BGP updates
                 # thread-safe access to update dict
-                self.bulk_timer_thread_lock.acquire()
+                shared_memory_locks["bulk_timer"].acquire()
                 self.insert_bgp_entries.append(value)
-                self.bulk_timer_thread_lock.release()
+                shared_memory_locks["bulk_timer"].release()
 
                 # register the monitor/peer ASN from whom we learned this BGP update
                 self.redis.sadd("peer-asns", msg_["peer_asn"])
@@ -614,7 +614,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
         msg_ = message.payload
-        self.bulk_timer_thread_lock.acquire()
+        shared_memory_locks["bulk_timer"].acquire()
         try:
             # update hijacks based on withdrawal messages
             value = (
@@ -627,24 +627,24 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         except Exception:
             log.exception("{}".format(msg_))
         finally:
-            self.bulk_timer_thread_lock.release()
+            shared_memory_locks["bulk_timer"].release()
 
     def handle_hijack_outdate(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
         try:
             raw = message.payload
-            self.bulk_timer_thread_lock.acquire()
+            shared_memory_locks["bulk_timer"].acquire()
             self.outdate_hijacks.add((raw["persistent_hijack_key"],))
         except Exception:
             log.exception("{}".format(message))
-            self.bulk_timer_thread_lock.release()
+            shared_memory_locks["bulk_timer"].release()
 
     def handle_hijack_update(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
         msg_ = message.payload
-        self.bulk_timer_thread_lock.acquire()
+        shared_memory_locks["bulk_timer"].acquire()
         try:
             key = msg_["key"]  # persistent hijack key
 
@@ -706,19 +706,19 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         except Exception:
             log.exception("{}".format(msg_))
         finally:
-            self.bulk_timer_thread_lock.release()
+            shared_memory_locks["bulk_timer"].release()
 
     def handle_handled_bgp_update(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
-        self.bulk_timer_thread_lock.acquire()
+        shared_memory_locks["bulk_timer"].acquire()
         try:
             key_ = (message.payload,)
             self.handled_bgp_entries.add(key_)
         except Exception:
             log.exception("{}".format(message))
         finally:
-            self.bulk_timer_thread_lock.release()
+            shared_memory_locks["bulk_timer"].release()
 
     def handle_hijack_ongoing_request(self, message):
         if not isinstance(message, dict):
@@ -1522,7 +1522,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             log.exception("")
 
     def _update_bulk(self):
-        self.bulk_timer_thread_lock.acquire()
+        shared_memory_locks["bulk_timer"].acquire()
         inserts, updates, hijacks, withdrawals = (
             self._insert_bgp_updates(),
             self._update_bgp_updates(),
@@ -1541,7 +1541,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             str_ += "Withdrawals Handled: {}".format(withdrawals)
         if str_ != "":
             log.debug("{}".format(str_))
-        self.bulk_timer_thread_lock.release()
+        shared_memory_locks["bulk_timer"].release()
         self.setup_bulk_update_timer()
 
     def stop_consumer_loop(self, message: Dict) -> NoReturn:

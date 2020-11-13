@@ -40,11 +40,17 @@ jobs:
         - docker-compose logs postgres
       after_failure:
         - docker-compose logs postgres
-    - stage: build containers (test, no push)
+    - stage: build and push containers
       name: riperistap
       install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) monitor-services/riperistap
+      - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-riperistap:${DOCKER_TAG} --cache-from inspiregroup/artemis-riperistap:latest --cache-from inspiregroup/artemis-riperistap:${DOCKER_TAG} monitor-services/riperistap/; fi
+      - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
+      - if [ $IS_FORK ]; then docker build -t artemis-riperistap:${DOCKER_TAG} monitor-services/riperistap/; fi
     - name: autostarter
       install: [ ]
       script:
@@ -78,40 +84,15 @@ jobs:
       script:
         - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/prefixtree
     - name: frontend
-      install: [ ]
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) frontend/
-#    - stage: build and push containers
-#      name: backend
-#      install: []
-#      before_script:
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-backend:latest; fi
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-backend:${DOCKER_TAG} || true; fi
-#        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
-#      script:
-#        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-backend:${DOCKER_TAG} --cache-from inspiregroup/artemis-backend:latest --cache-from inspiregroup/artemis-backend:${DOCKER_TAG} backend/; fi
-#        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-backend:${DOCKER_TAG}; fi
-#        - if [ $IS_FORK ]; then docker build -t artemis-backend:${DOCKER_TAG} backend/; fi
-#    - name: frontend
-#      install: []
-#      before_script:
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:latest; fi
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true; fi
-#        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
-#      script:
-#        - if [ ! $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/; fi
-#        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-frontend:${DOCKER_TAG}; fi
-#        - if [ $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:${DOCKER_TAG} frontend/; fi
-#    - name: monitor
-#      install: []
-#      before_script:
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-monitor:latest; fi
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-monitor:${DOCKER_TAG} || true; fi
-#        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
-#      script:
-#        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-monitor:${DOCKER_TAG} --cache-from inspiregroup/artemis-monitor:latest --cache-from inspiregroup/artemis-monitor:${DOCKER_TAG} monitor/; fi
-#        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-monitor:${DOCKER_TAG}; fi
-#        - if [ $IS_FORK ]; then docker build -t artemis-monitor:${DOCKER_TAG} monitor/; fi
+        - if [ ! $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-frontend:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:${DOCKER_TAG} frontend/; fi
 #    - stage: run tests
 #      name: TestCafe
 #      install: []

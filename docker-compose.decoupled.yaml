@@ -1,8 +1,7 @@
 version: '3'
 services:
     riperistap:
-        image: artemis_riperistap
-        build: ./monitor-services/riperistap
+        image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
         container_name: riperistap
         restart: always
         depends_on:
@@ -385,8 +384,7 @@ services:
         volumes:
             - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
-        image: artemis_frontend
-        build: ./frontend
+        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
         restart: always
         depends_on:

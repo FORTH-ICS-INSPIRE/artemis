@@ -1561,26 +1561,30 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
     def _update_bulk(self):
         shared_memory_locks["bulk_timer"].acquire()
-        inserts, updates, hijacks, withdrawals = (
-            self._insert_bgp_updates(),
-            self._update_bgp_updates(),
-            self._insert_update_hijacks(),
-            self._handle_bgp_withdrawals(),
-        )
-        self._handle_hijack_outdate()
-        str_ = ""
-        if inserts:
-            str_ += "BGP Updates Inserted: {}\n".format(inserts)
-        if updates:
-            str_ += "BGP Updates Updated: {}\n".format(updates)
-        if hijacks:
-            str_ += "Hijacks Inserted: {}".format(hijacks)
-        if withdrawals:
-            str_ += "Withdrawals Handled: {}".format(withdrawals)
-        if str_ != "":
-            log.debug("{}".format(str_))
-        shared_memory_locks["bulk_timer"].release()
-        self.setup_bulk_update_timer()
+        try:
+            inserts, updates, hijacks, withdrawals = (
+                self._insert_bgp_updates(),
+                self._update_bgp_updates(),
+                self._insert_update_hijacks(),
+                self._handle_bgp_withdrawals(),
+            )
+            self._handle_hijack_outdate()
+            str_ = ""
+            if inserts:
+                str_ += "BGP Updates Inserted: {}\n".format(inserts)
+            if updates:
+                str_ += "BGP Updates Updated: {}\n".format(updates)
+            if hijacks:
+                str_ += "Hijacks Inserted: {}".format(hijacks)
+            if withdrawals:
+                str_ += "Withdrawals Handled: {}".format(withdrawals)
+            if str_ != "":
+                log.debug("{}".format(str_))
+        except Exception:
+            log.exception("exception")
+        finally:
+            shared_memory_locks["bulk_timer"].release()
+            self.setup_bulk_update_timer()
 
     def stop_consumer_loop(self, message: Dict) -> NoReturn:
         """

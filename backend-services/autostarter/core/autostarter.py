@@ -1,4 +1,6 @@
 import os
+import re
+import socket
 import time
 
 import requests
@@ -37,6 +39,23 @@ USER_CONTROLLED_SERVICES = [DETECTION_HOST, MITIGATION_HOST, RIPERISTAP_HOST]
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
 CREATE_TRIGGER_QUERY = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
+
+
+# TODO: move to utils
+def service_to_ips_and_replicas(base_service_name):
+    service_to_ips_and_replicas_set = set([])
+    addr_infos = socket.getaddrinfo(base_service_name, REST_PORT)
+    for addr_info in addr_infos:
+        af, sock_type, proto, canon_name, sa = addr_info
+        replica_ip = sa[0]
+        replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
+        replica_name_match = re.match(
+            r"^artemis_" + re.escape(base_service_name) + r"_(\d+)\.",
+            replica_host_by_addr,
+        )
+        replica_name = "{}_{}".format(base_service_name, replica_name_match.group(1))
+        service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+    return service_to_ips_and_replicas_set
 
 
 def bootstrap_intended_services(wo_db):
@@ -88,66 +107,76 @@ def check_and_control_services(ro_db, wo_db):
     for service, stored_status in stored_status_entries:
         stored_status_dict[service] = stored_status
 
+    detection_examined = False
     for service in intended_status_dict:
-        try:
-            intended_status = intended_status_dict[service]
-            r = requests.get("http://{}:{}/health".format(service, REST_PORT))
-            current_status = True if r.json()["status"] == "running" else False
-            # check if we need to update stored status
-            stored_status = None
-            if service in stored_status_dict:
-                stored_status = stored_status_dict[service]
-            if current_status != stored_status:
-                set_current_service_status(wo_db, service, running=current_status)
-            # ATTENTION: if response status is unconfigured, then the actual intention is False
-            intended_status = (
-                False if r.json()["status"] == "unconfigured" else intended_status
-            )
-            if intended_status == current_status:
-                # statuses match, do nothing
-                pass
-            elif intended_status:
-                log.info(
-                    "service '{}' data worker should be running but is not".format(
-                        service
+        for replica_name, replica_ip in service_to_ips_and_replicas(service):
+            try:
+                intended_status = intended_status_dict[service]
+                r = requests.get("http://{}:{}/health".format(replica_ip, REST_PORT))
+                current_status = True if r.json()["status"] == "running" else False
+                # check if we need to update stored status
+                stored_status = None
+                if replica_name in stored_status_dict:
+                    stored_status = stored_status_dict[replica_name]
+                if current_status != stored_status:
+                    set_current_service_status(
+                        wo_db, replica_name, running=current_status
                     )
+                # ATTENTION: if response status is unconfigured, then the actual intention is False
+                intended_status = (
+                    False if r.json()["status"] == "unconfigured" else intended_status
                 )
-                r = requests.post(
-                    url="http://{}:{}/control".format(service, REST_PORT),
-                    data=json.dumps({"command": "start"}),
-                )
-                response = r.json()
-                if not response["success"]:
-                    raise Exception(response["message"])
-                # activate update trigger when detection turns on
+                if intended_status == current_status:
+                    # statuses match, do nothing
+                    pass
+                elif intended_status:
+                    log.info(
+                        "service '{}' data worker should be running but is not".format(
+                            replica_name
+                        )
+                    )
+                    r = requests.post(
+                        url="http://{}:{}/control".format(replica_ip, REST_PORT),
+                        data=json.dumps({"command": "start"}),
+                    )
+                    response = r.json()
+                    if not response["success"]:
+                        raise Exception(response["message"])
+                    # activate update trigger when detection turns on
+                    if service == DETECTION_HOST and not detection_examined:
+                        wo_db.execute(
+                            "{}{}".format(DROP_TRIGGER_QUERY, CREATE_TRIGGER_QUERY)
+                        )
+                    log.info(
+                        "service '{}': '{}'".format(replica_name, response["message"])
+                    )
+                else:
+                    log.info(
+                        "service '{}' data worker should not be running but it is".format(
+                            replica_name
+                        )
+                    )
+                    r = requests.post(
+                        url="http://{}:{}/control".format(replica_ip, REST_PORT),
+                        data=json.dumps({"command": "stop"}),
+                    )
+                    response = r.json()
+                    if not response["success"]:
+                        raise Exception(response["message"])
+                    # deactivate update trigger when detection turns off
+                    if service == DETECTION_HOST:
+                        wo_db.execute("{}".format(DROP_TRIGGER_QUERY))
+                    log.info(
+                        "service '{}': '{}'".format(replica_name, response["message"])
+                    )
                 if service == DETECTION_HOST:
-                    wo_db.execute(
-                        "{}{}".format(DROP_TRIGGER_QUERY, CREATE_TRIGGER_QUERY)
-                    )
-                log.info("service '{}': '{}'".format(service, response["message"]))
-            else:
-                log.info(
-                    "service '{}' data worker should not be running but it is".format(
-                        service
+                    detection_examined = True
+            except Exception:
+                log.warning(
+                    "could not properly check and control service '{}'. Will retry next round".format(
+                        replica_name
                     )
                 )
-                r = requests.post(
-                    url="http://{}:{}/control".format(service, REST_PORT),
-                    data=json.dumps({"command": "stop"}),
-                )
-                response = r.json()
-                if not response["success"]:
-                    raise Exception(response["message"])
-                # deactivate update trigger when detection turns off
-                if service == DETECTION_HOST:
-                    wo_db.execute("{}".format(DROP_TRIGGER_QUERY))
-                log.info("service '{}': '{}'".format(service, response["message"]))
-        except Exception:
-            log.warning(
-                "could not properly check and control service '{}'. Will retry next round".format(
-                    service
-                )
-            )
 
 
 if __name__ == "__main__":
@@ -172,6 +201,9 @@ if __name__ == "__main__":
         port=DB_PORT,
         database=DB_NAME,
     )
+
+    # reset stored process status table
+    wo_db.execute("TRUNCATE process_states")
 
     # set always running service to true
     bootstrap_intended_services(wo_db)

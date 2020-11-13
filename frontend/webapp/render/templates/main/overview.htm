@@ -279,7 +279,7 @@
                     if(data['view_processes'][key].name.includes('_')){
                         var find_first = parseInt(data['view_processes'][key].name.split('_')[1]);
 
-                        if(find_first == 0){
+                        if(find_first == 1){
                             var name = data['view_processes'][key].name.split('_')[0];
                             $('#modules_states').append( // Append the parent multiple module
                                 create_module_render_li(

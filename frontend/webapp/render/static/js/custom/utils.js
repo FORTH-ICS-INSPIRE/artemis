@@ -217,7 +217,7 @@ function aggregate_status_of_modules(data, name_to_aggregate, index){ // eslint-
         "total": 0
     }
 
-    while(data[index].name.includes(name_to_aggregate)){
+    while(index < data.length && data[index].name.includes(name_to_aggregate)){
         if(data[index].running){
             status['on']++;
         }

@@ -108,6 +108,7 @@ PROCESS_STATES_LOADING_MUTATION = """
     }
 """
 
+
 serialization.register(
     "ujson",
     json.dumps,

@@ -98,6 +98,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                     "prepend_seq": rule.get("prepend_seq", []),
                     "policies": set(rule.get("policies", [])),
                     "community_annotations": rule.get("community_annotations", []),
+                    "mitigation": rule.get("mitigation", "manual"),
                 }
                 for prefix in rule["prefixes"]:
                     for translated_prefix in translate_rfc2622(prefix):
@@ -440,6 +441,9 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             "hijack-update", connection, declare=True
         )
         self.pg_amq_bridge = create_exchange("amq.direct", connection)
+        self.mitigation_exchange = create_exchange(
+            "mitigation", connection, declare=True
+        )
         self.command_exchange = create_exchange("command", connection, declare=True)
 
         # QUEUES
@@ -457,6 +461,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             exchange=self.pg_amq_bridge,
             routing_key="update-insert",
             priority=1,
+        )
+        self.mitigation_request_queue = create_queue(
+            MODULE_NAME,
+            exchange=self.mitigation_exchange,
+            routing_key="mitigate",
+            priority=2,
         )
         self.stop_queue = create_queue(
             MODULE_NAME,
@@ -478,6 +488,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             Consumer(
                 queues=[self.hijack_ongoing_queue],
                 on_message=self.annotate_ongoing_hijack_updates,
+                prefetch_count=100,
+                accept=["ujson"],
+            ),
+            Consumer(
+                queues=[self.mitigation_request_queue],
+                on_message=self.annotate_mitigation_request,
                 prefetch_count=100,
                 accept=["ujson"],
             ),
@@ -584,6 +600,32 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             routing_key="ongoing-with-prefix-node",
             serializer="ujson",
         )
+
+    def annotate_mitigation_request(self, message: Dict) -> NoReturn:
+        """
+        Callback function that annotates incoming hijack mitigation requests with the associated
+        mitigation action/instruction (otherwise it discards them).
+        """
+        message.ack()
+        mit_request = message.payload
+        try:
+            prefix_node = self.find_prefix_node(mit_request["prefix"])
+            if prefix_node:
+                annotated_mit_request = {}
+                # use the first best matching rule mitigation action;
+                # a prefix should not have different mitigation actions anyway
+                annotated_mit_request["hijack_info"] = mit_request
+                annotated_mit_request["mitigation_action"] = prefix_node["data"][
+                    "confs"
+                ][0]["mitigation"]
+                self.producer.publish(
+                    annotated_mit_request,
+                    exchange=self.mitigation_exchange,
+                    routing_key="mitigate-with-action",
+                    serializer="ujson",
+                )
+        except Exception:
+            log.exception("exception")
 
     def stop_consumer_loop(self, message: Dict) -> NoReturn:
         """

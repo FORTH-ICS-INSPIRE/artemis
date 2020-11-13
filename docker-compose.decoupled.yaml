@@ -120,6 +120,7 @@ services:
         depends_on:
             - database
             - detection
+            - mitigation
             - notifier
             - postgres
             - prefixtree
@@ -135,6 +136,7 @@ services:
         environment:
             DATABASE_HOST: database
             DETECTION_HOST: detection
+            MITIGATION_HOST: mitigation
             MODULE_NAME: configuration
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
@@ -186,27 +188,34 @@ services:
             - ./backend-services/detection/configs/:/etc/artemis/
             - ./backend-services/detection/entrypoint:/root/entrypoint
             - ./backend-services/detection/core/detection.py:/root/core/detection.py
-#    mitigation:
-#        image: artemis_mitigation
-#        build: ./backend-services/mitigation
-#        container_name: mitigation
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#            - configuration
-#            - detection
-#            - prefixtree
-#        expose:
-#            - 3000
-#        ports:
-#            - "3008:3000"
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./backend-services/mitigation/configs/:/etc/artemis/
+    mitigation:
+        image: artemis_mitigation
+        build: ./backend-services/mitigation
+        container_name: mitigation
+        restart: always
+        depends_on:
+            - rabbitmq
+            - database
+            - prefixtree
+        expose:
+            - 3000
+        ports:
+            - "3008:3000"
+        networks:
+            - artemis
+        environment:
+            DATABASE_HOST: database
+            MODULE_NAME: mitigation
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./backend-services/mitigation/configs/:/etc/artemis/
+            - ./backend-services/mitigation/entrypoint:/root/entrypoint
+            - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
     fileobserver:
         image: artemis_fileobserver
         build: ./backend-services/fileobserver
@@ -335,6 +344,7 @@ services:
             - postgres
             - database
             - detection
+            - mitigation
             - notifier
             - prefixtree
             - configuration
@@ -354,6 +364,7 @@ services:
             DB_NAME: ${DB_NAME}
             DETECTION_HOST: detection
             FILEOBSERVER_HOST: fileobserver
+            MITIGATION_HOST: mitigation
             MODULE_NAME: autostarter
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree

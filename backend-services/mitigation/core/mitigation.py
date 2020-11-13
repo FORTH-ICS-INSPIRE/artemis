@@ -1,233 +1,315 @@
-import signal
+import multiprocessing as mp
+import os
 import subprocess
 import time
+from typing import Dict
+from typing import NoReturn
 
-import pytricia
+import requests
 import ujson as json
-from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import RABBITMQ_URI
-from artemis_utils import signal_loading
-from artemis_utils import translate_rfc2622
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
-from kombu import Consumer
-from kombu import Queue
-from kombu import uuid
+from kombu import Producer
 from kombu.mixins import ConsumerProducerMixin
+from tornado.ioloop import IOLoop
+from tornado.web import Application
+from tornado.web import RequestHandler
 
+# logger
 log = get_logger()
 
+# shared memory object locks
+shared_memory_locks = {"data_worker": mp.Lock()}
 
-class Mitigation:
-    def __init__(self):
-        self.worker = None
-        signal.signal(signal.SIGTERM, self.exit)
-        signal.signal(signal.SIGINT, self.exit)
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+# global vars
+MODULE_NAME = os.getenv("MODULE_NAME", "mitigation")
+PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
+REST_PORT = int(os.getenv("REST_PORT", 3000))
+DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
 
-    def run(self):
+
+# TODO: move this to util
+def wait_data_worker_dependencies(data_worker_dependencies):
+    while True:
+        all_deps_met = True
+        for service in data_worker_dependencies:
+            try:
+                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                status = True if r.json()["status"] == "running" else False
+                if not status:
+                    all_deps_met = False
+                    break
+            except Exception:
+                all_deps_met = False
+                break
+        if all_deps_met:
+            log.info("needed data workers started: {}".format(data_worker_dependencies))
+            break
+        log.info(
+            "waiting for needed data workers to start: {}".format(
+                data_worker_dependencies
+            )
+        )
+        time.sleep(1)
+
+
+class ConfigHandler(RequestHandler):
+    """
+    REST request handler for configuration.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def post(self):
         """
-        Entry function for this service that runs a RabbitMQ worker through Kombu.
+        Pseudo-configures fileobserver and responds with a success message.
+        :return: {"success": True | False, "message": < message >}
         """
+        self.write({"success": True, "message": "configured"})
+
+
+class HealthHandler(RequestHandler):
+    """
+    REST request handler for health checks.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Extract the status of a service via a GET request.
+        :return: {"status" : <unconfigured|running|stopped>}
+        """
+        status = "stopped"
+        shared_memory_locks["data_worker"].acquire()
+        if self.shared_memory_manager_dict["data_worker_running"]:
+            status = "running"
+        shared_memory_locks["data_worker"].release()
+        self.write({"status": status})
+
+
+class ControlHandler(RequestHandler):
+    """
+    REST request handler for control commands.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def start_data_worker(self):
+        shared_memory_locks["data_worker"].acquire()
+        if self.shared_memory_manager_dict["data_worker_running"]:
+            log.info("data worker already running")
+            shared_memory_locks["data_worker"].release()
+            return "already running"
+        shared_memory_locks["data_worker"].release()
+        mp.Process(target=self.run_data_worker_process).start()
+        return "instructed to start"
+
+    def run_data_worker_process(self):
         try:
             with Connection(RABBITMQ_URI) as connection:
-                self.worker = self.Worker(connection)
-                self.worker.run()
+                shared_memory_locks["data_worker"].acquire()
+                data_worker = MitigationDataWorker(
+                    connection, self.shared_memory_manager_dict
+                )
+                self.shared_memory_manager_dict["data_worker_running"] = True
+                shared_memory_locks["data_worker"].release()
+                log.info("data worker started")
+                data_worker.run()
         except Exception:
             log.exception("exception")
         finally:
-            log.info("stopped")
+            shared_memory_locks["data_worker"].acquire()
+            self.shared_memory_manager_dict["data_worker_running"] = False
+            shared_memory_locks["data_worker"].release()
+            log.info("data worker stopped")
 
-    def exit(self, signum, frame):
-        if self.worker:
-            self.worker.should_stop = True
-
-    class Worker(ConsumerProducerMixin):
-        def __init__(self, connection):
-            self.module_name = "mitigation"
-            self.connection = connection
-            self.timestamp = -1
-            self.rules = None
-            self.prefix_tree = None
-            self.correlation_id = None
-
-            # EXCHANGES
-            self.mitigation_exchange = create_exchange(
-                "mitigation", connection, declare=True
-            )
-            self.config_exchange = create_exchange("config", connection)
-
-            # QUEUES
-            self.config_queue = create_queue(
-                self.module_name,
-                exchange=self.config_exchange,
-                routing_key="notify",
-                priority=3,
-            )
-            self.mitigate_queue = create_queue(
-                self.module_name,
-                exchange=self.mitigation_exchange,
-                routing_key="mitigate",
-                priority=2,
-            )
-
-            signal_loading(self.module_name, True)
-            self.config_request_rpc()
-            signal_loading(self.module_name, False)
-
-        def get_consumers(self, Consumer, channel):
-            return [
-                Consumer(
-                    queues=[self.config_queue],
-                    on_message=self.handle_config_notify,
-                    prefetch_count=1,
-                    accept=["ujson"],
-                ),
-                Consumer(
-                    queues=[self.mitigate_queue],
-                    on_message=self.handle_mitigation_request,
-                    prefetch_count=1,
-                    accept=["ujson"],
-                ),
-            ]
-
-        def handle_config_notify(self, message):
-            message.ack()
-            log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading(self.module_name, True)
-            try:
-                raw = message.payload
-                if raw["timestamp"] > self.timestamp:
-                    self.timestamp = raw["timestamp"]
-                    self.rules = raw.get("rules", [])
-                    self.init_mitigation()
-            except Exception:
-                log.exception("Exception")
-            finally:
-                signal_loading(self.module_name, False)
-
-        def config_request_rpc(self):
-            self.correlation_id = uuid()
-            callback_queue = Queue(
-                uuid(),
-                durable=False,
-                auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
-
-            self.producer.publish(
-                "",
-                exchange="",
-                routing_key="configuration.rpc.request",
-                reply_to=callback_queue.name,
-                correlation_id=self.correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "configuration.rpc.request",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="ujson",
-            )
-            with Consumer(
-                self.connection,
-                on_message=self.handle_config_request_reply,
-                queues=[callback_queue],
-                accept=["ujson"],
-            ):
-                while self.rules is None:
-                    self.connection.drain_events()
-
-        def handle_config_request_reply(self, message):
-            message.ack()
-            log.debug("message: {}\npayload: {}".format(message, message.payload))
-            if self.correlation_id == message.properties["correlation_id"]:
-                raw = message.payload
-                if raw["timestamp"] > self.timestamp:
-                    self.timestamp = raw["timestamp"]
-                    self.rules = raw.get("rules", [])
-                    self.init_mitigation()
-
-        def init_mitigation(self):
-            log.info("Initiating mitigation...")
-
-            log.info("Starting building mitigation prefix tree...")
-            self.prefix_tree = {
-                "v4": pytricia.PyTricia(32),
-                "v6": pytricia.PyTricia(128),
-            }
-            raw_prefix_count = 0
-            for rule in self.rules:
-                try:
-                    for prefix in rule["prefixes"]:
-                        for translated_prefix in translate_rfc2622(prefix):
-                            ip_version = get_ip_version(translated_prefix)
-                            node = {
-                                "prefix": translated_prefix,
-                                "data": {"mitigation": rule["mitigation"]},
-                            }
-                            self.prefix_tree[ip_version].insert(translated_prefix, node)
-                            raw_prefix_count += 1
-                except Exception:
-                    log.exception("Exception")
-            log.info(
-                "{} prefixes integrated in mitigation prefix tree in total".format(
-                    raw_prefix_count
-                )
-            )
-            log.info("Finished building mitigation prefix tree.")
-
-            log.info("Mitigation initiated, configured and running.")
-
-        def handle_mitigation_request(self, message):
-            message.ack()
-            hijack_event = message.payload
-            ip_version = get_ip_version(hijack_event["prefix"])
-            if hijack_event["prefix"] in self.prefix_tree[ip_version]:
-                prefix_node = self.prefix_tree[ip_version][hijack_event["prefix"]]
-                mitigation_action = prefix_node["data"]["mitigation"][0]
-                if mitigation_action == "manual":
-                    log.info(
-                        "starting manual mitigation of hijack {}".format(hijack_event)
-                    )
-                else:
-                    log.info(
-                        "starting custom mitigation of hijack {} using '{}' script".format(
-                            hijack_event, mitigation_action
-                        )
-                    )
-                    hijack_event_str = json.dumps(hijack_event)
-                    subprocess.Popen(
-                        [mitigation_action, "-i", hijack_event_str],
-                        shell=False,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                    )
-                # do something
-                mit_started = {"key": hijack_event["key"], "time": time.time()}
-                self.producer.publish(
-                    mit_started,
-                    exchange=self.mitigation_exchange,
-                    routing_key="mit-start",
-                    priority=2,
+    @staticmethod
+    def stop_data_worker():
+        shared_memory_locks["data_worker"].acquire()
+        with Connection(RABBITMQ_URI) as connection:
+            with Producer(connection) as producer:
+                command_exchange = create_exchange("command", connection)
+                producer.publish(
+                    "",
+                    exchange=command_exchange,
+                    routing_key="stop-{}".format(MODULE_NAME),
                     serializer="ujson",
                 )
+        shared_memory_locks["data_worker"].release()
+        message = "instructed to stop"
+        return message
+
+    def post(self):
+        """
+        Instruct a service to start or stop by posting a command.
+        Sample request body
+        {
+            "command": <start|stop>
+        }
+        :return: {"success": True|False, "message": <message>}
+        """
+        try:
+            msg = json.loads(self.request.body)
+            command = msg["command"]
+            # start/stop data_worker
+            if command == "start":
+                message = self.start_data_worker()
+                self.write({"success": True, "message": message})
+            elif command == "stop":
+                message = self.stop_data_worker()
+                self.write({"success": True, "message": message})
             else:
-                log.warn("no rule for hijack {}".format(hijack_event))
+                self.write({"success": False, "message": "unknown command"})
+        except Exception:
+            log.exception("Exception")
+            self.write({"success": False, "message": "error during control"})
 
 
-def run():
-    service = Mitigation()
-    service.run()
+class Mitigation:
+    """
+    Mitigation Service.
+    """
+
+    def __init__(self):
+        # initialize shared memory
+        shared_memory_manager = mp.Manager()
+        self.shared_memory_manager_dict = shared_memory_manager.dict()
+        self.shared_memory_manager_dict["data_worker_running"] = False
+
+        log.info("service initiated")
+
+    def make_rest_app(self):
+        return Application(
+            [
+                (
+                    "/config",
+                    ConfigHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/control",
+                    ControlHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/health",
+                    HealthHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+            ]
+        )
+
+    def start_rest_app(self):
+        app = self.make_rest_app()
+        app.listen(REST_PORT)
+        log.info("REST worker started and listening to port {}".format(REST_PORT))
+        IOLoop.current().start()
+
+
+class MitigationDataWorker(ConsumerProducerMixin):
+    """
+    RabbitMQ Consumer/Producer for the mitigation Service.
+    """
+
+    def __init__(self, connection, shared_memory_manager_dict):
+        self.connection = connection
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+        # wait for other needed data workers to start
+        wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
+
+        # EXCHANGES
+        self.mitigation_exchange = create_exchange(
+            "mitigation", connection, declare=True
+        )
+        self.command_exchange = create_exchange("command", connection, declare=True)
+
+        # QUEUES
+        self.mitigate_queue = create_queue(
+            MODULE_NAME,
+            exchange=self.mitigation_exchange,
+            routing_key="mitigate-with-action",
+            priority=2,
+        )
+        self.stop_queue = create_queue(
+            MODULE_NAME,
+            exchange=self.command_exchange,
+            routing_key="stop-{}".format(MODULE_NAME),
+            priority=1,
+        )
+
+        log.info("data worker initiated")
+
+    def get_consumers(self, Consumer, channel):
+        return [
+            Consumer(
+                queues=[self.mitigate_queue],
+                on_message=self.handle_mitigation_request,
+                prefetch_count=1,
+                accept=["ujson"],
+            ),
+            Consumer(
+                queues=[self.stop_queue],
+                on_message=self.stop_consumer_loop,
+                prefetch_count=100,
+                accept=["ujson"],
+            ),
+        ]
+
+    def handle_mitigation_request(self, message):
+        message.ack()
+        mit_request = message.payload
+        try:
+            hijack_info = mit_request["hijack_info"]
+            mitigation_action = mit_request["mitigation_action"]
+            if isinstance(mitigation_action, list):
+                mitigation_action = mitigation_action[0]
+            if mitigation_action == "manual":
+                log.info("starting manual mitigation of hijack {}".format(hijack_info))
+            else:
+                log.info(
+                    "starting custom mitigation of hijack {} using '{}' script".format(
+                        hijack_info, mitigation_action
+                    )
+                )
+                hijack_info_str = json.dumps(hijack_info)
+                subprocess.Popen(
+                    [mitigation_action, "-i", hijack_info_str],
+                    shell=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            # do something
+            mit_started = {"key": hijack_info["key"], "time": time.time()}
+            self.producer.publish(
+                mit_started,
+                exchange=self.mitigation_exchange,
+                routing_key="mit-start",
+                priority=2,
+                serializer="ujson",
+            )
+        except Exception:
+            log.exception("exception")
+
+    def stop_consumer_loop(self, message: Dict) -> NoReturn:
+        """
+        Callback function that stop the current consumer loop
+        """
+        message.ack()
+        self.should_stop = True
 
 
 if __name__ == "__main__":
-    run()
+    # initiate mitigation service with REST
+    mitigationService = Mitigation()
+
+    # start REST within main process
+    mitigationService.start_rest_app()

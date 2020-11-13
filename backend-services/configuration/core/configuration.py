@@ -54,12 +54,14 @@ DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
 NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
 DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
+MITIGATION_HOST = os.getenv("MITIGATION_HOST", "mitigation")
 RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
 OTHER_SERVICES = [
     PREFIXTREE_HOST,
     DATABASE_HOST,
     NOTIFIER_HOST,
     DETECTION_HOST,
+    MITIGATION_HOST,
     RIPERISTAP_HOST,
 ]
 REST_PORT = int(os.getenv("REST_PORT", 3000))

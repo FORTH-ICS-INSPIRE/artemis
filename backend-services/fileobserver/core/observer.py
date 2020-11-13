@@ -31,7 +31,7 @@ class ConfigHandler(RequestHandler):
 
     def post(self):
         """
-        Pesudo-configures fileobserver and responds with a success message.
+        Pseudo-configures fileobserver and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         self.write({"success": True, "message": "configured"})

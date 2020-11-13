@@ -6,5 +6,6 @@ gql==0.4.0
 ipaddress==1.0.23
 requests==2.22.0
 six==1.13.0
+tornado==6.0.4
 ujson==1.35
 watchdog==0.9.0

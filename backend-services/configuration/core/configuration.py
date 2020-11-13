@@ -52,9 +52,16 @@ shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 MODULE_NAME = os.getenv("MODULE_NAME", "configuration")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
 DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
 RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
-OTHER_SERVICES = [PREFIXTREE_HOST, DATABASE_HOST, DETECTION_HOST, RIPERISTAP_HOST]
+OTHER_SERVICES = [
+    PREFIXTREE_HOST,
+    DATABASE_HOST,
+    NOTIFIER_HOST,
+    DETECTION_HOST,
+    RIPERISTAP_HOST,
+]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
@@ -1146,7 +1153,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop",
+                    routing_key="stop-{}".format(MODULE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -1261,7 +1268,10 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
             random=True,
         )
         self.stop_queue = create_queue(
-            MODULE_NAME, exchange=self.command_exchange, routing_key="stop", priority=1
+            MODULE_NAME,
+            exchange=self.command_exchange,
+            routing_key="stop-{}".format(MODULE_NAME),
+            priority=1,
         )
 
         log.info("data worker initiated")

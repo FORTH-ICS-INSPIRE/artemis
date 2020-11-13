@@ -249,7 +249,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop",
+                    routing_key="stop-{}".format(MODULE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -459,7 +459,10 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             priority=1,
         )
         self.stop_queue = create_queue(
-            MODULE_NAME, exchange=self.command_exchange, routing_key="stop", priority=1
+            MODULE_NAME,
+            exchange=self.command_exchange,
+            routing_key="stop-{}".format(MODULE_NAME),
+            priority=1,
         )
 
         log.info("data worker initiated")

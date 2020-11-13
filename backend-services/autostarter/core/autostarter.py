@@ -15,17 +15,19 @@ from artemis_utils.db_util import DB
 # logger
 log = get_logger()
 
-CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 10))
+CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 5))
 CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 FILEOBSERVER_HOST = os.getenv("FILEOBSERVER_HOST", "fileobserver")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
 DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
 RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 ALWAYS_RUNNING_SERVICES = [
     CONFIGURATION_HOST,
     DATABASE_HOST,
+    NOTIFIER_HOST,
     FILEOBSERVER_HOST,
     PREFIXTREE_HOST,
 ]
@@ -116,8 +118,8 @@ def check_and_control_services(ro_db, wo_db):
                 response = r.json()
                 if not response["success"]:
                     raise Exception(response["message"])
-                # activate update trigger for prefix tree
-                if service == PREFIXTREE_HOST:
+                # activate update trigger when detection turns on
+                if service == DETECTION_HOST:
                     wo_db.execute(
                         "{}{}".format(DROP_TRIGGER_QUERY, CREATE_TRIGGER_QUERY)
                     )
@@ -135,8 +137,8 @@ def check_and_control_services(ro_db, wo_db):
                 response = r.json()
                 if not response["success"]:
                     raise Exception(response["message"])
-                # deactivate update trigger for prefix tree
-                if service == PREFIXTREE_HOST:
+                # deactivate update trigger when detection turns off
+                if service == DETECTION_HOST:
                     wo_db.execute("{}".format(DROP_TRIGGER_QUERY))
                 log.info("service '{}': '{}'".format(service, response["message"]))
         except Exception:

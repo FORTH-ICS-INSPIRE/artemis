@@ -53,7 +53,34 @@ VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
 MODULE_NAME = os.getenv("MODULE_NAME", "database")
 CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
+DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
+
+
+# TODO: move this to util
+def wait_data_worker_dependencies(data_worker_dependencies):
+    while True:
+        all_deps_met = True
+        for service in data_worker_dependencies:
+            try:
+                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                status = True if r.json()["status"] == "running" else False
+                if not status:
+                    all_deps_met = False
+                    break
+            except Exception:
+                all_deps_met = False
+                break
+        if all_deps_met:
+            log.info("needed data workers started: {}".format(data_worker_dependencies))
+            break
+        log.info(
+            "waiting for needed data workers to start: {}".format(
+                data_worker_dependencies
+            )
+        )
+        time.sleep(1)
 
 
 def save_config(wo_db, config_hash, yaml_config, raw_config, comment):
@@ -274,7 +301,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop",
+                    routing_key="stop-{}".format(MODULE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -391,6 +418,9 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         ping_redis(self.redis)
         self.bootstrap_redis()
 
+        # wait for other needed data workers to start
+        wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
+
         # EXCHANGES
         self.update_exchange = create_exchange("bgp-update", connection, declare=True)
         self.hijack_exchange = create_exchange(
@@ -399,10 +429,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         self.hijack_hashing = create_exchange(
             "hijack-hashing", connection, "x-consistent-hash", declare=True
         )
-        self.handled_exchange = create_exchange("handled-update", connection)
-        self.mitigation_exchange = create_exchange("mitigation", connection)
+        self.handled_exchange = create_exchange(
+            "handled-update", connection, declare=True
+        )
+        self.mitigation_exchange = create_exchange(
+            "mitigation", connection, declare=True
+        )
         self.hijack_notification_exchange = create_exchange(
-            "hijack-notification", connection
+            "hijack-notification", connection, declare=True
         )
         self.command_exchange = create_exchange("command", connection, declare=True)
 
@@ -466,7 +500,10 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             MODULE_NAME, exchange=self.hijack_exchange, routing_key="delete", priority=2
         )
         self.stop_queue = create_queue(
-            MODULE_NAME, exchange=self.command_exchange, routing_key="stop", priority=1
+            MODULE_NAME,
+            exchange=self.command_exchange,
+            routing_key="stop-{}".format(MODULE_NAME),
+            priority=1,
         )
 
         self.setup_bulk_update_timer()

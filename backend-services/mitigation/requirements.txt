@@ -13,5 +13,8 @@ redis==3.4.0
 requests==2.22.0
 ruamel.yaml==0.16.5
 six==1.13.0
+slacker-log-handler==1.7.1
+socketIO-client==0.7.2
+socketIO-client-nexus==0.7.6
 tornado==6.0.4
 ujson==1.35

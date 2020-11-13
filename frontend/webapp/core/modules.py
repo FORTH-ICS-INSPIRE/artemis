@@ -10,6 +10,7 @@ from webapp.utils import CONFIGURATION_HOST
 from webapp.utils import DATABASE_HOST
 from webapp.utils import FILEOBSERVER_HOST
 from webapp.utils import GRAPHQL_URI
+from webapp.utils import NOTIFIER_HOST
 from webapp.utils import PREFIXTREE_HOST
 from webapp.utils import REST_PORT
 
@@ -35,8 +36,14 @@ mutation updateIntendedProcessStates($name: String, $running: Boolean) {
 }
 """
 
-user_controlled_modules = ["monitor", "detection", "mitigation"]
-ALL_MODULES = [CONFIGURATION_HOST, DATABASE_HOST, FILEOBSERVER_HOST, PREFIXTREE_HOST]
+USER_CONTROLLED_MODULES = ["monitor", "detection", "mitigation"]
+ALWAYS_ON_MODULES = [
+    CONFIGURATION_HOST,
+    DATABASE_HOST,
+    FILEOBSERVER_HOST,
+    PREFIXTREE_HOST,
+    NOTIFIER_HOST,
+]
 
 
 def display_time(seconds, granularity=2):
@@ -138,7 +145,7 @@ class Modules_state:
         #             }
         #         else:
         #             ret_response[module["name"]] = {"status": "down", "uptime": "N/A"}
-        for module in ALL_MODULES:
+        for module in ALWAYS_ON_MODULES + USER_CONTROLLED_MODULES:
             try:
                 r = requests.get("http://{}:{}/health".format(module, REST_PORT))
                 ret_response["module"] = {
@@ -146,7 +153,6 @@ class Modules_state:
                     "uptime": "N/A",
                 }
             except Exception:
-                log.exception("exception")
                 ret_response["module"] = {"status": "down", "uptime": "N/A"}
         return ret_response
 

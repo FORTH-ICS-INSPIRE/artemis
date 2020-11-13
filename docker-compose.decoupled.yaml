@@ -393,6 +393,7 @@ services:
             CONFIGURATION_HOST: configuration
             DATABASE_HOST: database
             FILEOBSERVER_HOST: fileobserver
+            NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}

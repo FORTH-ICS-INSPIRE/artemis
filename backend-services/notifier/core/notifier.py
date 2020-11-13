@@ -424,10 +424,7 @@ class NotifierDataWorker(ConsumerProducerMixin):
                 if (hijack_num_peers_seen < thres_num_peers_seen) and (
                     hijack_num_ases_infected < thres_num_ases_infected
                 ):
-                    log.info("SUPPRESSED hijack '{}'".format(hijack))
                     suppressed = True
-            if not suppressed:
-                log.info("NOT SUPPRESSED hijack '{}'".format(hijack))
         except Exception:
             log.exception("exception")
         finally:

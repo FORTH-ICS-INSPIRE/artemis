@@ -25,6 +25,7 @@ CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 FILEOBSERVER_HOST = os.getenv("FILEOBSERVER_HOST", "fileobserver")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

@@ -44,7 +44,7 @@ jobs:
       name: riperistap
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -54,7 +54,7 @@ jobs:
     - name: autostarter
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -64,7 +64,7 @@ jobs:
     - name: configuration
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -74,7 +74,7 @@ jobs:
     - name: detection
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -84,7 +84,7 @@ jobs:
     - name: database
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -94,7 +94,7 @@ jobs:
     - name: fileobserver
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -104,7 +104,7 @@ jobs:
     - name: mitigation
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -114,7 +114,7 @@ jobs:
     - name: notifier
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -124,7 +124,7 @@ jobs:
     - name: prefixtree
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
@@ -134,7 +134,7 @@ jobs:
     - name: frontend
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:latest || true; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:

@@ -45,6 +45,10 @@ jobs:
       install: []
       script:
         - docker build --build-arg revision=$(git rev-parse --short HEAD) monitor-services/riperistap
+    - name: autostarter
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/autostarter
     - name: configuration
       install: []
       script:
@@ -53,6 +57,18 @@ jobs:
       install: [ ]
       script:
         - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/database
+    - name: detection
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/detection
+    - name: fileobserver
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/fileobserver
+    - name: mitigation
+      install: [ ]
+      script:
+        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/mitigation
     - name: notifier
       install: [ ]
       script:
@@ -61,18 +77,6 @@ jobs:
       install: [ ]
       script:
         - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/prefixtree
-    - name: fileobserver
-      install: [ ]
-      script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/fileobserver
-    - name: detection
-      install: [ ]
-      script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/detection
-    - name: autostarter
-      install: [ ]
-      script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/autostarter
     - name: frontend
       install: [ ]
       script:

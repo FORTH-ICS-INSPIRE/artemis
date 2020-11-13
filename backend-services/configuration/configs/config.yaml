@@ -26,6 +26,14 @@ monitors:
   #- caida
 # End of Monitor Definitions
 
+autoignore:
+  autoignore_non_important_prefixes:
+    thres_num_peers_seen: 2
+    thres_num_ases_infected: 3
+    interval: 3600
+    prefixes:
+    - *forth_prefix_main
+
 # Start of ASN Definitions
 asns:
   forth_asn: &forth_asn

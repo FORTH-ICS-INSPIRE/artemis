@@ -242,6 +242,7 @@ services:
         networks:
             - artemis
         environment:
+            CONFIGURATION_HOST: configuration
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             MODULE_NAME: notifier
             RABBITMQ_USER: ${RABBITMQ_USER}

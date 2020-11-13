@@ -52,37 +52,85 @@ jobs:
       - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
       - if [ $IS_FORK ]; then docker build -t artemis-riperistap:${DOCKER_TAG} monitor-services/riperistap/; fi
     - name: autostarter
-      install: [ ]
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/autostarter
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-autostarter:${DOCKER_TAG} --cache-from inspiregroup/artemis-autostarter:latest --cache-from inspiregroup/artemis-autostarter:${DOCKER_TAG} backend-services/autostarter/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-autostarter:${DOCKER_TAG} backend-services/autostarter/; fi
     - name: configuration
       install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/configuration
-    - name: database
-      install: [ ]
-      script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/database
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-configuration:${DOCKER_TAG} --cache-from inspiregroup/artemis-configuration:latest --cache-from inspiregroup/artemis-configuration:${DOCKER_TAG} backend-services/configuration/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-configuration:${DOCKER_TAG} backend-services/configuration/; fi
     - name: detection
-      install: [ ]
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/detection
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-detection:${DOCKER_TAG} --cache-from inspiregroup/artemis-detection:latest --cache-from inspiregroup/artemis-detection:${DOCKER_TAG} backend-services/detection/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-detection:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-detection:${DOCKER_TAG} backend-services/detection/; fi
+    - name: database
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
+      script:
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-database:${DOCKER_TAG} --cache-from inspiregroup/artemis-database:latest --cache-from inspiregroup/artemis-database:${DOCKER_TAG} backend-services/database/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-database:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-database:${DOCKER_TAG} backend-services/database/; fi
     - name: fileobserver
-      install: [ ]
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/fileobserver
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-fileobserver:${DOCKER_TAG} --cache-from inspiregroup/artemis-fileobserver:latest --cache-from inspiregroup/artemis-fileobserver:${DOCKER_TAG} backend-services/fileobserver/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-fileobserver:${DOCKER_TAG} backend-services/fileobserver/; fi
     - name: mitigation
-      install: [ ]
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/mitigation
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-mitigation:${DOCKER_TAG} --cache-from inspiregroup/artemis-mitigation:latest --cache-from inspiregroup/artemis-mitigation:${DOCKER_TAG} backend-services/mitigation/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-mitigation:${DOCKER_TAG} backend-services/mitigation/; fi
     - name: notifier
-      install: [ ]
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/notifier
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-notifier:${DOCKER_TAG} --cache-from inspiregroup/artemis-notifier:latest --cache-from inspiregroup/artemis-notifier:${DOCKER_TAG} backend-services/notifier/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-notifier:${DOCKER_TAG} backend-services/notifier/; fi
     - name: prefixtree
-      install: [ ]
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - docker build --build-arg revision=$(git rev-parse --short HEAD) backend-services/prefixtree
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-prefixtree:${DOCKER_TAG} --cache-from inspiregroup/artemis-prefixtree:latest --cache-from inspiregroup/artemis-prefixtree:${DOCKER_TAG} backend-services/prefixtree/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-prefixtree:${DOCKER_TAG} backend-services/prefixtree/; fi
     - name: frontend
       install: []
       before_script:

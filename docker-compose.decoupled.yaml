@@ -111,232 +111,8 @@ services:
 #        # TODO: env variables, ports
 #        volumes:
 #            - ./monitor-services/exabgptap/configs/:/etc/artemis/
-    configuration:
-        image: artemis_configuration
-        build: ./backend-services/configuration
-        container_name: configuration
-        restart: always
-        depends_on:
-            - database
-            - detection
-            - mitigation
-            - notifier
-            - postgres
-            - prefixtree
-            - rabbitmq
-            - redis
-            - riperistap
-        expose:
-            - 3000
-        ports:
-            - "3006:3000"
-        networks:
-            - artemis
-        environment:
-            DATABASE_HOST: database
-            DETECTION_HOST: detection
-            MITIGATION_HOST: mitigation
-            MODULE_NAME: configuration
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REDIS_HOST: ${REDIS_HOST}
-            REDIS_PORT: ${REDIS_PORT}
-            REST_PORT: 3000
-            RIPERISTAP_HOST: riperistap
-        volumes:
-            - ./backend-services/configuration/configs/:/etc/artemis/
-            - ./backend-services/configuration/entrypoint:/root/entrypoint
-            - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
-    detection:
-        image: artemis_detection
-        build: ./backend-services/detection
-        container_name: detection
-        restart: always
-        depends_on:
-            - notifier
-            - database
-            - prefixtree
-            - rabbitmq
-            - redis
-        expose:
-            - 3000
-        ports:
-            - "3007:3000"
-        networks:
-            - artemis
-        environment:
-            DATABASE_HOST: database
-            MODULE_NAME: detection
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REDIS_HOST: ${REDIS_HOST}
-            REDIS_PORT: ${REDIS_PORT}
-            REST_PORT: 3000
-            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
-            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
-            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
-        volumes:
-            - ./backend-services/detection/configs/:/etc/artemis/
-            - ./backend-services/detection/entrypoint:/root/entrypoint
-            - ./backend-services/detection/core/detection.py:/root/core/detection.py
-    mitigation:
-        image: artemis_mitigation
-        build: ./backend-services/mitigation
-        container_name: mitigation
-        restart: always
-        depends_on:
-            - rabbitmq
-            - database
-            - prefixtree
-        expose:
-            - 3000
-        ports:
-            - "3008:3000"
-        networks:
-            - artemis
-        environment:
-            DATABASE_HOST: database
-            MODULE_NAME: mitigation
-            PREFIXTREE_HOST: prefixtree
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REST_PORT: 3000
-        volumes:
-            - ./backend-services/mitigation/configs/:/etc/artemis/
-            - ./backend-services/mitigation/entrypoint:/root/entrypoint
-            - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
-    fileobserver:
-        image: artemis_fileobserver
-        build: ./backend-services/fileobserver
-        container_name: fileobserver
-        restart: always
-        depends_on:
-            - configuration
-        expose:
-            - 3000
-        ports:
-            - "3009:3000"
-        networks:
-            - artemis
-        environment:
-            CONFIGURATION_HOST: configuration
-            MODULE_NAME: fileobserver
-            REST_PORT: 3000
-        volumes:
-            - ./backend-services/configuration/configs/:/etc/artemis/
-            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
-            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
-    notifier:
-        image: artemis_notifier
-        build: ./backend-services/notifier
-        container_name: notifier
-        restart: always
-        depends_on:
-            - rabbitmq
-        expose:
-            - 3000
-        ports:
-            - "3010:3000"
-        networks:
-            - artemis
-        environment:
-            CONFIGURATION_HOST: configuration
-            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            MODULE_NAME: notifier
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REST_PORT: 3000
-        volumes:
-            - ./backend-services/notifier/configs/:/etc/artemis/
-            - ./backend-services/notifier/entrypoint:/root/entrypoint
-            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
-    database:
-        image: artemis_database
-        build: ./backend-services/database
-        container_name: database
-        restart: always
-        depends_on:
-            - graphql
-            - notifier
-            - postgres
-            - prefixtree
-            - rabbitmq
-            - redis
-        expose:
-            - 3000
-        ports:
-            - "3011:3000"
-        networks:
-          - artemis
-        environment:
-            CONFIGURATION_HOST: configuration
-            DB_USER: ${DB_USER}
-            DB_PASS: ${DB_PASS}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            DB_NAME: ${DB_NAME}
-            DB_VERSION: ${DB_VERSION}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            MODULE_NAME: database
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REDIS_HOST: ${REDIS_HOST}
-            REDIS_PORT: ${REDIS_PORT}
-            REST_PORT: 3000
-            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
-            HISTORIC: ${HISTORIC}
-        volumes:
-            - ./backend-services/database/configs/:/etc/artemis/
-            - ./backend-services/database/entrypoint:/root/entrypoint
-            - ./backend-services/database/core/database.py:/root/core/database.py
-    prefixtree:
-        image: artemis_prefixtree
-        build: ./backend-services/prefixtree
-        container_name: prefixtree
-        restart: always
-        depends_on:
-            - rabbitmq
-        expose:
-            - 3000
-        ports:
-            - "3012:3000"
-        networks:
-            - artemis
-        environment:
-            CONFIGURATION_HOST: configuration
-            MODULE_NAME: prefixtree
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REST_PORT: 3000
-        volumes:
-            - ./backend-services/prefixtree/configs/:/etc/artemis/
-            - ./backend-services/prefixtree/entrypoint:/root/entrypoint
-            - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
-            - ./utils/:/root/utils/
     autostarter:
-        image: artemis_autostarter
-        build: ./backend-services/autostarter
+        image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
         container_name: autostarter
         restart: always
         depends_on:
@@ -373,6 +149,222 @@ services:
             - ./backend-services/autostarter/configs/:/etc/artemis/
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
             - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
+    configuration:
+        image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
+        container_name: configuration
+        restart: always
+        depends_on:
+            - database
+            - detection
+            - mitigation
+            - notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+            - riperistap
+        expose:
+            - 3000
+        ports:
+            - "3007:3000"
+        networks:
+            - artemis
+        environment:
+            DATABASE_HOST: database
+            DETECTION_HOST: detection
+            MITIGATION_HOST: mitigation
+            MODULE_NAME: configuration
+            NOTIFIER_HOST: notifier
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RIPERISTAP_HOST: riperistap
+        volumes:
+            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/configuration/entrypoint:/root/entrypoint
+            - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
+    detection:
+        image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
+        container_name: detection
+        restart: always
+        depends_on:
+            - notifier
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        ports:
+            - "3008:3000"
+        networks:
+            - artemis
+        environment:
+            DATABASE_HOST: database
+            MODULE_NAME: detection
+            NOTIFIER_HOST: notifier
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
+            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
+            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+        volumes:
+            - ./backend-services/detection/configs/:/etc/artemis/
+            - ./backend-services/detection/entrypoint:/root/entrypoint
+            - ./backend-services/detection/core/detection.py:/root/core/detection.py
+    database:
+        image: inspiregroup/artemis-database:${SYSTEM_VERSION}
+        container_name: database
+        restart: always
+        depends_on:
+            - graphql
+            - notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        ports:
+            - "3009:3000"
+        networks:
+            - artemis
+        environment:
+            CONFIGURATION_HOST: configuration
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            DB_VERSION: ${DB_VERSION}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            MODULE_NAME: database
+            NOTIFIER_HOST: notifier
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
+            HISTORIC: ${HISTORIC}
+        volumes:
+            - ./backend-services/database/configs/:/etc/artemis/
+            - ./backend-services/database/entrypoint:/root/entrypoint
+            - ./backend-services/database/core/database.py:/root/core/database.py
+    fileobserver:
+        image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
+        container_name: fileobserver
+        restart: always
+        depends_on:
+            - configuration
+        expose:
+            - 3000
+        ports:
+            - "3010:3000"
+        networks:
+            - artemis
+        environment:
+            CONFIGURATION_HOST: configuration
+            MODULE_NAME: fileobserver
+            REST_PORT: 3000
+        volumes:
+            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
+            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
+    mitigation:
+        image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
+        container_name: mitigation
+        restart: always
+        depends_on:
+            - rabbitmq
+            - database
+            - prefixtree
+        expose:
+            - 3000
+        ports:
+            - "3011:3000"
+        networks:
+            - artemis
+        environment:
+            DATABASE_HOST: database
+            MODULE_NAME: mitigation
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./backend-services/mitigation/configs/:/etc/artemis/
+            - ./backend-services/mitigation/entrypoint:/root/entrypoint
+            - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
+    notifier:
+        image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
+        container_name: notifier
+        restart: always
+        depends_on:
+            - rabbitmq
+        expose:
+            - 3000
+        ports:
+            - "3012:3000"
+        networks:
+            - artemis
+        environment:
+            CONFIGURATION_HOST: configuration
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            MODULE_NAME: notifier
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./backend-services/notifier/configs/:/etc/artemis/
+            - ./backend-services/notifier/entrypoint:/root/entrypoint
+            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
+    prefixtree:
+        image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
+        container_name: prefixtree
+        restart: always
+        depends_on:
+            - rabbitmq
+        expose:
+            - 3000
+        ports:
+            - "3013:3000"
+        networks:
+            - artemis
+        environment:
+            CONFIGURATION_HOST: configuration
+            MODULE_NAME: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./backend-services/prefixtree/configs/:/etc/artemis/
+            - ./backend-services/prefixtree/entrypoint:/root/entrypoint
+            - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
+            - ./utils/:/root/utils/
     redis:
         image: redis:latest
         container_name: redis

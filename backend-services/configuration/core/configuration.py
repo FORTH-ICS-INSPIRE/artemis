@@ -4,6 +4,7 @@ import multiprocessing as mp
 import os
 import re
 import shutil
+import socket
 import time
 from io import StringIO
 from ipaddress import ip_network as str2ip
@@ -65,6 +66,23 @@ OTHER_SERVICES = [
     RIPERISTAP_HOST,
 ]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
+
+
+# TODO: move to utils
+def service_to_ips_and_replicas(base_service_name):
+    service_to_ips_and_replicas_set = set([])
+    addr_infos = socket.getaddrinfo(base_service_name, REST_PORT)
+    for addr_info in addr_infos:
+        af, sock_type, proto, canon_name, sa = addr_info
+        replica_ip = sa[0]
+        replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
+        replica_name_match = re.match(
+            r"^artemis_" + re.escape(base_service_name) + r"_(\d+)\.",
+            replica_host_by_addr,
+        )
+        replica_name = "{}_{}".format(base_service_name, replica_name_match.group(1))
+        service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+    return service_to_ips_and_replicas_set
 
 
 def parse(raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False):
@@ -664,15 +682,22 @@ def get_created_asn_anchors_from_new_rule(yaml_conf, rule_asns):
 def post_configuration_to_other_services(data):
     for service in OTHER_SERVICES:
         try:
-            r = requests.post(
-                url="http://{}:{}/config".format(service, REST_PORT),
-                data=json.dumps(data),
-            )
-            response = r.json()
-            assert response["success"]
+            ips_and_replicas = service_to_ips_and_replicas(service)
         except Exception:
             log.exception("exception")
             log.error("could not configure service '{}'".format(service))
+            continue
+        for replica_name, replica_ip in ips_and_replicas:
+            try:
+                r = requests.post(
+                    url="http://{}:{}/config".format(replica_ip, REST_PORT),
+                    data=json.dumps(data),
+                )
+                response = r.json()
+                assert response["success"]
+            except Exception:
+                log.exception("exception")
+                log.error("could not configure service '{}'".format(replica_name))
 
 
 def write_conf_via_tmp_file(config_file, tmp_file, yaml_conf) -> NoReturn:

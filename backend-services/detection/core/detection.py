@@ -35,6 +35,7 @@ from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer
+from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 from tornado.ioloop import IOLoop
 from tornado.web import Application
@@ -310,7 +311,7 @@ class DetectionDataWorker(ConsumerProducerMixin):
             priority=1,
         )
         self.stop_queue = create_queue(
-            MODULE_NAME,
+            "{}-{}".format(MODULE_NAME, uuid()),
             exchange=self.command_exchange,
             routing_key="stop-{}".format(MODULE_NAME),
             priority=1,

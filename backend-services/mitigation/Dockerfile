@@ -9,9 +9,6 @@ RUN ln -s /usr/local/lib/pyenv/versions/3.6.8/bin/python /usr/local/bin
 COPY requirements.txt ./requirements.txt
 RUN pip --no-cache-dir install -r requirements.txt --ignore-installed
 
-# TODO: remove this after correct artemis-utils release
-RUN mkdir -p ./utils/
-
 RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/
 

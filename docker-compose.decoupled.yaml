@@ -348,7 +348,6 @@ services:
             - ./backend-services/prefixtree/configs/:/etc/artemis/
             - ./backend-services/prefixtree/entrypoint:/root/entrypoint
             - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
-            - ./utils/:/root/utils/
     redis:
         image: redis:latest
         container_name: redis

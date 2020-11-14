@@ -141,7 +141,7 @@ jobs:
         - if [ ! $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-frontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:${DOCKER_TAG} frontend/; fi
         - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-frontend:${DOCKER_TAG}; fi
         - if [ $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:${DOCKER_TAG} frontend/; fi
-#    - stage: run tests
+    - stage: run tests
 #      name: TestCafe
 #      install: []
 #      before_script:
@@ -155,7 +155,7 @@ jobs:
 #        - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
 #      after_failure:
 #        - docker-compose -f docker-compose.testcafe.yaml logs
-    - name: TestDetection
+      name: TestDetection
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
       before_script:

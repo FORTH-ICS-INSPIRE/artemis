@@ -44,7 +44,11 @@ shared_memory_locks = {
     "monitored_prefixes": mp.Lock(),
     "configured_prefix_count": mp.Lock(),
     "config_timestamp": mp.Lock(),
-    "bulk_timer": mp.Lock(),
+    "insert_bgp_entries": mp.Lock(),
+    "handle_bgp_withdrawals": mp.Lock(),
+    "handled_bgp_entries": mp.Lock(),
+    "outdate_hijacks": mp.Lock(),
+    "insert_hijacks_entries": mp.Lock(),
 }
 
 # global vars
@@ -629,9 +633,9 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 )
                 # insert all types of BGP updates
                 # thread-safe access to update dict
-                shared_memory_locks["bulk_timer"].acquire()
+                shared_memory_locks["insert_bgp_entries"].acquire()
                 self.insert_bgp_entries.append(value)
-                shared_memory_locks["bulk_timer"].release()
+                shared_memory_locks["insert_bgp_entries"].release()
 
                 # register the monitor/peer ASN from whom we learned this BGP update
                 self.redis.sadd("peer-asns", msg_["peer_asn"])
@@ -651,7 +655,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
         msg_ = message.payload
-        shared_memory_locks["bulk_timer"].acquire()
         try:
             # update hijacks based on withdrawal messages
             value = (
@@ -660,29 +663,30 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 datetime.datetime.fromtimestamp((msg_["timestamp"])),  # timestamp
                 msg_["key"],  # key
             )
+            shared_memory_locks["handle_bgp_withdrawals"].acquire()
             self.handle_bgp_withdrawals.add(value)
         except Exception:
             log.exception("{}".format(msg_))
         finally:
-            shared_memory_locks["bulk_timer"].release()
+            shared_memory_locks["handle_bgp_withdrawals"].release()
 
     def handle_hijack_outdate(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
-        shared_memory_locks["bulk_timer"].acquire()
+        shared_memory_locks["outdate_hijacks"].acquire()
         try:
             raw = message.payload
             self.outdate_hijacks.add((raw["persistent_hijack_key"],))
         except Exception:
             log.exception("{}".format(message))
         finally:
-            shared_memory_locks["bulk_timer"].release()
+            shared_memory_locks["outdate_hijacks"].release()
 
     def handle_hijack_update(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
         msg_ = message.payload
-        shared_memory_locks["bulk_timer"].acquire()
+        shared_memory_locks["insert_hijacks_entries"].acquire()
         try:
             key = msg_["key"]  # persistent hijack key
 
@@ -744,19 +748,19 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         except Exception:
             log.exception("{}".format(msg_))
         finally:
-            shared_memory_locks["bulk_timer"].release()
+            shared_memory_locks["insert_hijacks_entries"].release()
 
     def handle_handled_bgp_update(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
-        shared_memory_locks["bulk_timer"].acquire()
+        shared_memory_locks["handled_bgp_entries"].acquire()
         try:
             key_ = (message.payload,)
             self.handled_bgp_entries.add(key_)
         except Exception:
             log.exception("{}".format(message))
         finally:
-            shared_memory_locks["bulk_timer"].release()
+            shared_memory_locks["handled_bgp_entries"].release()
 
     def handle_hijack_ongoing_request(self, message):
         if not isinstance(message, dict):
@@ -1210,6 +1214,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
     def _insert_bgp_updates(self):
         try:
+            shared_memory_locks["insert_bgp_entries"].acquire()
             query = (
                 "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
                 "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s"
@@ -1217,11 +1222,12 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             self.wo_db.execute_values(query, self.insert_bgp_entries, page_size=1000)
         except Exception:
             log.exception("exception")
-            return -1
+            num_of_entries = -1
         finally:
             num_of_entries = len(self.insert_bgp_entries)
             self.insert_bgp_entries.clear()
-        return num_of_entries
+            shared_memory_locks["insert_bgp_entries"].release()
+            return num_of_entries
 
     def _handle_bgp_withdrawals(self):
         timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
@@ -1240,6 +1246,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         )
         update_normal_withdrawals = set()
         update_hijack_withdrawals = set()
+        shared_memory_locks["handle_bgp_withdrawals"].acquire()
         for withdrawal in self.handle_bgp_withdrawals:
             try:
                 # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3:
@@ -1334,6 +1341,9 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                             log.debug("updating hijack {}".format(entry))
             except Exception:
                 log.exception("exception")
+        num_of_entries = len(self.handle_bgp_withdrawals)
+        self.handle_bgp_withdrawals.clear()
+        shared_memory_locks["handle_bgp_withdrawals"].release()
 
         try:
             update_hijack_withdrawals_dict = {}
@@ -1385,8 +1395,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         except Exception:
             log.exception("exception")
 
-        num_of_entries = len(self.handle_bgp_withdrawals)
-        self.handle_bgp_withdrawals.clear()
         return num_of_entries
 
     def _update_bgp_updates(self):
@@ -1395,6 +1403,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
         timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
         # Update the BGP entries using the hijack messages
+        shared_memory_locks["insert_hijacks_entries"].acquire()
         for hijack_key in self.insert_hijacks_entries:
             for bgp_entry_to_update in self.insert_hijacks_entries[hijack_key][
                 "monitor_keys"
@@ -1405,7 +1414,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 )
                 # exclude handle bgp updates that point to same hijack as
                 # this
-                self.handled_bgp_entries.discard(bgp_entry_to_update)
+                shared_memory_locks["handled_bgp_entries"].acquire()
+                try:
+                    self.handled_bgp_entries.discard(bgp_entry_to_update)
+                except Exception:
+                    log.exception("exception")
+                finally:
+                    shared_memory_locks["handled_bgp_entries"].release()
+        shared_memory_locks["insert_hijacks_entries"].release()
 
         if update_bgp_entries:
             try:
@@ -1467,22 +1483,28 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         update_bgp_entries.clear()
 
         # Update the BGP entries using the handled messages
+        shared_memory_locks["handled_bgp_entries"].acquire()
         if self.handled_bgp_entries:
             try:
                 query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
                 self.wo_db.execute_values(
                     query, self.handled_bgp_entries, page_size=1000
                 )
+                num_of_updates += len(self.handled_bgp_entries)
+                self.handled_bgp_entries.clear()
             except Exception:
                 log.exception("handled bgp entries {}".format(self.handled_bgp_entries))
-                return -1
+                num_of_updates = -1
+            finally:
+                shared_memory_locks["handled_bgp_entries"].release()
+        else:
+            shared_memory_locks["handled_bgp_entries"].release()
 
-        num_of_updates += len(self.handled_bgp_entries)
-        self.handled_bgp_entries.clear()
         return num_of_updates
 
     def _insert_update_hijacks(self):
 
+        shared_memory_locks["insert_hijacks_entries"].acquire()
         try:
             query = (
                 "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
@@ -1495,7 +1517,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             )
 
             values = []
-
             for key in self.insert_hijacks_entries:
                 entry = (
                     key,  # key
@@ -1541,16 +1562,20 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 values.append(entry)
 
             self.wo_db.execute_values(query, values, page_size=1000)
+            num_of_entries = len(self.insert_hijacks_entries)
+            self.insert_hijacks_entries.clear()
         except Exception:
             log.exception("exception")
-            return -1
+            num_of_entries = -1
+        finally:
+            shared_memory_locks["insert_hijacks_entries"].release()
 
-        num_of_entries = len(self.insert_hijacks_entries)
-        self.insert_hijacks_entries.clear()
         return num_of_entries
 
     def _handle_hijack_outdate(self):
+        shared_memory_locks["outdate_hijacks"].acquire()
         if not self.outdate_hijacks:
+            shared_memory_locks["outdate_hijacks"].release()
             return
         try:
             query = "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
@@ -1558,9 +1583,10 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             self.outdate_hijacks.clear()
         except Exception:
             log.exception("")
+        finally:
+            shared_memory_locks["outdate_hijacks"].release()
 
     def _update_bulk(self):
-        shared_memory_locks["bulk_timer"].acquire()
         try:
             inserts, updates, hijacks, withdrawals = (
                 self._insert_bgp_updates(),
@@ -1583,7 +1609,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         except Exception:
             log.exception("exception")
         finally:
-            shared_memory_locks["bulk_timer"].release()
             self.setup_bulk_update_timer()
 
     def stop_consumer_loop(self, message: Dict) -> NoReturn:

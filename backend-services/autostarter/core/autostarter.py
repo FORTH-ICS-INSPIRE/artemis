@@ -109,7 +109,12 @@ def check_and_control_services(ro_db, wo_db):
 
     detection_examined = False
     for service in intended_status_dict:
-        for replica_name, replica_ip in service_to_ips_and_replicas(service):
+        try:
+            ips_and_replicas = service_to_ips_and_replicas(service)
+        except Exception:
+            log.exception("exception")
+            continue
+        for replica_name, replica_ip in ips_and_replicas:
             try:
                 intended_status = intended_status_dict[service]
                 r = requests.get("http://{}:{}/health".format(replica_ip, REST_PORT))

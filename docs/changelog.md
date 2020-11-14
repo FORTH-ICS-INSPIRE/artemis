@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- Action and necessary logic to un-mitigate a hijack
 
 ### Changed
 - TBD (Changed existing functionality)

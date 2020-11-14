@@ -31,7 +31,7 @@ including local monitors) is validated and transmitted to the detection and db a
 The detection micro-service reasons about whether what it sees is a hijack or not; if it is, it
 generates a hijack entry which is in turn stored in the DB, together with the corresponding
 monitoring entries. Finally, using the web application, the operator can instruct the mitigation
-micro-service to mitigate a hijack or mark it as resolved/ignored.
+micro-service to (un-)mitigate a hijack or mark it as resolved/ignored.
 All information (configuration, updates, hijacks and micro-service state) is persistently
 stored in the DB, which is accessed by the web application.
 Clock, listener/supervisor and observer micro-services are auxiliary, and take care of periodic clock signaling, micro-service status change events and configuration change notifications, respectively. For brevity we do not elaborate more on further auxiliary micro-services. In case you are interested in more details please check the source code under backend/core or contact the ARTEMIS team.

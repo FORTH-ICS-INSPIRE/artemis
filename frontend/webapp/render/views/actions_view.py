@@ -44,6 +44,15 @@ def hijack_action():
                 "payload": {"key": data["hijack_key"], "prefix": data["prefix"]},
             }
 
+        elif action == "unmitigate":
+            obj = {
+                "action": action,
+                "routing_key": "unmitigate",
+                "exchange": "mitigation",
+                "priority": 2,
+                "payload": {"key": data["hijack_key"], "prefix": data["prefix"]},
+            }
+
         elif action == "resolve":
             obj = {
                 "action": action,

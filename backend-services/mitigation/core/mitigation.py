@@ -240,6 +240,12 @@ class MitigationDataWorker(ConsumerProducerMixin):
             routing_key="mitigate-with-action",
             priority=2,
         )
+        self.unmitigate_queue = create_queue(
+            MODULE_NAME,
+            exchange=self.mitigation_exchange,
+            routing_key="unmitigate-with-action",
+            priority=2,
+        )
         self.stop_queue = create_queue(
             "{}-{}".format(MODULE_NAME, uuid()),
             exchange=self.command_exchange,
@@ -254,6 +260,12 @@ class MitigationDataWorker(ConsumerProducerMixin):
             Consumer(
                 queues=[self.mitigate_queue],
                 on_message=self.handle_mitigation_request,
+                prefetch_count=1,
+                accept=["ujson"],
+            ),
+            Consumer(
+                queues=[self.unmitigate_queue],
+                on_message=self.handle_unmitigation_request,
                 prefetch_count=1,
                 accept=["ujson"],
             ),
@@ -294,6 +306,41 @@ class MitigationDataWorker(ConsumerProducerMixin):
                 mit_started,
                 exchange=self.mitigation_exchange,
                 routing_key="mit-start",
+                priority=2,
+                serializer="ujson",
+            )
+        except Exception:
+            log.exception("exception")
+
+    def handle_unmitigation_request(self, message):
+        message.ack()
+        unmit_request = message.payload
+        try:
+            hijack_info = unmit_request["hijack_info"]
+            mitigation_action = unmit_request["mitigation_action"]
+            if isinstance(mitigation_action, list):
+                mitigation_action = mitigation_action[0]
+            if mitigation_action == "manual":
+                log.info("ending manual mitigation of hijack {}".format(hijack_info))
+            else:
+                log.info(
+                    "ending custom mitigation of hijack {} using '{}' script".format(
+                        hijack_info, mitigation_action
+                    )
+                )
+                hijack_info_str = json.dumps(hijack_info)
+                subprocess.Popen(
+                    [mitigation_action, "-i", hijack_info_str, "-e"],
+                    shell=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            # do something
+            mit_ended = {"key": hijack_info["key"], "time": time.time()}
+            self.producer.publish(
+                mit_ended,
+                exchange=self.mitigation_exchange,
+                routing_key="mit-end",
                 priority=2,
                 serializer="ujson",
             )

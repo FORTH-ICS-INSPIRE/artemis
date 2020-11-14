@@ -208,10 +208,12 @@ The action that you want to do when you press "Mitigate" in a hijack view page. 
 
 1. It should be the location of an executable
 
-2. The executable should support a '-i' input option (mandatory), that takes as input a json representation of a hijack event (provided by ARTEMIS). This representation contains the following information:
+2. The executable should support the '-e' input option (mandatory), that instructs mitigation to end (if absent, then mitigation will start), as well as the '-i' input option (mandatory), that takes as input a json representation of a hijack event (provided by ARTEMIS). This representation contains the following information:
 
+     {
          'key': unique_hijack_id,
          'prefix': hijacked_prefix
+     }
 
      Based on this information, you can run a custom script that de-aggregates the prefix (if possible), or outsources mitigation to an external domain. **These functions are not supported for all networks, but should be custom-built by the operator, in case automated mitigation is required.**
 
@@ -224,7 +226,8 @@ The action that you want to do when you press "Mitigate" in a hijack view page. 
          import argparse
 
          parser = argparse.ArgumentParser(description="test ARTEMIS mitigation")
-         parser.add_argument("-i", "--info_hijack", dest="info_hijack", type=str, help="hijack event information",        required=True)
+         parser.add_argument("-i", "--info_hijack", dest="info_hijack", type=str, help="hijack event information", required=True)
+         parser.add_argument("-e", "--end", dest="end_hijack", action="store_true", help="flag to indicate unimitigation")
          args = parser.parse_args()
 
          # write the information to a file (example script)

@@ -498,6 +498,12 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             routing_key="mit-start",
             priority=2,
         )
+        self.unmitigate_queue = create_queue(
+            MODULE_NAME,
+            exchange=self.mitigation_exchange,
+            routing_key="mit-end",
+            priority=2,
+        )
         self.hijack_seen_queue = create_queue(
             MODULE_NAME, exchange=self.hijack_exchange, routing_key="seen", priority=2
         )
@@ -548,6 +554,12 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             Consumer(
                 queues=[self.mitigate_queue],
                 on_message=self.handle_mitigation_request,
+                prefetch_count=1,
+                accept=["ujson"],
+            ),
+            Consumer(
+                queues=[self.unmitigate_queue],
+                on_message=self.handle_unmitigation_request,
                 prefetch_count=1,
                 accept=["ujson"],
             ),
@@ -999,6 +1011,17 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             self.wo_db.execute(
                 "UPDATE hijacks SET mitigation_started=%s, seen=true, under_mitigation=true WHERE key=%s;",
                 (datetime.datetime.fromtimestamp(raw["time"]), raw["key"]),
+            )
+        except Exception:
+            log.exception("{}".format(raw))
+
+    def handle_unmitigation_request(self, message):
+        message.ack()
+        raw = message.payload
+        log.debug("payload: {}".format(raw))
+        try:
+            self.wo_db.execute(
+                "UPDATE hijacks SET under_mitigation=false WHERE key=%s;", (raw["key"],)
             )
         except Exception:
             log.exception("{}".format(raw))

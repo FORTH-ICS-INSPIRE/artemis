@@ -469,6 +469,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             routing_key="mitigate",
             priority=2,
         )
+        self.unmitigation_request_queue = create_queue(
+            MODULE_NAME,
+            exchange=self.mitigation_exchange,
+            routing_key="unmitigate",
+            priority=2,
+        )
         self.stop_queue = create_queue(
             "{}-{}".format(MODULE_NAME, uuid()),
             exchange=self.command_exchange,
@@ -495,6 +501,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             Consumer(
                 queues=[self.mitigation_request_queue],
                 on_message=self.annotate_mitigation_request,
+                prefetch_count=100,
+                accept=["ujson"],
+            ),
+            Consumer(
+                queues=[self.unmitigation_request_queue],
+                on_message=self.annotate_unmitigation_request,
                 prefetch_count=100,
                 accept=["ujson"],
             ),
@@ -623,6 +635,32 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                     annotated_mit_request,
                     exchange=self.mitigation_exchange,
                     routing_key="mitigate-with-action",
+                    serializer="ujson",
+                )
+        except Exception:
+            log.exception("exception")
+
+    def annotate_unmitigation_request(self, message: Dict) -> NoReturn:
+        """
+        Callback function that annotates incoming hijack unmitigation requests with the associated
+        unmitigation action/instruction (otherwise it discards them).
+        """
+        message.ack()
+        unmit_request = message.payload
+        try:
+            prefix_node = self.find_prefix_node(unmit_request["prefix"])
+            if prefix_node:
+                annotated_unmit_request = {}
+                # use the first best matching rule mitigation action;
+                # a prefix should not have different mitigation actions anyway
+                annotated_unmit_request["hijack_info"] = unmit_request
+                annotated_unmit_request["mitigation_action"] = prefix_node["data"][
+                    "confs"
+                ][0]["mitigation"]
+                self.producer.publish(
+                    annotated_unmit_request,
+                    exchange=self.mitigation_exchange,
+                    routing_key="unmitigate-with-action",
                     serializer="ujson",
                 )
         except Exception:

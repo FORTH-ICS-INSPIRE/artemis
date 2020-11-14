@@ -685,7 +685,7 @@ def post_configuration_to_other_services(data):
             ips_and_replicas = service_to_ips_and_replicas(service)
         except Exception:
             log.exception("exception")
-            log.error("could not configure service '{}'".format(service))
+            log.error("could not resolve service '{}'".format(service))
             continue
         for replica_name, replica_ip in ips_and_replicas:
             try:

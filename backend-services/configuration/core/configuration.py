@@ -1022,9 +1022,9 @@ def configure_configuration(msg, shared_memory_manager_dict):
             log.debug("accepted new configuration")
             # compare current with previous data excluding --obviously-- timestamps
             # change to sth better
-            prev_data = copy.deepcopy(data)
+            prev_data = copy.deepcopy(shared_memory_manager_dict["config_data"])
             del prev_data["timestamp"]
-            new_data = copy.deepcopy(shared_memory_manager_dict["config_data"])
+            new_data = copy.deepcopy(data)
             del new_data["timestamp"]
             prev_data_str = json.dumps(prev_data, sort_keys=True)
             new_data_str = json.dumps(new_data, sort_keys=True)

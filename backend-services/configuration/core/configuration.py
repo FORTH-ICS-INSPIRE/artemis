@@ -1036,7 +1036,7 @@ def configure_configuration(msg, shared_memory_manager_dict):
                     write_raw_conf_via_tmp_file(
                         shared_memory_manager_dict["config_file"],
                         shared_memory_manager_dict["tmp_config_file"],
-                        shared_memory_manager_dict["raw_config"],
+                        shared_memory_manager_dict["config_data"]["raw_config"],
                     )
                 if comment:
                     shared_memory_manager_dict["config_data"]["comment"] = comment

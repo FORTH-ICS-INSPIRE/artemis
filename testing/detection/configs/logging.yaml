@@ -64,7 +64,7 @@ handlers:
 
 loggers:
     artemis_logger:
-        level: INFO
+        level: DEBUG
         handlers: [console]
         propagate: no
     mail_logger:

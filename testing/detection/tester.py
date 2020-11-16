@@ -399,9 +399,6 @@ class Tester:
             db_con.close()
 
             for testfile in sorted(os.listdir("testfiles/")):
-                # TODO: check and fix implicit withdrawal tests
-                if testfile.split("/")[-1].startswith("implicit_withdrawal"):
-                    continue
                 self.clear()
 
                 self.curr_test = testfile

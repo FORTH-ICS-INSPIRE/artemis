@@ -668,6 +668,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
         msg_ = message.payload
+        shared_memory_locks["handle_bgp_withdrawals"].acquire()
         try:
             # update hijacks based on withdrawal messages
             value = (
@@ -676,7 +677,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 datetime.datetime.fromtimestamp((msg_["timestamp"])),  # timestamp
                 msg_["key"],  # key
             )
-            shared_memory_locks["handle_bgp_withdrawals"].acquire()
             self.handle_bgp_withdrawals.add(value)
         except Exception:
             log.exception("{}".format(msg_))

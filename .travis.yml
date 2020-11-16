@@ -177,17 +177,17 @@ jobs:
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-notifier:${DOCKER_TAG} artemis_notifier:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
-#        - docker build -t artemis_detection_testing testing/detection
+        - docker build -t artemis_detection_testing testing/detection
         - docker-compose -f docker-compose.testdetection.decoupled.yaml up -d
       script:
         - echo "SCRIPT:TODO"
-#        - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
+        - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
       after_success:
         - sh convert_coverage.sh
         - codecov
       after_failure:
         - echo "FAILURE:TODO"
-#        - docker-compose -f docker-compose.testdetection.yaml logs
+        - docker-compose -f docker-compose.testdetection.yaml logs
 #    - name: TestAutoconf
 #      if: false
 #      install:

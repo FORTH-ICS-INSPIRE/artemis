@@ -370,7 +370,7 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
         for element in redis_instance.sscan_iter(
             "hijack_{}_prefixes_peers".format(ephemeral_key)
         ):
-            subelems = element.decode().split("_")
+            subelems = element.decode("utf-8").split("_")
             prefix_peer_hijack_set = "prefix_{}_peer_{}_hijacks".format(
                 subelems[0], subelems[1]
             )

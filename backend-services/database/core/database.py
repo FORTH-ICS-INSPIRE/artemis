@@ -1,4 +1,5 @@
 import datetime
+import json as classic_json
 import multiprocessing as mp
 import os
 import threading
@@ -973,9 +974,11 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
             log.debug("redis-entry for {}: {}".format(redis_hijack_key, redis_hijack))
             self.wo_db.execute("DELETE FROM hijacks WHERE key=%s;", (raw["key"],))
-            if redis_hijack and json.loads(redis_hijack).get("bgpupdate_keys", []):
+            if redis_hijack and classic_json.loads(redis_hijack.decode("utf-8")).get(
+                "bgpupdate_keys", []
+            ):
                 log.debug("deleting hijack using cache for bgp updates")
-                redis_hijack = json.loads(redis_hijack)
+                redis_hijack = classic_json.loads(redis_hijack.decode("utf-8"))
                 log.debug(
                     "bgpupdate_keys {} for {}".format(
                         redis_hijack["bgpupdate_keys"], redis_hijack_key
@@ -1173,11 +1176,13 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                                 )
                             )
                             self.wo_db.execute(query, (hijack_key,))
-                            if redis_hijack and json.loads(redis_hijack).get(
-                                "bgpupdate_keys", []
-                            ):
+                            if redis_hijack and classic_json.loads(
+                                redis_hijack.decode("utf-8")
+                            ).get("bgpupdate_keys", []):
                                 log.debug("deleting hijack using cache for bgp updates")
-                                redis_hijack = json.loads(redis_hijack)
+                                redis_hijack = classic_json.loads(
+                                    redis_hijack.decode("utf-8")
+                                )
                                 log.debug(
                                     "bgpupdate_keys {} for {}".format(
                                         redis_hijack["bgpupdate_keys"], redis_hijack
@@ -1306,9 +1311,9 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                         hijack = self.redis.get(redis_hijack_key)
                         redis_pipeline = self.redis.pipeline()
                         if hijack:
-                            hijack = json.loads(hijack)
-                            hijack["bgpupdate_keys"] = set(
-                                hijack["bgpupdate_keys"] + [withdrawal[3]]
+                            hijack = classic_json.loads(hijack.decode("utf-8"))
+                            hijack["bgpupdate_keys"] = list(
+                                set(hijack["bgpupdate_keys"] + [withdrawal[3]])
                             )
                             redis_pipeline.set(redis_hijack_key, json.dumps(hijack))
                         redis_pipeline.lpush(

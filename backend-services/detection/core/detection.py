@@ -1,4 +1,5 @@
 import ipaddress
+import json as classic_json
 import multiprocessing as mp
 import os
 import re
@@ -561,7 +562,9 @@ class DetectionDataWorker(ConsumerProducerMixin):
 
             if outdated_hijack:
                 try:
-                    outdated_hijack = json.loads(outdated_hijack)
+                    outdated_hijack = classic_json.loads(
+                        outdated_hijack.decode("utf-8")
+                    )
                     outdated_hijack["end_tag"] = "outdated"
                     self.producer.publish(
                         outdated_hijack,
@@ -929,7 +932,7 @@ class DetectionDataWorker(ConsumerProducerMixin):
                         self.rtrmanager, asn, network, int(netmask)
                     )
                 else:
-                    rpki_status = redis_rpki_status.decode()
+                    rpki_status = redis_rpki_status.decode("utf-8")
                 hijack_value["rpki_status"] = rpki_status
                 # the default refresh interval for the RPKI RTR manager is 3600 seconds
                 self.redis.set(redis_rpki_asn_prefix_key, rpki_status, ex=3600)
@@ -988,7 +991,7 @@ class DetectionDataWorker(ConsumerProducerMixin):
         try:
             result = self.redis.get(redis_hijack_key)
             if result:
-                result = json.loads(result)
+                result = classic_json.loads(result.decode("utf-8"))
                 result["time_started"] = min(
                     result["time_started"], hijack_value["time_started"]
                 )

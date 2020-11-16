@@ -385,7 +385,7 @@ def translate_learn_rule_msg_to_dicts(raw):
         ping_redis(redis_conn)
         if redis_conn.exists(hij_orig_neighb_set):
             for element in redis_conn.sscan_iter(hij_orig_neighb_set):
-                (origin_str, neighbor_str) = element.decode().split("_")
+                (origin_str, neighbor_str) = element.decode("utf-8").split("_")
                 origin = None
                 if origin_str != "None":
                     origin = int(origin_str)

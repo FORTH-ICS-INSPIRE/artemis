@@ -14,7 +14,6 @@ from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
 from kombu import serialization
-from kombu import uuid
 from kombu.utils.compat import nested
 from psycopg2 import sql
 
@@ -33,6 +32,7 @@ serialization.register(
 
 # global vars
 CONFIGURATION_HOST = "configuration"
+DATABASE_HOST = "database"
 DATA_WORKER_DEPENDENCIES = [
     "configuration",
     "database",
@@ -358,34 +358,32 @@ class Tester:
             Helper.hijack_ignore(
                 db_con, connection, "c", "139.5.237.0/24", "S|0|-|-", 136334
             )
-            # TODO refactor in db with REST and then call
-            # Helper.hijack_comment(db_con, connection, "d", "test")
+            Helper.hijack_comment(db_con, connection, "d", "test")
             Helper.hijack_ack(db_con, connection, "e", "true")
-            # TODO refactor in db with REST and then call
-            # Helper.hijack_multiple_action(
-            #     db_con, connection, ["f", "g"], "hijack_action_acknowledge"
-            # )
-            # Helper.hijack_multiple_action(
-            #     db_con, connection, ["f", "g"], "hijack_action_acknowledge_not"
-            # )
-            # Helper.hijack_multiple_action(
-            #     db_con, connection, ["f"], "hijack_action_resolve"
-            # )
-            # Helper.hijack_multiple_action(
-            #     db_con, connection, ["g"], "hijack_action_ignore"
-            # )
-            # # multi-action delete a hijack purged from cache
-            # Helper.hijack_multiple_action(
-            #     db_con, connection, ["f"], "hijack_action_delete"
-            # )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["f", "g"], "hijack_action_acknowledge"
+            )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["f", "g"], "hijack_action_acknowledge_not"
+            )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["f"], "hijack_action_resolve"
+            )
+            Helper.hijack_multiple_action(
+                db_con, connection, ["g"], "hijack_action_ignore"
+            )
+            # multi-action delete a hijack purged from cache
+            Helper.hijack_multiple_action(
+                db_con, connection, ["f"], "hijack_action_delete"
+            )
             # delete a hijack purged from cache
             Helper.hijack_delete(
                 db_con, connection, "g", "139.5.16.0/22", "S|0|-|-", 133676
             )
-            # # multi-action delete a hijack using cache
-            # Helper.hijack_multiple_action(
-            #     db_con, connection, ["h"], "hijack_action_delete"
-            # )
+            # multi-action delete a hijack using cache
+            Helper.hijack_multiple_action(
+                db_con, connection, ["h"], "hijack_action_delete"
+            )
             # delete a hijack using cache
             Helper.hijack_delete(
                 db_con, connection, "i", "139.5.24.0/24", "S|0|-|-", 133720
@@ -517,35 +515,14 @@ class Helper:
             result is True
         ), 'Action "hijack_ignore" for hijack id #{0} failed'.format(hijack_key)
 
-    # TODO: refactor in DB with rest and then here
     @staticmethod
     def hijack_comment(db_con, connection, hijack_key, comment):
-        correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            channel=connection.default_channel,
-            durable=False,
-            exclusive=True,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
+        r = requests.post(
+            url="http://{}:{}/hijackComment".format(DATABASE_HOST, REST_PORT),
+            data=json.dumps({"key": hijack_key, "comment": comment}),
         )
-        with connection.Producer() as producer:
-            producer.publish(
-                {"key": hijack_key, "comment": comment},
-                exchange="",
-                routing_key="database.rpc.hijack-comment",
-                retry=True,
-                declare=[callback_queue],
-                reply_to=callback_queue.name,
-                correlation_id=correlation_id,
-                priority=4,
-                serializer="ujson",
-            )
-        while True:
-            if callback_queue.get():
-                break
-            time.sleep(0.1)
+        response = r.json()
+        assert response["success"]
         result = hijack_action_test_result(db_con, hijack_key, "comment", comment)
         assert (
             result is True
@@ -607,47 +584,23 @@ class Helper:
             result is True
         ), 'Action "hijack_delete" for hijack id #{0} failed'.format(hijack_key)
 
-    # TODO: refactor in DB with rest and then here
     @staticmethod
     def hijack_multiple_action(db_con, connection, hijack_keys, action):
-        correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            channel=connection.default_channel,
-            durable=False,
-            exclusive=True,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
+        r = requests.post(
+            url="http://{}:{}/hijackMultiAction".format(DATABASE_HOST, REST_PORT),
+            data=json.dumps({"keys": hijack_keys, "action": action}),
         )
-        with connection.Producer() as producer:
-            producer.publish(
-                {"keys": hijack_keys, "action": action},
-                exchange="",
-                routing_key="database.rpc.hijack-multiple-action",
-                retry=True,
-                declare=[callback_queue],
-                reply_to=callback_queue.name,
-                correlation_id=correlation_id,
-                priority=4,
-                serializer="ujson",
-            )
-        while True:
-            msg = callback_queue.get()
-            if msg:
-                assert (
-                    msg.payload["status"] == "accepted"
-                ), 'Action "{}" for [{}] failed with reason: {}'.format(
-                    action, hijack_keys, msg.payload.get("reason", "")
-                )
-                break
-            time.sleep(0.1)
+        response = r.json()
+        assert response[
+            "success"
+        ], 'Action "{}" for [{}] failed with reason: {}'.format(
+            action, hijack_keys, response["message"]
+        )
 
     @staticmethod
     def load_as_sets(connection):
-        r = requests.post(
-            url="http://{}:{}/loadAsSets".format(CONFIGURATION_HOST, REST_PORT),
-            data=json.dumps(""),
+        r = requests.get(
+            url="http://{}:{}/loadAsSets".format(CONFIGURATION_HOST, REST_PORT)
         )
         response = r.json()
         if not response["success"]:

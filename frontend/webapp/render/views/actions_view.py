@@ -13,7 +13,7 @@ from flask_security.utils import hash_password
 from flask_security.utils import verify_password
 from webapp.core.actions import comment_hijack
 from webapp.core.actions import hijacks_multiple_action
-from webapp.core.actions import Learn_hijack_rule
+from webapp.core.actions import learn_hijack_rule
 from webapp.core.actions import rmq_hijack_action
 from webapp.core.modules import Modules_state
 from webapp.data.models import db
@@ -119,7 +119,7 @@ def hijack_action():
 
 @actions.route("/hijacks/learn_hijack_rule/", methods=["POST"])
 @roles_required("admin")
-def learn_hijack_rule():
+def handle_learn_hijack_rule():
     data_ = json.loads(request.data.decode("utf-8"))
 
     hijack_key = data_["hijack_key"]
@@ -128,10 +128,7 @@ def learn_hijack_rule():
     hijack_as = int(data_["hijack_as"])
     action = data_["action"]
 
-    _learn_hijack_rule = Learn_hijack_rule()
-    response, success = _learn_hijack_rule.send(
-        hijack_key, prefix, type_, hijack_as, action
-    )
+    response, success = learn_hijack_rule(hijack_key, prefix, type_, hijack_as, action)
 
     if success:
         return jsonify({"status": "success", "response": response})

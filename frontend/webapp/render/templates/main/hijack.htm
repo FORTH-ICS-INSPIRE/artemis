@@ -1041,7 +1041,7 @@
                             "action": action
                         };
 
-                        var url = "{{ url_for('actions.learn_hijack_rule') }}";
+                        var url = "{{ url_for('actions.handle_learn_hijack_rule') }}";
                         var result = await postFetch_json(url, obj);
 
                         if(result["status"] == "fail"){
@@ -1065,7 +1065,7 @@
                             "action": action
                         };
 
-                        var url = "{{ url_for('actions.learn_hijack_rule') }}";
+                        var url = "{{ url_for('actions.handle_learn_hijack_rule') }}";
                         var result = await postFetch_json(url, obj);
 
                         var message = [];

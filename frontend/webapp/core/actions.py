@@ -4,12 +4,9 @@ import logging
 import requests
 import ujson as json
 from kombu import Connection
-from kombu import Consumer
 from kombu import Exchange
 from kombu import Producer
-from kombu import Queue
 from kombu import serialization
-from kombu import uuid
 from webapp.utils import CONFIGURATION_HOST
 from webapp.utils import DATABASE_HOST
 from webapp.utils import RABBITMQ_URI
@@ -54,58 +51,23 @@ def rmq_hijack_action(obj):
             )
 
 
-class Learn_hijack_rule:
-    def on_response(self, message):
-        message.ack()
-        if message.properties["correlation_id"] == self.correlation_id:
-            self.response = message.payload
-
-    def send(self, hijack_key, prefix, type_, hijack_as, action):
-        log.debug(
-            "Send 'learn_new_rule - {0}' hijack message with key: {1}".format(
-                action, hijack_key
-            )
-        )
-        self.response = None
-        self.correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            durable=False,
-            exclusive=True,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
-        )
-        with Connection(RABBITMQ_URI) as connection:
-            with Producer(connection) as producer:
-                producer.publish(
-                    {
-                        "key": hijack_key,
-                        "prefix": prefix,
-                        "type": type_,
-                        "hijack_as": hijack_as,
-                        "action": action,
-                    },
-                    exchange="",
-                    routing_key="configuration.rpc.hijack-learn-rule",
-                    retry=True,
-                    declare=[callback_queue],
-                    reply_to=callback_queue.name,
-                    correlation_id=self.correlation_id,
-                    priority=4,
-                    serializer="ujson",
-                )
-            with Consumer(
-                connection,
-                on_message=self.on_response,
-                queues=[callback_queue],
-                accept=["ujson"],
-            ):
-                while self.response is None:
-                    connection.drain_events()
-        if self.response["success"]:
-            return self.response["new_yaml_conf"], True
-        return self.response["new_yaml_conf"], False
+def learn_hijack_rule(hijack_key, prefix, type_, hijack_as, action):
+    r = requests.post(
+        url="http://{}:{}/hijackLearnRule".format(CONFIGURATION_HOST, REST_PORT),
+        data=json.dumps(
+            {
+                "key": hijack_key,
+                "prefix": prefix,
+                "type": type_,
+                "hijack_as": hijack_as,
+                "action": action,
+            }
+        ),
+    )
+    response = r.json()
+    if response["success"]:
+        return response["new_yaml_conf"], True
+    return response["new_yaml_conf"], False
 
 
 def comment_hijack(hijack_key, comment):

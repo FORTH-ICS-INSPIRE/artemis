@@ -14,7 +14,6 @@ services:
             - artemis
         environment:
             CONFIGURATION_HOST: configuration
-            MODULE_NAME: riperistap
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -59,7 +58,6 @@ services:
             DETECTION_HOST: detection
             FILEOBSERVER_HOST: fileobserver
             MITIGATION_HOST: mitigation
-            MODULE_NAME: autostarter
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             REST_PORT: 3000
@@ -91,7 +89,6 @@ services:
             DATABASE_HOST: database
             DETECTION_HOST: detection
             MITIGATION_HOST: mitigation
-            MODULE_NAME: configuration
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -106,41 +103,6 @@ services:
             - ./testing/detection/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
-            - ./testing/.coveragerc:/root/core/.coveragerc
-    detection:
-        image: artemis_detection
-        build: ./backend-services/detection/
-        restart: always
-        depends_on:
-            - notifier
-            - database
-            - prefixtree
-            - rabbitmq
-            - redis
-        expose:
-            - 3000
-        networks:
-            - artemis
-        environment:
-            DATABASE_HOST: database
-            MODULE_NAME: detection
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REDIS_HOST: ${REDIS_HOST}
-            REDIS_PORT: ${REDIS_PORT}
-            REST_PORT: 3000
-            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
-            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
-            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
-            TEST_ENV: "true"
-        volumes:
-            - ./testing/detection/configs/:/etc/artemis/
-            - ./backend-services/detection/entrypoint:/root/entrypoint
-            - ./backend-services/detection/core/detection.py:/root/core/detection.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     database:
         image: artemis_database
@@ -169,7 +131,6 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            MODULE_NAME: database
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -186,6 +147,40 @@ services:
             - ./testing/test_entrypoints/entrypoint.database.test:/root/entrypoint
             - ./backend-services/database/core/database.py:/root/core/database.py
             - ./testing/.coveragerc:/root/core/.coveragerc
+    detection:
+        image: artemis_detection
+        build: ./backend-services/detection/
+        restart: always
+        depends_on:
+            - notifier
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            DATABASE_HOST: database
+            NOTIFIER_HOST: notifier
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
+            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
+            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+            TEST_ENV: "true"
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/detection/entrypoint:/root/entrypoint
+            - ./backend-services/detection/core/detection.py:/root/core/detection.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
     fileobserver:
         image: artemis_fileobserver
         build: ./backend-services/fileobserver/
@@ -198,7 +193,6 @@ services:
             - artemis
         environment:
             CONFIGURATION_HOST: configuration
-            MODULE_NAME: fileobserver
             REST_PORT: 3000
         volumes:
             - ./testing/detection/configs/:/etc/artemis/
@@ -219,7 +213,6 @@ services:
             - artemis
         environment:
             DATABASE_HOST: database
-            MODULE_NAME: mitigation
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -244,7 +237,6 @@ services:
         environment:
             CONFIGURATION_HOST: configuration
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            MODULE_NAME: notifier
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -267,7 +259,6 @@ services:
             - artemis
         environment:
             CONFIGURATION_HOST: configuration
-            MODULE_NAME: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}

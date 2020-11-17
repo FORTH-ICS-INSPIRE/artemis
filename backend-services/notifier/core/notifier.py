@@ -59,7 +59,7 @@ shared_memory_locks = {
 }
 
 # global vars
-MODULE_NAME = os.getenv("MODULE_NAME", "prefixtree")
+SERVICE_NAME = "prefixtree"
 CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
@@ -223,7 +223,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop-{}".format(MODULE_NAME),
+                    routing_key="stop-{}".format(SERVICE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -344,21 +344,21 @@ class NotifierDataWorker(ConsumerProducerMixin):
 
         # QUEUES
         self.hij_log_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.hijack_notification_exchange,
             routing_key="hij-log",
             priority=1,
         )
         self.mail_log_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.hijack_notification_exchange,
             routing_key="mail-log",
             priority=1,
         )
         self.stop_queue = create_queue(
-            "{}-{}".format(MODULE_NAME, uuid()),
+            "{}-{}".format(SERVICE_NAME, uuid()),
             exchange=self.command_exchange,
-            routing_key="stop-{}".format(MODULE_NAME),
+            routing_key="stop-{}".format(SERVICE_NAME),
             priority=1,
         )
 

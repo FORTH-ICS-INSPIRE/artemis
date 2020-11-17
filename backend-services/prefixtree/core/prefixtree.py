@@ -45,7 +45,7 @@ shared_memory_locks = {
 }
 
 # global vars
-MODULE_NAME = os.getenv("MODULE_NAME", "prefixtree")
+SERVICE_NAME = "prefixtree"
 CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
@@ -251,7 +251,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop-{}".format(MODULE_NAME),
+                    routing_key="stop-{}".format(SERVICE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -449,36 +449,39 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
 
         # QUEUES
         self.update_queue = create_queue(
-            MODULE_NAME, exchange=self.update_exchange, routing_key="update", priority=1
+            SERVICE_NAME,
+            exchange=self.update_exchange,
+            routing_key="update",
+            priority=1,
         )
         self.hijack_ongoing_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.hijack_exchange,
             routing_key="ongoing",
             priority=1,
         )
         self.pg_amq_update_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.pg_amq_bridge,
             routing_key="update-insert",
             priority=1,
         )
         self.mitigation_request_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.mitigation_exchange,
             routing_key="mitigate",
             priority=2,
         )
         self.unmitigation_request_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.mitigation_exchange,
             routing_key="unmitigate",
             priority=2,
         )
         self.stop_queue = create_queue(
-            "{}-{}".format(MODULE_NAME, uuid()),
+            "{}-{}".format(SERVICE_NAME, uuid()),
             exchange=self.command_exchange,
-            routing_key="stop-{}".format(MODULE_NAME),
+            routing_key="stop-{}".format(SERVICE_NAME),
             priority=1,
         )
 

@@ -21,7 +21,7 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
-MODULE_NAME = os.getenv("MODULE_NAME", "fileobserver")
+SERVICE_NAME = "fileobserver"
 CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 

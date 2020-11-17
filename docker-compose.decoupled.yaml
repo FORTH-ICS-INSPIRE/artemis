@@ -2,7 +2,6 @@ version: '3'
 services:
     riperistap:
         image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
-        # container_name: riperistap
         restart: always
         depends_on:
             - prefixtree
@@ -14,7 +13,6 @@ services:
             - artemis
         environment:
             CONFIGURATION_HOST: configuration
-            MODULE_NAME: riperistap
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -111,7 +109,6 @@ services:
 #            - ./monitor-services/exabgptap/configs/:/etc/artemis/
     autostarter:
         image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
-        # container_name: autostarter
         restart: always
         depends_on:
             - postgres
@@ -138,7 +135,6 @@ services:
             DETECTION_HOST: detection
             FILEOBSERVER_HOST: fileobserver
             MITIGATION_HOST: mitigation
-            MODULE_NAME: autostarter
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             REST_PORT: 3000
@@ -149,7 +145,6 @@ services:
             - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
     configuration:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
-        # container_name: configuration
         restart: always
         depends_on:
             - database
@@ -169,7 +164,6 @@ services:
             DATABASE_HOST: database
             DETECTION_HOST: detection
             MITIGATION_HOST: mitigation
-            MODULE_NAME: configuration
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -184,42 +178,8 @@ services:
             - ./backend-services/configuration/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
-    detection:
-        image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
-        # container_name: detection
-        restart: always
-        depends_on:
-            - notifier
-            - database
-            - prefixtree
-            - rabbitmq
-            - redis
-        expose:
-            - 3000
-        networks:
-            - artemis
-        environment:
-            DATABASE_HOST: database
-            MODULE_NAME: detection
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REDIS_HOST: ${REDIS_HOST}
-            REDIS_PORT: ${REDIS_PORT}
-            REST_PORT: 3000
-            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
-            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
-            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
-        volumes:
-            - ./backend-services/detection/configs/:/etc/artemis/
-            - ./backend-services/detection/entrypoint:/root/entrypoint
-            - ./backend-services/detection/core/detection.py:/root/core/detection.py
     database:
         image: inspiregroup/artemis-database:${SYSTEM_VERSION}
-        # container_name: database
         restart: always
         depends_on:
             - graphql
@@ -244,7 +204,6 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            MODULE_NAME: database
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
@@ -260,9 +219,39 @@ services:
             - ./backend-services/database/configs/:/etc/artemis/
             - ./backend-services/database/entrypoint:/root/entrypoint
             - ./backend-services/database/core/database.py:/root/core/database.py
+    detection:
+        image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
+        restart: always
+        depends_on:
+            - notifier
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            DATABASE_HOST: database
+            NOTIFIER_HOST: notifier
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
+            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
+            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+        volumes:
+            - ./backend-services/detection/configs/:/etc/artemis/
+            - ./backend-services/detection/entrypoint:/root/entrypoint
+            - ./backend-services/detection/core/detection.py:/root/core/detection.py
     fileobserver:
         image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
-        # container_name: fileobserver
         restart: always
         depends_on:
             - configuration
@@ -272,7 +261,6 @@ services:
             - artemis
         environment:
             CONFIGURATION_HOST: configuration
-            MODULE_NAME: fileobserver
             REST_PORT: 3000
         volumes:
             - ./backend-services/configuration/configs/:/etc/artemis/
@@ -280,7 +268,6 @@ services:
             - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     mitigation:
         image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
-        # container_name: mitigation
         restart: always
         depends_on:
             - rabbitmq
@@ -292,7 +279,6 @@ services:
             - artemis
         environment:
             DATABASE_HOST: database
-            MODULE_NAME: mitigation
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -305,7 +291,6 @@ services:
             - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
     notifier:
         image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
-        # container_name: notifier
         restart: always
         depends_on:
             - rabbitmq
@@ -316,7 +301,6 @@ services:
         environment:
             CONFIGURATION_HOST: configuration
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            MODULE_NAME: notifier
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -328,7 +312,6 @@ services:
             - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
     prefixtree:
         image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
-        # container_name: prefixtree
         restart: always
         depends_on:
             - rabbitmq
@@ -338,7 +321,6 @@ services:
             - artemis
         environment:
             CONFIGURATION_HOST: configuration
-            MODULE_NAME: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -434,9 +416,10 @@ services:
             - artemis
         expose:
             - ${RABBITMQ_PORT}
+            - 15672
             # - 15672 management port
-        # ports:
-        #     - "15672:15672"
+        ports:
+            - "15672:15672"
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}

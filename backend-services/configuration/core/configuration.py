@@ -51,7 +51,7 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 
 # global vars
-MODULE_NAME = os.getenv("MODULE_NAME", "configuration")
+SERVICE_NAME = "configuration"
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
 NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
@@ -1181,7 +1181,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop-{}".format(MODULE_NAME),
+                    routing_key="stop-{}".format(SERVICE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -1289,16 +1289,16 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
 
         # QUEUES
         self.autoconf_update_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.autoconf_exchange,
             routing_key="update",
             priority=4,
             random=True,
         )
         self.stop_queue = create_queue(
-            "{}-{}".format(MODULE_NAME, uuid()),
+            "{}-{}".format(SERVICE_NAME, uuid()),
             exchange=self.command_exchange,
-            routing_key="stop-{}".format(MODULE_NAME),
+            routing_key="stop-{}".format(SERVICE_NAME),
             priority=1,
         )
 

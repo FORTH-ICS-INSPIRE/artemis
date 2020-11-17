@@ -18,6 +18,7 @@ from artemis_utils.db_util import DB
 log = get_logger()
 
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 5))
+SERVICE_NAME = "autostarter"
 CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 FILEOBSERVER_HOST = os.getenv("FILEOBSERVER_HOST", "fileobserver")

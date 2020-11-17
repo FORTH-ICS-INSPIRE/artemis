@@ -26,7 +26,7 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
-MODULE_NAME = os.getenv("MODULE_NAME", "mitigation")
+SERVICE_NAME = "mitigation"
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
@@ -141,7 +141,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop-{}".format(MODULE_NAME),
+                    routing_key="stop-{}".format(SERVICE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -235,21 +235,21 @@ class MitigationDataWorker(ConsumerProducerMixin):
 
         # QUEUES
         self.mitigate_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.mitigation_exchange,
             routing_key="mitigate-with-action",
             priority=2,
         )
         self.unmitigate_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.mitigation_exchange,
             routing_key="unmitigate-with-action",
             priority=2,
         )
         self.stop_queue = create_queue(
-            "{}-{}".format(MODULE_NAME, uuid()),
+            "{}-{}".format(SERVICE_NAME, uuid()),
             exchange=self.command_exchange,
-            routing_key="stop-{}".format(MODULE_NAME),
+            routing_key="stop-{}".format(SERVICE_NAME),
             priority=1,
         )
 

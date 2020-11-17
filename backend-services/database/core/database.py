@@ -56,7 +56,7 @@ shared_memory_locks = {
 # global vars
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
-MODULE_NAME = os.getenv("MODULE_NAME", "database")
+SERVICE_NAME = "database"
 CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
 NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
@@ -307,7 +307,7 @@ class ControlHandler(RequestHandler):
                 producer.publish(
                     "",
                     exchange=command_exchange,
-                    routing_key="stop-{}".format(MODULE_NAME),
+                    routing_key="stop-{}".format(SERVICE_NAME),
                     serializer="ujson",
                 )
         shared_memory_locks["data_worker"].release()
@@ -448,73 +448,79 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
         # QUEUES
         self.update_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.update_exchange,
             routing_key="update-with-prefix-node",
             priority=1,
         )
         self.withdraw_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.update_exchange,
             routing_key="withdraw",
             priority=1,
         )
         self.hijack_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.hijack_hashing,
             routing_key="1",
             priority=1,
             random=True,
         )
         self.hijack_ongoing_request_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.hijack_exchange,
             routing_key="ongoing-request",
             priority=1,
         )
         self.hijack_outdate_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.hijack_exchange,
             routing_key="outdate",
             priority=1,
         )
         self.hijack_resolve_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.hijack_exchange,
             routing_key="resolve",
             priority=2,
         )
         self.hijack_ignore_queue = create_queue(
-            MODULE_NAME, exchange=self.hijack_exchange, routing_key="ignore", priority=2
+            SERVICE_NAME,
+            exchange=self.hijack_exchange,
+            routing_key="ignore",
+            priority=2,
         )
         self.handled_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.handled_exchange,
             routing_key="update",
             priority=1,
         )
         self.mitigate_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.mitigation_exchange,
             routing_key="mit-start",
             priority=2,
         )
         self.unmitigate_queue = create_queue(
-            MODULE_NAME,
+            SERVICE_NAME,
             exchange=self.mitigation_exchange,
             routing_key="mit-end",
             priority=2,
         )
         self.hijack_seen_queue = create_queue(
-            MODULE_NAME, exchange=self.hijack_exchange, routing_key="seen", priority=2
+            SERVICE_NAME, exchange=self.hijack_exchange, routing_key="seen", priority=2
         )
         self.hijack_delete_queue = create_queue(
-            MODULE_NAME, exchange=self.hijack_exchange, routing_key="delete", priority=2
+            SERVICE_NAME,
+            exchange=self.hijack_exchange,
+            routing_key="delete",
+            priority=2,
         )
         self.stop_queue = create_queue(
-            "{}-{}".format(MODULE_NAME, uuid()),
+            "{}-{}".format(SERVICE_NAME, uuid()),
             exchange=self.command_exchange,
-            routing_key="stop-{}".format(MODULE_NAME),
+            routing_key="stop-{}".format(SERVICE_NAME),
             priority=1,
         )
 

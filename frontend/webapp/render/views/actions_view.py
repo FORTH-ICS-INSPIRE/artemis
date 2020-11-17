@@ -12,7 +12,7 @@ from flask_security.decorators import roles_required
 from flask_security.utils import hash_password
 from flask_security.utils import verify_password
 from webapp.core.actions import comment_hijack
-from webapp.core.actions import Hijacks_multiple_action
+from webapp.core.actions import hijacks_multiple_action
 from webapp.core.actions import Learn_hijack_rule
 from webapp.core.actions import rmq_hijack_action
 from webapp.core.modules import Modules_state
@@ -297,10 +297,7 @@ def submit_hijacks_actions():
     data_ = json.loads(request.data.decode("utf-8"))
     hijack_keys = data_["hijack_keys"]
     action = data_["action"]
-
-    multiple_action_ = Hijacks_multiple_action()
-    success = multiple_action_.send(hijack_keys, action)
-
+    success = hijacks_multiple_action(hijack_keys, action)
     if success:
         return jsonify({"status": "success"})
     return jsonify({"status": "fail"})

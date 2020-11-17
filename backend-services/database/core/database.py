@@ -378,6 +378,172 @@ class HijackCommentHandler(RequestHandler):
             log.exception("{}".format(raw))
 
 
+class HijackMultiActionHandler(RequestHandler):
+    """
+    REST request handler for multiple hijack actions.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+        self.ro_db = DB(
+            application_name="database-rest-hijack-multi-action-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
+        self.wo_db = DB(
+            application_name="database-rest-hijack-multi-action-write",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+        )
+        self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+
+    def post(self):
+        """
+        Receives a "hijack-multi-action" message and applies the related actions in DB.
+        :param message: {
+            "keys": <list<str>>,
+            "action": <str>
+        }
+        :return: -
+        """
+        raw = json.loads(self.request.body)
+        log.debug("payload: {}".format(raw))
+        seen_action = False
+        ignore_action = False
+        resolve_action = False
+        delete_action = False
+        try:
+            if not raw["keys"]:
+                query = None
+            elif raw["action"] == "hijack_action_resolve":
+                query = "UPDATE hijacks SET resolved=true, active=false, dormant=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
+                resolve_action = True
+            elif raw["action"] == "hijack_action_ignore":
+                query = "UPDATE hijacks SET ignored=true, active=false, dormant=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
+                ignore_action = True
+            elif raw["action"] == "hijack_action_acknowledge":
+                query = "UPDATE hijacks SET seen=true WHERE key=%s;"
+                seen_action = True
+            elif raw["action"] == "hijack_action_acknowledge_not":
+                query = "UPDATE hijacks SET seen=false WHERE key=%s;"
+                seen_action = True
+            elif raw["action"] == "hijack_action_delete":
+                query = "DELETE FROM hijacks WHERE key=%s;"
+                delete_action = True
+            else:
+                raise BaseException("unreachable code reached")
+        except Exception:
+            log.exception("None action: {}".format(raw))
+            query = None
+
+        if not query:
+            self.write({"success": False, "message": "unknown error"})
+            return
+        else:
+            for hijack_key in raw["keys"]:
+                try:
+                    entries = self.ro_db.execute(
+                        "SELECT prefix, hijack_as, type FROM hijacks WHERE key = %s;",
+                        (hijack_key,),
+                    )
+
+                    if entries:
+                        entry = entries[0]
+                        redis_hijack_key = redis_key(
+                            entry[0], entry[1], entry[2]  # prefix  # hijack_as  # type
+                        )
+                        if seen_action:
+                            self.wo_db.execute(query, (hijack_key,))
+                        elif ignore_action:
+                            # if ongoing, clear redis
+                            if self.redis.sismember("persistent-keys", hijack_key):
+                                purge_redis_eph_pers_keys(
+                                    self.redis, redis_hijack_key, hijack_key
+                                )
+                            self.wo_db.execute(query, (hijack_key,))
+                        elif resolve_action:
+                            # if ongoing, clear redis
+                            if self.redis.sismember("persistent-keys", hijack_key):
+                                purge_redis_eph_pers_keys(
+                                    self.redis, redis_hijack_key, hijack_key
+                                )
+                            self.wo_db.execute(
+                                query, (datetime.datetime.now(), hijack_key)
+                            )
+                        elif delete_action:
+                            redis_hijack = self.redis.get(redis_hijack_key)
+                            if self.redis.sismember("persistent-keys", hijack_key):
+                                purge_redis_eph_pers_keys(
+                                    self.redis, redis_hijack_key, hijack_key
+                                )
+                            log.debug(
+                                "redis-entry for {}: {}".format(
+                                    redis_hijack_key, redis_hijack
+                                )
+                            )
+                            self.wo_db.execute(query, (hijack_key,))
+                            if redis_hijack and classic_json.loads(
+                                redis_hijack.decode("utf-8")
+                            ).get("bgpupdate_keys", []):
+                                log.debug("deleting hijack using cache for bgp updates")
+                                redis_hijack = classic_json.loads(
+                                    redis_hijack.decode("utf-8")
+                                )
+                                log.debug(
+                                    "bgpupdate_keys {} for {}".format(
+                                        redis_hijack["bgpupdate_keys"], redis_hijack
+                                    )
+                                )
+                                self.wo_db.execute(
+                                    "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
+                                    (hijack_key, list(redis_hijack["bgpupdate_keys"])),
+                                )
+                                self.wo_db.execute(
+                                    "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
+                                    (hijack_key, list(redis_hijack["bgpupdate_keys"])),
+                                )
+                            else:
+                                log.debug(
+                                    "deleting hijack by querying bgp updates database"
+                                )
+                                self.wo_db.execute(
+                                    "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1 AND handled = true;",
+                                    (hijack_key,),
+                                )
+                                self.wo_db.execute(
+                                    "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE %s = ANY(hijack_key) AND handled = true;",
+                                    (hijack_key, hijack_key),
+                                )
+                                log.debug(
+                                    "bgpupdate_keys is empty for {}".format(
+                                        redis_hijack
+                                    )
+                                )
+                        else:
+                            raise BaseException("unreachable code reached")
+
+                except Exception as e:
+                    log.exception("{}".format(raw))
+                    self.write(
+                        {
+                            "success": False,
+                            "message": "{}:{}".format(type(e).__name__, e.args),
+                        }
+                    )
+                    return
+
+        self.write({"success": True, "message": ""})
+
+
 class Database:
     """
     Database REST Service.
@@ -413,6 +579,11 @@ class Database:
                 (
                     "/hijackComment",
                     HijackCommentHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/hijackMultiAction",
+                    HijackMultiActionHandler,
                     dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
                 ),
             ]
@@ -1104,159 +1275,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             )
         except Exception:
             log.exception("{}".format(raw))
-
-    # TODO: move to POST
-    def handle_hijack_multiple_action(self, message):
-        message.ack()
-        raw = message.payload
-        log.debug("payload: {}".format(raw))
-        query = None
-        seen_action = False
-        ignore_action = False
-        resolve_action = False
-        delete_action = False
-        try:
-            if not raw["keys"]:
-                query = None
-            elif raw["action"] == "hijack_action_resolve":
-                query = "UPDATE hijacks SET resolved=true, active=false, dormant=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
-                resolve_action = True
-            elif raw["action"] == "hijack_action_ignore":
-                query = "UPDATE hijacks SET ignored=true, active=false, dormant=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
-                ignore_action = True
-            elif raw["action"] == "hijack_action_acknowledge":
-                query = "UPDATE hijacks SET seen=true WHERE key=%s;"
-                seen_action = True
-            elif raw["action"] == "hijack_action_acknowledge_not":
-                query = "UPDATE hijacks SET seen=false WHERE key=%s;"
-                seen_action = True
-            elif raw["action"] == "hijack_action_delete":
-                query = "DELETE FROM hijacks WHERE key=%s;"
-                delete_action = True
-            else:
-                raise BaseException("unreachable code reached")
-
-        except Exception:
-            log.exception("None action: {}".format(raw))
-            query = None
-
-        if not query:
-            self.producer.publish(
-                {"status": "rejected"},
-                exchange="",
-                routing_key=message.properties["reply_to"],
-                correlation_id=message.properties["correlation_id"],
-                retry=True,
-                priority=4,
-                serializer="ujson",
-            )
-        else:
-            for hijack_key in raw["keys"]:
-                try:
-                    entries = self.ro_db.execute(
-                        "SELECT prefix, hijack_as, type FROM hijacks WHERE key = %s;",
-                        (hijack_key,),
-                    )
-
-                    if entries:
-                        entry = entries[0]
-                        redis_hijack_key = redis_key(
-                            entry[0], entry[1], entry[2]  # prefix  # hijack_as  # type
-                        )
-                        if seen_action:
-                            self.wo_db.execute(query, (hijack_key,))
-                        elif ignore_action:
-                            # if ongoing, clear redis
-                            if self.redis.sismember("persistent-keys", hijack_key):
-                                purge_redis_eph_pers_keys(
-                                    self.redis, redis_hijack_key, hijack_key
-                                )
-                            self.wo_db.execute(query, (hijack_key,))
-                        elif resolve_action:
-                            # if ongoing, clear redis
-                            if self.redis.sismember("persistent-keys", hijack_key):
-                                purge_redis_eph_pers_keys(
-                                    self.redis, redis_hijack_key, hijack_key
-                                )
-                            self.wo_db.execute(
-                                query, (datetime.datetime.now(), hijack_key)
-                            )
-                        elif delete_action:
-                            redis_hijack = self.redis.get(redis_hijack_key)
-                            if self.redis.sismember("persistent-keys", hijack_key):
-                                purge_redis_eph_pers_keys(
-                                    self.redis, redis_hijack_key, hijack_key
-                                )
-                            log.debug(
-                                "redis-entry for {}: {}".format(
-                                    redis_hijack_key, redis_hijack
-                                )
-                            )
-                            self.wo_db.execute(query, (hijack_key,))
-                            if redis_hijack and classic_json.loads(
-                                redis_hijack.decode("utf-8")
-                            ).get("bgpupdate_keys", []):
-                                log.debug("deleting hijack using cache for bgp updates")
-                                redis_hijack = classic_json.loads(
-                                    redis_hijack.decode("utf-8")
-                                )
-                                log.debug(
-                                    "bgpupdate_keys {} for {}".format(
-                                        redis_hijack["bgpupdate_keys"], redis_hijack
-                                    )
-                                )
-                                self.wo_db.execute(
-                                    "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND handled = true AND array_length(hijack_key,1) = 1 AND key = ANY(%s);",
-                                    (hijack_key, list(redis_hijack["bgpupdate_keys"])),
-                                )
-                                self.wo_db.execute(
-                                    "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE handled = true AND key = ANY(%s);",
-                                    (hijack_key, list(redis_hijack["bgpupdate_keys"])),
-                                )
-                            else:
-                                log.debug(
-                                    "deleting hijack by querying bgp updates database"
-                                )
-                                self.wo_db.execute(
-                                    "DELETE FROM bgp_updates WHERE %s = ANY(hijack_key) AND array_length(hijack_key,1) = 1 AND handled = true;",
-                                    (hijack_key,),
-                                )
-                                self.wo_db.execute(
-                                    "UPDATE bgp_updates SET hijack_key = array_remove(hijack_key, %s) WHERE %s = ANY(hijack_key) AND handled = true;",
-                                    (hijack_key, hijack_key),
-                                )
-                                log.debug(
-                                    "bgpupdate_keys is empty for {}".format(
-                                        redis_hijack
-                                    )
-                                )
-                        else:
-                            raise BaseException("unreachable code reached")
-
-                except Exception as e:
-                    log.exception("{}".format(raw))
-                    self.producer.publish(
-                        {
-                            "status": "rejected",
-                            "reason": "{}:{}".format(type(e).__name__, e.args),
-                        },
-                        exchange="",
-                        routing_key=message.properties["reply_to"],
-                        correlation_id=message.properties["correlation_id"],
-                        retry=True,
-                        priority=4,
-                        serializer="ujson",
-                    )
-
-        self.producer.publish(
-            {"status": "accepted"},
-            exchange="",
-            routing_key=message.properties["reply_to"],
-            correlation_id=message.properties["correlation_id"],
-            retry=True,
-            priority=4,
-            serializer="ujson",
-        )
 
     def _insert_bgp_updates(self):
         try:

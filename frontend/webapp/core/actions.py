@@ -152,52 +152,10 @@ def load_as_sets():
     return response["error"], False
 
 
-class Hijacks_multiple_action:
-    def __init__(self):
-        self.hijack_exchange = Exchange(
-            "hijack-update", type="direct", durable=False, delivery_mode=1
-        )
-
-    def on_response(self, message):
-        message.ack()
-        if message.properties["correlation_id"] == self.correlation_id:
-            self.response = message.payload
-
-    def send(self, hijack_keys, action):
-        log.debug(
-            "Send 'multiple_action - {0}' hijack message with keys: {1}".format(
-                action, hijack_keys
-            )
-        )
-        self.response = None
-        self.correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            durable=False,
-            exclusive=True,
-            auto_delete=True,
-            max_priority=2,
-            consumer_arguments={"x-priority": 2},
-        )
-        with Connection(RABBITMQ_URI) as connection:
-            with Producer(connection) as producer:
-                producer.publish(
-                    {"keys": hijack_keys, "action": action},
-                    exchange="",
-                    routing_key="database.rpc.hijack-multiple-action",
-                    retry=True,
-                    declare=[callback_queue],
-                    reply_to=callback_queue.name,
-                    correlation_id=self.correlation_id,
-                    priority=4,
-                    serializer="ujson",
-                )
-            with Consumer(
-                connection,
-                on_message=self.on_response,
-                queues=[callback_queue],
-                accept=["ujson"],
-            ):
-                while self.response is None:
-                    connection.drain_events()
-        return self.response["status"] == "accepted"
+def hijacks_multiple_action(hijack_keys, action):
+    r = requests.post(
+        url="http://{}:{}/hijackMultiAction".format(DATABASE_HOST, REST_PORT),
+        data=json.dumps({"keys": hijack_keys, "action": action}),
+    )
+    response = r.json()
+    return response["success"]

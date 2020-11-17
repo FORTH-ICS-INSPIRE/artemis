@@ -851,7 +851,7 @@ class LoadAsSetsHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
-    def post(self):
+    def get(self):
         """
         Receives a "load-as-sets" message, translates the corresponding
         as anchors into lists, and rewrites the configuration

@@ -27,6 +27,10 @@ NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
 DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
 MITIGATION_HOST = os.getenv("MITIGATION_HOST", "mitigation")
 RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
+BGPSTREAMLIVETAP_HOST = os.getenv("BGPSTREAMLIVETAP_HOST", "bgpstreamlivetap")
+# BGPSTREAMKAFKATAP_HOST = os.getenv("BGPSTREAMKAFKATAP_HOST", "bgpstreamkafkatap")
+# BGPSTREAMHIST_HOST = os.getenv("BGPSTREAMHIST_HOST", "bgpstreamhisttap")
+# EXABGPTAP_HOST = os.getenv("EXABGPTAP_HOST", "exabgptap")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 ALWAYS_RUNNING_SERVICES = [
     CONFIGURATION_HOST,
@@ -35,7 +39,15 @@ ALWAYS_RUNNING_SERVICES = [
     FILEOBSERVER_HOST,
     PREFIXTREE_HOST,
 ]
-USER_CONTROLLED_SERVICES = [DETECTION_HOST, MITIGATION_HOST, RIPERISTAP_HOST]
+USER_CONTROLLED_SERVICES = [
+    DETECTION_HOST,
+    MITIGATION_HOST,
+    RIPERISTAP_HOST,
+    BGPSTREAMLIVETAP_HOST,
+    # BGPSTREAMKAFKATAP_HOST,
+    # BGPSTREAMHIST_HOST,
+    # EXABGPTAP_HOST
+]
 
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
@@ -68,9 +80,8 @@ def bootstrap_intended_services(wo_db):
         services_with_status = []
         for service in ALWAYS_RUNNING_SERVICES:
             services_with_status.append((service, True))
-        # TODO: move to False initialization after testing and let frontend set this at will
         for service in USER_CONTROLLED_SERVICES:
-            services_with_status.append((service, True))
+            services_with_status.append((service, False))
         wo_db.execute_batch(query, services_with_status)
         # if the user does not wish to auto-recover user-controlled processes on startup,
         # initialize with False

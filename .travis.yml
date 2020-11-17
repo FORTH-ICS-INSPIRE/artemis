@@ -51,6 +51,16 @@ jobs:
       - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-riperistap:${DOCKER_TAG} --cache-from inspiregroup/artemis-riperistap:latest --cache-from inspiregroup/artemis-riperistap:${DOCKER_TAG} monitor-services/riperistap/; fi
       - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
       - if [ $IS_FORK ]; then docker build -t artemis-riperistap:${DOCKER_TAG} monitor-services/riperistap/; fi
+    - name: bgpstreamlivetap
+      install: []
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:latest || true; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
+      script:
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstreamlivetap:latest --cache-from inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} monitor-services/bgpstreamlivetap/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-bgpstreamlivetap:${DOCKER_TAG} monitor-services/bgpstreamlivetap/; fi
     - name: autostarter
       install: []
       before_script:
@@ -161,6 +171,8 @@ jobs:
       before_script:
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-riperistap:${DOCKER_TAG} artemis_riperistap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} bgpstreamlivetap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi

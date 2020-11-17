@@ -30,6 +30,10 @@ NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
 PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
+BGPSTREAMLIVETAP_HOST = os.getenv("BGPSTREAMLIVETAP_HOST", "bgpstreamlivetap")
+# BGPSTREAMKAFKATAP_HOST = os.getenv("BGPSTREAMKAFKATAP_HOST", "bgpstreamkafkatap")
+# BGPSTREAMHIST_HOST = os.getenv("BGPSTREAMHIST_HOST", "bgpstreamhisttap")
+# EXABGPTAP_HOST = os.getenv("EXABGPTAP_HOST", "exabgptap")
 
 
 def flatten(items, seqtypes=(list, tuple)):

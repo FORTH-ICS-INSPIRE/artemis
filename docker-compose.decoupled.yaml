@@ -27,26 +27,32 @@ services:
             - ./monitor-services/riperistap/configs/:/etc/artemis/
             - ./monitor-services/riperistap/entrypoint:/root/entrypoint
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
-#    bgpstreamlivetap:
-#        image: artemis_bgpstreamlivetap
-#        build: ./monitor-services/bgpstreamlivetap
-#        # container_name: bgpstreamlivetap
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#            - configuration
-#            - prefixtree
-#        expose:
-#            - 3000
-#        ports:
-#            - "3002:3000"
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./monitor-services/bgpstreamlivetap/configs/:/etc/artemis/
+    bgpstreamlivetap:
+        image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
+        restart: always
+        depends_on:
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            CONFIGURATION_HOST: configuration
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            PREFIXTREE_HOST: prefixtree
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./monitor-services/bgpstreamlivetap/configs/:/etc/artemis/
+            - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
+            - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
 #    bgpstreamkafkatap:
 #        image: artemis_bgpstreamkafkatap
 #        build: ./monitor-services/bgpstreamkafkatap
@@ -111,11 +117,15 @@ services:
         image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
         restart: always
         depends_on:
-            - postgres
+#            - bgpstreamhisttap
+#            - bgpstreamkafkatap
+            - bgpstreamlivetap
             - database
             - detection
+#            - exabgptap
             - mitigation
             - notifier
+            - postgres
             - prefixtree
             - configuration
             - fileobserver
@@ -124,6 +134,9 @@ services:
             - artemis
         environment:
             AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
+#            BGPSTREAMHIST_HOST: bgpstreamhisttap
+#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
+            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
             CHECK_INTERVAL: 5
             CONFIGURATION_HOST: configuration
             DATABASE_HOST: database
@@ -133,6 +146,7 @@ services:
             DB_PORT: ${DB_PORT}
             DB_NAME: ${DB_NAME}
             DETECTION_HOST: detection
+#            EXABGPTAP_HOST: exabgptap
             FILEOBSERVER_HOST: fileobserver
             MITIGATION_HOST: mitigation
             NOTIFIER_HOST: notifier
@@ -147,8 +161,12 @@ services:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
         restart: always
         depends_on:
+#            - bgpstreamhisttap
+#            - bgpstreamkafkatap
+            - bgpstreamlivetap
             - database
             - detection
+#            - exabgptap
             - mitigation
             - notifier
             - postgres
@@ -161,8 +179,12 @@ services:
         networks:
             - artemis
         environment:
+#            BGPSTREAMHIST_HOST: bgpstreamhisttap
+#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
+            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
             DATABASE_HOST: database
             DETECTION_HOST: detection
+#            EXABGPTAP_HOST: exabgptap
             MITIGATION_HOST: mitigation
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
@@ -359,11 +381,15 @@ services:
             API_PORT: ${API_PORT}
             ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             BIND_IP: ${BIND_IP}
+#            BGPSTREAMHIST_HOST: bgpstreamhisttap
+#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
+            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
             CONFIGURATION_HOST: configuration
             DATABASE_HOST: database
             DB_HOST: ${DB_HOST}
             DB_PORT: ${DB_PORT}
             DETECTION_HOST: detection
+#            EXABGPTAP_HOST: exabgptap
             FILEOBSERVER_HOST: fileobserver
             FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
             GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}

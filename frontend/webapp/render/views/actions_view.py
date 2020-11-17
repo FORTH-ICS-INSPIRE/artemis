@@ -11,7 +11,7 @@ from flask_security.decorators import login_required
 from flask_security.decorators import roles_required
 from flask_security.utils import hash_password
 from flask_security.utils import verify_password
-from webapp.core.actions import Comment_hijack
+from webapp.core.actions import comment_hijack
 from webapp.core.actions import Hijacks_multiple_action
 from webapp.core.actions import Learn_hijack_rule
 from webapp.core.actions import rmq_hijack_action
@@ -150,8 +150,7 @@ def submit_new_comment():
         "hijack_key: {0} new_comment: {1}".format(hijack_key, new_comment)
     )
 
-    comment_ = Comment_hijack()
-    response, success = comment_.send(hijack_key, new_comment)
+    response, success = comment_hijack(hijack_key, new_comment)
 
     if success:
         return jsonify({"status": "success", "data": new_comment, "response": response})

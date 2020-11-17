@@ -340,6 +340,44 @@ class ControlHandler(RequestHandler):
             self.write({"success": False, "message": "error during control"})
 
 
+class HijackCommentHandler(RequestHandler):
+    """
+    REST request handler for hijack comments.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+        self.wo_db = DB(
+            application_name="database-rest-hijack-comment-write",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+        )
+
+    def post(self):
+        """
+        Receives a "hijack-comment" message and stores it in DB.
+        :param message: {
+            "key": <str>,
+            "comment": <str>
+        }
+        :return: -
+        """
+        raw = json.loads(self.request.body)
+        log.debug("payload: {}".format(raw))
+        try:
+            self.wo_db.execute(
+                "UPDATE hijacks SET comment=%s WHERE key=%s;",
+                (raw["comment"], raw["key"]),
+            )
+            self.write({"success": True, "message": ""})
+        except Exception:
+            self.write({"success": False, "message": "unknown error"})
+            log.exception("{}".format(raw))
+
+
 class Database:
     """
     Database REST Service.
@@ -370,6 +408,11 @@ class Database:
                 (
                     "/health",
                     HealthHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/hijackComment",
+                    HijackCommentHandler,
                     dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
                 ),
             ]
@@ -1049,38 +1092,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 (raw["key"],),
             )
         except Exception:
-            log.exception("{}".format(raw))
-
-    # TODO: move to POST
-    def handle_hijack_comment(self, message):
-        message.ack()
-        raw = message.payload
-        log.debug("payload: {}".format(raw))
-        try:
-            self.wo_db.execute(
-                "UPDATE hijacks SET comment=%s WHERE key=%s;",
-                (raw["comment"], raw["key"]),
-            )
-
-            self.producer.publish(
-                {"status": "accepted"},
-                exchange="",
-                routing_key=message.properties["reply_to"],
-                correlation_id=message.properties["correlation_id"],
-                retry=True,
-                priority=4,
-                serializer="ujson",
-            )
-        except Exception:
-            self.producer.publish(
-                {"status": "rejected"},
-                exchange="",
-                routing_key=message.properties["reply_to"],
-                correlation_id=message.properties["correlation_id"],
-                retry=True,
-                priority=4,
-                serializer="ujson",
-            )
             log.exception("{}".format(raw))
 
     def handle_hijack_seen(self, message):

@@ -355,35 +355,38 @@ services:
         expose:
             - ${WEBAPP_PORT}
         environment:
+            API_HOST: ${API_HOST}
+            API_PORT: ${API_PORT}
             ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
+            BIND_IP: ${BIND_IP}
             CONFIGURATION_HOST: configuration
             DATABASE_HOST: database
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DETECTION_HOST: detection
             FILEOBSERVER_HOST: fileobserver
+            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
+            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            JS_VERSION: ${JS_VERSION}
+            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+            MITIGATION_HOST: mitigation
             NOTIFIER_HOST: notifier
             PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            API_HOST: ${API_HOST}
-            API_PORT: ${API_PORT}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            REST_PORT: 3000
+            RIPERISTAP_HOST: riperistap
+            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
-            BIND_IP: ${BIND_IP}
-            WEBAPP_PORT: ${WEBAPP_PORT}
             USER_ROOT_USERNAME: ${ADMIN_USER}
             USER_ROOT_PASSWORD: ${ADMIN_PASS}
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
-            JS_VERSION: ${JS_VERSION}
-            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
-            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
-            REST_PORT: 3000
+            WEBAPP_PORT: ${WEBAPP_PORT}
         volumes:
             - ./frontend/:/root/
             - ./frontend/webapp/configs/:/etc/artemis/

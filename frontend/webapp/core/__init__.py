@@ -24,7 +24,6 @@ from flask_security.utils import verify_password
 from flask_talisman import Talisman
 from webapp.configs.config import configure_app
 from webapp.core.fetch_config import Configuration
-from webapp.core.modules import Modules_state
 from webapp.core.proxy_api import proxy_api_downloadTable
 from webapp.core.proxy_api import proxy_api_post
 from webapp.data.models import db
@@ -110,25 +109,6 @@ def setup():
     except BaseException:
         app.config["VERSION"] = "Fail"
         app.artemis_logger.debug("failed to get version")
-
-    modules = Modules_state()
-
-    # try:
-    #     app.artemis_logger.debug("Starting Database..")
-    #
-    #     if not modules.is_any_up_or_running("database"):
-    #         app.artemis_logger.error("Couldn't start Database.")
-    #         exit(-1)
-    # except BaseException:
-    #     app.artemis_logger.exception("exception while starting Database")
-    #     exit(-1)
-
-    try:
-        app.artemis_logger.debug("Request status of all modules..")
-        app.config["status"] = modules.get_response_all()
-    except BaseException:
-        app.artemis_logger.exception("exception while retrieving status of modules..")
-        exit(-1)
 
     if not os.path.isfile(app.config["DB_FULL_PATH"]):
         app.artemis_logger.debug("setting database for the first time")

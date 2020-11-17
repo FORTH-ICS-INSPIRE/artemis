@@ -1,6 +1,7 @@
 import difflib
 import logging
 
+import requests
 import ujson as json
 from kombu import Connection
 from kombu import Consumer
@@ -9,7 +10,9 @@ from kombu import Producer
 from kombu import Queue
 from kombu import serialization
 from kombu import uuid
+from webapp.utils import CONFIGURATION_HOST
 from webapp.utils import RABBITMQ_URI
+from webapp.utils import REST_PORT
 
 log = logging.getLogger("artemis_logger")
 
@@ -153,57 +156,27 @@ class Comment_hijack:
         return "Error while saving.", False
 
 
-class Submit_new_config:
-    def on_response(self, message):
-        message.ack()
-        if message.properties["correlation_id"] == self.correlation_id:
-            self.response = message.payload
-
-    def send(self, new_config, old_config, comment):
-        changes = "".join(difflib.unified_diff(new_config, old_config))
-        if changes:
-            log.debug("Send 'new config'")
-            self.response = None
-            self.correlation_id = uuid()
-            callback_queue = Queue(
-                uuid(),
-                durable=False,
-                auto_delete=True,
-                max_priority=4,
-                consumer_arguments={"x-priority": 4},
-            )
-            with Connection(RABBITMQ_URI) as connection:
-                with Producer(connection) as producer:
-                    producer.publish(
-                        {"config": new_config, "comment": comment},
-                        exchange="",
-                        routing_key="configuration.rpc.modify",
-                        serializer="yaml",
-                        retry=True,
-                        declare=[callback_queue],
-                        reply_to=callback_queue.name,
-                        correlation_id=self.correlation_id,
-                        priority=4,
-                    )
-                with Consumer(
-                    connection,
-                    on_message=self.on_response,
-                    queues=[callback_queue],
-                    accept=["ujson"],
-                ):
-                    while self.response is None:
-                        connection.drain_events()
-
-            if self.response["status"] == "accepted":
-                log.info("new configuration accepted:\n{}".format(changes))
-                return "Configuration file updated.", True
-
+def submit_new_config(new_config, old_config, comment):
+    changes = "".join(difflib.unified_diff(new_config, old_config))
+    if changes:
+        log.debug("Send 'new config'")
+        r = requests.post(
+            url="http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT),
+            data=json.dumps(
+                {"type": "yaml", "content": {"config": new_config, "comment": comment}}
+            ),
+        )
+        response = r.json()
+        if response["success"]:
+            log.info("new configuration accepted:\n{}".format(changes))
+            return "Configuration file updated.", True
+        else:
             log.info("invalid configuration:\n{}".format(new_config))
             return (
-                "Invalid configuration file.\n{}".format(self.response["reason"]),
+                "Invalid configuration file.\n{}".format(response["message"]),
                 False,
             )
-        return "No changes found on the new configuration.", False
+    return "No changes found on the new configuration.", False
 
 
 class Load_as_sets:

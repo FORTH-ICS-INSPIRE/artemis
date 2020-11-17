@@ -113,6 +113,12 @@ def configure_ripe_ris(shared_memory_manager_dict):
             shared_memory_locks["data_worker"].release()
             return {"success": True, "message": "data_task not in configuration"}
 
+        # check if the worker should run (if configured)
+        should_run = False
+        shared_memory_locks["data_worker"].acquire()
+        should_run = shared_memory_manager_dict["data_worker_should_run"]
+        shared_memory_locks["data_worker"].release()
+
         # make sure that data worker is stopped
         stop_msg = stop_data_worker(shared_memory_manager_dict)
         log.info(stop_msg)
@@ -140,9 +146,10 @@ def configure_ripe_ris(shared_memory_manager_dict):
         shared_memory_manager_dict["data_worker_configured"] = True
         shared_memory_locks["data_worker"].release()
 
-        # start the data worker
-        start_msg = start_data_worker(shared_memory_manager_dict)
-        log.info(start_msg)
+        # start the data worker only if it should be running
+        if should_run:
+            start_msg = start_data_worker(shared_memory_manager_dict)
+            log.info(start_msg)
 
         return {"success": True, "message": "configured"}
     except Exception:

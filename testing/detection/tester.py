@@ -322,12 +322,12 @@ class Tester:
         )
 
         with Connection(RABBITMQ_URI) as connection:
-            print("Waiting for pg_amq exchange..")
-            Tester.waitExchange(self.pg_amq_bridge, connection.default_channel)
-            print("Waiting for hijack exchange..")
-            Tester.waitExchange(self.hijack_exchange, connection.default_channel)
-            print("Waiting for update exchange..")
-            Tester.waitExchange(self.update_exchange, connection.default_channel)
+            # print("Waiting for pg_amq exchange..")
+            # Tester.waitExchange(self.pg_amq_bridge, connection.default_channel)
+            # print("Waiting for hijack exchange..")
+            # Tester.waitExchange(self.hijack_exchange, connection.default_channel)
+            # print("Waiting for update exchange..")
+            # Tester.waitExchange(self.update_exchange, connection.default_channel)
 
             # establish connection to DB
             db_con = self.getDbConnection()

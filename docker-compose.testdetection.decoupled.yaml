@@ -98,6 +98,7 @@ services:
             PREFIXTREE_HOST: prefixtree
             REST_PORT: 3000
             RIPERISTAP_HOST: riperistap
+            TEST_ENV: "true"
         volumes:
             - ./testing/detection/configs/:/etc/artemis/
             - ./backend-services/autostarter/entrypoint:/root/entrypoint

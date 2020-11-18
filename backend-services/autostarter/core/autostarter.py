@@ -12,6 +12,7 @@ from artemis_utils import DB_PASS
 from artemis_utils import DB_PORT
 from artemis_utils import DB_USER
 from artemis_utils import get_logger
+from artemis_utils import TEST_ENV
 from artemis_utils.db_util import DB
 
 # logger
@@ -81,7 +82,10 @@ def bootstrap_intended_services(wo_db):
         for service in ALWAYS_RUNNING_SERVICES:
             services_with_status.append((service, True))
         for service in USER_CONTROLLED_SERVICES:
-            services_with_status.append((service, False))
+            if TEST_ENV == "true":
+                services_with_status.append((service, True))
+            else:
+                services_with_status.append((service, False))
         wo_db.execute_batch(query, services_with_status)
         # if the user does not wish to auto-recover user-controlled processes on startup,
         # initialize with False

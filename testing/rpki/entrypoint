@@ -2,8 +2,12 @@
 
 ./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
-./wait-for ${BACKEND_SUPERVISOR_HOST}:${BACKEND_SUPERVISOR_PORT} -t 0
 ./wait-for ${REDIS_HOST}:${REDIS_PORT} -t 0
 ./wait-for ${RPKI_VALIDATOR_HOST}:${RPKI_VALIDATOR_PORT} -t 0
+./wait-for configuration:3000 -t 0
+./wait-for database:3000 -t 0
+./wait-for detection:3000 -t 0
+./wait-for fileobserver:3000 -t 0
+./wait-for prefixtree:3000 -t 0
 
 python -u tester.py

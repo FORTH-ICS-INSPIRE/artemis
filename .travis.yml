@@ -288,28 +288,46 @@ jobs:
 #        - codecov
 #      after_failure:
 #        - docker-compose -f docker-compose.testautoconf.yaml logs
-#    - name: TestRPKI
-#      install:
-#        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
-#      before_script:
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-backend:${DOCKER_TAG}; fi
-#        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest; fi
-#        - mkdir -p local_configs/routinator/tals
-#        - sudo chown -R 1012:1012 local_configs/routinator/tals
-#        - mkdir -p local_configs/routinator/rpki-repo
-#        - sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
-#        - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
-#        - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
-#        - docker build -t artemis_rpki_testing testing/rpki
-#        - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
-#        - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
-#      script:
-#        - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
-#      after_success:
-#        - sh convert_coverage.sh
-#        - codecov
-#      after_failure:
-#        - docker-compose -f docker-compose.testrpki.yaml logs
+    - name: TestRPKI
+      install:
+        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-riperistap:${DOCKER_TAG} artemis_riperistap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} bgpstreamlivetap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-configuration:${DOCKER_TAG} artemis_configuration:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-database:${DOCKER_TAG} artemis_database:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-detection:${DOCKER_TAG} artemis_detection:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-fileobserver:${DOCKER_TAG} artemis_fileobserver:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-mitigation:${DOCKER_TAG} artemis_mitigation:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-notifier:${DOCKER_TAG} artemis_notifier:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
+        - mkdir -p local_configs/routinator/tals
+        - sudo chown -R 1012:1012 local_configs/routinator/tals
+        - mkdir -p local_configs/routinator/rpki-repo
+        - sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
+        - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
+        - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
+        - docker build -t artemis_rpki_testing testing/rpki
+        - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
+        - docker-compose -f docker-compose.testrpki.decoupled.yaml -f docker-compose.routinator.yaml up -d
+      script:
+        - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
+      after_success:
+        - sh convert_coverage.sh
+        - codecov
+      after_failure:
+        - docker-compose -f docker-compose.testrpki.yaml logs
 #    - name: ZAP Baseline (Passive)
 #      before_script:
 #        - docker pull ictu/zap2docker-weekly

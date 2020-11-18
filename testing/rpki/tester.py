@@ -4,16 +4,15 @@ import os
 import re
 import socket
 import time
-from xmlrpc.client import ServerProxy
 
 import psycopg2
 import redis
+import requests
 import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
 from kombu import serialization
-from kombu import uuid
 from kombu.utils.compat import nested
 from rtrlib import RTRManager
 
@@ -30,12 +29,47 @@ serialization.register(
     "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
 )
 
+# global vars
+CONFIGURATION_HOST = "configuration"
+DATABASE_HOST = "database"
+DATA_WORKER_DEPENDENCIES = [
+    "configuration",
+    "database",
+    "detection",
+    "fileobserver",
+    "prefixtree",
+]
+REST_PORT = 3000
+
+
+def wait_data_worker_dependencies(data_worker_dependencies):
+    while True:
+        all_deps_met = True
+        for service in data_worker_dependencies:
+            try:
+                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                status = True if r.json()["status"] == "running" else False
+                if not status:
+                    all_deps_met = False
+                    break
+            except Exception:
+                all_deps_met = False
+                break
+        if all_deps_met:
+            print("needed data workers started: {}".format(data_worker_dependencies))
+            break
+        print(
+            "waiting for needed data workers to start: {}".format(
+                data_worker_dependencies
+            )
+        )
+        time.sleep(1)
+
 
 class Tester:
     def __init__(self):
         self.time_now = int(time.time())
         self.initRedis()
-        self.initSupervisor()
 
     def getDbConnection(self):
         """
@@ -76,13 +110,6 @@ class Tester:
                 print("retrying redis ping in 5 seconds...")
                 time.sleep(5)
 
-    def initSupervisor(self):
-        BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
-        BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
-        self.supervisor = ServerProxy(
-            "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
-        )
-
     def clear(self):
         db_con = self.getDbConnection()
         db_cur = db_con.cursor()
@@ -122,12 +149,6 @@ class Tester:
                 break
             except Exception:
                 time.sleep(1)
-
-    def waitProcess(self, mod, target):
-        state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
-        while state != target:
-            time.sleep(0.5)
-            state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
 
     def validate_message(self, body, message):
         """
@@ -233,49 +254,6 @@ class Tester:
                 serializer="ujson",
             )
 
-    @staticmethod
-    def config_request_rpc(conn):
-        """
-        Initial RPC of this service to request the configuration.
-        The RPC is blocked until the configuration service replies back.
-        """
-        correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            channel=conn.default_channel,
-            durable=False,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
-        )
-
-        with conn.Producer() as producer:
-            producer.publish(
-                "",
-                exchange="",
-                routing_key="configuration.rpc.request",
-                reply_to=callback_queue.name,
-                correlation_id=correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "configuration.rpc.request",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="ujson",
-            )
-
-        while True:
-            if callback_queue.get():
-                break
-            time.sleep(0.1)
-        print("Config RPC finished")
-
     def test(self):
         """
         Loads a test file that includes crafted bgp updates as
@@ -357,32 +335,29 @@ class Tester:
         )
 
         with Connection(RABBITMQ_URI) as connection:
-            print("Waiting for pg_amq exchange..")
-            Tester.waitExchange(self.pg_amq_bridge, connection.default_channel)
-            print("Waiting for hijack exchange..")
-            Tester.waitExchange(self.hijack_exchange, connection.default_channel)
-            print("Waiting for update exchange..")
-            Tester.waitExchange(self.update_exchange, connection.default_channel)
+            # print("Waiting for pg_amq exchange..")
+            # Tester.waitExchange(self.pg_amq_bridge, connection.default_channel)
+            # print("Waiting for hijack exchange..")
+            # Tester.waitExchange(self.hijack_exchange, connection.default_channel)
+            # print("Waiting for update exchange..")
+            # Tester.waitExchange(self.update_exchange, connection.default_channel)
 
-            # query database for the states of the processes
-            db_con = self.getDbConnection()
-            db_cur = db_con.cursor()
-            query = "SELECT name FROM process_states WHERE running=True"
-            running_modules = set()
-            # wait until all 5 modules are running
-            while len(running_modules) < 5:
-                db_cur.execute(query)
-                entries = db_cur.fetchall()
-                for entry in entries:
-                    running_modules.add(entry[0])
-                db_con.commit()
-                print("Running modules: {}".format(running_modules))
-                print("{}/5 modules are running.".format(len(running_modules)))
+            # wait for dependencies data workers to start
+            wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
+
+            while True:
+                try:
+                    r = requests.get(
+                        "http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT)
+                    )
+                    result = r.json()
+                    assert len(result) > 0
+                    break
+                except Exception:
+                    print("exception")
                 time.sleep(1)
 
-            Tester.config_request_rpc(connection)
-
-            time.sleep(10)
+            time.sleep(1)
 
             for testfile in os.listdir("testfiles/"):
                 self.clear()
@@ -426,18 +401,6 @@ class Tester:
                             except socket.timeout:
                                 # avoid infinite loop by timeout
                                 assert False, "Consumer timeout"
-
-            connection.close()
-
-        time.sleep(5)
-        self.supervisor.supervisor.stopAllProcesses()
-
-        self.waitProcess("listener", 0)  # 0 STOPPED
-        self.waitProcess("clock", 0)  # 0 STOPPED
-        self.waitProcess("detection", 0)  # 0 STOPPED
-        self.waitProcess("configuration", 0)  # 0 STOPPED
-        self.waitProcess("database", 0)  # 0 STOPPED
-        self.waitProcess("observer", 0)  # 0 STOPPED
 
 
 if __name__ == "__main__":

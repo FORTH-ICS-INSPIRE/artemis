@@ -439,8 +439,6 @@ class Tester:
                                 # avoid infinite loop by timeout
                                 assert False, "Consumer timeout"
 
-            connection.close()
-
         with open("configs/config.yaml") as f1, open("configs/config2.yaml") as f2:
             new_data = f2.read()
             old_data = f1.read()

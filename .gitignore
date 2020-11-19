@@ -16,3 +16,4 @@ postgres-data-backup/*
 *.rdb
 *_history
 local_configs/*
+local_configs.bk*

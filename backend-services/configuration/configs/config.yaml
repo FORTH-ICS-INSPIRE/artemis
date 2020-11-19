@@ -4,11 +4,11 @@
 # Start of Prefix Definitions
 prefixes:
   forth_prefix_main: &forth_prefix_main
-  - 139.91.0.0/16
+  - 139.91.0.0./16
   forth_prefix_lamda: &forth_prefix_lamda
   - 139.91.250.0/24
   forth_prefix_vod: &forth_prefix_vod
-  - 139.91.0.0/16
+  - 139.91.2.0/24
   # new v4 prefix observed, need to be verified with FORTH
   forth_prefix_v4_new: &forth_prefix_v4_new
   - 192.67.249.0/24
@@ -18,12 +18,17 @@ prefixes:
 # End of Prefix Definitions
 
 # Start of Monitor Definitions
-monitors:
-  riperis: ['']
+monitors: {}
+  #riperis: ['']
   #bgpstreamlive:
   #- routeviews
   #- ris
   #- caida
+  #bgpstreamkafka:
+  #  host: bmp.bgpstream.caida.org
+  #  port: 9092
+  #  topic: '^openbmp\.router--.+\.peer-as--.+\.bmp_raw'
+  #bgpstreamhist: '/etc/artemis/'
 # End of Monitor Definitions
 
 autoignore:
@@ -32,7 +37,8 @@ autoignore:
     thres_num_ases_infected: 3
     interval: 3600
     prefixes:
-    - *forth_prefix_main
+    - *forth_prefix_lamda
+    - *forth_prefix_vod
 
 # Start of ASN Definitions
 asns:

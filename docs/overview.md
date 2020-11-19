@@ -144,15 +144,7 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
 
 3. Decouple your setup files (tool configurations) from the default ones (that are under version control), by doing the following in your local artemis directory:
    ```
-   mkdir -p local_configs && \
-   mkdir -p local_configs/backend && \
-   mkdir -p local_configs/monitor && \
-   mkdir -p local_configs/frontend && \
-   cp -rn backend/configs/* local_configs/backend && \
-   cp -rn backend/supervisor.d local_configs/backend && \
-   cp -rn monitor/configs/* local_configs/monitor && \
-   cp -rn monitor/supervisor.d local_configs/monitor && \
-   cp -rn frontend/webapp/configs/* local_configs/frontend
+   ./other/migration_2.0.0/create_migrate_local_configs.sh
    ```
    and then change the source mappings in `docker-compose.yaml`, by following the instructions within the file.
    Example:
@@ -177,12 +169,28 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    A sample folder structure for local_configs is the following:
    ```
    $ tree local_configs
-   local_configs
-   ├── backend
-   │   ├── config.yaml
-   │   ├── logging.yaml
-   │   └── supervisor.d
-   │       └── services.conf
+   local_configs/
+   ├── backend-services
+   │   ├── autostarter
+   │   │   └── logging.yaml
+   │   ├── configuration
+   │   │   ├── autoconf-config.yaml
+   │   │   ├── config.yaml
+   │   │   └── logging.yaml
+   │   ├── database
+   │   │   └── logging.yaml
+   │   ├── detection
+   │   │   └── logging.yaml
+   │   ├── fileobserver
+   │   │   └── logging.yaml
+   │   ├── mitigation
+   │   │   └── logging.yaml
+   │   ├── notifier
+   │   │   └── logging.yaml
+   │   ├── prefixtree
+   │   │   └── logging.yaml
+   │   └── redis
+   │       └── redis.conf
    ├── frontend
    │   ├── certs
    │   │   ├── cert.pem
@@ -191,12 +199,23 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    │   ├── __init__.py
    │   ├── logging.yaml
    │   ├── nginx.conf
+   │   ├── __pycache__
+   │   │   ├── config.cpython-36.pyc
+   │   │   └── __init__.cpython-36.pyc
    │   └── webapp.cfg
-   └── monitor
-       ├── exabgp.conf
-       ├── logging.yaml
-       └── supervisor.d
-           └── services.conf
+   └── monitor-services
+       ├── bgpstreamhisttap
+       │   └── logging.yaml
+       ├── bgpstreamkafkatap
+       │   └── logging.yaml
+       ├── bgpstreamlivetap
+       │   └── logging.yaml
+       ├── exabgptap
+       │   ├── exabgp.conf
+       │   └── logging.yaml
+       └── riperistap
+           └── logging.yaml
+
    ```
 
 4. Setup https: the ARTEMIS web application supports https to ensure secure access to the application. We use a nginx reverse proxy to terminate SSL connections before forwarding the requests to Flask. To configure your own (e.g., self-signed) certificates, please place in the following folder:
@@ -521,9 +540,9 @@ docker-compose restart monitor
 
 Change the following source mapping from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.exabgp.yaml#L11) to:
 ```
-- ./local_configs/monitor/exabgp.conf:/home/config/exabgp.conf
+- ./local_configs/monitor-services/exabgptap/exabgp.conf:/home/config/exabgp.conf
 ```
-Edit the local_configs/monitor/exabgp.conf file as follows:
+Edit the local_configs/monitor-services/exabgptap/exabgp.conf file as follows:
 ```
 group r1 {
     router-id <PUBLIC_IP>; # the public IP of your ARTEMIS host
@@ -699,26 +718,52 @@ Then, do the following:
 
    ```
    $ tree local_configs
-   local_configs
-   ├── backend
-   │   ├── config.yaml
-   │   ├── logging.yaml
-   │   └── supervisor.d
-   │       └── services.conf
+   local_configs/
+   ├── backend-services
+   │   ├── autostarter
+   │   │   └── logging.yaml
+   │   ├── configuration
+   │   │   ├── autoconf-config.yaml
+   │   │   ├── config.yaml
+   │   │   └── logging.yaml
+   │   ├── database
+   │   │   └── logging.yaml
+   │   ├── detection
+   │   │   └── logging.yaml
+   │   ├── fileobserver
+   │   │   └── logging.yaml
+   │   ├── mitigation
+   │   │   └── logging.yaml
+   │   ├── notifier
+   │   │   └── logging.yaml
+   │   ├── prefixtree
+   │   │   └── logging.yaml
+   │   └── redis
+   │       └── redis.conf
    ├── frontend
-   │   ├── certs
-   │   │   ├── cert.pem
-   │   │   └── key.pem
-   │   ├── config.py
-   │   ├── __init__.py
-   │   ├── logging.yaml
-   │   ├── nginx.conf
-   │   └── webapp.cfg
-   └── monitor
-       ├── exabgp.conf
-       ├── logging.yaml
-       └── supervisor.d
-           └── services.conf
+   │   ├── certs
+   │   │   ├── cert.pem
+   │   │   └── key.pem
+   │   ├── config.py
+   │   ├── __init__.py
+   │   ├── logging.yaml
+   │   ├── nginx.conf
+   │   ├── __pycache__
+   │   │   ├── config.cpython-36.pyc
+   │   │   └── __init__.cpython-36.pyc
+   │   └── webapp.cfg
+   └── monitor-services
+       ├── bgpstreamhisttap
+       │   └── logging.yaml
+       ├── bgpstreamkafkatap
+       │   └── logging.yaml
+       ├── bgpstreamlivetap
+       │   └── logging.yaml
+       ├── exabgptap
+       │   ├── exabgp.conf
+       │   └── logging.yaml
+       └── riperistap
+           └── logging.yaml
    ```
 
 2. Deactivate current running instance:

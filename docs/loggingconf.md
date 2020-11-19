@@ -1,7 +1,8 @@
 Logging can be configured by editing the following files:
 ```
 local_configs/frontend/logging.yaml
-local_configs/backend/logging.yaml
+local_configs/backend-services/*/logging.yaml
+local_configs/monitor-services/*/logging.yaml
 ```
 Logs (which are useful for debugging) can be accessed as follows:
 ```

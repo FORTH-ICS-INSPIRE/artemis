@@ -3,10 +3,10 @@ The ARTEMIS configuration file (config.yaml) is written in YAML (for an ultra-fa
 
     backend/configs
 
-but we highly advise you to copy the default file to the local_configs/backend location and update the volume mapping in
+but we highly advise you to copy the default file to the `local_configs/backend-services/configuration` location and update the volume mapping in
 [docker-compose.yaml](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28). Detailed instructions on the exact steps can be found [here](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool). The local location of your file should eventually be:
 
-    local_configs/backend/config.yaml
+    local_configs/backend-services/configuration/config.yaml
 
 The file is composed of 4 sections (Prefixes, Monitors, ASNs, and Rules) described next in detail. *Reserved words are marked in bold (configuration keywords).*
 

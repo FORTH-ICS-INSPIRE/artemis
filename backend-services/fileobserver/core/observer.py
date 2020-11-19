@@ -22,7 +22,7 @@ shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "fileobserver"
-CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
+CONFIGURATION_HOST = "configuration"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

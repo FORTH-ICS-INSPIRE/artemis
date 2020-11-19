@@ -12,9 +12,7 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -39,9 +37,7 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -134,25 +130,13 @@ services:
             - artemis
         environment:
             AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
-#            BGPSTREAMHIST_HOST: bgpstreamhisttap
-#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
-            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
             CHECK_INTERVAL: 5
-            CONFIGURATION_HOST: configuration
-            DATABASE_HOST: database
             DB_USER: ${DB_USER}
             DB_PASS: ${DB_PASS}
             DB_HOST: ${DB_HOST}
             DB_PORT: ${DB_PORT}
             DB_NAME: ${DB_NAME}
-            DETECTION_HOST: detection
-#            EXABGPTAP_HOST: exabgptap
-            FILEOBSERVER_HOST: fileobserver
-            MITIGATION_HOST: mitigation
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             REST_PORT: 3000
-            RIPERISTAP_HOST: riperistap
         volumes:
             - ./backend-services/autostarter/configs/:/etc/artemis/
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
@@ -179,15 +163,6 @@ services:
         networks:
             - artemis
         environment:
-#            BGPSTREAMHIST_HOST: bgpstreamhisttap
-#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
-            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
-            DATABASE_HOST: database
-            DETECTION_HOST: detection
-#            EXABGPTAP_HOST: exabgptap
-            MITIGATION_HOST: mitigation
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -195,7 +170,6 @@ services:
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
-            RIPERISTAP_HOST: riperistap
         volumes:
             - ./backend-services/configuration/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
@@ -215,7 +189,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             DB_USER: ${DB_USER}
             DB_PASS: ${DB_PASS}
             DB_HOST: ${DB_HOST}
@@ -226,8 +199,6 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -255,9 +226,6 @@ services:
         networks:
             - artemis
         environment:
-            DATABASE_HOST: database
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -282,7 +250,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             REST_PORT: 3000
         volumes:
             - ./backend-services/configuration/configs/:/etc/artemis/
@@ -300,8 +267,6 @@ services:
         networks:
             - artemis
         environment:
-            DATABASE_HOST: database
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -321,7 +286,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -342,7 +306,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -381,16 +344,8 @@ services:
             API_PORT: ${API_PORT}
             ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             BIND_IP: ${BIND_IP}
-#            BGPSTREAMHIST_HOST: bgpstreamhisttap
-#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
-            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
-            CONFIGURATION_HOST: configuration
-            DATABASE_HOST: database
             DB_HOST: ${DB_HOST}
             DB_PORT: ${DB_PORT}
-            DETECTION_HOST: detection
-#            EXABGPTAP_HOST: exabgptap
-            FILEOBSERVER_HOST: fileobserver
             FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
             GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
             HASURA_HOST: ${HASURA_HOST}
@@ -398,15 +353,11 @@ services:
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             JS_VERSION: ${JS_VERSION}
             JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-            MITIGATION_HOST: mitigation
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
-            RIPERISTAP_HOST: riperistap
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
             USER_ROOT_USERNAME: ${ADMIN_USER}

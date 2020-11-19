@@ -57,9 +57,9 @@ shared_memory_locks = {
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
 SERVICE_NAME = "database"
-CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
-PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
-NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
+CONFIGURATION_HOST = "configuration"
+PREFIXTREE_HOST = "prefixtree"
+NOTIFIER_HOST = "notifier"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
 

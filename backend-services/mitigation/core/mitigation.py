@@ -27,8 +27,8 @@ shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "mitigation"
-PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
-DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
+PREFIXTREE_HOST = "prefixtree"
+DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
 

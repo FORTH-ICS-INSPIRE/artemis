@@ -6,8 +6,8 @@ pip --no-cache-dir install coverage==4.5.4
 ./wait-for ${REDIS_HOST}:${REDIS_PORT} -t 0
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
 ./wait-for ${HASURA_HOST}:${HASURA_PORT} -t 0
-./wait-for ${NOTIFIER_HOST}:${REST_PORT} -t 0
-./wait-for ${PREFIXTREE_HOST}:${REST_PORT} -t 0
+./wait-for notifier:${REST_PORT} -t 0
+./wait-for prefixtree:${REST_PORT} -t 0
 
 version=$(PGPASSWORD=$DB_PASS psql postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME} -c "select version from db_details;" -tA)
 

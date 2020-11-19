@@ -39,8 +39,8 @@ update_types = ["announcements", "withdrawals"]
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 SERVICE_NAME = "riperistap"
-CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
-PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+CONFIGURATION_HOST = "configuration"
+PREFIXTREE_HOST = "prefixtree"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

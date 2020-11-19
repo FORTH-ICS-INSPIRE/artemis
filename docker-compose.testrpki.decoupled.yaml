@@ -13,9 +13,7 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -42,9 +40,7 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -79,25 +75,13 @@ services:
             - artemis
         environment:
             AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
-#            BGPSTREAMHIST_HOST: bgpstreamhisttap
-#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
-            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
             CHECK_INTERVAL: 5
-            CONFIGURATION_HOST: configuration
-            DATABASE_HOST: database
             DB_USER: ${DB_USER}
             DB_PASS: ${DB_PASS}
             DB_HOST: ${DB_HOST}
             DB_PORT: ${DB_PORT}
             DB_NAME: ${DB_NAME}
-            DETECTION_HOST: detection
-#            EXABGPTAP_HOST: exabgptap
-            FILEOBSERVER_HOST: fileobserver
-            MITIGATION_HOST: mitigation
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             REST_PORT: 3000
-            RIPERISTAP_HOST: riperistap
             TEST_ENV: "true"
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
@@ -127,15 +111,6 @@ services:
         networks:
             - artemis
         environment:
-#            BGPSTREAMHIST_HOST: bgpstreamhisttap
-#            BGPSTREAMKAFKATAP_HOST: bgpstreamkafkatap
-            BGPSTREAMLIVETAP_HOST: bgpstreamlivetap
-            DATABASE_HOST: database
-            DETECTION_HOST: detection
-#            EXABGPTAP_HOST: exabgptap
-            MITIGATION_HOST: mitigation
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -143,7 +118,6 @@ services:
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
-            RIPERISTAP_HOST: riperistap
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
@@ -165,7 +139,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             DB_USER: ${DB_USER}
             DB_PASS: ${DB_PASS}
             DB_HOST: ${DB_HOST}
@@ -176,8 +149,6 @@ services:
             HASURA_PORT: ${HASURA_PORT}
             HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -207,9 +178,6 @@ services:
         networks:
             - artemis
         environment:
-            DATABASE_HOST: database
-            NOTIFIER_HOST: notifier
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -237,7 +205,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
@@ -257,8 +224,6 @@ services:
         networks:
             - artemis
         environment:
-            DATABASE_HOST: database
-            PREFIXTREE_HOST: prefixtree
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
@@ -280,7 +245,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -303,7 +267,6 @@ services:
         networks:
             - artemis
         environment:
-            CONFIGURATION_HOST: configuration
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}

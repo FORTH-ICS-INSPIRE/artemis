@@ -52,16 +52,16 @@ shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "configuration"
-DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
-PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
-NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
-DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
-MITIGATION_HOST = os.getenv("MITIGATION_HOST", "mitigation")
-RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
-BGPSTREAMLIVETAP_HOST = os.getenv("BGPSTREAMLIVETAP_HOST", "bgpstreamlivetap")
-# BGPSTREAMKAFKATAP_HOST = os.getenv("BGPSTREAMKAFKATAP_HOST", "bgpstreamkafkatap")
-# BGPSTREAMHIST_HOST = os.getenv("BGPSTREAMHIST_HOST", "bgpstreamhisttap")
-# EXABGPTAP_HOST = os.getenv("EXABGPTAP_HOST", "exabgptap")
+DATABASE_HOST = "database"
+PREFIXTREE_HOST = "prefixtree"
+NOTIFIER_HOST = "notifier"
+DETECTION_HOST = "detection"
+MITIGATION_HOST = "mitigation"
+RIPERISTAP_HOST = "riperistap"
+BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
+# BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
+# BGPSTREAMHIST_HOST = "bgpstreamhisttap"
+# EXABGPTAP_HOST = "exabgptap"
 OTHER_SERVICES = [
     PREFIXTREE_HOST,
     DATABASE_HOST,

@@ -21,19 +21,19 @@ if GRAPHQL_URI is None:
         HASURA_HOST=HASURA_HOST, HASURA_PORT=HASURA_PORT
     )
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
-CONFIGURATION_HOST = os.getenv("CONFIGURATION_HOST", "configuration")
-DATABASE_HOST = os.getenv("DATABASE_HOST", "database")
-DETECTION_HOST = os.getenv("DETECTION_HOST", "detection")
-FILEOBSERVER_HOST = os.getenv("FILEOBSERVER_HOST", "fileobserver")
-MITIGATION_HOST = os.getenv("MITIGATION_HOST", "mitigation")
-NOTIFIER_HOST = os.getenv("NOTIFIER_HOST", "notifier")
-PREFIXTREE_HOST = os.getenv("PREFIXTREE_HOST", "prefixtree")
+CONFIGURATION_HOST = "configuration"
+DATABASE_HOST = "database"
+DETECTION_HOST = "detection"
+FILEOBSERVER_HOST = "fileobserver"
+MITIGATION_HOST = "mitigation"
+NOTIFIER_HOST = "notifier"
+PREFIXTREE_HOST = "prefixtree"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
-RIPERISTAP_HOST = os.getenv("RIPERISTAP_HOST", "riperistap")
-BGPSTREAMLIVETAP_HOST = os.getenv("BGPSTREAMLIVETAP_HOST", "bgpstreamlivetap")
-# BGPSTREAMKAFKATAP_HOST = os.getenv("BGPSTREAMKAFKATAP_HOST", "bgpstreamkafkatap")
-# BGPSTREAMHIST_HOST = os.getenv("BGPSTREAMHIST_HOST", "bgpstreamhisttap")
-# EXABGPTAP_HOST = os.getenv("EXABGPTAP_HOST", "exabgptap")
+RIPERISTAP_HOST = "riperistap"
+BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
+# BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
+# BGPSTREAMHIST_HOST = "bgpstreamhisttap"
+# EXABGPTAP_HOST = "exabgptap"
 
 
 def flatten(items, seqtypes=(list, tuple)):

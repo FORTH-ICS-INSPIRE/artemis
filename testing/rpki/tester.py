@@ -44,25 +44,29 @@ REST_PORT = 3000
 
 def wait_data_worker_dependencies(data_worker_dependencies):
     while True:
-        all_deps_met = True
+        met_deps = set()
+        unmet_deps = set()
         for service in data_worker_dependencies:
             try:
                 r = requests.get("http://{}:{}/health".format(service, REST_PORT))
                 status = True if r.json()["status"] == "running" else False
                 if not status:
-                    all_deps_met = False
-                    break
+                    unmet_deps.add(service)
+                else:
+                    met_deps.add(service)
             except Exception:
-                all_deps_met = False
-                break
-        if all_deps_met:
-            print("needed data workers started: {}".format(data_worker_dependencies))
-            break
-        print(
-            "waiting for needed data workers to start: {}".format(
-                data_worker_dependencies
+                pass
+        if len(unmet_deps) == 0:
+            print(
+                "all needed data workers started: {}".format(data_worker_dependencies)
             )
-        )
+            break
+        else:
+            print(
+                "'{}' data workers started, waiting for: '{}'".format(
+                    met_deps, unmet_deps
+                )
+            )
         time.sleep(1)
 
 

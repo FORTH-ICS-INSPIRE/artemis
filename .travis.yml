@@ -273,21 +273,6 @@ jobs:
 #        - codecov
 #      after_failure:
 #        - docker-compose -f docker-compose.testautoignore.yaml logs
-#    - name: TestAutoconf
-#      install:
-#        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
-#      before_script:
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-backend:${DOCKER_TAG}; fi
-#        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest; fi
-#        - docker build -t artemis_autoconf_testing testing/autoconf
-#        - docker-compose -f docker-compose.testautoconf.yaml up -d
-#      script:
-#        - docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
-#      after_success:
-#        - sh convert_coverage.sh
-#        - codecov
-#      after_failure:
-#        - docker-compose -f docker-compose.testautoconf.yaml logs
     - name: TestRPKI
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
@@ -327,23 +312,7 @@ jobs:
         - sh convert_coverage.sh
         - codecov
       after_failure:
-        - docker-compose -f docker-compose.testrpki.yaml logs
-#    - name: ZAP Baseline (Passive)
-#      before_script:
-#        - docker pull ictu/zap2docker-weekly
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-backend:${DOCKER_TAG}; fi
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-frontend:${DOCKER_TAG}; fi
-#        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-monitor:${DOCKER_TAG}; fi
-#        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-backend:${DOCKER_TAG} artemis_backend:latest; fi
-#        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-frontend:${DOCKER_TAG} artemis_frontend:latest; fi
-#        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-monitor:${DOCKER_TAG} artemis_monitor:latest; fi
-#        - if [ $IS_FORK ]; then sed -i "s/image\:\sinspiregroup\/artemis-backend:\${SYSTEM_VERSION}/image\:\ artemis_backend\\n        build\:\ \.\/backend\//g" docker-compose.yaml; fi
-#        - if [ $IS_FORK ]; then sed -i "s/image\:\sinspiregroup\/artemis-frontend:\${SYSTEM_VERSION}/image\:\ artemis_frontend\\n        build\:\ \.\/frontend\//g" docker-compose.yaml; fi
-#        - if [ $IS_FORK ]; then sed -i "s/image\:\sinspiregroup\/artemis-monitor:\${SYSTEM_VERSION}/image\:\ artemis_monitor\\n        build\:\ \.\/monitor\//g" docker-compose.yaml; fi
-#        - docker-compose up -d
-#      script:
-#        - sleep 15
-#        - docker run -t --network artemis_artemis ictu/zap2docker-weekly zap-baseline.py -t https://nginx --hook=/zap/auth_hook.py -z 'auth.loginurl=https://nginx/login auth.username="admin" auth.password="admin123" auth.username_field="email" auth.password_field="password" auth.submit_field="submit" auth.exclude=".*logout.*,\Qhttps://nginx/logout\E.*"' || true
+        - docker-compose -f docker-compose.testrpki.decoupled.yaml logs
 
 notifications:
   slack:

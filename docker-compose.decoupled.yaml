@@ -51,7 +51,6 @@ services:
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
     bgpstreamkafkatap:
         image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
-        build: ./monitor-services/bgpstreamkafkatap
         restart: always
         depends_on:
             - prefixtree

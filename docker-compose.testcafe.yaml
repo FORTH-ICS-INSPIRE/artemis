@@ -88,6 +88,24 @@ services:
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
+    bgpstreamhisttap:
+        image: artemis_bgpstreamhisttap
+        build: ./monitor-services/bgpstreamhisttap
+        restart: always
+        depends_on:
+            - prefixtree
+            - rabbitmq
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            HISTORIC: "true"
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
     autostarter:
         image: artemis_autostarter
         build: ./backend-services/autostarter/

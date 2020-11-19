@@ -79,6 +79,29 @@ services:
             - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
             - ./testing/.coveragerc:/root/core/.coveragerc
+    bgpstreamhisttap:
+        image: artemis_bgpstreamhisttap
+        build: ./monitor-services/bgpstreamhisttap
+        restart: always
+        depends_on:
+            - prefixtree
+            - rabbitmq
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            HISTORIC: "true"
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/autoconf/configs/:/etc/artemis/
+            - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
+            - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
     autostarter:
         image: artemis_autostarter
         build: ./backend-services/autostarter/

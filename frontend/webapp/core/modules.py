@@ -6,6 +6,7 @@ from flask_security import current_user
 from gql import Client
 from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
+from webapp.utils import BGPSTREAMHISTTAP_HOST
 from webapp.utils import BGPSTREAMKAFKATAP_HOST
 from webapp.utils import BGPSTREAMLIVETAP_HOST
 from webapp.utils import CONFIGURATION_HOST
@@ -19,7 +20,6 @@ from webapp.utils import PREFIXTREE_HOST
 from webapp.utils import REST_PORT
 from webapp.utils import RIPERISTAP_HOST
 
-# from webapp.utils import BGPSTREAMHIST_HOST
 # from webapp.utils import EXABGPTAP_HOST
 
 log = logging.getLogger("artemis_logger")
@@ -48,7 +48,7 @@ USER_CONTROLLED_MODULES = [
     RIPERISTAP_HOST,
     BGPSTREAMLIVETAP_HOST,
     BGPSTREAMKAFKATAP_HOST,
-    # BGPSTREAMHIST_HOST,
+    BGPSTREAMHISTTAP_HOST,
     # EXABGPTAP_HOST,
     DETECTION_HOST,
     MITIGATION_HOST,
@@ -57,7 +57,7 @@ MONITOR_MODULES = [
     RIPERISTAP_HOST,
     BGPSTREAMLIVETAP_HOST,
     BGPSTREAMKAFKATAP_HOST,
-    # BGPSTREAMHIST_HOST,
+    BGPSTREAMHISTTAP_HOST,
     # EXABGPTAP_HOST,
 ]
 ALWAYS_ON_MODULES = [

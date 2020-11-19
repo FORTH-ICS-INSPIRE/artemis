@@ -84,7 +84,7 @@ services:
         build: ./backend-services/autostarter/
         restart: always
         depends_on:
-#            - bgpstreamhisttap
+            - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap
             - database
@@ -119,7 +119,7 @@ services:
         build: ./backend-services/configuration/
         restart: always
         depends_on:
-#            - bgpstreamhisttap
+            - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap
             - database

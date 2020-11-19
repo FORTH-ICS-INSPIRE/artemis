@@ -4,7 +4,7 @@ services:
         image: testcafe/testcafe:latest
         container_name: testcafe
         depends_on:
-#            - bgpstreamhisttap
+            - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap
             - configuration
@@ -93,7 +93,7 @@ services:
         build: ./backend-services/autostarter/
         restart: always
         depends_on:
-#            - bgpstreamhisttap
+            - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap
             - database
@@ -124,7 +124,7 @@ services:
         build: ./backend-services/configuration/
         restart: always
         depends_on:
-#            - bgpstreamhisttap
+            - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap
             - database

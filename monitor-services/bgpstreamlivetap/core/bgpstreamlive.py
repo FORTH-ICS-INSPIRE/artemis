@@ -437,7 +437,6 @@ class BGPStreamLiveDataWorker:
                                 log.exception(
                                     "Error when normalizing BGP message: {}".format(msg)
                                 )
-                            break
                     try:
                         elem = rec.get_next_elem()
                     except BaseException:

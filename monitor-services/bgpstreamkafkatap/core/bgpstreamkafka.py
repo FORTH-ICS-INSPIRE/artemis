@@ -69,7 +69,7 @@ def run_data_worker_process(shared_memory_manager_dict):
     try:
         with Connection(RABBITMQ_URI) as connection:
             shared_memory_locks["data_worker"].acquire()
-            data_worker = BGPStreamkafkaDataWorker(
+            data_worker = BGPStreamKafkaDataWorker(
                 connection, shared_memory_manager_dict
             )
             shared_memory_manager_dict["data_worker_should_run"] = True
@@ -290,7 +290,7 @@ class BGPStreamKafkaTap:
         IOLoop.current().start()
 
 
-class BGPStreamkafkaDataWorker:
+class BGPStreamKafkaDataWorker:
     """
     RabbitMQ Producer for the BGPStream Kafka tap Service.
     """
@@ -467,7 +467,6 @@ class BGPStreamkafkaDataWorker:
                                 log.exception(
                                     "Error when normalizing BGP message: {}".format(msg)
                                 )
-                            break
                     try:
                         elem = rec.get_next_elem()
                     except BaseException:

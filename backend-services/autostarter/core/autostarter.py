@@ -123,14 +123,15 @@ def check_and_control_services(ro_db, wo_db):
     for service, stored_status in stored_status_entries:
         stored_status_dict[service] = stored_status
 
+    ips_and_replicas_per_service = {}
     detection_examined = False
     for service in intended_status_dict:
         try:
-            ips_and_replicas = service_to_ips_and_replicas(service)
+            ips_and_replicas_per_service[service] = service_to_ips_and_replicas(service)
         except Exception:
             log.exception("exception")
             continue
-        for replica_name, replica_ip in ips_and_replicas:
+        for replica_name, replica_ip in ips_and_replicas_per_service[service]:
             try:
                 intended_status = intended_status_dict[service]
                 r = requests.get("http://{}:{}/health".format(replica_ip, REST_PORT))
@@ -199,6 +200,8 @@ def check_and_control_services(ro_db, wo_db):
                     )
                 )
 
+    return ips_and_replicas_per_service
+
 
 if __name__ == "__main__":
     # DB variables
@@ -230,6 +233,28 @@ if __name__ == "__main__":
     bootstrap_intended_services(wo_db)
 
     # control the processes that are intended to run or not in an endless loop
+    ips_and_replicas_per_service_previous = {}
     while True:
-        check_and_control_services(ro_db, wo_db)
+        ips_and_replicas_per_service = check_and_control_services(ro_db, wo_db)
+        # check if scale-down since in that case we need to delete deprecated process states
+        for service in ips_and_replicas_per_service:
+            if service in ips_and_replicas_per_service_previous:
+                replicas_before = set(
+                    map(lambda x: x[0], ips_and_replicas_per_service_previous[service])
+                )
+                replicas_now = set(
+                    map(lambda x: x[0], ips_and_replicas_per_service[service])
+                )
+                for scaled_down_instance in replicas_before - replicas_now:
+                    try:
+                        query = "DELETE FROM process_states WHERE name=%s"
+                        wo_db.execute(query, (scaled_down_instance,))
+                        log.info(
+                            "removed {} from process states due to down-scaling".format(
+                                scaled_down_instance
+                            )
+                        )
+                    except Exception:
+                        log.exception("exception")
+        ips_and_replicas_per_service_previous = ips_and_replicas_per_service
         time.sleep(CHECK_INTERVAL)

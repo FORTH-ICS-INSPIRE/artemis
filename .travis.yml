@@ -71,6 +71,16 @@ jobs:
         - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstreamkafkatap:latest --cache-from inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} monitor-services/bgpstreamkafkatap/; fi
         - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
         - if [ $IS_FORK ]; then docker build -t artemis-bgpstreamkafkatap:${DOCKER_TAG} monitor-services/bgpstreamkafkatap/; fi
+    - name: bgpstreamhisttap
+      install: [ ]
+      before_script:
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstream;histtap:latest || true; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
+      script:
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstream;histtap:latest --cache-from inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG} monitor-services/bgpstream;histtap/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-bgpstream;histtap:${DOCKER_TAG} monitor-services/bgpstream;histtap/; fi
     - name: autostarter
       install: []
       before_script:
@@ -173,6 +183,8 @@ jobs:
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} bgpstreamlivetap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} bgpstreamkafkatap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} bgpstreamhisttap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
@@ -203,6 +215,8 @@ jobs:
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} bgpstreamlivetap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} bgpstreamkafkatap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} bgpstreamhisttap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
@@ -238,6 +252,8 @@ jobs:
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} bgpstreamlivetap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} bgpstreamkafkatap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} bgpstreamhisttap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
@@ -299,6 +315,8 @@ jobs:
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} bgpstreamlivetap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} bgpstreamkafkatap:latest; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
+        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} bgpstreamhisttap:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi

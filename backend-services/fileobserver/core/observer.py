@@ -239,7 +239,6 @@ class Handler(FileSystemEventHandler):
             try:
                 ips_and_replicas = service_to_ips_and_replicas(CONFIGURATION_HOST)
             except Exception:
-                log.exception("exception")
                 log.error("could not resolve service '{}'".format(CONFIGURATION_HOST))
                 return
             for replica_name, replica_ip in ips_and_replicas:
@@ -261,7 +260,6 @@ class Handler(FileSystemEventHandler):
                             )
                         )
                 except Exception:
-                    log.exception("exception")
                     log.error(
                         "could not send configuration to service '{}'".format(
                             replica_name

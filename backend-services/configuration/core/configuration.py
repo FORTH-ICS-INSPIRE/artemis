@@ -693,7 +693,6 @@ def post_configuration_to_other_services(data):
         try:
             ips_and_replicas = service_to_ips_and_replicas(service)
         except Exception:
-            log.exception("exception")
             log.error("could not resolve service '{}'".format(service))
             continue
         for replica_name, replica_ip in ips_and_replicas:
@@ -705,7 +704,6 @@ def post_configuration_to_other_services(data):
                 response = r.json()
                 assert response["success"]
             except Exception:
-                log.exception("exception")
                 log.error("could not configure service '{}'".format(replica_name))
 
 

@@ -178,9 +178,9 @@ jobs:
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
       script:
-        - docker-compose -f docker-compose.testcafe.decoupled.yaml up --abort-on-container-exit
+        - docker-compose -f docker-compose.testcafe.yaml up --abort-on-container-exit
       after_failure:
-        - docker-compose -f docker-compose.testcafe.decoupled.yaml logs
+        - docker-compose -f docker-compose.testcafe.yaml logs
     - name: TestDetection
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
@@ -206,14 +206,14 @@ jobs:
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
         - docker build -t artemis_detection_testing testing/detection
-        - docker-compose -f docker-compose.testdetection.decoupled.yaml up -d
+        - docker-compose -f docker-compose.testdetection.yaml up -d
       script:
         - docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
       after_success:
         - sh convert_coverage.sh
         - codecov
       after_failure:
-        - docker-compose -f docker-compose.testdetection.decoupled.yaml logs
+        - docker-compose -f docker-compose.testdetection.yaml logs
     - name: TestAutoconf
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
@@ -305,14 +305,14 @@ jobs:
         - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
         - docker build -t artemis_rpki_testing testing/rpki
         - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
-        - docker-compose -f docker-compose.testrpki.decoupled.yaml -f docker-compose.routinator.yaml up -d
+        - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
       script:
         - docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
       after_success:
         - sh convert_coverage.sh
         - codecov
       after_failure:
-        - docker-compose -f docker-compose.testrpki.decoupled.yaml logs
+        - docker-compose -f docker-compose.testrpki.yaml logs
 
 notifications:
   slack:

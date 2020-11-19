@@ -1,49 +1,292 @@
 version: '3'
 services:
-    backend:
-        image: artemis_backend
-        build: ./backend/
-        container_name: backend
+    riperistap:
+        image: artemis_riperistap
+        build: ./monitor-services/riperistap/
+        restart: always
         depends_on:
+            - prefixtree
             - rabbitmq
-            - postgres
+            - redis
+        expose:
+            - 3000
         networks:
             - artemis
-        expose:
-            - ${BACKEND_SUPERVISOR_PORT}
-            - ${REDIS_PORT}
         environment:
-            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
-            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RIS_ID: ${RIS_ID}
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./monitor-services/riperistap/entrypoint:/root/entrypoint
+            - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    bgpstreamlivetap:
+        image: artemis_bgpstreamlivetap
+        build: ./monitor-services/bgpstreamlivetap/
+        restart: always
+        depends_on:
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
+            - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    autostarter:
+        image: artemis_autostarter
+        build: ./backend-services/autostarter/
+        restart: always
+        depends_on:
+#            - bgpstreamhisttap
+#            - bgpstreamkafkatap
+            - bgpstreamlivetap
+            - database
+            - detection
+#            - exabgptap
+            - mitigation
+            - notifier
+            - postgres
+            - prefixtree
+            - configuration
+            - fileobserver
+            - riperistap
+        networks:
+            - artemis
+        environment:
+            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
+            CHECK_INTERVAL: 5
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            REST_PORT: 3000
+            TEST_ENV: "true"
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/autostarter/entrypoint:/root/entrypoint
+            - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    configuration:
+        image: artemis_configuration
+        build: ./backend-services/configuration/
+        restart: always
+        depends_on:
+#            - bgpstreamhisttap
+#            - bgpstreamkafkatap
+            - bgpstreamlivetap
+            - database
+            - detection
+#            - exabgptap
+            - mitigation
+            - notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+            - riperistap
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/configuration/entrypoint:/root/entrypoint
+            - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    database:
+        image: artemis_database
+        build: ./backend-services/database/
+        restart: always
+        depends_on:
+            - graphql
+            - notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
             DB_USER: ${DB_USER}
             DB_PASS: ${DB_PASS}
             DB_HOST: ${DB_HOST}
             DB_PORT: ${DB_PORT}
             DB_NAME: ${DB_NAME}
             DB_VERSION: ${DB_VERSION}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
             REDIS_HOST: ${REDIS_HOST}
             REDIS_PORT: ${REDIS_PORT}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            GUI_ENABLED: "false"
-            BULK_TIMER: 0.1
-            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
-            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
-            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
+            REST_PORT: 3000
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
+            HISTORIC: ${HISTORIC}
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./testing/test_entrypoints/entrypoint.database.test:/root/entrypoint
+            - ./backend-services/database/core/database.py:/root/core/database.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    detection:
+        image: artemis_detection
+        build: ./backend-services/detection/
+        restart: always
+        depends_on:
+            - notifier
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
             RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
             TEST_ENV: "true"
         volumes:
             - ./testing/detection/configs/:/etc/artemis/
-            - ./testing/detection/supervisor.d/:/etc/supervisor/conf.d/
-            - ./testing/entrypoint.test:/root/entrypoint
+            - ./backend-services/detection/entrypoint:/root/entrypoint
+            - ./backend-services/detection/core/detection.py:/root/core/detection.py
             - ./testing/.coveragerc:/root/core/.coveragerc
+    fileobserver:
+        image: artemis_fileobserver
+        build: ./backend-services/fileobserver/
+        restart: always
+        depends_on:
+            - configuration
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
+            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    mitigation:
+        image: artemis_mitigation
+        build: ./backend-services/mitigation/
+        restart: always
+        depends_on:
+            - rabbitmq
+            - database
+            - prefixtree
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/mitigation/entrypoint:/root/entrypoint
+            - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    notifier:
+        image: artemis_notifier
+        build: ./backend-services/notifier/
+        restart: always
+        depends_on:
+            - rabbitmq
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/notifier/entrypoint:/root/entrypoint
+            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    prefixtree:
+        image: artemis_prefixtree
+        build: ./backend-services/prefixtree/
+        restart: always
+        depends_on:
+            - rabbitmq
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/prefixtree/entrypoint:/root/entrypoint
+            - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
+    redis:
+        image: redis:latest
+        container_name: redis
+        restart: always
+        networks:
+            - artemis
+        expose:
+            - ${REDIS_PORT}
+        volumes:
+            - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq
@@ -68,6 +311,9 @@ services:
             POSTGRES_DB: ${DB_NAME}
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
+            DB_BACKUP: ${DB_BACKUP}
+            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
+            DB_HIJACK_DORMANT: ${DB_HIJACK_DORMANT}
         volumes:
             - ./testing/detection/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./testing/detection/db/data/:/docker-entrypoint-initdb.d/data/
@@ -75,19 +321,38 @@ services:
     pg-amqp-bridge:
         image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
+        restart: always
         depends_on:
             - postgres
-            - backend
+            - database
             - rabbitmq
         networks:
             - artemis
         environment:
-            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-            - AMQP_URI=amqp://${RABBITMQ_HOST}//
+            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=pg-amqp-bridge
+            - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
             - BRIDGE_CHANNELS=events:amq.direct
         volumes:
-            - ./backend/wait-for:/root/wait-for
+            - ./backend-services/database/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
+    graphql:
+        image: hasura/graphql-engine:v1.1.0
+        container_name: graphql
+        restart: always
+        depends_on:
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - ${HASURA_PORT}
+        environment:
+            HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=graphql
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_GUI}
+            HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'
+        command:
+            - graphql-engine
+            - serve
 
 networks:
     artemis:

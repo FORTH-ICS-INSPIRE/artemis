@@ -159,7 +159,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
             return {"success": True, "message": "configured"}
     except Exception:
         log.exception("exception")
-        return {"success": False, "message": "error during data_task configuration"}
+        return {"success": False, "message": "error during data worker configuration"}
 
 
 class ConfigHandler(RequestHandler):
@@ -180,7 +180,7 @@ class ConfigHandler(RequestHandler):
             self.write(configure_prefixtree(msg, self.shared_memory_manager_dict))
         except Exception:
             self.write(
-                {"success": False, "message": "error during data_task configuration"}
+                {"success": False, "message": "error during data worker configuration"}
             )
 
 

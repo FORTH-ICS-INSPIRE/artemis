@@ -53,13 +53,39 @@ services:
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
             - ./testing/.coveragerc:/root/core/.coveragerc
+    bgpstreamkafkatap:
+        image: artemis_bgpstreamkafkatap
+        build: ./monitor-services/bgpstreamkafkatap
+        restart: always
+        depends_on:
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/rpki/configs/:/etc/artemis/
+            - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
+            - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
     autostarter:
         image: artemis_autostarter
         build: ./backend-services/autostarter/
         restart: always
         depends_on:
 #            - bgpstreamhisttap
-#            - bgpstreamkafkatap
+            - bgpstreamkafkatap
             - bgpstreamlivetap
             - database
             - detection
@@ -94,7 +120,7 @@ services:
         restart: always
         depends_on:
 #            - bgpstreamhisttap
-#            - bgpstreamkafkatap
+            - bgpstreamkafkatap
             - bgpstreamlivetap
             - database
             - detection

@@ -111,10 +111,9 @@ def configure_ripe_ris(shared_memory_manager_dict):
             shared_memory_locks["data_worker"].acquire()
             shared_memory_manager_dict["data_worker_configured"] = False
             shared_memory_locks["data_worker"].release()
-            return {"success": True, "message": "data_task not in configuration"}
+            return {"success": True, "message": "data worker not in configuration"}
 
         # check if the worker should run (if configured)
-        should_run = False
         shared_memory_locks["data_worker"].acquire()
         should_run = shared_memory_manager_dict["data_worker_should_run"]
         shared_memory_locks["data_worker"].release()
@@ -154,7 +153,7 @@ def configure_ripe_ris(shared_memory_manager_dict):
         return {"success": True, "message": "configured"}
     except Exception:
         log.exception("exception")
-        return {"success": False, "message": "error during data_task configuration"}
+        return {"success": False, "message": "error during data worker configuration"}
 
 
 class ConfigHandler(RequestHandler):
@@ -176,7 +175,7 @@ class ConfigHandler(RequestHandler):
             self.write(configure_ripe_ris(self.shared_memory_manager_dict))
         except Exception:
             self.write(
-                {"success": False, "message": "error during data_task configuration"}
+                {"success": False, "message": "error during data worker configuration"}
             )
 
 

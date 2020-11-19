@@ -31,7 +31,7 @@ PREFIXTREE_HOST = "prefixtree"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 RIPERISTAP_HOST = "riperistap"
 BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
-# BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
+BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
 # BGPSTREAMHIST_HOST = "bgpstreamhisttap"
 # EXABGPTAP_HOST = "exabgptap"
 

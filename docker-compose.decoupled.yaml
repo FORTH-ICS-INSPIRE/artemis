@@ -49,26 +49,31 @@ services:
             - ./monitor-services/bgpstreamlivetap/configs/:/etc/artemis/
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
-#    bgpstreamkafkatap:
-#        image: artemis_bgpstreamkafkatap
-#        build: ./monitor-services/bgpstreamkafkatap
-#        # container_name: bgpstreamkafkatap
-#        restart: always
-#        depends_on:
-#            - rabbitmq
-#            - postgres
-#            - redis
-#            - configuration
-#            - prefixtree
-#        expose:
-#            - 3000
-#        ports:
-#            - "3003:3000"
-#        networks:
-#            - artemis
-#        # TODO: env variables, ports
-#        volumes:
-#            - ./monitor-services/bgpstreamkafkatap/configs/:/etc/artemis/
+    bgpstreamkafkatap:
+        image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamkafkatap
+        restart: always
+        depends_on:
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./monitor-services/bgpstreamkafkatap/configs/:/etc/artemis/
+            - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
+            - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
 #    bgpstreamhisttap:
 #        image: artemis_bgpstreamhisttap
 #        build: ./monitor-services/bgpstreamhisttap
@@ -114,7 +119,7 @@ services:
         restart: always
         depends_on:
 #            - bgpstreamhisttap
-#            - bgpstreamkafkatap
+            - bgpstreamkafkatap
             - bgpstreamlivetap
             - database
             - detection
@@ -146,7 +151,7 @@ services:
         restart: always
         depends_on:
 #            - bgpstreamhisttap
-#            - bgpstreamkafkatap
+            - bgpstreamkafkatap
             - bgpstreamlivetap
             - database
             - detection

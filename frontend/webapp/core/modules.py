@@ -6,6 +6,7 @@ from flask_security import current_user
 from gql import Client
 from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
+from webapp.utils import BGPSTREAMKAFKATAP_HOST
 from webapp.utils import BGPSTREAMLIVETAP_HOST
 from webapp.utils import CONFIGURATION_HOST
 from webapp.utils import DATABASE_HOST
@@ -18,7 +19,6 @@ from webapp.utils import PREFIXTREE_HOST
 from webapp.utils import REST_PORT
 from webapp.utils import RIPERISTAP_HOST
 
-# from webapp.utils import BGPSTREAMKAFKATAP_HOST
 # from webapp.utils import BGPSTREAMHIST_HOST
 # from webapp.utils import EXABGPTAP_HOST
 
@@ -47,7 +47,7 @@ mutation updateIntendedProcessStates($name: String, $running: Boolean) {
 USER_CONTROLLED_MODULES = [
     RIPERISTAP_HOST,
     BGPSTREAMLIVETAP_HOST,
-    # BGPSTREAMKAFKATAP_HOST,
+    BGPSTREAMKAFKATAP_HOST,
     # BGPSTREAMHIST_HOST,
     # EXABGPTAP_HOST,
     DETECTION_HOST,
@@ -56,7 +56,7 @@ USER_CONTROLLED_MODULES = [
 MONITOR_MODULES = [
     RIPERISTAP_HOST,
     BGPSTREAMLIVETAP_HOST,
-    # BGPSTREAMKAFKATAP_HOST,
+    BGPSTREAMKAFKATAP_HOST,
     # BGPSTREAMHIST_HOST,
     # EXABGPTAP_HOST,
 ]

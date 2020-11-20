@@ -1294,10 +1294,10 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
         self.command_exchange = create_exchange("command", connection, declare=True)
 
         # QUEUES
-        self.autoconf_update_queue = create_queue(
+        self.autoconf_filtered_update_queue = create_queue(
             SERVICE_NAME,
             exchange=self.autoconf_exchange,
-            routing_key="update",
+            routing_key="filtered-update",
             priority=4,
             random=True,
         )
@@ -1313,8 +1313,8 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
     def get_consumers(self, Consumer: Consumer, channel: Connection) -> List[Consumer]:
         return [
             Consumer(
-                queues=[self.autoconf_update_queue],
-                on_message=self.handle_autoconf_updates,
+                queues=[self.autoconf_filtered_update_queue],
+                on_message=self.handle_filtered_autoconf_updates,
                 prefetch_count=1,
                 accept=["ujson"],
             ),
@@ -1326,10 +1326,11 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
             ),
         ]
 
-    def handle_autoconf_updates(self, message):
+    def handle_filtered_autoconf_updates(self, message):
         """
-        Receives a "autoconf-update" message batch, translates the corresponding
-        BGP updates into ARTEMIS configuration and rewrites the configuration
+        Receives a "autoconf-update" message batch (filtered by the prefixtree),
+        translates the corresponding BGP updates into ARTEMIS configuration
+        and rewrites the configuration
         :param message:
         :return:
         """

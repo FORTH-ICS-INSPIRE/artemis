@@ -5,12 +5,16 @@ from typing import List
 from typing import NoReturn
 
 import pytricia
+import redis
 import requests
 import ujson as json
 from artemis_utils import flatten
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
+from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
+from artemis_utils import REDIS_HOST
+from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
 from artemis_utils import translate_asn_range
 from artemis_utils import translate_rfc2622
@@ -418,6 +422,8 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         self, connection: Connection, shared_memory_manager_dict: Dict
     ) -> NoReturn:
         self.connection = connection
+        self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+        ping_redis(self.redis)
         self.shared_memory_manager_dict = shared_memory_manager_dict
         self.prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
         shared_memory_locks["prefix_tree"].acquire()
@@ -441,6 +447,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         self.hijack_exchange = create_exchange(
             "hijack-update", connection, declare=True
         )
+        self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
         self.pg_amq_bridge = create_exchange("amq.direct", connection)
         self.mitigation_exchange = create_exchange(
             "mitigation", connection, declare=True
@@ -484,6 +491,13 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             routing_key="stop-{}".format(SERVICE_NAME),
             priority=1,
         )
+        self.autoconf_update_queue = create_queue(
+            SERVICE_NAME,
+            exchange=self.autoconf_exchange,
+            routing_key="update",
+            priority=4,
+            random=True,
+        )
 
         log.info("data worker initiated")
 
@@ -522,6 +536,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             Consumer(
                 queues=[self.stop_queue],
                 on_message=self.stop_consumer_loop,
+                prefetch_count=100,
+                accept=["ujson"],
+            ),
+            Consumer(
+                queues=[self.autoconf_update_queue],
+                on_message=self.handle_autoconf_updates,
                 prefetch_count=100,
                 accept=["ujson"],
             ),
@@ -668,6 +688,40 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 )
         except Exception:
             log.exception("exception")
+
+    def handle_autoconf_updates(self, message: List) -> NoReturn:
+        """
+        Callback function that filters incoming autoconf updates based on whether their
+        encoded information already exists in the configuration (prefixtree).
+        """
+        message.ack()
+        bgp_updates = message.payload
+        if not isinstance(bgp_updates, list):
+            bgp_updates = [bgp_updates]
+        bgp_updates_to_send_to_conf = list()
+        for bgp_update in bgp_updates:
+            # if you have seen the exact same update before, do nothing
+            if self.redis.get(bgp_update["key"]):
+                return
+            if self.redis.exists(
+                "autoconf-update-keys-to-process"
+            ) and not self.redis.sismember(
+                "autoconf-update-keys-to-process", bgp_update["key"]
+            ):
+                return
+
+            # prefix_node = self.find_prefix_node(bgp_update["prefix"])
+
+            # TODO: process messages based on current prefix tree
+            bgp_updates_to_send_to_conf.append(bgp_update)
+        self.producer.publish(
+            bgp_updates_to_send_to_conf,
+            exchange=self.autoconf_exchange,
+            routing_key="filtered-update",
+            retry=True,
+            priority=4,
+            serializer="ujson",
+        )
 
     def stop_consumer_loop(self, message: Dict) -> NoReturn:
         """

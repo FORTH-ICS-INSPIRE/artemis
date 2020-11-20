@@ -74,13 +74,13 @@ jobs:
     - name: bgpstreamhisttap
       install: [ ]
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstream;histtap:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG} || true; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:latest || true; fi
+        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstream;histtap:latest --cache-from inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG} monitor-services/bgpstream;histtap/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstream;histtap:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-bgpstream;histtap:${DOCKER_TAG} monitor-services/bgpstream;histtap/; fi
+        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstreamhisttap:latest --cache-from inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} monitor-services/bgpstreamhisttap/; fi
+        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
+        - if [ $IS_FORK ]; then docker build -t artemis-bgpstreamhisttap:${DOCKER_TAG} monitor-services/bgpstreamhisttap/; fi
     - name: autostarter
       install: []
       before_script:

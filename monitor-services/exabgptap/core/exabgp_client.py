@@ -432,7 +432,6 @@ class ExaBGPDataWorker:
             for prefix in prefixes:
                 ip_version = get_ip_version(prefix)
                 prefix_tree[ip_version].insert(prefix, "")
-            log.info("{}: {}".format(host, prefixes))
 
             # set up message validator
             validator = mformat_validator()
@@ -474,10 +473,13 @@ class ExaBGPDataWorker:
                                         shared_memory_locks[
                                             "autoconf_updates"
                                         ].acquire()
+                                        autoconf_updates = self.shared_memory_manager_dict[
+                                            "autoconf_updates"
+                                        ]
+                                        autoconf_updates[msg["key"]] = msg
                                         self.shared_memory_manager_dict[
                                             "autoconf_updates"
-                                        ][msg["key"]] = msg
-                                        log.info("AUTOCONF MESSAGE: '{}'".format(msg))
+                                        ] = autoconf_updates
                                         # mark the autoconf BGP updates for configuration
                                         # processing in redis
                                         redis_pipeline = redis.pipeline()

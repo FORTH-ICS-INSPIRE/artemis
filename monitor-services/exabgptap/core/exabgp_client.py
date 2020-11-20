@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import os
+import signal
 import threading
 import time
 
@@ -79,6 +80,8 @@ def run_data_worker_process(shared_memory_manager_dict):
     except Exception:
         log.exception("exception")
     finally:
+        if data_worker.autoconf_timer_thread is not None:
+            data_worker.autoconf_timer_thread.join()
         shared_memory_locks["data_worker"].acquire()
         shared_memory_manager_dict["data_worker_running"] = False
         shared_memory_locks["data_worker"].release()
@@ -305,12 +308,13 @@ class ExaBGPDataWorker:
         self.hosts = self.shared_memory_manager_dict["hosts"]
         shared_memory_locks["hosts"].release()
         self.autoconf_timer_thread = None
-        self.autoconf_updates = {}
+        self.previous_redis_autoconf_updates_counter = 0
 
         # EXCHANGES
         self.update_exchange = create_exchange(
             "bgp-update", self.connection, declare=True
         )
+        self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
 
     def setup_autoconf_update_timer(self):
         """
@@ -318,88 +322,98 @@ class ExaBGPDataWorker:
         it sends buffered autoconf messages to configuration for processing
         :return:
         """
-        autoconf_update_keys_to_process = set(
-            map(
-                lambda x: x.decode("ascii"),
-                redis.smembers("autoconf-update-keys-to-process"),
-            )
-        )
-        if len(autoconf_update_keys_to_process) == 0:
-            # no autoconf updates to send currently, return
+        shared_memory_locks["data_worker"].acquire()
+        if not self.shared_memory_manager_dict["data_worker_should_run"]:
+            shared_memory_locks["data_worker"].release()
             return
+        shared_memory_locks["data_worker"].release()
         self.autoconf_timer_thread = threading.Timer(
             interval=AUTOCONF_INTERVAL, function=self.send_autoconf_updates
         )
         self.autoconf_timer_thread.start()
 
     def send_autoconf_updates(self):
-        pass
+        # clean up unneeded updates stored in RAM (with thread-safe access)
+        shared_memory_locks["autoconf_updates"].acquire()
+        autoconf_update_keys_to_process = set(
+            map(
+                lambda x: x.decode("ascii"),
+                redis.smembers("autoconf-update-keys-to-process"),
+            )
+        )
+        try:
+            keys_to_remove = (
+                set(self.shared_memory_manager_dict["autoconf_updates"].keys())
+                - autoconf_update_keys_to_process
+            )
+            for key in keys_to_remove:
+                del self.shared_memory_manager_dict["autoconf_updates"][key]
+        except Exception:
+            log.exception("exception")
+        finally:
+            shared_memory_locks["autoconf_updates"].release()
 
-    #         # clean up unneeded updates stored in RAM (with thread-safe access)
-    #         lock.acquire()
-    #         autoconf_update_keys_to_process = set(
-    #             map(
-    #                 lambda x: x.decode("ascii"),
-    #                 redis.smembers("autoconf-update-keys-to-process"),
-    #             )
-    #         )
-    #         try:
-    #             keys_to_remove = (
-    #                 set(self.autoconf_updates.keys()) - autoconf_update_keys_to_process
-    #             )
-    #             for key in keys_to_remove:
-    #                 del self.autoconf_updates[key]
-    #         except Exception:
-    #             log.exception("exception")
-    #         finally:
-    #             lock.release()
-    #
-    #         if len(autoconf_update_keys_to_process) == 0:
-    #             self.previous_redis_autoconf_updates_counter = 0
-    #             self.setup_autoconf_update_timer()
-    #             return
-    #
-    #         # check if configuration is overwhelmed; if yes, back off to reduce aggressiveness
-    #         if self.previous_redis_autoconf_updates_counter == len(
-    #             autoconf_update_keys_to_process
-    #         ):
-    #             self.setup_autoconf_update_timer()
-    #             return
-    #
-    #         try:
-    #             autoconf_updates_keys_to_send = list(autoconf_update_keys_to_process)[
-    #                 :MAX_AUTOCONF_UPDATES
-    #             ]
-    #             autoconf_updates_to_send = []
-    #             for update_key in autoconf_updates_keys_to_send:
-    #                 autoconf_updates_to_send.append(self.autoconf_updates[update_key])
-    #             log.info(
-    #                 "Sending {} autoconf updates to configuration".format(
-    #                     len(autoconf_updates_to_send)
-    #                 )
-    #             )
-    #             if self.connection is None:
-    #                 self.connection = Connection(RABBITMQ_URI)
-    #             with Producer(self.connection) as producer:
-    #                 producer.publish(
-    #                     autoconf_updates_to_send,
-    #                     exchange=self.config_exchange,
-    #                     routing_key="autoconf-update",
-    #                     retry=True,
-    #                     priority=4,
-    #                     serializer="ujson",
-    #                 )
-    #             if self.connection is None:
-    #                 self.connection = Connection(RABBITMQ_URI)
-    #         except Exception:
-    #             log.exception("exception")
-    #         finally:
-    #             self.previous_redis_autoconf_updates_counter = len(
-    #                 autoconf_update_keys_to_process
-    #             )
-    #             self.setup_autoconf_update_timer()
+        if len(autoconf_update_keys_to_process) == 0:
+            self.previous_redis_autoconf_updates_counter = 0
+            self.setup_autoconf_update_timer()
+            return
+
+        # check if configuration is overwhelmed; if yes, back off to reduce aggressiveness
+        if self.previous_redis_autoconf_updates_counter == len(
+            autoconf_update_keys_to_process
+        ):
+            self.setup_autoconf_update_timer()
+            log.warning("autoconf mechanism is overwhelmed, will re-try next round")
+            return
+
+        try:
+            autoconf_updates_keys_to_send = list(autoconf_update_keys_to_process)[
+                :MAX_AUTOCONF_UPDATES
+            ]
+            autoconf_updates_to_send = []
+            for update_key in autoconf_updates_keys_to_send:
+                shared_memory_locks["autoconf_updates"].acquire()
+                autoconf_updates_to_send.append(
+                    self.shared_memory_manager_dict["autoconf_updates"][update_key]
+                )
+                shared_memory_locks["autoconf_updates"].release()
+            log.info(
+                "Sending {} autoconf updates to be filtered via prefixtree".format(
+                    len(autoconf_updates_to_send)
+                )
+            )
+
+            with Producer(self.connection) as producer:
+                producer.publish(
+                    autoconf_updates_to_send,
+                    exchange=self.autoconf_exchange,
+                    routing_key="update",
+                    retry=True,
+                    priority=4,
+                    serializer="ujson",
+                )
+        except Exception:
+            log.exception("exception")
+        finally:
+            self.previous_redis_autoconf_updates_counter = len(
+                autoconf_update_keys_to_process
+            )
+            self.setup_autoconf_update_timer()
 
     def run_host_sio_process(self, host):
+        def exit_gracefully(signum, frame):
+            if sio is not None:
+                sio.disconnect()
+                log.info("'{}' sio disconnected".format(host))
+            log.info("'{}' client exited".format(host))
+            shared_memory_locks["data_worker"].acquire()
+            self.shared_memory_manager_dict["data_worker_should_run"] = False
+            shared_memory_locks["data_worker"].release()
+
+        # register signal handler
+        signal.signal(signal.SIGTERM, exit_gracefully)
+        signal.signal(signal.SIGINT, exit_gracefully)
+
         try:
             # set autoconf booleans
             autoconf = False
@@ -418,6 +432,7 @@ class ExaBGPDataWorker:
             for prefix in prefixes:
                 ip_version = get_ip_version(prefix)
                 prefix_tree[ip_version].insert(prefix, "")
+            log.info("{}: {}".format(host, prefixes))
 
             # set up message validator
             validator = mformat_validator()
@@ -459,7 +474,10 @@ class ExaBGPDataWorker:
                                         shared_memory_locks[
                                             "autoconf_updates"
                                         ].acquire()
-                                        self.autoconf_updates[msg["key"]] = msg
+                                        self.shared_memory_manager_dict[
+                                            "autoconf_updates"
+                                        ][msg["key"]] = msg
+                                        log.info("AUTOCONF MESSAGE: '{}'".format(msg))
                                         # mark the autoconf BGP updates for configuration
                                         # processing in redis
                                         redis_pipeline = redis.pipeline()
@@ -491,6 +509,7 @@ class ExaBGPDataWorker:
 
             # set up socket-io client
             sio = SocketIO("http://" + host, namespace=BaseNamespace)
+            log.info("'{}' client ready to receive sio messages".format(host))
             sio.on("exa_message", handle_exabgp_msg)
             sio.emit("exa_subscribe", {"prefixes": prefixes})
             if autoconf:
@@ -500,7 +519,7 @@ class ExaBGPDataWorker:
                 sio.emit("route_command", {"command": route_refresh_command_v6})
             sio.wait()
         except KeyboardInterrupt:
-            self.exit()
+            exit_gracefully()
         except Exception:
             log.exception("exception")
 
@@ -522,52 +541,22 @@ class ExaBGPDataWorker:
             self.autoconf_timer_thread.cancel()
         self.setup_autoconf_update_timer()
 
-        # start per-host processes
+        # start host processes
+        host_processes = []
         for host in self.hosts:
             host_process = mp.Process(target=self.run_host_sio_process, args=(host,))
-            host_process.daemon = True
+            host_processes.append(host_process)
             host_process.start()
 
         while True:
             shared_memory_locks["data_worker"].acquire()
             if not self.shared_memory_manager_dict["data_worker_should_run"]:
                 shared_memory_locks["data_worker"].release()
+                for host_process in host_processes:
+                    host_process.terminate()
                 break
             shared_memory_locks["data_worker"].release()
             time.sleep(1)
-
-
-# class ExaBGP:
-#
-#         self.previous_redis_autoconf_updates_counter = 0
-#         signal.signal(signal.SIGTERM, self.exit)
-#         signal.signal(signal.SIGINT, self.exit)
-#         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-#
-#     def setup_autoconf_update_timer(self):
-#         """
-#         Timer for autoconf update message send. Periodically (every AUTOCONF_INTERVAL seconds),
-#         it sends buffered autoconf messages to configuration for processing
-#         :return:
-#         """
-#         autoconf_update_keys_to_process = set(
-#             map(
-#                 lambda x: x.decode("ascii"),
-#                 redis.smembers("autoconf-update-keys-to-process"),
-#             )
-#         )
-#         if self.should_stop and len(autoconf_update_keys_to_process) == 0:
-#             if self.sio is not None:
-#                 self.sio.disconnect()
-#             if self.connection is not None:
-#                 self.connection.release()
-#             redis.set("exabgp_{}_running".format(self.host), 0)
-#             log.info("ExaBGP exited")
-#             return
-#         self.autoconf_timer_thread = Timer(
-#             interval=AUTOCONF_INTERVAL, function=self.send_autoconf_updates
-#         )
-#         self.autoconf_timer_thread.start()
 
 
 if __name__ == "__main__":

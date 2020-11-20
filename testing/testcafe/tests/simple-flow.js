@@ -15,6 +15,7 @@ test('Simple Flow', async t => {
         .expect(Selector('li').withText('Configuration').textContent).contains("Configuration On 1/1")
         .expect(Selector('li').withText('Database v.22').textContent).contains("Database v.22 On 1/1")
         .expect(Selector('li').withText('Detection').textContent).contains("Detection On 0/1")
+        .expect(Selector('li').withText('Exabgptap').textContent).contains("Exabgptap On 0/1")
         .expect(Selector('li').withText('Fileobserver').textContent).contains("Fileobserver On 1/1")
         .expect(Selector('li').withText('Mitigation').textContent).contains("Mitigation On 0/1")
         .expect(Selector('li').withText('Notifier').textContent).contains("Notifier On 1/1")

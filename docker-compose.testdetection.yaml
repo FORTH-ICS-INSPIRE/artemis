@@ -102,6 +102,32 @@ services:
             - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
             - ./testing/.coveragerc:/root/core/.coveragerc
+    exabgptap:
+        image: artemis_exabgptap
+        build: ./monitor-services/exabgptap
+        restart: always
+        depends_on:
+            - rabbitmq
+            - redis
+            - prefixtree
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
+            - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
     autostarter:
         image: artemis_autostarter
         build: ./backend-services/autostarter/
@@ -112,7 +138,7 @@ services:
             - bgpstreamlivetap
             - database
             - detection
-#            - exabgptap
+            - exabgptap
             - mitigation
             - notifier
             - postgres
@@ -147,7 +173,7 @@ services:
             - bgpstreamlivetap
             - database
             - detection
-#            - exabgptap
+            - exabgptap
             - mitigation
             - notifier
             - postgres

@@ -33,7 +33,7 @@ RIPERISTAP_HOST = "riperistap"
 BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
 BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
 BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
-# EXABGPTAP_HOST = "exabgptap"
+EXABGPTAP_HOST = "exabgptap"
 
 
 def flatten(items, seqtypes=(list, tuple)):

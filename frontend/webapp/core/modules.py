@@ -12,6 +12,7 @@ from webapp.utils import BGPSTREAMLIVETAP_HOST
 from webapp.utils import CONFIGURATION_HOST
 from webapp.utils import DATABASE_HOST
 from webapp.utils import DETECTION_HOST
+from webapp.utils import EXABGPTAP_HOST
 from webapp.utils import FILEOBSERVER_HOST
 from webapp.utils import GRAPHQL_URI
 from webapp.utils import MITIGATION_HOST
@@ -19,8 +20,6 @@ from webapp.utils import NOTIFIER_HOST
 from webapp.utils import PREFIXTREE_HOST
 from webapp.utils import REST_PORT
 from webapp.utils import RIPERISTAP_HOST
-
-# from webapp.utils import EXABGPTAP_HOST
 
 log = logging.getLogger("artemis_logger")
 
@@ -49,7 +48,7 @@ USER_CONTROLLED_MODULES = [
     BGPSTREAMLIVETAP_HOST,
     BGPSTREAMKAFKATAP_HOST,
     BGPSTREAMHISTTAP_HOST,
-    # EXABGPTAP_HOST,
+    EXABGPTAP_HOST,
     DETECTION_HOST,
     MITIGATION_HOST,
 ]
@@ -58,7 +57,7 @@ MONITOR_MODULES = [
     BGPSTREAMLIVETAP_HOST,
     BGPSTREAMKAFKATAP_HOST,
     BGPSTREAMHISTTAP_HOST,
-    # EXABGPTAP_HOST,
+    EXABGPTAP_HOST,
 ]
 ALWAYS_ON_MODULES = [
     CONFIGURATION_HOST,

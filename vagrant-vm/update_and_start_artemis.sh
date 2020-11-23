@@ -2,8 +2,8 @@
 
 echo "Updating and starting ARTEMIS..."
 cd /home/vagrant/artemis
-if [ -e "vagrant" ]; then
-    cp vagrant/vagrant-docker-compose.yaml docker-compose.yaml
+if [ -e "vagrant-vm" ]; then
+    cp vagrant-vm/vagrant-docker-compose.yaml docker-compose.yaml
 fi
 git stash
 # TODO: replace with master after merge!

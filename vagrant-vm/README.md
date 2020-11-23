@@ -33,3 +33,22 @@
 Temporary VM data will be stored under `.vagrant`.
 Please let the ARTEMIS devs know in case something does not work as expected.
 The setup has been tested with VirtualBox 5+ and the latest vagrant executable on a Linux Ubuntu 16.04 Desktop environment.
+
+**Note: In case you encounter problems like:**
+
+```
+A host only network interface you're attempting to configure via DHCP
+already has a conflicting host only adapter with DHCP enabled. The
+DHCP on this adapter is incompatible with the DHCP settings. Two
+host only network interfaces are not allowed to overlap, and each
+host only network interface can have only one DHCP server. Please
+reconfigure your host only network or remove the virtual machine
+using the other host only network.
+```
+
+please consult [this page](https://github.com/hashicorp/vagrant/issues/3083).
+You may need to run sth like:
+
+```
+VBoxManage dhcpserver remove --netname HostInterfaceNetworking-vboxnet0
+```

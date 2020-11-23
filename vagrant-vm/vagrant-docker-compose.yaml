@@ -22,7 +22,7 @@ services:
             REST_PORT: 3000
             RIS_ID: ${RIS_ID}
         volumes:
-            - ./local_configs/riperistap/configs/:/etc/artemis/
+            - ./local_configs/monitor-services/riperistap/:/etc/artemis/
             - ./monitor-services/riperistap/entrypoint:/root/entrypoint
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
     bgpstreamlivetap:
@@ -46,7 +46,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/bgpstreamlivetap/configs/:/etc/artemis/
+            - ./local_configs/monitor-services/bgpstreamlivetap/:/etc/artemis/
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
     bgpstreamkafkatap:
@@ -70,7 +70,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/bgpstreamkafkatap/configs/:/etc/artemis/
+            - ./local_configs/monitor-services/bgpstreamkafkatap/:/etc/artemis/
             - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
     bgpstreamhisttap:
@@ -92,7 +92,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/bgpstreamhisttap/configs/:/etc/artemis/
+            - ./local_configs/monitor-services/bgpstreamhisttap/:/etc/artemis/
             - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
     exabgptap:
@@ -117,7 +117,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/exabgptap/configs/:/etc/artemis/
+            - ./local_configs/monitor-services/exabgptap/:/etc/artemis/
             - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
             - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
     autostarter:
@@ -149,7 +149,7 @@ services:
             DB_NAME: ${DB_NAME}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/autostarter/configs/:/etc/artemis/
+            - ./local_configs/backend-services/autostarter/:/etc/artemis/
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
             - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
     configuration:
@@ -182,7 +182,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/configuration/configs/:/etc/artemis/
+            - ./local_configs/backend-services/configuration/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
     database:
@@ -220,7 +220,7 @@ services:
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
             HISTORIC: ${HISTORIC}
         volumes:
-            - ./local_configs/database/configs/:/etc/artemis/
+            - ./local_configs/backend-services/database/:/etc/artemis/
             - ./backend-services/database/entrypoint:/root/entrypoint
             - ./backend-services/database/core/database.py:/root/core/database.py
     detection:
@@ -248,7 +248,7 @@ services:
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
         volumes:
-            - ./local_configs/detection/configs/:/etc/artemis/
+            - ./local_configs/backend-services/detection/:/etc/artemis/
             - ./backend-services/detection/entrypoint:/root/entrypoint
             - ./backend-services/detection/core/detection.py:/root/core/detection.py
     fileobserver:
@@ -263,7 +263,7 @@ services:
         environment:
             REST_PORT: 3000
         volumes:
-            - ./local_configs/configuration/configs/:/etc/artemis/
+            - ./local_configs/backend-services/configuration/:/etc/artemis/
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
             - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     mitigation:
@@ -284,7 +284,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/mitigation/configs/:/etc/artemis/
+            - ./local_configs/backend-services/mitigation/:/etc/artemis/
             - ./backend-services/mitigation/entrypoint:/root/entrypoint
             - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
             - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
@@ -305,7 +305,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/notifier/configs/:/etc/artemis/
+            - ./local_configs/backend-services/notifier/:/etc/artemis/
             - ./backend-services/notifier/entrypoint:/root/entrypoint
             - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
     prefixtree:
@@ -327,7 +327,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/prefixtree/configs/:/etc/artemis/
+            - ./local_configs/backend-services/prefixtree/:/etc/artemis/
             - ./backend-services/prefixtree/entrypoint:/root/entrypoint
             - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
     redis:
@@ -339,7 +339,7 @@ services:
         expose:
             - ${REDIS_PORT}
         volumes:
-            - ./local_configs/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
+            - ./local_configs/backend-services/redis/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
         image: inspiregroup/artemis-frontend:dev-PR472
         container_name: frontend

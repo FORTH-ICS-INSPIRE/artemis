@@ -10,7 +10,7 @@ test('Simple Flow', async t => {
         .typeText(Selector('#password'), 'admin123')
         .click(Selector('#submit'))
         .expect(Selector('li').withText('Bgpstreamhisttap').textContent).contains("Bgpstreamhisttap On 0/1")
-        .expect(Selector('li').withText('Bgpstreamkafkatap').textContent).contains("Bgpstreamlivetap On 0/1")
+        .expect(Selector('li').withText('Bgpstreamkafkatap').textContent).contains("Bgpstreamkafkatap On 0/1")
         .expect(Selector('li').withText('Bgpstreamlivetap').textContent).contains("Bgpstreamlivetap On 0/1")
         .expect(Selector('li').withText('Configuration').textContent).contains("Configuration On 1/1")
         .expect(Selector('li').withText('Database v.22').textContent).contains("Database v.22 On 1/1")

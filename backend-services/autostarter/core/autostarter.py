@@ -64,7 +64,7 @@ def service_to_ips_and_replicas(base_service_name):
         replica_ip = sa[0]
         replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
         replica_name_match = re.match(
-            r"^artemis_" + re.escape(base_service_name) + r"_(\d+)\.",
+            r"^artemis_" + re.escape(base_service_name) + r"_(\d+)",
             replica_host_by_addr,
         )
         replica_name = "{}_{}".format(base_service_name, replica_name_match.group(1))

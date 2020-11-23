@@ -35,15 +35,29 @@ BGP updates via PEER AS AS65005.
 1. In `docker-compose.yaml`, edit volumes to point to the PoC's files:
 
     ```
+       ```
     version: '3'
     services:
-      backend:
+      configuration:
         ...
         volumes:
+          ...
           - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
           - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
           ...
       ...
+      fileobserver:
+        ...
+        volumes:
+          ...
+          - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
+          ...
+      mitigation:
+        ...
+        volumes:
+          ...
+          - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+          ...
     ```
 
 2. Run the following command and check the ARTEMIS UI:
@@ -51,10 +65,14 @@ BGP updates via PEER AS AS65005.
    ```
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml up -d
    ```
+
+   After it is up and running, activate ARTEMIS exabgp tap, detection and mitigation.
+
 3. Connect to `r06` and  announce the hijacked prefix:
 
    ```
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r06 sh
    gobgp global rib add 192.168.0.0/16
    ```
+
 4. Observe the hijack in ARTEMIS and initiate the mitigation action.

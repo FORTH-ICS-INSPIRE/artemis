@@ -6,6 +6,7 @@ from flask_security import current_user
 from gql import Client
 from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
+from webapp.utils import AUTOIGNORE_HOST
 from webapp.utils import BGPSTREAMHISTTAP_HOST
 from webapp.utils import BGPSTREAMKAFKATAP_HOST
 from webapp.utils import BGPSTREAMLIVETAP_HOST
@@ -65,6 +66,7 @@ ALWAYS_ON_MODULES = [
     FILEOBSERVER_HOST,
     PREFIXTREE_HOST,
     NOTIFIER_HOST,
+    AUTOIGNORE_HOST,
 ]
 
 

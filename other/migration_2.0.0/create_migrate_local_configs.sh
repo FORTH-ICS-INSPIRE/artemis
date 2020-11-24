@@ -7,6 +7,7 @@ LOCAL_CONFIGS_BK="$ROOT_ARTEMIS_DIR/local_configs.bk$(date '+%s')"
 [ -d $LOCAL_CONFIGS ] && mkdir -p $LOCAL_CONFIGS_BK && cp -r $LOCAL_CONFIGS $LOCAL_CONFIGS_BK;
 mkdir -p $LOCAL_CONFIGS;
 mkdir -p $LOCAL_CONFIGS/backend-services;
+mkdir -p $LOCAL_CONFIGS/backend-services/autoignore;
 mkdir -p $LOCAL_CONFIGS/backend-services/autostarter;
 mkdir -p $LOCAL_CONFIGS/backend-services/configuration;
 mkdir -p $LOCAL_CONFIGS/backend-services/database;
@@ -22,6 +23,8 @@ mkdir -p $LOCAL_CONFIGS/monitor-services/bgpstreamkafkatap;
 mkdir -p $LOCAL_CONFIGS/monitor-services/bgpstreamhisttap;
 mkdir -p $LOCAL_CONFIGS/monitor-services/exabgptap;
 mkdir -p $LOCAL_CONFIGS/frontend;
+[ -d $LOCAL_CONFIGS/backend ] && [ -f $LOCAL_CONFIGS/backend/logging.yaml ] && cp -n $LOCAL_CONFIGS/backend/logging.yaml $LOCAL_CONFIGS/backend-services/autoignore/;
+cp -n $ROOT_ARTEMIS_DIR/backend-services/autoignore/configs/logging.yaml $LOCAL_CONFIGS/backend-services/autoignore/;
 [ -d $LOCAL_CONFIGS/backend ] && [ -f $LOCAL_CONFIGS/backend/config.yaml ] && cp -n $LOCAL_CONFIGS/backend/config.yaml $LOCAL_CONFIGS/backend-services/configuration/;
 cp -n $ROOT_ARTEMIS_DIR/backend-services/configuration/configs/config.yaml $LOCAL_CONFIGS/backend-services/configuration/;
 [ -d $LOCAL_CONFIGS/backend ] && [ -f $LOCAL_CONFIGS/backend/autoconf-config.yaml ] && cp -n $LOCAL_CONFIGS/backend/autoconf-config.yaml $LOCAL_CONFIGS/backend-services/configuration/;

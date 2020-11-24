@@ -82,6 +82,9 @@ def configure_autoignore(msg, shared_memory_manager_dict):
 
             # extract autoignore rules
             autoignore_rules = config.get("autoignore", {})
+            for key in autoignore_rules:
+                # prefixes are not needed and should not be expanded (handled by prefix tree)
+                del autoignore_rules[key]["prefixes"]
 
             shared_memory_locks["autoignore"].acquire()
             shared_memory_manager_dict["autoignore_rules"] = autoignore_rules
@@ -327,7 +330,7 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
         return [
             Consumer(
                 queues=[self.autoignore_hijacks_rules_queue],
-                on_message=self.handle_autoignore_hijacks_matching_rule(),
+                on_message=self.handle_autoignore_hijacks_matching_rule,
                 prefetch_count=100,
                 accept=["ujson"],
             ),
@@ -344,7 +347,7 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
         Timer for rule check operations
         """
         self.rule_timer_thread = threading.Timer(
-            interval=1, function=self.check_rules_should_be_checked()
+            interval=1, function=self.check_rules_should_be_checked
         )
         self.rule_timer_thread.start()
 

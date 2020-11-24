@@ -128,11 +128,41 @@ services:
             - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
             - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
             - ./testing/.coveragerc:/root/core/.coveragerc
+    autoignore:
+        image: artemis_autoignore
+        build: ./backend-services/autoignore/
+        restart: always
+        depends_on:
+            - database
+            - prefixtree
+            - rabbitmq
+            - postgres
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./testing/detection/configs/:/etc/artemis/
+            - ./backend-services/autoignore/entrypoint:/root/entrypoint
+            - ./backend-services/autoignore/core/autoignore.py:/root/core/autoignore.py
+            - ./testing/.coveragerc:/root/core/.coveragerc
     autostarter:
         image: artemis_autostarter
         build: ./backend-services/autostarter/
         restart: always
         depends_on:
+            - autoignore
             - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap

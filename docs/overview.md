@@ -171,6 +171,8 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    $ tree local_configs
    local_configs/
    ├── backend-services
+   │   ├── autoignore
+   │   │   └── logging.yaml
    │   ├── autostarter
    │   │   └── logging.yaml
    │   ├── configuration
@@ -720,6 +722,8 @@ Then, do the following:
    $ tree local_configs
    local_configs/
    ├── backend-services
+   │   ├── autoignore
+   │   │   └── logging.yaml
    │   ├── autostarter
    │   │   └── logging.yaml
    │   ├── configuration

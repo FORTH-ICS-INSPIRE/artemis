@@ -20,6 +20,7 @@ log = get_logger()
 
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 5))
 SERVICE_NAME = "autostarter"
+AUTOIGNORE_HOST = "autoignore"
 CONFIGURATION_HOST = "configuration"
 DATABASE_HOST = "database"
 FILEOBSERVER_HOST = "fileobserver"
@@ -39,6 +40,7 @@ ALWAYS_RUNNING_SERVICES = [
     NOTIFIER_HOST,
     FILEOBSERVER_HOST,
     PREFIXTREE_HOST,
+    AUTOIGNORE_HOST,
 ]
 USER_CONTROLLED_SERVICES = [
     DETECTION_HOST,

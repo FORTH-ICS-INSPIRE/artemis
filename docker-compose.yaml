@@ -122,7 +122,6 @@ services:
             - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
     autoignore:
         image: inspiregroup/artemis-autoignore:${SYSTEM_VERSION}
-        build: ./backend-services/autoignore/
         restart: always
         depends_on:
             - database

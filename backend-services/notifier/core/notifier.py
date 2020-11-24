@@ -5,14 +5,11 @@ from typing import Dict
 from typing import List
 from typing import NoReturn
 
-import pytricia
 import requests
 import ujson as json
-from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import hijack_log_field_formatter
 from artemis_utils import RABBITMQ_URI
-from artemis_utils import translate_rfc2622
 from artemis_utils.rabbitmq_util import create_exchange
 from artemis_utils.rabbitmq_util import create_queue
 from kombu import Connection
@@ -52,32 +49,12 @@ mail_log.addFilter(HijackLogFilter())
 hij_log.addFilter(HijackLogFilter())
 
 # shared memory object locks
-shared_memory_locks = {
-    "data_worker": mp.Lock(),
-    "autoignore": mp.Lock(),
-    "config_timestamp": mp.Lock(),
-}
+shared_memory_locks = {"data_worker": mp.Lock(), "config_timestamp": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "notifier"
 CONFIGURATION_HOST = "configuration"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
-
-
-# TODO: move this to artemis-utils
-def pytricia_to_dict(pyt_tree):
-    pyt_dict = {}
-    for prefix in pyt_tree:
-        pyt_dict[prefix] = pyt_tree[prefix]
-    return pyt_dict
-
-
-# TODO: move this to artemis-utils
-def dict_to_pytricia(dict_tree, size=32):
-    pyt_tree = pytricia.PyTricia(size)
-    for prefix in dict_tree:
-        pyt_tree.insert(prefix, dict_tree[prefix])
-    return pyt_tree
 
 
 def configure_notifier(msg, shared_memory_manager_dict):
@@ -88,42 +65,7 @@ def configure_notifier(msg, shared_memory_manager_dict):
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
         shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
-
-            # extract autoignore rules
-            autoignore_rules = config.get("autoignore", {})
-
-            # calculate autoignore prefix tree
-            autoignore_prefix_tree = {
-                "v4": pytricia.PyTricia(32),
-                "v6": pytricia.PyTricia(128),
-            }
-            for key in autoignore_rules:
-                rule = autoignore_rules[key]
-                for prefix in rule["prefixes"]:
-                    for translated_prefix in translate_rfc2622(prefix):
-                        ip_version = get_ip_version(translated_prefix)
-                        if not autoignore_prefix_tree[ip_version].has_key(
-                            translated_prefix
-                        ):
-                            node = {"prefix": translated_prefix, "rule_key": key}
-                            autoignore_prefix_tree[ip_version].insert(
-                                translated_prefix, node
-                            )
-
-            # note that the object should be picklable (e.g., dict instead of pytricia tree,
-            # see also: https://github.com/jsommers/pytricia/issues/20)
-            dict_autoignore_prefix_tree = {
-                "v4": pytricia_to_dict(autoignore_prefix_tree["v4"]),
-                "v6": pytricia_to_dict(autoignore_prefix_tree["v6"]),
-            }
-            shared_memory_locks["autoignore"].acquire()
-            shared_memory_manager_dict["autoignore_rules"] = autoignore_rules
-            shared_memory_manager_dict[
-                "autoignore_prefix_tree"
-            ] = dict_autoignore_prefix_tree
-            shared_memory_manager_dict["autoignore_recalculate"] = True
-            shared_memory_locks["autoignore"].release()
-
+            # placeholder, no need for doing anything on the data worker for now
             shared_memory_locks["config_timestamp"].acquire()
             shared_memory_manager_dict["config_timestamp"] = config_timestamp
             shared_memory_locks["config_timestamp"].release()
@@ -266,9 +208,6 @@ class Notifier:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
-        self.shared_memory_manager_dict["autoignore_rules"] = {}
-        self.shared_memory_manager_dict["autoignore_prefix_tree"] = {"v4": {}, "v6": {}}
-        self.shared_memory_manager_dict["autoignore_recalculate"] = True
         self.shared_memory_manager_dict["config_timestamp"] = -1
 
         log.info("service initiated")
@@ -311,30 +250,6 @@ class NotifierDataWorker(ConsumerProducerMixin):
     ) -> NoReturn:
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
-        self.autoignore_prefix_tree = {
-            "v4": pytricia.PyTricia(32),
-            "v6": pytricia.PyTricia(128),
-        }
-        shared_memory_locks["autoignore"].acquire()
-        if self.shared_memory_manager_dict["autoignore_recalculate"]:
-            for ip_version in ["v4", "v6"]:
-                if ip_version == "v4":
-                    size = 32
-                else:
-                    size = 128
-                self.autoignore_prefix_tree[ip_version] = dict_to_pytricia(
-                    self.shared_memory_manager_dict["autoignore_prefix_tree"][
-                        ip_version
-                    ],
-                    size,
-                )
-                log.info(
-                    "{} pytricia tree parsed from configuration".format(ip_version)
-                )
-                self.shared_memory_manager_dict["autoignore_recalculate"] = False
-        shared_memory_locks["autoignore"].release()
-
-        # TODO: optional: set timers to periodically check for ongoing hijacks-to-be-ignored
 
         # EXCHANGES
         self.hijack_notification_exchange = create_exchange(
@@ -386,65 +301,16 @@ class NotifierDataWorker(ConsumerProducerMixin):
             ),
         ]
 
-    def find_autoignore_prefix_node(self, prefix):
-        ip_version = get_ip_version(prefix)
-        prefix_node = None
-        shared_memory_locks["autoignore"].acquire()
-        if ip_version == "v4":
-            size = 32
-        else:
-            size = 128
-        # need to turn to pytricia tree since this means that the tree has changed due to re-configuration
-        if self.shared_memory_manager_dict["autoignore_recalculate"]:
-            self.autoignore_prefix_tree[ip_version] = dict_to_pytricia(
-                self.shared_memory_manager_dict["autoignore_prefix_tree"][ip_version],
-                size,
-            )
-            log.info("{} pytricia tree re-parsed from configuration".format(ip_version))
-            self.shared_memory_manager_dict["autoignore_recalculate"] = False
-        if prefix in self.autoignore_prefix_tree[ip_version]:
-            prefix_node = self.autoignore_prefix_tree[ip_version][prefix]
-        shared_memory_locks["autoignore"].release()
-        return prefix_node
-
-    def hijack_suppressed(self, hijack: Dict):
-        suppressed = False
-        try:
-            hijack_prefix = hijack["prefix"]
-            hijack_num_peers_seen = len(hijack["peers_seen"])
-            hijack_num_ases_infected = len(hijack["asns_inf"])
-            autoignore_rule_match = self.find_autoignore_prefix_node(hijack_prefix)
-            shared_memory_locks["autoignore"].acquire()
-            if autoignore_rule_match:
-                autoignore_rule_key = autoignore_rule_match["rule_key"]
-                autoignore_rule = self.shared_memory_manager_dict["autoignore_rules"][
-                    autoignore_rule_key
-                ]
-                thres_num_peers_seen = autoignore_rule["thres_num_peers_seen"]
-                thres_num_ases_infected = autoignore_rule["thres_num_ases_infected"]
-                if (hijack_num_peers_seen < thres_num_peers_seen) and (
-                    hijack_num_ases_infected < thres_num_ases_infected
-                ):
-                    suppressed = True
-        except Exception:
-            log.exception("exception")
-        finally:
-            shared_memory_locks["autoignore"].release()
-            return suppressed
-
     def handle_hij_log(self, message: Dict) -> NoReturn:
         """
         Callback function that generates a hijack log
         """
         message.ack()
         hij_dict = message.payload
-        if not self.hijack_suppressed(hij_dict):
-            hij_log.info(
-                "{}".format(json.dumps(hijack_log_field_formatter(hij_dict))),
-                extra={
-                    "community_annotation": hij_dict.get("community_annotation", "NA")
-                },
-            )
+        hij_log.info(
+            "{}".format(json.dumps(hijack_log_field_formatter(hij_dict))),
+            extra={"community_annotation": hij_dict.get("community_annotation", "NA")},
+        )
 
     def handle_mail_log(self, message: Dict) -> NoReturn:
         """
@@ -452,13 +318,10 @@ class NotifierDataWorker(ConsumerProducerMixin):
         """
         message.ack()
         hij_dict = message.payload
-        if not self.hijack_suppressed(hij_dict):
-            mail_log.info(
-                "{}".format(json.dumps(hijack_log_field_formatter(hij_dict))),
-                extra={
-                    "community_annotation": hij_dict.get("community_annotation", "NA")
-                },
-            )
+        mail_log.info(
+            "{}".format(json.dumps(hijack_log_field_formatter(hij_dict))),
+            extra={"community_annotation": hij_dict.get("community_annotation", "NA")},
+        )
 
     def stop_consumer_loop(self, message: Dict) -> NoReturn:
         """

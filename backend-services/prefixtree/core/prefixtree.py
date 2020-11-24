@@ -42,6 +42,7 @@ serialization.register(
 shared_memory_locks = {
     "data_worker": mp.Lock(),
     "prefix_tree": mp.Lock(),
+    "autoignore": mp.Lock(),
     "monitors": mp.Lock(),
     "monitored_prefixes": mp.Lock(),
     "configured_prefix_count": mp.Lock(),
@@ -80,7 +81,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
         if config["timestamp"] > config_timestamp:
 
             # extract monitors
-            monitors = msg.get("monitors", {})
+            monitors = config.get("monitors", {})
 
             # calculate prefix tree
             prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
@@ -131,9 +132,31 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                     if monitored_prefix:
                         monitored_prefixes.add(monitored_prefix)
 
-            shared_memory_locks["prefix_tree"].acquire()
+            # extract autoignore rules
+            autoignore_rules = config.get("autoignore", {})
+
+            # calculate autoignore prefix tree
+            autoignore_prefix_tree = {
+                "v4": pytricia.PyTricia(32),
+                "v6": pytricia.PyTricia(128),
+            }
+
+            for key in autoignore_rules:
+                rule = autoignore_rules[key]
+                for prefix in rule["prefixes"]:
+                    for translated_prefix in translate_rfc2622(prefix):
+                        ip_version = get_ip_version(translated_prefix)
+                        if not autoignore_prefix_tree[ip_version].has_key(
+                            translated_prefix
+                        ):
+                            node = {"prefix": translated_prefix, "rule_key": key}
+                            autoignore_prefix_tree[ip_version].insert(
+                                translated_prefix, node
+                            )
+
             # note that the object should be picklable (e.g., dict instead of pytricia tree,
             # see also: https://github.com/jsommers/pytricia/issues/20)
+            shared_memory_locks["prefix_tree"].acquire()
             dict_prefix_tree = {
                 "v4": pytricia_to_dict(prefix_tree["v4"]),
                 "v6": pytricia_to_dict(prefix_tree["v6"]),
@@ -155,6 +178,20 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                 "configured_prefix_count"
             ] = configured_prefix_count
             shared_memory_locks["configured_prefix_count"].release()
+
+            # note that the object should be picklable (e.g., dict instead of pytricia tree,
+            # see also: https://github.com/jsommers/pytricia/issues/20)
+            dict_autoignore_prefix_tree = {
+                "v4": pytricia_to_dict(autoignore_prefix_tree["v4"]),
+                "v6": pytricia_to_dict(autoignore_prefix_tree["v6"]),
+            }
+            shared_memory_locks["autoignore"].acquire()
+            shared_memory_manager_dict["autoignore_rules"] = autoignore_rules
+            shared_memory_manager_dict[
+                "autoignore_prefix_tree"
+            ] = dict_autoignore_prefix_tree
+            shared_memory_manager_dict["autoignore_recalculate"] = True
+            shared_memory_locks["autoignore"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
             shared_memory_manager_dict["config_timestamp"] = config_timestamp
@@ -366,6 +403,9 @@ class PrefixTree:
         self.shared_memory_manager_dict["monitors"] = {}
         self.shared_memory_manager_dict["monitored_prefixes"] = set()
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
+        self.shared_memory_manager_dict["autoignore_rules"] = {}
+        self.shared_memory_manager_dict["autoignore_prefix_tree"] = {"v4": {}, "v6": {}}
+        self.shared_memory_manager_dict["autoignore_recalculate"] = True
         self.shared_memory_manager_dict["config_timestamp"] = -1
 
         log.info("service initiated")
@@ -425,6 +465,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
         ping_redis(self.redis)
         self.shared_memory_manager_dict = shared_memory_manager_dict
+
         self.prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
         shared_memory_locks["prefix_tree"].acquire()
         if self.shared_memory_manager_dict["prefix_tree_recalculate"]:
@@ -441,6 +482,29 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 )
                 self.shared_memory_manager_dict["prefix_tree_recalculate"] = False
         shared_memory_locks["prefix_tree"].release()
+
+        self.autoignore_prefix_tree = {
+            "v4": pytricia.PyTricia(32),
+            "v6": pytricia.PyTricia(128),
+        }
+        shared_memory_locks["autoignore"].acquire()
+        if self.shared_memory_manager_dict["autoignore_recalculate"]:
+            for ip_version in ["v4", "v6"]:
+                if ip_version == "v4":
+                    size = 32
+                else:
+                    size = 128
+                self.autoignore_prefix_tree[ip_version] = dict_to_pytricia(
+                    self.shared_memory_manager_dict["autoignore_prefix_tree"][
+                        ip_version
+                    ],
+                    size,
+                )
+                log.info(
+                    "{} pytricia tree parsed from configuration".format(ip_version)
+                )
+                self.shared_memory_manager_dict["autoignore_recalculate"] = False
+        shared_memory_locks["autoignore"].release()
 
         # EXCHANGES
         self.update_exchange = create_exchange("bgp-update", connection, declare=True)
@@ -565,6 +629,27 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         if prefix in self.prefix_tree[ip_version]:
             prefix_node = self.prefix_tree[ip_version][prefix]
         shared_memory_locks["prefix_tree"].release()
+        return prefix_node
+
+    def find_autoignore_prefix_node(self, prefix):
+        ip_version = get_ip_version(prefix)
+        prefix_node = None
+        shared_memory_locks["autoignore"].acquire()
+        if ip_version == "v4":
+            size = 32
+        else:
+            size = 128
+        # need to turn to pytricia tree since this means that the tree has changed due to re-configuration
+        if self.shared_memory_manager_dict["autoignore_recalculate"]:
+            self.autoignore_prefix_tree[ip_version] = dict_to_pytricia(
+                self.shared_memory_manager_dict["autoignore_prefix_tree"][ip_version],
+                size,
+            )
+            log.info("{} pytricia tree re-parsed from configuration".format(ip_version))
+            self.shared_memory_manager_dict["autoignore_recalculate"] = False
+        if prefix in self.autoignore_prefix_tree[ip_version]:
+            prefix_node = self.autoignore_prefix_tree[ip_version][prefix]
+        shared_memory_locks["autoignore"].release()
         return prefix_node
 
     def annotate_bgp_update(self, message: Dict) -> NoReturn:

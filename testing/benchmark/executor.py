@@ -2,8 +2,8 @@ import os
 import sys
 import time
 from multiprocessing import Process
-from xmlrpc.client import ServerProxy
 
+import requests
 import ujson as json
 from kombu import Connection
 from kombu import Exchange
@@ -20,6 +20,17 @@ serialization.register(
     content_encoding="utf-8",
 )
 
+# global vars
+CONFIGURATION_HOST = "configuration"
+DATABASE_HOST = "database"
+DATA_WORKER_DEPENDENCIES = [
+    "configuration",
+    "database",
+    "detection",
+    "fileobserver",
+    "prefixtree",
+]
+REST_PORT = 3000
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
 RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
@@ -27,13 +38,6 @@ RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
 )
-
-BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
-BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
-BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
-    BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
-)
-
 
 if len(sys.argv) == 2:
     LIMIT_UPDATES = int(sys.argv[1])
@@ -45,19 +49,32 @@ if LIMIT_UPDATES > 65536:
     sys.exit()
 
 
-def wait():
-    ctx = ServerProxy(BACKEND_SUPERVISOR_URI)
-
-    try:
-        state = ctx.supervisor.getProcessInfo("detection")["state"]
-        while state == 10:
-            print("[!] Waiting for Detection")
-            time.sleep(0.5)
-            state = ctx.supervisor.getProcessInfo("detection")["state"]
-    except Exception as e:
-        print(e)
-        sys.exit(-1)
-    print("[!] Detection is running")
+def wait_data_worker_dependencies(data_worker_dependencies):
+    while True:
+        met_deps = set()
+        unmet_deps = set()
+        for service in data_worker_dependencies:
+            try:
+                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                status = True if r.json()["status"] == "running" else False
+                if not status:
+                    unmet_deps.add(service)
+                else:
+                    met_deps.add(service)
+            except Exception:
+                pass
+        if len(unmet_deps) == 0:
+            print(
+                "all needed data workers started: {}".format(data_worker_dependencies)
+            )
+            break
+        else:
+            print(
+                "'{}' data workers started, waiting for: '{}'".format(
+                    met_deps, unmet_deps
+                )
+            )
+        time.sleep(1)
 
 
 def send():
@@ -154,7 +171,9 @@ def receive(exchange_name, routing_key):
 
 if __name__ == "__main__":
     print("[+] Starting")
-    wait()
+
+    # wait for dependencies data workers to start
+    wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
 
     precvs = [
         Process(target=receive, args=("amq.direct", "update-insert")),

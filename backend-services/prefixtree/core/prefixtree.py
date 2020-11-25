@@ -804,6 +804,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         if not isinstance(bgp_updates, list):
             bgp_updates = [bgp_updates]
         bgp_updates_to_send_to_conf = list()
+        delete_from_redis_without_sending_to_autoconf = set()
         for bgp_update in bgp_updates:
             # if you have seen the exact same update before, do nothing
             if self.redis.get(bgp_update["key"]):
@@ -815,10 +816,17 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             ):
                 return
 
-            # prefix_node = self.find_prefix_node(bgp_update["prefix"])
-
-            # TODO: process messages based on current prefix tree
-            bgp_updates_to_send_to_conf.append(bgp_update)
+            prefix_node = self.find_prefix_node(bgp_update["prefix"])
+            # small optimization: if prefix exist in prefix tree and we have an update, discard it
+            if prefix_node and bgp_update["type"] == "A":
+                delete_from_redis_without_sending_to_autoconf.add(bgp_update["key"])
+            else:
+                bgp_updates_to_send_to_conf.append(bgp_update)
+        if self.redis.exists("autoconf-update-keys-to-process"):
+            redis_pipeline = self.redis.pipeline()
+            for bgp_update_key in delete_from_redis_without_sending_to_autoconf:
+                redis_pipeline.srem("autoconf-update-keys-to-process", bgp_update_key)
+            redis_pipeline.execute()
         self.producer.publish(
             bgp_updates_to_send_to_conf,
             exchange=self.autoconf_exchange,

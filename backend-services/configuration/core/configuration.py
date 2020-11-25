@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import socket
+import stat
 import time
 from io import StringIO
 from ipaddress import ip_network as str2ip
@@ -709,18 +710,38 @@ def post_configuration_to_other_services(data):
                 log.error("could not configure service '{}'".format(replica_name))
 
 
-def write_conf_via_tmp_file(config_file, tmp_file, yaml_conf) -> NoReturn:
-    with open(tmp_file, "w") as f:
-        ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
-    shutil.copymode(config_file, tmp_file)
-    os.rename(tmp_file, config_file)
+def write_conf_via_tmp_file(config_file, tmp_file, yaml_conf, lock=True) -> NoReturn:
+    if lock:
+        shared_memory_locks["config_data"].acquire()
+    try:
+        with open(tmp_file, "w") as f:
+            ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+        shutil.copymode(config_file, tmp_file)
+        st = os.stat(config_file)
+        os.chown(tmp_file, st[stat.ST_UID], st[stat.ST_GID])
+        os.rename(tmp_file, config_file)
+    except Exception:
+        log.exception("exception")
+    finally:
+        if lock:
+            shared_memory_locks["config_data"].release()
 
 
-def write_raw_conf_via_tmp_file(config_file, tmp_file, raw) -> NoReturn:
-    with open(tmp_file, "w") as f:
-        f.write(raw)
-    shutil.copymode(config_file, tmp_file)
-    os.rename(tmp_file, config_file)
+def write_raw_conf_via_tmp_file(config_file, tmp_file, raw, lock=True) -> NoReturn:
+    if lock:
+        shared_memory_locks["config_data"].acquire()
+    try:
+        with open(tmp_file, "w") as f:
+            f.write(raw)
+        shutil.copymode(config_file, tmp_file)
+        st = os.stat(config_file)
+        os.chown(tmp_file, st[stat.ST_UID], st[stat.ST_GID])
+        os.rename(tmp_file, config_file)
+    except Exception:
+        log.exception("exception")
+    finally:
+        if lock:
+            shared_memory_locks["config_data"].release()
 
 
 def translate_learn_rule_dicts_to_yaml_conf(
@@ -1045,6 +1066,7 @@ def configure_configuration(msg, shared_memory_manager_dict):
                         shared_memory_manager_dict["config_file"],
                         shared_memory_manager_dict["tmp_config_file"],
                         shared_memory_manager_dict["config_data"]["raw_config"],
+                        lock=False,
                     )
                 if comment:
                     shared_memory_manager_dict["config_data"]["comment"] = comment
@@ -1067,6 +1089,7 @@ def configure_configuration(msg, shared_memory_manager_dict):
                     shared_memory_manager_dict["config_file"],
                     shared_memory_manager_dict["tmp_config_file"],
                     yaml_conf,
+                    lock=False,
                 )
 
             # reply back to the sender with a configuration accepted
@@ -1356,7 +1379,7 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
 
             # process the autoconf updates
             conf_needs_update = False
-            updates_processed = True
+            updates_processed = set()
             for bgp_update in bgp_updates:
                 # if you have seen the exact same update before, do nothing
                 if self.redis.get(bgp_update["key"]):
@@ -1387,6 +1410,7 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                 if ok:
                     # update running configuration
                     conf_needs_update = True
+                    updates_processed.add(bgp_update["key"])
                 else:
                     log.error("!!!PROBLEM with rule autoconf installation !!!!!")
                     log.error(msg)
@@ -1400,7 +1424,6 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                         redis_pipeline.execute()
                     # cancel operation, write nothing (this is done for optimization, even if we miss some updates)
                     conf_needs_update = False
-                    updates_processed = False
                     break
 
             # store the updated configuration to file
@@ -1423,13 +1446,13 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                 )
 
             # acknowledge the processing of autoconf BGP updates using redis
-            if updates_processed and self.redis.exists(
+            if len(updates_processed) > 0 and self.redis.exists(
                 "autoconf-update-keys-to-process"
             ):
-                for bgp_update in bgp_updates:
+                for bgp_update_key in updates_processed:
                     redis_pipeline = self.redis.pipeline()
                     redis_pipeline.srem(
-                        "autoconf-update-keys-to-process", bgp_update["key"]
+                        "autoconf-update-keys-to-process", bgp_update_key
                     )
                     redis_pipeline.execute()
         except Exception:

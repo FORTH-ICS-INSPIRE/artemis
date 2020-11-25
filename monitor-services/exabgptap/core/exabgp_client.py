@@ -41,8 +41,7 @@ shared_memory_locks = {
 # global vars
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
-AUTOCONF_INTERVAL = 10
-MAX_AUTOCONF_UPDATES = 100
+AUTOCONF_INTERVAL = 60
 SERVICE_NAME = "exabgptap"
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
@@ -367,9 +366,7 @@ class ExaBGPDataWorker:
             return
 
         try:
-            autoconf_updates_keys_to_send = list(autoconf_update_keys_to_process)[
-                :MAX_AUTOCONF_UPDATES
-            ]
+            autoconf_updates_keys_to_send = list(autoconf_update_keys_to_process)
             autoconf_updates_to_send = []
             for update_key in autoconf_updates_keys_to_send:
                 shared_memory_locks["autoconf_updates"].acquire()
@@ -520,8 +517,6 @@ class ExaBGPDataWorker:
                 route_refresh_command_v6 = "announce route-refresh ipv6 unicast"
                 sio.emit("route_command", {"command": route_refresh_command_v6})
             sio.wait()
-        except KeyboardInterrupt:
-            exit_gracefully()
         except Exception:
             log.exception("exception")
 

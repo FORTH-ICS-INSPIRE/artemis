@@ -909,17 +909,17 @@
                 if(hijack_obj['active'] == true){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
                     $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
-                    {% if mitigate == True %}
-                        if(hijack_obj['under_mitigation'] == false) {
-                            $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
-                        }else{
-                            $("#hijack_action_selection").append(new Option("Un-mitigate Hijack", "hijack_action_unmitigate"));
-                        }
-                    {% endif %}
                 }else if((hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true) && (hijack_obj['resolved'] == false && hijack_obj['ignored'] == false)){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
                     $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
                 }
+                {% if mitigate == True %}
+                    if(hijack_obj['under_mitigation'] == false) {
+                        $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
+                    }else{
+                        $("#hijack_action_selection").append(new Option("Un-mitigate Hijack", "hijack_action_unmitigate"));
+                    }
+                {% endif %}
 
                 if(hijack_obj['seen'] == true){
                     $('#hijack_acknowledged_badge').removeClass('badge-danger').addClass('badge-primary');

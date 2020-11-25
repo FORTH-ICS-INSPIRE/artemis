@@ -425,10 +425,10 @@ class HijackMultiActionHandler(RequestHandler):
             if not raw["keys"]:
                 query = None
             elif raw["action"] == "hijack_action_resolve":
-                query = "UPDATE hijacks SET resolved=true, active=false, dormant=false, under_mitigation=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
+                query = "UPDATE hijacks SET resolved=true, active=false, dormant=false, seen=true, time_ended=%s WHERE resolved=false AND ignored=false AND key=%s;"
                 resolve_action = True
             elif raw["action"] == "hijack_action_ignore":
-                query = "UPDATE hijacks SET ignored=true, active=false, dormant=false, under_mitigation=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
+                query = "UPDATE hijacks SET ignored=true, active=false, dormant=false, seen=false WHERE ignored=false AND resolved=false AND key=%s;"
                 ignore_action = True
             elif raw["action"] == "hijack_action_acknowledge":
                 query = "UPDATE hijacks SET seen=true WHERE key=%s;"
@@ -1177,7 +1177,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
 
             self.wo_db.execute(
-                "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
+                "UPDATE hijacks SET active=false, dormant=false, resolved=true, seen=true, time_ended=%s WHERE key=%s;",
                 (datetime.datetime.now(), raw["key"]),
             )
 
@@ -1261,7 +1261,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             if self.redis.sismember("persistent-keys", raw["key"]):
                 purge_redis_eph_pers_keys(self.redis, redis_hijack_key, raw["key"])
             self.wo_db.execute(
-                "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, seen=false, ignored=true WHERE key=%s;",
+                "UPDATE hijacks SET active=false, dormant=false, seen=false, ignored=true WHERE key=%s;",
                 (raw["key"],),
             )
         except Exception:
@@ -1374,7 +1374,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                                 self.redis, redis_hijack_key, entry[2]
                             )
                             self.wo_db.execute(
-                                "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, resolved=false, withdrawn=true, time_ended=%s, "
+                                "UPDATE hijacks SET active=false, dormant=false, resolved=false, withdrawn=true, time_ended=%s, "
                                 "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
                                 (timestamp, entry[1], timestamp, entry[2]),
                             )
@@ -1644,7 +1644,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             shared_memory_locks["outdate_hijacks"].release()
             return
         try:
-            query = "UPDATE hijacks SET active=false, dormant=false, under_mitigation=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
+            query = "UPDATE hijacks SET active=false, dormant=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
             self.wo_db.execute_values(query, list(self.outdate_hijacks), page_size=1000)
             self.outdate_hijacks.clear()
         except Exception:

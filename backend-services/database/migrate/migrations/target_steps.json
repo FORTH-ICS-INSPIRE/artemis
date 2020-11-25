@@ -131,6 +131,12 @@
             "db_version": "22",
             "description": "Creation of new dataplane_msms table and view_dataplane_msms view",
             "file": "migration_22.sql"
+        },
+        "23": {
+            "id": "23",
+            "db_version": "23",
+            "description": "Altering hijacks TABLE possible_states constraints",
+            "file": "migration_23.sql"
         }
     }
 }

@@ -142,6 +142,8 @@ Allowed state transitions (parenthesis denotes optional states):
 * ongoing (<--> dormant) (--> under mitigation) (--> outdated/withdrawn) --> resolved
 * ongoing (<--> dormant) (--> under mitigation) (--> outdated/withdrawn) --> ignored
 
+Note that as of version 2.0.0 the `under mitigation` state/tag is orthogonal to the other states.
+
 ## Hijack actions
 Upon viewing a selected hijack event, the ADMIN user can execute the following actions:
 

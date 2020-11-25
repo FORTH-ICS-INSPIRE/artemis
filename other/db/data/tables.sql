@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (22, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (23, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -82,31 +82,29 @@ CREATE TABLE IF NOT EXISTS hijacks (
     UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (
         (
-            active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=false
+            active=true and resolved=false and ignored=false and withdrawn=false and outdated=false
         ) or (
-            active=true and under_mitigation=true and resolved=false and ignored=false and withdrawn=false and outdated=false
+            active=false and resolved=true and ignored=false and withdrawn=false and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false and outdated=false
+            active=false and resolved=false and ignored=true and withdrawn=false and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false and outdated=false
+            active=false and resolved=false and ignored=false and withdrawn=false and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=true
+            active=false and resolved=true and ignored=false and withdrawn=false and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false and outdated=true
+            active=false and resolved=false and ignored=true and withdrawn=false and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false and outdated=true
+            active=false and resolved=false and ignored=false and withdrawn=true and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true and outdated=false
+            active=false and resolved=false and ignored=false and withdrawn=true and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true and outdated=true
+            active=false and resolved=true and ignored=false and withdrawn=true and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=true and outdated=false
+            active=false and resolved=false and ignored=true and withdrawn=true and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=false
+            active=false and resolved=true and ignored=false and withdrawn=true and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=true and outdated=true
-        ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=true
+            active=false and resolved=false and ignored=true and withdrawn=true and outdated=true
         )
     ),
     CONSTRAINT dormant_active CHECK (

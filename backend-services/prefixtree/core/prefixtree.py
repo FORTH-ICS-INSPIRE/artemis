@@ -516,6 +516,9 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         self.mitigation_exchange = create_exchange(
             "mitigation", connection, declare=True
         )
+        self.autoignore_exchange = create_exchange(
+            "autoignore", connection, declare=True
+        )
         self.command_exchange = create_exchange("command", connection, declare=True)
 
         # QUEUES
@@ -560,6 +563,13 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             exchange=self.autoconf_exchange,
             routing_key="update",
             priority=4,
+            random=True,
+        )
+        self.ongoing_hijack_prefixes_queue = create_queue(
+            SERVICE_NAME,
+            exchange=self.autoignore_exchange,
+            routing_key="ongoing-hijack-prefixes",
+            priority=1,
             random=True,
         )
 
@@ -609,6 +619,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 prefetch_count=100,
                 accept=["ujson"],
             ),
+            Consumer(
+                queues=[self.ongoing_hijack_prefixes_queue],
+                on_message=self.handle_ongoing_hijack_prefixes,
+                prefetch_count=100,
+                accept=["ujson"],
+            ),
         ]
 
     def find_prefix_node(self, prefix):
@@ -645,7 +661,11 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 self.shared_memory_manager_dict["autoignore_prefix_tree"][ip_version],
                 size,
             )
-            log.info("{} pytricia tree re-parsed from configuration".format(ip_version))
+            log.info(
+                "{} autoignore pytricia tree re-parsed from configuration".format(
+                    ip_version
+                )
+            )
             self.shared_memory_manager_dict["autoignore_recalculate"] = False
         if prefix in self.autoignore_prefix_tree[ip_version]:
             prefix_node = self.autoignore_prefix_tree[ip_version][prefix]
@@ -805,6 +825,39 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
             routing_key="filtered-update",
             retry=True,
             priority=4,
+            serializer="ujson",
+        )
+
+    def handle_ongoing_hijack_prefixes(self, message: Dict) -> NoReturn:
+        """
+        Callback function that checks whether ongoing hijack prefixes match
+        an autoignore rule (included in the message).
+        """
+        message.ack()
+        ongoing_hijacks_to_prefixes = message.payload["ongoing_hijacks_to_prefixes"]
+        autoignore_rule_key = message.payload["rule_key"]
+        hijacks_matching_rule = set()
+        for hijack_key in ongoing_hijacks_to_prefixes:
+            try:
+                autoignore_prefix_node = self.find_autoignore_prefix_node(
+                    ongoing_hijacks_to_prefixes[hijack_key]
+                )
+                if (
+                    autoignore_prefix_node
+                    and autoignore_prefix_node["rule_key"] == autoignore_rule_key
+                ):
+                    hijacks_matching_rule.add(hijack_key)
+            except Exception:
+                log.exception("exception")
+        self.producer.publish(
+            {
+                "hijacks_matching_rule": list(hijacks_matching_rule),
+                "rule_key": autoignore_rule_key,
+            },
+            exchange=self.autoignore_exchange,
+            routing_key="hijacks-matching-rule",
+            retry=True,
+            priority=1,
             serializer="ujson",
         )
 

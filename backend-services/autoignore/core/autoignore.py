@@ -346,6 +346,8 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
         """
         Timer for rule check operations
         """
+        if self.should_stop:
+            return
         self.rule_timer_thread = threading.Timer(
             interval=1, function=self.check_rules_should_be_checked
         )
@@ -358,7 +360,7 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
         try:
             for key in self.shared_memory_manager_dict["autoignore_rules"]:
                 interval = int(
-                    self.shared_memory_manager_dict["autoignore_rules"]["interval"]
+                    self.shared_memory_manager_dict["autoignore_rules"][key]["interval"]
                 )
                 if interval <= 0:
                     continue
@@ -369,6 +371,7 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
                 if process_time % interval == 0:
                     # do the following once for the current session
                     if len(ongoing_hijacks_to_prefixes) == 0:
+                        shared_memory_locks["ongoing_hijacks"].acquire()
                         try:
                             # fetch ongoing hijack events
                             query = (
@@ -377,38 +380,35 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
                                 "FROM hijacks WHERE active = true"
                             )
                             entries = self.ro_db.execute(query)
-                            shared_memory_locks["ongoing_hijacks"].acquire()
-                            try:
-                                self.ongoing_hijacks = {}
-                                for entry in entries:
-                                    self.ongoing_hijacks[entry[4]] = {
-                                        "prefix": entry[5],
-                                        "time_last_updated": max(
-                                            int(entry[1].timestamp()),
-                                            int(entry[8].timestamp()),
-                                        ),
-                                        "num_peers_seen": int(entry[2]),
-                                        "num_asns_inf": int(entry[3]),
-                                        "hijack_as": int(entry[6]),
-                                        "hij_type": entry[7],
-                                    }
-                                    ongoing_hijacks_to_prefixes[entry[4]] = entry[5]
-                            except Exception:
-                                log.exception("exception")
-                            finally:
-                                shared_memory_locks["ongoing_hijacks"].release()
+                            self.ongoing_hijacks = {}
+                            for entry in entries:
+                                self.ongoing_hijacks[entry[4]] = {
+                                    "prefix": entry[5],
+                                    "time_last_updated": max(
+                                        int(entry[1].timestamp()),
+                                        int(entry[8].timestamp()),
+                                    ),
+                                    "num_peers_seen": int(entry[2]),
+                                    "num_asns_inf": int(entry[3]),
+                                    "hijack_as": int(entry[6]),
+                                    "hij_type": entry[7],
+                                }
+                                ongoing_hijacks_to_prefixes[entry[4]] = entry[5]
                         except Exception:
                             log.exception("exception")
+                        finally:
+                            shared_memory_locks["ongoing_hijacks"].release()
 
-                    self.producer.publish(
-                        {
-                            "ongoing_hijacks_to_prefixes": ongoing_hijacks_to_prefixes,
-                            "rule_key": key,
-                        },
-                        exchange=self.autoignore_exchange,
-                        routing_key="ongoing-hijack-prefixes",
-                        serializer="ujson",
-                    )
+                    if len(ongoing_hijacks_to_prefixes) > 0:
+                        self.producer.publish(
+                            {
+                                "ongoing_hijacks_to_prefixes": ongoing_hijacks_to_prefixes,
+                                "rule_key": key,
+                            },
+                            exchange=self.autoignore_exchange,
+                            routing_key="ongoing-hijack-prefixes",
+                            serializer="ujson",
+                        )
         except Exception:
             log.exception("exception")
         finally:
@@ -418,8 +418,11 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
     def handle_autoignore_hijacks_matching_rule(self, message):
         message.ack()
         payload = message.payload
+        shared_memory_locks["ongoing_hijacks"].acquire()
         try:
             hijacks_matching_rule = set(payload["hijacks_matching_rule"])
+            if len(hijacks_matching_rule) == 0:
+                return
             rule_key = payload["rule_key"]
             shared_memory_locks["autoignore"].acquire()
             rule = self.shared_memory_manager_dict["autoignore_rules"].get(
@@ -435,7 +438,6 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
             interval = rule["interval"]
 
             time_now = int(time.time())
-            shared_memory_locks["ongoing_hijacks"].acquire()
             for hijack_key in hijacks_matching_rule:
                 if hijack_key not in self.ongoing_hijacks:
                     continue

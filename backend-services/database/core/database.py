@@ -826,6 +826,8 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         """
         Timer for bulk operations (replaces deprecated db clock)
         """
+        if self.should_stop:
+            return
         self.bulk_timer_thread = threading.Timer(
             interval=BULK_TIMER, function=self._update_bulk
         )

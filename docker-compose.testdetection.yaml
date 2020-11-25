@@ -198,6 +198,7 @@ services:
         build: ./backend-services/configuration/
         restart: always
         depends_on:
+            - autoignore
             - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap

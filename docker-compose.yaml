@@ -184,6 +184,7 @@ services:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
         restart: always
         depends_on:
+            - autoignore
             - bgpstreamhisttap
             - bgpstreamkafkatap
             - bgpstreamlivetap

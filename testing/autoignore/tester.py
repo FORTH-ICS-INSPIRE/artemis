@@ -1,32 +1,19 @@
 import datetime
+import hashlib
 import os
 import re
 import socket
 import time
-from xmlrpc.client import ServerProxy
 
 import psycopg2
 import redis
+import requests
 import ujson as json
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
 from kombu import serialization
-from kombu import uuid
 from kombu.utils.compat import nested
-
-RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
-RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
-RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
-RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
-    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
-)
-BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
-BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
-BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
-    BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
-)
 
 serialization.register(
     "ujson",
@@ -41,12 +28,58 @@ serialization.register(
     "txtjson", json.dumps, json.loads, content_type="text", content_encoding="utf-8"
 )
 
+# global vars
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+)
+CONFIGURATION_HOST = "configuration"
+DATABASE_HOST = "database"
+DATA_WORKER_DEPENDENCIES = [
+    "configuration",
+    "database",
+    "detection",
+    "fileobserver",
+    "prefixtree",
+]
+REST_PORT = 3000
 
-class AutoignoreTester:
+
+def wait_data_worker_dependencies(data_worker_dependencies):
+    while True:
+        met_deps = set()
+        unmet_deps = set()
+        for service in data_worker_dependencies:
+            try:
+                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                status = True if r.json()["status"] == "running" else False
+                if not status:
+                    unmet_deps.add(service)
+                else:
+                    met_deps.add(service)
+            except Exception:
+                pass
+        if len(unmet_deps) == 0:
+            print(
+                "all needed data workers started: {}".format(data_worker_dependencies)
+            )
+            break
+        else:
+            print(
+                "'{}' data workers started, waiting for: '{}'".format(
+                    met_deps, unmet_deps
+                )
+            )
+        time.sleep(1)
+
+
+class Tester:
     def __init__(self):
         self.time_now = int(time.time())
         self.initRedis()
-        self.initSupervisor()
 
     def getDbConnection(self):
         """
@@ -87,13 +120,6 @@ class AutoignoreTester:
                 print("retrying redis ping in 5 seconds...")
                 time.sleep(5)
 
-    def initSupervisor(self):
-        BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
-        BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
-        self.supervisor = ServerProxy(
-            "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
-        )
-
     def clear(self):
         db_con = self.getDbConnection()
         db_cur = db_con.cursor()
@@ -116,7 +142,11 @@ class AutoignoreTester:
             and isinstance(hijack_as, int)
             and isinstance(_type, str)
         )
-        return AutoignoreTester.get_hash([prefix, hijack_as, _type])
+        return Tester.get_hash([prefix, hijack_as, _type])
+
+    @staticmethod
+    def get_hash(obj):
+        return hashlib.shake_128(json.dumps(obj).encode("utf-8")).hexdigest(16)
 
     @staticmethod
     def waitExchange(exchange, channel):
@@ -129,12 +159,6 @@ class AutoignoreTester:
                 break
             except Exception:
                 time.sleep(1)
-
-    def waitProcess(self, mod, target):
-        state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
-        while state != target:
-            time.sleep(0.5)
-            state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
 
     def validate_message(self, body, message):
         """
@@ -155,6 +179,9 @@ class AutoignoreTester:
 
         # distinguish between type of messages
         if message.delivery_info["routing_key"] == "hijack-update":
+            if "database_hijack_response" not in self.messages[self.curr_idx]:
+                message.ack()
+                return
             expected = self.messages[self.curr_idx]["database_hijack_response"]
             if event["active"]:
                 assert self.redis.sismember(
@@ -176,7 +203,7 @@ class AutoignoreTester:
             if "time" in key:
                 expected_item[key] += self.time_now
 
-                # use unix timstamp instead of datetime objects
+                # use unix timestamp instead of datetime objects
                 if message.delivery_info["routing_key"] == "hijack-update":
                     event[key] = datetime.datetime(
                         *map(int, re.findall(r"\d+", event[key]))
@@ -227,116 +254,63 @@ class AutoignoreTester:
                 serializer="ujson",
             )
 
-    @staticmethod
-    def config_request_rpc(conn):
-        """
-        Initial RPC of this service to request the configuration.
-        The RPC is blocked until the configuration service replies back.
-        """
-        correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            channel=conn.default_channel,
-            durable=False,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
+    def test(self):
+        # exchanges
+        self.update_exchange = Exchange(
+            "bgp-update", type="direct", durable=False, delivery_mode=1
         )
 
-        with conn.Producer() as producer:
-            producer.publish(
-                "",
-                exchange="",
-                routing_key="configuration.rpc.request",
-                reply_to=callback_queue.name,
-                correlation_id=correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "configuration.rpc.request",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="ujson",
-            )
+        self.pg_amq_bridge = Exchange(
+            "amq.direct", type="direct", durable=True, delivery_mode=1
+        )
 
-        while True:
-            if callback_queue.get():
-                break
-            time.sleep(0.1)
-        print("Config RPC finished")
+        # queues
+        self.update_queue = Queue(
+            "detection-testing",
+            exchange=self.pg_amq_bridge,
+            routing_key="update-update",
+            durable=False,
+            auto_delete=True,
+            max_priority=1,
+            consumer_arguments={"x-priority": 1},
+        )
 
-    def test(self):
+        self.hijack_db_queue = Queue(
+            "hijack-db-testing",
+            exchange=self.pg_amq_bridge,
+            routing_key="hijack-update",
+            durable=False,
+            auto_delete=True,
+            max_priority=1,
+            consumer_arguments={"x-priority": 1},
+        )
+
         with Connection(RABBITMQ_URI) as connection:
-            # exchanges
-            self.update_exchange = Exchange(
-                "bgp-update", type="direct", durable=False, delivery_mode=1
-            )
+            # print("Waiting for pg_amq exchange..")
+            # AutoignoreTester.waitExchange(
+            #     self.pg_amq_bridge, connection.default_channel
+            # )
+            # print("Waiting for update exchange..")
+            # AutoignoreTester.waitExchange(
+            #     self.update_exchange, connection.default_channel
+            # )
 
-            self.pg_amq_bridge = Exchange(
-                "amq.direct", type="direct", durable=True, delivery_mode=1
-            )
+            # wait for dependencies data workers to start
+            wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
 
-            # queues
-            self.update_queue = Queue(
-                "detection-testing",
-                exchange=self.pg_amq_bridge,
-                routing_key="update-update",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
-            )
-
-            self.hijack_db_queue = Queue(
-                "hijack-db-testing",
-                exchange=self.pg_amq_bridge,
-                routing_key="hijack-update",
-                durable=False,
-                auto_delete=True,
-                max_priority=1,
-                consumer_arguments={"x-priority": 1},
-            )
-
-            print("Waiting for pg_amq exchange..")
-            AutoignoreTester.waitExchange(
-                self.pg_amq_bridge, connection.default_channel
-            )
-            print("Waiting for update exchange..")
-            AutoignoreTester.waitExchange(
-                self.update_exchange, connection.default_channel
-            )
-
-            # query database for the states of the processes
-            db_con = self.getDbConnection()
-            db_cur = db_con.cursor()
-            query = "SELECT name FROM process_states WHERE running=True"
-            running_modules = set()
-            # wait until all 6 modules are running
-            while len(running_modules) < 6:
-                db_cur.execute(query)
-                entries = db_cur.fetchall()
-                for entry in entries:
-                    running_modules.add(entry[0])
-                db_con.commit()
-                print("[+] Running modules: {}".format(running_modules))
-                print(
-                    "[+] {}/6 modules are running. Re-executing query...".format(
-                        len(running_modules)
+            while True:
+                try:
+                    r = requests.get(
+                        "http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT)
                     )
-                )
+                    result = r.json()
+                    assert len(result) > 0
+                    break
+                except Exception:
+                    print("exception")
                 time.sleep(1)
 
-            AutoignoreTester.config_request_rpc(connection)
-
-            time.sleep(5)
-
-            db_cur.close()
-            db_con.close()
+            time.sleep(1)
 
             for testfile in os.listdir("testfiles/"):
                 self.clear()
@@ -371,7 +345,7 @@ class AutoignoreTester:
                             except socket.timeout:
                                 # avoid infinite loop by timeout
                                 assert False, "Consumer timeout"
-                        # sleep for at least 20 seconds between messages so that we check that the ignore mechanism
+                        # sleep for at least 20 = 2 x interval seconds between messages so that we check that the ignore mechanism
                         # is not triggered by mistake
                         if send_cnt < send_len:
                             print(
@@ -383,23 +357,10 @@ class AutoignoreTester:
 
         print("[+] Sleeping for 5 seconds...")
         time.sleep(5)
-        print("[+] Instructing all processes to stop...")
-        self.supervisor.supervisor.stopAllProcesses()
-
-        self.waitProcess("autoignore", 0)  # 0 STOPPED
-        self.waitProcess("listener", 0)  # 0 STOPPED
-        self.waitProcess("clock", 0)  # 0 STOPPED
-        self.waitProcess("configuration", 0)  # 0 STOPPED
-        self.waitProcess("database", 0)  # 0 STOPPED
-        self.waitProcess("observer", 0)  # 0 STOPPED
-        self.waitProcess("detection", 0)  # 0 STOPPED
-        print(
-            "[+] All processes (listener, clock, conf, db, detection, autoignore and observer) are stopped."
-        )
 
 
 if __name__ == "__main__":
     print("[+] Starting")
-    autoignore_tester = AutoignoreTester()
+    autoignore_tester = Tester()
     autoignore_tester.test()
     print("[+] Exiting")

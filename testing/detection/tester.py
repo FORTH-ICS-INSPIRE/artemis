@@ -654,5 +654,7 @@ def hijack_action_test_result(db_con, hijack_key, action, extra=None):
 
 
 if __name__ == "__main__":
+    print("[+] Starting")
     obj = Tester()
     obj.test()
+    print("[+] Exiting")

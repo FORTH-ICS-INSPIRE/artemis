@@ -52,6 +52,7 @@ shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "configuration"
+AUTOIGNORE_HOST = "autoignore"
 DATABASE_HOST = "database"
 PREFIXTREE_HOST = "prefixtree"
 NOTIFIER_HOST = "notifier"
@@ -73,6 +74,7 @@ OTHER_SERVICES = [
     BGPSTREAMKAFKATAP_HOST,
     BGPSTREAMHISTTAP_HOST,
     EXABGPTAP_HOST,
+    AUTOIGNORE_HOST,
 ]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 

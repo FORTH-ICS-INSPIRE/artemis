@@ -408,5 +408,7 @@ class Tester:
 
 
 if __name__ == "__main__":
+    print("[+] Starting")
     obj = Tester()
     obj.test()
+    print("[+] Exiting")

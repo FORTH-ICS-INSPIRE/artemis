@@ -103,57 +103,28 @@ services:
             #- ./local_configs/monitor/supervisor.d/:/etc/supervisor/conf.d/
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
-        container_name: frontend
+        build:
+            context: frontend/
+            dockerfile: ./apps/artemis-web/Dockerfile
         restart: always
-        depends_on:
-            - rabbitmq
-            - postgres
-            - postgrest
-            - backend
-            - monitor
+        container_name: frontend
         networks:
             - artemis
-        expose:
-            - ${WEBAPP_PORT}
+        env_file:
+            - frontend/.env
+        depends_on:
+            - mongodb
+    mongodb:
+        image: mongo:latest
+        container_name: mongodb
+        restart: always
+        networks:
+            - artemis
         environment:
-            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            API_HOST: ${API_HOST}
-            API_PORT: ${API_PORT}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            SYSTEM_VERSION: ${SYSTEM_VERSION}
-            BIND_IP: ${BIND_IP}
-            WEBAPP_PORT: ${WEBAPP_PORT}
-            USER_ROOT_USERNAME: ${ADMIN_USER}
-            USER_ROOT_PASSWORD: ${ADMIN_PASS}
-            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            BACKEND_SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            BACKEND_SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            MON_SUPERVISOR_HOST: ${MON_SUPERVISOR_HOST}
-            MON_SUPERVISOR_PORT: ${MON_SUPERVISOR_PORT}
-            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
-            JS_VERSION: ${JS_VERSION}
-            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
-            # for backwards compatibility
-            SUPERVISOR_HOST: ${BACKEND_SUPERVISOR_HOST}
-            SUPERVISOR_PORT: ${BACKEND_SUPERVISOR_PORT}
-            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+            MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASS}
         volumes:
-            # uncomment to run from source code  (only if you build from source)
-            # - ./frontend/:/root/
-            # comment after Step 2 of README
-            - ./frontend/webapp/configs/:/etc/artemis/
-            # uncomment after Step 2 of README
-            # - ./local_configs/frontend/:/etc/artemis/
-            - ./frontend/db/:/etc/webapp/db/
+            - ./mongo-data:/data/db
     nginx:
         image: nginx:1.17-alpine
         container_name: nginx
@@ -172,11 +143,11 @@ services:
             - "443:443"
         volumes:
             # comment after Step 2 of README
-            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
+            - ./other/nginx.conf:/etc/nginx/nginx.conf
             # uncomment after Step 2 of README
             # - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
             # comment after Step 2 of README
-            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+            - ./other/certs/:/etc/nginx/certs/
             # uncomment after Step 2 of README
             # - ./local_configs/frontend/certs/:/etc/nginx/certs/
     rabbitmq:

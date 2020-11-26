@@ -2,6 +2,7 @@ version: '3'
 services:
     riperistap:
         image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
+        build: ./monitor-services/riperistap/
         restart: always
         depends_on:
             - prefixtree
@@ -27,6 +28,7 @@ services:
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
     bgpstreamlivetap:
         image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamlivetap/
         restart: always
         depends_on:
             - prefixtree
@@ -51,6 +53,7 @@ services:
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
     bgpstreamkafkatap:
         image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamkafkatap/
         restart: always
         depends_on:
             - prefixtree
@@ -75,7 +78,7 @@ services:
             - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
     bgpstreamhisttap:
         image: inspiregroup/artemis-bgpstreamhisttap:${SYSTEM_VERSION}
-        build: ./monitor-services/bgpstreamhisttap
+        build: ./monitor-services/bgpstreamhisttap/
         restart: always
         depends_on:
             - prefixtree
@@ -97,7 +100,7 @@ services:
             - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
     exabgptap:
         image: inspiregroup/artemis-exabgptap:${SYSTEM_VERSION}
-        build: ./monitor-services/exabgptap
+        build: ./monitor-services/exabgptap/
         restart: always
         depends_on:
             - rabbitmq
@@ -122,6 +125,7 @@ services:
             - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
     autoignore:
         image: inspiregroup/artemis-autoignore:${SYSTEM_VERSION}
+        build: ./backend-services/autoignore/
         restart: always
         depends_on:
             - database
@@ -149,6 +153,7 @@ services:
             - ./backend-services/autoignore/core/autoignore.py:/root/core/autoignore.py
     autostarter:
         image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
+        build: ./backend-services/autostarter/
         restart: always
         depends_on:
             - autoignore
@@ -182,6 +187,7 @@ services:
             - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
     configuration:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
+        build: ./backend-services/configuration/
         restart: always
         depends_on:
             - autoignore
@@ -217,6 +223,7 @@ services:
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
     database:
         image: inspiregroup/artemis-database:${SYSTEM_VERSION}
+        build: ./backend-services/database/
         restart: always
         depends_on:
             - graphql
@@ -254,6 +261,7 @@ services:
             - ./backend-services/database/core/database.py:/root/core/database.py
     detection:
         image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
+        build: ./backend-services/detection/
         restart: always
         depends_on:
             - notifier
@@ -282,6 +290,7 @@ services:
             - ./backend-services/detection/core/detection.py:/root/core/detection.py
     fileobserver:
         image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
+        build: ./backend-services/fileobserver/
         restart: always
         depends_on:
             - configuration
@@ -298,6 +307,7 @@ services:
             - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     mitigation:
         image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
+        build: ./backend-services/mitigation/
         restart: always
         depends_on:
             - rabbitmq
@@ -319,6 +329,7 @@ services:
             - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
     notifier:
         image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
+        build: ./backend-services/notifier/
         restart: always
         depends_on:
             - rabbitmq
@@ -340,6 +351,7 @@ services:
             - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
     prefixtree:
         image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
+        build: ./backend-services/prefixtree/
         restart: always
         depends_on:
             - rabbitmq
@@ -372,6 +384,7 @@ services:
             - ./backend-services/configs/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
+        build: ./frontend/
         container_name: frontend
         restart: always
         depends_on:

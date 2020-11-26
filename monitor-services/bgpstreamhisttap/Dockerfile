@@ -14,8 +14,6 @@ RUN pip3 --no-cache-dir install -r requirements.txt
 RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/
 
-COPY ./configs/* /etc/artemis/
-
 COPY entrypoint Makefile wait-for ./
 COPY core ./core
 

@@ -44,6 +44,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: apiPort
+        - name: REST_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: { { .Release.Name } }-configmap
+              key: restPort
         - name: BIND_IP
           valueFrom:
             configMapKeyRef:
@@ -109,26 +114,6 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secret
               key: passwordSalt
-        - name: BACKEND_SUPERVISOR_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: backendSupervisorHost
-        - name: BACKEND_SUPERVISOR_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: backendSupervisorPort
-        - name: MON_SUPERVISOR_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: monSupervisorHost
-        - name: MON_SUPERVISOR_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: monSupervisorPort
         - name: SYSTEM_VERSION
           valueFrom:
             configMapKeyRef:

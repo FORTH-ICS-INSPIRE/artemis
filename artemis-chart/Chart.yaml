@@ -1,7 +1,7 @@
 apiVersion: v2
 name: artemis-chart
 description: ARTEMIS helm chart for deploying on kubernetes.
-version: 0.0.4
+version: 2.0.0
 icon: https://github.com/FORTH-ICS-INSPIRE/artemis/blob/gh-pages/logo.png
 type: application
 keywords:
@@ -14,4 +14,7 @@ maintainers:
   - name: Dimitrios Mavrommatis
     email: jim.mavrommatis@gmail.com
     url: https://slowr.github.io
+  - name: Vasileios Kotronis
+      email: biece89@gmail.com
+      url: https://www.linkedin.com/in/vasileios-kotronis-2b269b5b/
 appVersion: latest

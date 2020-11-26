@@ -29,7 +29,11 @@ try:
     hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER", "[]"))
 except Exception:
     log.exception("exception")
-    hij_log_filter = []
+    try:
+        hij_log_filter = os.getenv("HIJACK_LOG_FILTER", "").split(",")
+    except Exception:
+        log.exception("exception")
+        hij_log_filter = []
 
 
 # log filter for hijack alerts

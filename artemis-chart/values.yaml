@@ -9,6 +9,7 @@ redisPort: 6379
 # api
 apiHost: postgrest
 apiPort: 3000
+restPort: 3000
 # monitor-specific configs
 risId: 8522
 # database

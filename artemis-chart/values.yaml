@@ -4,14 +4,8 @@ systemVersion: latest
 historic: false
 replicaCount: 1
 # redis
-redisHost: backend
+redisHost: redis
 redisPort: 6379
-# supervisor
-backendSupervisorHost: backend
-backendSupervisorPort: 9001
-# monitor supervisor
-monSupervisorHost: monitor
-monSupervisorPort: 9001
 # api
 apiHost: postgrest
 apiPort: 3000
@@ -64,12 +58,51 @@ autoRecoverProcessState: true
 
 # services
 svc:
-  backend:
+  riperistap:
+    - 9001
+    - 3000
+  bgpstreamlivetap:
+    - 9001
+    - 3000
+  bgpstreamkafkatap:
+    - 9001
+    - 3000
+  bgpstreamhisttap:
+    - 9001
+    - 3000
+  exabgptap:
+    - 9001
+    - 3000
+  autoignore:
+    - 9001
+    - 3000
+  autostarter:
+    - 9001
+    - 3000
+  configuration:
+    - 9001
+    - 3000
+  database:
+    - 9001
+    - 3000
+  detection:
+    - 9001
+    - 3000
+  fileobserver:
+    - 9001
+    - 3000
+  mitigation:
+    - 9001
+    - 3000
+  notifier:
+    - 9001
+    - 3000
+  prefixtree:
+    - 9001
+    - 3000
+  redis:
     ports:
     - 6379
-    - 9001
-  monitor:
-    ports:
     - 9001
   postgrest:
     ports:

@@ -300,6 +300,7 @@ services:
             - artemis
         environment:
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}

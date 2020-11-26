@@ -13,6 +13,9 @@
     "prefixes": {
       "AUTOCONF_P_192_168_2_0_24": [
         "192.168.2.0/24"
+      ],
+      "AUTOCONF_P_192_168_3_0_24": [
+        "192.168.3.0/24"
       ]
     },
     "monitors": {},
@@ -34,6 +37,19 @@
         ],
         "origin_asns": [
           1
+        ],
+        "mitigation": ["manual"]
+      },
+      {
+        "prefixes": [
+          "192.168.3.0/24"
+        ],
+        "origin_asns": [
+          1
+        ],
+        "neighbors": [
+          2,
+          3
         ],
         "mitigation": ["manual"]
       }

@@ -29,7 +29,7 @@ spec:
         - mountPath: /pvc
           name: bgpstreamkafkatap-pvc
           subPath: configs
-        command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /configmaps/mon-services.conf /pvc/ 2> /dev/null']
+        command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /pvc/ 2> /dev/null']
       - name: wait-for-rmq
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
@@ -89,9 +89,6 @@ spec:
         - mountPath: /etc/artemis/logging.yaml
           name: bgpstreamkafkatap-pvc
           subPath: configs/logging.yaml
-        - mountPath: /etc/supervisor/conf.d/services.conf
-          name: bgpstreamkafkatap-pvc
-          subPath: configs/mon-services.conf
       restartPolicy: Always
       volumes:
       - configMap:

@@ -12,8 +12,6 @@ RUN pip --no-cache-dir install -r requirements.txt --ignore-installed
 RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/
 
-COPY ./configs/* /etc/artemis/
-
 COPY entrypoint hasura_init.json Makefile wait-for ./
 COPY migrate ./migrate
 COPY core ./core

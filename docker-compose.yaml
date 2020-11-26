@@ -144,7 +144,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/autoignore/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/autoignore/entrypoint:/root/entrypoint
             - ./backend-services/autoignore/core/autoignore.py:/root/core/autoignore.py
     autostarter:
@@ -177,7 +177,7 @@ services:
             DB_NAME: ${DB_NAME}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/autostarter/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
             - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
     configuration:
@@ -211,7 +211,8 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/configs/config.yaml:/etc/artemis/config.yaml
             - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
     database:
@@ -248,7 +249,7 @@ services:
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
             HISTORIC: ${HISTORIC}
         volumes:
-            - ./backend-services/database/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/database/entrypoint:/root/entrypoint
             - ./backend-services/database/core/database.py:/root/core/database.py
     detection:
@@ -276,7 +277,7 @@ services:
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
         volumes:
-            - ./backend-services/detection/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/detection/entrypoint:/root/entrypoint
             - ./backend-services/detection/core/detection.py:/root/core/detection.py
     fileobserver:
@@ -291,7 +292,8 @@ services:
         environment:
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configuration/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/configs/config.yaml:/etc/artemis/config.yaml
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
             - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     mitigation:
@@ -312,7 +314,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/mitigation/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/mitigation/entrypoint:/root/entrypoint
             - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
     notifier:
@@ -333,7 +335,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/notifier/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/notifier/entrypoint:/root/entrypoint
             - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
     prefixtree:
@@ -355,7 +357,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/prefixtree/configs/:/etc/artemis/
+            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/prefixtree/entrypoint:/root/entrypoint
             - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
     redis:
@@ -367,7 +369,7 @@ services:
         expose:
             - ${REDIS_PORT}
         volumes:
-            - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
+            - ./backend-services/configs/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
         image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend

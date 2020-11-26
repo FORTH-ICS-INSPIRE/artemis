@@ -22,7 +22,7 @@ services:
             REST_PORT: 3000
             RIS_ID: ${RIS_ID}
         volumes:
-            - ./monitor-services/riperistap/configs/:/etc/artemis/
+            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/riperistap/entrypoint:/root/entrypoint
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
     bgpstreamlivetap:
@@ -46,7 +46,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/bgpstreamlivetap/configs/:/etc/artemis/
+            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
     bgpstreamkafkatap:
@@ -70,7 +70,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/bgpstreamkafkatap/configs/:/etc/artemis/
+            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
     bgpstreamhisttap:
@@ -92,7 +92,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/bgpstreamhisttap/configs/:/etc/artemis/
+            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
     exabgptap:
@@ -117,7 +117,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/exabgptap/configs/:/etc/artemis/
+            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
             - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
     autoignore:

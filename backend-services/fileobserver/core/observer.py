@@ -277,9 +277,13 @@ def make_app():
     )
 
 
-if __name__ == "__main__":
+def main():
     # initiate file observer service with REST
     fileObserverService = FileObserver()
 
     # start REST within main process
     fileObserverService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

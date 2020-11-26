@@ -205,7 +205,7 @@ def check_and_control_services(ro_db, wo_db):
     return ips_and_replicas_per_service
 
 
-if __name__ == "__main__":
+def main():
     # DB variables
     # TODO: optional: replace these calls with gql instead of DB queries
     ro_db = DB(
@@ -260,3 +260,7 @@ if __name__ == "__main__":
                         log.exception("exception")
         ips_and_replicas_per_service_previous = ips_and_replicas_per_service
         time.sleep(CHECK_INTERVAL)
+
+
+if __name__ == "__main__":
+    main()

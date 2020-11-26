@@ -22,7 +22,8 @@ jobs:
       script:
         - echo $TRAVIS_PULL_REQUEST_SLUG
         - SKIP=unittest pre-commit run --all-files
-        #- PYTHONPATH=./backend/core pytest --cov=backend --cov-config=testing/.coveragerc
+        - PYTHONPATH=./backend-services/detection/core pytest --cov=detection --cov-config=testing/.coveragerc
+        - PYTHONPATH=./backend-services/configuration/core pytest --cov=configuration --cov-config=testing/.coveragerc
       after_success:
         - coverage xml --rcfile testing/.coveragerc
         - codecov

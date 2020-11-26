@@ -877,7 +877,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         self.should_stop = True
 
 
-if __name__ == "__main__":
+def main():
     # initiate prefix tree service with REST
     prefixTreeService = PrefixTree()
 
@@ -897,3 +897,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     prefixTreeService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

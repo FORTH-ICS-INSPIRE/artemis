@@ -385,14 +385,14 @@ class BGPStreamHistDataWorker:
             time.sleep(1)
 
 
-if __name__ == "__main__":
+def main():
     # initiate BGPStream Kafka tap service with REST
     bgpStreamHistTapService = BGPStreamHistTap()
 
     # try to get configuration upon start (it is OK if it fails, will get it from POST)
     # (this is needed because service may restart while configuration is running)
     try:
-        r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+        requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
         conf_res = configure_bgpstreamhist(
             bgpStreamHistTapService.shared_memory_manager_dict
         )
@@ -405,3 +405,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     bgpStreamHistTapService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

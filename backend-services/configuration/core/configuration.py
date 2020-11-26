@@ -1466,7 +1466,7 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
         self.should_stop = True
 
 
-if __name__ == "__main__":
+def main():
     # initiate configuration service with REST
     configurationService = Configuration()
 
@@ -1491,3 +1491,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     configurationService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

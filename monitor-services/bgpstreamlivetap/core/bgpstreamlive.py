@@ -443,14 +443,14 @@ class BGPStreamLiveDataWorker:
                         continue
 
 
-if __name__ == "__main__":
+def main():
     # initiate BGPStream Live tap service with REST
     bgpStreamLiveTapService = BGPStreamLiveTap()
 
     # try to get configuration upon start (it is OK if it fails, will get it from POST)
     # (this is needed because service may restart while configuration is running)
     try:
-        r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+        requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
         conf_res = configure_bgpstreamlive(
             bgpStreamLiveTapService.shared_memory_manager_dict
         )
@@ -463,3 +463,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     bgpStreamLiveTapService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

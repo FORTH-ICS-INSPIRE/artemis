@@ -335,7 +335,7 @@ class NotifierDataWorker(ConsumerProducerMixin):
         self.should_stop = True
 
 
-if __name__ == "__main__":
+def main():
     # initiate notifier service with REST
     notifierService = Notifier()
 
@@ -355,3 +355,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     notifierService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

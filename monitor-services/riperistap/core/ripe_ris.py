@@ -501,14 +501,14 @@ class RipeRisTapDataWorker:
         return msgs
 
 
-if __name__ == "__main__":
+def main():
     # initiate Ripe RIS tap service with REST
     ripeRisTapService = RipeRisTap()
 
     # try to get configuration upon start (it is OK if it fails, will get it from POST)
     # (this is needed because service may restart while configuration is running)
     try:
-        r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+        requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
         conf_res = configure_ripe_ris(ripeRisTapService.shared_memory_manager_dict)
         if not conf_res["success"]:
             log.info(
@@ -519,3 +519,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     ripeRisTapService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

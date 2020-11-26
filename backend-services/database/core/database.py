@@ -1685,7 +1685,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         self.should_stop = True
 
 
-if __name__ == "__main__":
+def main():
     # initiate database service with REST
     databaseService = Database()
 
@@ -1705,3 +1705,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     databaseService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

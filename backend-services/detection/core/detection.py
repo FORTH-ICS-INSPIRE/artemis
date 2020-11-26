@@ -1229,9 +1229,13 @@ class DetectionDataWorker(ConsumerProducerMixin):
         self.should_stop = True
 
 
-if __name__ == "__main__":
+def main():
     # initiate detection service with REST
     detectionService = Detection()
 
     # start REST within main process
     detectionService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

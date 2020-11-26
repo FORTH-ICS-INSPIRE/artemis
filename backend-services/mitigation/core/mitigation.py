@@ -355,9 +355,13 @@ class MitigationDataWorker(ConsumerProducerMixin):
         self.should_stop = True
 
 
-if __name__ == "__main__":
+def main():
     # initiate mitigation service with REST
     mitigationService = Mitigation()
 
     # start REST within main process
     mitigationService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

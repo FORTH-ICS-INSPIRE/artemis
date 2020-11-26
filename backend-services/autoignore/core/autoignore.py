@@ -485,7 +485,7 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
         self.should_stop = True
 
 
-if __name__ == "__main__":
+def main():
     # initiate autoignore service with REST
     autoignoreService = Autoignore()
 
@@ -505,3 +505,7 @@ if __name__ == "__main__":
 
     # start REST within main process
     autoignoreService.start_rest_app()
+
+
+if __name__ == "__main__":
+    main()

@@ -24,7 +24,7 @@ services:
             RIS_ID: ${RIS_ID}
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./monitor-services/riperistap/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.riperistap.test:/root/entrypoint
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     bgpstreamlivetap:
@@ -50,7 +50,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.bgpstreamlivetap.test:/root/entrypoint
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     bgpstreamkafkatap:
@@ -76,7 +76,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.bgpstreamkafkatap.test:/root/entrypoint
             - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     bgpstreamhisttap:
@@ -99,7 +99,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.bgpstreamhisttap.test:/root/entrypoint
             - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     exabgptap:
@@ -125,7 +125,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.exabgptap.test:/root/entrypoint
             - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     autoignore:
@@ -154,7 +154,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/autoignore/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.autoignore.test:/root/entrypoint
             - ./backend-services/autoignore/core/autoignore.py:/root/core/autoignore.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     autostarter:
@@ -190,7 +190,7 @@ services:
             TEST_ENV: "true"
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/autostarter/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.autostarter.test:/root/entrypoint
             - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     configuration:
@@ -226,7 +226,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/configuration/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.configuration.test:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     database:
@@ -296,7 +296,7 @@ services:
             TEST_ENV: "true"
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/detection/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.detection.test:/root/entrypoint
             - ./backend-services/detection/core/detection.py:/root/core/detection.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     fileobserver:
@@ -313,7 +313,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.fileobserver.test:/root/entrypoint
             - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     mitigation:
@@ -336,7 +336,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/mitigation/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.mitigation.test:/root/entrypoint
             - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     notifier:
@@ -359,7 +359,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/notifier/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.notifier.test:/root/entrypoint
             - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     prefixtree:
@@ -383,7 +383,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./testing/rpki/configs/:/etc/artemis/
-            - ./backend-services/prefixtree/entrypoint:/root/entrypoint
+            - ./testing/test_entrypoints/entrypoint.prefixtree.test:/root/entrypoint
             - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
             - ./testing/.coveragerc:/root/core/.coveragerc
     redis:

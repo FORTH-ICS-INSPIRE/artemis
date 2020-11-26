@@ -1,0 +1,6 @@
+#!/bin/bash
+
+pip --no-cache-dir install coverage==4.5.4
+
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+/usr/local/bin/python /root/core/notifier.py

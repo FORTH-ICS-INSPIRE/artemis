@@ -20,6 +20,16 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      initContainers:
+      - name: populate-pvc
+        image: busybox
+        volumeMounts:
+        - mountPath: /configmaps
+          name: redis-configmap
+        - mountPath: /pvc
+          name: redis-pvc
+          subPath: configs
+        command: ['sh', '-c', 'false | cp -i /configmaps/redis.conf /pvc/ 2> /dev/null']
       containers:
       - image: redis/redis:latest
         name: redis

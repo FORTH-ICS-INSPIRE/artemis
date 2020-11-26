@@ -114,6 +114,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: restPort
+        - name: TEST_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: testEnv
         image: inspiregroup/artemis-autostarter:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: autostarter

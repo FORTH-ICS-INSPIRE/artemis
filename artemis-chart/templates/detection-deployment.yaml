@@ -1,0 +1,125 @@
+apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Release.Name }}-detection
+{{ include "artemis.labels" . | indent 4 }}
+  name: {{ .Release.Name }}-detection
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-detection
+  replicas: {{ .Values.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: {{ .Release.Name }}-detection
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      initContainers:
+      - name: populate-pvc
+        image: busybox
+        volumeMounts:
+        - mountPath: /configmaps
+          name: detection-configmap
+        - mountPath: /pvc
+          name: detection-pvc
+          subPath: configs
+        command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /pvc/ 2> /dev/null']
+      - name: wait-for-rmq
+        image: busybox
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+      - name: wait-for-redis
+        image: busybox
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.redisHost }}-svc {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
+      - name: wait-for-prefixtree
+        image: busybox
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+      - name: wait-for-database
+        image: busybox
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+      - name: wait-for-notifier
+        image: busybox
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-notifier-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+      containers:
+      - env:
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqHost
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: rabbitmqPass
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqPort
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rabbitmqUser
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: redisHost
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: redisPort
+        - name: REST_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: restPort
+        - name: RPKI_VALIDATOR_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rpkiValidatorEnabled
+        - name: RPKI_VALIDATOR_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rpkiValidatorHost
+        - name: RPKI_VALIDATOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: rpkiValidatorPort
+        - name: TEST_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: testEnv
+        image: inspiregroup/artemis-detection:{{ .Values.systemVersion }}
+        imagePullPolicy: Always
+        name: detection
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/artemis/logging.yaml
+          name: detection-pvc
+          subPath: configs/logging.yaml
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+        name: detection-configmap
+      - persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-detection-pvc
+        name: detection-pvc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | nindent 8 }}
+      {{- end }}
+status: {}

@@ -32,10 +32,10 @@ spec:
         command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /pvc/ 2> /dev/null']
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-pg
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }}-svc {{ .Values.dbPort}}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }}-svc {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-database
         image: busybox
         command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
@@ -109,6 +109,11 @@ spec:
             configMapKeyRef:
               name: {{ .Release.Name }}-configmap
               key: dbUser
+        - name: REST_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: restPort
         image: inspiregroup/artemis-autostarter:{{ .Values.systemVersion }}
         imagePullPolicy: Always
         name: autostarter

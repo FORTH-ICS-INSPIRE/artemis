@@ -8,6 +8,7 @@ data:
   guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
   systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
   historic: {{ .Values.historic | default "false" | quote }}
+  checkInterval: {{ .Values.checkInterval | default "5" | quote }}
   redisHost: {{ .Release.Name }}-{{ .Values.redisHost | default "backend" }}-svc
   redisPort: {{ .Values.redisPort | default "6379" | quote }}
   apiHost: {{ .Release.Name }}-{{ .Values.apiHost | default "postgrest" }}-svc

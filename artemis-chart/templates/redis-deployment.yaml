@@ -41,10 +41,10 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: { { .Release.Name } }-volumes
+          name: {{ .Release.Name }}-volumes
         name: redis-configmap
       - persistentVolumeClaim:
-          claimName: { { .Release.Name } }-redis-pvc
+          claimName: {{ .Release.Name }}-redis-pvc
         name: redis-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:

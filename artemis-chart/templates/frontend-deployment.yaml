@@ -47,7 +47,7 @@ spec:
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
-              name: { { .Release.Name } }-configmap
+              name: {{ .Release.Name }}-configmap
               key: restPort
         - name: BIND_IP
           valueFrom:

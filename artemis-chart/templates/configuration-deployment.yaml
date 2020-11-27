@@ -115,7 +115,7 @@ spec:
           name: configuration-pvc
           subPath: configs/logging.yaml
         - mountPath: /etc/artemis/config.yaml
-          name: backend-pvc
+          name: configuration-pvc
           subPath: configs/config.yaml
       restartPolicy: Always
       volumes:

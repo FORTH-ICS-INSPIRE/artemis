@@ -80,10 +80,13 @@ spec:
         - name: AUTO_RECOVER_PROCESS_STATE
           valueFrom:
             configMapKeyRef:
-              name: { { .Release.Name } }-configmap
+              name: {{ .Release.Name }}-configmap
               key: autoRecoverProcessState
         - name: CHECK_INTERVAL
-          value: "5"
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-configmap
+              key: checkInterval
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:

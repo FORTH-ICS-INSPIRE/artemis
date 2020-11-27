@@ -3,6 +3,8 @@ guiEnabled: true
 systemVersion: latest
 historic: false
 replicaCount: 1
+# autostarter
+checkInterval: 5
 # redis
 redisHost: redis
 redisPort: 6379
@@ -60,45 +62,59 @@ autoRecoverProcessState: true
 # services
 svc:
   riperistap:
+    ports:
     - 9001
     - 3000
   bgpstreamlivetap:
+    ports:
     - 9001
     - 3000
   bgpstreamkafkatap:
+    ports:
     - 9001
     - 3000
   bgpstreamhisttap:
+    ports:
     - 9001
     - 3000
   exabgptap:
+    ports:
     - 9001
     - 3000
   autoignore:
+    ports:
     - 9001
     - 3000
   autostarter:
+    ports:
     - 9001
     - 3000
   configuration:
+    ports:
     - 9001
     - 3000
   database:
+    ports:
     - 9001
     - 3000
   detection:
+    ports:
     - 9001
     - 3000
   fileobserver:
+    ports:
     - 9001
     - 3000
   mitigation:
+    ports:
     - 9001
     - 3000
   notifier:
+    ports:
     - 9001
     - 3000
   prefixtree:
+    ports:
     - 9001
     - 3000
   redis:

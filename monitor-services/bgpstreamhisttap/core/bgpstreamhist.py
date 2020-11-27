@@ -28,6 +28,7 @@ shared_memory_locks = {
     "data_worker": mp.Lock(),
     "monitored_prefixes": mp.Lock(),
     "input_dir": mp.Lock(),
+    "config_timestamp": mp.Lock(),
 }
 
 # global vars
@@ -90,54 +91,64 @@ def stop_data_worker(shared_memory_manager_dict):
     return message
 
 
-def configure_bgpstreamhist(shared_memory_manager_dict):
+def configure_bgpstreamhist(msg, shared_memory_manager_dict):
+    config = msg
     try:
-        # get monitors
-        r = requests.get("http://{}:{}/monitors".format(PREFIXTREE_HOST, REST_PORT))
-        monitors = r.json()["monitors"]
+        # check newer config
+        shared_memory_locks["config_timestamp"].acquire()
+        config_timestamp = shared_memory_manager_dict["config_timestamp"]
+        shared_memory_locks["config_timestamp"].release()
+        if config["timestamp"] > config_timestamp:
+            # get monitors
+            r = requests.get("http://{}:{}/monitors".format(PREFIXTREE_HOST, REST_PORT))
+            monitors = r.json()["monitors"]
 
-        # check if "bgpstreamhist" is configured at all
-        if "bgpstreamhist" not in monitors:
+            # check if "bgpstreamhist" is configured at all
+            if "bgpstreamhist" not in monitors:
+                stop_msg = stop_data_worker(shared_memory_manager_dict)
+                log.info(stop_msg)
+                shared_memory_locks["data_worker"].acquire()
+                shared_memory_manager_dict["data_worker_configured"] = False
+                shared_memory_locks["data_worker"].release()
+                return {"success": True, "message": "data worker not in configuration"}
+
+            # check if the worker should run (if configured)
+            shared_memory_locks["data_worker"].acquire()
+            should_run = shared_memory_manager_dict["data_worker_should_run"]
+            shared_memory_locks["data_worker"].release()
+
+            # make sure that data worker is stopped
             stop_msg = stop_data_worker(shared_memory_manager_dict)
             log.info(stop_msg)
+
+            # get monitored prefixes
+            r = requests.get(
+                "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
+            )
+            shared_memory_locks["monitored_prefixes"].acquire()
+            shared_memory_manager_dict["monitored_prefixes"] = set(
+                r.json()["monitored_prefixes"]
+            )
+            shared_memory_locks["monitored_prefixes"].release()
+
+            # get input directory
+            shared_memory_locks["input_dir"].acquire()
+            shared_memory_manager_dict["input_dir"] = str(monitors["bgpstreamhist"])
+            shared_memory_locks["input_dir"].release()
+
+            # signal that data worker is configured
             shared_memory_locks["data_worker"].acquire()
-            shared_memory_manager_dict["data_worker_configured"] = False
+            shared_memory_manager_dict["data_worker_configured"] = True
             shared_memory_locks["data_worker"].release()
-            return {"success": True, "message": "data worker not in configuration"}
 
-        # check if the worker should run (if configured)
-        shared_memory_locks["data_worker"].acquire()
-        should_run = shared_memory_manager_dict["data_worker_should_run"]
-        shared_memory_locks["data_worker"].release()
+            shared_memory_locks["config_timestamp"].acquire()
+            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_locks["config_timestamp"].release()
 
-        # make sure that data worker is stopped
-        stop_msg = stop_data_worker(shared_memory_manager_dict)
-        log.info(stop_msg)
-
-        # get monitored prefixes
-        r = requests.get(
-            "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
-        )
-        shared_memory_locks["monitored_prefixes"].acquire()
-        shared_memory_manager_dict["monitored_prefixes"] = set(
-            r.json()["monitored_prefixes"]
-        )
-        shared_memory_locks["monitored_prefixes"].release()
-
-        # get input directory
-        shared_memory_locks["input_dir"].acquire()
-        shared_memory_manager_dict["input_dir"] = str(monitors["bgpstreamhist"])
-        shared_memory_locks["input_dir"].release()
-
-        # signal that data worker is configured
-        shared_memory_locks["data_worker"].acquire()
-        shared_memory_manager_dict["data_worker_configured"] = True
-        shared_memory_locks["data_worker"].release()
-
-        # start the data worker only if it should be running
-        if should_run:
-            start_msg = start_data_worker(shared_memory_manager_dict)
-            log.info(start_msg)
+            # start the data worker only if it should be running
+            if should_run:
+                start_msg = start_data_worker(shared_memory_manager_dict)
+                log.info(start_msg)
 
         return {"success": True, "message": "configured"}
     except Exception:
@@ -161,7 +172,8 @@ class ConfigHandler(RequestHandler):
         :return: {"success": True|False, "message": <message>}
         """
         try:
-            self.write(configure_bgpstreamhist(self.shared_memory_manager_dict))
+            msg = json.loads(self.request.body)
+            self.write(configure_bgpstreamhist(msg, self.shared_memory_manager_dict))
         except Exception:
             self.write(
                 {"success": False, "message": "error during data worker configuration"}
@@ -239,6 +251,9 @@ class BGPStreamHistTap:
         self.shared_memory_manager_dict["data_worker_configured"] = False
         self.shared_memory_manager_dict["monitored_prefixes"] = set()
         self.shared_memory_manager_dict["input_dir"] = None
+        self.shared_memory_manager_dict["config_timestamp"] = -1
+
+        log.info("service initiated")
 
     def make_rest_app(self):
         return Application(
@@ -392,9 +407,9 @@ def main():
     # try to get configuration upon start (it is OK if it fails, will get it from POST)
     # (this is needed because service may restart while configuration is running)
     try:
-        requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
+        r = requests.get("http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT))
         conf_res = configure_bgpstreamhist(
-            bgpStreamHistTapService.shared_memory_manager_dict
+            r.json(), bgpStreamHistTapService.shared_memory_manager_dict
         )
         if not conf_res["success"]:
             log.info(

@@ -29,11 +29,7 @@ try:
     hij_log_filter = json.loads(os.getenv("HIJACK_LOG_FILTER", "[]"))
 except Exception:
     log.exception("exception")
-    try:
-        hij_log_filter = os.getenv("HIJACK_LOG_FILTER", "").split(",")
-    except Exception:
-        log.exception("exception")
-        hij_log_filter = []
+    hij_log_filter = []
 
 
 # log filter for hijack alerts
@@ -74,7 +70,7 @@ def configure_notifier(msg, shared_memory_manager_dict):
             shared_memory_manager_dict["config_timestamp"] = config_timestamp
             shared_memory_locks["config_timestamp"].release()
 
-            return {"success": True, "message": "configured"}
+        return {"success": True, "message": "configured"}
     except Exception:
         log.exception("exception")
         return {"success": False, "message": "error during data worker configuration"}

@@ -197,7 +197,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
             shared_memory_manager_dict["config_timestamp"] = config_timestamp
             shared_memory_locks["config_timestamp"].release()
 
-            return {"success": True, "message": "configured"}
+        return {"success": True, "message": "configured"}
     except Exception:
         log.exception("exception")
         return {"success": False, "message": "error during data worker configuration"}

@@ -98,7 +98,7 @@ def configure_autoignore(msg, shared_memory_manager_dict):
             shared_memory_manager_dict["time"] = 0
             shared_memory_locks["time"].release()
 
-            return {"success": True, "message": "configured"}
+        return {"success": True, "message": "configured"}
     except Exception:
         log.exception("exception")
         return {"success": False, "message": "error during data worker configuration"}

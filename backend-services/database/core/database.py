@@ -213,7 +213,7 @@ def configure_database(msg, shared_memory_manager_dict):
             shared_memory_manager_dict["config_timestamp"] = config_timestamp
             shared_memory_locks["config_timestamp"].release()
 
-            return {"success": True, "message": "configured"}
+        return {"success": True, "message": "configured"}
     except Exception:
         return {"success": False, "message": "error during service configuration"}
 

@@ -22,11 +22,6 @@ jobs:
       script:
         - echo $TRAVIS_PULL_REQUEST_SLUG
         - SKIP=unittest pre-commit run --all-files
-        - PYTHONPATH=./backend-services/detection/core pytest
-        - PYTHONPATH=./backend-services/configuration/core pytest
-       # after_success:
-       #  - coverage xml --rcfile testing/.coveragerc
-       #  - codecov
     - name: MigrationCheck
       install: []
       before_script:

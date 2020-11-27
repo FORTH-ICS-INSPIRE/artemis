@@ -1,7 +1,7 @@
 ## Overview
 The ARTEMIS configuration file (config.yaml) is written in YAML (for an ultra-fast intro to its syntax, please check [here](https://learn.getgrav.org/advanced/yaml)). It is contained by default under:
 
-    backend/configs
+    backend-services/configs
 
 but we highly advise you to copy the default file to the `local_configs/backend` location and update the volume mapping in
 [docker-compose.yaml](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28). Detailed instructions on the exact steps can be found [here](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool). The local location of your file should eventually be:
@@ -217,7 +217,7 @@ The action that you want to do when you press "Mitigate" in a hijack view page. 
 
      Based on this information, you can run a custom script that de-aggregates the prefix (if possible), or outsources mitigation to an external domain. **These functions are not supported for all networks, but should be custom-built by the operator, in case automated mitigation is required.**
 
-     Do not forget to instruct the backend container (and therefore the mitigation module) w.r.t. the location of your script, by properly mapping this in a backend volume using the `docker-compose.yaml` file.
+     Do not forget to instruct the backend container (and therefore the mitigation microservice) w.r.t. the location of your script, by properly mapping this in a backend volume using the `docker-compose.yaml` file.
 
      Example script (e.g., under `backend/test_mitigate.py`; this should be made executable with `chmod +x`):
 

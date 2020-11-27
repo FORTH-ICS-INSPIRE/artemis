@@ -1,12 +1,15 @@
 site_name: Artemis Docs
 nav:
     -   Home: index.md
-    -   Overview: overview.md
     -   Getting Started:
+            -   'Logic and Microservices': logic.md
+            -   'Technical Requirements': requirements.md
             -   'First Steps': gettingstarted.md
-            -   'UI Overview': uioverview.md
+            -   'Installation and Setup': installsetup.md
+            -   'Running ARTEMIS': running.md
+            -   'Web Application': webapp.md
+            -   'Upgrading': upgrade.md
             -   'Best Practices': bestpractices.md
-            -   Architecture: architecture.md
     -   Configuration:
             -   Basic: basicconf.md
             -   'Environment Variables': envvars.md
@@ -14,24 +17,28 @@ nav:
             -   Logging: loggingconf.md
             -   LDAP: ldapconf.md
             -   'RPKI Validation': rpkivalidconf.md
+            -   'ExaBGP Local Feed': exabgpfeed.md
     -   Details:
             -   'BGP Update Information': bgpupdateinfo.md
             -   'Hijack Information': hijackinfo.md
             -   Redis: redisinfo.md
     -   Advanced:
+            -   'Scaling Microservices' : scaling.md
             -   'Auto-Configuration': autoconfiguration.md
             -   'Auto-Mitigation': automitigation.md
-            -   'Custom Tap': customtap.md
+            -   'Replaying History': history.md
             -   'Community Annotations': commannotations.md
             -   'Database restore': dbrestore.md
             -   'Decoupling Microservices': decouplingmicroservices.md
             -   'Grafana Dashboard': grafanadash.md
             -   'Private BMP feeds': bgpstreambmp.md
             -   Vagrant: vagrant.md
+            -   Architecture: architecture.md
     -   Kubernetes: kubernetes.md
     -   APIs:
             -   GraphQL: graphqlapi.md
     -   FAQ: faq.md
+    -   Issues and Fixes: issuesfixes.md
     -   Changelog: changelog.md
 theme:
     name: material

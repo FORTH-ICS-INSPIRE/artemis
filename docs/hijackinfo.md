@@ -150,11 +150,11 @@ Upon viewing a selected hijack event, the ADMIN user can execute the following a
 * **Mitigate**:
   Start the mitigation process for this hijack. It sets the Mitigation Started field and sets an ongoing hijack to
   under mitigation state. A mitigate action is an implicit confirmation of the hijack
-  event as a true positive (sets "acknowledge" to true). Note that the mitigation micro-service should be active for
+  event as a true positive (sets "acknowledge" to true). Note that the mitigation microservice should be active for
   the action to work.
 * **Unmitigate**:
   Stop the mitigation process for this hijack. It sets an ongoing under mitigation hijack to
-  simply ongoing state. Note that the mitigation micro-service should be active for
+  simply ongoing state. Note that the mitigation microservice should be active for
   the action to work.
 * **Resolve**:
   The hijack has finished (by successful mitigation or other actions). It marks the Time Ended field and sets an

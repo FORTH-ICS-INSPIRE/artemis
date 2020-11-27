@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Decoupled microservice architecture for backend and frontend
-- possible states constraint on DB hijacks table to allow orthogonal mitigation tagging
-- orthogonal mitigation/unmitigation tagging
+- Possible states constraint on DB hijacks table to allow orthogonal mitigation tagging
+- Orthogonal mitigation/unmitigation tagging
+- Heavily refactored docs
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)

@@ -30,12 +30,6 @@ REDIS_HOST=backend
 REDIS_PORT=6379
 ```
 
-## Supervisor config
-```
-SUPERVISOR_HOST=backend
-SUPERVISOR_PORT=9001
-```
-
 ## API config
 
 Postgrest container IP and PORT (containers have their name as hostname):
@@ -163,7 +157,6 @@ WITHDRAWN_HIJACK_THRESHOLD=80
 RPKI_VALIDATOR_ENABLED=false # set to true only if you have or spawn a working RPKI validator
 RPKI_VALIDATOR_HOST=routinator # change to the IP of the validator of your choice
 RPKI_VALIDATOR_PORT=3323 # change to the preferred port (default for RTR protocol)
-
 
 ## Auto-recovery of intended process states
 AUTO_RECOVER_PROCESS_STATE=true # flag to signal whether ARTEMIS should auto-enforce intended process state (running/stopped) on startup

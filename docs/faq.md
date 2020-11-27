@@ -14,8 +14,8 @@ Please check out [this docs page](https://bgpartemis.readthedocs.io/en/latest/en
 
 ## I see a lot of incoming load on the BGP updates; ARTEMIS is not able to process them at line-rate and the load is constantly accumulating. What should I do?
 
-The main approach to deal with this is to distribute the detection load to multiple detectors and use multiple database access modules (db clients) to read in parallel (writing may be unfortunately be a bottleneck). See [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#invoking-multiple-detectorsdb-clients-optional)
-on how to spawn multiple detectors and database modules using the `supervisor.d` configuration. In the future, we plan to truly distributed detectors in several containers, that can run on different pods (see Kubernetes deployment options).
+The main approach to deal with this is to distribute the detection load to multiple detectors, prefix trees and database access (db client) microservices to read in parallel (writing may be unfortunately be a bottleneck). See [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#invoking-multiple-detectorsdb-clients-optional)
+on how to spawn multiple microservices using `docker-compose` scaling capabilities.
 
 ## I know for a fact that a hijack against one of my prefixes took place, but ARTEMIS did not detect it. What are the potential reasons for this?
 
@@ -39,7 +39,7 @@ Yes! Please consult [this docs page](https://bgpartemis.readthedocs.io/en/latest
 
 ## My ARTEMIS instance has run into out-of-memory issues. What are the possible causes for this?
 
-Too much configuration load, too little memory! First, count (preferably automatically) the number of configured prefixes/rules you are using. According to this number and the number of detection/db modules that you spawn, please follow memory allocation guidelines described in detail [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements).
+Too much configuration load, too little memory! First, count (preferably automatically) the number of configured prefixes/rules you are using. According to this number and the number of prefixtree modules that you spawn, please follow memory allocation guidelines described in detail [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements).
 
 ## How do I upgrade the ARTEMIS software?
 

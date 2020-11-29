@@ -217,8 +217,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
-            - ./backend-services/configs/config.yaml:/etc/artemis/config.yaml
+            - ./backend-services/configs/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
     database:
@@ -301,8 +300,7 @@ services:
         environment:
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
-            - ./backend-services/configs/config.yaml:/etc/artemis/config.yaml
+            - ./backend-services/configs/:/etc/artemis/
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
             - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     mitigation:

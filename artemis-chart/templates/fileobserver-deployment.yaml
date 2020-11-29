@@ -45,12 +45,9 @@ spec:
         name: fileobserver
         resources: {}
         volumeMounts:
-        - mountPath: /etc/artemis/logging.yaml
+        - mountPath: /etc/artemis/
           name: fileobserver-pvc
-          subPath: configs/logging.yaml
-        - mountPath: /etc/artemis/config.yaml
-          name: fileobserver-pvc
-          subPath: configs/config.yaml
+          subPath: configs
       restartPolicy: Always
       volumes:
       - configMap:

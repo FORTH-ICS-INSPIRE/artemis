@@ -111,12 +111,9 @@ spec:
         name: configuration
         resources: {}
         volumeMounts:
-        - mountPath: /etc/artemis/logging.yaml
+        - mountPath: /etc/artemis/
           name: configuration-pvc
-          subPath: configs/logging.yaml
-        - mountPath: /etc/artemis/config.yaml
-          name: configuration-pvc
-          subPath: configs/config.yaml
+          subPath: configs
       restartPolicy: Always
       volumes:
       - configMap:

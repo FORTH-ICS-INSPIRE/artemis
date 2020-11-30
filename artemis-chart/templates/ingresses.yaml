@@ -25,7 +25,7 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{ .Release.Name }}-{{ .Values.webappHost }}-svc
+          serviceName: {{ .Release.Name }}-{{ .Values.webappHost }}
           servicePort: {{ .Values.webappPort }}
 ---
 apiVersion: {{ template "artemis.ingress.apiVersion" . }}
@@ -54,6 +54,6 @@ spec:
       paths:
       - path: /api/graphql
         backend:
-          serviceName: {{ .Release.Name}}-{{ .Values.hasuraHost }}-svc
+          serviceName: {{ .Release.Name}}-{{ .Values.hasuraHost }}
           servicePort: {{ .Values.hasuraPort }}
 {{- end -}}

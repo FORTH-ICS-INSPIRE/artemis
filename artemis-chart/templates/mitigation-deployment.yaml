@@ -20,13 +20,13 @@ spec:
       initContainers:
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-prefixtree
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-database
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
         - name: RELEASE_NAME

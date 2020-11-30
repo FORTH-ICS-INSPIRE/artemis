@@ -19,7 +19,7 @@ spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name}}-{{ .Values.dbHost }}-svc {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name}}-{{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - args:
         - graphql-engine

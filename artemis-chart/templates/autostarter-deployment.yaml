@@ -20,49 +20,49 @@ spec:
       initContainers:
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-pg
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }}-svc {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-database
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-prefixtree
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-configuration
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-configuration-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-configuration {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-fileobserver
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-fileobserver-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-fileobserver {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-autoignore
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-autoignore-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-autoignore {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-notifier
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-notifier-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-notifier {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-detection
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-detection-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-detection {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-mitigation
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-mitigation-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-mitigation {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-riperistap
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-riperistap-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-riperistap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-bgpstreamlivetap
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-bgpstreamlivetap-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-bgpstreamlivetap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-bgpstreamkafkatap
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-bgpstreamkafkatap-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-bgpstreamkafkatap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-bgpstreamhisttap
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-bgpstreamhisttap-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-bgpstreamhisttap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-exabgptap
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-exabgptap-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-exabgptap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
         - name: RELEASE_NAME

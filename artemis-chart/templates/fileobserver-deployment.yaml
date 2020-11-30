@@ -20,7 +20,7 @@ spec:
       initContainers:
       - name: wait-for-configuration
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-configuration-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-configuration {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
         - name: RELEASE_NAME

@@ -20,22 +20,22 @@ spec:
       initContainers:
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-redis
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.redisHost }}-svc {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.redisHost }} {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-pg
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }}-svc {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-hasura
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.hasuraHost }}-svc {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-notifier
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-notifier-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-notifier {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-prefixtree
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
         - name: RELEASE_NAME

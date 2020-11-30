@@ -30,7 +30,7 @@ spec:
       containers:
       - env:
         - name: RELEASE_NAME
-        value: {{ .Release.Name }}
+          value: {{ .Release.Name }}
         - name: MON_TIMEOUT_LAST_BGP_UPDATE
           valueFrom:
             configMapKeyRef:

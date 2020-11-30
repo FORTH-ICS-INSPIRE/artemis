@@ -14,7 +14,5 @@ spec:
   {{- end }}
   selector:
     app: {{ $.Release.Name }}-{{ $key }}
-status:
-  loadBalancer: {}
 ---
 {{- end }}

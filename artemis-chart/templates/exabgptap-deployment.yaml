@@ -21,15 +21,6 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
-      - name: populate-pvc
-        image: busybox
-        volumeMounts:
-        - mountPath: /configmaps
-          name: exabgptap-configmap
-        - mountPath: /pvc
-          name: exabgptap-pvc
-          subPath: configs
-        command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /pvc/ 2> /dev/null']
       - name: wait-for-rmq
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
@@ -87,18 +78,14 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/logging.yaml
-          name: exabgptap-pvc
-          subPath: configs/logging.yaml
+          name: exabgptap-configmap
+          subPath: logging.yaml
       restartPolicy: Always
       volumes:
       - configMap:
           name: {{ .Release.Name }}-volumes
         name: exabgptap-configmap
-      - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-exabgptap-pvc
-        name: exabgptap-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

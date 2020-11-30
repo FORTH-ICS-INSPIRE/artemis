@@ -27,7 +27,7 @@ spec:
         - mountPath: /configmaps
           name: fileobserver-configmap
         - mountPath: /pvc
-          name: fileobserver-pvc
+          name: configs-pvc
           subPath: configs
         command: ['sh', '-c', 'false | cp -i /configmaps/config.yaml /configmaps/logging.yaml /pvc/ 2> /dev/null']
       - name: wait-for-configuration
@@ -46,7 +46,7 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/
-          name: fileobserver-pvc
+          name: configs-pvc
           subPath: configs
       restartPolicy: Always
       volumes:
@@ -54,10 +54,9 @@ spec:
           name: {{ .Release.Name }}-volumes
         name: fileobserver-configmap
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-fileobserver-pvc
-        name: fileobserver-pvc
+          claimName: {{ .Release.Name }}-configs-pvc
+        name: configs-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

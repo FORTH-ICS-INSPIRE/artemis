@@ -21,15 +21,6 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
-      - name: populate-pvc
-        image: busybox
-        volumeMounts:
-        - mountPath: /configmaps
-          name: autostarter-configmap
-        - mountPath: /pvc
-          name: autostarter-pvc
-          subPath: configs
-        command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /pvc/ 2> /dev/null']
       - name: wait-for-rmq
         image: busybox
         command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
@@ -128,18 +119,14 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/logging.yaml
-          name: autostarter-pvc
-          subPath: configs/logging.yaml
+          name: autostarter-configmap
+          subPath: logging.yaml
       restartPolicy: Always
       volumes:
       - configMap:
           name: {{ .Release.Name }}-volumes
         name: autostarter-configmap
-      - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-autostarter-pvc
-        name: autostarter-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

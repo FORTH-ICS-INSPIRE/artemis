@@ -1282,19 +1282,19 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             log.exception("{}".format(raw))
 
     def _insert_bgp_updates(self):
+        shared_memory_locks["insert_bgp_entries"].acquire()
         try:
-            shared_memory_locks["insert_bgp_entries"].acquire()
             query = (
                 "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
                 "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s"
             )
             self.wo_db.execute_values(query, self.insert_bgp_entries, page_size=1000)
+            num_of_entries = len(self.insert_bgp_entries)
+            self.insert_bgp_entries.clear()
         except Exception:
             log.exception("exception")
             num_of_entries = -1
         finally:
-            num_of_entries = len(self.insert_bgp_entries)
-            self.insert_bgp_entries.clear()
             shared_memory_locks["insert_bgp_entries"].release()
             return num_of_entries
 
@@ -1472,7 +1472,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
         timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
         # Update the BGP entries using the hijack messages
-        shared_memory_locks["insert_hijacks_entries"].acquire()
         for hijack_key in self.insert_hijacks_entries:
             for bgp_entry_to_update in self.insert_hijacks_entries[hijack_key][
                 "monitor_keys"
@@ -1483,14 +1482,10 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 )
                 # exclude handle bgp updates that point to same hijack as
                 # this
-                shared_memory_locks["handled_bgp_entries"].acquire()
                 try:
                     self.handled_bgp_entries.discard(bgp_entry_to_update)
                 except Exception:
                     log.exception("exception")
-                finally:
-                    shared_memory_locks["handled_bgp_entries"].release()
-        shared_memory_locks["insert_hijacks_entries"].release()
 
         if update_bgp_entries:
             try:
@@ -1552,7 +1547,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         update_bgp_entries.clear()
 
         # Update the BGP entries using the handled messages
-        shared_memory_locks["handled_bgp_entries"].acquire()
         if self.handled_bgp_entries:
             try:
                 query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
@@ -1562,18 +1556,15 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 num_of_updates += len(self.handled_bgp_entries)
                 self.handled_bgp_entries.clear()
             except Exception:
-                log.exception("handled bgp entries {}".format(self.handled_bgp_entries))
+                log.exception(
+                    "handled bgp entries {}".format(len(self.handled_bgp_entries))
+                )
                 num_of_updates = -1
-            finally:
-                shared_memory_locks["handled_bgp_entries"].release()
-        else:
-            shared_memory_locks["handled_bgp_entries"].release()
 
         return num_of_updates
 
     def _insert_update_hijacks(self):
 
-        shared_memory_locks["insert_hijacks_entries"].acquire()
         try:
             query = (
                 "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
@@ -1636,8 +1627,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         except Exception:
             log.exception("exception")
             num_of_entries = -1
-        finally:
-            shared_memory_locks["insert_hijacks_entries"].release()
 
         return num_of_entries
 
@@ -1657,12 +1646,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
     def _update_bulk(self):
         try:
-            inserts, updates, hijacks, withdrawals = (
-                self._insert_bgp_updates(),
-                self._update_bgp_updates(),
-                self._insert_update_hijacks(),
-                self._handle_bgp_withdrawals(),
-            )
+            inserts = self._insert_bgp_updates()
+            shared_memory_locks["insert_hijacks_entries"].acquire()
+            shared_memory_locks["handled_bgp_entries"].acquire()
+            updates = self._update_bgp_updates()
+            shared_memory_locks["handled_bgp_entries"].release()
+            hijacks = self._insert_update_hijacks()
+            shared_memory_locks["insert_hijacks_entries"].release()
+            withdrawals = self._handle_bgp_withdrawals()
             self._handle_hijack_outdate()
             str_ = ""
             if inserts:

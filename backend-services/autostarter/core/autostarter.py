@@ -18,21 +18,25 @@ from artemis_utils.db_util import DB
 # logger
 log = get_logger()
 
+# global vars
+SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
+if SVC_NAME_PREFIX != "":
+    SVC_NAME_PREFIX += "-"
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 5))
-SERVICE_NAME = "autostarter"
-AUTOIGNORE_HOST = "autoignore"
-CONFIGURATION_HOST = "configuration"
-DATABASE_HOST = "database"
-FILEOBSERVER_HOST = "fileobserver"
-PREFIXTREE_HOST = "prefixtree"
-NOTIFIER_HOST = "notifier"
-DETECTION_HOST = "detection"
-MITIGATION_HOST = "mitigation"
-RIPERISTAP_HOST = "riperistap"
-BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
-BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
-BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
-EXABGPTAP_HOST = "exabgptap"
+SERVICE_NAME = SVC_NAME_PREFIX + "autostarter"
+AUTOIGNORE_HOST = SVC_NAME_PREFIX + "autoignore"
+CONFIGURATION_HOST = SVC_NAME_PREFIX + "configuration"
+DATABASE_HOST = SVC_NAME_PREFIX + "database"
+FILEOBSERVER_HOST = SVC_NAME_PREFIX + "fileobserver"
+PREFIXTREE_HOST = SVC_NAME_PREFIX + "prefixtree"
+NOTIFIER_HOST = SVC_NAME_PREFIX + "notifier"
+DETECTION_HOST = SVC_NAME_PREFIX + "detection"
+MITIGATION_HOST = SVC_NAME_PREFIX + "mitigation"
+RIPERISTAP_HOST = SVC_NAME_PREFIX + "riperistap"
+BGPSTREAMLIVETAP_HOST = SVC_NAME_PREFIX + "bgpstreamlivetap"
+BGPSTREAMKAFKATAP_HOST = SVC_NAME_PREFIX + "bgpstreamkafkatap"
+BGPSTREAMHISTTAP_HOST = SVC_NAME_PREFIX + "bgpstreamhisttap"
+EXABGPTAP_HOST = SVC_NAME_PREFIX + "exabgptap"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 ALWAYS_RUNNING_SERVICES = [
     CONFIGURATION_HOST,

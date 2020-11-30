@@ -38,10 +38,13 @@ shared_memory_locks = {
 }
 
 # global vars
-SERVICE_NAME = "autoignore"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
+SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
+if SVC_NAME_PREFIX != "":
+    SVC_NAME_PREFIX += "-"
+SERVICE_NAME = SVC_NAME_PREFIX + "autoignore"
+CONFIGURATION_HOST = SVC_NAME_PREFIX + "configuration"
+PREFIXTREE_HOST = SVC_NAME_PREFIX + "prefixtree"
+DATABASE_HOST = SVC_NAME_PREFIX + "database"
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 

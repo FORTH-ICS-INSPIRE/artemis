@@ -52,8 +52,11 @@ hij_log.addFilter(HijackLogFilter())
 shared_memory_locks = {"data_worker": mp.Lock(), "config_timestamp": mp.Lock()}
 
 # global vars
-SERVICE_NAME = "notifier"
-CONFIGURATION_HOST = "configuration"
+SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
+if SVC_NAME_PREFIX != "":
+    SVC_NAME_PREFIX += "-"
+SERVICE_NAME = SVC_NAME_PREFIX + "notifier"
+CONFIGURATION_HOST = SVC_NAME_PREFIX + "configuration"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

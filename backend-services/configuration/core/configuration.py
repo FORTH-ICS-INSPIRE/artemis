@@ -52,18 +52,21 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 
 # global vars
-SERVICE_NAME = "configuration"
-AUTOIGNORE_HOST = "autoignore"
-DATABASE_HOST = "database"
-PREFIXTREE_HOST = "prefixtree"
-NOTIFIER_HOST = "notifier"
-DETECTION_HOST = "detection"
-MITIGATION_HOST = "mitigation"
-RIPERISTAP_HOST = "riperistap"
-BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
-BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
-BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
-EXABGPTAP_HOST = "exabgptap"
+SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
+if SVC_NAME_PREFIX != "":
+    SVC_NAME_PREFIX += "-"
+SERVICE_NAME = SVC_NAME_PREFIX + "configuration"
+AUTOIGNORE_HOST = SVC_NAME_PREFIX + "autoignore"
+DATABASE_HOST = SVC_NAME_PREFIX + "database"
+PREFIXTREE_HOST = SVC_NAME_PREFIX + "prefixtree"
+NOTIFIER_HOST = SVC_NAME_PREFIX + "notifier"
+DETECTION_HOST = SVC_NAME_PREFIX + "detection"
+MITIGATION_HOST = SVC_NAME_PREFIX + "mitigation"
+RIPERISTAP_HOST = SVC_NAME_PREFIX + "riperistap"
+BGPSTREAMLIVETAP_HOST = SVC_NAME_PREFIX + "bgpstreamlivetap"
+BGPSTREAMKAFKATAP_HOST = SVC_NAME_PREFIX + "bgpstreamkafkatap"
+BGPSTREAMHISTTAP_HOST = SVC_NAME_PREFIX + "bgpstreamhisttap"
+EXABGPTAP_HOST = SVC_NAME_PREFIX + "exabgptap"
 OTHER_SERVICES = [
     PREFIXTREE_HOST,
     DATABASE_HOST,

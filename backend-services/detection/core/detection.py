@@ -49,10 +49,13 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
-SERVICE_NAME = "detection"
-NOTIFIER_HOST = "notifier"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
+SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
+if SVC_NAME_PREFIX != "":
+    SVC_NAME_PREFIX += "-"
+SERVICE_NAME = SVC_NAME_PREFIX + "detection"
+NOTIFIER_HOST = SVC_NAME_PREFIX + "notifier"
+PREFIXTREE_HOST = SVC_NAME_PREFIX + "prefixtree"
+DATABASE_HOST = SVC_NAME_PREFIX + "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],

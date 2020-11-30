@@ -14,11 +14,8 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-mitigation
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-rmq
@@ -32,6 +29,8 @@ spec:
         command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
+        - name: RELEASE_NAME
+          value: {{ .Release.Name }}
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:

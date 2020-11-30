@@ -14,11 +14,8 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-configuration
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-rmq
@@ -62,6 +59,8 @@ spec:
         command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-autoignore-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
+        - name: RELEASE_NAME
+          value: {{ .Release.Name }}
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
@@ -103,13 +102,17 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/
-          name: configs-pvc
-          subPath: configs
+          name: configuration-configmap
       restartPolicy: Always
       volumes:
-      - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-configs-pvc
-        name: configs-pvc
+      - configMap:
+          name: {{ .Release.Name }}-volumes
+          items:
+            - key: config.yaml
+              path: config.yaml
+            - key: logging.yaml
+              path: logging.yaml
+        name: configuration-configmap
       {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}

@@ -14,11 +14,8 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-rabbitmq
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
       - env:
@@ -53,4 +50,3 @@ spec:
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

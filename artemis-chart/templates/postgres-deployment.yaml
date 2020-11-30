@@ -14,11 +14,8 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-postgres
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
       - command:
@@ -104,4 +101,3 @@ spec:
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

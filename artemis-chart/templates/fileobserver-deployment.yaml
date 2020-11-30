@@ -14,27 +14,17 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-fileobserver
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
-      - name: populate-pvc
-        image: busybox
-        volumeMounts:
-        - mountPath: /configmaps
-          name: fileobserver-configmap
-        - mountPath: /pvc
-          name: fileobserver-pvc
-          subPath: configs
-        command: ['sh', '-c', 'false | cp -i /configmaps/config.yaml /configmaps/logging.yaml /pvc/ 2> /dev/null']
       - name: wait-for-configuration
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-configuration-svc {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-configuration {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
+        - name: RELEASE_NAME
+          value: {{ .Release.Name }}
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
@@ -46,18 +36,18 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/
-          name: fileobserver-pvc
-          subPath: configs
+          name: fileobserver-configmap
       restartPolicy: Always
       volumes:
       - configMap:
           name: {{ .Release.Name }}-volumes
+          items:
+          - key: config.yaml
+            path: config.yaml
+          - key: logging.yaml
+            path: logging.yaml
         name: fileobserver-configmap
-      - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-fileobserver-pvc
-        name: fileobserver-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

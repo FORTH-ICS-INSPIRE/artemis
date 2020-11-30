@@ -13,16 +13,13 @@ spec:
   strategy: {}
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-graphql
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name}}-{{ .Values.dbHost }}-svc {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name}}-{{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - args:
         - graphql-engine
@@ -56,4 +53,3 @@ spec:
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

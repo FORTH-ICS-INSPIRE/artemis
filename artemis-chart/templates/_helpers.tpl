@@ -28,3 +28,10 @@ Return the appropriate apiVersion for deployment.
 {{- print "apps/v1" -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return the appropriate apiVersion for ingress.
+*/}}
+{{- define "artemis.ingress.apiVersion" -}}
+{{- print "extensions/v1beta1" -}}
+{{- end -}}

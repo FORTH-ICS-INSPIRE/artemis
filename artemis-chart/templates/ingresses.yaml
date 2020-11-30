@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled -}}
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.ingress.apiVersion" . }}
 kind: Ingress
 metadata:
   name: {{ .Release.Name }}-frontend-ingress
@@ -25,10 +25,10 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{ .Release.Name }}-{{ .Values.webappHost }}-svc
+          serviceName: {{ .Release.Name }}-{{ .Values.webappHost }}
           servicePort: {{ .Values.webappPort }}
 ---
-apiVersion: extensions/v1beta1
+apiVersion: {{ template "artemis.ingress.apiVersion" . }}
 kind: Ingress
 metadata:
   name: {{ .Release.Name }}-graphql-ingress
@@ -54,6 +54,6 @@ spec:
       paths:
       - path: /api/graphql
         backend:
-          serviceName: {{ .Release.Name}}-{{ .Values.hasuraHost }}-svc
+          serviceName: {{ .Release.Name}}-{{ .Values.hasuraHost }}
           servicePort: {{ .Values.hasuraPort }}
 {{- end -}}

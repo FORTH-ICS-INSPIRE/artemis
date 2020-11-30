@@ -14,30 +14,20 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-prefixtree
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
-      - name: populate-pvc
-        image: busybox
-        volumeMounts:
-        - mountPath: /configmaps
-          name: prefixtree-configmap
-        - mountPath: /pvc
-          name: prefixtree-pvc
-          subPath: configs
-        command: ['sh', '-c', 'false | cp -i /configmaps/logging.yaml /pvc/ 2> /dev/null']
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-redis
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.redisHost }}-svc {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
+        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.redisHost }} {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
+        - name: RELEASE_NAME
+          value: {{ .Release.Name }}
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
@@ -79,18 +69,14 @@ spec:
         resources: {}
         volumeMounts:
         - mountPath: /etc/artemis/logging.yaml
-          name: prefixtree-pvc
-          subPath: configs/logging.yaml
+          name: prefixtree-configmap
+          subPath: logging.yaml
       restartPolicy: Always
       volumes:
       - configMap:
           name: {{ .Release.Name }}-volumes
         name: prefixtree-configmap
-      - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-prefixtree-pvc
-        name: prefixtree-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}

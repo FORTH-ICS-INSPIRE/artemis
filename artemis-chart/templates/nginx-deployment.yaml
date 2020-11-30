@@ -15,16 +15,13 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: {{ .Release.Name }}-nginx
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.webappHost }}-svc {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.webappHost }} {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - image: nginx:1.17-alpine
         name: nginx
@@ -55,5 +52,4 @@ spec:
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}
 {{- end -}}

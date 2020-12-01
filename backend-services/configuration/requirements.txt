@@ -5,6 +5,7 @@ enum34==1.1.6
 gql==0.4.0
 ipaddress==1.0.23
 kombu==4.6.7
+kubernetes==12.0.1
 netaddr==0.7.19
 psycopg2==2.8.4
 pytricia==1.0.0

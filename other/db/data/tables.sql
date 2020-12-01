@@ -187,14 +187,14 @@ SELECT * FROM bgp_updates WHERE prefix << $1;
 $$ LANGUAGE SQL;
 
 CREATE TABLE IF NOT EXISTS process_states (
-    name VARCHAR (32) UNIQUE,
+    name VARCHAR (63) UNIQUE,
     running BOOLEAN DEFAULT FALSE,
     loading BOOLEAN DEFAULT FALSE,
     timestamp TIMESTAMP default current_timestamp
 );
 
 CREATE TABLE IF NOT EXISTS intended_process_states (
-    name VARCHAR (32) UNIQUE,
+    name VARCHAR (63) UNIQUE,
     running BOOLEAN DEFAULT FALSE
 );
 

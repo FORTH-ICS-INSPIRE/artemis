@@ -3,6 +3,7 @@ cffi==1.13.2
 Cython==0.29.14
 enum34==1.1.6
 gql==0.4.0
+kubernetes==12.0.1
 psycopg2==2.8.4
 requests==2.22.0
 slacker-log-handler==1.7.1

@@ -78,6 +78,8 @@ OTHER_SERVICES = [
     AUTOIGNORE_HOST,
 ]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
+# TODO: move to utils
+IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
 
 
 # TODO: move to utils
@@ -94,6 +96,30 @@ def service_to_ips_and_replicas(base_service_name):
         )
         replica_name = "{}_{}".format(base_service_name, replica_name_match.group(1))
         service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+    return service_to_ips_and_replicas_set
+
+
+# TODO: move to utils
+def service_to_ips_and_replicas_in_k8s(base_service_name):
+    from kubernetes import client, config
+
+    service_to_ips_and_replicas_set = set([])
+    config.load_incluster_config()
+    current_namespace = open(
+        "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+    ).read()
+    v1 = client.CoreV1Api()
+    try:
+        endpoints = v1.read_namespaced_endpoints_with_http_info(
+            base_service_name, current_namespace, _return_http_data_only=True
+        ).to_dict()
+        for entry in endpoints["subsets"][0]["addresses"]:
+            replica_name = entry["target_ref"]["name"]
+            replica_ip = entry["ip"]
+            service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+    except Exception as e:
+        log.exception(e)
+
     return service_to_ips_and_replicas_set
 
 
@@ -694,7 +720,10 @@ def get_created_asn_anchors_from_new_rule(yaml_conf, rule_asns):
 def post_configuration_to_other_services(data):
     for service in OTHER_SERVICES:
         try:
-            ips_and_replicas = service_to_ips_and_replicas(service)
+            if IS_KUBERNETES:
+                ips_and_replicas = service_to_ips_and_replicas_in_k8s(service)
+            else:
+                ips_and_replicas = service_to_ips_and_replicas(service)
         except Exception:
             log.error("could not resolve service '{}'".format(service))
             continue

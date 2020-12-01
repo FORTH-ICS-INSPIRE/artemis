@@ -56,6 +56,8 @@ USER_CONTROLLED_SERVICES = [
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
 CREATE_TRIGGER_QUERY = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
+# TODO: move to utils
+IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
 
 
 # TODO: move to utils
@@ -72,6 +74,30 @@ def service_to_ips_and_replicas(base_service_name):
         )
         replica_name = "{}_{}".format(base_service_name, replica_name_match.group(1))
         service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+    return service_to_ips_and_replicas_set
+
+
+# TODO: move to utils
+def service_to_ips_and_replicas_in_k8s(base_service_name):
+    from kubernetes import client, config
+
+    service_to_ips_and_replicas_set = set([])
+    config.load_incluster_config()
+    current_namespace = open(
+        "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+    ).read()
+    v1 = client.CoreV1Api()
+    try:
+        endpoints = v1.read_namespaced_endpoints_with_http_info(
+            base_service_name, current_namespace, _return_http_data_only=True
+        ).to_dict()
+        for entry in endpoints["subsets"][0]["addresses"]:
+            replica_name = entry["target_ref"]["name"]
+            replica_ip = entry["ip"]
+            service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+    except Exception as e:
+        log.exception(e)
+
     return service_to_ips_and_replicas_set
 
 
@@ -130,7 +156,14 @@ def check_and_control_services(ro_db, wo_db):
     detection_examined = False
     for service in intended_status_dict:
         try:
-            ips_and_replicas_per_service[service] = service_to_ips_and_replicas(service)
+            if IS_KUBERNETES:
+                ips_and_replicas_per_service[
+                    service
+                ] = service_to_ips_and_replicas_in_k8s(service)
+            else:
+                ips_and_replicas_per_service[service] = service_to_ips_and_replicas(
+                    service
+                )
         except Exception:
             log.exception("exception")
             continue

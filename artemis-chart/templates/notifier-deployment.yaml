@@ -49,7 +49,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-notifier:{{ .Values.systemVersion }}
+        image: {{  .Values.services.notifier.image  }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: notifier
         resources: {}

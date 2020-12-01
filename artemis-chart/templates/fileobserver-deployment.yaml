@@ -29,7 +29,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-fileobserver:{{ .Values.systemVersion }}
+        image: {{ .Values.services.fileobserver.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: fileobserver
         resources: {}

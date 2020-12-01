@@ -95,7 +95,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: testEnv
-        image: inspiregroup/artemis-detection:{{ .Values.systemVersion }}
+        image: {{ .Values.services.detection.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: detection
         resources: {}

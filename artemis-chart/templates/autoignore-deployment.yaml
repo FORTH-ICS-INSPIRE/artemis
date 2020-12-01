@@ -86,7 +86,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-autoignore:{{ .Values.systemVersion }}
+        image: {{ .Values.services.autoignore.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: autoignore
         resources: {}

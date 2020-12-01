@@ -57,7 +57,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-mitigation:{{ .Values.systemVersion }}
+        image: {{  .Values.services.mitigation.image  }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: mitigation
         resources: {}

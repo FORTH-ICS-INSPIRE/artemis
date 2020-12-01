@@ -72,7 +72,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-exabgptap:{{ .Values.systemVersion }}
+        image: {{ .Values.services.exabgptap.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: exabgptap
         resources: {}

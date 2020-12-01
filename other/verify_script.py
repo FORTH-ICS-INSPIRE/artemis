@@ -93,8 +93,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: hasura/graphql-engine:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("graphql"),
-            r"image: hasura/graphql-engine:([a-zA-Z0-9.\-_]*)",
+            K8S_VALUES_FILE, r"image: hasura/graphql-engine:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -102,7 +101,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: rabbitmq:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("rabbitmq"), r"image: rabbitmq:([a-zA-Z0-9.\-_]*)"
+            K8S_VALUES_FILE, r"image: rabbitmq:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -110,8 +109,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: timescale/timescaledb:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("postgres"),
-            r"image: timescale/timescaledb:([a-zA-Z0-9.\-_]*)",
+            K8S_VALUES_FILE, r"image: timescale/timescaledb:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -119,8 +117,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: postgrest/postgrest:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("postgrest"),
-            r"image: postgrest/postgrest:([a-zA-Z0-9.\-_]*)",
+            K8S_VALUES_FILE, r"image: postgrest/postgrest:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 

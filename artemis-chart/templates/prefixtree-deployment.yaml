@@ -63,7 +63,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-prefixtree:{{ .Values.systemVersion }}
+        image: {{  .Values.services.prefixtree.image  }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: prefixtree
         resources: {}

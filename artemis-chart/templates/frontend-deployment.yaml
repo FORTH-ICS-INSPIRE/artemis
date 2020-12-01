@@ -139,7 +139,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: gunicornWorkers
-        image: inspiregroup/artemis-frontend:{{ .Values.systemVersion }}
+        image: {{  .Values.services.frontend.image  }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: frontend
         resources: {}

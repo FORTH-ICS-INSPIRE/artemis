@@ -77,7 +77,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: risId
-        image: inspiregroup/artemis-riperistap:{{ .Values.systemVersion }}
+        image: {{  .Values.services.riperistap.image  }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: riperistap
         resources: {}

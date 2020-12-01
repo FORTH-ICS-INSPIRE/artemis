@@ -125,7 +125,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: testEnv
-        image: inspiregroup/artemis-autostarter:{{ .Values.systemVersion }}
+        image: {{ .Values.services.autostarter.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: autostarter
         resources: {}

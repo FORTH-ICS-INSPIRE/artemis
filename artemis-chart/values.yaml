@@ -61,78 +61,98 @@ autoRecoverProcessState: true
 # services
 services:
   riperistap:
+    image: inspiregroup/artemis-riperistap
     replicas: 1
     ports:
     - 3000
   bgpstreamlivetap:
+    image: inspiregroup/artemis-bgpstreamlivetap
     replicas: 1
     ports:
     - 3000
   bgpstreamkafkatap:
+    image: inspiregroup/artemis-bgpstreamkafkatap
     replicas: 1
     ports:
     - 3000
   bgpstreamhisttap:
+    image: inspiregroup/artemis-bgpstreamhisttap
     replicas: 1
     ports:
     - 3000
   exabgptap:
+    image: inspiregroup/artemis-exabgptap
     replicas: 1
     ports:
     - 3000
   autoignore:
+    image: inspiregroup/artemis-autoignore
     replicas: 1
     ports:
     - 3000
   autostarter:
+    image: inspiregroup/artemis-autostarter
     replicas: 1
     ports:
     - 3000
   configuration:
+    image: inspiregroup/artemis-configuration
     replicas: 1
     ports:
     - 3000
   database:
+    image: inspiregroup/artemis-database
     replicas: 1
     ports:
     - 3000
   detection:
+    image: inspiregroup/artemis-detection
     replicas: 1
     ports:
     - 3000
   fileobserver:
+    image: inspiregroup/artemis-fileobserver
     replicas: 1
     ports:
     - 3000
   mitigation:
+    image: inspiregroup/artemis-mitigation
     replicas: 1
     ports:
     - 3000
   notifier:
+    image: inspiregroup/artemis-notifier
     replicas: 1
     ports:
     - 3000
   prefixtree:
+    image: inspiregroup/artemis-prefixtree
     replicas: 1
     ports:
     - 3000
   frontend:
+    image: inspiregroup/artemis-frontend
     replicas: 1
     ports:
       - 8000
   redis:
+    image: redis:latest
     ports:
     - 6379
   postgrest:
+    image: postgrest/postgrest:v7.0.0
     ports:
     - 3000
   postgres:
+    image: timescale/timescaledb:1.1.0-pg10
     ports:
     - 5432
   rabbitmq:
+    image: rabbitmq:3.8.3-management-alpine
     ports:
     - 5672
   graphql:
+    image: hasura/graphql-engine:v1.1.0
     ports:
     - 8080
 ingress:

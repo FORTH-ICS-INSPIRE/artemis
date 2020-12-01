@@ -72,7 +72,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-bgpstreamkafkatap:{{ .Values.systemVersion }}
+        image: {{ .Values.services.bgpstreamkafkatap.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: bgpstreamkafkatap
         resources: {}

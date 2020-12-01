@@ -134,7 +134,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: withdrawnHijackThreshold
-        image: inspiregroup/artemis-database:{{ .Values.systemVersion }}
+        image: {{ .Values.services.database.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: database
         resources: {}

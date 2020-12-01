@@ -107,7 +107,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-configuration:{{ .Values.systemVersion }}
+        image: {{ .Values.services.configuration.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: configuration
         resources: {}

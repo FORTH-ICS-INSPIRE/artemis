@@ -58,7 +58,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: inspiregroup/artemis-bgpstreamhisttap:{{ .Values.systemVersion }}
+        image: {{ .Values.services.bgpstreamhisttap.image }}:{{ .Values.systemVersion }}
         imagePullPolicy: IfNotPresent
         name: bgpstreamhisttap
         resources: {}

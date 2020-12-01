@@ -135,7 +135,7 @@
         "23": {
             "id": "23",
             "db_version": "23",
-            "description": "Altering hijacks TABLE possible_states constraints",
+            "description": "Altering hijacks TABLE possible_states constraints and extended intended_process_states and process_states name column to 63 chars",
             "file": "migration_23.sql"
         }
     }

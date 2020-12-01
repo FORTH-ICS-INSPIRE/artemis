@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: pg-amqp-bridge
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: 1
   strategy:
     type: Recreate
   template:

@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: configuration
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.configuration.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

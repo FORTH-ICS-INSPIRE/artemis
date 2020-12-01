@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: bgpstreamkafkatap
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.bgpstreamkafkatap.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

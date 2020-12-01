@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: riperistap
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.riperistap.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

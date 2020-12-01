@@ -2,7 +2,6 @@
 guiEnabled: true
 systemVersion: latest
 historic: false
-replicaCount: 1
 # autostarter
 checkInterval: 5
 # redis
@@ -60,76 +59,76 @@ testEnv: false
 autoRecoverProcessState: true
 
 # services
-svc:
+services:
   riperistap:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   bgpstreamlivetap:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   bgpstreamkafkatap:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   bgpstreamhisttap:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   exabgptap:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   autoignore:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   autostarter:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   configuration:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   database:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   detection:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   fileobserver:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   mitigation:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   notifier:
+    replicas: 1
     ports:
-    - 9001
     - 3000
   prefixtree:
+    replicas: 1
     ports:
-    - 9001
     - 3000
+  frontend:
+    replicas: 1
+    ports:
+      - 8000
   redis:
     ports:
     - 6379
-    - 9001
   postgrest:
     ports:
     - 3000
   postgres:
     ports:
     - 5432
-  frontend:
-    ports:
-    - 8000
   rabbitmq:
     ports:
     - 5672

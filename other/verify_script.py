@@ -98,12 +98,6 @@ class TestStringMethods(unittest.TestCase):
         )
         self.assertEqual(version, k8s_version)
 
-        version = get_match_from_file(COMPOSE_FILE, r"image: nginx:([a-zA-Z0-9.\-_]*)")
-        k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("nginx"), r"image: nginx:([a-zA-Z0-9.\-_]*)"
-        )
-        self.assertEqual(version, k8s_version)
-
         version = get_match_from_file(
             COMPOSE_FILE, r"image: rabbitmq:([a-zA-Z0-9.\-_]*)"
         )

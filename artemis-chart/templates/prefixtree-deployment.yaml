@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: prefixtree
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.prefixtree.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

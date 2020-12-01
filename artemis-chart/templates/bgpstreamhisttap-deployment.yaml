@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: bgpstreamhisttap
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.bgpstreamhisttap.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

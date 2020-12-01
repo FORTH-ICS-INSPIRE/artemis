@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: notifier
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.notifier.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: exabgptap
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.exabgptap.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

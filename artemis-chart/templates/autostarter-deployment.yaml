@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: autostarter
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.services.autostarter.replicas | default 1 }}
   strategy:
     type: Recreate
   template:

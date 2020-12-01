@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: postgrest
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: 1
   strategy: {}
   template:
     metadata:

@@ -32,12 +32,9 @@ shared_memory_locks = {
 }
 
 # global vars
-SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
-if SVC_NAME_PREFIX != "":
-    SVC_NAME_PREFIX += "-"
-SERVICE_NAME = SVC_NAME_PREFIX + "bgpstreamhisttap"
-CONFIGURATION_HOST = SVC_NAME_PREFIX + "configuration"
-PREFIXTREE_HOST = SVC_NAME_PREFIX + "prefixtree"
+SERVICE_NAME = "bgpstreamhisttap"
+CONFIGURATION_HOST = "configuration"
+PREFIXTREE_HOST = "prefixtree"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

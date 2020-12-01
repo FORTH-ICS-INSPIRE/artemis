@@ -2,24 +2,25 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-graphql
+    app: graphql
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-graphql
+  name: graphql
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-graphql
+      app: graphql
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy: {}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-graphql
+        app: graphql
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name}}-{{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - args:
         - graphql-engine
@@ -28,22 +29,22 @@ spec:
         - name: HASURA_GRAPHQL_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: hasuraSecret
         - name: HASURA_GRAPHQL_DATABASE_URL
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbUri
         - name: HASURA_GRAPHQL_ENABLE_CONSOLE
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: hasuraGui
         - name: HASURA_GRAPHQL_JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: hasuraJwt
         image: hasura/graphql-engine:v1.1.0
         name: graphql

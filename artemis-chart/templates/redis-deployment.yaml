@@ -2,20 +2,20 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-redis
+    app: redis
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-redis
+  name: redis
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-redis
+      app: redis
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-redis
+        app: redis
     spec:
       containers:
       - image: redis:latest
@@ -28,7 +28,7 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
         name: redis-configmap
       {{- with .Values.nodeSelector }}
       nodeSelector:

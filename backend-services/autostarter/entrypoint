@@ -1,19 +1,19 @@
 #!/bin/bash
 make -j
 ./wait-for ${DB_HOST}:${DB_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)database:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)prefixtree:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)configuration:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)fileobserver:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)autoignore:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)notifier:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)detection:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)mitigation:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)riperistap:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)bgpstreamlivetap:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)bgpstreamkafkatap:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)bgpstreamhisttap:${REST_PORT} -t 0
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)exabgptap:${REST_PORT} -t 0
+./wait-for database:${REST_PORT} -t 0
+./wait-for prefixtree:${REST_PORT} -t 0
+./wait-for configuration:${REST_PORT} -t 0
+./wait-for fileobserver:${REST_PORT} -t 0
+./wait-for autoignore:${REST_PORT} -t 0
+./wait-for notifier:${REST_PORT} -t 0
+./wait-for detection:${REST_PORT} -t 0
+./wait-for mitigation:${REST_PORT} -t 0
+./wait-for riperistap:${REST_PORT} -t 0
+./wait-for bgpstreamlivetap:${REST_PORT} -t 0
+./wait-for bgpstreamkafkatap:${REST_PORT} -t 0
+./wait-for bgpstreamhisttap:${REST_PORT} -t 0
+./wait-for exabgptap:${REST_PORT} -t 0
 
 cd ./core
 /usr/local/bin/python -c "import autostarter; autostarter.main()"

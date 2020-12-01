@@ -2,36 +2,35 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-fileobserver
+    app: fileobserver
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-fileobserver
+  name: fileobserver
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-fileobserver
+      app: fileobserver
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-fileobserver
+        app: fileobserver
     spec:
       initContainers:
       - name: wait-for-configuration
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-configuration {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z configuration {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
-        - name: RELEASE_NAME
-          value: {{ .Release.Name }}
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: restPort
         image: inspiregroup/artemis-fileobserver:{{ .Values.systemVersion }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: fileobserver
         resources: {}
         volumeMounts:
@@ -40,7 +39,7 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
           items:
           - key: config.yaml
             path: config.yaml

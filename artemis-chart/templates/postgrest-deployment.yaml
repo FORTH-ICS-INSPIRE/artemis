@@ -2,37 +2,38 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-postgrest
+    app: postgrest
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-postgrest
+  name: postgrest
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-postgrest
+      app: postgrest
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy: {}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-postgrest
+        app: postgrest
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
         - name: PGRST_DB_ANON_ROLE
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbUser
         - name: PGRST_DB_SCHEMA
           value: public
         - name: PGRST_DB_URI
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbUri
         image: postgrest/postgrest:v7.0.0
         name: postgrest

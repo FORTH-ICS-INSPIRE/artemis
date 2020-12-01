@@ -1,6 +1,6 @@
 #!/bin/bash
 make -j
-./wait-for $(if [[ ! -z "${RELEASE_NAME}" ]]; then echo ${RELEASE_NAME}-; fi)configuration:${REST_PORT} -t 0
+./wait-for configuration:${REST_PORT} -t 0
 
 cd ./core
 /usr/local/bin/python -c "import observer; observer.main()"

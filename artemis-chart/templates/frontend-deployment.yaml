@@ -2,149 +2,145 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-frontend
+    app: frontend
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-frontend
+  name: frontend
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-frontend
+      app: frontend
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-frontend
+        app: frontend
     spec:
       initContainers:
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
-      - name: wait-for-monsup
-        image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.monSupervisorHost }} {{ .Values.monSupervisorPort}}; do echo waiting for services; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - env:
-        - name: RELEASE_NAME
-          value: {{ .Release.Name }}
         - name: ARTEMIS_WEB_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: artemisWebHost
         - name: API_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: apiHost
         - name: API_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: apiPort
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: restPort
         - name: BIND_IP
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: bindIp
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbHost
         - name: DB_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbPort
         - name: FLASK_SECRET_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: flaskSecret
         - name: HASURA_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: hasuraHost
         - name: HASURA_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: hasuraPort
         - name: JS_VERSION
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: jsVersion
         - name: JWT_SECRET_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: jwtSecret
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqHost
         - name: RABBITMQ_PASS
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: rabbitmqPass
         - name: RABBITMQ_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqPort
         - name: RABBITMQ_USER
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqUser
         - name: SECURITY_PASSWORD_SALT
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: passwordSalt
         - name: SYSTEM_VERSION
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: systemVersion
         - name: USER_ROOT_EMAIL
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: adminEmail
         - name: USER_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: adminPass
         - name: USER_ROOT_USERNAME
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: adminUser
         - name: WEBAPP_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: webappPort
         - name: GUNICORN_WORKERS
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: gunicornWorkers
         image: inspiregroup/artemis-frontend:{{ .Values.systemVersion }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: frontend
         resources: {}
         volumeMounts:
@@ -156,7 +152,7 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
           items:
           - key: webapp.cfg
             path: webapp.cfg
@@ -164,7 +160,7 @@ spec:
             path: logging.yaml
         name: frontend-configmap
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-frontend-pvc
+          claimName: frontend-pvc
         name: frontend-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:

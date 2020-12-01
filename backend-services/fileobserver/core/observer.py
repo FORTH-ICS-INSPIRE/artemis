@@ -21,11 +21,8 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
-SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
-if SVC_NAME_PREFIX != "":
-    SVC_NAME_PREFIX += "-"
-SERVICE_NAME = SVC_NAME_PREFIX + "fileobserver"
-CONFIGURATION_HOST = SVC_NAME_PREFIX + "configuration"
+SERVICE_NAME = "fileobserver"
+CONFIGURATION_HOST = "configuration"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 

@@ -54,15 +54,12 @@ shared_memory_locks = {
 }
 
 # global vars
-SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
-if SVC_NAME_PREFIX != "":
-    SVC_NAME_PREFIX += "-"
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
-SERVICE_NAME = SVC_NAME_PREFIX + "database"
-CONFIGURATION_HOST = SVC_NAME_PREFIX + "configuration"
-PREFIXTREE_HOST = SVC_NAME_PREFIX + "prefixtree"
-NOTIFIER_HOST = SVC_NAME_PREFIX + "notifier"
+SERVICE_NAME = "database"
+CONFIGURATION_HOST = "configuration"
+PREFIXTREE_HOST = "prefixtree"
+NOTIFIER_HOST = "notifier"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
 

@@ -39,15 +39,12 @@ shared_memory_locks = {
 }
 
 # global vars
-SVC_NAME_PREFIX = os.getenv("RELEASE_NAME", "")
-if SVC_NAME_PREFIX != "":
-    SVC_NAME_PREFIX += "-"
 START_TIME_OFFSET = 3600  # seconds
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
-SERVICE_NAME = SVC_NAME_PREFIX + "bgpstreamkafkatap"
-CONFIGURATION_HOST = SVC_NAME_PREFIX + "configuration"
-PREFIXTREE_HOST = SVC_NAME_PREFIX + "prefixtree"
+SERVICE_NAME = "bgpstreamkafkatap"
+CONFIGURATION_HOST = "configuration"
+PREFIXTREE_HOST = "prefixtree"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)

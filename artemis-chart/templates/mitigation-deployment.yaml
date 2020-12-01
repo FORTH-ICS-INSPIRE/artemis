@@ -2,62 +2,63 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-mitigation
+    app: mitigation
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-mitigation
+  name: mitigation
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-mitigation
+      app: mitigation
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-mitigation
+        app: mitigation
     spec:
       initContainers:
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-prefixtree
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-database
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-database {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z database {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
-        - name: RELEASE_NAME
-          value: {{ .Release.Name }}
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqHost
         - name: RABBITMQ_PASS
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: rabbitmqPass
         - name: RABBITMQ_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqPort
         - name: RABBITMQ_USER
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqUser
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: restPort
         image: inspiregroup/artemis-mitigation:{{ .Values.systemVersion }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: mitigation
         resources: {}
         volumeMounts:
@@ -67,7 +68,7 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
         name: mitigation-configmap
       {{- with .Values.nodeSelector }}
       nodeSelector:

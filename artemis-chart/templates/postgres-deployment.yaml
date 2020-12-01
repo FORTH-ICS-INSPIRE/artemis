@@ -2,20 +2,20 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-postgres
+    app: postgres
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-postgres
+  name: postgres
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-postgres
+      app: postgres
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-postgres
+        app: postgres
     spec:
       containers:
       - command:
@@ -24,32 +24,32 @@ spec:
         - name: DB_AUTOCLEAN
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbAutoClean
         - name: DB_BACKUP
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbBackup
         - name: DB_HIJACK_DORMANT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbHijackDormant
         - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbName
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: dbPass
         - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbUser
         image: timescale/timescaledb:1.1.0-pg10
         name: postgres
@@ -74,14 +74,14 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
           defaultMode: 0777
         name: postgres-configmap0
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
         name: postgres-configmap1
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
           items:
           - key: restore.sql
             path: restore.sql
@@ -89,13 +89,13 @@ spec:
             path: tables.sql
         name: postgres-configmap2
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
           items:
           - key: schema.sql
             path: schema.sql
         name: postgres-configmap3
       - persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-postgres-pvc
+          claimName: postgres-pvc
         name: postgres-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:

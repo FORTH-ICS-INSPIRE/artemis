@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name}}-nginx
+  name: nginx
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 spec:
@@ -14,5 +14,5 @@ spec:
     port: 443
     targetPort: 443
   selector:
-    app: {{ .Release.Name }}-nginx
+    app: nginx
 {{- end -}}

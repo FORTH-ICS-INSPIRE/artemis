@@ -3,25 +3,26 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-nginx
+    app: nginx
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-nginx
+  name: nginx
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-nginx
+      app: nginx
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-nginx
+        app: nginx
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.webappHost }} {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ .Values.webappHost }} {{ .Values.webappPort }} && nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;']
       containers:
       - image: nginx:1.17-alpine
         name: nginx
@@ -38,10 +39,10 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
         name: nginx-configmap0
       - secret:
-          secretName: {{ .Release.Name }}-secret-tls
+          secretName: secret-tls
           items:
           - key: tls.crt
             path: cert.pem

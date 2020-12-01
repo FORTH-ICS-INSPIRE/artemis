@@ -2,38 +2,39 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-pg-amqp-bridge
+    app: pg-amqp-bridge
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-pg-amqp-bridge
+  name: pg-amqp-bridge
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-pg-amqp-bridge
+      app: pg-amqp-bridge
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-pg-amqp-bridge
+        app: pg-amqp-bridge
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for rabbitmq; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for rabbitmq; sleep 10; done;']
       containers:
       - env:
         - name: AMQP_URI
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqUri
         - name: BRIDGE_CHANNELS
           value: events:amq.direct
         - name: POSTGRESQL_URI
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbUri
         image: subzerocloud/pg-amqp-bridge:0.0.6
         name: pg-amqp-bridge

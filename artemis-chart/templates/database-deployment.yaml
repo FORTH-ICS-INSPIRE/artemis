@@ -2,136 +2,140 @@ apiVersion: {{ template "artemis.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-database
+    app: database
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-database
+  name: database
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-database
+      app: database
   replicas: {{ .Values.replicaCount | default 1 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-database
+        app: database
     spec:
       initContainers:
       - name: wait-for-rmq
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
       - name: wait-for-redis
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.redisHost }} {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z {{ .Values.redisHost }} {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-pg
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z {{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-hasura
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z {{ .Values.hasuraHost }} {{ .Values.hasuraPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-notifier
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-notifier {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z notifier {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       - name: wait-for-prefixtree
         image: busybox
-        command: [ 'sh', '-c', 'until nc -z {{ .Release.Name }}-prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
+        imagePullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'until nc -z prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
       - env:
-        - name: RELEASE_NAME
-          value: {{ .Release.Name }}
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbHost
         - name: DB_NAME
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbName
         - name: DB_PASS
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: dbPass
         - name: DB_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbPort
         - name: DB_USER
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbUser
         - name: DB_VERSION
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbVersion
         - name: HASURA_GRAPHQL_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: hasuraSecret
         - name: HASURA_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: hasuraHost
         - name: HASURA_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: hasuraPort
         - name: HISTORIC
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: historic
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqHost
         - name: RABBITMQ_PASS
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secret
+              name: secret
               key: rabbitmqPass
         - name: RABBITMQ_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqPort
         - name: RABBITMQ_USER
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqUser
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: redisHost
         - name: REDIS_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: redisPort
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: restPort
         - name: WITHDRAWN_HIJACK_THRESHOLD
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: withdrawnHijackThreshold
         image: inspiregroup/artemis-database:{{ .Values.systemVersion }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: database
         resources: {}
         volumeMounts:
@@ -141,7 +145,7 @@ spec:
       restartPolicy: Always
       volumes:
       - configMap:
-          name: {{ .Release.Name }}-volumes
+          name: volumes
         name: database-configmap
       {{- with .Values.nodeSelector }}
       nodeSelector:

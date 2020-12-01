@@ -1280,6 +1280,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
     def _insert_bgp_updates(self):
         shared_memory_locks["insert_bgp_entries"].acquire()
+        num_of_entries = 0
         try:
             query = (
                 "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "

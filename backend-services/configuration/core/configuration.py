@@ -52,6 +52,7 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
 
 # global vars
+COMPOSE_PROJECT_NAME = os.getenv("COMPOSE_PROJECT_NAME", "artemis")
 SERVICE_NAME = "configuration"
 AUTOIGNORE_HOST = "autoignore"
 DATABASE_HOST = "database"
@@ -91,10 +92,14 @@ def service_to_ips_and_replicas(base_service_name):
         replica_ip = sa[0]
         replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
         replica_name_match = re.match(
-            r"^artemis_" + re.escape(base_service_name) + r"_(\d+)",
+            r"^"
+            + re.escape(COMPOSE_PROJECT_NAME)
+            + r"_"
+            + re.escape(base_service_name)
+            + r"_(\d+)",
             replica_host_by_addr,
         )
-        replica_name = "{}_{}".format(base_service_name, replica_name_match.group(1))
+        replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))
         service_to_ips_and_replicas_set.add((replica_name, replica_ip))
     return service_to_ips_and_replicas_set
 

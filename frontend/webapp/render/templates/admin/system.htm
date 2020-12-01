@@ -371,7 +371,7 @@
                 var loading_alert_box;
                 var loading_message = '';
                 for (var elem in data) {
-                    var group = data[elem]['name'].split('_')[0];
+                    var group = data[elem]['name'].split('-')[0];
                     if(modules_list.includes(group) == false){
                         continue;
                     }

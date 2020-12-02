@@ -48,7 +48,11 @@ from tornado.web import RequestHandler
 log = get_logger()
 
 # shared memory object locks
-shared_memory_locks = {"data_worker": mp.Lock(), "config_data": mp.Lock()}
+shared_memory_locks = {
+    "data_worker": mp.Lock(),
+    "config_data": mp.Lock(),
+    "ignore_fileobserver": mp.Lock(),
+}
 
 # global vars
 COMPOSE_PROJECT_NAME = os.getenv("COMPOSE_PROJECT_NAME", "artemis")
@@ -769,9 +773,15 @@ def get_created_asn_anchors_from_new_rule(yaml_conf, rule_asns):
     return created_asn_anchors, all_asns_exist
 
 
-def post_configuration_to_other_services(data):
+def post_configuration_to_other_services(
+    shared_memory_manager_dict, same_service_only=False
+):
+    data = shared_memory_manager_dict["config_data"]
     local_ip = get_local_ip()
-    for service in OTHER_SERVICES:
+    services_to_consider = OTHER_SERVICES
+    if same_service_only:
+        services_to_consider = [SERVICE_NAME]
+    for service in services_to_consider:
         try:
             if IS_KUBERNETES:
                 ips_and_replicas = service_to_ips_and_replicas_in_k8s(service)
@@ -782,13 +792,40 @@ def post_configuration_to_other_services(data):
             continue
         for replica_name, replica_ip in ips_and_replicas:
             try:
-                # do not send the configuration to yourself
-                if service == SERVICE_NAME and replica_ip == local_ip:
-                    continue
-                r = requests.post(
-                    url="http://{}:{}/config".format(replica_ip, REST_PORT),
-                    data=json.dumps(data),
-                )
+                # same service (configuration)
+                if service == SERVICE_NAME:
+                    # do not send the configuration to yourself
+                    if replica_ip == local_ip:
+                        continue
+                    # check if you need to inform the other microservice about the fileobserver ignoring state
+                    shared_memory_locks["ignore_fileobserver"].acquire()
+                    ignore_fileobserver = shared_memory_manager_dict[
+                        "ignore_fileobserver"
+                    ]
+                    shared_memory_locks["ignore_fileobserver"].release()
+                    # no need to update data, just notify about fileobserver ignore state
+                    if same_service_only:
+                        r = requests.post(
+                            url="http://{}:{}/config".format(replica_ip, REST_PORT),
+                            data=json.dumps(
+                                {"data": {}, "ignore_fileobserver": ignore_fileobserver}
+                            ),
+                        )
+                    else:
+                        r = requests.post(
+                            url="http://{}:{}/config".format(replica_ip, REST_PORT),
+                            data=json.dumps(
+                                {
+                                    "data": data,
+                                    "ignore_fileobserver": ignore_fileobserver,
+                                }
+                            ),
+                        )
+                else:
+                    r = requests.post(
+                        url="http://{}:{}/config".format(replica_ip, REST_PORT),
+                        data=json.dumps(data),
+                    )
                 response = r.json()
                 assert response["success"]
             except Exception:
@@ -1096,12 +1133,36 @@ class HijackLearnRuleHandler(RequestHandler):
 
 
 def configure_configuration(msg, shared_memory_manager_dict):
-    shared_memory_locks["config_data"].acquire()
     ret_json = {}
+
+    # ignore file observer if this is a change that we expect and do not need to re-consider
+    if "origin" in msg and msg["origin"] == "fileobserver":
+        shared_memory_locks["ignore_fileobserver"].acquire()
+        # re-instate fileobserver ignoring state to no-ignore
+        if shared_memory_manager_dict["ignore_fileobserver"]:
+            shared_memory_manager_dict["ignore_fileobserver"] = False
+            ret_json = {"success": True, "message": "ignored"}
+            shared_memory_locks["ignore_fileobserver"].release()
+            # configure the other configuration service replicas with the current config
+            # and the new ignore file observer info
+            post_configuration_to_other_services(
+                shared_memory_manager_dict, same_service_only=True
+            )
+            return ret_json
+        shared_memory_locks["ignore_fileobserver"].release()
+
+    shared_memory_locks["config_data"].acquire()
     try:
         # other configuration replica sends the correct data directly
-        if "raw_config" in msg:
-            shared_memory_manager_dict["config_data"] = msg
+        if "data" in msg:
+            if msg["data"]:
+                shared_memory_manager_dict["config_data"] = msg["data"]
+            if "ignore_fileobserver" in msg:
+                shared_memory_locks["ignore_fileobserver"].acquire()
+                shared_memory_manager_dict["ignore_fileobserver"] = msg[
+                    "ignore_fileobserver"
+                ]
+                shared_memory_locks["ignore_fileobserver"].release()
             ret_json = {"success": True, "message": "configured"}
         else:
             type_ = msg["type"]
@@ -1150,17 +1211,25 @@ def configure_configuration(msg, shared_memory_manager_dict):
                     if comment:
                         shared_memory_manager_dict["config_data"]["comment"] = comment
 
-                    # configure all other services with the new config
-                    post_configuration_to_other_services(
-                        shared_memory_manager_dict["config_data"]
-                    )
+                    # if the change did not come from the file observer itself,
+                    # we ignore the file observer next changes (until it informs us again)
+                    if not ("origin" in msg and msg["origin"] == "fileobserver"):
+                        shared_memory_locks["ignore_fileobserver"].acquire()
+                        shared_memory_manager_dict["ignore_fileobserver"] = True
+                        shared_memory_locks["ignore_fileobserver"].release()
 
-                    write_conf_via_tmp_file(
-                        shared_memory_manager_dict["config_file"],
-                        shared_memory_manager_dict["tmp_config_file"],
-                        shared_memory_manager_dict["config_data"]["raw_config"],
-                        yaml=False,
-                    )
+                    # configure all other services with the new config
+                    post_configuration_to_other_services(shared_memory_manager_dict)
+
+                    # if the change did not come from the file observer itself,
+                    # we write the file
+                    if not ("origin" in msg and msg["origin"] == "fileobserver"):
+                        write_conf_via_tmp_file(
+                            shared_memory_manager_dict["config_file"],
+                            shared_memory_manager_dict["tmp_config_file"],
+                            shared_memory_manager_dict["config_data"]["raw_config"],
+                            yaml=False,
+                        )
 
                 # reply back to the sender with a configuration accepted
                 # message.
@@ -1202,7 +1271,8 @@ class ConfigHandler(RequestHandler):
         sample request body:
         {
             "type": <yaml|json>,
-            "content": <list|dict>
+            "content": <list|dict>,
+            "origin": <str> (optional)
         }
         :return: {"success": True|False, "message": <message>}
         """
@@ -1330,6 +1400,7 @@ class Configuration:
             "tmp_config_file"
         ] = "/etc/artemis/config.yaml.tmp"
         self.shared_memory_manager_dict["config_data"] = {}
+        self.shared_memory_manager_dict["ignore_fileobserver"] = False
 
         log.info("service initiated")
 
@@ -1540,7 +1611,7 @@ def main():
         ], _flag, _error = parse(raw, yaml=True)
         # configure all other services with the current config
         post_configuration_to_other_services(
-            configurationService.shared_memory_manager_dict["config_data"]
+            configurationService.shared_memory_manager_dict
         )
     except Exception:
         log.exception("exception")

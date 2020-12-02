@@ -221,12 +221,17 @@ class Handler(FileSystemEventHandler):
             try:
                 r = requests.post(
                     url="http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT),
-                    data=json.dumps({"type": "yaml", "content": content}),
+                    data=json.dumps(
+                        {"type": "yaml", "content": content, "origin": "fileobserver"}
+                    ),
                 )
                 response = r.json()
 
                 if response["success"]:
-                    text = "new configuration accepted:\n{}".format(changes)
+                    if response["message"] == "ignored":
+                        text = "new configuration ok but ignored (no need to change)"
+                    else:
+                        text = "new configuration accepted:\n{}".format(changes)
                     log.info(text)
                     self.content = content
                 else:

@@ -22,6 +22,7 @@ import ruamel.yaml
 import ujson as json
 from artemis_utils import ArtemisError
 from artemis_utils import flatten
+from artemis_utils import get_hash
 from artemis_utils import get_logger
 from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
@@ -137,6 +138,7 @@ def service_to_ips_and_replicas_in_k8s(base_service_name):
 
 
 def read_conf(load_yaml=True, config_file=None):
+    ret_key = None
     ret_conf = None
     try:
         r = requests.get("http://{}:{}/config".format(DATABASE_HOST, REST_PORT))
@@ -150,6 +152,7 @@ def read_conf(load_yaml=True, config_file=None):
                 )
             else:
                 ret_conf = r_json["raw_config"]
+            ret_key = r_json["key"]
         elif config_file:
             log.warning(
                 "could not get most recent configuration from DB, falling back to file"
@@ -165,7 +168,7 @@ def read_conf(load_yaml=True, config_file=None):
     except Exception:
         log.exception("exception")
     finally:
-        return ret_conf
+        return ret_key, ret_conf
 
 
 def parse(raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False):
@@ -953,7 +956,7 @@ class LoadAsSetsHandler(RequestHandler):
         """
         ret_json = {}
         try:
-            yaml_conf = read_conf(
+            (conf_key, yaml_conf) = read_conf(
                 load_yaml=True,
                 config_file=self.shared_memory_manager_dict["config_file"],
             )
@@ -1009,7 +1012,7 @@ class LoadAsSetsHandler(RequestHandler):
                         "type": "yaml",
                         "content": ruamel.yaml.dump(
                             yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
-                        ).split("\n"),
+                        ),
                     },
                     self.shared_memory_manager_dict,
                 )
@@ -1050,7 +1053,7 @@ class HijackLearnRuleHandler(RequestHandler):
         yaml_conf_str = ""
         try:
             # load initial YAML configuration
-            yaml_conf = read_conf(
+            (conf_key, yaml_conf) = read_conf(
                 load_yaml=True,
                 config_file=self.shared_memory_manager_dict["config_file"],
             )
@@ -1079,7 +1082,7 @@ class HijackLearnRuleHandler(RequestHandler):
                         "type": "yaml",
                         "content": ruamel.yaml.dump(
                             yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
-                        ).split("\n"),
+                        ),
                     },
                     self.shared_memory_manager_dict,
                 )
@@ -1124,15 +1127,25 @@ def configure_configuration(msg, shared_memory_manager_dict):
             # accepted or not.
             if _flag:
                 log.debug("accepted new configuration")
-                # compare current with previous data excluding --obviously-- timestamps
-                # change to sth better
-                prev_data = copy.deepcopy(shared_memory_manager_dict["config_data"])
-                del prev_data["timestamp"]
-                new_data = copy.deepcopy(data)
-                del new_data["timestamp"]
-                prev_data_str = json.dumps(prev_data, sort_keys=True)
-                new_data_str = json.dumps(new_data, sort_keys=True)
-                if prev_data_str != new_data_str:
+
+                data_differ = False
+                # get previous conf key/hash and compare
+                (conf_key, yaml_conf) = read_conf(load_yaml=False, config_file=None)
+                if conf_key:
+                    new_config_hash = get_hash(data["raw_config"])
+                    if new_config_hash != conf_key:
+                        data_differ = True
+                else:
+                    # as fallback, compare current with previous data excluding --obviously-- timestamps
+                    prev_data = copy.deepcopy(shared_memory_manager_dict["config_data"])
+                    del prev_data["timestamp"]
+                    new_data = copy.deepcopy(data)
+                    del new_data["timestamp"]
+                    prev_data_str = json.dumps(prev_data, sort_keys=True)
+                    new_data_str = json.dumps(new_data, sort_keys=True)
+                    if prev_data_str != new_data_str:
+                        data_differ = True
+                if data_differ:
                     shared_memory_manager_dict["config_data"] = data
                     if comment:
                         shared_memory_manager_dict["config_data"]["comment"] = comment
@@ -1424,7 +1437,7 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                 bgp_updates = [bgp_updates]
 
             # load initial YAML configuration
-            yaml_conf = read_conf(
+            (conf_key, yaml_conf) = read_conf(
                 load_yaml=True,
                 config_file=self.shared_memory_manager_dict["config_file"],
             )
@@ -1485,7 +1498,7 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                         "type": "yaml",
                         "content": ruamel.yaml.dump(
                             yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
-                        ).split("\n"),
+                        ),
                     },
                     self.shared_memory_manager_dict,
                 )
@@ -1518,7 +1531,7 @@ def main():
     # reads and parses initial configuration file
     shared_memory_locks["config_data"].acquire()
     try:
-        raw = read_conf(
+        (conf_key, raw) = read_conf(
             load_yaml=False,
             config_file=configurationService.shared_memory_manager_dict["config_file"],
         )

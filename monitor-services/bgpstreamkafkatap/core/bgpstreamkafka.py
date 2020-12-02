@@ -164,7 +164,7 @@ def configure_bgpstreamkafka(msg, shared_memory_manager_dict):
             shared_memory_locks["data_worker"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
             # start the data worker only if it should be running

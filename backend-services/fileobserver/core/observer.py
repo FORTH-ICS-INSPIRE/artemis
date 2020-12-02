@@ -1,8 +1,6 @@
 import difflib
 import multiprocessing as mp
 import os
-import re
-import socket
 import time
 
 import requests
@@ -25,53 +23,6 @@ COMPOSE_PROJECT_NAME = os.getenv("COMPOSE_PROJECT_NAME", "artemis")
 SERVICE_NAME = "fileobserver"
 CONFIGURATION_HOST = "configuration"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
-# TODO: move to utils
-IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
-
-
-# TODO: move to utils
-def service_to_ips_and_replicas(base_service_name):
-    service_to_ips_and_replicas_set = set([])
-    addr_infos = socket.getaddrinfo(base_service_name, REST_PORT)
-    for addr_info in addr_infos:
-        af, sock_type, proto, canon_name, sa = addr_info
-        replica_ip = sa[0]
-        replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
-        replica_name_match = re.match(
-            r"^"
-            + re.escape(COMPOSE_PROJECT_NAME)
-            + r"_"
-            + re.escape(base_service_name)
-            + r"_(\d+)",
-            replica_host_by_addr,
-        )
-        replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))
-        service_to_ips_and_replicas_set.add((replica_name, replica_ip))
-    return service_to_ips_and_replicas_set
-
-
-# TODO: move to utils
-def service_to_ips_and_replicas_in_k8s(base_service_name):
-    from kubernetes import client, config
-
-    service_to_ips_and_replicas_set = set([])
-    config.load_incluster_config()
-    current_namespace = open(
-        "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-    ).read()
-    v1 = client.CoreV1Api()
-    try:
-        endpoints = v1.read_namespaced_endpoints_with_http_info(
-            base_service_name, current_namespace, _return_http_data_only=True
-        ).to_dict()
-        for entry in endpoints["subsets"][0]["addresses"]:
-            replica_name = entry["target_ref"]["name"]
-            replica_ip = entry["ip"]
-            service_to_ips_and_replicas_set.add((replica_name, replica_ip))
-    except Exception as e:
-        log.exception(e)
-
-    return service_to_ips_and_replicas_set
 
 
 class ConfigHandler(RequestHandler):
@@ -268,39 +219,28 @@ class Handler(FileSystemEventHandler):
         changes = "".join(difflib.unified_diff(self.content, content))
         if changes:
             try:
-                if IS_KUBERNETES:
-                    ips_and_replicas = service_to_ips_and_replicas_in_k8s(
+                r = requests.post(
+                    url="http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT),
+                    data=json.dumps({"type": "yaml", "content": content}),
+                )
+                response = r.json()
+
+                if response["success"]:
+                    text = "new configuration accepted:\n{}".format(changes)
+                    log.info(text)
+                    self.content = content
+                else:
+                    log.error(
+                        "invalid configuration due to error '{}':\n{}".format(
+                            response["message"], content
+                        )
+                    )
+            except Exception:
+                log.error(
+                    "could not send configuration to service '{}'".format(
                         CONFIGURATION_HOST
                     )
-                else:
-                    ips_and_replicas = service_to_ips_and_replicas(CONFIGURATION_HOST)
-            except Exception:
-                log.error("could not resolve service '{}'".format(CONFIGURATION_HOST))
-                return
-            for replica_name, replica_ip in ips_and_replicas:
-                try:
-                    r = requests.post(
-                        url="http://{}:{}/config".format(replica_ip, REST_PORT),
-                        data=json.dumps({"type": "yaml", "content": content}),
-                    )
-                    response = r.json()
-
-                    if response["success"]:
-                        text = "new configuration accepted:\n{}".format(changes)
-                        log.info(text)
-                        self.content = content
-                    else:
-                        log.error(
-                            "invalid configuration due to error '{}':\n{}".format(
-                                response["message"], content
-                            )
-                        )
-                except Exception:
-                    log.error(
-                        "could not send configuration to service '{}'".format(
-                            replica_name
-                        )
-                    )
+                )
 
 
 def make_app():

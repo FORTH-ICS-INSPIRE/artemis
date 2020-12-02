@@ -1,5 +1,4 @@
 import copy
-import difflib
 import multiprocessing as mp
 import os
 import re
@@ -43,7 +42,6 @@ from kombu.mixins import ConsumerProducerMixin
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
-from yaml import load as yload
 
 # logger
 log = get_logger()
@@ -66,6 +64,7 @@ BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
 BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
 EXABGPTAP_HOST = "exabgptap"
 OTHER_SERVICES = [
+    SERVICE_NAME,
     PREFIXTREE_HOST,
     DATABASE_HOST,
     NOTIFIER_HOST,
@@ -84,12 +83,21 @@ IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
 
 
 # TODO: move to utils
+def get_local_ip():
+    return socket.gethostbyname(socket.gethostname())
+
+
+# TODO: move to utils
 def service_to_ips_and_replicas(base_service_name):
+    local_ip = get_local_ip()
     service_to_ips_and_replicas_set = set([])
     addr_infos = socket.getaddrinfo(base_service_name, REST_PORT)
     for addr_info in addr_infos:
         af, sock_type, proto, canon_name, sa = addr_info
         replica_ip = sa[0]
+        # do not include yourself
+        if base_service_name == SERVICE_NAME and replica_ip == local_ip:
+            continue
         replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
         replica_name_match = re.match(
             r"^"
@@ -131,7 +139,6 @@ def service_to_ips_and_replicas_in_k8s(base_service_name):
 def read_conf(load_yaml=True, config_file=None):
     ret_conf = None
     try:
-        log.info("reading most recent configuration from DB")
         r = requests.get("http://{}:{}/config".format(DATABASE_HOST, REST_PORT))
         r_json = r.json()
         if r_json["success"]:
@@ -168,7 +175,11 @@ def parse(raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False):
     """
     try:
         if yaml:
-            data = yload(raw)
+            data = ruamel.yaml.load(
+                raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+            )
+            # update raw to keep correct format
+            raw = ruamel.yaml.dump(data, Dumper=ruamel.yaml.RoundTripDumper)
         else:
             data = raw
         data = check(data)
@@ -192,7 +203,7 @@ def check(data: Text) -> Dict:
     is misdefined.
     """
     if data is None or not isinstance(data, dict):
-        raise ArtemisError("invalid-data", data)
+        raise ArtemisError("invalid-data", type(data))
 
     sections = {"prefixes", "asns", "monitors", "rules", "autoignore"}
     for section in data:
@@ -756,6 +767,7 @@ def get_created_asn_anchors_from_new_rule(yaml_conf, rule_asns):
 
 
 def post_configuration_to_other_services(data):
+    local_ip = get_local_ip()
     for service in OTHER_SERVICES:
         try:
             if IS_KUBERNETES:
@@ -767,6 +779,9 @@ def post_configuration_to_other_services(data):
             continue
         for replica_name, replica_ip in ips_and_replicas:
             try:
+                # do not send the configuration to yourself
+                if service == SERVICE_NAME and replica_ip == local_ip:
+                    continue
                 r = requests.post(
                     url="http://{}:{}/config".format(replica_ip, REST_PORT),
                     data=json.dumps(data),
@@ -777,38 +792,21 @@ def post_configuration_to_other_services(data):
                 log.error("could not configure service '{}'".format(replica_name))
 
 
-def write_conf_via_tmp_file(config_file, tmp_file, yaml_conf, lock=True) -> NoReturn:
-    if lock:
-        shared_memory_locks["config_data"].acquire()
+def write_conf_via_tmp_file(config_file, tmp_file, conf, yaml=True) -> NoReturn:
+    if IS_KUBERNETES:
+        return
     try:
         with open(tmp_file, "w") as f:
-            ruamel.yaml.dump(yaml_conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+            if yaml:
+                ruamel.yaml.dump(conf, f, Dumper=ruamel.yaml.RoundTripDumper)
+            else:
+                f.write(conf)
         shutil.copymode(config_file, tmp_file)
         st = os.stat(config_file)
         os.chown(tmp_file, st[stat.ST_UID], st[stat.ST_GID])
         os.rename(tmp_file, config_file)
     except Exception:
         log.exception("exception")
-    finally:
-        if lock:
-            shared_memory_locks["config_data"].release()
-
-
-def write_raw_conf_via_tmp_file(config_file, tmp_file, raw, lock=True) -> NoReturn:
-    if lock:
-        shared_memory_locks["config_data"].acquire()
-    try:
-        with open(tmp_file, "w") as f:
-            f.write(raw)
-        shutil.copymode(config_file, tmp_file)
-        st = os.stat(config_file)
-        os.chown(tmp_file, st[stat.ST_UID], st[stat.ST_GID])
-        os.rename(tmp_file, config_file)
-    except Exception:
-        log.exception("exception")
-    finally:
-        if lock:
-            shared_memory_locks["config_data"].release()
 
 
 def translate_learn_rule_dicts_to_yaml_conf(
@@ -1006,10 +1004,14 @@ class LoadAsSetsHandler(RequestHandler):
 
             # as-sets were resolved, update configuration
             if (not error) and done_as_set_translations:
-                write_conf_via_tmp_file(
-                    self.shared_memory_manager_dict["config_file"],
-                    self.shared_memory_manager_dict["tmp_config_file"],
-                    yaml_conf,
+                configure_configuration(
+                    {
+                        "type": "yaml",
+                        "content": ruamel.yaml.dump(
+                            yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
+                        ).split("\n"),
+                    },
+                    self.shared_memory_manager_dict,
                 )
 
         except Exception:
@@ -1071,11 +1073,15 @@ class HijackLearnRuleHandler(RequestHandler):
                 yaml_conf_str = msg
 
             if payload["action"] == "approve" and ok:
-                # store the new configuration to file
-                write_conf_via_tmp_file(
-                    self.shared_memory_manager_dict["config_file"],
-                    self.shared_memory_manager_dict["tmp_config_file"],
-                    yaml_conf,
+                # update configuration
+                configure_configuration(
+                    {
+                        "type": "yaml",
+                        "content": ruamel.yaml.dump(
+                            yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
+                        ).split("\n"),
+                    },
+                    self.shared_memory_manager_dict,
                 )
         except Exception:
             log.exception("exception")
@@ -1090,80 +1096,67 @@ def configure_configuration(msg, shared_memory_manager_dict):
     shared_memory_locks["config_data"].acquire()
     ret_json = {}
     try:
-        type_ = msg["type"]
-        raw_ = msg["content"]
-
-        # if received config from Frontend with comment
-        comment = None
-        from_frontend = False
-        if isinstance(raw_, dict) and "comment" in raw_:
-            comment = raw_["comment"]
-            del raw_["comment"]
-            raw = raw_["config"]
-            from_frontend = True
+        # other configuration replica sends the correct data directly
+        if "raw_config" in msg:
+            shared_memory_manager_dict["config_data"] = msg
+            ret_json = {"success": True, "message": "configured"}
         else:
-            raw = raw_
+            type_ = msg["type"]
+            raw_ = msg["content"]
 
-        if type_ == "yaml":
-            stream = StringIO("".join(raw))
-            data, _flag, _error = parse(stream, yaml=True)
-        else:
-            data, _flag, _error = parse(raw)
+            # if received config from Frontend with comment
+            comment = None
+            if isinstance(raw_, dict) and "comment" in raw_:
+                comment = raw_["comment"]
+                del raw_["comment"]
+                raw = list(map(lambda x: x + "\n", raw_["config"].split("\n")))
+            else:
+                raw = raw_
 
-        # _flag is True or False depending if the new configuration was
-        # accepted or not.
-        if _flag:
-            log.debug("accepted new configuration")
-            # compare current with previous data excluding --obviously-- timestamps
-            # change to sth better
-            prev_data = copy.deepcopy(shared_memory_manager_dict["config_data"])
-            del prev_data["timestamp"]
-            new_data = copy.deepcopy(data)
-            del new_data["timestamp"]
-            prev_data_str = json.dumps(prev_data, sort_keys=True)
-            new_data_str = json.dumps(new_data, sort_keys=True)
-            if prev_data_str != new_data_str:
-                shared_memory_manager_dict["config_data"] = data
-                # the following needs to take place only if conf came from frontend
-                # otherwise the file is already updated to the latest version!
-                if from_frontend:
-                    write_raw_conf_via_tmp_file(
+            if type_ == "yaml":
+                # the content is provided as a list of YAML lines so we have to join first
+                stream = StringIO("".join(raw))
+                data, _flag, _error = parse(stream, yaml=True)
+            else:
+                data, _flag, _error = parse(raw)
+
+            # _flag is True or False depending if the new configuration was
+            # accepted or not.
+            if _flag:
+                log.debug("accepted new configuration")
+                # compare current with previous data excluding --obviously-- timestamps
+                # change to sth better
+                prev_data = copy.deepcopy(shared_memory_manager_dict["config_data"])
+                del prev_data["timestamp"]
+                new_data = copy.deepcopy(data)
+                del new_data["timestamp"]
+                prev_data_str = json.dumps(prev_data, sort_keys=True)
+                new_data_str = json.dumps(new_data, sort_keys=True)
+                if prev_data_str != new_data_str:
+                    shared_memory_manager_dict["config_data"] = data
+                    if comment:
+                        shared_memory_manager_dict["config_data"]["comment"] = comment
+
+                    # configure all other services with the new config
+                    post_configuration_to_other_services(
+                        shared_memory_manager_dict["config_data"]
+                    )
+
+                    write_conf_via_tmp_file(
                         shared_memory_manager_dict["config_file"],
                         shared_memory_manager_dict["tmp_config_file"],
                         shared_memory_manager_dict["config_data"]["raw_config"],
-                        lock=False,
+                        yaml=False,
                     )
-                if comment:
-                    shared_memory_manager_dict["config_data"]["comment"] = comment
 
-                # configure all other services with the new config
-                post_configuration_to_other_services(
-                    shared_memory_manager_dict["config_data"]
-                )
-
-                # Remove the comment to avoid marking config as different
-                if "comment" in shared_memory_manager_dict["config_data"]:
-                    del shared_memory_manager_dict["config_data"]["comment"]
-                # after accepting/writing, format new configuration correctly
-                yaml_conf = read_conf(
-                    load_yaml=True,
-                    config_file=shared_memory_manager_dict["config_file"],
-                )
-                write_conf_via_tmp_file(
-                    shared_memory_manager_dict["config_file"],
-                    shared_memory_manager_dict["tmp_config_file"],
-                    yaml_conf,
-                    lock=False,
-                )
-
-            # reply back to the sender with a configuration accepted
-            # message.
-            ret_json = {"success": True, "message": "configured"}
-        else:
-            log.debug("rejected new configuration")
-            # replay back to the sender with a configuration rejected and
-            # reason message.
-            ret_json = {"success": False, "message": _error}
+                # reply back to the sender with a configuration accepted
+                # message.
+                ret_json = {"success": True, "message": "configured"}
+            else:
+                log.debug("rejected new configuration")
+                # replay back to the sender with a configuration rejected and
+                # reason message.
+                ret_json = {"success": False, "message": _error}
     except Exception:
         log.exception("exception")
         ret_json = {"success": False, "message": "unknown error"}
@@ -1436,10 +1429,6 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                 config_file=self.shared_memory_manager_dict["config_file"],
             )
 
-            # save initial file content to ensure that it has not changed while processing
-            with open(self.shared_memory_manager_dict["config_file"], "r") as f:
-                initial_content = f.readlines()
-
             # process the autoconf updates
             conf_needs_update = False
             updates_processed = set()
@@ -1489,23 +1478,16 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                     conf_needs_update = False
                     break
 
-            # store the updated configuration to file
+            # update configuration
             if conf_needs_update:
-                # check final file content to ensure that it has not changed while processing
-                with open(self.shared_memory_manager_dict["config_file"], "r") as f:
-                    final_content = f.readlines()
-                changes = "".join(difflib.unified_diff(initial_content, final_content))
-                if changes:
-                    log.info(
-                        "Configuration file changed while processing autoconf updates, "
-                        "re-running autoconf to avoid overwrites"
-                    )
-                    self.handle_filtered_autoconf_updates(message)
-                    return
-                write_conf_via_tmp_file(
-                    self.shared_memory_manager_dict["config_file"],
-                    self.shared_memory_manager_dict["tmp_config_file"],
-                    yaml_conf,
+                configure_configuration(
+                    {
+                        "type": "yaml",
+                        "content": ruamel.yaml.dump(
+                            yaml_conf, Dumper=ruamel.yaml.RoundTripDumper
+                        ).split("\n"),
+                    },
+                    self.shared_memory_manager_dict,
                 )
 
             # acknowledge the processing of autoconf BGP updates using redis

@@ -116,6 +116,26 @@ def retrieve_most_recent_config_hash(ro_db):
     return None
 
 
+def retrieve_most_recent_raw_config(ro_db):
+    return_msg = None
+    try:
+        entry = ro_db.execute(
+            "SELECT key, raw_config, comment, time_modified from configs ORDER BY time_modified DESC LIMIT 1",
+            fetch_one=True,
+        )
+
+        if entry:
+            return_msg = {
+                "key": entry[0],
+                "raw_config": entry[1],
+                "comment": entry[2],
+                "time_modified": entry[3].timestamp(),
+            }
+    except Exception:
+        log.exception("failed to retrieved most recent config in db")
+    return return_msg
+
+
 def store_monitored_prefixes_stat(wo_db, monitored_prefixes):
     try:
         wo_db.execute(
@@ -225,6 +245,30 @@ class ConfigHandler(RequestHandler):
 
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
+        self.ro_db = DB(
+            application_name="database-rest-configuration-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
+
+    def get(self):
+        """
+        Simply provides the raw configuration stored in the DB
+        (with timestamp, hash and comment) to the requester
+        """
+        most_recent_config = retrieve_most_recent_raw_config(self.ro_db)
+        if most_recent_config:
+            write_json = most_recent_config
+            write_json["success"] = True
+        else:
+            write_json = {"success": False}
+        self.write(write_json)
 
     def post(self):
         """

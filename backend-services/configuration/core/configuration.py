@@ -128,6 +128,39 @@ def service_to_ips_and_replicas_in_k8s(base_service_name):
     return service_to_ips_and_replicas_set
 
 
+def read_conf(load_yaml=True, config_file=None):
+    ret_conf = None
+    try:
+        log.info("reading most recent configuration from DB")
+        r = requests.get("http://{}:{}/config".format(DATABASE_HOST, REST_PORT))
+        r_json = r.json()
+        if r_json["success"]:
+            if load_yaml:
+                ret_conf = ruamel.yaml.load(
+                    r_json["raw_config"],
+                    Loader=ruamel.yaml.RoundTripLoader,
+                    preserve_quotes=True,
+                )
+            else:
+                ret_conf = r_json["raw_config"]
+        elif config_file:
+            log.warning(
+                "could not get most recent configuration from DB, falling back to file"
+            )
+            with open(config_file, "r") as f:
+                raw = f.read()
+                if load_yaml:
+                    ret_conf = ruamel.yaml.load(
+                        raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                    )
+                else:
+                    ret_conf = raw
+    except Exception:
+        log.exception("exception")
+    finally:
+        return ret_conf
+
+
 def parse(raw: Union[Text, TextIO, StringIO], yaml: Optional[bool] = False):
     """
     Parser for the configuration file or string.
@@ -922,10 +955,9 @@ class LoadAsSetsHandler(RequestHandler):
         """
         ret_json = {}
         try:
-            with open(self.shared_memory_manager_dict["config_file"], "r") as f:
-                raw = f.read()
-            yaml_conf = ruamel.yaml.load(
-                raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+            yaml_conf = read_conf(
+                load_yaml=True,
+                config_file=self.shared_memory_manager_dict["config_file"],
             )
             error = False
             done_as_set_translations = {}
@@ -1015,12 +1047,11 @@ class HijackLearnRuleHandler(RequestHandler):
         ok = False
         yaml_conf_str = ""
         try:
-            # load initial YAML configuration from file
-            with open(self.shared_memory_manager_dict["config_file"], "r") as f:
-                raw = f.read()
-                yaml_conf = ruamel.yaml.load(
-                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
-                )
+            # load initial YAML configuration
+            yaml_conf = read_conf(
+                load_yaml=True,
+                config_file=self.shared_memory_manager_dict["config_file"],
+            )
 
             # translate the BGP update information into ARTEMIS conf primitives
             (rule_prefix, rule_asns, rules) = translate_learn_rule_msg_to_dicts(payload)
@@ -1114,10 +1145,9 @@ def configure_configuration(msg, shared_memory_manager_dict):
                 if "comment" in shared_memory_manager_dict["config_data"]:
                     del shared_memory_manager_dict["config_data"]["comment"]
                 # after accepting/writing, format new configuration correctly
-                with open(shared_memory_manager_dict["config_file"], "r") as f:
-                    raw = f.read()
-                yaml_conf = ruamel.yaml.load(
-                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
+                yaml_conf = read_conf(
+                    load_yaml=True,
+                    config_file=shared_memory_manager_dict["config_file"],
                 )
                 write_conf_via_tmp_file(
                     shared_memory_manager_dict["config_file"],
@@ -1400,12 +1430,11 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
             if not isinstance(bgp_updates, list):
                 bgp_updates = [bgp_updates]
 
-            # load initial YAML configuration from file
-            with open(self.shared_memory_manager_dict["config_file"], "r") as f:
-                raw = f.read()
-                yaml_conf = ruamel.yaml.load(
-                    raw, Loader=ruamel.yaml.RoundTripLoader, preserve_quotes=True
-                )
+            # load initial YAML configuration
+            yaml_conf = read_conf(
+                load_yaml=True,
+                config_file=self.shared_memory_manager_dict["config_file"],
+            )
 
             # save initial file content to ensure that it has not changed while processing
             with open(self.shared_memory_manager_dict["config_file"], "r") as f:
@@ -1471,7 +1500,7 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                         "Configuration file changed while processing autoconf updates, "
                         "re-running autoconf to avoid overwrites"
                     )
-                    self.handle_autoconf_updates(message)
+                    self.handle_filtered_autoconf_updates(message)
                     return
                 write_conf_via_tmp_file(
                     self.shared_memory_manager_dict["config_file"],
@@ -1507,17 +1536,17 @@ def main():
     # reads and parses initial configuration file
     shared_memory_locks["config_data"].acquire()
     try:
-        with open(
-            configurationService.shared_memory_manager_dict["config_file"], "r"
-        ) as f:
-            raw = f.read()
-            configurationService.shared_memory_manager_dict[
-                "config_data"
-            ], _flag, _error = parse(raw, yaml=True)
-            # configure all other services with the current config
-            post_configuration_to_other_services(
-                configurationService.shared_memory_manager_dict["config_data"]
-            )
+        raw = read_conf(
+            load_yaml=False,
+            config_file=configurationService.shared_memory_manager_dict["config_file"],
+        )
+        configurationService.shared_memory_manager_dict[
+            "config_data"
+        ], _flag, _error = parse(raw, yaml=True)
+        # configure all other services with the current config
+        post_configuration_to_other_services(
+            configurationService.shared_memory_manager_dict["config_data"]
+        )
     except Exception:
         log.exception("exception")
     finally:

@@ -1,15 +1,16 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: riperistap
 {{ include "artemis.labels" . | indent 4 }}
   name: riperistap
+{{- with .Values.services.riperistap }}
 spec:
   selector:
     matchLabels:
       app: riperistap
-  replicas: {{ .Values.services.riperistap.replicas | default 1 }}
+  replicas: {{ .replicas | default 1 }}
   strategy:
     type: Recreate
   template:
@@ -17,21 +18,11 @@ spec:
       labels:
         app: riperistap
     spec:
-      initContainers:
-      - name: wait-for-rmq
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
-      - name: wait-for-redis
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z {{ .Values.redisHost }} {{ .Values.redisPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-prefixtree
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
-      - env:
+      - name: riperistap
+        image: {{ .image }}:{{ $.Values.systemVersion }}
+        imagePullPolicy: Always
+        env:
         - name: MON_TIMEOUT_LAST_BGP_UPDATE
           valueFrom:
             configMapKeyRef:
@@ -77,10 +68,9 @@ spec:
             configMapKeyRef:
               name: configmap
               key: risId
-        image: {{  .Values.services.riperistap.image  }}:{{ .Values.systemVersion }}
-        imagePullPolicy: IfNotPresent
-        name: riperistap
-        resources: {}
+        {{- with $.Values.probes }}
+{{ toYaml . | nindent 8 }}
+        {{- end }}
         volumeMounts:
         - mountPath: /etc/artemis/logging.yaml
           name: riperistap-configmap
@@ -90,7 +80,8 @@ spec:
       - configMap:
           name: volumes
         name: riperistap-configmap
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
+  {{- end }}

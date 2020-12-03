@@ -4,6 +4,10 @@ metadata:
   name: postgres-pvc
   labels:
 {{ include "artemis.labels" . | indent 4 }}
+  annotations:
+    {{- with .Values.pvc.annotations }}
+{{ toYaml . | indent 4 }}
+    {{- end }}
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}
@@ -20,6 +24,10 @@ metadata:
   name: frontend-pvc
   labels:
 {{ include "artemis.labels" . | indent 4 }}
+  annotations:
+    {{- with .Values.pvc.annotations }}
+{{ toYaml . | indent 4 }}
+    {{- end }}
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode | default "ReadWriteMany" }}

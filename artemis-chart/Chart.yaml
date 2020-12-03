@@ -3,7 +3,7 @@ name: artemis-chart
 description: ARTEMIS helm chart for deploying on kubernetes.
 version: 2.0.0
 icon: https://github.com/FORTH-ICS-INSPIRE/artemis/blob/gh-pages/logo.png
-type: application
+kubeVersion: ">1.14.0-alpha"
 keywords:
   - helm
   - artemis

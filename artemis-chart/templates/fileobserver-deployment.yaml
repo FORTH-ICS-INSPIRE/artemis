@@ -1,15 +1,16 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: fileobserver
 {{ include "artemis.labels" . | indent 4 }}
   name: fileobserver
+{{- with .Values.services.fileobserver }}
 spec:
   selector:
     matchLabels:
       app: fileobserver
-  replicas: {{ .Values.services.fileobserver.replicas | default 1 }}
+  replicas: {{ .replicas | default 1 }}
   strategy:
     type: Recreate
   template:
@@ -17,22 +18,19 @@ spec:
       labels:
         app: fileobserver
     spec:
-      initContainers:
-      - name: wait-for-configuration
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z configuration {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
-      - env:
+      - name: fileobserver
+        image: {{ .image }}:{{ $.Values.systemVersion }}
+        imagePullPolicy: Always
+        env:
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: {{ .Values.services.fileobserver.image }}:{{ .Values.systemVersion }}
-        imagePullPolicy: IfNotPresent
-        name: fileobserver
-        resources: {}
+        {{- with $.Values.probes }}
+{{ toYaml . | nindent 8 }}
+        {{- end }}
         volumeMounts:
         - mountPath: /etc/artemis/
           name: fileobserver-configmap
@@ -46,7 +44,8 @@ spec:
           - key: logging.yaml
             path: logging.yaml
         name: fileobserver-configmap
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
+  {{- end }}

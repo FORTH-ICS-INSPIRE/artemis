@@ -1,10 +1,11 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: graphql
 {{ include "artemis.labels" . | indent 4 }}
   name: graphql
+{{- with .Values.services.graphql }}
 spec:
   selector:
     matchLabels:
@@ -20,9 +21,11 @@ spec:
       - name: wait-for-service
         image: busybox
         imagePullPolicy: IfNotPresent
-        command: ['sh', '-c', 'until nc -z {{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;']
+        command: ['sh', '-c', 'until nc -z {{ $.Values.dbHost }} {{ $.Values.dbPort }}; do echo waiting for services; sleep 10; done;']
       containers:
-      - args:
+      - name: graphql
+        image: {{ .image }}
+        args:
         - graphql-engine
         - serve
         env:
@@ -46,11 +49,9 @@ spec:
             secretKeyRef:
               name: secret
               key: hasuraJwt
-        image: {{ .Values.services.graphql.image }}
-        name: graphql
-        resources: {}
       restartPolicy: Always
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
+  {{- end }}

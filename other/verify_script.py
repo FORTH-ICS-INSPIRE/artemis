@@ -125,8 +125,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("pg-amqp-bridge"),
-            r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)",
+            K8S_VALUES_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 

@@ -1,10 +1,11 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: postgres
 {{ include "artemis.labels" . | indent 4 }}
   name: postgres
+{{- with .Values.services.postgres }}
 spec:
   selector:
     matchLabels:
@@ -18,8 +19,8 @@ spec:
         app: postgres
     spec:
       containers:
-      - command:
-        - ./postgres-entrypoint.sh
+      - name: postgres
+        image: {{ .image }}
         env:
         - name: DB_AUTOCLEAN
           valueFrom:
@@ -51,9 +52,8 @@ spec:
             configMapKeyRef:
               name: configmap
               key: dbUser
-        image: {{ .Values.services.postgres.image }}
-        name: postgres
-        resources: {}
+        command:
+        - ./postgres-entrypoint.sh
         volumeMounts:
         - mountPath: /postgres-entrypoint.sh
           name: postgres-configmap0
@@ -97,7 +97,8 @@ spec:
       - persistentVolumeClaim:
           claimName: postgres-pvc
         name: postgres-pvc
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
+  {{- end }}

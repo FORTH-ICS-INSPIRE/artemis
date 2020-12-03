@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled -}}
-apiVersion: {{ template "artemis.ingress.apiVersion" . }}
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: frontend-ingress
@@ -28,7 +28,7 @@ spec:
           serviceName: {{ .Values.webappHost }}
           servicePort: {{ .Values.webappPort }}
 ---
-apiVersion: {{ template "artemis.ingress.apiVersion" . }}
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: graphql-ingress

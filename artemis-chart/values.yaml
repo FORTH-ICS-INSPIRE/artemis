@@ -2,17 +2,22 @@
 guiEnabled: true
 systemVersion: latest
 historic: false
+
 # autostarter
 checkInterval: 5
+
 # redis
 redisHost: redis
 redisPort: 6379
+
 # api
 apiHost: postgrest
 apiPort: 3000
 restPort: 3000
+
 # monitor-specific configs
 risId: 8522
+
 # database
 dbHost: postgres
 dbPort: 5432
@@ -24,6 +29,7 @@ dbSchema: public
 dbAutoClean: false
 dbBackup: true
 dbHijackDormant: false
+
 # webapp
 bindIp: 0.0.0.0
 webappHost: frontend
@@ -33,16 +39,19 @@ adminPass: admin123
 adminEmail: admin@admin
 gunicornWorkers: 4
 jsVersion: 1.0.4
+
 # rabbitmq
 rabbitmqHost: rabbitmq
 rabbitmqPort: 5672
 rabbitmqUser: guest
 rabbitmqPass: guest
 rabbitmqIoThreadPoolSize: 128
+
 # hasura
 hasuraHost: graphql
 hasuraPort: 8080
 hasuraGui: false
+
 # custom log filter
 hijackLogFilter: '[{"community_annotation":"critical"},{"community_annotation":"NA"}]'
 # timeout (sec) since last seen BGP update for monitors
@@ -155,6 +164,10 @@ services:
     image: hasura/graphql-engine:v1.1.0
     ports:
     - 8080
+  pgamqpbridge:
+    image: subzerocloud/pg-amqp-bridge:0.0.6
+
+# ingress
 ingress:
   enabled: true
   # Used to create an Ingress record.
@@ -167,9 +180,29 @@ ingress:
       nginx.ingress.kubernetes.io/rewrite-target: /v1alpha1/graphql
   frontend:
     annotations:
+
+# pvc
 pvc:
   storage: 1Gi
   # storageClassName: rook-block
-  # accessMode: ReadWriteMany
+  accessMode: ReadWriteOnce
+  annotations:
+    helm.sh/resource-policy: "keep"
 
-nodeSelector:
+# nodeselector
+nodeSelector: {}
+
+# probes
+probes: {}
+#  livenessProbe:
+#    httpGet:
+#      path: /health
+#      port: 3000
+#    failureThreshold: 2
+#    periodSeconds: 5
+#  startupProbe:
+#    httpGet:
+#      path: /health
+#      port: 3000
+#    failureThreshold: 30
+#    periodSeconds: 10

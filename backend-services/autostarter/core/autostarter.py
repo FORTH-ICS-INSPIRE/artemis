@@ -23,7 +23,7 @@ from tornado.web import RequestHandler
 log = get_logger()
 
 # shared memory object locks
-shared_memory_locks = {"worker": mp.Lock()}
+shared_memory_locks = {"worker": mp.Lock(), "detection_update_trigger": mp.Lock()}
 
 # global vars
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 5))
@@ -66,6 +66,8 @@ USER_CONTROLLED_SERVICES = [
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
 CREATE_TRIGGER_QUERY = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
+# wait at most one round for a service to respond
+REST_TIMEOUT = CHECK_INTERVAL
 # TODO: move to utils
 IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
 
@@ -155,6 +157,7 @@ class Autostarter:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["worker_running"] = False
+        self.shared_memory_manager_dict["detection_update_trigger"] = False
 
         log.info("service initiated")
 
@@ -283,7 +286,6 @@ class AutostarterWorker:
             stored_status_dict[service] = stored_status
 
         ips_and_replicas_per_service = {}
-        detection_examined = False
         for service in intended_status_dict:
             try:
                 if IS_KUBERNETES:
@@ -311,7 +313,8 @@ class AutostarterWorker:
                 try:
                     intended_status = intended_status_dict[service]
                     r = requests.get(
-                        "http://{}:{}/health".format(replica_ip, REST_PORT)
+                        "http://{}:{}/health".format(replica_ip, REST_PORT),
+                        timeout=REST_TIMEOUT,
                     )
                     current_status = True if r.json()["status"] == "running" else False
                     # check if we need to update stored status
@@ -346,15 +349,11 @@ class AutostarterWorker:
                         r = requests.post(
                             url="http://{}:{}/control".format(replica_ip, REST_PORT),
                             data=json.dumps({"command": "start"}),
+                            timeout=REST_TIMEOUT,
                         )
                         response = r.json()
                         if not response["success"]:
                             raise Exception(response["message"])
-                        # activate update trigger when detection turns on
-                        if service == DETECTION_HOST and not detection_examined:
-                            self.wo_db.execute(
-                                "{}{}".format(DROP_TRIGGER_QUERY, CREATE_TRIGGER_QUERY)
-                            )
                         log.info(
                             "service '{}': '{}'".format(
                                 replica_name, response["message"]
@@ -369,26 +368,53 @@ class AutostarterWorker:
                         r = requests.post(
                             url="http://{}:{}/control".format(replica_ip, REST_PORT),
                             data=json.dumps({"command": "stop"}),
+                            timeout=REST_TIMEOUT,
                         )
                         response = r.json()
                         if not response["success"]:
                             raise Exception(response["message"])
-                        # deactivate update trigger when detection turns off
-                        if service == DETECTION_HOST:
-                            self.wo_db.execute("{}".format(DROP_TRIGGER_QUERY))
                         log.info(
                             "service '{}': '{}'".format(
                                 replica_name, response["message"]
                             )
                         )
-                    if service == DETECTION_HOST:
-                        detection_examined = True
+                except requests.exceptions.Timeout:
+                    log.warning(
+                        "timed out while checking and controlling service '{}'. Will retry next round".format(
+                            replica_name
+                        )
+                    )
                 except Exception:
                     log.warning(
                         "could not properly check and control service '{}'. Will retry next round".format(
                             replica_name
                         )
                     )
+
+            # in the end, check the special case of detection
+            if service == DETECTION_HOST:
+                intended_status = intended_status_dict[service]
+                shared_memory_locks["detection_update_trigger"].acquire()
+                detection_update_trigger = self.shared_memory_manager_dict[
+                    "detection_update_trigger"
+                ]
+                shared_memory_locks["detection_update_trigger"].release()
+                # activate update trigger when detection is intended to run
+                if intended_status and not detection_update_trigger:
+                    self.wo_db.execute(
+                        "{}{}".format(DROP_TRIGGER_QUERY, CREATE_TRIGGER_QUERY)
+                    )
+                    shared_memory_locks["detection_update_trigger"].acquire()
+                    self.shared_memory_manager_dict["detection_update_trigger"] = True
+                    shared_memory_locks["detection_update_trigger"].release()
+                    log.info("activated pg-amqp trigger for detection")
+                # deactivate update trigger when detection is not intended to run
+                elif not intended_status and detection_update_trigger:
+                    self.wo_db.execute("{}".format(DROP_TRIGGER_QUERY))
+                    shared_memory_locks["detection_update_trigger"].acquire()
+                    self.shared_memory_manager_dict["detection_update_trigger"] = False
+                    shared_memory_locks["detection_update_trigger"].release()
+                    log.info("deactivated pg-amqp trigger for detection")
 
         return ips_and_replicas_per_service
 

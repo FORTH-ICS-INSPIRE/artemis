@@ -345,16 +345,20 @@ class ControlHandler(RequestHandler):
     @staticmethod
     def stop_data_worker():
         shared_memory_locks["data_worker"].acquire()
-        with Connection(RABBITMQ_URI) as connection:
-            with Producer(connection) as producer:
-                command_exchange = create_exchange("command", connection)
-                producer.publish(
-                    "",
-                    exchange=command_exchange,
-                    routing_key="stop-{}".format(SERVICE_NAME),
-                    serializer="ujson",
-                )
-        shared_memory_locks["data_worker"].release()
+        try:
+            with Connection(RABBITMQ_URI) as connection:
+                with Producer(connection) as producer:
+                    command_exchange = create_exchange("command", connection)
+                    producer.publish(
+                        "",
+                        exchange=command_exchange,
+                        routing_key="stop-{}".format(SERVICE_NAME),
+                        serializer="ujson",
+                    )
+        except Exception:
+            log.exception("exception")
+        finally:
+            shared_memory_locks["data_worker"].release()
         message = "instructed to stop"
         return message
 

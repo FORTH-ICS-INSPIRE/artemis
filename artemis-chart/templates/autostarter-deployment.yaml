@@ -1,15 +1,16 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: autostarter
 {{ include "artemis.labels" . | indent 4 }}
   name: autostarter
+{{- with .Values.services.autostarter }}
 spec:
   selector:
     matchLabels:
       app: autostarter
-  replicas: {{ .Values.services.autostarter.replicas | default 1 }}
+  replicas: {{ .replicas | default 1 }}
   strategy:
     type: Recreate
   template:
@@ -17,69 +18,11 @@ spec:
       labels:
         app: autostarter
     spec:
-      initContainers:
-      - name: wait-for-rmq
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort }}; do echo waiting for services; sleep 10; done;']
-      - name: wait-for-pg
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z {{ .Values.dbHost }} {{ .Values.dbPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-database
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z database {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-prefixtree
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-configuration
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z configuration {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-fileobserver
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z fileobserver {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-autoignore
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z autoignore {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-notifier
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z notifier {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-detection
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z detection {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-mitigation
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z mitigation {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-riperistap
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z riperistap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-bgpstreamlivetap
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z bgpstreamlivetap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-bgpstreamkafkatap
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z bgpstreamkafkatap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-bgpstreamhisttap
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z bgpstreamhisttap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
-      - name: wait-for-exabgptap
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z exabgptap {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
-      - env:
+      - name: autostarter
+        image: {{ .image }}:{{ $.Values.systemVersion }}
+        imagePullPolicy: Always
+        env:
         - name: AUTO_RECOVER_PROCESS_STATE
           valueFrom:
             configMapKeyRef:
@@ -125,10 +68,9 @@ spec:
             configMapKeyRef:
               name: configmap
               key: testEnv
-        image: {{ .Values.services.autostarter.image }}:{{ .Values.systemVersion }}
-        imagePullPolicy: IfNotPresent
-        name: autostarter
-        resources: {}
+{{/*        {{- with $.Values.probes }}*/}}
+{{/*{{ toYaml . | nindent 8 }}*/}}
+{{/*        {{- end }}*/}}
         volumeMounts:
         - mountPath: /etc/artemis/logging.yaml
           name: autostarter-configmap
@@ -138,7 +80,8 @@ spec:
       - configMap:
           name: volumes
         name: autostarter-configmap
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

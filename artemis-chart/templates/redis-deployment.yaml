@@ -1,10 +1,11 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: redis
 {{ include "artemis.labels" . | indent 4 }}
   name: redis
+{{- with .Values.services.redis }}
 spec:
   selector:
     matchLabels:
@@ -18,8 +19,8 @@ spec:
         app: redis
     spec:
       containers:
-      - image: {{ .Values.services.redis.image }}
-        name: redis
+      - name: redis
+        image: {{ .image }}
         resources: {}
         volumeMounts:
         - mountPath: /usr/local/etc/redis/redis.conf
@@ -30,7 +31,8 @@ spec:
       - configMap:
           name: volumes
         name: redis-configmap
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
+  {{- end }}

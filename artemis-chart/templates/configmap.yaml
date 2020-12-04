@@ -5,11 +5,11 @@ metadata:
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 data:
-  guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
+  guiEnabled: {{ .Values.guiEnabled | default "true" | quote }}
   systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
   historic: {{ .Values.historic | default "false" | quote }}
   checkInterval: {{ .Values.checkInterval | default "5" | quote }}
-  redisHost: {{ .Values.redisHost | default "backend" }}
+  redisHost: {{ .Values.redisHost | default "redis" }}
   redisPort: {{ .Values.redisPort | default "6379" | quote }}
   apiHost: {{ .Values.apiHost | default "postgrest" }}
   apiPort: {{ .Values.apiPort | default "3000" | quote }}

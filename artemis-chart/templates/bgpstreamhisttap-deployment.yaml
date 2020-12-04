@@ -1,15 +1,16 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: bgpstreamhisttap
 {{ include "artemis.labels" . | indent 4 }}
   name: bgpstreamhisttap
+{{- with .Values.services.bgpstreamhisttap }}
 spec:
   selector:
     matchLabels:
       app: bgpstreamhisttap
-  replicas: {{ .Values.services.bgpstreamhisttap.replicas | default 1 }}
+  replicas: {{ .replicas | default 1 }}
   strategy:
     type: Recreate
   template:
@@ -17,17 +18,11 @@ spec:
       labels:
         app: bgpstreamhisttap
     spec:
-      initContainers:
-      - name: wait-for-rmq
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: ['sh', '-c', 'until nc -z {{ .Values.rabbitmqHost }} {{ .Values.rabbitmqPort}}; do echo waiting for services; sleep 10; done;']
-      - name: wait-for-prefixtree
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: [ 'sh', '-c', 'until nc -z prefixtree {{ .Values.restPort }}; do echo waiting for services; sleep 10; done;' ]
       containers:
-      - env:
+      - name: bgpstreamhisttap
+        image: {{ .image }}:{{ $.Values.systemVersion }}
+        imagePullPolicy: Always
+        env:
         - name: HISTORIC
           valueFrom:
             configMapKeyRef:
@@ -58,10 +53,9 @@ spec:
             configMapKeyRef:
               name: configmap
               key: restPort
-        image: {{ .Values.services.bgpstreamhisttap.image }}:{{ .Values.systemVersion }}
-        imagePullPolicy: IfNotPresent
-        name: bgpstreamhisttap
-        resources: {}
+        {{- with $.Values.probes }}
+{{ toYaml . | nindent 8 }}
+        {{- end }}
         volumeMounts:
         - mountPath: /etc/artemis/logging.yaml
           name: bgpstreamhisttap-configmap
@@ -71,7 +65,8 @@ spec:
       - configMap:
           name: volumes
         name: bgpstreamhisttap-configmap
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

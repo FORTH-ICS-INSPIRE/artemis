@@ -62,30 +62,39 @@ PREFIXTREE_HOST = "prefixtree"
 NOTIFIER_HOST = "notifier"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
+# TODO move to utils
+HEALTH_CHECK_TIMEOUT = 5
 
 
 # TODO: move this to util
 def wait_data_worker_dependencies(data_worker_dependencies):
     while True:
-        all_deps_met = True
+        met_deps = set()
+        unmet_deps = set()
         for service in data_worker_dependencies:
             try:
-                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                r = requests.get(
+                    "http://{}:{}/health".format(service, REST_PORT),
+                    timeout=HEALTH_CHECK_TIMEOUT,
+                )
                 status = True if r.json()["status"] == "running" else False
                 if not status:
-                    all_deps_met = False
-                    break
+                    unmet_deps.add(service)
+                else:
+                    met_deps.add(service)
             except Exception:
-                all_deps_met = False
-                break
-        if all_deps_met:
-            log.info("needed data workers started: {}".format(data_worker_dependencies))
-            break
-        log.info(
-            "waiting for needed data workers to start: {}".format(
-                data_worker_dependencies
+                unmet_deps.add(service)
+        if len(unmet_deps) == 0:
+            log.info(
+                "all needed data workers started: {}".format(data_worker_dependencies)
             )
-        )
+            break
+        else:
+            log.info(
+                "'{}' data workers started, waiting for: '{}'".format(
+                    met_deps, unmet_deps
+                )
+            )
         time.sleep(1)
 
 
@@ -684,7 +693,9 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         # redis db
         self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
         ping_redis(self.redis)
+        log.info("bootstrap redis...")
         self.bootstrap_redis()
+        log.info("redis bootstraped...")
 
         # wait for other needed data workers to start
         wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
@@ -786,7 +797,11 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             priority=1,
         )
 
+        log.info("setting up bulk updates...")
         self.setup_bulk_update_timer()
+        log.info("bulk update set up")
+
+        log.info("data worker initiated")
 
     def get_consumers(self, Consumer, channel):
         return [
@@ -1097,18 +1112,34 @@ class DatabaseDataWorker(ConsumerProducerMixin):
     def bootstrap_redis(self):
         try:
 
-            # bootstrap ongoing hijack events
+            # get all ongoing hijack events
             query = (
                 "SELECT time_started, time_last, peers_seen, "
                 "asns_inf, key, prefix, hijack_as, type, time_detected, "
                 "configured_prefix, timestamp_of_config, community_annotation, rpki_status "
                 "FROM hijacks WHERE active = true"
             )
+            ongoing_hijack_entries = self.ro_db.execute(query)
+            ongoing_hijack_keys_to_entries = {}
+            for entry in ongoing_hijack_entries:
+                ongoing_hijack_keys_to_entries[entry[4]] = entry
 
-            entries = self.ro_db.execute(query)
+            # get all hijack updates
+            query = "SELECT key, hijack_key FROM bgp_updates WHERE handled = true AND hijack_key<>ARRAY[]::text[];"
+            hijack_update_entries = self.ro_db.execute(query)
+            ongoing_hijacks_to_updates = {}
+            for entry in hijack_update_entries:
+                hijack_keys = entry[1]
+                for hijack_key in hijack_keys:
+                    if hijack_key in ongoing_hijack_keys_to_entries:
+                        if hijack_key not in ongoing_hijacks_to_updates:
+                            ongoing_hijacks_to_updates[hijack_key] = set()
+                        ongoing_hijacks_to_updates[hijack_key].add(entry[0])
+            del hijack_update_entries
 
+            # bootstrap hijack events in redis
             redis_pipeline = self.redis.pipeline()
-            for entry in entries:
+            for entry in ongoing_hijack_entries:
                 result = {
                     "time_started": entry[0].timestamp(),
                     "time_last": entry[1].timestamp(),
@@ -1124,24 +1155,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                     "community_annotation": entry[11],
                     "rpki_status": entry[12],
                 }
-
-                subquery = "SELECT key FROM bgp_updates WHERE %s = ANY(hijack_key);"
-
-                subentries = set(self.ro_db.execute(subquery, (entry[4],)))
-                subentries = set(map(lambda x: x[0], subentries))
-                log.debug(
-                    "Adding bgpupdate_keys: {} for {} and {}".format(
-                        subentries, redis_key(entry[5], entry[6], entry[7]), entry[4]
-                    )
-                )
-                result["bgpupdate_keys"] = subentries
+                result["bgpupdate_keys"] = ongoing_hijacks_to_updates[entry[4]]
 
                 redis_hijack_key = redis_key(entry[5], entry[6], entry[7])
                 redis_pipeline.set(redis_hijack_key, json.dumps(result))
                 redis_pipeline.sadd("persistent-keys", entry[4])
             redis_pipeline.execute()
 
-            # bootstrap BGP updates
+            # bootstrap recent BGP updates
             query = (
                 "SELECT key, timestamp FROM bgp_updates "
                 "WHERE timestamp > NOW() - interval '2 hours' "
@@ -1159,42 +1180,61 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             redis_pipeline.execute()
 
             # bootstrap (origin, neighbor) AS-links of ongoing hijacks
+
+            # first get all hijack handled 'A' updates
             query = (
-                "SELECT bgp_updates.prefix, bgp_updates.peer_asn, bgp_updates.as_path, "
-                "hijacks.prefix, hijacks.hijack_as, hijacks.type FROM "
-                "hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
-                "WHERE bgp_updates.type = 'A' "
-                "AND hijacks.active = true "
-                "AND bgp_updates.handled = true"
+                "SELECT key, hijack_key, prefix, peer_asn, as_path FROM bgp_updates "
             )
+            "WHERE type = 'A' "
+            "AND handled = true "
+            "AND hijack_key<>ARRAY[]::text[];"
+            hijack_handled_ann_update_entries = self.ro_db.execute(query)
+            hijack_handled_ann_update_keys_to_entries = {}
+            for entry in hijack_handled_ann_update_entries:
+                hijack_handled_ann_update_keys_to_entries[entry[0]] = entry
 
-            entries = self.ro_db.execute(query)
+            # then map ongoing hijacks (we have them already from before) to those updates
+            ongoing_hijacks_to_handled_ann_updates = {}
+            for entry in hijack_handled_ann_update_entries:
+                hijack_keys = entry[1]
+                for hijack_key in hijack_keys:
+                    if hijack_key in ongoing_hijack_keys_to_entries:
+                        if hijack_key not in ongoing_hijacks_to_handled_ann_updates:
+                            ongoing_hijacks_to_handled_ann_updates[hijack_key] = set()
+                        ongoing_hijacks_to_handled_ann_updates[hijack_key].add(entry[0])
 
+            # now store the combinations
             redis_pipeline = self.redis.pipeline()
-            for entry in entries:
-                # store the origin, neighbor combination for this hijack BGP update
-                origin = None
-                neighbor = None
-                as_path = entry[2]
-                if as_path:
-                    origin = as_path[-1]
-                if len(as_path) > 1:
-                    neighbor = as_path[-2]
-                redis_hijack_key = redis_key(entry[3], entry[4], entry[5])
-                redis_pipeline.sadd(
-                    "hij_orig_neighb_{}".format(redis_hijack_key),
-                    "{}_{}".format(origin, neighbor),
+            for hijack_key in ongoing_hijacks_to_handled_ann_updates:
+                hijack_entry = ongoing_hijack_keys_to_entries[hijack_key]
+                redis_hijack_key = redis_key(
+                    hijack_entry[5], hijack_entry[6], hijack_entry[7]
                 )
+                for update_key in ongoing_hijacks_to_handled_ann_updates[hijack_key]:
+                    update = hijack_handled_ann_update_keys_to_entries[update_key]
+                    # store the origin, neighbor combination for this hijack BGP update
+                    origin = None
+                    neighbor = None
+                    as_path = update[4]
+                    if as_path:
+                        origin = as_path[-1]
+                    if len(as_path) > 1:
+                        neighbor = as_path[-2]
 
-                # store the prefix and peer asn for this hijack BGP update
-                redis_pipeline.sadd(
-                    "prefix_{}_peer_{}_hijacks".format(entry[0], entry[1]),
-                    redis_hijack_key,
-                )
-                redis_pipeline.sadd(
-                    "hijack_{}_prefixes_peers".format(redis_hijack_key),
-                    "{}_{}".format(entry[0], entry[1]),
-                )
+                    redis_pipeline.sadd(
+                        "hij_orig_neighb_{}".format(redis_hijack_key),
+                        "{}_{}".format(origin, neighbor),
+                    )
+
+                    # store the prefix and peer asn for this hijack BGP update
+                    redis_pipeline.sadd(
+                        "prefix_{}_peer_{}_hijacks".format(update[2], update[3]),
+                        redis_hijack_key,
+                    )
+                    redis_pipeline.sadd(
+                        "hijack_{}_prefixes_peers".format(redis_hijack_key),
+                        "{}_{}".format(update[2], update[3]),
+                    )
             redis_pipeline.execute()
 
             # bootstrap seen monitor peers

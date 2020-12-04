@@ -66,10 +66,10 @@ USER_CONTROLLED_SERVICES = [
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
 CREATE_TRIGGER_QUERY = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
-# wait at most one round for a service to respond
-REST_TIMEOUT = CHECK_INTERVAL
 # TODO: move to utils
 IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
+# TODO move to utils
+HEALTH_CHECK_TIMEOUT = 5
 
 
 # TODO: move to utils
@@ -314,7 +314,7 @@ class AutostarterWorker:
                     intended_status = intended_status_dict[service]
                     r = requests.get(
                         "http://{}:{}/health".format(replica_ip, REST_PORT),
-                        timeout=REST_TIMEOUT,
+                        timeout=HEALTH_CHECK_TIMEOUT,
                     )
                     current_status = True if r.json()["status"] == "running" else False
                     # check if we need to update stored status
@@ -349,7 +349,6 @@ class AutostarterWorker:
                         r = requests.post(
                             url="http://{}:{}/control".format(replica_ip, REST_PORT),
                             data=json.dumps({"command": "start"}),
-                            timeout=REST_TIMEOUT,
                         )
                         response = r.json()
                         if not response["success"]:
@@ -368,7 +367,6 @@ class AutostarterWorker:
                         r = requests.post(
                             url="http://{}:{}/control".format(replica_ip, REST_PORT),
                             data=json.dumps({"command": "stop"}),
-                            timeout=REST_TIMEOUT,
                         )
                         response = r.json()
                         if not response["success"]:

@@ -71,31 +71,40 @@ HIJACK_DIM_COMBINATIONS = [
     ["Q", "0", "-", "-"],
     ["Q", "0", "-", "L"],
 ]
-DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
+DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST, NOTIFIER_HOST]
+# TODO move to utils
+HEALTH_CHECK_TIMEOUT = 5
 
 
 # TODO: move this to util
 def wait_data_worker_dependencies(data_worker_dependencies):
     while True:
-        all_deps_met = True
+        met_deps = set()
+        unmet_deps = set()
         for service in data_worker_dependencies:
             try:
-                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                r = requests.get(
+                    "http://{}:{}/health".format(service, REST_PORT),
+                    timeout=HEALTH_CHECK_TIMEOUT,
+                )
                 status = True if r.json()["status"] == "running" else False
                 if not status:
-                    all_deps_met = False
-                    break
+                    unmet_deps.add(service)
+                else:
+                    met_deps.add(service)
             except Exception:
-                all_deps_met = False
-                break
-        if all_deps_met:
-            log.info("needed data workers started: {}".format(data_worker_dependencies))
-            break
-        log.info(
-            "waiting for needed data workers to start: {}".format(
-                data_worker_dependencies
+                unmet_deps.add(service)
+        if len(unmet_deps) == 0:
+            log.info(
+                "all needed data workers started: {}".format(data_worker_dependencies)
             )
-        )
+            break
+        else:
+            log.info(
+                "'{}' data workers started, waiting for: '{}'".format(
+                    met_deps, unmet_deps
+                )
+            )
         time.sleep(1)
 
 

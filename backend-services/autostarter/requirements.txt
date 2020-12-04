@@ -7,4 +7,5 @@ kubernetes==12.0.1
 psycopg2==2.8.4
 requests==2.22.0
 slacker-log-handler==1.7.1
+tornado==6.0.4
 ujson==1.35

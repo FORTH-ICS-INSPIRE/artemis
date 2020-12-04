@@ -7,6 +7,7 @@ from gql import Client
 from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
 from webapp.utils import AUTOIGNORE_HOST
+from webapp.utils import AUTOSTARTER_HOST
 from webapp.utils import BGPSTREAMHISTTAP_HOST
 from webapp.utils import BGPSTREAMKAFKATAP_HOST
 from webapp.utils import BGPSTREAMLIVETAP_HOST
@@ -67,6 +68,7 @@ ALWAYS_ON_MODULES = [
     PREFIXTREE_HOST,
     NOTIFIER_HOST,
     AUTOIGNORE_HOST,
+    AUTOSTARTER_HOST,
 ]
 
 

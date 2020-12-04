@@ -22,6 +22,7 @@ if GRAPHQL_URI is None:
     )
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
 AUTOIGNORE_HOST = "autoignore"
+AUTOSTARTER_HOST = "autostarter"
 CONFIGURATION_HOST = "configuration"
 DATABASE_HOST = "database"
 DETECTION_HOST = "detection"

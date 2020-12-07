@@ -1579,21 +1579,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
         if update_bgp_entries:
             try:
-                query = (
-                    "UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, removed.peer_asn) FROM "
-                    "(SELECT witann.key, witann.peer_asn FROM "
-                    "(SELECT hij.key, wit.peer_asn, wit.timestamp AS wit_time, ann.timestamp AS ann_time FROM "
-                    "((VALUES %s) AS data (v1, v2, v3) LEFT JOIN hijacks AS hij ON (data.v1=hij.key) "
-                    "LEFT JOIN bgp_updates AS ann ON (data.v2=ann.key) "
-                    "LEFT JOIN bgp_updates AS wit ON (hij.key=ANY(wit.hijack_key))) WHERE "
-                    "ann.timestamp >= data.v3 AND wit.timestamp >= data.v3 AND "
-                    "ann.type='A' AND wit.prefix=ann.prefix AND wit.peer_asn=ann.peer_asn AND wit.type='W' "
-                    "ORDER BY wit_time DESC, hij.key LIMIT 1) AS witann WHERE witann.wit_time < witann.ann_time) "
-                    "AS removed WHERE hijacks.key=removed.key"
-                )
-                self.wo_db.execute_values(
-                    query, list(update_bgp_entries), page_size=1000
-                )
+                # update BGP updates either serially (if same hijack) or in parallel)
                 update_bgp_entries_dict = {}
                 for update_bgp_entry in update_bgp_entries:
                     hijack_key = update_bgp_entry[0]
@@ -1629,6 +1615,105 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 update_bgp_entries_parallel.clear()
                 update_bgp_entries_serial.clear()
                 update_bgp_entries_dict.clear()
+
+                # calculate new withdrawn peers seeing the new update announcements
+
+                # get all bgp updates (announcements) keys that were just updated
+                # plus the related hijack keys
+                updated_hijack_keys = set(map(lambda x: x[0], update_bgp_entries))
+                updated_bgp_update_keys = set(map(lambda x: x[1], update_bgp_entries))
+
+                # get all handled hijack update entries of type 'A' that belong to this set
+                # (ordered by DESC timestamp)
+                query = (
+                    "SELECT key, prefix, peer_asn, hijack_key, timestamp "
+                    "FROM bgp_updates WHERE handled = true AND type = 'A'"
+                    "AND hijack_key<>ARRAY[]::text[] "
+                    "ORDER BY timestamp DESC"
+                )
+                ann_updates_entries = self.ro_db.execute(query)
+                hijacks_to_ann_prefix_peer_timestamp = {}
+                for entry in ann_updates_entries:
+                    hijack_keys = entry[3]
+                    for hijack_key in hijack_keys:
+                        if (
+                            hijack_key in updated_hijack_keys
+                            and entry[0] in updated_bgp_update_keys
+                        ):
+                            prefix_peer = "{}-{}".format(entry[1], entry[2])
+                            if hijack_key not in hijacks_to_ann_prefix_peer_timestamp:
+                                hijacks_to_ann_prefix_peer_timestamp[hijack_key] = {}
+                            # the following needs to take place only the first time the prefix-peer combo is encountered
+                            if (
+                                prefix_peer
+                                not in hijacks_to_ann_prefix_peer_timestamp[hijack_key]
+                            ):
+                                hijacks_to_ann_prefix_peer_timestamp[hijack_key][
+                                    prefix_peer
+                                ] = (entry[4].timestamp(), entry[2])
+
+                # get all handled hijack updates of type 'W' (ordered by DESC timestamp)
+                query = (
+                    "SELECT key, prefix, peer_asn, hijack_key, timestamp "
+                    "FROM bgp_updates WHERE handled = true AND type = 'W'"
+                    "AND hijack_key<>ARRAY[]::text[] "
+                    "ORDER BY timestamp DESC"
+                )
+                wit_updates_entries = self.ro_db.execute(query)
+                hijacks_to_wit_prefix_peer_timestamp = {}
+                for entry in wit_updates_entries:
+                    hijack_keys = entry[3]
+                    for hijack_key in hijack_keys:
+                        if hijack_key in updated_hijack_keys:
+                            prefix_peer = "{}-{}".format(entry[1], entry[2])
+                            if hijack_key not in hijacks_to_wit_prefix_peer_timestamp:
+                                hijacks_to_wit_prefix_peer_timestamp[hijack_key] = {}
+                            # the following needs to take place only the first time the prefix-peer combo is encountered
+                            if (
+                                prefix_peer
+                                not in hijacks_to_wit_prefix_peer_timestamp[hijack_key]
+                            ):
+                                hijacks_to_wit_prefix_peer_timestamp[hijack_key][
+                                    prefix_peer
+                                ] = (entry[4].timestamp(), entry[2])
+
+                # check what peers need to be removed from withdrawn sets
+                remove_withdrawn_peers = set()
+                for hijack_key in hijacks_to_ann_prefix_peer_timestamp:
+                    if hijack_key in hijacks_to_wit_prefix_peer_timestamp:
+                        for prefix_peer in hijacks_to_ann_prefix_peer_timestamp[
+                            hijack_key
+                        ]:
+                            if (
+                                prefix_peer
+                                in hijacks_to_wit_prefix_peer_timestamp[hijack_key]
+                            ):
+                                if (
+                                    hijacks_to_wit_prefix_peer_timestamp[hijack_key][
+                                        prefix_peer
+                                    ][0]
+                                    < hijacks_to_ann_prefix_peer_timestamp[hijack_key][
+                                        prefix_peer
+                                    ][0]
+                                ):
+                                    remove_withdrawn_peers.add(
+                                        (
+                                            hijack_key,
+                                            hijacks_to_ann_prefix_peer_timestamp[
+                                                hijack_key
+                                            ][prefix_peer][1],
+                                        )
+                                    )
+
+                # execute query
+                query = (
+                    "UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, data.v2::BIGINT) FROM "
+                    "(VALUES %s) AS data (v1, v2) WHERE hijacks.key=data.v1"
+                )
+                self.wo_db.execute_values(
+                    query, list(remove_withdrawn_peers), page_size=1000
+                )
+
             except Exception:
                 log.exception("exception")
                 return -1

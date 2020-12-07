@@ -693,9 +693,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         # redis db
         self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
         ping_redis(self.redis)
-        log.info("bootstrap redis...")
-        self.bootstrap_redis()
-        log.info("redis bootstraped...")
+        # the first DB process that starts, bootstraps redis
+        if not self.redis.getset("redis-bootstrap", "1"):
+            log.info("bootstrapping redis...")
+            self.bootstrap_redis()
+            log.info("redis bootstrapped...")
+        else:
+            log.info("redis already bootstrapped...")
+        self.monitor_peers = self.redis.scard("peer-asns")
 
         # wait for other needed data workers to start
         wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
@@ -1245,7 +1250,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             for entry in entries:
                 redis_pipeline.sadd("peer-asns", int(entry[0]))
             redis_pipeline.execute()
-            self.monitor_peers = self.redis.scard("peer-asns")
 
             self.wo_db.execute(
                 "UPDATE stats SET monitor_peers=%s;", (self.monitor_peers,)

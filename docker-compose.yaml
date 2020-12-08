@@ -367,7 +367,6 @@ services:
         volumes:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
-        image: inspiregroup/artemis-tempfrontend:${SYSTEM_VERSION}
         build:
             context: frontend/
             dockerfile: ./apps/artemis-web/Dockerfile

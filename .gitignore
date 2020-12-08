@@ -18,3 +18,4 @@ postgres-data-backup/*
 local_configs/*
 local_configs.bk*
 *.iml
+mongo-data

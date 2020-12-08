@@ -368,47 +368,28 @@ services:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
         image: inspiregroup/artemis-tempfrontend:${SYSTEM_VERSION}
-        build: ./frontend/
-        container_name: frontend
+        build:
+            context: frontend/
+            dockerfile: ./apps/artemis-web/Dockerfile
         restart: always
-        depends_on:
-            - database
-            - graphql
-            - postgres
-            - postgrest
-            - rabbitmq
+        container_name: frontend
         networks:
             - artemis
-        expose:
-            - ${WEBAPP_PORT}
+        env_file:
+            - frontend/.env
+        depends_on:
+            - mongodb
+    mongodb:
+        image: mongo:latest
+        container_name: mongodb
+        restart: always
+        networks:
+            - artemis
         environment:
-            API_HOST: ${API_HOST}
-            API_PORT: ${API_PORT}
-            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
-            BIND_IP: ${BIND_IP}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
-            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            JS_VERSION: ${JS_VERSION}
-            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASS: ${RABBITMQ_PASS}
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REST_PORT: 3000
-            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
-            SYSTEM_VERSION: ${SYSTEM_VERSION}
-            USER_ROOT_USERNAME: ${ADMIN_USER}
-            USER_ROOT_PASSWORD: ${ADMIN_PASS}
-            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            WEBAPP_PORT: ${WEBAPP_PORT}
+            MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASS}
         volumes:
-            - ./local_configs/frontend/:/etc/artemis/
-            - ./frontend/db/:/etc/webapp/db/
+            - ./mongo-data:/data/db
     nginx:
         image: nginx:1.17-alpine
         container_name: nginx

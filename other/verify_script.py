@@ -132,7 +132,12 @@ class TestStringMethods(unittest.TestCase):
     def test_env_values(self):
         env_vals = set(get_matches_from_file(ENV_FILE, r"([A-Z_]+)="))
         env_vals.remove("COMPOSE_PROJECT_NAME")
+        env_vals.remove("ARTEMIS_WEB_HOST")
+        env_vals.remove("MONGODB_USER")
+        env_vals.remove("MONGODB_PASS")
         dc_vals = set(get_matches_from_file(COMPOSE_FILE, r"\$\{([A-Z_]+)[:\-0-9]*\}"))
+        dc_vals.remove("MONGODB_USER")
+        dc_vals.remove("MONGODB_PASS")
 
         self.assertTrue(dc_vals.issubset(env_vals))
 

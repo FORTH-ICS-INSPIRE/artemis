@@ -1,3 +1,0 @@
-# minimal attribute set is required
-ATTRIBUTE	User-Name		1	string
-ATTRIBUTE	User-Password	2	string

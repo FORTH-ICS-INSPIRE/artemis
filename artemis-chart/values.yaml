@@ -1,6 +1,6 @@
 # general
 guiEnabled: true
-systemVersion: latest
+systemVersion: dev-PR472
 historic: false
 
 # autostarter

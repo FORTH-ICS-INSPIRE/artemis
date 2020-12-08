@@ -114,18 +114,7 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    cp -rn monitor-services/configs/* local_configs/monitor && \
    cp -rn frontend/webapp/configs/* local_configs/frontend
    ```
-   and then change the source mappings in `docker-compose.yaml`, by following the instructions within the file.
-   Example:
-   ```
-   # comment after Step 2 of README
-   ```
-   means: "comment out the following line"
-   and:
-   ```
-   # uncomment after Step 2 of README
-   ```
-   means: "uncomment the following line".
-
+   The source mappings in `docker-compose.yaml` are already updated by default.
    The `local_configs` directory is NOT under version control.
    The same applies to:
    ```
@@ -138,8 +127,10 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    $ tree local_configs
    local_configs
    ├── backend
+   │   ├── autoconf-config.yaml
    │   ├── config.yaml
-   │   └── logging.yaml
+   │   ├── logging.yaml
+   │   └── redis.conf
    ├── frontend
    │   ├── certs
    │   │   ├── cert.pem

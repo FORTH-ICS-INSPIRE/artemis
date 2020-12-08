@@ -23,9 +23,8 @@ services:
             REST_PORT: 3000
             RIS_ID: ${RIS_ID}
         volumes:
-            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/riperistap/entrypoint:/root/entrypoint
-            - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
     bgpstreamlivetap:
         image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
         build: ./monitor-services/bgpstreamlivetap/
@@ -48,9 +47,8 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
-            - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
     bgpstreamkafkatap:
         image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
         build: ./monitor-services/bgpstreamkafkatap/
@@ -73,9 +71,8 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
-            - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
     bgpstreamhisttap:
         image: inspiregroup/artemis-bgpstreamhisttap:${SYSTEM_VERSION}
         build: ./monitor-services/bgpstreamhisttap/
@@ -95,9 +92,8 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
-            - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
     exabgptap:
         image: inspiregroup/artemis-exabgptap:${SYSTEM_VERSION}
         build: ./monitor-services/exabgptap/
@@ -120,9 +116,8 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./monitor-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
-            - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
     autoignore:
         image: inspiregroup/artemis-autoignore:${SYSTEM_VERSION}
         build: ./backend-services/autoignore/
@@ -148,9 +143,8 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/autoignore/entrypoint:/root/entrypoint
-            - ./backend-services/autoignore/core/autoignore.py:/root/core/autoignore.py
     autostarter:
         image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
         build: ./backend-services/autostarter/
@@ -182,9 +176,8 @@ services:
             DB_NAME: ${DB_NAME}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
-            - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
     configuration:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
         build: ./backend-services/configuration/
@@ -217,9 +210,8 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/:/etc/artemis/
+            - ./local_configs/backend/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
-            - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
     database:
         image: inspiregroup/artemis-database:${SYSTEM_VERSION}
         build: ./backend-services/database/
@@ -255,9 +247,8 @@ services:
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
             HISTORIC: ${HISTORIC}
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/database/entrypoint:/root/entrypoint
-            - ./backend-services/database/core/database.py:/root/core/database.py
     detection:
         image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
         build: ./backend-services/detection/
@@ -284,9 +275,8 @@ services:
             RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
             RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/detection/entrypoint:/root/entrypoint
-            - ./backend-services/detection/core/detection.py:/root/core/detection.py
     fileobserver:
         image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
         build: ./backend-services/fileobserver/
@@ -300,9 +290,8 @@ services:
         environment:
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/:/etc/artemis/
+            - ./local_configs/backend/:/etc/artemis/
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
-            - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     mitigation:
         image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
         build: ./backend-services/mitigation/
@@ -322,9 +311,8 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/mitigation/entrypoint:/root/entrypoint
-            - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
     notifier:
         image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
         build: ./backend-services/notifier/
@@ -344,9 +332,8 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/notifier/entrypoint:/root/entrypoint
-            - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
     prefixtree:
         image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
         build: ./backend-services/prefixtree/
@@ -367,9 +354,8 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./backend-services/configs/logging.yaml:/etc/artemis/logging.yaml
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/prefixtree/entrypoint:/root/entrypoint
-            - ./backend-services/prefixtree/core/prefixtree.py:/root/core/prefixtree.py
     redis:
         image: redis:latest
         container_name: redis
@@ -379,9 +365,9 @@ services:
         expose:
             - ${REDIS_PORT}
         volumes:
-            - ./backend-services/configs/redis.conf:/usr/local/etc/redis/redis.conf
+            - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
-        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
+        image: inspiregroup/artemis-tempfrontend:${SYSTEM_VERSION}
         build: ./frontend/
         container_name: frontend
         restart: always
@@ -421,8 +407,7 @@ services:
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}
             WEBAPP_PORT: ${WEBAPP_PORT}
         volumes:
-            - ./frontend/:/root/
-            - ./frontend/webapp/configs/:/etc/artemis/
+            - ./local_configs/frontend/:/etc/artemis/
             - ./frontend/db/:/etc/webapp/db/
     nginx:
         image: nginx:1.17-alpine
@@ -441,9 +426,8 @@ services:
             - "80:80"
             - "443:443"
         volumes:
-            - ./frontend/webapp/configs/nginx.conf:/etc/nginx/nginx.conf
-            # comment after Step 2 of README
-            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+            - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
+            - ./local_configs/frontend/certs/:/etc/nginx/certs/
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq
@@ -452,10 +436,7 @@ services:
             - artemis
         expose:
             - ${RABBITMQ_PORT}
-            - 15672
             # - 15672 management port
-        ports:
-            - "15672:15672"
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}

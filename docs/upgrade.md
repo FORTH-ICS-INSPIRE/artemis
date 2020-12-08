@@ -14,8 +14,10 @@ check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docke
    $ tree local_configs
    local_configs
    ├── backend
+   │   ├── autoconf-config.yaml
    │   ├── config.yaml
-   │   └── logging.yaml
+   │   ├── logging.yaml
+   │   └── redis.conf
    ├── frontend
    │   ├── certs
    │   │   ├── cert.pem

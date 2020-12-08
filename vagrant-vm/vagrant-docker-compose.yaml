@@ -341,7 +341,7 @@ services:
         volumes:
             - ./local_configs/backend-services/redis/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
-        image: inspiregroup/artemis-frontend:dev-PR472
+        image: inspiregroup/artemis-tempfrontend:dev-PR472
         container_name: frontend
         restart: always
         depends_on:
@@ -400,7 +400,6 @@ services:
             - "443:443"
         volumes:
             - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
-            # comment after Step 2 of README
             - ./local_configs/frontend/certs/:/etc/nginx/certs/
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine

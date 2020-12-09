@@ -723,12 +723,21 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         # redis db
         self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
         ping_redis(self.redis)
-        # the first DB process that starts, bootstraps redis
+        # the first DB process that starts, bootstraps redis and blocks rest of replicas until complete
         if not self.redis.getset("redis-bootstrap", "1"):
             log.info("bootstrapping redis...")
+            redis_pipeline = self.redis.pipeline()
+            redis_pipeline.lpush("database-goahead", "1")
+            redis_pipeline.blpop("database-goahead")
+            redis_pipeline.execute()
             self.bootstrap_redis()
             log.info("redis bootstrapped...")
+            self.redis.lpush("database-goahead", "1")
         else:
+            while not self.redis.exists("database-goahead"):
+                time.sleep(1)
+            self.redis.blpop("database-goahead")
+            self.redis.lpush("database-goahead", "1")
             log.info("redis already bootstrapped...")
         self.monitor_peers = self.redis.scard("peer-asns")
 

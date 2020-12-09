@@ -51,6 +51,7 @@ shared_memory_locks = {
     "handled_bgp_entries": mp.Lock(),
     "outdate_hijacks": mp.Lock(),
     "insert_hijacks_entries": mp.Lock(),
+    "monitors": mp.Lock(),
 }
 
 # global vars
@@ -209,6 +210,12 @@ def configure_database(msg, shared_memory_manager_dict):
             else:
                 log.debug("database config is up-to-date")
 
+            # extract monitors
+            monitors = config.get("monitors", {})
+            shared_memory_locks["monitors"].acquire()
+            shared_memory_manager_dict["monitors"] = monitors
+            shared_memory_locks["monitors"].release()
+
             # now that the conf is changed, get and store additional stats from prefixtree
             r = requests.get(
                 "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
@@ -245,6 +252,23 @@ def configure_database(msg, shared_memory_manager_dict):
         return {"success": True, "message": "configured"}
     except Exception:
         return {"success": False, "message": "error during service configuration"}
+
+
+class MonitorHandler(RequestHandler):
+    """
+    REST request handler for monitor information.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Simply provides the configured monitors (in the form of a JSON dict) to the requester
+        """
+        shared_memory_locks["monitors"].acquire()
+        self.write({"monitors": self.shared_memory_manager_dict["monitors"]})
+        shared_memory_locks["monitors"].release()
 
 
 class ConfigHandler(RequestHandler):
@@ -612,6 +636,7 @@ class Database:
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["monitored_prefixes"] = set()
+        self.shared_memory_manager_dict["monitors"] = {}
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
         self.shared_memory_manager_dict["config_timestamp"] = -1
 
@@ -631,6 +656,11 @@ class Database:
                 (
                     "/health",
                     HealthHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/monitors",
+                    MonitorHandler,
                     dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
                 ),
                 (

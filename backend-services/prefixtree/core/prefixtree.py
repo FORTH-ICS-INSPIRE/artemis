@@ -43,7 +43,6 @@ shared_memory_locks = {
     "data_worker": mp.Lock(),
     "prefix_tree": mp.Lock(),
     "autoignore": mp.Lock(),
-    "monitors": mp.Lock(),
     "monitored_prefixes": mp.Lock(),
     "configured_prefix_count": mp.Lock(),
     "config_timestamp": mp.Lock(),
@@ -79,9 +78,6 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
         shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
-
-            # extract monitors
-            monitors = config.get("monitors", {})
 
             # calculate prefix tree
             prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
@@ -164,10 +160,6 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
             shared_memory_manager_dict["prefix_tree"] = dict_prefix_tree
             shared_memory_manager_dict["prefix_tree_recalculate"] = True
             shared_memory_locks["prefix_tree"].release()
-
-            shared_memory_locks["monitors"].acquire()
-            shared_memory_manager_dict["monitors"] = monitors
-            shared_memory_locks["monitors"].release()
 
             shared_memory_locks["monitored_prefixes"].acquire()
             shared_memory_manager_dict["monitored_prefixes"] = monitored_prefixes
@@ -329,23 +321,6 @@ class ControlHandler(RequestHandler):
             self.write({"success": False, "message": "error during control"})
 
 
-class MonitorHandler(RequestHandler):
-    """
-    REST request handler for monitor information.
-    """
-
-    def initialize(self, shared_memory_manager_dict):
-        self.shared_memory_manager_dict = shared_memory_manager_dict
-
-    def get(self):
-        """
-        Simply provides the configured monitors (in the form of a JSON dict) to the requester
-        """
-        shared_memory_locks["monitors"].acquire()
-        self.write({"monitors": self.shared_memory_manager_dict["monitors"]})
-        shared_memory_locks["monitors"].release()
-
-
 class ConfiguredPrefixCountHandler(RequestHandler):
     """
     REST request handler for configured prefix count information.
@@ -404,7 +379,6 @@ class PrefixTree:
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["prefix_tree"] = {"v4": {}, "v6": {}}
         self.shared_memory_manager_dict["prefix_tree_recalculate"] = True
-        self.shared_memory_manager_dict["monitors"] = {}
         self.shared_memory_manager_dict["monitored_prefixes"] = set()
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
         self.shared_memory_manager_dict["autoignore_rules"] = {}
@@ -430,11 +404,6 @@ class PrefixTree:
                 (
                     "/health",
                     HealthHandler,
-                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
-                ),
-                (
-                    "/monitors",
-                    MonitorHandler,
                     dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
                 ),
                 (

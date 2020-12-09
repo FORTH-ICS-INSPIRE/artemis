@@ -68,7 +68,7 @@ BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
 BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
 BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
 EXABGPTAP_HOST = "exabgptap"
-OTHER_SERVICES = [
+ALL_CONFIGURABLE_SERVICES = [
     SERVICE_NAME,
     PREFIXTREE_HOST,
     DATABASE_HOST,
@@ -81,6 +81,13 @@ OTHER_SERVICES = [
     BGPSTREAMHISTTAP_HOST,
     EXABGPTAP_HOST,
     AUTOIGNORE_HOST,
+]
+MONITOR_SERVICES = [
+    RIPERISTAP_HOST,
+    BGPSTREAMLIVETAP_HOST,
+    BGPSTREAMKAFKATAP_HOST,
+    BGPSTREAMHISTTAP_HOST,
+    EXABGPTAP_HOST,
 ]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 # TODO: move to utils
@@ -774,14 +781,14 @@ def get_created_asn_anchors_from_new_rule(yaml_conf, rule_asns):
 
 
 def post_configuration_to_other_services(
-    shared_memory_manager_dict, same_service_only=False
+    shared_memory_manager_dict, services=ALL_CONFIGURABLE_SERVICES
 ):
     data = shared_memory_manager_dict["config_data"]
     local_ip = get_local_ip()
-    services_to_consider = OTHER_SERVICES
-    if same_service_only:
-        services_to_consider = [SERVICE_NAME]
-    for service in services_to_consider:
+    same_service_only = False
+    if services == [SERVICE_NAME]:
+        same_service_only = True
+    for service in services:
         try:
             if IS_KUBERNETES:
                 ips_and_replicas = service_to_ips_and_replicas_in_k8s(service)
@@ -1146,7 +1153,7 @@ def configure_configuration(msg, shared_memory_manager_dict):
             # configure the other configuration service replicas with the current config
             # and the new ignore file observer info
             post_configuration_to_other_services(
-                shared_memory_manager_dict, same_service_only=True
+                shared_memory_manager_dict, services=[SERVICE_NAME]
             )
             return ret_json
         shared_memory_locks["ignore_fileobserver"].release()
@@ -1157,6 +1164,22 @@ def configure_configuration(msg, shared_memory_manager_dict):
         if "data" in msg:
             if msg["data"]:
                 shared_memory_manager_dict["config_data"] = msg["data"]
+                # update data hashes
+                shared_memory_manager_dict["section_hashes"] = {
+                    "prefixes": get_hash(
+                        shared_memory_manager_dict["config_data"]["prefixes"]
+                    ),
+                    "asns": get_hash(shared_memory_manager_dict["config_data"]["asns"]),
+                    "monitors": get_hash(
+                        shared_memory_manager_dict["config_data"]["monitors"]
+                    ),
+                    "rules": get_hash(
+                        shared_memory_manager_dict["config_data"]["rules"]
+                    ),
+                    "autoignore": get_hash(
+                        shared_memory_manager_dict["config_data"]["autoignore"]
+                    ),
+                }
             if "ignore_fileobserver" in msg:
                 shared_memory_locks["ignore_fileobserver"].acquire()
                 shared_memory_manager_dict["ignore_fileobserver"] = msg[
@@ -1218,8 +1241,70 @@ def configure_configuration(msg, shared_memory_manager_dict):
                         shared_memory_manager_dict["ignore_fileobserver"] = True
                         shared_memory_locks["ignore_fileobserver"].release()
 
-                    # configure all other services with the new config
-                    post_configuration_to_other_services(shared_memory_manager_dict)
+                    # calculate new data hashes, and compare them with stored ones
+                    new_section_hashes = {
+                        "prefixes": get_hash(
+                            shared_memory_manager_dict["config_data"]["prefixes"]
+                        ),
+                        "asns": get_hash(
+                            shared_memory_manager_dict["config_data"]["asns"]
+                        ),
+                        "monitors": get_hash(
+                            shared_memory_manager_dict["config_data"]["monitors"]
+                        ),
+                        "rules": get_hash(
+                            shared_memory_manager_dict["config_data"]["rules"]
+                        ),
+                        "autoignore": get_hash(
+                            shared_memory_manager_dict["config_data"]["autoignore"]
+                        ),
+                    }
+                    difference_booleans = {}
+                    for section in new_section_hashes:
+                        difference_booleans[section] = (
+                            new_section_hashes[section]
+                            != shared_memory_manager_dict["section_hashes"][section]
+                        )
+                    # update data hashes
+                    shared_memory_manager_dict["section_hashes"] = {
+                        "prefixes": new_section_hashes["prefixes"],
+                        "asns": new_section_hashes["asns"],
+                        "monitors": new_section_hashes["monitors"],
+                        "rules": new_section_hashes["rules"],
+                        "autoignore": new_section_hashes["autoignore"],
+                    }
+
+                    # by default notify configuration replicas in any case
+                    services_to_notify = [SERVICE_NAME]
+
+                    # if rules changes, notify everyone
+                    if difference_booleans["rules"]:
+                        services_to_notify = ALL_CONFIGURABLE_SERVICES
+
+                    # if autoignore changes, notify prefixtree, database and autoignore
+                    if difference_booleans["autoignore"]:
+                        for service in [
+                            PREFIXTREE_HOST,
+                            DATABASE_HOST,
+                            AUTOIGNORE_HOST,
+                        ]:
+                            if service not in services_to_notify:
+                                services_to_notify.append(service)
+
+                    # if database not already scheduled to notify at this stage, append it
+                    if DATABASE_HOST not in services_to_notify:
+                        services_to_notify.append(DATABASE_HOST)
+
+                    # if monitors changes, notify monitor services
+                    if difference_booleans["monitors"]:
+                        for service in MONITOR_SERVICES:
+                            if service not in services_to_notify:
+                                services_to_notify.append(service)
+
+                    # configure needed services with the new config
+                    post_configuration_to_other_services(
+                        shared_memory_manager_dict, services=services_to_notify
+                    )
 
                     # if the change did not come from the file observer itself,
                     # we write the file
@@ -1405,6 +1490,13 @@ class Configuration:
         ] = "/etc/artemis/config.yaml.tmp"
         self.shared_memory_manager_dict["config_data"] = {}
         self.shared_memory_manager_dict["ignore_fileobserver"] = False
+        self.shared_memory_manager_dict["section_hashes"] = {
+            "prefixes": None,
+            "asns": None,
+            "monitors": None,
+            "rules": None,
+            "autoignore": None,
+        }
 
         log.info("service initiated")
 
@@ -1613,7 +1705,31 @@ def main():
         configurationService.shared_memory_manager_dict[
             "config_data"
         ], _flag, _error = parse(raw, yaml=True)
-        # configure all other services with the current config
+        # update data hashes
+        configurationService.shared_memory_manager_dict["section_hashes"] = {
+            "prefixes": get_hash(
+                configurationService.shared_memory_manager_dict["config_data"][
+                    "prefixes"
+                ]
+            ),
+            "asns": get_hash(
+                configurationService.shared_memory_manager_dict["config_data"]["asns"]
+            ),
+            "monitors": get_hash(
+                configurationService.shared_memory_manager_dict["config_data"][
+                    "monitors"
+                ]
+            ),
+            "rules": get_hash(
+                configurationService.shared_memory_manager_dict["config_data"]["rules"]
+            ),
+            "autoignore": get_hash(
+                configurationService.shared_memory_manager_dict["config_data"][
+                    "autoignore"
+                ]
+            ),
+        }
+        # configure all other services (independent of hash changes, since it is startup) with the current config
         post_configuration_to_other_services(
             configurationService.shared_memory_manager_dict
         )

@@ -723,12 +723,21 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         # redis db
         self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
         ping_redis(self.redis)
-        # the first DB process that starts, bootstraps redis
+        # the first DB process that starts, bootstraps redis and blocks rest of replicas until complete
         if not self.redis.getset("redis-bootstrap", "1"):
             log.info("bootstrapping redis...")
+            redis_pipeline = self.redis.pipeline()
+            redis_pipeline.lpush("database-goahead", "1")
+            redis_pipeline.blpop("database-goahead")
+            redis_pipeline.execute()
             self.bootstrap_redis()
             log.info("redis bootstrapped...")
+            self.redis.lpush("database-goahead", "1")
         else:
+            while not self.redis.exists("database-goahead"):
+                time.sleep(1)
+            self.redis.blpop("database-goahead")
+            self.redis.lpush("database-goahead", "1")
             log.info("redis already bootstrapped...")
         self.monitor_peers = self.redis.scard("peer-asns")
 
@@ -940,6 +949,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
         if not self.redis.getset(msg_["key"], "1"):
             try:
+                # discard old (older than 1.30 hour ago) timestamped BGP updates (may accumulate due to load)
+                if (
+                    HISTORIC == "false"
+                    and msg_["timestamp"] < int(time.time()) - 90 * 60
+                ):
+                    return
+
+                # discard BGP updates not matching any configured prefix any more
                 best_match = msg_["prefix_node"]["prefix"]  # matched_prefix
                 if not best_match:
                     return

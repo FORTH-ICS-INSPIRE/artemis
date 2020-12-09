@@ -61,7 +61,11 @@ def wait_data_worker_dependencies(data_worker_dependencies):
                 else:
                     met_deps.add(service)
             except Exception:
-                pass
+                print(
+                    "exception while waiting for service '{}'. Will retry".format(
+                        service
+                    )
+                )
         if len(unmet_deps) == 0:
             print(
                 "all needed data workers started: {}".format(data_worker_dependencies)

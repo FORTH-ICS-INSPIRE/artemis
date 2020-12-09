@@ -426,7 +426,6 @@ class RipeRisTapDataWorker:
                     )
                     time.sleep(10)
 
-    # TODO: consider moving to utils
     @staticmethod
     def normalize_ripe_ris(msg, prefix_tree):
         msgs = []

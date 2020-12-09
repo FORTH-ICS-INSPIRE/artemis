@@ -54,7 +54,7 @@ CONFIGURATION_HOST = "configuration"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
-# TODO: move this to artemis-utils
+# need to move this to artemis-utils
 def pytricia_to_dict(pyt_tree):
     pyt_dict = {}
     for prefix in pyt_tree:
@@ -62,7 +62,7 @@ def pytricia_to_dict(pyt_tree):
     return pyt_dict
 
 
-# TODO: move this to artemis-utils
+# need to move this to artemis-utils
 def dict_to_pytricia(dict_tree, size=32):
     pyt_tree = pytricia.PyTricia(size)
     for prefix in dict_tree:

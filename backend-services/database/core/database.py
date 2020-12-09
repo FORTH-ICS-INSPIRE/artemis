@@ -63,11 +63,11 @@ PREFIXTREE_HOST = "prefixtree"
 NOTIFIER_HOST = "notifier"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
-# TODO move to utils
+# need to move to utils
 HEALTH_CHECK_TIMEOUT = 5
 
 
-# TODO: move this to util
+# need to move this to utils
 def wait_data_worker_dependencies(data_worker_dependencies):
     while True:
         met_deps = set()
@@ -1219,10 +1219,10 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             # first get all hijack handled 'A' updates
             query = (
                 "SELECT key, hijack_key, prefix, peer_asn, as_path FROM bgp_updates "
+                "WHERE type = 'A' "
+                "AND handled = true "
+                "AND hijack_key<>ARRAY[]::text[];"
             )
-            "WHERE type = 'A' "
-            "AND handled = true "
-            "AND hijack_key<>ARRAY[]::text[];"
             hijack_handled_ann_update_entries = self.ro_db.execute(query)
             hijack_handled_ann_update_keys_to_entries = {}
             for entry in hijack_handled_ann_update_entries:

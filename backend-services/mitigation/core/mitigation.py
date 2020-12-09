@@ -31,11 +31,11 @@ PREFIXTREE_HOST = "prefixtree"
 DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
-# TODO move to utils
+# need to move to utils
 HEALTH_CHECK_TIMEOUT = 5
 
 
-# TODO: move this to util
+# need to move this to utils
 def wait_data_worker_dependencies(data_worker_dependencies):
     while True:
         met_deps = set()

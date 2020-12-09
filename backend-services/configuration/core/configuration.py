@@ -90,16 +90,16 @@ MONITOR_SERVICES = [
     EXABGPTAP_HOST,
 ]
 REST_PORT = int(os.getenv("REST_PORT", 3000))
-# TODO: move to utils
+# need to move to utils
 IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
 
 
-# TODO: move to utils
+# need to move to utils
 def get_local_ip():
     return socket.gethostbyname(socket.gethostname())
 
 
-# TODO: move to utils
+# need to move to utils
 def service_to_ips_and_replicas(base_service_name):
     local_ip = get_local_ip()
     service_to_ips_and_replicas_set = set([])
@@ -124,7 +124,7 @@ def service_to_ips_and_replicas(base_service_name):
     return service_to_ips_and_replicas_set
 
 
-# TODO: move to utils
+# need to move to utils
 def service_to_ips_and_replicas_in_k8s(base_service_name):
     from kubernetes import client, config
 

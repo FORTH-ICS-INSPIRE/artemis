@@ -72,11 +72,11 @@ HIJACK_DIM_COMBINATIONS = [
     ["Q", "0", "-", "L"],
 ]
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST, NOTIFIER_HOST]
-# TODO move to utils
+# need to move to utils
 HEALTH_CHECK_TIMEOUT = 5
 
 
-# TODO: move this to util
+# need to move this to utils
 def wait_data_worker_dependencies(data_worker_dependencies):
     while True:
         met_deps = set()

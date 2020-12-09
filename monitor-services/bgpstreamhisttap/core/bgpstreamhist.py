@@ -35,6 +35,7 @@ shared_memory_locks = {
 SERVICE_NAME = "bgpstreamhisttap"
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
+DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
@@ -100,7 +101,7 @@ def configure_bgpstreamhist(msg, shared_memory_manager_dict):
         shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
-            r = requests.get("http://{}:{}/monitors".format(PREFIXTREE_HOST, REST_PORT))
+            r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
             monitors = r.json()["monitors"]
 
             # check if "bgpstreamhist" is configured at all

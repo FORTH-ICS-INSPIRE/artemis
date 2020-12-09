@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED] (latest) - YYYY-MM-DD
 ### Added
 - Action and necessary logic to un-mitigate a hijack
+- Ability to reload targeted services based on what conf section changed
 
 ### Changed
 - Decoupled microservice architecture for backend and frontend
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)
+- Check for very old timestamps in DB update handling
 
 ### Removed
 - TBD (removed a feature)

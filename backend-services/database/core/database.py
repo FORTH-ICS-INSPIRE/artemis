@@ -940,6 +940,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
 
         if not self.redis.getset(msg_["key"], "1"):
             try:
+                # discard old (older than 1.30 hour ago) timestamped BGP updates (may accumulate due to load)
+                if (
+                    HISTORIC == "false"
+                    and msg_["timestamp"] < int(time.time()) - 90 * 60
+                ):
+                    return
+
+                # discard BGP updates not matching any configured prefix any more
                 best_match = msg_["prefix_node"]["prefix"]  # matched_prefix
                 if not best_match:
                     return

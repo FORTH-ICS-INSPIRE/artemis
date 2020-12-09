@@ -51,6 +51,7 @@ shared_memory_locks = {
     "handled_bgp_entries": mp.Lock(),
     "outdate_hijacks": mp.Lock(),
     "insert_hijacks_entries": mp.Lock(),
+    "monitors": mp.Lock(),
 }
 
 # global vars
@@ -62,11 +63,11 @@ PREFIXTREE_HOST = "prefixtree"
 NOTIFIER_HOST = "notifier"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
-# TODO move to utils
+# need to move to utils
 HEALTH_CHECK_TIMEOUT = 5
 
 
-# TODO: move this to util
+# need to move this to utils
 def wait_data_worker_dependencies(data_worker_dependencies):
     while True:
         met_deps = set()
@@ -209,6 +210,12 @@ def configure_database(msg, shared_memory_manager_dict):
             else:
                 log.debug("database config is up-to-date")
 
+            # extract monitors
+            monitors = config.get("monitors", {})
+            shared_memory_locks["monitors"].acquire()
+            shared_memory_manager_dict["monitors"] = monitors
+            shared_memory_locks["monitors"].release()
+
             # now that the conf is changed, get and store additional stats from prefixtree
             r = requests.get(
                 "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
@@ -245,6 +252,23 @@ def configure_database(msg, shared_memory_manager_dict):
         return {"success": True, "message": "configured"}
     except Exception:
         return {"success": False, "message": "error during service configuration"}
+
+
+class MonitorHandler(RequestHandler):
+    """
+    REST request handler for monitor information.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Simply provides the configured monitors (in the form of a JSON dict) to the requester
+        """
+        shared_memory_locks["monitors"].acquire()
+        self.write({"monitors": self.shared_memory_manager_dict["monitors"]})
+        shared_memory_locks["monitors"].release()
 
 
 class ConfigHandler(RequestHandler):
@@ -612,6 +636,7 @@ class Database:
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["monitored_prefixes"] = set()
+        self.shared_memory_manager_dict["monitors"] = {}
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
         self.shared_memory_manager_dict["config_timestamp"] = -1
 
@@ -631,6 +656,11 @@ class Database:
                 (
                     "/health",
                     HealthHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
+                (
+                    "/monitors",
+                    MonitorHandler,
                     dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
                 ),
                 (
@@ -1189,10 +1219,10 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             # first get all hijack handled 'A' updates
             query = (
                 "SELECT key, hijack_key, prefix, peer_asn, as_path FROM bgp_updates "
+                "WHERE type = 'A' "
+                "AND handled = true "
+                "AND hijack_key<>ARRAY[]::text[];"
             )
-            "WHERE type = 'A' "
-            "AND handled = true "
-            "AND hijack_key<>ARRAY[]::text[];"
             hijack_handled_ann_update_entries = self.ro_db.execute(query)
             hijack_handled_ann_update_keys_to_entries = {}
             for entry in hijack_handled_ann_update_entries:

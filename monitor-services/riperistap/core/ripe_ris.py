@@ -42,6 +42,7 @@ DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 SERVICE_NAME = "riperistap"
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
+DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
@@ -108,7 +109,7 @@ def configure_ripe_ris(msg, shared_memory_manager_dict):
         shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
-            r = requests.get("http://{}:{}/monitors".format(PREFIXTREE_HOST, REST_PORT))
+            r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
             monitors = r.json()["monitors"]
 
             # check if "riperis" is configured at all
@@ -425,7 +426,6 @@ class RipeRisTapDataWorker:
                     )
                     time.sleep(10)
 
-    # TODO: consider moving to utils
     @staticmethod
     def normalize_ripe_ris(msg, prefix_tree):
         msgs = []

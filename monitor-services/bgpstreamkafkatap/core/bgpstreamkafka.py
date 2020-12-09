@@ -45,6 +45,7 @@ DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 SERVICE_NAME = "bgpstreamkafkatap"
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
+DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
@@ -112,7 +113,7 @@ def configure_bgpstreamkafka(msg, shared_memory_manager_dict):
         shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
-            r = requests.get("http://{}:{}/monitors".format(PREFIXTREE_HOST, REST_PORT))
+            r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
             monitors = r.json()["monitors"]
 
             # check if "bgpstreamkafka" is configured at all

@@ -5,6 +5,7 @@ services:
         build: ./monitor-services/riperistap/
         restart: always
         depends_on:
+            - database
             - prefixtree
             - rabbitmq
             - redis
@@ -31,6 +32,7 @@ services:
         build: ./monitor-services/bgpstreamlivetap/
         restart: always
         depends_on:
+            - database
             - prefixtree
             - rabbitmq
             - redis
@@ -56,6 +58,7 @@ services:
         build: ./monitor-services/bgpstreamkafkatap
         restart: always
         depends_on:
+            - database
             - prefixtree
             - rabbitmq
             - redis
@@ -81,6 +84,7 @@ services:
         build: ./monitor-services/bgpstreamhisttap
         restart: always
         depends_on:
+            - database
             - prefixtree
             - rabbitmq
         expose:
@@ -103,9 +107,10 @@ services:
         build: ./monitor-services/exabgptap
         restart: always
         depends_on:
+            - database
+            - prefixtree
             - rabbitmq
             - redis
-            - prefixtree
         expose:
             - 3000
         networks:

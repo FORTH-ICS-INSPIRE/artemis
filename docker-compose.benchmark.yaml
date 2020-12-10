@@ -259,7 +259,7 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
             WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
-            HISTORIC: ${HISTORIC}
+            HISTORIC: "true"
         volumes:
             - ./testing/benchmark/configs/:/etc/artemis/
             - ./testing/test_entrypoints/entrypoint.database.test:/root/entrypoint

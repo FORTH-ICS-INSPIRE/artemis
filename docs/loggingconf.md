@@ -50,11 +50,14 @@ slack_handler:
 Then, you can attach them to the already defined loggers based on their purpose. For example, backend loggers include:
 
 * artemis_logger: Output of all (backend) services.
-* mail_logger: Triggered on new hijack events (targeted information to avoid spamming for mail services - **only** triggered on hijack events). For its current use, check [this line](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/core/detection.py#L969).
+* mail_logger: Triggered on new hijack events (targeted information to avoid spamming for mail services - **only** triggered on hijack events). For its current use, check [this line](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend-services/detection/core/detection.py#L1043).
 * hijack_logger: Triggered for every hijack update (not only on first trigger). Be careful to avoid being overwhelmed with messages in case you attach a handler to it! Useful for monitoring the progress of a hijack in terms of incoming BGP updates.
 * taps_logger: Logger for the monitoring services.
 
-*Note that you should attach a logger you would like to use. For example, after you configure the smtps log handler in lines [32-50](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/logging.yaml#L32-L50) and optionally adding your custom formatter after line [5](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/logging.yaml#L5), you should add the smtps_handler to the mail_logger handlers [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/configs/logging.yaml#L85).*
+*Note that you should attach a logger you would like to use.
+For example, after you configure the `smtps` log handler in lines 32-50
+within `local_configs/backend/logging.yaml` and optionally adding your custom
+formatter after line 5, you should add the `smtps_handler` to the `mail_logger` handlers.*
 
 In general, the logging.yaml files, besides auxiliary information, contain 3 sections that you can adjust according to your logging needs:
 

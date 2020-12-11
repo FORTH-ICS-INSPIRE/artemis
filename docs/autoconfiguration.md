@@ -6,7 +6,7 @@ For a Proof of Concept (PoC), please check [this directory](https://github.com/F
 
 The workflow to enable auto-configuration via trusted local feeds (over exaBGP) is the following:
 
-1. First, connect ARTEMIS exabgp container with your local feed, following the steps in [this doc section](https://bgpartemis.readthedocs.io/en/latest/overview/#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
+1. First, connect ARTEMIS exabgp container with your local feed, following the steps in [this doc section](https://bgpartemis.readthedocs.io/en/latest/exabgpfeed/).
 
 2. Then, you may start with a minimal configuration file as follows:
 

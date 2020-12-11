@@ -94,7 +94,7 @@ For a detailed list of supported features please check the [CHANGELOG](docs/chan
 * Configuration file editable by the operator (directly or via the UI),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * Support for both IPv4 and IPv6 prefixes (millions of routed prefixes depending on your resources).
-* Support for both mobile and desktop environments (UI): [sample screenshots](https://bgpartemis.readthedocs.io/en/latest/uioverview/).
+* Support for both mobile and desktop environments (UI): [sample screenshots](https://bgpartemis.readthedocs.io/en/latest/webapp/#ui-overview-with-screenshots).
 * Support for `docker-compose` (local single-server deployment) and `Kubernetes` (helm charts).
 * Support for multiple modes of operation (passive monitor/detector, active mitigator, etc.).
 * Support for historical BGP update replaying.
@@ -121,7 +121,7 @@ in a Kubernetes environment, please check the related [docs page](https://bgpart
 ## Minimum Technical Requirements
 
 * CPU: 4 cores (note that needed CPU cores depend on the number of separate processes, e.g., detectors or database modules you spawn)
-* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements) for more details)
+* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://bgpartemis.readthedocs.io/en/latest/requirements/#memory-requirements) for more details)
 * HDD: 50 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
 * NETWORK: 1 public-facing network interface (optionally: one internal interface for connection with local route collectors)
 * OS: Ubuntu Linux 16.04+ (other Linux distributions will work too)
@@ -139,11 +139,15 @@ sudo ./other/ufw_setup.sh
 
 ## How to Install and Setup
 
-To download and install the required software packages, please follow steps 1 through 6 described in [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#install-packages).
+To download and install the required software packages, please follow steps 1 through 6 described
+in [this docs section](https://bgpartemis.readthedocs.io/en/latest/installsetup/#install-packages).
 
-To setup the tool (as well as https access to it via the web application), please follow steps 1 through 5 described in [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool).
+To setup the tool (as well as https access to it via the web application),
+please follow steps 1 through 5 described
+in [this docs section](https://bgpartemis.readthedocs.io/en/latest/installsetup/#setup-tool).
 
-*Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation; please check out [this docs page](https://bgpartemis.readthedocs.io/en/latest/vagrant/) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
+*Note that specifically for testing purposes, we now support `vagrant` and `VirtualBox` VM automation;
+please check out [this docs page](https://bgpartemis.readthedocs.io/en/latest/vagrant/) for simple instructions on how to spin up a fully functioning ARTEMIS VM, running all needed microservices, within a minute.*
 
 ## How to Run and Configure
 
@@ -152,7 +156,7 @@ To setup the tool (as well as https access to it via the web application), pleas
    ```
    docker-compose up -d
    ```
-   *Please consult [this docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#starting-artemis) if you need to activate additional services.*
+   *Please consult [this docs section](https://bgpartemis.readthedocs.io/en/latest/running/) if you need to activate additional services.*
 
 5. Visit web UI and configure ARTEMIS:
 
@@ -238,18 +242,22 @@ The following funding sources supported the collaboration with CAIDA UCSD, on th
 
 ## Powered By
 <p align="center">
+<img src="docs/images/powered_by/kubernetes.png" width="100"/>
+<img src="docs/images/powered_by/rabbitmq.png" width="100"/>
+<img src="docs/images/powered_by/docker.png" width="100"/>
+<img src="docs/images/powered_by/hasura.png" width="100"/>
+<img src="docs/images/powered_by/exabgp.jpg" width="100"/>
 <img src="docs/images/powered_by/bgpstream.png" width="100"/>
 <img src="docs/images/powered_by/bootstrap.png" width="100"/>
-<img src="docs/images/powered_by/exabgp.jpg" width="100"/>
+<img src="docs/images/powered_by/react.jpg" width="100"/>
+<img src="docs/images/powered_by/postgresql.png" width="100"/>
+<img src="docs/images/powered_by/nginx.jpeg" width="100"/>
+<img src="docs/images/powered_by/redis.png" width="100"/>
+<img src="docs/images/powered_by/yaml.png" width="100"/>
 <img src="docs/images/powered_by/flask.png" width="100"/>
 <img src="docs/images/powered_by/gunicorn.png" width="100"/>
-<img src="docs/images/powered_by/hasura.png" width="100"/>
 <img src="docs/images/powered_by/jquery.png" width="100"/>
-<img src="docs/images/powered_by/nginx.jpeg" width="100"/>
-<img src="docs/images/powered_by/postgresql.png" width="100"/>
 <img src="docs/images/powered_by/python.jpeg" width="100"/>
-<img src="docs/images/powered_by/rabbitmq.png" width="100"/>
-<img src="docs/images/powered_by/redis.png" width="100"/>
 <img src="docs/images/powered_by/sqlite.jpeg" width="100"/>
 </p>
 

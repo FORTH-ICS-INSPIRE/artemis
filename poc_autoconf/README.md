@@ -4,7 +4,7 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
 
 ```
  ----------------          -------------          -------------
-| ExaBGP Monitor |        | MONITOR AS  |        | EXTERNAL AS |
+| ExaBGP Monitor |        | MONITOR AS  |        |  CLIENT AS  |
 |    AS65001     |  eBGP  |   AS65003   |  eBGP  |   AS65004   |
 |      exa       | ------ | r03 (goBGP) | ------ | r04 (goBGP) |
 |    1.1.1.11    |        |   1.1.1.13  |        |  1.1.1.14   |
@@ -13,8 +13,8 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
      ARTEMIS
 ```
 
-## Hijack mitigation steps
-1. AS65004 announces 10K routes.
+## Auto-configuration steps
+1. AS65004 announces 1K routes.
 2. AS65003 sees them and relays them to the exaBGP monitor for auto-configuration.
 3. ARTEMIS writes the configuration file automatically.
 

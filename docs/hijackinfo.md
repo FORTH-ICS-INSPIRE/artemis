@@ -32,30 +32,41 @@ Table of Contents
 * **Number of ASes Infected**:
   Nmber of infected ASes that seem to route traffic towards the hijacker AS, according to control plane information (*note that this is an experimental field*).
 * Additional information under "More" tab:
+
     * **Matched**:
       The prefix that was (best) matched in the configuration (*note: this might differ from the actually hijacked prefix in the case of sub-prefix hijacks*).
+
     * **Config**:
       The timestamp (i.e., unique ID) of the configuration based on which this hijack event was triggered.
+
     * **Key**:
       The unique key of a hijack event.
+
     * **Time Started**:
       The timestamp of the oldest known (to the system) BGP update that is related to the hijack.
+
     * **Time Ended**:
       The timestamp when the hijack was ended. It can be set in the following ways: (i) manually, when the user presses
       the "resolved" button; (ii) automatically, when a hijack is completely withdrawn (all monitors that saw hijack
       updates for a certain prefix have seen the respective withdrawals). Note that in the latter case, withdrawals can be "implicit", i.e., they stem due to corrected AS-paths towards the advertised IP prefix.
+
     * **Last Update**:
       The timestamp of the newest known (to the system) BGP update that is related to the hijack.
+
     * **Mitigation Started**:
       The timestamp when the mitigation was triggered by the user ("mitigate" button).
+
     * **Display Peers**:
       The peer/monitors that either saw hijack updates, or received explicit withdrawals of the hijacked prefix.
+
     * **Comment**:
       Text written by the user (accompanies the hijack event).
+
     * **Related BGP Updates**:
       Table with the BGP updates (both announcements and withdrawals) that are related to the hijack event (information
       is the same as [here](https://bgpartemis.readthedocs.io/en/latest/bgpupdateinfo/)).
-    * **Community Annotation**: The user-defined annotation of the hijack according to the communities of hijacked BGP updates.
+
+* **Community Annotation**: The user-defined annotation of the hijack according to the communities of hijacked BGP updates.
 
 ## Classification of hijacks
 In general, we classify hijack events according to the 3D taxonomy that we describe in [our paper](https://www.inspire.edu.gr/wp-content/pdfs/artemis_TON2018.pdf), plus an additional "policy violation" dimension, as we explain in the following.

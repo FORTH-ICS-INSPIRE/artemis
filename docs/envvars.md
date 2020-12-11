@@ -26,7 +26,7 @@ HISTORIC=false
 
 Redis IP and Port:
 ```
-REDIS_HOST=backend
+REDIS_HOST=redis
 REDIS_PORT=6379
 ```
 

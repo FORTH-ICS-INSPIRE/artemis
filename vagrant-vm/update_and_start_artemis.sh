@@ -6,8 +6,7 @@ if [ -e "vagrant-vm" ]; then
     cp vagrant-vm/vagrant-docker-compose.yaml docker-compose.yaml
 fi
 git stash
-# TODO: replace with master after merge!
-git pull origin modularization
+git pull origin master
 git stash pop
 docker-compose pull
 docker-compose up -d

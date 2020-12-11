@@ -1,7 +1,5 @@
 We include a Proof of Concept (PoC) implementation of a mitigation setup to be used with ARTEMIS.
 
-The relevant (now merged into master) PR is [here](https://github.com/FORTH-ICS-INSPIRE/artemis/pull/437).
-
 The folder with the needed scripts and configurations is [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/poc_mitigate_deaggregate).
 
 We include a script that receives the information of the hijack (id + prefix), and upon

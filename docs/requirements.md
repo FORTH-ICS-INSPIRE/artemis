@@ -7,7 +7,7 @@ ARTEMIS is a `docker` application that can run on a Linux server (or a Kubernete
 ## Minimum Technical Requirements
 
 * CPU: 4 cores
-* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements) for more details)
+* RAM: 4+ GB (note that needed memory depends on the number of configured prefixes/rules/asns and load of incoming BGP updates, see [here](https://bgpartemis.readthedocs.io/en/latest/requirements/#memory-requirements) for more details)
 * HDD: 50 GB (less may suffice, depending on the use case for storing BGP updates and hijack alerts)
 * NETWORK: 1 public-facing network interface (optionally: one internal interface for connection with local route collectors)
 * OS: Ubuntu Linux 16.04+ (other Linux distributions will work too)

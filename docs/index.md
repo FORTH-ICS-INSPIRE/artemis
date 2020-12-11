@@ -55,7 +55,7 @@ For a detailed list of supported features please check the [CHANGELOG](changelog
 * Configuration file editable by the operator (directly or via the UI),
 containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX originates prefix P and advertises it to ASY").
 * Support for both IPv4 and IPv6 prefixes (millions of routed prefixes depending on your resources).
-* Support for both mobile and desktop environments (UI): [sample screenshots](https://bgpartemis.readthedocs.io/en/latest/uioverview/).
+* Support for both mobile and desktop environments (UI): [sample screenshots](https://bgpartemis.readthedocs.io/en/latest/webapp/#ui-overview-with-screenshots).
 * Support for `docker-compose` (local single-server deployment) and `Kubernetes` (helm charts).
 * Support for multiple modes of operation (passive monitor/detector, active mitigator, etc.).
 * Support for historical BGP update replaying.
@@ -67,4 +67,4 @@ containing information about: prefixes, ASNs, monitors and ARTEMIS rules ("ASX o
 
 ## System Architecture
 
-![Architecture](images/artemis_system_overview.jpg)
+Please check [this page](https://bgpartemis.readthedocs.io/en/latest/architecture/).

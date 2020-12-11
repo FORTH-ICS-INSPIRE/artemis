@@ -69,7 +69,7 @@ You can change these values inside the `docker-compose.yaml`:
 
 These changes should be sufficient to have artemis running rootless on `https://localhost:8443`.
 
-### Setup Tool
+## Setup Tool
 
 1. Edit environment variables in `.env` file (especially the security-related variables); please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/envvars/) for more information on the env variables.
 A comprehensive list of environment variables and their exact use can be found at [Environment variables](https://bgpartemis.readthedocs.io/en/latest/envvars/),

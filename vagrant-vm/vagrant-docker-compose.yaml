@@ -1,7 +1,7 @@
 version: '3'
 services:
     riperistap:
-        image: inspiregroup/artemis-riperistap:dev-PR472
+        image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - database
@@ -27,7 +27,7 @@ services:
             - ./monitor-services/riperistap/entrypoint:/root/entrypoint
             - ./monitor-services/riperistap/core/ripe_ris.py:/root/core/ripe_ris.py
     bgpstreamlivetap:
-        image: inspiregroup/artemis-bgpstreamlivetap:dev-PR472
+        image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - database
@@ -52,7 +52,7 @@ services:
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamlivetap/core/bgpstreamlive.py:/root/core/bgpstreamlive.py
     bgpstreamkafkatap:
-        image: inspiregroup/artemis-bgpstreamkafkatap:dev-PR472
+        image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - database
@@ -77,7 +77,7 @@ services:
             - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamkafkatap/core/bgpstreamkafka.py:/root/core/bgpstreamkafka.py
     bgpstreamhisttap:
-        image: inspiregroup/artemis-bgpstreamhisttap:dev-PR472
+        image: inspiregroup/artemis-bgpstreamhisttap:${SYSTEM_VERSION}
         build: ./monitor-services/bgpstreamhisttap
         restart: always
         depends_on:
@@ -100,7 +100,7 @@ services:
             - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
             - ./monitor-services/bgpstreamhisttap/core/bgpstreamhist.py:/root/core/bgpstreamhist.py
     exabgptap:
-        image: inspiregroup/artemis-exabgptap:dev-PR472
+        image: inspiregroup/artemis-exabgptap:${SYSTEM_VERSION}
         build: ./monitor-services/exabgptap
         restart: always
         depends_on:
@@ -126,7 +126,7 @@ services:
             - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
             - ./monitor-services/exabgptap/core/exabgp_client.py:/root/core/exabgp_client.py
     autostarter:
-        image: inspiregroup/artemis-autostarter:dev-PR472
+        image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - bgpstreamhisttap
@@ -158,7 +158,7 @@ services:
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
             - ./backend-services/autostarter/core/autostarter.py:/root/core/autostarter.py
     configuration:
-        image: inspiregroup/artemis-configuration:dev-PR472
+        image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - bgpstreamhisttap
@@ -191,7 +191,7 @@ services:
             - ./backend-services/configuration/entrypoint:/root/entrypoint
             - ./backend-services/configuration/core/configuration.py:/root/core/configuration.py
     database:
-        image: inspiregroup/artemis-database:dev-PR472
+        image: inspiregroup/artemis-database:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - graphql
@@ -228,7 +228,7 @@ services:
             - ./backend-services/database/entrypoint:/root/entrypoint
             - ./backend-services/database/core/database.py:/root/core/database.py
     detection:
-        image: inspiregroup/artemis-detection:dev-PR472
+        image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - notifier
@@ -256,7 +256,7 @@ services:
             - ./backend-services/detection/entrypoint:/root/entrypoint
             - ./backend-services/detection/core/detection.py:/root/core/detection.py
     fileobserver:
-        image: inspiregroup/artemis-fileobserver:dev-PR472
+        image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - configuration
@@ -271,7 +271,7 @@ services:
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
             - ./backend-services/fileobserver/core/observer.py:/root/core/observer.py
     mitigation:
-        image: inspiregroup/artemis-mitigation:dev-PR472
+        image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - rabbitmq
@@ -293,7 +293,7 @@ services:
             - ./backend-services/mitigation/core/mitigation.py:/root/core/mitigation.py
             - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
     notifier:
-        image: inspiregroup/artemis-notifier:dev-PR472
+        image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - rabbitmq
@@ -314,7 +314,7 @@ services:
             - ./backend-services/notifier/entrypoint:/root/entrypoint
             - ./backend-services/notifier/core/notifier.py:/root/core/notifier.py
     prefixtree:
-        image: inspiregroup/artemis-prefixtree:dev-PR472
+        image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
         restart: always
         depends_on:
             - rabbitmq
@@ -346,7 +346,7 @@ services:
         volumes:
             - ./local_configs/backend-services/redis/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
-        image: inspiregroup/artemis-tempfrontend:dev-PR472
+        image: inspiregroup/artemis-tempfrontend:${SYSTEM_VERSION}
         container_name: frontend
         restart: always
         depends_on:
@@ -379,7 +379,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             REST_PORT: 3000
             SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
-            SYSTEM_VERSION: dev-PR472
+            SYSTEM_VERSION: ${SYSTEM_VERSION}
             USER_ROOT_USERNAME: ${ADMIN_USER}
             USER_ROOT_PASSWORD: ${ADMIN_PASS}
             USER_ROOT_EMAIL: ${ADMIN_EMAIL}

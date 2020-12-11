@@ -17,14 +17,18 @@ cd /var/log/artemis
 Both containers use [Python's logging library](https://docs.python.org/3/library/logging.html) and can be configured as such. The tool supports SMTP, SMPTS and SYSLOG handlers for the loggers, which can be defined as follows:
 ```
 smtps_handler:
-    class: utils.SMTPSHandler
+    # artemis_utils.TLSSMTPHandler for TLS
+    # artemis_utils.SSLSMTPHandler for SSL
+    class: artemis_utils.SSLSMTPHandler
     level: INFO
     formatter: simple
     mailhost:
     - smtp.server.com
     - port
-    fromaddr: from
-    toaddrs: to
+    fromaddr: from@email.com
+    toaddrs:
+    - to1@email.com
+    - to2@email.com
     subject: subject
     credentials:
     - username

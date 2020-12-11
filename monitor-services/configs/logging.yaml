@@ -31,9 +31,9 @@ handlers:
 
     # for email
     # smtps_handler:
-    #     # utils.TLSSMTPHandler for TLS
-    #     # utils.SSLSMTPHandler for SSL
-    #     class: utils.TLSSMTPHandler
+    #     # artemis_utils.TLSSMTPHandler for TLS
+    #     # artemis_utils.SSLSMTPHandler for SSL
+    #     class: artemis_utils.TLSSMTPHandler
     #     level: INFO
     #     formatter: simple
     #     mailhost:

@@ -30,7 +30,7 @@ handlers:
         encoding: utf8
 
     # smtps_handler:
-    #     class: utils.SMTPSHandler
+    #     class: artemis_utils.SSLSMTPHandler
     #     level: INFO
     #     formatter: simple
     #     mailhost:

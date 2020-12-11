@@ -33,8 +33,11 @@ You can instruct the tool to run multiple instances of any of the following micr
 However, we recommend not scaling tap microservices,
 and in case you have issues with large BGP update loads, to scale only
 the following microservices:
+
 * `detection` (for load-balancing detection processes)
+
 * `prefixtree` (for load-balancing prefix tree lookups; attention, this requires memory!)
+
 * `database` (for load-balancing database access)
 
 To apply scaling (can be upwards or downwards):

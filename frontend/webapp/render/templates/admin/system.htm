@@ -19,21 +19,23 @@
                 <h1 class="page-header">System</h1>
             </div>
         </div>
+
         <div class="row">
-            <div class="col-lg-4">
-                <div class="col-lg-12" id="system_modules_monitor">
+
+            <div class="col-lg-3">
+                <div class="col-lg-12" id="system_modules_riperistap">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Monitor Module
+                            <i class="fa fa-bell fa-fw"></i> RIPE RIS Monitor Service
                         </div>
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-lg-4 offset-lg-2">
-                                    <div id="module_monitor_instances_running"></div>
+                                    <div id="module_riperistap_instances_running"></div>
                                 </div>
                                 <div class="col-lg-4">
                                     <label class="switch">
-                                        <input data-toggle="toggle" id="monitor_switch" name="monitor_switch" type="checkbox">
+                                        <input data-toggle="toggle" id="riperistap_switch" name="riperistap_switch" type="checkbox">
                                         <span class="slider round"></span>
                                     </label>
                                 </div>
@@ -43,11 +45,106 @@
                 </div>
             </div>
 
-            <div class="col-lg-4">
+            <div class="col-lg-3">
+                <div class="col-lg-12" id="system_modules_bgpstreamlivetap">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> BGPStream Live Monitor Service
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_bgpstreamlivetap_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="bgpstreamlivetap_switch" name="bgpstreamlivetap_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="col-lg-12" id="system_modules_bgpstreamkafkatap">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> BGPStream Kafka Monitor Service
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_bgpstreamkafkatap_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="bgpstreamkafkatap_switch" name="bgpstreamkafkatap_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="col-lg-12" id="system_modules_bgpstreamhisttap">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> BGPStream Historical Monitor Service
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_bgpstreamhisttap_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="bgpstreamhisttap_switch" name="bgpstreamhisttap_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <div class="col-lg-3">
+                <div class="col-lg-12" id="system_modules_exabgptap">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bell fa-fw"></i> ExaBGP Monitor Service
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4 offset-lg-2">
+                                    <div id="module_exabgptap_instances_running"></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="switch">
+                                        <input data-toggle="toggle" id="exabgptap_switch" name="exabgptap_switch" type="checkbox">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
                 <div class="col-lg-12" id="system_modules_detection">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Detection Module
+                            <i class="fa fa-bell fa-fw"></i> Detection Service
                         </div>
                         <div class="panel-body">
                             <div class="row">
@@ -66,11 +163,11 @@
                 </div>
             </div>
 
-            <div class="col-lg-4">
+            <div class="col-lg-3">
                 <div class="col-lg-12" id="system_modules_mitigation">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Mitigation Module
+                            <i class="fa fa-bell fa-fw"></i> Mitigation Service
                         </div>
                         <div class="panel-body">
                             <div class="row">
@@ -143,7 +240,15 @@
             var comment_editor = null;
             var valid_conf;
             var valid_comment;
-            var modules_list = ['monitor', 'detection', 'mitigation'];
+            var modules_list = [
+                'riperistap',
+                'bgpstreamlivetap',
+                'bgpstreamkafkatap',
+                'bgpstreamhisttap',
+                'exabgptap',
+                'detection',
+                'mitigation'
+            ];
 
             $('#config_action').on('click', function (event, state) {
                 if($(this).hasClass("btn-primary")){
@@ -266,7 +371,7 @@
                 var loading_alert_box;
                 var loading_message = '';
                 for (var elem in data) {
-                    var group = data[elem]['name'].split('_')[0];
+                    var group = data[elem]['name'].split('-')[0];
                     if(modules_list.includes(group) == false){
                         continue;
                     }
@@ -409,8 +514,20 @@
                 $("#navbar_admin").addClass("active");
             });
 
-            $("#monitor_switch").on("click", (event) => {
-                toggleModule("monitor");
+            $("#riperistap_switch").on("click", (event) => {
+                toggleModule("riperistap");
+            });
+            $("#bgpstreamlivetap_switch").on("click", (event) => {
+                toggleModule("bgpstreamlivetap");
+            });
+            $("#bgpstreamkafkatap_switch").on("click", (event) => {
+                toggleModule("bgpstreamkafkatap");
+            });
+            $("#bgpstreamhisttap_switch").on("click", (event) => {
+                toggleModule("bgpstreamhisttap");
+            });
+            $("#exabgptap_switch").on("click", (event) => {
+                toggleModule("exabgptap");
             });
             $("#detection_switch").on("click", (event) => {
                 toggleModule("detection");

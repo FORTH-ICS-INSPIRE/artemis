@@ -7,19 +7,8 @@ RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
 API_HOST = os.getenv("API_HOST", "postgrest")
 API_PORT = os.getenv("API_PORT", 3000)
-BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "backend")
-BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
-MON_SUPERVISOR_HOST = os.getenv("MON_SUPERVISOR_HOST", "monitor")
-MON_SUPERVISOR_PORT = os.getenv("MON_SUPERVISOR_PORT", 9001)
 RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
     RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
-)
-
-BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
-    BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
-)
-MON_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
-    MON_SUPERVISOR_HOST, MON_SUPERVISOR_PORT
 )
 
 API_URI = "http://{}:{}".format(API_HOST, API_PORT)
@@ -32,6 +21,21 @@ if GRAPHQL_URI is None:
         HASURA_HOST=HASURA_HOST, HASURA_PORT=HASURA_PORT
     )
 HASURA_GRAPHQL_ACCESS_KEY = os.getenv("HASURA_GRAPHQL_ACCESS_KEY", "@rt3m1s.")
+AUTOIGNORE_HOST = "autoignore"
+AUTOSTARTER_HOST = "autostarter"
+CONFIGURATION_HOST = "configuration"
+DATABASE_HOST = "database"
+DETECTION_HOST = "detection"
+FILEOBSERVER_HOST = "fileobserver"
+MITIGATION_HOST = "mitigation"
+NOTIFIER_HOST = "notifier"
+PREFIXTREE_HOST = "prefixtree"
+REST_PORT = int(os.getenv("REST_PORT", 3000))
+RIPERISTAP_HOST = "riperistap"
+BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
+BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
+BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
+EXABGPTAP_HOST = "exabgptap"
 
 
 def flatten(items, seqtypes=(list, tuple)):

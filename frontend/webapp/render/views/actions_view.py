@@ -11,9 +11,9 @@ from flask_security.decorators import login_required
 from flask_security.decorators import roles_required
 from flask_security.utils import hash_password
 from flask_security.utils import verify_password
-from webapp.core.actions import Comment_hijack
-from webapp.core.actions import Hijacks_multiple_action
-from webapp.core.actions import Learn_hijack_rule
+from webapp.core.actions import comment_hijack
+from webapp.core.actions import hijacks_multiple_action
+from webapp.core.actions import learn_hijack_rule
 from webapp.core.actions import rmq_hijack_action
 from webapp.core.modules import Modules_state
 from webapp.data.models import db
@@ -39,6 +39,15 @@ def hijack_action():
             obj = {
                 "action": action,
                 "routing_key": "mitigate",
+                "exchange": "mitigation",
+                "priority": 2,
+                "payload": {"key": data["hijack_key"], "prefix": data["prefix"]},
+            }
+
+        elif action == "unmitigate":
+            obj = {
+                "action": action,
+                "routing_key": "unmitigate",
                 "exchange": "mitigation",
                 "priority": 2,
                 "payload": {"key": data["hijack_key"], "prefix": data["prefix"]},
@@ -110,7 +119,7 @@ def hijack_action():
 
 @actions.route("/hijacks/learn_hijack_rule/", methods=["POST"])
 @roles_required("admin")
-def learn_hijack_rule():
+def handle_learn_hijack_rule():
     data_ = json.loads(request.data.decode("utf-8"))
 
     hijack_key = data_["hijack_key"]
@@ -119,10 +128,7 @@ def learn_hijack_rule():
     hijack_as = int(data_["hijack_as"])
     action = data_["action"]
 
-    _learn_hijack_rule = Learn_hijack_rule()
-    response, success = _learn_hijack_rule.send(
-        hijack_key, prefix, type_, hijack_as, action
-    )
+    response, success = learn_hijack_rule(hijack_key, prefix, type_, hijack_as, action)
 
     if success:
         return jsonify({"status": "success", "response": response})
@@ -141,8 +147,7 @@ def submit_new_comment():
         "hijack_key: {0} new_comment: {1}".format(hijack_key, new_comment)
     )
 
-    comment_ = Comment_hijack()
-    response, success = comment_.send(hijack_key, new_comment)
+    response, success = comment_hijack(hijack_key, new_comment)
 
     if success:
         return jsonify({"status": "success", "data": new_comment, "response": response})
@@ -289,10 +294,7 @@ def submit_hijacks_actions():
     data_ = json.loads(request.data.decode("utf-8"))
     hijack_keys = data_["hijack_keys"]
     action = data_["action"]
-
-    multiple_action_ = Hijacks_multiple_action()
-    success = multiple_action_.send(hijack_keys, action)
-
+    success = hijacks_multiple_action(hijack_keys, action)
     if success:
         return jsonify({"status": "success"})
     return jsonify({"status": "fail"})

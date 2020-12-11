@@ -909,15 +909,17 @@
                 if(hijack_obj['active'] == true){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
                     $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
-                    {% if mitigate == True %}
-                        if(hijack_obj['under_mitigation'] == false) {
-                            $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
-                        }
-                    {% endif %}
                 }else if((hijack_obj['outdated'] == true || hijack_obj['withdrawn'] == true) && (hijack_obj['resolved'] == false && hijack_obj['ignored'] == false)){
                     $("#hijack_action_selection").append(new Option("Mark as Resolved", "hijack_action_resolve"));
                     $("#hijack_action_selection").append(new Option("Mark as Ignored", "hijack_action_ignore"));
                 }
+                {% if mitigate == True %}
+                    if(hijack_obj['under_mitigation'] == false) {
+                        $("#hijack_action_selection").append(new Option("Mitigate Hijack", "hijack_action_mitigate"));
+                    }else{
+                        $("#hijack_action_selection").append(new Option("Un-mitigate Hijack", "hijack_action_unmitigate"));
+                    }
+                {% endif %}
 
                 if(hijack_obj['seen'] == true){
                     $('#hijack_acknowledged_badge').removeClass('badge-danger').addClass('badge-primary');
@@ -959,6 +961,13 @@
                             "hijack_key" : hijack_obj['key'],
                             "prefix": hijack_obj['prefix'],
                             "action": "mitigate"
+                        }
+
+                    }else if(action == "hijack_action_unmitigate"){
+                        obj = {
+                            "hijack_key" : hijack_obj['key'],
+                            "prefix": hijack_obj['prefix'],
+                            "action": "unmitigate"
                         }
 
                     }else if(action == "hijack_action_ignore"){
@@ -1032,7 +1041,7 @@
                             "action": action
                         };
 
-                        var url = "{{ url_for('actions.learn_hijack_rule') }}";
+                        var url = "{{ url_for('actions.handle_learn_hijack_rule') }}";
                         var result = await postFetch_json(url, obj);
 
                         if(result["status"] == "fail"){
@@ -1056,7 +1065,7 @@
                             "action": action
                         };
 
-                        var url = "{{ url_for('actions.learn_hijack_rule') }}";
+                        var url = "{{ url_for('actions.handle_learn_hijack_rule') }}";
                         var result = await postFetch_json(url, obj);
 
                         var message = [];

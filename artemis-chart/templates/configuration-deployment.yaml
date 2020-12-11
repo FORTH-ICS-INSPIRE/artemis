@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: configuration
+{{ include "artemis.labels" . | indent 4 }}
+  name: configuration
+{{- with .Values.services.configuration }}
+spec:
+  selector:
+    matchLabels:
+      app: configuration
+  replicas: {{ .replicas | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: configuration
+    spec:
+      containers:
+      - name: configuration
+        image: {{ .image }}:{{ $.Values.systemVersion }}
+        imagePullPolicy: Always
+        env:
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: rabbitmqHost
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: rabbitmqPass
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: rabbitmqPort
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: rabbitmqUser
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: redisHost
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: redisPort
+        - name: REST_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: restPort
+        {{- with $.Values.probes }}
+{{ toYaml . | nindent 8 }}
+        {{- end }}
+        volumeMounts:
+        - mountPath: /etc/artemis/
+          name: configuration-configmap
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          name: volumes
+          items:
+            - key: config.yaml
+              path: config.yaml
+            - key: logging.yaml
+              path: logging.yaml
+        name: configuration-configmap
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

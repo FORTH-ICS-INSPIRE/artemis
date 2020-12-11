@@ -8,7 +8,7 @@ ca7a6987045334df736c0569e3aa17fc	139.5.29.0/24	133720	8283	{8283,6453,4755,45194
 d6581b8e5efc20c67404683ea16d9f04	139.5.45.0/24	133720	8283	{8283,6453,4755,45194,133720}	ripe-ris|rrc03	A	[[6453, 2000], [6453, 2100], [6453, 2104], [6453, 10002], [8283, 1], [8283, 101]]	2019-02-23 16:59:05.76	{g}	t	139.0.0.0/8	null
 4a647d51626bad5763a659215cf93b24	139.5.24.0/24	133720	8283	{8283,6453,4755,45194,133720}	ripe-ris|rrc03	A	[[6453, 2000], [6453, 2100], [6453, 2104], [6453, 10002], [8283, 1], [8283, 101]]	2019-02-23 16:59:05.76	{h}	t	139.0.0.0/8	null
 b4b5125fe7f7530a2aad50a5b6dbbde4	139.5.16.0/22	133676	8283	{8283,6453,4755,133676}	ripe-ris|rrc03	A	[[6453, 2000], [6453, 2100], [6453, 2104], [6453, 10002], [8283, 1], [8283, 101]]	2019-02-23 16:59:05.76	{i}	t	139.0.0.0/8	null
-c4b5125fe7f7530a2aad50a5b6dbbde5	2001:db8:abcd:12::/80	133677	8283	{8283,6453,4755,133677}	ripe-ris|rrc03	A	[[6453, 2000], [6453, 2100], [6453, 2104], [6453, 10002], [8283, 1], [8283, 101]]	2019-02-23 16:59:06.76	{k}	t	2001:db8:abcd:12::/64	null
+c4b5125fe7f7530a2aad50a5b6dbbde5	2001:db8:abcd:12::/80	133677	8283	{8283,6453,4755,133677}	ripe-ris|rrc03	A	[[6453, 2000], [6453, 2100], [6453, 2104], [6453, 10002], [8283, 1], [8283, 101]]	2019-02-23 16:59:06.76	{j}	t	2001:db8:abcd:12::/64	null
 \.
 
 COPY hijacks (key, type, prefix, hijack_as, peers_seen, community_annotation, rpki_status, peers_withdrawn, num_peers_seen, asns_inf, num_asns_inf, time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, resolved, active, ignored, withdrawn, outdated, dormant, configured_prefix, timestamp_of_config, comment, seen) FROM stdin;

@@ -10,7 +10,11 @@
     "peer_asn": 1
   },
   "configuration": {
-    "prefixes": {},
+    "prefixes": {
+      "AUTOCONF_P_192_168_3_0_24": [
+        "192.168.3.0/24"
+      ]
+    },
     "monitors": {},
     "asns": {
       "AUTOCONF_AS_1": [
@@ -23,6 +27,20 @@
         3
       ]
     },
-    "rules": []
+    "rules": [
+      {
+        "prefixes": [
+          "192.168.3.0/24"
+        ],
+        "origin_asns": [
+          1
+        ],
+        "neighbors": [
+          2,
+          3
+        ],
+        "mitigation": ["manual"]
+      }
+    ]
   }
 }

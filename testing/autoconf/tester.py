@@ -1,31 +1,15 @@
 import glob
 import os
 import re
-import socket
 import time
-from xmlrpc.client import ServerProxy
 
 import psycopg2
+import requests
 import ujson as json
 from kombu import Connection
 from kombu import Exchange
-from kombu import Queue
 from kombu import serialization
-from kombu import uuid
-from kombu.utils.compat import nested
 
-RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
-RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
-RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
-RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
-    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
-)
-BACKEND_SUPERVISOR_HOST = os.getenv("BACKEND_SUPERVISOR_HOST", "localhost")
-BACKEND_SUPERVISOR_PORT = os.getenv("BACKEND_SUPERVISOR_PORT", 9001)
-BACKEND_SUPERVISOR_URI = "http://{}:{}/RPC2".format(
-    BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT
-)
 
 serialization.register(
     "ujson",
@@ -36,15 +20,64 @@ serialization.register(
 )
 
 
+# global vars
+CONFIGURATION_HOST = "configuration"
+DATABASE_HOST = "database"
+DATA_WORKER_DEPENDENCIES = [
+    "configuration",
+    "database",
+    "detection",
+    "fileobserver",
+    "prefixtree",
+]
+REST_PORT = 3000
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", 5672)
+RABBITMQ_URI = "amqp://{}:{}@{}:{}//".format(
+    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT
+)
+
+
+def wait_data_worker_dependencies(data_worker_dependencies):
+    while True:
+        met_deps = set()
+        unmet_deps = set()
+        for service in data_worker_dependencies:
+            try:
+                r = requests.get("http://{}:{}/health".format(service, REST_PORT))
+                status = True if r.json()["status"] == "running" else False
+                if not status:
+                    unmet_deps.add(service)
+                else:
+                    met_deps.add(service)
+            except Exception:
+                print(
+                    "exception while waiting for service '{}'. Will retry".format(
+                        service
+                    )
+                )
+        if len(unmet_deps) == 0:
+            print(
+                "all needed data workers started: {}".format(data_worker_dependencies)
+            )
+            break
+        else:
+            print(
+                "'{}' data workers started, waiting for: '{}'".format(
+                    met_deps, unmet_deps
+                )
+            )
+        time.sleep(1)
+
+
 class AutoconfTester:
     def __init__(self):
         self.time_now = int(time.time())
         self.proceed_to_next_test = True
         self.expected_configuration = None
-        self.supervisor = ServerProxy(
-            "http://{}:{}/RPC2".format(BACKEND_SUPERVISOR_HOST, BACKEND_SUPERVISOR_PORT)
-        )
-        self.config_notify_received = False
+        self.autoconf_exchange = None
 
     def getDbConnection(self):
         """
@@ -83,94 +116,36 @@ class AutoconfTester:
             except Exception:
                 time.sleep(1)
 
-    def waitProcess(self, mod, target):
-        state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
-        while state != target:
-            time.sleep(0.5)
-            state = self.supervisor.supervisor.getProcessInfo(mod)["state"]
-
-    @staticmethod
-    def config_request_rpc(conn):
-        """
-        Initial RPC of this service to request the configuration.
-        The RPC is blocked until the configuration service replies back.
-        """
-        correlation_id = uuid()
-        callback_queue = Queue(
-            uuid(),
-            channel=conn.default_channel,
-            durable=False,
-            auto_delete=True,
-            max_priority=4,
-            consumer_arguments={"x-priority": 4},
-        )
-
-        with conn.Producer() as producer:
-            producer.publish(
-                "",
-                exchange="",
-                routing_key="configuration.rpc.request",
-                reply_to=callback_queue.name,
-                correlation_id=correlation_id,
-                retry=True,
-                declare=[
-                    Queue(
-                        "configuration.rpc.request",
-                        durable=False,
-                        max_priority=4,
-                        consumer_arguments={"x-priority": 4},
-                    ),
-                    callback_queue,
-                ],
-                priority=4,
-                serializer="ujson",
-            )
-
-        while True:
-            if callback_queue.get():
-                break
-            time.sleep(0.1)
-        print("[+] Config RPC finished")
-
     def send_next_message(self, conn, msg):
         """
         Publish next custom BGP update via the autoconf RPC.
         """
 
-        with nested(
-            conn.Consumer(
-                on_message=self.handle_config_notify,
-                queues=[self.config_queue],
-                accept=["ujson"],
+        with conn.Producer() as producer:
+            print("[+] Sending message '{}'".format(msg))
+            producer.publish(
+                msg,
+                exchange=self.autoconf_exchange,
+                routing_key="update",
+                retry=True,
+                priority=4,
+                serializer="ujson",
             )
-        ):
-            with conn.Producer() as producer:
-                print("[+] Sending message '{}'".format(msg))
-                producer.publish(
-                    msg,
-                    exchange=self.config_exchange,
-                    routing_key="autoconf-update",
-                    retry=True,
-                    priority=4,
-                    serializer="ujson",
-                )
-                print("[+] Sent message '{}'".format(msg))
-                try:
-                    conn.drain_events(timeout=10)
-                except socket.timeout:
-                    # avoid infinite loop by timeout
-                    assert (
-                        self.config_notify_received
-                    ), "[-] Config notify consumer timeout"
-                assert self.config_notify_received, "[-] Config notify consumer timeout"
-            print("[+] Async received config notify")
+            print("[+] Sent message '{}'".format(msg))
+            print("Sleeping for 5 seconds before polling configuration...")
+            time.sleep(5)
+            r = requests.get(
+                "http://{}:{}/config".format(CONFIGURATION_HOST, REST_PORT)
+            )
+            result = r.json()
+            self.check_config(result)
+            print("Configuration is up-to-date! Continuing...")
 
-    def handle_config_notify(self, msg):
+    def check_config(self, msg):
         """
-        Receive and validate new configuration based on autoconf update
+        Validate new configuration based on autoconf update
         """
-        msg.ack()
-        raw = msg.payload
+        raw = msg
         assert isinstance(raw, dict), "[-] Raw configuration is not a dict"
         for outer_key in self.expected_configuration:
             assert (
@@ -238,60 +213,25 @@ class AutoconfTester:
                                     raw[outer_key][i][inner_key],
                                 )
                             )
-        self.config_notify_received = True
 
     def test(self):
         with Connection(RABBITMQ_URI) as connection:
             # exchanges
-            self.config_exchange = Exchange(
-                "config",
+            self.autoconf_exchange = Exchange(
+                "autoconf",
                 channel=connection,
                 type="direct",
                 durable=False,
                 delivery_mode=1,
             )
 
-            # queues
-            self.config_queue = Queue(
-                "autoconf-config-notify-{}".format(uuid()),
-                exchange=self.config_exchange,
-                routing_key="notify",
-                durable=False,
-                auto_delete=True,
-                max_priority=2,
-                consumer_arguments={"x-priority": 2},
-            )
-            print("[+] Waiting for config exchange..")
-            AutoconfTester.waitExchange(
-                self.config_exchange, connection.default_channel
-            )
+            # print("[+] Waiting for config exchange..")
+            # AutoconfTester.waitExchange(
+            #     self.autoconf_exchange, connection.default_channel
+            # )
 
-            # query database for the states of the processes
-            db_con = self.getDbConnection()
-            db_cur = db_con.cursor()
-            query = "SELECT name FROM process_states WHERE running=True"
-            running_modules = set()
-            # wait until all 4 modules are running
-            while len(running_modules) < 4:
-                db_cur.execute(query)
-                entries = db_cur.fetchall()
-                for entry in entries:
-                    running_modules.add(entry[0])
-                db_con.commit()
-                print("[+] Running modules: {}".format(running_modules))
-                print(
-                    "[+] {}/4 modules are running. Re-executing query...".format(
-                        len(running_modules)
-                    )
-                )
-                time.sleep(1)
-
-            AutoconfTester.config_request_rpc(connection)
-
-            time.sleep(5)
-
-            db_cur.close()
-            db_con.close()
+            # wait for dependencies data workers to start
+            wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
 
             full_testfiles = glob.glob("testfiles/*.json")
             testfiles_to_id = {}
@@ -313,23 +253,8 @@ class AutoconfTester:
                     autoconf_test_info = json.load(f)
                     message = autoconf_test_info["send"]
                     self.expected_configuration = autoconf_test_info["configuration"]
-                    self.config_notify_received = False
                     message["timestamp"] = self.time_now + i + 1
                     self.send_next_message(connection, message)
-
-            connection.close()
-
-        print("[+] Sleeping for 5 seconds...")
-        time.sleep(5)
-        print("[+] Instructing all processes to stop...")
-        self.supervisor.supervisor.stopAllProcesses()
-
-        self.waitProcess("listener", 0)  # 0 STOPPED
-        self.waitProcess("clock", 0)  # 0 STOPPED
-        self.waitProcess("configuration", 0)  # 0 STOPPED
-        self.waitProcess("database", 0)  # 0 STOPPED
-        self.waitProcess("observer", 0)  # 0 STOPPED
-        print("[+] All processes (listener, clock, conf, db and observer) are stopped.")
 
 
 if __name__ == "__main__":

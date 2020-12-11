@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: autostarter
+{{ include "artemis.labels" . | indent 4 }}
+  name: autostarter
+{{- with .Values.services.autostarter }}
+spec:
+  selector:
+    matchLabels:
+      app: autostarter
+  replicas: {{ .replicas | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: autostarter
+    spec:
+      containers:
+      - name: autostarter
+        image: {{ .image }}:{{ $.Values.systemVersion }}
+        imagePullPolicy: Always
+        env:
+        - name: AUTO_RECOVER_PROCESS_STATE
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: autoRecoverProcessState
+        - name: CHECK_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: checkInterval
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: dbHost
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: dbName
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: dbPass
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: dbPort
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: dbUser
+        - name: REST_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: restPort
+        - name: TEST_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: testEnv
+{{/*        {{- with $.Values.probes }}*/}}
+{{/*{{ toYaml . | nindent 8 }}*/}}
+{{/*        {{- end }}*/}}
+        volumeMounts:
+        - mountPath: /etc/artemis/logging.yaml
+          name: autostarter-configmap
+          subPath: logging.yaml
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          name: volumes
+        name: autostarter-configmap
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -40,14 +40,20 @@ apt-get install -y git
 #echo "[+] Cloning latest ARTEMIS from GitHub..."
 git clone https://github.com/FORTH-ICS-INSPIRE/artemis.git
 cd artemis
-git pull origin master
+# TODO: replace with master after merge!
+git checkout modularization
+git pull origin modularization
 
 # Setting up ARTEMIS
 
 #echo "[+] Setting up local configuration files..."
-mkdir -p local_configs && mkdir -p local_configs/backend && mkdir -p local_configs/monitor && mkdir -p local_configs/frontend
-cp -rn backend/configs/* local_configs/backend && cp -rn backend/supervisor.d local_configs/backend && cp -rn monitor/configs/* local_configs/monitor
-cp -rn monitor/supervisor.d local_configs/monitor && cp -rn frontend/webapp/configs/* local_configs/frontend
+mkdir -p local_configs && \
+mkdir -p local_configs/backend && \
+mkdir -p local_configs/monitor && \
+mkdir -p local_configs/frontend && \
+cp -rn backend-services/configs/* local_configs/backend && \
+cp -rn monitor-services/configs/* local_configs/monitor && \
+cp -rn frontend/webapp/configs/* local_configs/frontend
 #echo "[+] ARTEMIS VM provisioning completed"
 
 # Setting up firewall
@@ -58,6 +64,4 @@ ufw default allow outgoing
 ufw allow https
 ufw allow ssh
 ufw allow in on lo to any
-ufw enable
-
-reboot
+yes | ufw enable

@@ -1,0 +1,6 @@
+#!/bin/bash
+make -j
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+
+cd ./core
+/usr/local/bin/python -c "import notifier; notifier.main()"

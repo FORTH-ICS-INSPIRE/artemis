@@ -5,8 +5,8 @@ from flask import jsonify
 from flask import render_template
 from flask import request
 from flask_security.decorators import roles_required
-from webapp.core.actions import Load_as_sets
-from webapp.core.actions import Submit_new_config
+from webapp.core.actions import load_as_sets
+from webapp.core.actions import submit_new_config
 from webapp.data.models import Role
 from webapp.data.models import User
 from webapp.render.forms import ApproveUserForm
@@ -34,8 +34,7 @@ def handle_new_config():
         data = json.loads(request.data)
         comment = data["comment"]
         new_config = data["new_config"]
-        config_modify = Submit_new_config()
-        response, success = config_modify.send(new_config, old_config, comment)
+        response, success = submit_new_config(new_config, old_config, comment)
 
         if success:
             return jsonify({"status": "success", "response": response})
@@ -47,9 +46,8 @@ def handle_new_config():
 
 @admin.route("/load_as_sets", methods=["GET"])
 @roles_required("admin")
-def load_as_sets():
-    _load_as_sets = Load_as_sets()
-    response, success = _load_as_sets.send()
+def handle_load_as_sets():
+    response, success = load_as_sets()
     if success:
         return jsonify({"status": "success", "response": response})
     return jsonify({"status": "fail", "response": response})

@@ -1,0 +1,8 @@
+#!/bin/bash
+make -j
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+./wait-for prefixtree:${REST_PORT} -t 0
+./wait-for database:${REST_PORT} -t 0
+
+cd ./core
+/usr/local/bin/python -c "import bgpstreamhist; bgpstreamhist.main()"

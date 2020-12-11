@@ -22,7 +22,7 @@ CREATE TRIGGER db_details_no_delete
 BEFORE DELETE ON db_details
 FOR EACH ROW EXECUTE PROCEDURE db_version_no_delete();
 
-INSERT INTO db_details (version, upgraded_on) VALUES (22, now());
+INSERT INTO db_details (version, upgraded_on) VALUES (23, now());
 
 CREATE TABLE IF NOT EXISTS bgp_updates (
     key VARCHAR ( 32 ) NOT NULL,
@@ -90,31 +90,29 @@ CREATE TABLE IF NOT EXISTS hijacks (
     UNIQUE(time_detected, key),
     CONSTRAINT possible_states CHECK (
         (
-            active=true and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=false
+            active=true and resolved=false and ignored=false and withdrawn=false and outdated=false
         ) or (
-            active=true and under_mitigation=true and resolved=false and ignored=false and withdrawn=false and outdated=false
+            active=false and resolved=true and ignored=false and withdrawn=false and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false and outdated=false
+            active=false and resolved=false and ignored=true and withdrawn=false and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false and outdated=false
+            active=false and resolved=false and ignored=false and withdrawn=false and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=false and outdated=true
+            active=false and resolved=true and ignored=false and withdrawn=false and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=false and outdated=true
+            active=false and resolved=false and ignored=true and withdrawn=false and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=false and outdated=true
+            active=false and resolved=false and ignored=false and withdrawn=true and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true and outdated=false
+            active=false and resolved=false and ignored=false and withdrawn=true and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=false and withdrawn=true and outdated=true
+            active=false and resolved=true and ignored=false and withdrawn=true and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=true and outdated=false
+            active=false and resolved=false and ignored=true and withdrawn=true and outdated=false
         ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=false
+            active=false and resolved=true and ignored=false and withdrawn=true and outdated=true
         ) or (
-            active=false and under_mitigation=false and resolved=true and ignored=false and withdrawn=true and outdated=true
-        ) or (
-            active=false and under_mitigation=false and resolved=false and ignored=true and withdrawn=true and outdated=true
+            active=false and resolved=false and ignored=true and withdrawn=true and outdated=true
         )
     ),
     CONSTRAINT dormant_active CHECK (
@@ -197,14 +195,14 @@ SELECT * FROM bgp_updates WHERE prefix << $1;
 $$ LANGUAGE SQL;
 
 CREATE TABLE IF NOT EXISTS process_states (
-    name VARCHAR (32) UNIQUE,
+    name VARCHAR (63) UNIQUE,
     running BOOLEAN DEFAULT FALSE,
         loading BOOLEAN DEFAULT FALSE,
     timestamp TIMESTAMP default current_timestamp
 );
 
 CREATE TABLE IF NOT EXISTS intended_process_states (
-    name VARCHAR (32) UNIQUE,
+    name VARCHAR (63) UNIQUE,
     running BOOLEAN DEFAULT FALSE
 );
 
@@ -225,6 +223,23 @@ CREATE OR REPLACE VIEW view_processes AS SELECT * FROM process_states;
 CREATE OR REPLACE VIEW view_intended_process_states AS SELECT * FROM intended_process_states;
 
 CREATE OR REPLACE VIEW view_db_details AS SELECT version, upgraded_on FROM db_details;
+
+CREATE TABLE IF NOT EXISTS dataplane_msms (
+    key VARCHAR ( 32 ) NOT NULL,
+    hijack_key VARCHAR(32) NOT NULL,
+    valid_origin_AS BIGINT,
+    hijack_AS BIGINT,
+    dst_addr inet,
+    msm_type VARCHAR(10),
+    msm_id BIGINT NOT NULL,
+    msm_link text,
+    responding VARCHAR(3) DEFAULT 'NA',
+    hijacked VARCHAR(3) DEFAULT 'NA',
+    PRIMARY KEY (key),
+    UNIQUE (key, hijack_key, msm_id)
+);
+
+CREATE OR REPLACE VIEW view_dataplane_msms AS SELECT hijack_key, valid_origin_AS, hijack_AS, dst_addr, msm_type, msm_id, msm_link, responding, hijacked FROM dataplane_msms;
 
 CREATE FUNCTION search_bgpupdates_as_path(as_paths BIGINT[])
 RETURNS SETOF view_bgpupdates AS $$

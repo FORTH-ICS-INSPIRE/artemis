@@ -1,50 +1,48 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-configmap
+  name: configmap
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 data:
-  guiEnabled: {{ .Values.guiEnable | default "true" | quote }}
+  guiEnabled: {{ .Values.guiEnabled | default "true" | quote }}
   systemVersion: {{ .Values.systemVersion | default "latest" | quote }}
   historic: {{ .Values.historic | default "false" | quote }}
-  redisHost: {{ .Release.Name }}-{{ .Values.redisHost | default "backend" }}-svc
+  checkInterval: {{ .Values.checkInterval | default "5" | quote }}
+  redisHost: {{ .Values.redisHost | default "redis" }}
   redisPort: {{ .Values.redisPort | default "6379" | quote }}
-  backendSupervisorHost: {{ .Release.Name }}-{{ .Values.backendSupervisorHost | default "backend" }}-svc
-  backendSupervisorPort: {{ .Values.backendSupervisorPort | default "9001" | quote }}
-  monSupervisorHost: {{ .Release.Name }}-{{ .Values.monSupervisorHost | default "monitor" }}-svc
-  monSupervisorPort: {{ .Values.monSupervisorPort | default "9001" | quote }}
-  apiHost: {{ .Release.Name }}-{{ .Values.apiHost | default "postgrest" }}-svc
+  apiHost: {{ .Values.apiHost | default "postgrest" }}
   apiPort: {{ .Values.apiPort | default "3000" | quote }}
+  restPort: {{ .Values.restPort | default "3000" | quote }}
   risId: {{ .Values.risId | default "8522" | quote }}
-  dbHost: {{ .Release.Name }}-{{ .Values.dbHost | default "postgres" }}-svc
+  dbHost: {{ .Values.dbHost | default "postgres" }}
   dbPort: {{ .Values.dbPort | default "5432" | quote }}
-  dbVersion: {{ .Values.dbVersion | default "22" | quote }}
+  dbVersion: {{ .Values.dbVersion | default "23" | quote }}
   dbName: {{ .Values.dbName | default "artemis_db" | quote }}
   dbUser: {{ .Values.dbUser | default "artemis_user" | quote }}
   dbSchema: {{ .Values.dbSchema | default "public" | quote }}
   dbAutoClean: {{ .Values.dbAutoClean | default "false" | quote }}
   dbBackup: {{ .Values.dbBackup | default "true" | quote }}
   dbHijackDormant: {{ .Values.dbHijackDormant | default "false" | quote }}
-  dbUri: postgres://{{ .Values.dbUser | default "artemis_user" }}:{{ .Values.dbPass | default "Art3m1s" }}@{{ .Release.Name }}-{{ .Values.dbHost | default "postgres"}}-svc:{{ .Values.dbPort | default 5432 }}/{{ .Values.dbName | default "artemis_db" }}
+  dbUri: postgres://{{ .Values.dbUser | default "artemis_user" }}:{{ .Values.dbPass | default "Art3m1s" }}@{{ .Values.dbHost | default "postgres"}}:{{ .Values.dbPort | default 5432 }}/{{ .Values.dbName | default "artemis_db" }}
   bindIp: {{ .Values.bindIp | default "0.0.0.0" | quote }}
-  webappHost: {{ .Release.Name }}-{{ .Values.webappHost | default "frontend" }}-svc
+  webappHost: {{ .Values.webappHost | default "frontend" }}
   webappPort: {{ .Values.webappPort | default "8000" | quote }}
   adminUser: {{ .Values.adminUser | default "admin" | quote }}
   adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
   gunicornWorkers: {{ .Values.gunicornWorkers | default "4" | quote }}
   jsVersion: {{ .Values.jsVersion | default "1.0.4" | quote }}
-  rabbitmqHost: {{ .Release.Name }}-{{ .Values.rabbimtqHost | default "rabbitmq" }}-svc
+  rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" }}
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}
-  rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Release.Name }}-{{ .Values.rabbitmqHost | default "rabbitmq"}}-svc:{{ .Values.rabbitmqPort | default 5672 }}//
+  rabbitmqUri: amqp://{{ .Values.rabbitmqUser | default "guest" }}:{{ .Values.rabbitmqPass | default "guest" }}@{{ .Values.rabbitmqHost | default "rabbitmq"}}:{{ .Values.rabbitmqPort | default 5672 }}//
   rabbitmqIoThreadPoolSize: {{ .Values.rabbitmqIoThreadPoolSize | default "128" | quote }}
-  hasuraHost: {{ .Release.Name }}-{{ .Values.hasuraHost | default "graphql" }}-svc
+  hasuraHost: {{ .Values.hasuraHost | default "graphql" }}
   hasuraPort: {{ .Values.hasuraPort | default "8080" | quote }}
   hasuraGui: {{ .Values.hasuraGui | default "false" | quote }}
-  hijackLogFilter: {{ .Values.hijackLogFilter | default "[]" | quote }}
+  hijackLogFilter: {{ .Values.hijackLogFilter | default "" | quote }}
   monTimeoutLastBgpUpdate: {{ .Values.monTimeoutLastBgpUpdate | default "3600" | quote }}
-  hijackLogFields: {{ .Values.hijackLogFields | default "[]" | quote }}
+  hijackLogFields: {{ .Values.hijackLogFields | default "" | quote }}
   artemisWebHost: {{ .Values.ingress.host | default "artemis.com" }}
   withdrawnHijackThreshold: {{ .Values.withdrawnHijackThreshold | default "80" | quote }}
   rpkiValidatorEnabled: {{ .Values.rpkiValidatorEnabled | default "false" | quote }}

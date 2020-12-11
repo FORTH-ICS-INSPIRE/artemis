@@ -6,11 +6,17 @@ repos:
       language: script
       entry: ./other/verify_script.py
       pass_filenames: false
-    - id: unittest
-      name: Backend Unit Tests
-      entry: /bin/bash -c 'cd backend && make test'
+    - id: configuration-unittest
+      name: Configuration Unit Tests
+      entry: /bin/bash -c 'cd backend-services/configuration && make test'
       language: script
-      files: "backend/core"
+      files: "backend-services/configuration/core"
+      pass_filenames: false
+    - id: detection-unittest
+      name: Detection Unit Tests
+      entry: /bin/bash -c 'cd backend-services/detection && make test'
+      language: script
+      files: "backend-services/detection/core"
       pass_filenames: false
 - repo: https://github.com/ambv/black
   rev: 19.3b0

@@ -1,8 +1,8 @@
 {{- if .Values.ingress.enabled -}}
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}-frontend-ingress
+  name: frontend-ingress
   annotations:
   {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
@@ -17,7 +17,7 @@ spec:
   tls:
   - hosts:
     - {{ .Values.ingress.host | default "artemis.com" }}
-    secretName: {{ .Release.Name }}-secret-tls
+    secretName: secret-tls
   {{- end }}
   rules:
   - host: {{ .Values.ingress.host | default "artemis.com" }}
@@ -25,13 +25,13 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{ .Release.Name }}-{{ .Values.webappHost }}-svc
+          serviceName: {{ .Values.webappHost }}
           servicePort: {{ .Values.webappPort }}
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}-graphql-ingress
+  name: graphql-ingress
   annotations:
   {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
@@ -46,7 +46,7 @@ spec:
   tls:
   - hosts:
     - {{ .Values.ingress.host | default "artemis.com" }}
-    secretName: {{ .Release.Name }}-secret-tls
+    secretName: secret-tls
   {{- end }}
   rules:
   - host: {{ .Values.ingress.host | default "artemis.com" }}
@@ -54,6 +54,6 @@ spec:
       paths:
       - path: /api/graphql
         backend:
-          serviceName: {{ .Release.Name}}-{{ .Values.hasuraHost }}-svc
+          serviceName: {{ .Values.hasuraHost }}
           servicePort: {{ .Values.hasuraPort }}
 {{- end -}}

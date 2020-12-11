@@ -12,9 +12,9 @@ When the IP address of the server on which ARTEMIS is running is affected by a h
 
 Use the `DB_AUTOCLEAN` env variable to automatically clean up benign BGP updates more than e.g., 24 hours old (units: hours), see [this page](https://bgpartemis.readthedocs.io/en/latest/envvars/). This will also clean up unprocessed BGP updates that were generated from the monitor when the detector was OFF, or excess updates that arose during severe load periods and overwhelmed the detector.
 
-## Excess load: Use multiple detectors/db access modules
+## Excess load: Use multiple detectors/db access microservices
 
-See [this page](https://bgpartemis.readthedocs.io/en/latest/overview/#invoking-multiple-detectorsdb-clients-optional). However pay also attention to the RAM requirements of the extra modules (see [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements))
+See [this page](https://bgpartemis.readthedocs.io/en/latest/overview/#invoking-multiple-detectorsdb-clients-optional). However pay also attention to the RAM requirements of the extra microservices (essentially `prefixtree`; see [here](https://bgpartemis.readthedocs.io/en/latest/overview/#memory-requirements))
 
 ## Dormant hijacks
 

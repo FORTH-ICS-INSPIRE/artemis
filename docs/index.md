@@ -13,11 +13,11 @@ desirable to network operators such as comprehensiveness, accuracy, speed,
 privacy, and flexibility. With the ARTEMIS approach, prefix hijacking
 can be neutralized within a minute!
 
-Depending on the preferences of the user, ARTEMIS can be used in 3 basic modes according to the combination of enabled micro-services in the user interface:
+Depending on the preferences of the user, ARTEMIS can be used in 3 basic modes according to the combination of enabled microservices in the user interface:
 
 1. Passive monitor (monitoring enabled)
 2. Passive detector (monitoring + detection enabled)
-3. Active joint detector and user-triggered mitigator (monitoring + detection + mitigation enabled)
+3. Active joint detector and user-triggered mitigation mechanism (monitoring + detection + mitigation enabled)
 
 *Any of these combinations is valid. To start with, we recommend using mode (2).
 Mode (3) is under development (currently only a mitigation wrapper is offered).*
@@ -29,14 +29,15 @@ This repository contains the software of ARTEMIS as a tool.
 ARTEMIS can be run on a server/VM as a modular and extensible
 multi-container (microservice) application. It has been officially tested at
 AMS-IX, a major greek ISP, FORTH (a dual-homed edge academic network),
-and Internet2 (a major US R&E backbone network). Several other network operators use it either in production or in a testing environment.
+and Internet2 (a major US R&E backbone network).
+Several other network operators use it either in production or in a testing environment.
 
 ## Features
 
 For a detailed list of supported features please check the [CHANGELOG](changelog.md) file
-(sections: "Added"). The following main features are supported:
+(sections: "Added"). The following main features are currently supported:
 
-* Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS running ARTEMIS, via:
+* Real-time monitoring of the changes in the BGP routes of the prefixes originated by the AS(es) running ARTEMIS, via:
   * [RIPE RIS live](https://ris-live.ripe.net/)
   * [RIPE RIS RIB collections](https://bgpstream.caida.org/data#!ris)
   * [RouteViews RIB collections](https://bgpstream.caida.org/data#!routeviews)

@@ -9,7 +9,6 @@ K8S_VALUES_FILE = "artemis-chart/values.yaml"
 CONFIGMAP_FILE = "artemis-chart/templates/configmap.yaml"
 COMPOSE_FILE = "docker-compose.yaml"
 DEPLOYMENT_FILE = "artemis-chart/templates/{}-deployment.yaml"
-TESTCAFE_FILE = "testing/testcafe/tests/simple-flow.js"
 
 
 def get_match_from_file(fp, query):
@@ -39,7 +38,6 @@ class TestStringMethods(unittest.TestCase):
         configmap_version = get_match_from_file(
             CONFIGMAP_FILE, r"\.Values\.dbVersion \| default \"([0-9]*)\""
         )
-        testcafe_version = get_match_from_file(TESTCAFE_FILE, r"Database v.([0-9]*)")
 
         self.assertEqual(
             version,
@@ -56,9 +54,6 @@ class TestStringMethods(unittest.TestCase):
         )
         self.assertEqual(
             version, configmap_version, "Wrong db version in {}".format(CONFIGMAP_FILE)
-        )
-        self.assertEqual(
-            version, testcafe_version, "Wrong db version in {}".format(TESTCAFE_FILE)
         )
 
     def test_js_version(self):
@@ -98,14 +93,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: hasura/graphql-engine:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("graphql"),
-            r"image: hasura/graphql-engine:([a-zA-Z0-9.\-_]*)",
-        )
-        self.assertEqual(version, k8s_version)
-
-        version = get_match_from_file(COMPOSE_FILE, r"image: nginx:([a-zA-Z0-9.\-_]*)")
-        k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("nginx"), r"image: nginx:([a-zA-Z0-9.\-_]*)"
+            K8S_VALUES_FILE, r"image: hasura/graphql-engine:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -113,7 +101,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: rabbitmq:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("rabbitmq"), r"image: rabbitmq:([a-zA-Z0-9.\-_]*)"
+            K8S_VALUES_FILE, r"image: rabbitmq:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -121,8 +109,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: timescale/timescaledb:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("postgres"),
-            r"image: timescale/timescaledb:([a-zA-Z0-9.\-_]*)",
+            K8S_VALUES_FILE, r"image: timescale/timescaledb:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -130,8 +117,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: postgrest/postgrest:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("postgrest"),
-            r"image: postgrest/postgrest:([a-zA-Z0-9.\-_]*)",
+            K8S_VALUES_FILE, r"image: postgrest/postgrest:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -139,8 +125,7 @@ class TestStringMethods(unittest.TestCase):
             COMPOSE_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            DEPLOYMENT_FILE.format("pg-amqp-bridge"),
-            r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)",
+            K8S_VALUES_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 
@@ -149,7 +134,7 @@ class TestStringMethods(unittest.TestCase):
         env_vals.remove("COMPOSE_PROJECT_NAME")
         dc_vals = set(get_matches_from_file(COMPOSE_FILE, r"\$\{([A-Z_]+)[:\-0-9]*\}"))
 
-        self.assertTrue(env_vals.issubset(dc_vals))
+        self.assertTrue(dc_vals.issubset(env_vals))
 
         k8s_vals = set(get_matches_from_file(K8S_VALUES_FILE, r"([A-Za-z]+):"))
         env_vals = {k.lower().replace("_", "") for k in env_vals}

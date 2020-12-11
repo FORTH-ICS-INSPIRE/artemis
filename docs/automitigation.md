@@ -41,13 +41,27 @@ BGP updates via PEER AS AS65005.
     ```
     version: '3'
     services:
-      backend:
+      ...
+      configuration:
         ...
         volumes:
+          ...
           - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
           - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
-          - ./backend/supervisor.d/:/etc/supervisor/conf.d/
+          ...
       ...
+      fileobserver:
+        ...
+        volumes:
+          ...
+          - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
+          ...
+      mitigation:
+        ...
+        volumes:
+          ...
+          - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+          ...
     ```
 
 2. Run the following command and check the ARTEMIS UI:
@@ -61,7 +75,7 @@ BGP updates via PEER AS AS65005.
    docker-compose -f docker-compose.yaml -f docker-compose.pocmitigatedeaggregate.yaml exec r06 sh
    gobgp global rib add 192.168.0.0/16
    ```
-4. Observe the hijack in ARTEMIS and initiate the mitigation action.
+4. Observe the hijack in ARTEMIS and initiate the mitigation action. You can optionally invoke the `un-mitigate` action to stop mitigation (not implemented in-PoC-script).
 
 ## How to run in production (to be tested)
 
@@ -74,11 +88,20 @@ In case you want to run this in production you can adjust [`poc_mitigate_deaggre
     ```
     version: '3'
     services:
-      backend:
+      ...
+      configuration:
         ...
         volumes:
+          ...
           - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+          ...
       ...
+      mitigation:
+        ...
+        volumes:
+          ...
+          - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+          ...
     ```
 
 3. Edit the [exabgp configuration files](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/poc_mitigate_deaggregate/configs/exabgp) according to your router setup. Note that the `monitor` is passive (receiving updates from routers), while the `routecommander` active (sending updates to routers).
@@ -107,5 +130,4 @@ In case you want to run this in production you can adjust [`poc_mitigate_deaggre
 
 ## Notes
 
-1. Currently we do not support "stopping" deaggregation (only triggering via the ARTEMIS UI action), but we monitor its effects within the hijack event.
-2. Feedback is more than welcome, feel free to expand this section!
+Feedback is more than welcome, feel free to expand this section!

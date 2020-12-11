@@ -1,0 +1,19 @@
+#!/bin/bash
+make -j
+./wait-for ${RABBITMQ_HOST}:${RABBITMQ_PORT} -t 0
+./wait-for ${REDIS_HOST}:${REDIS_PORT} -t 0
+# should wait for the following services so that it configures them when up
+./wait-for database:${REST_PORT} -t 0
+./wait-for prefixtree:${REST_PORT} -t 0
+./wait-for riperistap:${REST_PORT} -t 0
+./wait-for bgpstreamlivetap:${REST_PORT} -t 0
+./wait-for bgpstreamkafkatap:${REST_PORT} -t 0
+./wait-for bgpstreamhisttap:${REST_PORT} -t 0
+./wait-for exabgptap:${REST_PORT} -t 0
+./wait-for detection:${REST_PORT} -t 0
+./wait-for mitigation:${REST_PORT} -t 0
+./wait-for notifier:${REST_PORT} -t 0
+./wait-for autoignore:${REST_PORT} -t 0
+
+cd ./core
+/usr/local/bin/python -c "import configuration; configuration.main()"

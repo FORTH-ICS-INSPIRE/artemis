@@ -1,49 +1,47 @@
-apiVersion: {{ template "artemis.deployment.apiVersion" . }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: {{ .Release.Name }}-pg-amqp-bridge
+    app: pg-amqp-bridge
 {{ include "artemis.labels" . | indent 4 }}
-  name: {{ .Release.Name }}-pg-amqp-bridge
+  name: pg-amqp-bridge
+{{- with .Values.services.pgamqpbridge }}
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-pg-amqp-bridge
-  replicas: {{ .Values.replicaCount | default 1 }}
+      app: pg-amqp-bridge
+  replicas: 1
   strategy:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: {{ .Release.Name }}-pg-amqp-bridge
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        app: pg-amqp-bridge
     spec:
       initContainers:
       - name: wait-for-service
         image: busybox
-        command: ['sh', '-c', 'until nc -z {{ .Release.Name }}-{{ .Values.rabbitmqHost }}-svc {{ .Values.rabbitmqPort}}; do echo waiting for rabbitmq; sleep 10; done;']
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z {{ $.Values.rabbitmqHost }} {{ $.Values.rabbitmqPort}}; do echo waiting for rabbitmq; sleep 10; done;']
       containers:
-      - env:
+      - name: pg-amqp-bridge
+        image: {{ .image }}
+        env:
         - name: AMQP_URI
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: rabbitmqUri
         - name: BRIDGE_CHANNELS
           value: events:amq.direct
         - name: POSTGRESQL_URI
           valueFrom:
             configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
+              name: configmap
               key: dbUri
-        image: subzerocloud/pg-amqp-bridge:0.0.6
-        name: pg-amqp-bridge
-        resources: {}
       restartPolicy: Always
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}
       {{- end }}
-status: {}
+{{- end }}

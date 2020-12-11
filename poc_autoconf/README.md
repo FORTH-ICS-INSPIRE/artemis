@@ -25,12 +25,19 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
     ```
     version: '3'
     services:
-      backend:
+      configuration:
         ...
         volumes:
+          ...
           - ./poc_autoconf/configs/artemis/:/etc/artemis/
           ...
       ...
+      fileobserver:
+        ...
+        volumes:
+          ...
+          - ./poc_autoconf/configs/artemis/:/etc/artemis/
+          ...
     ```
 
 2. Run the following command and check the ARTEMIS UI:
@@ -38,6 +45,8 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
    ```
    docker-compose -f docker-compose.yaml -f docker-compose.pocautoconf.yaml up -d
    ```
+
+   After it is up and running, activate ARTEMIS exabgp tap.
 
 3. Connect to `r04` and  announce a new prefix:
 

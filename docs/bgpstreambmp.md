@@ -39,7 +39,9 @@ monitors:
 ...
 ```
 
+<!--
 As of now there is an issue with the parsed timestamps from BGPStream so you need to define a custom environment variable.
 
 Follow this ticket for more information:
 https://github.com/FORTH-ICS-INSPIRE/artemis/issues/411
+-->

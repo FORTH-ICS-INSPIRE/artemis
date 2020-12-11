@@ -1,7 +1,5 @@
 Information stored in Redis:
 
-**TODO: recheck keys in new architecture**
-
 | key format | value type | value | description |
 |:---:|:---:|:---:|:---:|
 | [a-z0-9]{32}                          | string    | dictionary        | hijack ephemeral key with all details in value        |

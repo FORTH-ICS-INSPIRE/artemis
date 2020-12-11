@@ -3,12 +3,14 @@ The ARTEMIS configuration file (config.yaml) is written in YAML (for an ultra-fa
 
     backend-services/configs
 
-but we highly advise you to copy the default file to the `local_configs/backend` location and update the volume mapping in
-[docker-compose.yaml](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.yaml#L28). Detailed instructions on the exact steps can be found [here](https://bgpartemis.readthedocs.io/en/latest/overview/#setup-tool). The local location of your file should eventually be:
+but you should copy the default file to the `local_configs/backend` location.
+Detailed instructions on the exact steps can be found [here](https://bgpartemis.readthedocs.io/en/latest/installsetup/#setup-tool).
+The local location of your file should eventually be:
 
     local_configs/backend/config.yaml
 
-The file is composed of 4 sections (Prefixes, Monitors, ASNs, and Rules) described next in detail. *Reserved words are marked in bold (configuration keywords).*
+The file is composed of 4 sections (Prefixes, Monitors, ASNs, and Rules) described next in detail.
+*Reserved words are marked in bold (configuration keywords).*
 
 ## Prefixes
 This section contains all declared ARTEMIS prefixes. Note that even if a prefix is declared here, it does not mean
@@ -74,13 +76,13 @@ Means: "select all available RRCs from RouteViews, RIPE RIS and Caida projects".
     - ip: ip_to_exabgp_N
       port: port_N
 
-Means: "receive feed from the N exaBGP monitors configured on these IPs and ports" (default IP="exabgp", default port=5000). To configure exaBGP sessions with your local routers please consult this [docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#receiving-bgp-feed-from-local-routerroute-reflectorbgp-monitor-via-exabgp).
+Means: "receive feed from the N exaBGP monitors configured on these IPs and ports" (default IP="exabgp", default port=5000). To configure exaBGP sessions with your local routers please consult this [docs section](https://bgpartemis.readthedocs.io/en/latest/exabgpfeed/).
 
 ### Historical BGPStream records
 
     bgpstreamhist: csv_dir_with_formatted_BGP_updates
 
-Means: "replay all recorded BGP updates found in all .csv files in this directory". W.r.t. the format of the updates in the files, please consult this [docs section](https://bgpartemis.readthedocs.io/en/latest/overview/#replaying-history).
+Means: "replay all recorded BGP updates found in all .csv files in this directory". W.r.t. the format of the updates in the files, please consult this [docs section](https://bgpartemis.readthedocs.io/en/latest/history/).
 
 ## Full example
 
@@ -237,17 +239,24 @@ The action that you want to do when you press "Mitigate" in a hijack view page. 
      Example configuration file snippet:
 
          - prefixes: ...
-         ...
-         mitigation: "/root/test_mitigate.py"
+           ...
+           mitigation: "/root/test_mitigate.py"
 
      Example `docker-compose.yaml` configuration:
 
-         backend:
+         configuration:
+           ...
+           volumes:
              ...
-             volumes:
-                 ...
-                 - ./backend/test_mitigate.py:/root/test_mitigate.py
-                 ...
+             - ./test_mitigate.py:/root/test_mitigate.py
+             ...
+         ...
+         mitigation:
+           ...
+           volumes:
+             ...
+             - ./test_mitigate.py:/root/test_mitigate.py
+             ...
 
 ### Policies
 The policies that apply to this rule. Currently we support the no-export policy, which can be configured as follows:
@@ -444,7 +453,7 @@ then the combinations ASN_A-ASN_D and ASN_C-ASN_B are also considered legal, eve
 
 ## Auto-populating the configuration file
 
-While this is a custom feature that needs to be handled by the ARTEMIS deployer (and is not provided by the open-source software as a service), we are offering a few utility functions that can be used by the user to generate yaml configurations in [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend/core/utils/conf_lib.py). The documentation of each function can be found below.
+While this is a custom feature that needs to be handled by the ARTEMIS deployer (and is not provided by the open-source software as a service), we are offering a few utility functions that can be used by the user to generate yaml configurations in [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/utils/artemis_utils/conf_lib_util.py). The documentation of each function can be found below.
 
 **We recommend though that you write your own custom scripts and functions based on your local setup. The requirements for being able to generate yaml from custom sources are the `json` and `ruamel.yaml` pip packages.**
 

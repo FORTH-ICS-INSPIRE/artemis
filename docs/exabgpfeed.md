@@ -2,7 +2,7 @@
 
 ### Configuration
 
-Change the following source mapping from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.exabgp.yaml#L11) to:
+If not already changed, change the following source mapping from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docker-compose.exabgp.yaml#L11) to:
 ```
 - ./local_configs/monitor/exabgp.conf:/home/config/exabgp.conf
 ```

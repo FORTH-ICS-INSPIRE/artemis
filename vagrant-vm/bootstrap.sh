@@ -40,9 +40,8 @@ apt-get install -y git
 #echo "[+] Cloning latest ARTEMIS from GitHub..."
 git clone https://github.com/FORTH-ICS-INSPIRE/artemis.git
 cd artemis
-# TODO: replace with master after merge!
-git checkout modularization
-git pull origin modularization
+git checkout master
+git pull origin master
 
 # Setting up ARTEMIS
 

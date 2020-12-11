@@ -16,6 +16,25 @@ For the sake of this page we will focus on:
 * **Provisioned dashboard**: A dashboard that has been created in a way that is bootstrapped when Grafana starts. See more below.
 * **Non-provisioned dashboard**: A dashboard that the user can create and store in Grafana's DB (default: sqlite).
 
+# Configuring Postgres
+In `docker-compose.yaml`, configure `postgres` microservice to expose the needed host ports:
+
+```
+version: '3'
+services:
+    ...
+    postgres:
+        image: timescale/timescaledb:1.1.0-pg10
+        container_name: postgres
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - "5432:5432"
+        ...
+    ...
+```
+
 # Starting Grafana
 By default, Artemis docker compose does not initiate the grafana container. This can be done via the following command:
 ```

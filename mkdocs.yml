@@ -10,6 +10,7 @@ nav:
             -   'Web Application': webapp.md
             -   'Upgrading': upgrade.md
             -   'Best Practices': bestpractices.md
+            -   'Moving Folders': movingrepo.md
     -   Configuration:
             -   Basic: basicconf.md
             -   'Environment Variables': envvars.md

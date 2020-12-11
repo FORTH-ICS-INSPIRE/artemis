@@ -110,6 +110,10 @@ Please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/rpkiva
 
 Please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/bgpstreambmp/).
 
+## I want to move ARTEMIS to a new filesystem location to deal with permission errors. How can I  do this?
+
+Please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/movingrepo/).
+
 ## I am not receiving updates and my error log contains messages like `Failure when receiving data from the peer (56)` or `parse_ripe_ris: RIPE RIS Server closed connection. Restarting socket in X seconds`
 
 Some users may experience issues receiving updates for a range of reasons, and error messages like this point to a network problem.

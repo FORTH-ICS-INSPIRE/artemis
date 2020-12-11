@@ -108,7 +108,7 @@ Read more at [bgpartemis.org](http://bgpartemis.org/) and the [docs](https://bgp
 
 ## System Architecture
 
-![Architecture](docs/images/artemis_system_overview.jpg)
+Please check [this page](https://bgpartemis.readthedocs.io/en/latest/architecture/).
 
 ## Getting Started
 

@@ -2,15 +2,15 @@
 
 ## Containers
 
-![Containers](../docs/images/arch_containers.jpg)
+![Containers](images/arch_containers.jpg)
 
 ## REST calls
 
-![Rest Calls](../docs/images/arch_rest_calls.jpg)
+![Rest Calls](images/arch_rest_calls.jpg)
 
 ## RabbitMQ Produces, Consumers, Exchanges, Queues
 
-![RMQ](../docs/images/arch_rmq.jpg)
+![RMQ](images/arch_rmq.jpg)
 
 <!---
 ## BGP Update to Hijack Pipeline

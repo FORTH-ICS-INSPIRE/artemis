@@ -31,24 +31,22 @@ The following steps need to be done for ARTEMIS to replay these records in a str
    Note that you will need the [bgpstream](https://bgpstream.caida.org/docs/install/bgpstream) and [pybgpstream](https://bgpstream.caida.org/docs/install/pybgpstream) and their dependencies installed locally to operate the script. Alternatively, you can map the script in a monitor volume in `docker-compose.yaml` and run it from within the monitor container, after also having properly mapped the directory where the output (i.e., the csvs with the BGP update records) will be stored.
 * Stop ARTEMIS
 * In docker-compose, in the `configuration` and `bgpstreamhisttap` container mappings, map the directory containing the csv files to a proper location, e.g.,:
-
   ```
   ...
   bgpstreamhisttap:
   ...
   volumes:
-      ... # other mappings
-      - ./csv_dir/:/tmp/csv_dir/
-      ... # other mappings
+    ... # other mappings
+    - ./csv_dir/:/tmp/csv_dir/
+    ... # other mappings
   ...
   configuration:
   ...
   volumes:
-      ... # other mappings
-      - ./csv_dir/:/tmp/csv_dir/
-      ... # other mappings
-   ```
-
+    ... # other mappings
+    - ./csv_dir/:/tmp/csv_dir/
+    ... # other mappings
+  ```
 * Start ARTEMIS normally
 * Edit ARTEMIS configuration to use the extra monitor:
   ```

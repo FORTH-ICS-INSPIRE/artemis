@@ -62,7 +62,7 @@ USER_CONTROLLED_SERVICES = [
     BGPSTREAMHISTTAP_HOST,
     EXABGPTAP_HOST,
 ]
-DEPRECATED_SERVICES = "monitor"
+DEPRECATED_SERVICES = ["monitor"]
 
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
@@ -242,6 +242,7 @@ class AutostarterWorker:
             for service in DEPRECATED_SERVICES:
                 query = "DELETE FROM intended_process_states WHERE name=%s"
                 self.wo_db.execute(query, (service,))
+
             query = (
                 "INSERT INTO intended_process_states (name, running) "
                 "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
@@ -255,6 +256,7 @@ class AutostarterWorker:
                 else:
                     services_with_status.append((service, False))
             self.wo_db.execute_batch(query, services_with_status)
+
             # if the user does not wish to auto-recover user-controlled processes on startup,
             # initialize with False
             if AUTO_RECOVER_PROCESS_STATE != "true":

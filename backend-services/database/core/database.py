@@ -2,7 +2,6 @@ import datetime
 import json as classic_json
 import multiprocessing as mp
 import os
-import threading
 import time
 from typing import Dict
 from typing import NoReturn
@@ -221,9 +220,9 @@ def configure_database(msg, shared_memory_manager_dict):
                 "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
             )
             shared_memory_locks["monitored_prefixes"].acquire()
-            shared_memory_manager_dict["monitored_prefixes"] = set(
-                r.json()["monitored_prefixes"]
-            )
+            shared_memory_manager_dict["monitored_prefixes"] = r.json()[
+                "monitored_prefixes"
+            ]
             store_monitored_prefixes_stat(
                 wo_db,
                 monitored_prefixes=shared_memory_manager_dict["monitored_prefixes"],
@@ -635,10 +634,15 @@ class Database:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
-        self.shared_memory_manager_dict["monitored_prefixes"] = set()
+        self.shared_memory_manager_dict["monitored_prefixes"] = list()
         self.shared_memory_manager_dict["monitors"] = {}
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
         self.shared_memory_manager_dict["config_timestamp"] = -1
+        self.shared_memory_manager_dict["insert_bgp_entries"] = list()
+        self.shared_memory_manager_dict["handle_bgp_withdrawals"] = list()
+        self.shared_memory_manager_dict["handled_bgp_entries"] = list()
+        self.shared_memory_manager_dict["outdate_hijacks"] = list()
+        self.shared_memory_manager_dict["insert_hijacks_entries"] = {}
 
     def make_rest_app(self):
         return Application(
@@ -683,6 +687,596 @@ class Database:
         IOLoop.current().start()
 
 
+class DatabaseBulkUpdater:
+    """
+    Database bulk updater.
+    """
+
+    def __init__(self, connection, shared_memory_manager_dict):
+        self.connection = connection
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+        # DB variables
+        self.ro_db = DB(
+            application_name="database-bulk-updater-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
+        self.wo_db = DB(
+            application_name="database-bulk-updater-write",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+        )
+
+        # EXCHANGES
+        self.hijack_notification_exchange = create_exchange(
+            "hijack-notification", connection, declare=True
+        )
+
+        # redis db
+        self.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+
+    def _insert_bgp_updates(self):
+        shared_memory_locks["insert_bgp_entries"].acquire()
+        num_of_entries = 0
+        try:
+            query = (
+                "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
+                "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s"
+            )
+            log.info(
+                "INSERTING {} updates".format(
+                    len(self.shared_memory_manager_dict["insert_bgp_entries"])
+                )
+            )
+            self.wo_db.execute_values(
+                query,
+                self.shared_memory_manager_dict["insert_bgp_entries"],
+                page_size=1000,
+            )
+            num_of_entries = len(self.shared_memory_manager_dict["insert_bgp_entries"])
+            self.shared_memory_manager_dict["insert_bgp_entries"] = []
+        except Exception:
+            log.exception("exception")
+            num_of_entries = -1
+        finally:
+            shared_memory_locks["insert_bgp_entries"].release()
+            return num_of_entries
+
+    def _update_bgp_updates(self):
+        num_of_updates = 0
+        update_bgp_entries = set()
+        timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
+        timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
+        # Update the BGP entries using the hijack messages
+        for hijack_key in self.shared_memory_manager_dict["insert_hijacks_entries"]:
+            for bgp_entry_to_update in self.shared_memory_manager_dict[
+                "insert_hijacks_entries"
+            ][hijack_key]["monitor_keys"]:
+                num_of_updates += 1
+                update_bgp_entries.add(
+                    (hijack_key, bgp_entry_to_update, timestamp_thres)
+                )
+                # exclude handle bgp updates that point to same hijack as
+                # this
+                try:
+                    self.shared_memory_manager_dict["handled_bgp_entries"].remove(
+                        bgp_entry_to_update
+                    )
+                except Exception:
+                    log.exception("exception")
+
+        if update_bgp_entries:
+            try:
+                # update BGP updates either serially (if same hijack) or in parallel)
+                update_bgp_entries_dict = {}
+                for update_bgp_entry in update_bgp_entries:
+                    hijack_key = update_bgp_entry[0]
+                    bgp_entry_to_update = update_bgp_entry[1]
+                    if bgp_entry_to_update not in update_bgp_entries_dict:
+                        update_bgp_entries_dict[bgp_entry_to_update] = set()
+                    update_bgp_entries_dict[bgp_entry_to_update].add(hijack_key)
+                update_bgp_entries_parallel = set()
+                update_bgp_entries_serial = set()
+                for bgp_entry_to_update in update_bgp_entries_dict:
+                    if len(update_bgp_entries_dict[bgp_entry_to_update]) == 1:
+                        for hijack_key in update_bgp_entries_dict[bgp_entry_to_update]:
+                            update_bgp_entries_parallel.add(
+                                (hijack_key, bgp_entry_to_update)
+                            )
+                    else:
+                        for hijack_key in update_bgp_entries_dict[bgp_entry_to_update]:
+                            update_bgp_entries_serial.add(
+                                (hijack_key, bgp_entry_to_update)
+                            )
+
+                # execute parallel execute values query
+                query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
+                self.wo_db.execute_values(
+                    query, list(update_bgp_entries_parallel), page_size=1000
+                )
+
+                # execute serial execute_batch query
+                query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
+                self.wo_db.execute_batch(
+                    query, list(update_bgp_entries_serial), page_size=1000
+                )
+                update_bgp_entries_parallel.clear()
+                update_bgp_entries_serial.clear()
+                update_bgp_entries_dict.clear()
+
+                # calculate new withdrawn peers seeing the new update announcements
+
+                # get all bgp updates (announcements) keys that were just updated
+                # plus the related hijack keys
+                updated_hijack_keys = set(map(lambda x: x[0], update_bgp_entries))
+                updated_bgp_update_keys = set(map(lambda x: x[1], update_bgp_entries))
+
+                # get all handled hijack update entries of type 'A' that belong to this set
+                # (ordered by DESC timestamp)
+                query = (
+                    "SELECT key, prefix, peer_asn, hijack_key, timestamp "
+                    "FROM bgp_updates WHERE handled = true AND type = 'A'"
+                    "AND hijack_key<>ARRAY[]::text[] "
+                    "ORDER BY timestamp DESC"
+                )
+                ann_updates_entries = self.ro_db.execute(query)
+                hijacks_to_ann_prefix_peer_timestamp = {}
+                for entry in ann_updates_entries:
+                    hijack_keys = entry[3]
+                    for hijack_key in hijack_keys:
+                        if (
+                            hijack_key in updated_hijack_keys
+                            and entry[0] in updated_bgp_update_keys
+                        ):
+                            prefix_peer = "{}-{}".format(entry[1], entry[2])
+                            if hijack_key not in hijacks_to_ann_prefix_peer_timestamp:
+                                hijacks_to_ann_prefix_peer_timestamp[hijack_key] = {}
+                            # the following needs to take place only the first time the prefix-peer combo is encountered
+                            if (
+                                prefix_peer
+                                not in hijacks_to_ann_prefix_peer_timestamp[hijack_key]
+                            ):
+                                hijacks_to_ann_prefix_peer_timestamp[hijack_key][
+                                    prefix_peer
+                                ] = (entry[4].timestamp(), entry[2])
+
+                # get all handled hijack updates of type 'W' (ordered by DESC timestamp)
+                query = (
+                    "SELECT key, prefix, peer_asn, hijack_key, timestamp "
+                    "FROM bgp_updates WHERE handled = true AND type = 'W'"
+                    "AND hijack_key<>ARRAY[]::text[] "
+                    "ORDER BY timestamp DESC"
+                )
+                wit_updates_entries = self.ro_db.execute(query)
+                hijacks_to_wit_prefix_peer_timestamp = {}
+                for entry in wit_updates_entries:
+                    hijack_keys = entry[3]
+                    for hijack_key in hijack_keys:
+                        if hijack_key in updated_hijack_keys:
+                            prefix_peer = "{}-{}".format(entry[1], entry[2])
+                            if hijack_key not in hijacks_to_wit_prefix_peer_timestamp:
+                                hijacks_to_wit_prefix_peer_timestamp[hijack_key] = {}
+                            # the following needs to take place only the first time the prefix-peer combo is encountered
+                            if (
+                                prefix_peer
+                                not in hijacks_to_wit_prefix_peer_timestamp[hijack_key]
+                            ):
+                                hijacks_to_wit_prefix_peer_timestamp[hijack_key][
+                                    prefix_peer
+                                ] = (entry[4].timestamp(), entry[2])
+
+                # check what peers need to be removed from withdrawn sets
+                remove_withdrawn_peers = set()
+                for hijack_key in hijacks_to_ann_prefix_peer_timestamp:
+                    if hijack_key in hijacks_to_wit_prefix_peer_timestamp:
+                        for prefix_peer in hijacks_to_ann_prefix_peer_timestamp[
+                            hijack_key
+                        ]:
+                            if (
+                                prefix_peer
+                                in hijacks_to_wit_prefix_peer_timestamp[hijack_key]
+                            ):
+                                if (
+                                    hijacks_to_wit_prefix_peer_timestamp[hijack_key][
+                                        prefix_peer
+                                    ][0]
+                                    < hijacks_to_ann_prefix_peer_timestamp[hijack_key][
+                                        prefix_peer
+                                    ][0]
+                                ):
+                                    remove_withdrawn_peers.add(
+                                        (
+                                            hijack_key,
+                                            hijacks_to_ann_prefix_peer_timestamp[
+                                                hijack_key
+                                            ][prefix_peer][1],
+                                        )
+                                    )
+
+                # execute query
+                query = (
+                    "UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, data.v2::BIGINT) FROM "
+                    "(VALUES %s) AS data (v1, v2) WHERE hijacks.key=data.v1"
+                )
+                self.wo_db.execute_values(
+                    query, list(remove_withdrawn_peers), page_size=1000
+                )
+
+            except Exception:
+                log.exception("exception")
+                return -1
+
+        num_of_updates += len(update_bgp_entries)
+        update_bgp_entries.clear()
+
+        # Update the BGP entries using the handled messages
+        if self.shared_memory_manager_dict["handled_bgp_entries"]:
+            try:
+                query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
+                self.wo_db.execute_values(
+                    query,
+                    self.shared_memory_manager_dict["handled_bgp_entries"],
+                    page_size=1000,
+                )
+                num_of_updates += len(
+                    self.shared_memory_manager_dict["handled_bgp_entries"]
+                )
+                self.shared_memory_manager_dict["handled_bgp_entries"] = []
+            except Exception:
+                log.exception(
+                    "handled bgp entries {}".format(
+                        len(self.shared_memory_manager_dict["handled_bgp_entries"])
+                    )
+                )
+                num_of_updates = -1
+
+        return num_of_updates
+
+    def _insert_update_hijacks(self):
+
+        try:
+            query = (
+                "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
+                "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
+                "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation, rpki_status) "
+                "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
+                ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
+                "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, timestamp_of_config=excluded.timestamp_of_config, "
+                "configured_prefix=excluded.configured_prefix, community_annotation=excluded.community_annotation, rpki_status=excluded.rpki_status"
+            )
+
+            values = []
+            for key in self.shared_memory_manager_dict["insert_hijacks_entries"]:
+                entry = (
+                    key,  # key
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "type"
+                    ],  # type
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "prefix"
+                    ],  # prefix
+                    # hijack_as
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "hijack_as"
+                    ],
+                    # num_peers_seen
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "num_peers_seen"
+                    ],
+                    # num_asns_inf
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "num_asns_inf"
+                    ],
+                    datetime.datetime.fromtimestamp(
+                        self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                            "time_started"
+                        ]
+                    ),  # time_started
+                    datetime.datetime.fromtimestamp(
+                        self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                            "time_last"
+                        ]
+                    ),  # time_last
+                    None,  # time_ended
+                    None,  # mitigation_started
+                    datetime.datetime.fromtimestamp(
+                        self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                            "time_detected"
+                        ]
+                    ),  # time_detected
+                    False,  # under_mitigation
+                    True,  # active
+                    False,  # resolved
+                    False,  # ignored
+                    False,  # withdrawn
+                    False,  # dormant
+                    # configured_prefix
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "configured_prefix"
+                    ],
+                    datetime.datetime.fromtimestamp(
+                        self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                            "timestamp_of_config"
+                        ]
+                    ),  # timestamp_of_config
+                    "",  # comment
+                    # peers_seen
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "peers_seen"
+                    ],
+                    [],  # peers_withdrawn
+                    # asns_inf
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "asns_inf"
+                    ],
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "community_annotation"
+                    ],
+                    self.shared_memory_manager_dict["insert_hijacks_entries"][key][
+                        "rpki_status"
+                    ],
+                )
+                values.append(entry)
+
+            self.wo_db.execute_values(query, values, page_size=1000)
+            num_of_entries = len(
+                self.shared_memory_manager_dict["insert_hijacks_entries"]
+            )
+            self.shared_memory_manager_dict["insert_hijacks_entries"] = {}
+        except Exception:
+            log.exception("exception")
+            num_of_entries = -1
+
+        return num_of_entries
+
+    def _handle_bgp_withdrawals(self):
+        timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
+        timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
+        query = (
+            "SELECT DISTINCT ON (hijacks.key) hijacks.peers_seen, hijacks.peers_withdrawn, "
+            "hijacks.key, hijacks.hijack_as, hijacks.type, bgp_updates.timestamp, hijacks.time_last "
+            "FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
+            "WHERE bgp_updates.prefix = %s "
+            "AND bgp_updates.type = 'A' "
+            "AND bgp_updates.timestamp >= %s "
+            "AND hijacks.active = true "
+            "AND bgp_updates.peer_asn = %s "
+            "AND bgp_updates.handled = true "
+            "ORDER BY hijacks.key, bgp_updates.timestamp DESC"
+        )
+        update_normal_withdrawals = set()
+        update_hijack_withdrawals = set()
+        shared_memory_locks["handle_bgp_withdrawals"].acquire()
+        for withdrawal in self.shared_memory_manager_dict["handle_bgp_withdrawals"]:
+            try:
+                # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3:
+                # key
+                entries = self.ro_db.execute(
+                    query, (withdrawal[0], timestamp_thres, withdrawal[1])
+                )
+
+                if not entries:
+                    update_normal_withdrawals.add((withdrawal[3],))
+                    continue
+                for entry in entries:
+                    # entry -> 0: peers_seen, 1: peers_withdrawn, 2:
+                    # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
+                    # 6: time_last
+                    update_hijack_withdrawals.add((entry[2], withdrawal[3]))
+                    # update the bgpupdate_keys related to this hijack with withdrawals
+                    redis_hijack_key = redis_key(withdrawal[0], entry[3], entry[4])
+                    # to prevent detectors from working in parallel with hijack update
+                    hijack = None
+                    if self.redis.exists("{}token_active".format(redis_hijack_key)):
+                        self.redis.set("{}token_active".format(redis_hijack_key), "1")
+                    if self.redis.exists("{}token".format(redis_hijack_key)):
+                        token = self.redis.blpop(
+                            "{}token".format(redis_hijack_key), timeout=60
+                        )
+                        if not token:
+                            log.info(
+                                "Redis withdrawal addition encountered redis token timeout for hijack {}".format(
+                                    entry[2]
+                                )
+                            )
+                        hijack = self.redis.get(redis_hijack_key)
+                        redis_pipeline = self.redis.pipeline()
+                        if hijack:
+                            hijack = classic_json.loads(hijack.decode("utf-8"))
+                            hijack["bgpupdate_keys"] = list(
+                                set(hijack["bgpupdate_keys"] + [withdrawal[3]])
+                            )
+                            redis_pipeline.set(redis_hijack_key, json.dumps(hijack))
+                        redis_pipeline.lpush(
+                            "{}token".format(redis_hijack_key), "token"
+                        )
+                        redis_pipeline.execute()
+                    if entry[5] > withdrawal[2]:
+                        continue
+                    # matching withdraw with a hijack
+                    if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
+                        entry[1].append(withdrawal[1])
+                        timestamp = max(withdrawal[2], entry[6])
+                        # if a certain percentage of hijack 'A' peers see corresponding hijack 'W'
+                        if len(entry[1]) >= int(
+                            round(WITHDRAWN_HIJACK_THRESHOLD * len(entry[0]) / 100.0)
+                        ):
+                            # set hijack as withdrawn and delete from redis
+                            if hijack:
+                                hijack["end_tag"] = "withdrawn"
+                            purge_redis_eph_pers_keys(
+                                self.redis, redis_hijack_key, entry[2]
+                            )
+                            self.wo_db.execute(
+                                "UPDATE hijacks SET active=false, dormant=false, resolved=false, withdrawn=true, time_ended=%s, "
+                                "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
+                                (timestamp, entry[1], timestamp, entry[2]),
+                            )
+
+                            log.debug("withdrawn hijack {}".format(entry))
+                            if hijack:
+                                with Producer(self.connection) as producer:
+                                    producer.publish(
+                                        hijack,
+                                        exchange=self.hijack_notification_exchange,
+                                        routing_key="mail-log",
+                                        retry=False,
+                                        priority=1,
+                                        serializer="ujson",
+                                    )
+                                    producer.publish(
+                                        hijack,
+                                        exchange=self.hijack_notification_exchange,
+                                        routing_key="hij-log",
+                                        retry=False,
+                                        priority=1,
+                                        serializer="ujson",
+                                    )
+                        else:
+                            # add withdrawal to hijack
+                            self.wo_db.execute(
+                                "UPDATE hijacks SET peers_withdrawn=%s, time_last=%s, dormant=false WHERE key=%s;",
+                                (entry[1], timestamp, entry[2]),
+                            )
+
+                            log.debug("updating hijack {}".format(entry))
+            except Exception:
+                log.exception("exception")
+        num_of_entries = len(self.shared_memory_manager_dict["handle_bgp_withdrawals"])
+        self.shared_memory_manager_dict["handle_bgp_withdrawals"] = []
+        shared_memory_locks["handle_bgp_withdrawals"].release()
+
+        try:
+            update_hijack_withdrawals_dict = {}
+            for update_hijack_withdrawal in update_hijack_withdrawals:
+                hijack_key = update_hijack_withdrawal[0]
+                withdrawal_key = update_hijack_withdrawal[1]
+                if withdrawal_key not in update_hijack_withdrawals_dict:
+                    update_hijack_withdrawals_dict[withdrawal_key] = set()
+                update_hijack_withdrawals_dict[withdrawal_key].add(hijack_key)
+            update_hijack_withdrawals_parallel = set()
+            update_hijack_withdrawals_serial = set()
+            for withdrawal_key in update_hijack_withdrawals_dict:
+                if len(update_hijack_withdrawals_dict[withdrawal_key]) == 1:
+                    for hijack_key in update_hijack_withdrawals_dict[withdrawal_key]:
+                        update_hijack_withdrawals_parallel.add(
+                            (hijack_key, withdrawal_key)
+                        )
+                else:
+                    for hijack_key in update_hijack_withdrawals_dict[withdrawal_key]:
+                        update_hijack_withdrawals_serial.add(
+                            (hijack_key, withdrawal_key)
+                        )
+
+            # execute parallel execute values query
+            query = (
+                "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) "
+                "FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
+            )
+            self.wo_db.execute_values(
+                query, list(update_hijack_withdrawals_parallel), page_size=1000
+            )
+
+            # execute serial execute_batch query
+            query = (
+                "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
+                "WHERE bgp_updates.key=%s"
+            )
+            self.wo_db.execute_batch(
+                query, list(update_hijack_withdrawals_serial), page_size=1000
+            )
+            update_hijack_withdrawals_parallel.clear()
+            update_hijack_withdrawals_serial.clear()
+            update_hijack_withdrawals_dict.clear()
+
+            query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
+            self.wo_db.execute_values(
+                query, list(update_normal_withdrawals), page_size=1000
+            )
+        except Exception:
+            log.exception("exception")
+
+        return num_of_entries
+
+    def _handle_hijack_outdate(self):
+        shared_memory_locks["outdate_hijacks"].acquire()
+        if not self.shared_memory_manager_dict["outdate_hijacks"]:
+            shared_memory_locks["outdate_hijacks"].release()
+            return
+        try:
+            query = "UPDATE hijacks SET active=false, dormant=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
+            self.wo_db.execute_values(
+                query,
+                self.shared_memory_manager_dict["outdate_hijacks"],
+                page_size=1000,
+            )
+            self.shared_memory_manager_dict["outdate_hijacks"] = []
+        except Exception:
+            log.exception("")
+        finally:
+            shared_memory_locks["outdate_hijacks"].release()
+
+    def run(self):
+        while True:
+            # stop if parent is not running any more
+            shared_memory_locks["data_worker"].acquire()
+            if not self.shared_memory_manager_dict["data_worker_running"]:
+                shared_memory_locks["data_worker"].release()
+                break
+            shared_memory_locks["data_worker"].release()
+            try:
+                inserts = self._insert_bgp_updates()
+                shared_memory_locks["insert_hijacks_entries"].acquire()
+                shared_memory_locks["handled_bgp_entries"].acquire()
+                updates = self._update_bgp_updates()
+                shared_memory_locks["handled_bgp_entries"].release()
+                hijacks = self._insert_update_hijacks()
+                shared_memory_locks["insert_hijacks_entries"].release()
+                withdrawals = self._handle_bgp_withdrawals()
+                self._handle_hijack_outdate()
+                str_ = ""
+                if inserts:
+                    str_ += "BGP Updates Inserted: {}\n".format(inserts)
+                if updates:
+                    str_ += "BGP Updates Updated: {}\n".format(updates)
+                if hijacks:
+                    str_ += "Hijacks Inserted: {}".format(hijacks)
+                if withdrawals:
+                    str_ += "Withdrawals Handled: {}".format(withdrawals)
+                # if str_ != "":
+                log.info("{}".format(str_))
+            except Exception:
+                log.exception("exception")
+                log.error("flushing current state")
+                shared_memory_locks["insert_bgp_entries"].acquire()
+                shared_memory_locks["handle_bgp_withdrawals"].acquire()
+                shared_memory_locks["handled_bgp_entries"].acquire()
+                shared_memory_locks["outdate_hijacks"].acquire()
+                shared_memory_locks["insert_hijacks_entries"].acquire()
+                self.shared_memory_manager_dict["insert_bgp_entries"] = []
+                self.shared_memory_manager_dict["handle_bgp_withdrawals"] = []
+                self.shared_memory_manager_dict["handled_bgp_entries"] = []
+                self.shared_memory_manager_dict["outdate_hijacks"] = []
+                self.shared_memory_manager_dict["insert_hijacks_entries"] = {}
+                shared_memory_locks["insert_bgp_entries"].release()
+                shared_memory_locks["handle_bgp_withdrawals"].release()
+                shared_memory_locks["handled_bgp_entries"].release()
+                shared_memory_locks["outdate_hijacks"].release()
+                shared_memory_locks["insert_hijacks_entries"].release()
+            finally:
+                time.sleep(BULK_TIMER)
+
+
 class DatabaseDataWorker(ConsumerProducerMixin):
     """
     RabbitMQ Consumer/Producer for the Database Service.
@@ -692,12 +1286,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
         self.monitor_peers = 0
-        self.insert_bgp_entries = []
-        self.handle_bgp_withdrawals = set()
-        self.handled_bgp_entries = set()
-        self.outdate_hijacks = set()
-        self.insert_hijacks_entries = {}
-        self.bulk_timer_thread = None
 
         # DB variables
         self.ro_db = DB(
@@ -841,9 +1429,12 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             priority=1,
         )
 
-        log.info("setting up bulk updates...")
-        self.setup_bulk_update_timer()
-        log.info("bulk update set up")
+        log.info("setting up bulk updater process...")
+        self.bulk_updater = DatabaseBulkUpdater(
+            self.connection, self.shared_memory_manager_dict
+        )
+        mp.Process(target=self.bulk_updater.run).start()
+        log.info("bulk updater set up")
 
         log.info("data worker initiated")
 
@@ -929,17 +1520,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             ),
         ]
 
-    def setup_bulk_update_timer(self):
-        """
-        Timer for bulk operations (replaces deprecated db clock)
-        """
-        if self.should_stop:
-            return
-        self.bulk_timer_thread = threading.Timer(
-            interval=BULK_TIMER, function=self._update_bulk
-        )
-        self.bulk_timer_thread.start()
-
     def handle_bgp_update(self, message):
         # log.debug('message: {}\npayload: {}'.format(message, message.payload))
         message.ack()
@@ -985,7 +1565,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 # insert all types of BGP updates
                 # thread-safe access to update dict
                 shared_memory_locks["insert_bgp_entries"].acquire()
-                self.insert_bgp_entries.append(value)
+                self.shared_memory_manager_dict["insert_bgp_entries"].append(value)
                 shared_memory_locks["insert_bgp_entries"].release()
 
                 # register the monitor/peer ASN from whom we learned this BGP update
@@ -1015,7 +1595,8 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 datetime.datetime.fromtimestamp((msg_["timestamp"])),  # timestamp
                 msg_["key"],  # key
             )
-            self.handle_bgp_withdrawals.add(value)
+            if value not in self.shared_memory_manager_dict["handle_bgp_withdrawals"]:
+                self.shared_memory_manager_dict["handle_bgp_withdrawals"].append(value)
         except Exception:
             log.exception("{}".format(msg_))
         finally:
@@ -1027,7 +1608,12 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         shared_memory_locks["outdate_hijacks"].acquire()
         try:
             raw = message.payload
-            self.outdate_hijacks.add((raw["persistent_hijack_key"],))
+            if (raw["persistent_hijack_key"],) not in self.shared_memory_manager_dict[
+                "outdate_hijacks"
+            ]:
+                self.shared_memory_manager_dict["outdate_hijacks"].append(
+                    (raw["persistent_hijack_key"],)
+                )
         except Exception:
             log.exception("{}".format(message))
         finally:
@@ -1041,61 +1627,53 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         try:
             key = msg_["key"]  # persistent hijack key
 
-            if key not in self.insert_hijacks_entries:
+            insert_hijacks_entries = self.shared_memory_manager_dict[
+                "insert_hijacks_entries"
+            ]
+            if key not in insert_hijacks_entries:
                 # log.info('key {} at {}'.format(key, os.getpid()))
-                self.insert_hijacks_entries[key] = {}
-                self.insert_hijacks_entries[key]["prefix"] = msg_["prefix"]
-                self.insert_hijacks_entries[key]["hijack_as"] = msg_["hijack_as"]
-                self.insert_hijacks_entries[key]["type"] = msg_["type"]
-                self.insert_hijacks_entries[key]["time_started"] = msg_["time_started"]
-                self.insert_hijacks_entries[key]["time_last"] = msg_["time_last"]
-                self.insert_hijacks_entries[key]["peers_seen"] = list(
-                    msg_["peers_seen"]
-                )
-                self.insert_hijacks_entries[key]["asns_inf"] = list(msg_["asns_inf"])
-                self.insert_hijacks_entries[key]["num_peers_seen"] = len(
-                    msg_["peers_seen"]
-                )
-                self.insert_hijacks_entries[key]["num_asns_inf"] = len(msg_["asns_inf"])
-                self.insert_hijacks_entries[key]["monitor_keys"] = set(
-                    msg_["monitor_keys"]
-                )
-                self.insert_hijacks_entries[key]["time_detected"] = msg_[
-                    "time_detected"
-                ]
-                self.insert_hijacks_entries[key]["configured_prefix"] = msg_[
+                insert_hijacks_entries[key] = {}
+                insert_hijacks_entries[key]["prefix"] = msg_["prefix"]
+                insert_hijacks_entries[key]["hijack_as"] = msg_["hijack_as"]
+                insert_hijacks_entries[key]["type"] = msg_["type"]
+                insert_hijacks_entries[key]["time_started"] = msg_["time_started"]
+                insert_hijacks_entries[key]["time_last"] = msg_["time_last"]
+                insert_hijacks_entries[key]["peers_seen"] = list(msg_["peers_seen"])
+                insert_hijacks_entries[key]["asns_inf"] = list(msg_["asns_inf"])
+                insert_hijacks_entries[key]["num_peers_seen"] = len(msg_["peers_seen"])
+                insert_hijacks_entries[key]["num_asns_inf"] = len(msg_["asns_inf"])
+                insert_hijacks_entries[key]["monitor_keys"] = set(msg_["monitor_keys"])
+                insert_hijacks_entries[key]["time_detected"] = msg_["time_detected"]
+                insert_hijacks_entries[key]["configured_prefix"] = msg_[
                     "configured_prefix"
                 ]
-                self.insert_hijacks_entries[key]["timestamp_of_config"] = msg_[
+                insert_hijacks_entries[key]["timestamp_of_config"] = msg_[
                     "timestamp_of_config"
                 ]
-                self.insert_hijacks_entries[key]["community_annotation"] = msg_[
+                insert_hijacks_entries[key]["community_annotation"] = msg_[
                     "community_annotation"
                 ]
-                self.insert_hijacks_entries[key]["rpki_status"] = msg_["rpki_status"]
+                insert_hijacks_entries[key]["rpki_status"] = msg_["rpki_status"]
             else:
-                self.insert_hijacks_entries[key]["time_started"] = min(
-                    self.insert_hijacks_entries[key]["time_started"],
-                    msg_["time_started"],
+                insert_hijacks_entries[key]["time_started"] = min(
+                    insert_hijacks_entries[key]["time_started"], msg_["time_started"]
                 )
-                self.insert_hijacks_entries[key]["time_last"] = max(
-                    self.insert_hijacks_entries[key]["time_last"], msg_["time_last"]
+                insert_hijacks_entries[key]["time_last"] = max(
+                    insert_hijacks_entries[key]["time_last"], msg_["time_last"]
                 )
-                self.insert_hijacks_entries[key]["peers_seen"] = list(
-                    msg_["peers_seen"]
-                )
-                self.insert_hijacks_entries[key]["asns_inf"] = list(msg_["asns_inf"])
-                self.insert_hijacks_entries[key]["num_peers_seen"] = len(
-                    msg_["peers_seen"]
-                )
-                self.insert_hijacks_entries[key]["num_asns_inf"] = len(msg_["asns_inf"])
-                self.insert_hijacks_entries[key]["monitor_keys"].update(
-                    msg_["monitor_keys"]
-                )
-                self.insert_hijacks_entries[key]["community_annotation"] = msg_[
+                insert_hijacks_entries[key]["peers_seen"] = list(msg_["peers_seen"])
+                insert_hijacks_entries[key]["asns_inf"] = list(msg_["asns_inf"])
+                insert_hijacks_entries[key]["num_peers_seen"] = len(msg_["peers_seen"])
+                insert_hijacks_entries[key]["num_asns_inf"] = len(msg_["asns_inf"])
+                insert_hijacks_entries[key]["monitor_keys"].update(msg_["monitor_keys"])
+                insert_hijacks_entries[key]["community_annotation"] = msg_[
                     "community_annotation"
                 ]
-                self.insert_hijacks_entries[key]["rpki_status"] = msg_["rpki_status"]
+                insert_hijacks_entries[key]["rpki_status"] = msg_["rpki_status"]
+
+            self.shared_memory_manager_dict[
+                "insert_hijacks_entries"
+            ] = insert_hijacks_entries
         except Exception:
             log.exception("{}".format(msg_))
         finally:
@@ -1107,7 +1685,8 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         shared_memory_locks["handled_bgp_entries"].acquire()
         try:
             key_ = (message.payload,)
-            self.handled_bgp_entries.add(key_)
+            if key_ not in self.shared_memory_manager_dict["handled_bgp_entries"]:
+                self.shared_memory_manager_dict["handled_bgp_entries"].append(key_)
         except Exception:
             log.exception("{}".format(message))
         finally:
@@ -1416,482 +1995,6 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             )
         except Exception:
             log.exception("{}".format(raw))
-
-    def _insert_bgp_updates(self):
-        shared_memory_locks["insert_bgp_entries"].acquire()
-        num_of_entries = 0
-        try:
-            query = (
-                "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
-                "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s"
-            )
-            self.wo_db.execute_values(query, self.insert_bgp_entries, page_size=1000)
-            num_of_entries = len(self.insert_bgp_entries)
-            self.insert_bgp_entries.clear()
-        except Exception:
-            log.exception("exception")
-            num_of_entries = -1
-        finally:
-            shared_memory_locks["insert_bgp_entries"].release()
-            return num_of_entries
-
-    def _handle_bgp_withdrawals(self):
-        timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
-        timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
-        query = (
-            "SELECT DISTINCT ON (hijacks.key) hijacks.peers_seen, hijacks.peers_withdrawn, "
-            "hijacks.key, hijacks.hijack_as, hijacks.type, bgp_updates.timestamp, hijacks.time_last "
-            "FROM hijacks LEFT JOIN bgp_updates ON (hijacks.key = ANY(bgp_updates.hijack_key)) "
-            "WHERE bgp_updates.prefix = %s "
-            "AND bgp_updates.type = 'A' "
-            "AND bgp_updates.timestamp >= %s "
-            "AND hijacks.active = true "
-            "AND bgp_updates.peer_asn = %s "
-            "AND bgp_updates.handled = true "
-            "ORDER BY hijacks.key, bgp_updates.timestamp DESC"
-        )
-        update_normal_withdrawals = set()
-        update_hijack_withdrawals = set()
-        shared_memory_locks["handle_bgp_withdrawals"].acquire()
-        for withdrawal in self.handle_bgp_withdrawals:
-            try:
-                # withdrawal -> 0: prefix, 1: peer_asn, 2: timestamp, 3:
-                # key
-                entries = self.ro_db.execute(
-                    query, (withdrawal[0], timestamp_thres, withdrawal[1])
-                )
-
-                if not entries:
-                    update_normal_withdrawals.add((withdrawal[3],))
-                    continue
-                for entry in entries:
-                    # entry -> 0: peers_seen, 1: peers_withdrawn, 2:
-                    # hij.key, 3: hij.as, 4: hij.type, 5: timestamp
-                    # 6: time_last
-                    update_hijack_withdrawals.add((entry[2], withdrawal[3]))
-                    # update the bgpupdate_keys related to this hijack with withdrawals
-                    redis_hijack_key = redis_key(withdrawal[0], entry[3], entry[4])
-                    # to prevent detectors from working in parallel with hijack update
-                    hijack = None
-                    if self.redis.exists("{}token_active".format(redis_hijack_key)):
-                        self.redis.set("{}token_active".format(redis_hijack_key), "1")
-                    if self.redis.exists("{}token".format(redis_hijack_key)):
-                        token = self.redis.blpop(
-                            "{}token".format(redis_hijack_key), timeout=60
-                        )
-                        if not token:
-                            log.info(
-                                "Redis withdrawal addition encountered redis token timeout for hijack {}".format(
-                                    entry[2]
-                                )
-                            )
-                        hijack = self.redis.get(redis_hijack_key)
-                        redis_pipeline = self.redis.pipeline()
-                        if hijack:
-                            hijack = classic_json.loads(hijack.decode("utf-8"))
-                            hijack["bgpupdate_keys"] = list(
-                                set(hijack["bgpupdate_keys"] + [withdrawal[3]])
-                            )
-                            redis_pipeline.set(redis_hijack_key, json.dumps(hijack))
-                        redis_pipeline.lpush(
-                            "{}token".format(redis_hijack_key), "token"
-                        )
-                        redis_pipeline.execute()
-                    if entry[5] > withdrawal[2]:
-                        continue
-                    # matching withdraw with a hijack
-                    if withdrawal[1] not in entry[1] and withdrawal[1] in entry[0]:
-                        entry[1].append(withdrawal[1])
-                        timestamp = max(withdrawal[2], entry[6])
-                        # if a certain percentage of hijack 'A' peers see corresponding hijack 'W'
-                        if len(entry[1]) >= int(
-                            round(WITHDRAWN_HIJACK_THRESHOLD * len(entry[0]) / 100.0)
-                        ):
-                            # set hijack as withdrawn and delete from redis
-                            if hijack:
-                                hijack["end_tag"] = "withdrawn"
-                            purge_redis_eph_pers_keys(
-                                self.redis, redis_hijack_key, entry[2]
-                            )
-                            self.wo_db.execute(
-                                "UPDATE hijacks SET active=false, dormant=false, resolved=false, withdrawn=true, time_ended=%s, "
-                                "peers_withdrawn=%s, time_last=%s WHERE key=%s;",
-                                (timestamp, entry[1], timestamp, entry[2]),
-                            )
-
-                            log.debug("withdrawn hijack {}".format(entry))
-                            if hijack:
-                                self.producer.publish(
-                                    hijack,
-                                    exchange=self.hijack_notification_exchange,
-                                    routing_key="mail-log",
-                                    retry=False,
-                                    priority=1,
-                                    serializer="ujson",
-                                )
-                                self.producer.publish(
-                                    hijack,
-                                    exchange=self.hijack_notification_exchange,
-                                    routing_key="hij-log",
-                                    retry=False,
-                                    priority=1,
-                                    serializer="ujson",
-                                )
-                        else:
-                            # add withdrawal to hijack
-                            self.wo_db.execute(
-                                "UPDATE hijacks SET peers_withdrawn=%s, time_last=%s, dormant=false WHERE key=%s;",
-                                (entry[1], timestamp, entry[2]),
-                            )
-
-                            log.debug("updating hijack {}".format(entry))
-            except Exception:
-                log.exception("exception")
-        num_of_entries = len(self.handle_bgp_withdrawals)
-        self.handle_bgp_withdrawals.clear()
-        shared_memory_locks["handle_bgp_withdrawals"].release()
-
-        try:
-            update_hijack_withdrawals_dict = {}
-            for update_hijack_withdrawal in update_hijack_withdrawals:
-                hijack_key = update_hijack_withdrawal[0]
-                withdrawal_key = update_hijack_withdrawal[1]
-                if withdrawal_key not in update_hijack_withdrawals_dict:
-                    update_hijack_withdrawals_dict[withdrawal_key] = set()
-                update_hijack_withdrawals_dict[withdrawal_key].add(hijack_key)
-            update_hijack_withdrawals_parallel = set()
-            update_hijack_withdrawals_serial = set()
-            for withdrawal_key in update_hijack_withdrawals_dict:
-                if len(update_hijack_withdrawals_dict[withdrawal_key]) == 1:
-                    for hijack_key in update_hijack_withdrawals_dict[withdrawal_key]:
-                        update_hijack_withdrawals_parallel.add(
-                            (hijack_key, withdrawal_key)
-                        )
-                else:
-                    for hijack_key in update_hijack_withdrawals_dict[withdrawal_key]:
-                        update_hijack_withdrawals_serial.add(
-                            (hijack_key, withdrawal_key)
-                        )
-
-            # execute parallel execute values query
-            query = (
-                "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) "
-                "FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
-            )
-            self.wo_db.execute_values(
-                query, list(update_hijack_withdrawals_parallel), page_size=1000
-            )
-
-            # execute serial execute_batch query
-            query = (
-                "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) "
-                "WHERE bgp_updates.key=%s"
-            )
-            self.wo_db.execute_batch(
-                query, list(update_hijack_withdrawals_serial), page_size=1000
-            )
-            update_hijack_withdrawals_parallel.clear()
-            update_hijack_withdrawals_serial.clear()
-            update_hijack_withdrawals_dict.clear()
-
-            query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
-            self.wo_db.execute_values(
-                query, list(update_normal_withdrawals), page_size=1000
-            )
-        except Exception:
-            log.exception("exception")
-
-        return num_of_entries
-
-    def _update_bgp_updates(self):
-        num_of_updates = 0
-        update_bgp_entries = set()
-        timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
-        timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
-        # Update the BGP entries using the hijack messages
-        for hijack_key in self.insert_hijacks_entries:
-            for bgp_entry_to_update in self.insert_hijacks_entries[hijack_key][
-                "monitor_keys"
-            ]:
-                num_of_updates += 1
-                update_bgp_entries.add(
-                    (hijack_key, bgp_entry_to_update, timestamp_thres)
-                )
-                # exclude handle bgp updates that point to same hijack as
-                # this
-                try:
-                    self.handled_bgp_entries.discard(bgp_entry_to_update)
-                except Exception:
-                    log.exception("exception")
-
-        if update_bgp_entries:
-            try:
-                # update BGP updates either serially (if same hijack) or in parallel)
-                update_bgp_entries_dict = {}
-                for update_bgp_entry in update_bgp_entries:
-                    hijack_key = update_bgp_entry[0]
-                    bgp_entry_to_update = update_bgp_entry[1]
-                    if bgp_entry_to_update not in update_bgp_entries_dict:
-                        update_bgp_entries_dict[bgp_entry_to_update] = set()
-                    update_bgp_entries_dict[bgp_entry_to_update].add(hijack_key)
-                update_bgp_entries_parallel = set()
-                update_bgp_entries_serial = set()
-                for bgp_entry_to_update in update_bgp_entries_dict:
-                    if len(update_bgp_entries_dict[bgp_entry_to_update]) == 1:
-                        for hijack_key in update_bgp_entries_dict[bgp_entry_to_update]:
-                            update_bgp_entries_parallel.add(
-                                (hijack_key, bgp_entry_to_update)
-                            )
-                    else:
-                        for hijack_key in update_bgp_entries_dict[bgp_entry_to_update]:
-                            update_bgp_entries_serial.add(
-                                (hijack_key, bgp_entry_to_update)
-                            )
-
-                # execute parallel execute values query
-                query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[data.v1]) FROM (VALUES %s) AS data (v1, v2) WHERE bgp_updates.key=data.v2"
-                self.wo_db.execute_values(
-                    query, list(update_bgp_entries_parallel), page_size=1000
-                )
-
-                # execute serial execute_batch query
-                query = "UPDATE bgp_updates SET handled=true, hijack_key=array_distinct(hijack_key || array[%s]) WHERE bgp_updates.key=%s"
-                self.wo_db.execute_batch(
-                    query, list(update_bgp_entries_serial), page_size=1000
-                )
-                update_bgp_entries_parallel.clear()
-                update_bgp_entries_serial.clear()
-                update_bgp_entries_dict.clear()
-
-                # calculate new withdrawn peers seeing the new update announcements
-
-                # get all bgp updates (announcements) keys that were just updated
-                # plus the related hijack keys
-                updated_hijack_keys = set(map(lambda x: x[0], update_bgp_entries))
-                updated_bgp_update_keys = set(map(lambda x: x[1], update_bgp_entries))
-
-                # get all handled hijack update entries of type 'A' that belong to this set
-                # (ordered by DESC timestamp)
-                query = (
-                    "SELECT key, prefix, peer_asn, hijack_key, timestamp "
-                    "FROM bgp_updates WHERE handled = true AND type = 'A'"
-                    "AND hijack_key<>ARRAY[]::text[] "
-                    "ORDER BY timestamp DESC"
-                )
-                ann_updates_entries = self.ro_db.execute(query)
-                hijacks_to_ann_prefix_peer_timestamp = {}
-                for entry in ann_updates_entries:
-                    hijack_keys = entry[3]
-                    for hijack_key in hijack_keys:
-                        if (
-                            hijack_key in updated_hijack_keys
-                            and entry[0] in updated_bgp_update_keys
-                        ):
-                            prefix_peer = "{}-{}".format(entry[1], entry[2])
-                            if hijack_key not in hijacks_to_ann_prefix_peer_timestamp:
-                                hijacks_to_ann_prefix_peer_timestamp[hijack_key] = {}
-                            # the following needs to take place only the first time the prefix-peer combo is encountered
-                            if (
-                                prefix_peer
-                                not in hijacks_to_ann_prefix_peer_timestamp[hijack_key]
-                            ):
-                                hijacks_to_ann_prefix_peer_timestamp[hijack_key][
-                                    prefix_peer
-                                ] = (entry[4].timestamp(), entry[2])
-
-                # get all handled hijack updates of type 'W' (ordered by DESC timestamp)
-                query = (
-                    "SELECT key, prefix, peer_asn, hijack_key, timestamp "
-                    "FROM bgp_updates WHERE handled = true AND type = 'W'"
-                    "AND hijack_key<>ARRAY[]::text[] "
-                    "ORDER BY timestamp DESC"
-                )
-                wit_updates_entries = self.ro_db.execute(query)
-                hijacks_to_wit_prefix_peer_timestamp = {}
-                for entry in wit_updates_entries:
-                    hijack_keys = entry[3]
-                    for hijack_key in hijack_keys:
-                        if hijack_key in updated_hijack_keys:
-                            prefix_peer = "{}-{}".format(entry[1], entry[2])
-                            if hijack_key not in hijacks_to_wit_prefix_peer_timestamp:
-                                hijacks_to_wit_prefix_peer_timestamp[hijack_key] = {}
-                            # the following needs to take place only the first time the prefix-peer combo is encountered
-                            if (
-                                prefix_peer
-                                not in hijacks_to_wit_prefix_peer_timestamp[hijack_key]
-                            ):
-                                hijacks_to_wit_prefix_peer_timestamp[hijack_key][
-                                    prefix_peer
-                                ] = (entry[4].timestamp(), entry[2])
-
-                # check what peers need to be removed from withdrawn sets
-                remove_withdrawn_peers = set()
-                for hijack_key in hijacks_to_ann_prefix_peer_timestamp:
-                    if hijack_key in hijacks_to_wit_prefix_peer_timestamp:
-                        for prefix_peer in hijacks_to_ann_prefix_peer_timestamp[
-                            hijack_key
-                        ]:
-                            if (
-                                prefix_peer
-                                in hijacks_to_wit_prefix_peer_timestamp[hijack_key]
-                            ):
-                                if (
-                                    hijacks_to_wit_prefix_peer_timestamp[hijack_key][
-                                        prefix_peer
-                                    ][0]
-                                    < hijacks_to_ann_prefix_peer_timestamp[hijack_key][
-                                        prefix_peer
-                                    ][0]
-                                ):
-                                    remove_withdrawn_peers.add(
-                                        (
-                                            hijack_key,
-                                            hijacks_to_ann_prefix_peer_timestamp[
-                                                hijack_key
-                                            ][prefix_peer][1],
-                                        )
-                                    )
-
-                # execute query
-                query = (
-                    "UPDATE hijacks SET peers_withdrawn=array_remove(peers_withdrawn, data.v2::BIGINT) FROM "
-                    "(VALUES %s) AS data (v1, v2) WHERE hijacks.key=data.v1"
-                )
-                self.wo_db.execute_values(
-                    query, list(remove_withdrawn_peers), page_size=1000
-                )
-
-            except Exception:
-                log.exception("exception")
-                return -1
-
-        num_of_updates += len(update_bgp_entries)
-        update_bgp_entries.clear()
-
-        # Update the BGP entries using the handled messages
-        if self.handled_bgp_entries:
-            try:
-                query = "UPDATE bgp_updates SET handled=true FROM (VALUES %s) AS data (key) WHERE bgp_updates.key=data.key"
-                self.wo_db.execute_values(
-                    query, self.handled_bgp_entries, page_size=1000
-                )
-                num_of_updates += len(self.handled_bgp_entries)
-                self.handled_bgp_entries.clear()
-            except Exception:
-                log.exception(
-                    "handled bgp entries {}".format(len(self.handled_bgp_entries))
-                )
-                num_of_updates = -1
-
-        return num_of_updates
-
-    def _insert_update_hijacks(self):
-
-        try:
-            query = (
-                "INSERT INTO hijacks (key, type, prefix, hijack_as, num_peers_seen, num_asns_inf, "
-                "time_started, time_last, time_ended, mitigation_started, time_detected, under_mitigation, "
-                "active, resolved, ignored, withdrawn, dormant, configured_prefix, timestamp_of_config, comment, peers_seen, peers_withdrawn, asns_inf, community_annotation, rpki_status) "
-                "VALUES %s ON CONFLICT(key, time_detected) DO UPDATE SET num_peers_seen=excluded.num_peers_seen, num_asns_inf=excluded.num_asns_inf "
-                ", time_started=LEAST(excluded.time_started, hijacks.time_started), time_last=GREATEST(excluded.time_last, hijacks.time_last), "
-                "peers_seen=excluded.peers_seen, asns_inf=excluded.asns_inf, dormant=false, timestamp_of_config=excluded.timestamp_of_config, "
-                "configured_prefix=excluded.configured_prefix, community_annotation=excluded.community_annotation, rpki_status=excluded.rpki_status"
-            )
-
-            values = []
-            for key in self.insert_hijacks_entries:
-                entry = (
-                    key,  # key
-                    self.insert_hijacks_entries[key]["type"],  # type
-                    self.insert_hijacks_entries[key]["prefix"],  # prefix
-                    # hijack_as
-                    self.insert_hijacks_entries[key]["hijack_as"],
-                    # num_peers_seen
-                    self.insert_hijacks_entries[key]["num_peers_seen"],
-                    # num_asns_inf
-                    self.insert_hijacks_entries[key]["num_asns_inf"],
-                    datetime.datetime.fromtimestamp(
-                        self.insert_hijacks_entries[key]["time_started"]
-                    ),  # time_started
-                    datetime.datetime.fromtimestamp(
-                        self.insert_hijacks_entries[key]["time_last"]
-                    ),  # time_last
-                    None,  # time_ended
-                    None,  # mitigation_started
-                    datetime.datetime.fromtimestamp(
-                        self.insert_hijacks_entries[key]["time_detected"]
-                    ),  # time_detected
-                    False,  # under_mitigation
-                    True,  # active
-                    False,  # resolved
-                    False,  # ignored
-                    False,  # withdrawn
-                    False,  # dormant
-                    # configured_prefix
-                    self.insert_hijacks_entries[key]["configured_prefix"],
-                    datetime.datetime.fromtimestamp(
-                        self.insert_hijacks_entries[key]["timestamp_of_config"]
-                    ),  # timestamp_of_config
-                    "",  # comment
-                    # peers_seen
-                    self.insert_hijacks_entries[key]["peers_seen"],
-                    [],  # peers_withdrawn
-                    # asns_inf
-                    self.insert_hijacks_entries[key]["asns_inf"],
-                    self.insert_hijacks_entries[key]["community_annotation"],
-                    self.insert_hijacks_entries[key]["rpki_status"],
-                )
-                values.append(entry)
-
-            self.wo_db.execute_values(query, values, page_size=1000)
-            num_of_entries = len(self.insert_hijacks_entries)
-            self.insert_hijacks_entries.clear()
-        except Exception:
-            log.exception("exception")
-            num_of_entries = -1
-
-        return num_of_entries
-
-    def _handle_hijack_outdate(self):
-        shared_memory_locks["outdate_hijacks"].acquire()
-        if not self.outdate_hijacks:
-            shared_memory_locks["outdate_hijacks"].release()
-            return
-        try:
-            query = "UPDATE hijacks SET active=false, dormant=false, outdated=true FROM (VALUES %s) AS data (key) WHERE hijacks.key=data.key;"
-            self.wo_db.execute_values(query, list(self.outdate_hijacks), page_size=1000)
-            self.outdate_hijacks.clear()
-        except Exception:
-            log.exception("")
-        finally:
-            shared_memory_locks["outdate_hijacks"].release()
-
-    def _update_bulk(self):
-        try:
-            inserts = self._insert_bgp_updates()
-            shared_memory_locks["insert_hijacks_entries"].acquire()
-            shared_memory_locks["handled_bgp_entries"].acquire()
-            updates = self._update_bgp_updates()
-            shared_memory_locks["handled_bgp_entries"].release()
-            hijacks = self._insert_update_hijacks()
-            shared_memory_locks["insert_hijacks_entries"].release()
-            withdrawals = self._handle_bgp_withdrawals()
-            self._handle_hijack_outdate()
-            str_ = ""
-            if inserts:
-                str_ += "BGP Updates Inserted: {}\n".format(inserts)
-            if updates:
-                str_ += "BGP Updates Updated: {}\n".format(updates)
-            if hijacks:
-                str_ += "Hijacks Inserted: {}".format(hijacks)
-            if withdrawals:
-                str_ += "Withdrawals Handled: {}".format(withdrawals)
-            if str_ != "":
-                log.debug("{}".format(str_))
-        except Exception:
-            log.exception("exception")
-        finally:
-            self.setup_bulk_update_timer()
 
     def stop_consumer_loop(self, message: Dict) -> NoReturn:
         """

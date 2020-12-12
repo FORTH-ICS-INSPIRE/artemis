@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Orthogonal mitigation/unmitigation tagging
 - Heavily refactored docs
 - Replaced bulk timer thread with separate process
+- Replaced autoignore checker thread with separate process
+- Replaced exabgp autoconf thread with separate process
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)

@@ -303,7 +303,7 @@ jobs:
         - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
         - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
         - docker build -t artemis_benchmark testing/benchmark
-        - docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
+        - docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 -d
       script:
         - docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
           -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark

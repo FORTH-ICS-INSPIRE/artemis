@@ -1,7 +1,6 @@
 import multiprocessing as mp
 import os
 import signal
-import threading
 import time
 
 import pytricia
@@ -42,7 +41,7 @@ shared_memory_locks = {
 # global vars
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
-AUTOCONF_INTERVAL = 60
+AUTOCONF_INTERVAL = 10
 SERVICE_NAME = "exabgptap"
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
@@ -81,8 +80,6 @@ def run_data_worker_process(shared_memory_manager_dict):
     except Exception:
         log.exception("exception")
     finally:
-        if data_worker.autoconf_timer_thread is not None:
-            data_worker.autoconf_timer_thread.join()
         shared_memory_locks["data_worker"].acquire()
         shared_memory_manager_dict["data_worker_running"] = False
         shared_memory_locks["data_worker"].release()
@@ -275,6 +272,7 @@ class ExaBGPTap:
         self.shared_memory_manager_dict["hosts"] = {}
         self.shared_memory_manager_dict["autoconf_updates"] = {}
         self.shared_memory_manager_dict["config_timestamp"] = -1
+        self.shared_memory_manager_dict["autoconf_running"] = False
 
         log.info("service initiated")
 
@@ -306,44 +304,18 @@ class ExaBGPTap:
         IOLoop.current().start()
 
 
-class ExaBGPDataWorker:
+class AutoconfUpdater:
     """
-    RabbitMQ Producer for the ExaBGP tap Service.
+    Autoconf Updater.
     """
 
     def __init__(self, connection, shared_memory_manager_dict):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
-        shared_memory_locks["monitored_prefixes"].acquire()
-        self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
-        shared_memory_locks["monitored_prefixes"].release()
-        shared_memory_locks["hosts"].acquire()
-        self.hosts = self.shared_memory_manager_dict["hosts"]
-        shared_memory_locks["hosts"].release()
-        self.autoconf_timer_thread = None
-        self.previous_redis_autoconf_updates_counter = 0
+        self.previous_redis_autoconf_updates = set()
 
         # EXCHANGES
-        self.update_exchange = create_exchange(
-            "bgp-update", self.connection, declare=True
-        )
         self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
-
-    def setup_autoconf_update_timer(self):
-        """
-        Timer for autoconf update message send. Periodically (every AUTOCONF_INTERVAL seconds),
-        it sends buffered autoconf messages to configuration for processing
-        :return:
-        """
-        shared_memory_locks["data_worker"].acquire()
-        if not self.shared_memory_manager_dict["data_worker_should_run"]:
-            shared_memory_locks["data_worker"].release()
-            return
-        shared_memory_locks["data_worker"].release()
-        self.autoconf_timer_thread = threading.Timer(
-            interval=AUTOCONF_INTERVAL, function=self.send_autoconf_updates
-        )
-        self.autoconf_timer_thread.start()
 
     def send_autoconf_updates(self):
         # clean up unneeded updates stored in RAM (with thread-safe access)
@@ -355,27 +327,23 @@ class ExaBGPDataWorker:
             )
         )
         try:
+            autoconf_updates = self.shared_memory_manager_dict["autoconf_updates"]
             keys_to_remove = (
-                set(self.shared_memory_manager_dict["autoconf_updates"].keys())
-                - autoconf_update_keys_to_process
+                set(autoconf_updates.keys()) - autoconf_update_keys_to_process
             )
             for key in keys_to_remove:
-                del self.shared_memory_manager_dict["autoconf_updates"][key]
+                del autoconf_updates[key]
+            self.shared_memory_manager_dict["autoconf_updates"] = autoconf_updates
         except Exception:
             log.exception("exception")
         finally:
             shared_memory_locks["autoconf_updates"].release()
 
         if len(autoconf_update_keys_to_process) == 0:
-            self.previous_redis_autoconf_updates_counter = 0
-            self.setup_autoconf_update_timer()
             return
 
         # check if configuration is overwhelmed; if yes, back off to reduce aggressiveness
-        if self.previous_redis_autoconf_updates_counter == len(
-            autoconf_update_keys_to_process
-        ):
-            self.setup_autoconf_update_timer()
+        if self.previous_redis_autoconf_updates == autoconf_update_keys_to_process:
             log.warning("autoconf mechanism is overwhelmed, will re-try next round")
             return
 
@@ -406,10 +374,38 @@ class ExaBGPDataWorker:
         except Exception:
             log.exception("exception")
         finally:
-            self.previous_redis_autoconf_updates_counter = len(
-                autoconf_update_keys_to_process
-            )
-            self.setup_autoconf_update_timer()
+            self.previous_redis_autoconf_updates = set(autoconf_update_keys_to_process)
+
+    def run(self):
+        while True:
+            # no need to ever stop autoconf mechanism from the moment it starts
+            # independent of what happens to the parent (e.g., if conf changes,
+            # etc.)
+            self.send_autoconf_updates()
+            time.sleep(AUTOCONF_INTERVAL)
+
+
+class ExaBGPDataWorker:
+    """
+    RabbitMQ Producer for the ExaBGP tap Service.
+    """
+
+    def __init__(self, connection, shared_memory_manager_dict):
+        self.connection = connection
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+        shared_memory_locks["monitored_prefixes"].acquire()
+        self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
+        shared_memory_locks["monitored_prefixes"].release()
+        shared_memory_locks["hosts"].acquire()
+        self.hosts = self.shared_memory_manager_dict["hosts"]
+        shared_memory_locks["hosts"].release()
+        self.autoconf_updater = None
+
+        # EXCHANGES
+        self.update_exchange = create_exchange(
+            "bgp-update", self.connection, declare=True
+        )
+        self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
 
     def run_host_sio_process(self, host):
         def exit_gracefully(signum, frame):
@@ -547,10 +543,20 @@ class ExaBGPDataWorker:
             ),
         )
 
-        # start autoconf timer thread
-        if self.autoconf_timer_thread is not None:
-            self.autoconf_timer_thread.cancel()
-        self.setup_autoconf_update_timer()
+        shared_memory_locks["autoconf_updates"].acquire()
+        autoconf_running = self.shared_memory_manager_dict["autoconf_running"]
+        shared_memory_locks["autoconf_updates"].release()
+        if not autoconf_running:
+            log.info("setting up autoconf updater process...")
+            with Connection(RABBITMQ_URI) as connection:
+                self.autoconf_updater = AutoconfUpdater(
+                    connection, self.shared_memory_manager_dict
+                )
+                shared_memory_locks["autoconf_updates"].acquire()
+                self.shared_memory_manager_dict["autoconf_running"] = True
+                shared_memory_locks["autoconf_updates"].release()
+                mp.Process(target=self.autoconf_updater.run).start()
+            log.info("autoignore checker set up")
 
         # start host processes
         host_processes = []

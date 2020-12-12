@@ -7,7 +7,7 @@
 ./wait-for fileobserver:3000 -t 0
 ./wait-for prefixtree:3000 -t 0
 
-timeout -t 200 python executor.py 10000
+timeout -t 600 python executor.py 10000
 rmq_update_insert=$(cat bgp-update-update)
 rmq_hijack_insert=$(cat hijack-update-update)
 postgres_update_insert=$(cat amq.direct-update-insert)

@@ -38,6 +38,8 @@ the following microservices:
 
 * `prefixtree` (for load-balancing prefix tree lookups; attention, this requires memory!)
 
+* `database` (for load-balancing database access)
+
 To apply scaling (can be upwards or downwards):
 
 * Before you initiate artemis:

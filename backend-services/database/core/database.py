@@ -1692,7 +1692,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             key_ = (message.payload,)
             handled_bgp_entries = self.shared_memory_manager_dict["handled_bgp_entries"]
             if key_ not in handled_bgp_entries:
-                self.shared_memory_manager_dict["handled_bgp_entries"].append(key_)
+                handled_bgp_entries.append(key_)
             self.shared_memory_manager_dict["handled_bgp_entries"] = handled_bgp_entries
         except Exception:
             log.exception("{}".format(message))

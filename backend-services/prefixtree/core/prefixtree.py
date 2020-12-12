@@ -162,7 +162,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
             shared_memory_locks["prefix_tree"].release()
 
             shared_memory_locks["monitored_prefixes"].acquire()
-            shared_memory_manager_dict["monitored_prefixes"] = monitored_prefixes
+            shared_memory_manager_dict["monitored_prefixes"] = list(monitored_prefixes)
             shared_memory_locks["monitored_prefixes"].release()
 
             shared_memory_locks["configured_prefix_count"].acquire()
@@ -359,9 +359,9 @@ class MonitoredPrefixesHandler(RequestHandler):
         shared_memory_locks["monitored_prefixes"].acquire()
         self.write(
             {
-                "monitored_prefixes": list(
-                    self.shared_memory_manager_dict["monitored_prefixes"]
-                )
+                "monitored_prefixes": self.shared_memory_manager_dict[
+                    "monitored_prefixes"
+                ]
             }
         )
         shared_memory_locks["monitored_prefixes"].release()
@@ -379,7 +379,7 @@ class PrefixTree:
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["prefix_tree"] = {"v4": {}, "v6": {}}
         self.shared_memory_manager_dict["prefix_tree_recalculate"] = True
-        self.shared_memory_manager_dict["monitored_prefixes"] = set()
+        self.shared_memory_manager_dict["monitored_prefixes"] = list()
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
         self.shared_memory_manager_dict["autoignore_rules"] = {}
         self.shared_memory_manager_dict["autoignore_prefix_tree"] = {"v4": {}, "v6": {}}

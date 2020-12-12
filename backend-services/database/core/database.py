@@ -733,11 +733,6 @@ class DatabaseBulkUpdater:
                 "INSERT INTO bgp_updates (prefix, key, origin_as, peer_asn, as_path, service, type, communities, "
                 "timestamp, hijack_key, handled, matched_prefix, orig_path) VALUES %s"
             )
-            log.info(
-                "INSERTING {} updates".format(
-                    len(self.shared_memory_manager_dict["insert_bgp_entries"])
-                )
-            )
             self.wo_db.execute_values(
                 query,
                 self.shared_memory_manager_dict["insert_bgp_entries"],
@@ -758,6 +753,7 @@ class DatabaseBulkUpdater:
         timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
         timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
         # Update the BGP entries using the hijack messages
+        handled_bgp_entries = self.shared_memory_manager_dict["handled_bgp_entries"]
         for hijack_key in self.shared_memory_manager_dict["insert_hijacks_entries"]:
             for bgp_entry_to_update in self.shared_memory_manager_dict[
                 "insert_hijacks_entries"
@@ -768,12 +764,9 @@ class DatabaseBulkUpdater:
                 )
                 # exclude handle bgp updates that point to same hijack as
                 # this
-                try:
-                    self.shared_memory_manager_dict["handled_bgp_entries"].remove(
-                        bgp_entry_to_update
-                    )
-                except Exception:
-                    log.exception("exception")
+                if bgp_entry_to_update in handled_bgp_entries:
+                    handled_bgp_entries.remove(bgp_entry_to_update)
+        self.shared_memory_manager_dict["handled_bgp_entries"] = handled_bgp_entries
 
         if update_bgp_entries:
             try:
@@ -1253,8 +1246,8 @@ class DatabaseBulkUpdater:
                     str_ += "Hijacks Inserted: {}".format(hijacks)
                 if withdrawals:
                     str_ += "Withdrawals Handled: {}".format(withdrawals)
-                # if str_ != "":
-                log.info("{}".format(str_))
+                if str_ != "":
+                    log.debug("{}".format(str_))
             except Exception:
                 log.exception("exception")
                 log.error("flushing current state")
@@ -1565,7 +1558,13 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 # insert all types of BGP updates
                 # thread-safe access to update dict
                 shared_memory_locks["insert_bgp_entries"].acquire()
-                self.shared_memory_manager_dict["insert_bgp_entries"].append(value)
+                insert_bgp_entries = self.shared_memory_manager_dict[
+                    "insert_bgp_entries"
+                ]
+                insert_bgp_entries.append(value)
+                self.shared_memory_manager_dict[
+                    "insert_bgp_entries"
+                ] = insert_bgp_entries
                 shared_memory_locks["insert_bgp_entries"].release()
 
                 # register the monitor/peer ASN from whom we learned this BGP update
@@ -1595,8 +1594,14 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 datetime.datetime.fromtimestamp((msg_["timestamp"])),  # timestamp
                 msg_["key"],  # key
             )
-            if value not in self.shared_memory_manager_dict["handle_bgp_withdrawals"]:
-                self.shared_memory_manager_dict["handle_bgp_withdrawals"].append(value)
+            handle_bgp_withdrawals = self.shared_memory_manager_dict[
+                "handle_bgp_withdrawals"
+            ]
+            if value not in handle_bgp_withdrawals:
+                handle_bgp_withdrawals.append(value)
+            self.shared_memory_manager_dict[
+                "handle_bgp_withdrawals"
+            ] = handle_bgp_withdrawals
         except Exception:
             log.exception("{}".format(msg_))
         finally:
@@ -1611,9 +1616,9 @@ class DatabaseDataWorker(ConsumerProducerMixin):
             if (raw["persistent_hijack_key"],) not in self.shared_memory_manager_dict[
                 "outdate_hijacks"
             ]:
-                self.shared_memory_manager_dict["outdate_hijacks"].append(
-                    (raw["persistent_hijack_key"],)
-                )
+                outdate_hijacks = self.shared_memory_manager_dict["outdate_hijacks"]
+                outdate_hijacks.append((raw["persistent_hijack_key"],))
+                self.shared_memory_manager_dict["outdate_hijacks"] = outdate_hijacks
         except Exception:
             log.exception("{}".format(message))
         finally:
@@ -1685,8 +1690,10 @@ class DatabaseDataWorker(ConsumerProducerMixin):
         shared_memory_locks["handled_bgp_entries"].acquire()
         try:
             key_ = (message.payload,)
-            if key_ not in self.shared_memory_manager_dict["handled_bgp_entries"]:
+            handled_bgp_entries = self.shared_memory_manager_dict["handled_bgp_entries"]
+            if key_ not in handled_bgp_entries:
                 self.shared_memory_manager_dict["handled_bgp_entries"].append(key_)
+            self.shared_memory_manager_dict["handled_bgp_entries"] = handled_bgp_entries
         except Exception:
             log.exception("{}".format(message))
         finally:

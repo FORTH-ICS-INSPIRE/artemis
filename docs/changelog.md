@@ -15,10 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Possible states constraint on DB hijacks table to allow orthogonal mitigation tagging
 - Orthogonal mitigation/unmitigation tagging
 - Heavily refactored docs
+- Replaced bulk timer thread with separate process
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)
 - Check for very old timestamps in DB update handling
+- Replaced sets that are not supported by shared manager with lists
 
 ### Removed
 - TBD (removed a feature)

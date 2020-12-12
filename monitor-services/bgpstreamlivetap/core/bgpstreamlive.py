@@ -137,15 +137,15 @@ def configure_bgpstreamlive(msg, shared_memory_manager_dict):
                 "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
             )
             shared_memory_locks["monitored_prefixes"].acquire()
-            shared_memory_manager_dict["monitored_prefixes"] = set(
-                r.json()["monitored_prefixes"]
-            )
+            shared_memory_manager_dict["monitored_prefixes"] = r.json()[
+                "monitored_prefixes"
+            ]
             shared_memory_locks["monitored_prefixes"].release()
 
             # calculate monitor projects
             monitor_projects = set(monitors["bgpstreamlive"])
             shared_memory_locks["monitor_projects"].acquire()
-            shared_memory_manager_dict["monitor_projects"] = monitor_projects
+            shared_memory_manager_dict["monitor_projects"] = list(monitor_projects)
             shared_memory_locks["monitor_projects"].release()
 
             # signal that data worker is configured
@@ -261,8 +261,8 @@ class BGPStreamLiveTap:
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["data_worker_should_run"] = False
         self.shared_memory_manager_dict["data_worker_configured"] = False
-        self.shared_memory_manager_dict["monitored_prefixes"] = set()
-        self.shared_memory_manager_dict["monitor_projects"] = set()
+        self.shared_memory_manager_dict["monitored_prefixes"] = list()
+        self.shared_memory_manager_dict["monitor_projects"] = list()
         self.shared_memory_manager_dict["config_timestamp"] = -1
 
         log.info("service initiated")

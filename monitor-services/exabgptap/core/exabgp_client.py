@@ -140,9 +140,9 @@ def configure_exabgp(msg, shared_memory_manager_dict):
                 "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
             )
             shared_memory_locks["monitored_prefixes"].acquire()
-            shared_memory_manager_dict["monitored_prefixes"] = set(
-                r.json()["monitored_prefixes"]
-            )
+            shared_memory_manager_dict["monitored_prefixes"] = r.json()[
+                "monitored_prefixes"
+            ]
             shared_memory_locks["monitored_prefixes"].release()
 
             # get host configuration
@@ -271,7 +271,7 @@ class ExaBGPTap:
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["data_worker_should_run"] = False
         self.shared_memory_manager_dict["data_worker_configured"] = False
-        self.shared_memory_manager_dict["monitored_prefixes"] = set()
+        self.shared_memory_manager_dict["monitored_prefixes"] = list()
         self.shared_memory_manager_dict["hosts"] = {}
         self.shared_memory_manager_dict["autoconf_updates"] = {}
         self.shared_memory_manager_dict["config_timestamp"] = -1
@@ -438,7 +438,7 @@ class ExaBGPDataWorker:
             if autoconf:
                 prefixes = ["0.0.0.0/0", "::/0"]
             else:
-                prefixes = list(self.prefixes)
+                prefixes = self.prefixes
             prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
             for prefix in prefixes:
                 ip_version = get_ip_version(prefix)

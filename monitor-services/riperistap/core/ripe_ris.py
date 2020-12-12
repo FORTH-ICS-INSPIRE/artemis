@@ -135,9 +135,9 @@ def configure_ripe_ris(msg, shared_memory_manager_dict):
                 "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
             )
             shared_memory_locks["monitored_prefixes"].acquire()
-            shared_memory_manager_dict["monitored_prefixes"] = set(
-                r.json()["monitored_prefixes"]
-            )
+            shared_memory_manager_dict["monitored_prefixes"] = r.json()[
+                "monitored_prefixes"
+            ]
             shared_memory_locks["monitored_prefixes"].release()
 
             # calculate ripe ris hosts
@@ -145,7 +145,7 @@ def configure_ripe_ris(msg, shared_memory_manager_dict):
             if hosts == set([""]):
                 hosts = set()
             shared_memory_locks["hosts"].acquire()
-            shared_memory_manager_dict["hosts"] = hosts
+            shared_memory_manager_dict["hosts"] = list(hosts)
             shared_memory_locks["hosts"].release()
 
             # signal that data worker is configured
@@ -261,8 +261,8 @@ class RipeRisTap:
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["data_worker_should_run"] = False
         self.shared_memory_manager_dict["data_worker_configured"] = False
-        self.shared_memory_manager_dict["monitored_prefixes"] = set()
-        self.shared_memory_manager_dict["hosts"] = set()
+        self.shared_memory_manager_dict["monitored_prefixes"] = list()
+        self.shared_memory_manager_dict["hosts"] = list()
         self.shared_memory_manager_dict["config_timestamp"] = -1
 
         log.info("service initiated")

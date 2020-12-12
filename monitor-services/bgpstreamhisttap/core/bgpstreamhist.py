@@ -127,9 +127,9 @@ def configure_bgpstreamhist(msg, shared_memory_manager_dict):
                 "http://{}:{}/monitoredPrefixes".format(PREFIXTREE_HOST, REST_PORT)
             )
             shared_memory_locks["monitored_prefixes"].acquire()
-            shared_memory_manager_dict["monitored_prefixes"] = set(
-                r.json()["monitored_prefixes"]
-            )
+            shared_memory_manager_dict["monitored_prefixes"] = r.json()[
+                "monitored_prefixes"
+            ]
             shared_memory_locks["monitored_prefixes"].release()
 
             # get input directory
@@ -250,7 +250,7 @@ class BGPStreamHistTap:
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["data_worker_should_run"] = False
         self.shared_memory_manager_dict["data_worker_configured"] = False
-        self.shared_memory_manager_dict["monitored_prefixes"] = set()
+        self.shared_memory_manager_dict["monitored_prefixes"] = list()
         self.shared_memory_manager_dict["input_dir"] = None
         self.shared_memory_manager_dict["config_timestamp"] = -1
 

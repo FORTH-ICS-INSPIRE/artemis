@@ -753,7 +753,9 @@ class DatabaseBulkUpdater:
         timestamp_thres = time.time() - 7 * 24 * 60 * 60 if HISTORIC == "false" else 0
         timestamp_thres = datetime.datetime.fromtimestamp(timestamp_thres)
         # Update the BGP entries using the hijack messages
-        handled_bgp_entries = self.shared_memory_manager_dict["handled_bgp_entries"]
+        handled_bgp_entries = set(
+            self.shared_memory_manager_dict["handled_bgp_entries"]
+        )
         for hijack_key in self.shared_memory_manager_dict["insert_hijacks_entries"]:
             for bgp_entry_to_update in self.shared_memory_manager_dict[
                 "insert_hijacks_entries"
@@ -764,9 +766,10 @@ class DatabaseBulkUpdater:
                 )
                 # exclude handle bgp updates that point to same hijack as
                 # this
-                if bgp_entry_to_update in handled_bgp_entries:
-                    handled_bgp_entries.remove(bgp_entry_to_update)
-        self.shared_memory_manager_dict["handled_bgp_entries"] = handled_bgp_entries
+                handled_bgp_entries.discard(bgp_entry_to_update)
+        self.shared_memory_manager_dict["handled_bgp_entries"] = list(
+            handled_bgp_entries
+        )
 
         if update_bgp_entries:
             try:

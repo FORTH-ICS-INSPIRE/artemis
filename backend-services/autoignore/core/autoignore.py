@@ -1,6 +1,5 @@
 import multiprocessing as mp
 import os
-import threading
 import time
 from typing import Dict
 from typing import NoReturn
@@ -252,6 +251,7 @@ class Autoignore:
         self.shared_memory_manager_dict["autoignore_rules"] = {}
         self.shared_memory_manager_dict["config_timestamp"] = -1
         self.shared_memory_manager_dict["time"] = 0
+        self.shared_memory_manager_dict["ongoing_hijacks"] = {}
 
         log.info("service initiated")
 
@@ -283,6 +283,110 @@ class Autoignore:
         IOLoop.current().start()
 
 
+class AutoignoreChecker:
+    """
+    Autoignore checker.
+    """
+
+    def __init__(self, connection, shared_memory_manager_dict):
+        self.connection = connection
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+        # DB variables
+        self.ro_db = DB(
+            application_name="autoignore-checker-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
+
+        # EXCHANGES
+        self.autoignore_exchange = create_exchange(
+            "autoignore", connection, declare=True
+        )
+
+    def check_rules_should_be_checked(self):
+        ongoing_hijacks_to_prefixes = {}
+        # check if we need to ask prefixtree about potential rule match
+        shared_memory_locks["autoignore"].acquire()
+        try:
+            for key in self.shared_memory_manager_dict["autoignore_rules"]:
+                interval = int(
+                    self.shared_memory_manager_dict["autoignore_rules"][key]["interval"]
+                )
+                if interval <= 0:
+                    continue
+                shared_memory_locks["time"].acquire()
+                self.shared_memory_manager_dict["time"] += 1
+                process_time = self.shared_memory_manager_dict["time"]
+                shared_memory_locks["time"].release()
+                if process_time % interval == 0:
+                    # do the following once for the current session
+                    if len(ongoing_hijacks_to_prefixes) == 0:
+                        shared_memory_locks["ongoing_hijacks"].acquire()
+                        try:
+                            # fetch ongoing hijack events
+                            query = (
+                                "SELECT time_started, time_last, num_peers_seen, "
+                                "num_asns_inf, key, prefix, hijack_as, type, time_detected "
+                                "FROM hijacks WHERE active = true"
+                            )
+                            entries = self.ro_db.execute(query)
+                            ongoing_hijacks = {}
+                            for entry in entries:
+                                ongoing_hijacks[entry[4]] = {
+                                    "prefix": entry[5],
+                                    "time_last_updated": max(
+                                        int(entry[1].timestamp()),
+                                        int(entry[8].timestamp()),
+                                    ),
+                                    "num_peers_seen": int(entry[2]),
+                                    "num_asns_inf": int(entry[3]),
+                                    "hijack_as": int(entry[6]),
+                                    "hij_type": entry[7],
+                                }
+                                ongoing_hijacks_to_prefixes[entry[4]] = entry[5]
+                            self.shared_memory_manager_dict[
+                                "ongoing_hijacks"
+                            ] = ongoing_hijacks
+                        except Exception:
+                            log.exception("exception")
+                        finally:
+                            shared_memory_locks["ongoing_hijacks"].release()
+
+                    if len(ongoing_hijacks_to_prefixes) > 0:
+                        with Producer(self.connection) as producer:
+                            producer.publish(
+                                {
+                                    "ongoing_hijacks_to_prefixes": ongoing_hijacks_to_prefixes,
+                                    "rule_key": key,
+                                },
+                                exchange=self.autoignore_exchange,
+                                routing_key="ongoing-hijack-prefixes",
+                                serializer="ujson",
+                            )
+        except Exception:
+            log.exception("exception")
+        finally:
+            shared_memory_locks["autoignore"].release()
+
+    def run(self):
+        while True:
+            # stop if parent is not running any more
+            shared_memory_locks["data_worker"].acquire()
+            if not self.shared_memory_manager_dict["data_worker_running"]:
+                shared_memory_locks["data_worker"].release()
+                break
+            shared_memory_locks["data_worker"].release()
+            self.check_rules_should_be_checked()
+            time.sleep(1)
+
+
 class AutoignoreDataWorker(ConsumerProducerMixin):
     """
     RabbitMQ Consumer/Producer for the autoignore Service.
@@ -293,7 +397,6 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
     ) -> NoReturn:
         self.connection = connection
         self.rule_timer_thread = None
-        self.ongoing_hijacks = {}
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
         # wait for other needed data workers to start
@@ -324,7 +427,7 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
 
         # DB variables
         self.ro_db = DB(
-            application_name="autoignore-readonly",
+            application_name="autoignore-data-worker-readonly",
             user=DB_USER,
             password=DB_PASS,
             host=DB_HOST,
@@ -335,7 +438,12 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
             readonly=True,
         )
 
-        self.setup_rule_timer()
+        log.info("setting up autoignore checker process...")
+        self.autoignore_checker = AutoignoreChecker(
+            self.connection, self.shared_memory_manager_dict
+        )
+        mp.Process(target=self.autoignore_checker.run).start()
+        log.info("autoignore checker set up")
 
         log.info("data worker initiated")
 
@@ -354,79 +462,6 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
                 accept=["ujson"],
             ),
         ]
-
-    def setup_rule_timer(self):
-        """
-        Timer for rule check operations
-        """
-        if self.should_stop:
-            return
-        self.rule_timer_thread = threading.Timer(
-            interval=1, function=self.check_rules_should_be_checked
-        )
-        self.rule_timer_thread.start()
-
-    def check_rules_should_be_checked(self):
-        ongoing_hijacks_to_prefixes = {}
-        # check if we need to ask prefixtree about potential rule match
-        shared_memory_locks["autoignore"].acquire()
-        try:
-            for key in self.shared_memory_manager_dict["autoignore_rules"]:
-                interval = int(
-                    self.shared_memory_manager_dict["autoignore_rules"][key]["interval"]
-                )
-                if interval <= 0:
-                    continue
-                shared_memory_locks["time"].acquire()
-                self.shared_memory_manager_dict["time"] += 1
-                process_time = self.shared_memory_manager_dict["time"]
-                shared_memory_locks["time"].release()
-                if process_time % interval == 0:
-                    # do the following once for the current session
-                    if len(ongoing_hijacks_to_prefixes) == 0:
-                        shared_memory_locks["ongoing_hijacks"].acquire()
-                        try:
-                            # fetch ongoing hijack events
-                            query = (
-                                "SELECT time_started, time_last, num_peers_seen, "
-                                "num_asns_inf, key, prefix, hijack_as, type, time_detected "
-                                "FROM hijacks WHERE active = true"
-                            )
-                            entries = self.ro_db.execute(query)
-                            self.ongoing_hijacks = {}
-                            for entry in entries:
-                                self.ongoing_hijacks[entry[4]] = {
-                                    "prefix": entry[5],
-                                    "time_last_updated": max(
-                                        int(entry[1].timestamp()),
-                                        int(entry[8].timestamp()),
-                                    ),
-                                    "num_peers_seen": int(entry[2]),
-                                    "num_asns_inf": int(entry[3]),
-                                    "hijack_as": int(entry[6]),
-                                    "hij_type": entry[7],
-                                }
-                                ongoing_hijacks_to_prefixes[entry[4]] = entry[5]
-                        except Exception:
-                            log.exception("exception")
-                        finally:
-                            shared_memory_locks["ongoing_hijacks"].release()
-
-                    if len(ongoing_hijacks_to_prefixes) > 0:
-                        self.producer.publish(
-                            {
-                                "ongoing_hijacks_to_prefixes": ongoing_hijacks_to_prefixes,
-                                "rule_key": key,
-                            },
-                            exchange=self.autoignore_exchange,
-                            routing_key="ongoing-hijack-prefixes",
-                            serializer="ujson",
-                        )
-        except Exception:
-            log.exception("exception")
-        finally:
-            shared_memory_locks["autoignore"].release()
-            self.setup_rule_timer()
 
     def handle_autoignore_hijacks_matching_rule(self, message):
         message.ack()
@@ -451,22 +486,17 @@ class AutoignoreDataWorker(ConsumerProducerMixin):
             interval = rule["interval"]
 
             time_now = int(time.time())
+            ongoing_hijacks = self.shared_memory_manager_dict["ongoing_hijacks"]
             for hijack_key in hijacks_matching_rule:
-                if hijack_key not in self.ongoing_hijacks:
+                if hijack_key not in ongoing_hijacks:
                     continue
 
-                hijack_prefix = self.ongoing_hijacks[hijack_key]["prefix"]
-                hijack_type = self.ongoing_hijacks[hijack_key]["hij_type"]
-                hijack_as = self.ongoing_hijacks[hijack_key]["hijack_as"]
-                hijack_num_peers_seen = self.ongoing_hijacks[hijack_key][
-                    "num_peers_seen"
-                ]
-                hijack_num_ases_infected = self.ongoing_hijacks[hijack_key][
-                    "num_asns_inf"
-                ]
-                time_last_updated = self.ongoing_hijacks[hijack_key][
-                    "time_last_updated"
-                ]
+                hijack_prefix = ongoing_hijacks[hijack_key]["prefix"]
+                hijack_type = ongoing_hijacks[hijack_key]["hij_type"]
+                hijack_as = ongoing_hijacks[hijack_key]["hijack_as"]
+                hijack_num_peers_seen = ongoing_hijacks[hijack_key]["num_peers_seen"]
+                hijack_num_ases_infected = ongoing_hijacks[hijack_key]["num_asns_inf"]
+                time_last_updated = ongoing_hijacks[hijack_key]["time_last_updated"]
 
                 if (
                     (time_now - time_last_updated > interval)

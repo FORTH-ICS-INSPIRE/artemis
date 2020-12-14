@@ -1654,8 +1654,7 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
                             "autoconf-update-keys-to-process", bgp_update["key"]
                         )
                         redis_pipeline.execute()
-                    # cancel operation, write nothing (this is done for optimization, even if we miss some updates)
-                    conf_needs_update = False
+                    # cancel operations
                     break
 
             # update configuration
@@ -1674,12 +1673,12 @@ class ConfigurationDataWorker(ConsumerProducerMixin):
             if len(updates_processed) > 0 and self.redis.exists(
                 "autoconf-update-keys-to-process"
             ):
+                redis_pipeline = self.redis.pipeline()
                 for bgp_update_key in updates_processed:
-                    redis_pipeline = self.redis.pipeline()
                     redis_pipeline.srem(
                         "autoconf-update-keys-to-process", bgp_update_key
                     )
-                    redis_pipeline.execute()
+                redis_pipeline.execute()
         except Exception:
             log.exception("exception")
 

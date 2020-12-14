@@ -136,18 +136,18 @@ def receive(exchange_name, routing_key):
                                 recv_cnt,
                                 exchange_name,
                                 routing_key,
-                                LIMIT_UPDATES / (time.time() - start),
+                                recv_cnt / (time.time() - start),
                             )
                         )
                         f.write(str(int(recv_cnt / (time.time() - start))))
         stop = time.time()
         print(
             "[!] Throughput for {} on {}:{} = {} msg/s".format(
-                recv_cnt, exchange_name, routing_key, LIMIT_UPDATES / (stop - start)
+                recv_cnt, exchange_name, routing_key, recv_cnt / (stop - start)
             )
         )
         with open("{}-{}".format(exchange_name, routing_key), "w") as f:
-            f.write(str(int(LIMIT_UPDATES / (stop - start))))
+            f.write(str(int(recv_cnt / (stop - start))))
 
     print("[+] Receiving {} on {}:{}".format(LIMIT_UPDATES, exchange_name, routing_key))
     with Connection(RABBITMQ_URI) as connection:

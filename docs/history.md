@@ -34,18 +34,18 @@ The following steps need to be done for ARTEMIS to replay these records in a str
   ```
   ...
   bgpstreamhisttap:
-    ...
-    volumes:
-      ... # other mappings
-      - ./csv_dir/:/tmp/csv_dir/
-      ... # other mappings
+  ...
+  volumes:
+    ... # other mappings
+    - ./csv_dir/:/tmp/csv_dir/
+    ... # other mappings
   ...
   configuration:
-    ...
-    volumes:
-      ... # other mappings
-      - ./csv_dir/:/tmp/csv_dir/
-      ... # other mappings
+  ...
+  volumes:
+    ... # other mappings
+    - ./csv_dir/:/tmp/csv_dir/
+    ... # other mappings
   ```
 * Start ARTEMIS normally
 * Edit ARTEMIS configuration to use the extra monitor:

@@ -41,7 +41,6 @@ For a detailed list of supported features please check the [CHANGELOG](changelog
   * [RIPE RIS live](https://ris-live.ripe.net/)
   * [RIPE RIS RIB collections](https://bgpstream.caida.org/data#!ris)
   * [RouteViews RIB collections](https://bgpstream.caida.org/data#!routeviews)
-  * [Public CAIDA BMP feeds](https://bgpstream.caida.org/v2-beta#bmp)
   * Local BGP feeds ([exaBGP](https://github.com/Exa-Networks/exabgp))
   * [Private BMP feeds](https://bgpstream.caida.org/v2-beta#bmp-private)
 * Real-time detection and notifications of BGP prefix hijacking attacks/events of the following types (please refer to the attack taxonomy in our [ARTEMIS IEEE/ACM ToN paper](https://www.inspire.edu.gr/wp-content/pdfs/artemis_TON2018.pdf)):

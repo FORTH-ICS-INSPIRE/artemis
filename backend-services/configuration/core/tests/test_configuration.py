@@ -14,7 +14,6 @@ monitors:
     bgpstreamlive:
     - routeviews
     - ris
-    - caida
     exabgp:
     - ip: exabgp # this will automatically be resolved to the exabgp container's IP
       port: 5000 # default port

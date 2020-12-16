@@ -26,19 +26,6 @@ monitors:
 ...
 ```
 
-The latter can be acquired equivalently as follows:
-
-```
-...
-monitors:
-  bgpstreamlive:
-    ...
-    - caida
-    ...
-  ...
-...
-```
-
 <!--
 As of now there is an issue with the parsed timestamps from BGPStream so you need to define a custom environment variable.
 

@@ -165,6 +165,40 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "data_worker_should_run": <bool>,
+            "data_worker_configured": <bool>,
+            "monitored_prefixes": <list>,
+            "input_dir": <str>
+        }
+        """
+        ret_dict = {}
+
+        shared_memory_locks["data_worker"].acquire()
+        ret_dict["data_worker_should_run"] = self.shared_memory_manager_dict[
+            "data_worker_should_run"
+        ]
+        ret_dict["data_worker_configured"] = self.shared_memory_manager_dict[
+            "data_worker_configured"
+        ]
+        shared_memory_locks["data_worker"].release()
+
+        shared_memory_locks["monitored_prefixes"].acquire()
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+        shared_memory_locks["monitored_prefixes"].release()
+
+        shared_memory_locks["input_dir"].acquire()
+        ret_dict["input_dir"] = self.shared_memory_manager_dict["input_dir"]
+        shared_memory_locks["input_dir"].release()
+
+        self.write(ret_dict)
+
     def post(self):
         """
         Handler for posted configuration from configuration.

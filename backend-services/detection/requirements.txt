@@ -10,7 +10,7 @@ psycopg2==2.8.4
 pytricia==1.0.0
 PyYAML==5.3
 redis==3.4.0
-requests==2.22.0
+requests==2.25.1
 ruamel.yaml==0.16.5
 six==1.13.0
 slacker-log-handler==1.7.1

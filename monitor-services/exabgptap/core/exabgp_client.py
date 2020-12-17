@@ -151,6 +151,7 @@ def configure_exabgp(msg, shared_memory_manager_dict):
                     hosts[host].add("autoconf")
                 if "learn_neighbors" in exabgp_monitor:
                     hosts[host].add("learn_neighbors")
+                hosts[host] = list(hosts[host])
             shared_memory_locks["hosts"].acquire()
             shared_memory_manager_dict["hosts"] = hosts
             shared_memory_locks["hosts"].release()
@@ -182,6 +183,41 @@ class ConfigHandler(RequestHandler):
 
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "data_worker_should_run": <bool>,
+            "data_worker_configured": <bool>,
+            "monitored_prefixes": <list>,
+            "hosts": <dict>,
+            "autoconf_running": <bool>
+        }
+        """
+        ret_dict = {}
+
+        shared_memory_locks["data_worker"].acquire()
+        ret_dict["data_worker_should_run"] = self.shared_memory_manager_dict[
+            "data_worker_should_run"
+        ]
+        ret_dict["data_worker_configured"] = self.shared_memory_manager_dict[
+            "data_worker_configured"
+        ]
+        shared_memory_locks["data_worker"].release()
+
+        shared_memory_locks["monitored_prefixes"].acquire()
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+        shared_memory_locks["monitored_prefixes"].release()
+
+        shared_memory_locks["hosts"].acquire()
+        ret_dict["hosts"] = self.shared_memory_manager_dict["hosts"]
+        shared_memory_locks["hosts"].release()
+
+        self.write(ret_dict)
 
     def post(self):
         """

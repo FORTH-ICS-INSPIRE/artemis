@@ -116,6 +116,14 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Note that detection does not have any actual configuration, since incoming
+        messages come bundled with their own processing rules. It thus returns an empty dict.
+        """
+        self.write({})
+
     def post(self):
         """
         Configures notifier and responds with a success message.

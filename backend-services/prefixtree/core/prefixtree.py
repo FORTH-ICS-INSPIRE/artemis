@@ -203,9 +203,64 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "prefix_tree": {
+                "v4": <dict>,
+                "v6": <dict>
+            },
+            "prefix_tree_recalculate": <bool>,
+            "monitored_prefixes": <list>,
+            "configured_prefix_count": <int>,
+            "autoignore_rules": <dict>,
+            "autoignore_prefix_tree": {
+                "v4": <dict>,
+                "v6": <dict>
+            },
+            "autoignore_recalculate": <bool>
+        }
+        """
+        ret_dict = {}
+
+        shared_memory_locks["prefix_tree"].acquire()
+        ret_dict["prefix_tree"] = self.shared_memory_manager_dict["prefix_tree"]
+        ret_dict["prefix_tree_recalculate"] = self.shared_memory_manager_dict[
+            "prefix_tree_recalculate"
+        ]
+        shared_memory_locks["prefix_tree"].release()
+
+        shared_memory_locks["monitored_prefixes"].acquire()
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+        shared_memory_locks["monitored_prefixes"].release()
+
+        shared_memory_locks["configured_prefix_count"].acquire()
+        ret_dict["configured_prefix_count"] = self.shared_memory_manager_dict[
+            "configured_prefix_count"
+        ]
+        shared_memory_locks["configured_prefix_count"].release()
+
+        shared_memory_locks["autoignore"].acquire()
+        ret_dict["autoignore_rules"] = self.shared_memory_manager_dict[
+            "autoignore_rules"
+        ]
+        ret_dict["autoignore_prefix_tree"] = self.shared_memory_manager_dict[
+            "autoignore_prefix_tree"
+        ]
+        ret_dict["autoignore_recalculate"] = self.shared_memory_manager_dict[
+            "autoignore_recalculate"
+        ]
+        shared_memory_locks["autoignore"].release()
+
+        self.write(ret_dict)
+
     def post(self):
         """
-        Cofnigures prefix tree and responds with a success message.
+        Configures prefix tree and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         try:

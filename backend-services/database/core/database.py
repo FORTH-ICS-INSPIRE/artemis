@@ -98,14 +98,20 @@ def wait_data_worker_dependencies(data_worker_dependencies):
         time.sleep(1)
 
 
-def save_config(wo_db, config_hash, yaml_config, raw_config, comment):
+def save_config(wo_db, config_hash, yaml_config, raw_config, comment, config_timestamp):
     try:
         query = (
             "INSERT INTO configs (key, raw_config, time_modified, comment)"
             "VALUES (%s, %s, %s, %s);"
         )
         wo_db.execute(
-            query, (config_hash, raw_config, datetime.datetime.now(), comment)
+            query,
+            (
+                config_hash,
+                raw_config,
+                datetime.datetime.fromtimestamp(config_timestamp),
+                comment,
+            ),
         )
     except Exception:
         log.exception("failed to save config in db")
@@ -192,6 +198,7 @@ def configure_database(msg, shared_memory_manager_dict):
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
         shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
+            incoming_config_timestamp = config["timestamp"]
             if "timestamp" in config:
                 del config["timestamp"]
             raw_config = ""
@@ -205,7 +212,14 @@ def configure_database(msg, shared_memory_manager_dict):
             config_hash = get_hash(raw_config)
             latest_config_in_db_hash = retrieve_most_recent_config_hash(ro_db)
             if config_hash != latest_config_in_db_hash:
-                save_config(wo_db, config_hash, config, raw_config, comment)
+                save_config(
+                    wo_db,
+                    config_hash,
+                    config,
+                    raw_config,
+                    comment,
+                    incoming_config_timestamp,
+                )
             else:
                 log.debug("database config is up-to-date")
 
@@ -292,7 +306,14 @@ class ConfigHandler(RequestHandler):
     def get(self):
         """
         Simply provides the raw configuration stored in the DB
-        (with timestamp, hash and comment) to the requester
+        (with timestamp, hash and comment) to the requester.
+        Format:
+        {
+            "key": <string>,
+            "raw_config": <string>,
+            "comment": <string>,
+            "time_modified": <timestamp>,
+        }
         """
         most_recent_config = retrieve_most_recent_raw_config(self.ro_db)
         if most_recent_config:

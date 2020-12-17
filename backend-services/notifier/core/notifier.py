@@ -84,6 +84,13 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Note that notifier does not have any actual configuration. It thus returns an empty dict.
+        """
+        self.write({})
+
     def post(self):
         """
         Configures prefix tree and responds with a success message.

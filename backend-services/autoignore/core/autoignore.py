@@ -120,9 +120,19 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        For autoignore, these are the autoignore rules in a dict format.
+        """
+        shared_memory_locks["autoignore"].acquire()
+        autoignore_rules = self.shared_memory_manager_dict["autoignore_rules"]
+        shared_memory_locks["autoignore"].release()
+        self.write(autoignore_rules)
+
     def post(self):
         """
-        Cofnigures autoignore and responds with a success message.
+        Configures autoignore and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         try:

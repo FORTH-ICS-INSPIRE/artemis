@@ -1342,7 +1342,15 @@ class ConfigHandler(RequestHandler):
 
     def get(self):
         """
-        Simply provides the configuration (in the form of a JSON dict) to the requester
+        Simply provides the configuration (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "prefixes": <dict>,
+            "asns": <dict>,
+            "monitors": <dict>,
+            "rules": <list>,
+            "autoignore": <dict>
+        }
         """
         self.write(self.shared_memory_manager_dict["config_data"])
 

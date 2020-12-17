@@ -30,6 +30,26 @@ class ConfigHandler(RequestHandler):
     REST request handler for configuration.
     """
 
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Note that autoignore does not have any actual configuration, but we return the following
+        information that it uses to operate:
+        {
+            "dirname": <string>,
+            "filename": <string>
+        }
+        """
+        self.write(
+            {
+                "dirname": self.shared_memory_manager_dict["dirname"],
+                "filename": self.shared_memory_manager_dict["filename"],
+            }
+        )
+
     def post(self):
         """
         Pseudo-configures fileobserver and responds with a success message.

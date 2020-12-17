@@ -127,6 +127,22 @@ def service_to_ips_and_replicas_in_k8s(base_service_name):
     return service_to_ips_and_replicas_set
 
 
+class ConfigHandler(RequestHandler):
+    """
+    REST request handler for configuration.
+    """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Note that autostarter does not have any actual configuration. It thus returns an empty dict.
+        """
+        self.write({})
+
+
 class HealthHandler(RequestHandler):
     """
     REST request handler for health checks.
@@ -190,7 +206,12 @@ class Autostarter:
                     "/health",
                     HealthHandler,
                     dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
-                )
+                ),
+                (
+                    "/config",
+                    ConfigHandler,
+                    dict(shared_memory_manager_dict=self.shared_memory_manager_dict),
+                ),
             ]
         )
 

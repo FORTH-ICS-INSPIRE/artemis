@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Action and necessary logic to un-mitigate a hijack
 - Ability to reload targeted services based on what conf section changed
+- GET config endpoints to backend services
 
 ### Changed
 - Decoupled microservice architecture for backend and frontend

@@ -98,7 +98,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                     "origin_asns": rule["origin_asns"],
                     "neighbors": rule["neighbors"],
                     "prepend_seq": rule.get("prepend_seq", []),
-                    "policies": set(rule.get("policies", [])),
+                    "policies": list(set(rule.get("policies", []))),
                     "community_annotations": rule.get("community_annotations", []),
                     "mitigation": rule.get("mitigation", "manual"),
                 }

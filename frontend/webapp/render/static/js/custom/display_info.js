@@ -1,11 +1,18 @@
 var mapHelpText_stats = {};
-mapHelpText_stats['field_clock'] = 'ARTEMIS module serving as the clock signal generator for periodic tasks done in other modules (e.g., database).';
-mapHelpText_stats['field_configuration'] = 'ARTEMIS module responsible for the configuration of the other ARTEMIS modules.';
-mapHelpText_stats['field_detection'] = 'ARTEMIS module responsible for the detection of hijack events.';
-mapHelpText_stats['field_mitigation'] = 'ARTEMIS module responsible for the manual or automated mitigation of hijack events (current support for manual mitigation or via the invocation of a custom operator-supplied script).';
-mapHelpText_stats['field_monitor'] = 'ARTEMIS module responsible for real-time monitoring of BGP updates appearing on the visible control plane of public and local BGP monitors (current support for RIPE RIS, BGPStream RouteViews, RIPE RIS and beta BMP, local exaBGP monitors, historical trace replay).';
-mapHelpText_stats['field_observer'] = 'ARTEMIS module responsible for observing async changes in the configuration file, triggering the reloading of ARTEMIS modules.';
-mapHelpText_stats['field_database'] = 'ARTEMIS module responsible for providing access to the Postgres DB used in the core of ARTEMIS for persistent storage of configuration, BGP update and BGP prefix hijack event data.';
+mapHelpText_stats['field_autoignore'] = 'Backend microservice that automatically ignores hijack alerts of low impact and/or visibility based on user configuration.';
+mapHelpText_stats['field_autostarter'] = 'Backend microservice that automatically checks the health of the backend and monitor (taps) microservices and activates them via their REST interface in case they are down.';
+mapHelpText_stats['field_configuration'] = 'Backend microservice that configures the rest of the microservices using the configuration file.';
+mapHelpText_stats['field_database'] = 'Backend microservice that provides database access and management (stores BGP updates, hijacks and other persistent information in Postgres).';
+mapHelpText_stats['field_detection'] = 'User-controllable backend microservice that detects BGP hijacks in real-time.';
+mapHelpText_stats['field_fileobserver'] = 'Backend microservice that detects content changes in the configuration file and notifies configuration.';
+mapHelpText_stats['field_mitigation'] = 'Backend microservice that triggers custom mitigation mechanisms when the user instructs it.';
+mapHelpText_stats['field_notifier'] = 'Backend microservice that sends BGP hijack alerts to different logging endpoints, according to user configuration.';
+mapHelpText_stats['field_prefixtree'] = 'Backend microservice that holds the configuration prefix tree (prefixes bundled with ARTEMIS rules) in-memory for quick lookups.';
+mapHelpText_stats['field_riperistap'] = 'Monitor/tap microservice that collects real-time BGP update information from RIPE RIS live.';
+mapHelpText_stats['field_bgpstreamlivetap'] = 'Monitor/tap microservice that collects real-time BGP update information from RIPE RIS RIB collections, RouteViews RIB collections and Public CAIDA BMP feeds.';
+mapHelpText_stats['field_bgpstreamkafkatap'] = 'Monitor/tap microservice that collects real-time BGP update information via Kafka from public and private BMP feeds.';
+mapHelpText_stats['field_bgpstreamhisttap'] = 'Monitor/tap microservice that replays historical BGP updates.';
+mapHelpText_stats['field_exabgptap'] = 'Monitor/tap microservice that collects real-time BGP update information from local BGP feeds via exaBGP.';
 
 mapHelpText_stats['field_stats_configured_prefixes'] = 'The total number of IPv4/IPv6 prefixes that are configured (as appearing in ARTEMIS rules).';
 mapHelpText_stats['field_stats_monitored_prefixes'] = 'The total number of IPv4/IPv6 prefixes that are actually monitored (super-prefixes include sub-prefixes).';

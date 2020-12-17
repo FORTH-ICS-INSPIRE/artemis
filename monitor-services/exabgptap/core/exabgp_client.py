@@ -192,7 +192,8 @@ class ConfigHandler(RequestHandler):
             "data_worker_should_run": <bool>,
             "data_worker_configured": <bool>,
             "monitored_prefixes": <list>,
-            "hosts": <dict>
+            "hosts": <dict>,
+            "config_timestamp": <timestamp>
         }
         """
         ret_dict = {}
@@ -215,6 +216,12 @@ class ConfigHandler(RequestHandler):
         shared_memory_locks["hosts"].acquire()
         ret_dict["hosts"] = self.shared_memory_manager_dict["hosts"]
         shared_memory_locks["hosts"].release()
+
+        shared_memory_locks["config_timestamp"].acquire()
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+        shared_memory_locks["config_timestamp"].release()
 
         self.write(ret_dict)
 

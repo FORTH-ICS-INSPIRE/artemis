@@ -197,7 +197,8 @@ class ConfigHandler(RequestHandler):
             "monitored_prefixes": <list>,
             "host": <str>,
             "port": <str>,
-            "topic": <str>
+            "topic": <str>,
+            "config_timestamp": <timestamp>
         }
         """
         ret_dict = {}
@@ -228,6 +229,12 @@ class ConfigHandler(RequestHandler):
         shared_memory_locks["topic"].acquire()
         ret_dict["topic"] = self.shared_memory_manager_dict["topic"]
         shared_memory_locks["topic"].release()
+
+        shared_memory_locks["config_timestamp"].acquire()
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+        shared_memory_locks["config_timestamp"].release()
 
         self.write(ret_dict)
 

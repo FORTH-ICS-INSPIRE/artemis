@@ -93,11 +93,36 @@
                             <i class="fa fa-bell fa-fw"></i> System Status
                         </div>
                         <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-4"></div>
+                                <div class="col-lg-6">Backend Microservices</div>
+                                <div class="col-lg-2"></div>
+                            </div>
                             <div class="list-group">
-                                <ul id="modules_states">
+                                <ul id="backend_modules_states">
                                     <li class="list-group-item">
                                         <div class="row">
-                                            <div class="col-lg-4"><strong>Module</strong></div>
+                                            <div class="col-lg-4"><strong>Name</strong></div>
+                                            <div class="col-lg-8">
+                                                <div class="row">
+                                                    <div class="col-lg-4"> <strong>Status</strong> </div>
+                                                    <div class="col-lg-8"> <strong>Uptime</strong> </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-4"></div>
+                                <div class="col-lg-6">Monitor (tap) Microservices</div>
+                                <div class="col-lg-2"></div>
+                            </div>
+                            <div class="list-group">
+                                <ul id="monitor_modules_states">
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-lg-4"><strong>Name</strong></div>
                                             <div class="col-lg-8">
                                                 <div class="row">
                                                     <div class="col-lg-4"> <strong>Status</strong> </div>
@@ -271,7 +296,8 @@
             }
 
             function render_modules_state(data) {
-                $('#modules_states li').not('li:first').remove();
+                $('#backend_modules_states li').not('li:first').remove();
+                $('#monitor_modules_states li').not('li:first').remove();
                 data['view_processes'].sort((str1, str2) => (str1['name'] < str2['name'] ? -1 : +(str1['name'] > str2['name'])));
                 let baseProcessesFound = new Set();
 
@@ -281,65 +307,126 @@
                         var baseProcessName = data['view_processes'][key].name.split('-')[0];
                         if (!(baseProcessesFound.has(baseProcessName))){
                             baseProcessesFound.add(baseProcessName);
-                            $('#modules_states').append( // Append the parent multiple module
-                                create_module_render_li(
-                                    {
-                                        "raw_name": baseProcessName,
-                                        "name_edited": baseProcessName.charAt(0).toUpperCase() + baseProcessName.slice(1),
-                                        "running": "multiple",
-                                        "timestamp": null,
-                                        "display": true,
-                                        "multiple_status": aggregate_status_of_modules(data['view_processes'], baseProcessName, key) // Extra field for status aggregation
-                                    }
-                                )
-                            );
+                            if(baseProcessName.endsWith('tap')){
+                                $('#monitor_modules_states').append( // Append the parent multiple module for monitor services
+                                    create_module_render_li(
+                                        {
+                                            "raw_name": baseProcessName,
+                                            "name_edited": baseProcessName.charAt(0).toUpperCase() + baseProcessName.slice(1),
+                                            "running": "multiple",
+                                            "timestamp": null,
+                                            "display": true,
+                                            "multiple_status": aggregate_status_of_modules(data['view_processes'], baseProcessName, key) // Extra field for status aggregation
+                                        }
+                                    )
+                                );
 
-                            name = data['view_processes'][key].name;
-                            $('#modules_states').append(
-                                create_module_render_li(
-                                    {
-                                        "raw_name": name,
-                                        "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
-                                        "parent_name": data['view_processes'][key].name.split('-')[0],
-                                        "running": data['view_processes'][key].running,
-                                        "loading": data['view_processes'][key].loading,
-                                        "timestamp": data['view_processes'][key].timestamp,
-                                        "display": false
-                                    }
-                                )
-                            );
+                                name = data['view_processes'][key].name;
+                                $('#monitor_modules_states').append(
+                                    create_module_render_li(
+                                        {
+                                            "raw_name": name,
+                                            "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                            "parent_name": data['view_processes'][key].name.split('-')[0],
+                                            "running": data['view_processes'][key].running,
+                                            "loading": data['view_processes'][key].loading,
+                                            "timestamp": data['view_processes'][key].timestamp,
+                                            "display": false
+                                        }
+                                    )
+                                );
+                            }
+                            else{
+                                $('#backend_modules_states').append( // Append the parent multiple module for backend services
+                                        create_module_render_li(
+                                            {
+                                                "raw_name": baseProcessName,
+                                                "name_edited": baseProcessName.charAt(0).toUpperCase() + baseProcessName.slice(1),
+                                                "running": "multiple",
+                                                "timestamp": null,
+                                                "display": true,
+                                                "multiple_status": aggregate_status_of_modules(data['view_processes'], baseProcessName, key) // Extra field for status aggregation
+                                            }
+                                        )
+                                    );
 
+                                name = data['view_processes'][key].name;
+                                $('#backend_modules_states').append(
+                                    create_module_render_li(
+                                        {
+                                            "raw_name": name,
+                                            "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                            "parent_name": data['view_processes'][key].name.split('-')[0],
+                                            "running": data['view_processes'][key].running,
+                                            "loading": data['view_processes'][key].loading,
+                                            "timestamp": data['view_processes'][key].timestamp,
+                                            "display": false
+                                        }
+                                    )
+                                );
+                            }
                         }else{
                             var name = data['view_processes'][key].name;
-                            $('#modules_states').append(
+                            if(baseProcessName.endsWith('tap')){
+                                $('#monitor_modules_states').append(
+                                    create_module_render_li(
+                                        {
+                                            "raw_name": name,
+                                            "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                            "parent_name": data['view_processes'][key].name.split('-')[0],
+                                            "running": data['view_processes'][key].running,
+                                            "loading": data['view_processes'][key].loading,
+                                            "timestamp": data['view_processes'][key].timestamp,
+                                            "display": false
+                                        }
+                                    )
+                                );
+                            }
+                            else{
+                                $('#backend_modules_states').append(
+                                    create_module_render_li(
+                                        {
+                                            "raw_name": name,
+                                            "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                            "parent_name": data['view_processes'][key].name.split('-')[0],
+                                            "running": data['view_processes'][key].running,
+                                            "loading": data['view_processes'][key].loading,
+                                            "timestamp": data['view_processes'][key].timestamp,
+                                            "display": false
+                                        }
+                                    )
+                                );
+                            }
+                        }
+                    }else{
+                        var name = data['view_processes'][key].name;
+                        if(name.endsWith('tap')){
+                            $('#monitor_modules_states').append(
                                 create_module_render_li(
                                     {
                                         "raw_name": name,
                                         "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
-                                        "parent_name": data['view_processes'][key].name.split('-')[0],
                                         "running": data['view_processes'][key].running,
                                         "loading": data['view_processes'][key].loading,
                                         "timestamp": data['view_processes'][key].timestamp,
-                                        "display": false
+                                        "display": true
+                                    }
+                                )
+                            );
+                        }else{
+                            $('#backend_modules_states').append(
+                                create_module_render_li(
+                                    {
+                                        "raw_name": name,
+                                        "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
+                                        "running": data['view_processes'][key].running,
+                                        "loading": data['view_processes'][key].loading,
+                                        "timestamp": data['view_processes'][key].timestamp,
+                                        "display": true
                                     }
                                 )
                             );
                         }
-
-                    }else{
-                        var name = data['view_processes'][key].name;
-                        $('#modules_states').append(
-                            create_module_render_li(
-                                {
-                                    "raw_name": name,
-                                    "name_edited": name.charAt(0).toUpperCase() + name.slice(1),
-                                    "running": data['view_processes'][key].running,
-                                    "loading": data['view_processes'][key].loading,
-                                    "timestamp": data['view_processes'][key].timestamp,
-                                    "display": true
-                                }
-                            )
-                        );
                     }
                 }
 

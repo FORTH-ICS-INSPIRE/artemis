@@ -50,15 +50,11 @@ REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 def start_data_worker(shared_memory_manager_dict):
-    shared_memory_locks["data_worker"].acquire()
     if not shared_memory_manager_dict["data_worker_configured"]:
-        shared_memory_locks["data_worker"].release()
         return "not configured, will not start"
     if shared_memory_manager_dict["data_worker_running"]:
         log.info("data worker already running")
-        shared_memory_locks["data_worker"].release()
         return "already running"
-    shared_memory_locks["data_worker"].release()
     mp.Process(
         target=run_data_worker_process, args=(shared_memory_manager_dict,)
     ).start()
@@ -90,11 +86,8 @@ def stop_data_worker(shared_memory_manager_dict):
     shared_memory_locks["data_worker"].release()
     # make sure that data worker is stopped
     while True:
-        shared_memory_locks["data_worker"].acquire()
         if not shared_memory_manager_dict["data_worker_running"]:
-            shared_memory_locks["data_worker"].release()
             break
-        shared_memory_locks["data_worker"].release()
         time.sleep(1)
     message = "instructed to stop"
     return message
@@ -104,9 +97,7 @@ def configure_ripe_ris(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
             r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
@@ -122,9 +113,7 @@ def configure_ripe_ris(msg, shared_memory_manager_dict):
                 return {"success": True, "message": "data worker not in configuration"}
 
             # check if the worker should run (if configured)
-            shared_memory_locks["data_worker"].acquire()
             should_run = shared_memory_manager_dict["data_worker_should_run"]
-            shared_memory_locks["data_worker"].release()
 
             # make sure that data worker is stopped
             stop_msg = stop_data_worker(shared_memory_manager_dict)
@@ -190,30 +179,22 @@ class ConfigHandler(RequestHandler):
         """
         ret_dict = {}
 
-        shared_memory_locks["data_worker"].acquire()
         ret_dict["data_worker_should_run"] = self.shared_memory_manager_dict[
             "data_worker_should_run"
         ]
         ret_dict["data_worker_configured"] = self.shared_memory_manager_dict[
             "data_worker_configured"
         ]
-        shared_memory_locks["data_worker"].release()
 
-        shared_memory_locks["monitored_prefixes"].acquire()
         ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
             "monitored_prefixes"
         ]
-        shared_memory_locks["monitored_prefixes"].release()
 
-        shared_memory_locks["hosts"].acquire()
         ret_dict["hosts"] = self.shared_memory_manager_dict["hosts"]
-        shared_memory_locks["hosts"].release()
 
-        shared_memory_locks["config_timestamp"].acquire()
         ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
             "config_timestamp"
         ]
-        shared_memory_locks["config_timestamp"].release()
 
         self.write(ret_dict)
 
@@ -247,12 +228,10 @@ class HealthHandler(RequestHandler):
         :return: {"status" : <unconfigured|running|stopped>}
         """
         status = "stopped"
-        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
         elif not self.shared_memory_manager_dict["data_worker_configured"]:
             status = "unconfigured"
-        shared_memory_locks["data_worker"].release()
         self.write({"status": status})
 
 
@@ -344,12 +323,8 @@ class RipeRisTapDataWorker:
     def __init__(self, connection, shared_memory_manager_dict):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
-        shared_memory_locks["monitored_prefixes"].acquire()
         self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
-        shared_memory_locks["monitored_prefixes"].release()
-        shared_memory_locks["hosts"].acquire()
         self.hosts = self.shared_memory_manager_dict["hosts"]
-        shared_memory_locks["hosts"].release()
 
         # EXCHANGES
         self.update_exchange = create_exchange(
@@ -382,11 +357,8 @@ class RipeRisTapDataWorker:
         validator = mformat_validator()
         with Producer(self.connection) as producer:
             while True:
-                shared_memory_locks["data_worker"].acquire()
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:
-                    shared_memory_locks["data_worker"].release()
                     break
-                shared_memory_locks["data_worker"].release()
                 try:
                     events = requests.get(
                         "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(
@@ -399,13 +371,10 @@ class RipeRisTapDataWorker:
                     iterator = events.iter_lines()
                     next(iterator)
                     for data in iterator:
-                        shared_memory_locks["data_worker"].acquire()
                         if not self.shared_memory_manager_dict[
                             "data_worker_should_run"
                         ]:
-                            shared_memory_locks["data_worker"].release()
                             break
-                        shared_memory_locks["data_worker"].release()
                         try:
                             parsed = json.loads(data)
                             msg = parsed["data"]

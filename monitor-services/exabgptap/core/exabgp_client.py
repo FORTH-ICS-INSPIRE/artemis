@@ -192,8 +192,7 @@ class ConfigHandler(RequestHandler):
             "data_worker_should_run": <bool>,
             "data_worker_configured": <bool>,
             "monitored_prefixes": <list>,
-            "hosts": <dict>,
-            "autoconf_running": <bool>
+            "hosts": <dict>
         }
         """
         ret_dict = {}

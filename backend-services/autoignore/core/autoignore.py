@@ -99,7 +99,7 @@ def configure_autoignore(msg, shared_memory_manager_dict):
             shared_memory_locks["autoignore"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
             shared_memory_locks["time"].acquire()
@@ -123,12 +123,27 @@ class ConfigHandler(RequestHandler):
     def get(self):
         """
         Provides current configuration primitives (in the form of a JSON dict) to the requester.
-        For autoignore, these are the autoignore rules in a dict format.
+        Format:
+        {
+            "autoignore_rules": <dict>,
+            "config_timestamp": <timestamp>
+        }
         """
+        ret_dict = {}
+
         shared_memory_locks["autoignore"].acquire()
-        autoignore_rules = self.shared_memory_manager_dict["autoignore_rules"]
+        ret_dict["autoignore_rules"] = self.shared_memory_manager_dict[
+            "autoignore_rules"
+        ]
         shared_memory_locks["autoignore"].release()
-        self.write(autoignore_rules)
+
+        shared_memory_locks["config_timestamp"].acquire()
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+        shared_memory_locks["config_timestamp"].release()
+
+        self.write(ret_dict)
 
     def post(self):
         """

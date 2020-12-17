@@ -67,7 +67,7 @@ def configure_notifier(msg, shared_memory_manager_dict):
         if config["timestamp"] > config_timestamp:
             # placeholder, no need for doing anything on the data worker for now
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
         return {"success": True, "message": "configured"}

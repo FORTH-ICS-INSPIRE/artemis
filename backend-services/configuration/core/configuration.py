@@ -1349,7 +1349,8 @@ class ConfigHandler(RequestHandler):
             "asns": <dict>,
             "monitors": <dict>,
             "rules": <list>,
-            "autoignore": <dict>
+            "autoignore": <dict>,
+            "timestamp": <timestamp>
         }
         """
         self.write(self.shared_memory_manager_dict["config_data"])

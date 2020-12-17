@@ -186,7 +186,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
             shared_memory_locks["autoignore"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
         return {"success": True, "message": "configured"}
@@ -220,7 +220,8 @@ class ConfigHandler(RequestHandler):
                 "v4": <dict>,
                 "v6": <dict>
             },
-            "autoignore_recalculate": <bool>
+            "autoignore_recalculate": <bool>,
+            "config_timestamp": <timestamp>
         }
         """
         ret_dict = {}
@@ -255,6 +256,12 @@ class ConfigHandler(RequestHandler):
             "autoignore_recalculate"
         ]
         shared_memory_locks["autoignore"].release()
+
+        shared_memory_locks["config_timestamp"].acquire()
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+        shared_memory_locks["config_timestamp"].release()
 
         self.write(ret_dict)
 

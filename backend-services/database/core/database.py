@@ -259,7 +259,7 @@ def configure_database(msg, shared_memory_manager_dict):
             shared_memory_locks["configured_prefix_count"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = incoming_config_timestamp
             shared_memory_locks["config_timestamp"].release()
 
         return {"success": True, "message": "configured"}

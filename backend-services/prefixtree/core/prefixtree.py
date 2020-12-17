@@ -74,9 +74,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
 
             # calculate prefix tree
@@ -226,26 +224,19 @@ class ConfigHandler(RequestHandler):
         """
         ret_dict = {}
 
-        shared_memory_locks["prefix_tree"].acquire()
         ret_dict["prefix_tree"] = self.shared_memory_manager_dict["prefix_tree"]
         ret_dict["prefix_tree_recalculate"] = self.shared_memory_manager_dict[
             "prefix_tree_recalculate"
         ]
-        shared_memory_locks["prefix_tree"].release()
 
-        shared_memory_locks["monitored_prefixes"].acquire()
         ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
             "monitored_prefixes"
         ]
-        shared_memory_locks["monitored_prefixes"].release()
 
-        shared_memory_locks["configured_prefix_count"].acquire()
         ret_dict["configured_prefix_count"] = self.shared_memory_manager_dict[
             "configured_prefix_count"
         ]
-        shared_memory_locks["configured_prefix_count"].release()
 
-        shared_memory_locks["autoignore"].acquire()
         ret_dict["autoignore_rules"] = self.shared_memory_manager_dict[
             "autoignore_rules"
         ]
@@ -255,13 +246,10 @@ class ConfigHandler(RequestHandler):
         ret_dict["autoignore_recalculate"] = self.shared_memory_manager_dict[
             "autoignore_recalculate"
         ]
-        shared_memory_locks["autoignore"].release()
 
-        shared_memory_locks["config_timestamp"].acquire()
         ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
             "config_timestamp"
         ]
-        shared_memory_locks["config_timestamp"].release()
 
         self.write(ret_dict)
 
@@ -293,10 +281,8 @@ class HealthHandler(RequestHandler):
         :return: {"status" : <unconfigured|running|stopped>}
         """
         status = "stopped"
-        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
-        shared_memory_locks["data_worker"].release()
         self.write({"status": status})
 
 
@@ -309,12 +295,9 @@ class ControlHandler(RequestHandler):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
     def start_data_worker(self):
-        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             log.info("data worker already running")
-            shared_memory_locks["data_worker"].release()
             return "already running"
-        shared_memory_locks["data_worker"].release()
         mp.Process(target=self.run_data_worker_process).start()
         return "instructed to start"
 
@@ -339,7 +322,6 @@ class ControlHandler(RequestHandler):
 
     @staticmethod
     def stop_data_worker():
-        shared_memory_locks["data_worker"].acquire()
         try:
             with Connection(RABBITMQ_URI) as connection:
                 with Producer(connection) as producer:
@@ -352,8 +334,6 @@ class ControlHandler(RequestHandler):
                     )
         except Exception:
             log.exception("exception")
-        finally:
-            shared_memory_locks["data_worker"].release()
         message = "instructed to stop"
         return message
 
@@ -395,7 +375,6 @@ class ConfiguredPrefixCountHandler(RequestHandler):
         """
         Simply provides the configured prefix count (in the form of a JSON dict) to the requester
         """
-        shared_memory_locks["configured_prefix_count"].acquire()
         self.write(
             {
                 "configured_prefix_count": self.shared_memory_manager_dict[
@@ -403,7 +382,6 @@ class ConfiguredPrefixCountHandler(RequestHandler):
                 ]
             }
         )
-        shared_memory_locks["configured_prefix_count"].release()
 
 
 class MonitoredPrefixesHandler(RequestHandler):
@@ -418,7 +396,6 @@ class MonitoredPrefixesHandler(RequestHandler):
         """
         Simply provides the monitored prefixes (in the form of a JSON dict) to the requester
         """
-        shared_memory_locks["monitored_prefixes"].acquire()
         self.write(
             {
                 "monitored_prefixes": self.shared_memory_manager_dict[
@@ -426,7 +403,6 @@ class MonitoredPrefixesHandler(RequestHandler):
                 ]
             }
         )
-        shared_memory_locks["monitored_prefixes"].release()
 
 
 class PrefixTree:

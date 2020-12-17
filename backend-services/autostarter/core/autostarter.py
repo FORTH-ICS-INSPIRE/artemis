@@ -157,10 +157,8 @@ class HealthHandler(RequestHandler):
         :return: {"status" : <unconfigured|running|stopped>}
         """
         status = "stopped"
-        shared_memory_locks["worker"].acquire()
         if self.shared_memory_manager_dict["worker_running"]:
             status = "running"
-        shared_memory_locks["worker"].release()
         self.write({"status": status})
 
 
@@ -419,11 +417,9 @@ class AutostarterWorker:
             # in the end, check the special case of detection
             if service == DETECTION_HOST:
                 intended_status = intended_status_dict[service]
-                shared_memory_locks["detection_update_trigger"].acquire()
                 detection_update_trigger = self.shared_memory_manager_dict[
                     "detection_update_trigger"
                 ]
-                shared_memory_locks["detection_update_trigger"].release()
                 # activate update trigger when detection is intended to run
                 if intended_status and not detection_update_trigger:
                     self.wo_db.execute(

@@ -83,9 +83,7 @@ def configure_autoignore(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
 
             # extract autoignore rules
@@ -131,17 +129,13 @@ class ConfigHandler(RequestHandler):
         """
         ret_dict = {}
 
-        shared_memory_locks["autoignore"].acquire()
         ret_dict["autoignore_rules"] = self.shared_memory_manager_dict[
             "autoignore_rules"
         ]
-        shared_memory_locks["autoignore"].release()
 
-        shared_memory_locks["config_timestamp"].acquire()
         ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
             "config_timestamp"
         ]
-        shared_memory_locks["config_timestamp"].release()
 
         self.write(ret_dict)
 
@@ -173,10 +167,8 @@ class HealthHandler(RequestHandler):
         :return: {"status" : <unconfigured|running|stopped>}
         """
         status = "stopped"
-        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
-        shared_memory_locks["data_worker"].release()
         self.write({"status": status})
 
 
@@ -189,12 +181,9 @@ class ControlHandler(RequestHandler):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
     def start_data_worker(self):
-        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             log.info("data worker already running")
-            shared_memory_locks["data_worker"].release()
             return "already running"
-        shared_memory_locks["data_worker"].release()
         mp.Process(target=self.run_data_worker_process).start()
         return "instructed to start"
 
@@ -219,7 +208,6 @@ class ControlHandler(RequestHandler):
 
     @staticmethod
     def stop_data_worker():
-        shared_memory_locks["data_worker"].acquire()
         try:
             with Connection(RABBITMQ_URI) as connection:
                 with Producer(connection) as producer:
@@ -232,8 +220,6 @@ class ControlHandler(RequestHandler):
                     )
         except Exception:
             log.exception("exception")
-        finally:
-            shared_memory_locks["data_worker"].release()
         message = "instructed to stop"
         return message
 
@@ -403,11 +389,8 @@ class AutoignoreChecker:
     def run(self):
         while True:
             # stop if parent is not running any more
-            shared_memory_locks["data_worker"].acquire()
             if not self.shared_memory_manager_dict["data_worker_running"]:
-                shared_memory_locks["data_worker"].release()
                 break
-            shared_memory_locks["data_worker"].release()
             self.check_rules_should_be_checked()
             time.sleep(1)
 

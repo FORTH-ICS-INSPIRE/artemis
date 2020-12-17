@@ -805,11 +805,9 @@ def post_configuration_to_other_services(
                     if replica_ip == local_ip:
                         continue
                     # check if you need to inform the other microservice about the fileobserver ignoring state
-                    shared_memory_locks["ignore_fileobserver"].acquire()
                     ignore_fileobserver = shared_memory_manager_dict[
                         "ignore_fileobserver"
                     ]
-                    shared_memory_locks["ignore_fileobserver"].release()
                     # no need to update data, just notify about fileobserver ignore state
                     if same_service_only:
                         r = requests.post(
@@ -1393,10 +1391,8 @@ class HealthHandler(RequestHandler):
         :return: {"status" : <unconfigured|running|stopped>}
         """
         status = "stopped"
-        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
-        shared_memory_locks["data_worker"].release()
         self.write({"status": status})
 
 
@@ -1409,12 +1405,9 @@ class ControlHandler(RequestHandler):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
     def start_data_worker(self):
-        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             log.info("data worker already running")
-            shared_memory_locks["data_worker"].release()
             return "already running"
-        shared_memory_locks["data_worker"].release()
         mp.Process(target=self.run_data_worker_process).start()
         return "instructed to start"
 
@@ -1439,7 +1432,6 @@ class ControlHandler(RequestHandler):
 
     @staticmethod
     def stop_data_worker():
-        shared_memory_locks["data_worker"].acquire()
         try:
             with Connection(RABBITMQ_URI) as connection:
                 with Producer(connection) as producer:
@@ -1452,8 +1444,6 @@ class ControlHandler(RequestHandler):
                     )
         except Exception:
             log.exception("exception")
-        finally:
-            shared_memory_locks["data_worker"].release()
         message = "instructed to stop"
         return message
 

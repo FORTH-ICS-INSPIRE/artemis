@@ -3,7 +3,7 @@ prefixes:
         - 139.91.250.0/24
 monitors:
     riperis: ['rrc01']
-    bgpstreamlive: ['routeviews', 'ris', 'caida']
+    bgpstreamlive: ['routeviews', 'ris']
     bgpstreamhist: ./
     bgpstreamkafka:
       host: bmp.bgpstream.caida.org

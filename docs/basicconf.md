@@ -58,12 +58,11 @@ Means: "select or available RIPE RIS RRCs". You can specify specific RRCs within
 
 ### [BGPStream](https://bgpstream.caida.org/) (live)
 
-Offering access to [RIPE RIS and RouteViews RRCs](https://bgpstream.caida.org/data). Moreover, it offers access to [BetaBMP](https://bgpstream.caida.org/v2-beta#bmp) feeds.
+Offering access to [RIPE RIS and RouteViews RRCs](https://bgpstream.caida.org/data).
 
     bgpstreamlive:
     - routeviews
     - ris
-    - caida
 
 Means: "select all available RRCs from RouteViews, RIPE RIS and Caida projects". You can specify any or all of the three projects.
 
@@ -91,7 +90,6 @@ Means: "replay all recorded BGP updates found in all .csv files in this director
         bgpstreamlive:
             - routeviews
             - ris
-            - caida
         exabgp:
             - ip: ip_to_exabgp_1
               port: port_1
@@ -492,7 +490,6 @@ OUTPUT:
       bgpstreamlive:
         - routeviews
         - ris
-        - caida
     ...
 
 ### Creating ASN definitions

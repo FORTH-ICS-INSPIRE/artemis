@@ -16,7 +16,6 @@ The workflow to enable auto-configuration via trusted local feeds (over exaBGP) 
           bgpstreamlive:
             - routeviews
             - ris
-            - caida
           exabgp:
             - ip: exabgp # this will automatically be resolved to the exabgp container's IP
               port: 5000 # default port
@@ -52,7 +51,6 @@ associated feed and are of the form ("A" meaning announcement):
           bgpstreamlive:
           - routeviews
           - ris
-          - caida
           exabgp:
           - ip: exabgp   # this will automatically be resolved to the exabgp container's IP
             port: 5000   # default port
@@ -166,7 +164,6 @@ associated feed and are of the form ("A" meaning announcement):
           bgpstreamlive:
           - routeviews
           - ris
-          - caida
           exabgp:
           - ip: exabgp   # this will automatically be resolved to the exabgp container's IP
             port: 5000   # default port

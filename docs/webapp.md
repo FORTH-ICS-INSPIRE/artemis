@@ -63,7 +63,6 @@ monitors:
   bgpstreamlive:
       - routeviews
       - ris
-      - caida
   exabgp:
       - ip: <IP_1>
         port: <PORT_1>

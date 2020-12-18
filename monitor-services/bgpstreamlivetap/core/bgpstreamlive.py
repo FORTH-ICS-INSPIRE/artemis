@@ -45,6 +45,8 @@ CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
 DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
+LIVE_PROJECT_MAPPINGS = {"ris": "ris-live", "routeviews": "routeviews-stream"}
+DEPRECATED_PROJECTS = ["caida"]
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
@@ -357,7 +359,14 @@ class BGPStreamLiveDataWorker:
 
         # consider collectors from given projects
         for project in self.monitor_projects:
+            # ignore deprecated projects
+            if project in DEPRECATED_PROJECTS:
+                continue
+            # add the classic project sources
             stream.add_filter("project", project)
+            # plus their real-time counterparts
+            if project in LIVE_PROJECT_MAPPINGS:
+                stream.add_filter("project", LIVE_PROJECT_MAPPINGS[project])
 
         # filter prefixes
         for prefix in self.prefixes:

@@ -1242,8 +1242,11 @@ class DatabaseBulkUpdater:
     def run(self):
         while True:
             # stop if parent is not running any more
+            shared_memory_locks["data_worker"].acquire()
             if not self.shared_memory_manager_dict["data_worker_running"]:
+                shared_memory_locks["data_worker"].release()
                 break
+            shared_memory_locks["data_worker"].release()
             try:
                 inserts = self._insert_bgp_updates()
                 shared_memory_locks["insert_hijacks_entries"].acquire()

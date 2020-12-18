@@ -397,8 +397,11 @@ class AutoignoreChecker:
     def run(self):
         while True:
             # stop if parent is not running any more
+            shared_memory_locks["data_worker"].acquire()
             if not self.shared_memory_manager_dict["data_worker_running"]:
+                shared_memory_locks["data_worker"].release()
                 break
+            shared_memory_locks["data_worker"].release()
             self.check_rules_should_be_checked()
             time.sleep(1)
 

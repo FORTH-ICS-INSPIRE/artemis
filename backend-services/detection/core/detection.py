@@ -157,8 +157,10 @@ class HealthHandler(RequestHandler):
         :return: {"status" : <unconfigured|running|stopped>}
         """
         status = "stopped"
+        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
+        shared_memory_locks["data_worker"].release()
         self.write({"status": status})
 
 
@@ -171,9 +173,12 @@ class ControlHandler(RequestHandler):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
     def start_data_worker(self):
+        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             log.info("data worker already running")
+            shared_memory_locks["data_worker"].release()
             return "already running"
+        shared_memory_locks["data_worker"].release()
         mp.Process(target=self.run_data_worker_process).start()
         return "instructed to start"
 
@@ -198,6 +203,7 @@ class ControlHandler(RequestHandler):
 
     @staticmethod
     def stop_data_worker():
+        shared_memory_locks["data_worker"].acquire()
         try:
             with Connection(RABBITMQ_URI) as connection:
                 with Producer(connection) as producer:
@@ -210,6 +216,8 @@ class ControlHandler(RequestHandler):
                     )
         except Exception:
             log.exception("exception")
+        finally:
+            shared_memory_locks["data_worker"].release()
         message = "instructed to stop"
         return message
 

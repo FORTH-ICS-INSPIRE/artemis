@@ -50,11 +50,15 @@ REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 def start_data_worker(shared_memory_manager_dict):
+    shared_memory_locks["data_worker"].acquire()
     if not shared_memory_manager_dict["data_worker_configured"]:
+        shared_memory_locks["data_worker"].release()
         return "not configured, will not start"
     if shared_memory_manager_dict["data_worker_running"]:
         log.info("data worker already running")
+        shared_memory_locks["data_worker"].release()
         return "already running"
+    shared_memory_locks["data_worker"].release()
     mp.Process(
         target=run_data_worker_process, args=(shared_memory_manager_dict,)
     ).start()
@@ -228,10 +232,12 @@ class HealthHandler(RequestHandler):
         :return: {"status" : <unconfigured|running|stopped>}
         """
         status = "stopped"
+        shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
         elif not self.shared_memory_manager_dict["data_worker_configured"]:
             status = "unconfigured"
+        shared_memory_locks["data_worker"].release()
         self.write({"status": status})
 
 
@@ -419,13 +425,15 @@ class RipeRisTapDataWorker:
                                                 "Invalid format message: {}".format(msg)
                                             )
                                     except BaseException:
-                                        log.exception(
+                                        log.exception("exception")
+                                        log.error(
                                             "Error when normalizing BGP message: {}".format(
                                                 norm_ris_msg
                                             )
                                         )
                         except Exception:
-                            log.exception("exception message {}".format(data))
+                            log.exception("exception")
+                            log.error("exception message {}".format(data))
                     log.warning(
                         "Iterator ran out of data; the connection will be retried"
                     )

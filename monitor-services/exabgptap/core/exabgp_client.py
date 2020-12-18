@@ -430,6 +430,8 @@ class ExaBGPDataWorker:
         )
         self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
 
+        log.info("data worker initiated")
+
     def run_host_sio_process(self, host):
         def exit_gracefully(signum, frame):
             if sio is not None:

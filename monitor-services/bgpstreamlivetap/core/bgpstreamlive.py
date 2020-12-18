@@ -341,6 +341,8 @@ class BGPStreamLiveDataWorker:
             "bgp-update", self.connection, declare=True
         )
 
+        log.info("data worker initiated")
+
     def run(self):
         # update redis
         ping_redis(redis)

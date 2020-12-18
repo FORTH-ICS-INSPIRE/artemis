@@ -326,6 +326,8 @@ class BGPStreamHistDataWorker:
             "bgp-update", self.connection, declare=True
         )
 
+        log.info("data worker initiated")
+
     def run(self):
         # build monitored prefix tree
         prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}

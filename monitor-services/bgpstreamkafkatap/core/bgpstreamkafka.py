@@ -47,6 +47,7 @@ CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
 DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
+MAX_KAFKA_WAIT_TIMEOUT = 30  # seconds to determine internal error
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
@@ -93,10 +94,17 @@ def stop_data_worker(shared_memory_manager_dict):
     shared_memory_manager_dict["data_worker_should_run"] = False
     shared_memory_locks["data_worker"].release()
     # make sure that data worker is stopped
+    time_waiting = 0
     while True:
         if not shared_memory_manager_dict["data_worker_running"]:
             break
         time.sleep(1)
+        time_waiting += 1
+        if time_waiting == MAX_KAFKA_WAIT_TIMEOUT:
+            shared_memory_locks["data_worker"].acquire()
+            shared_memory_manager_dict["data_worker_running"] = False
+            shared_memory_locks["data_worker"].release()
+            log.error("kafka tap expired during stop-waiting")
     message = "instructed to stop"
     return message
 
@@ -357,6 +365,8 @@ class BGPStreamKafkaDataWorker:
         self.update_exchange = create_exchange(
             "bgp-update", self.connection, declare=True
         )
+
+        log.info("data worker initiated")
 
     def run(self):
         # update redis

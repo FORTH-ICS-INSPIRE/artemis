@@ -21,7 +21,7 @@ kombu==4.6.7
 ldap3==2.5.2
 pyrad==2.3
 PyYAML==5.3
-requests==2.22.0
+requests==2.25.1
 SQLAlchemy==1.3.12
 ujson==1.35
 WTForms==2.2.1

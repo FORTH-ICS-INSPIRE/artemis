@@ -82,11 +82,8 @@ def stop_data_worker(shared_memory_manager_dict):
     shared_memory_locks["data_worker"].release()
     # make sure that data worker is stopped
     while True:
-        shared_memory_locks["data_worker"].acquire()
         if not shared_memory_manager_dict["data_worker_running"]:
-            shared_memory_locks["data_worker"].release()
             break
-        shared_memory_locks["data_worker"].release()
         time.sleep(1)
     message = "instructed to stop"
     return message
@@ -96,9 +93,7 @@ def configure_bgpstreamhist(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
             r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
@@ -114,9 +109,7 @@ def configure_bgpstreamhist(msg, shared_memory_manager_dict):
                 return {"success": True, "message": "data worker not in configuration"}
 
             # check if the worker should run (if configured)
-            shared_memory_locks["data_worker"].acquire()
             should_run = shared_memory_manager_dict["data_worker_should_run"]
-            shared_memory_locks["data_worker"].release()
 
             # make sure that data worker is stopped
             stop_msg = stop_data_worker(shared_memory_manager_dict)
@@ -164,6 +157,39 @@ class ConfigHandler(RequestHandler):
 
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "data_worker_should_run": <bool>,
+            "data_worker_configured": <bool>,
+            "monitored_prefixes": <list>,
+            "input_dir": <str>,
+            "config_timestamp": <timestamp>
+        }
+        """
+        ret_dict = {}
+
+        ret_dict["data_worker_should_run"] = self.shared_memory_manager_dict[
+            "data_worker_should_run"
+        ]
+        ret_dict["data_worker_configured"] = self.shared_memory_manager_dict[
+            "data_worker_configured"
+        ]
+
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+
+        ret_dict["input_dir"] = self.shared_memory_manager_dict["input_dir"]
+
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+
+        self.write(ret_dict)
 
     def post(self):
         """
@@ -292,17 +318,15 @@ class BGPStreamHistDataWorker:
     def __init__(self, connection, shared_memory_manager_dict):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
-        shared_memory_locks["monitored_prefixes"].acquire()
         self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
-        shared_memory_locks["monitored_prefixes"].release()
-        shared_memory_locks["input_dir"].acquire()
         self.input_dir = shared_memory_manager_dict["input_dir"]
-        shared_memory_locks["input_dir"].release()
 
         # EXCHANGES
         self.update_exchange = create_exchange(
             "bgp-update", self.connection, declare=True
         )
+
+        log.info("data worker initiated")
 
     def run(self):
         # build monitored prefix tree
@@ -315,23 +339,17 @@ class BGPStreamHistDataWorker:
         validator = mformat_validator()
         with Producer(self.connection) as producer:
             for csv_file in glob.glob("{}/*.csv".format(self.input_dir)):
-                shared_memory_locks["data_worker"].acquire()
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:
-                    shared_memory_locks["data_worker"].release()
                     break
-                shared_memory_locks["data_worker"].release()
 
                 try:
                     with open(csv_file, "r") as f:
                         csv_reader = csv.reader(f, delimiter="|")
                         for row in csv_reader:
-                            shared_memory_locks["data_worker"].acquire()
                             if not self.shared_memory_manager_dict[
                                 "data_worker_should_run"
                             ]:
-                                shared_memory_locks["data_worker"].release()
                                 break
-                            shared_memory_locks["data_worker"].release()
 
                             try:
                                 if len(row) != 9:
@@ -393,11 +411,8 @@ class BGPStreamHistDataWorker:
 
         # run until instructed to stop
         while True:
-            shared_memory_locks["data_worker"].acquire()
             if not self.shared_memory_manager_dict["data_worker_should_run"]:
-                shared_memory_locks["data_worker"].release()
                 break
-            shared_memory_locks["data_worker"].release()
             time.sleep(1)
 
 

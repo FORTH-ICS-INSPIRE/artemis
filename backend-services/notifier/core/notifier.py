@@ -67,7 +67,7 @@ def configure_notifier(msg, shared_memory_manager_dict):
         if config["timestamp"] > config_timestamp:
             # placeholder, no need for doing anything on the data worker for now
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
         return {"success": True, "message": "configured"}
@@ -83,6 +83,13 @@ class ConfigHandler(RequestHandler):
 
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Note that notifier does not have any actual configuration. It thus returns an empty dict.
+        """
+        self.write({})
 
     def post(self):
         """

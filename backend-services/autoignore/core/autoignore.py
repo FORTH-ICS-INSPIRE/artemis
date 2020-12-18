@@ -83,9 +83,7 @@ def configure_autoignore(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
 
             # extract autoignore rules
@@ -99,7 +97,7 @@ def configure_autoignore(msg, shared_memory_manager_dict):
             shared_memory_locks["autoignore"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
             shared_memory_locks["time"].acquire()
@@ -120,9 +118,30 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "autoignore_rules": <dict>,
+            "config_timestamp": <timestamp>
+        }
+        """
+        ret_dict = {}
+
+        ret_dict["autoignore_rules"] = self.shared_memory_manager_dict[
+            "autoignore_rules"
+        ]
+
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+
+        self.write(ret_dict)
+
     def post(self):
         """
-        Cofnigures autoignore and responds with a success message.
+        Configures autoignore and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         try:
@@ -378,11 +397,8 @@ class AutoignoreChecker:
     def run(self):
         while True:
             # stop if parent is not running any more
-            shared_memory_locks["data_worker"].acquire()
             if not self.shared_memory_manager_dict["data_worker_running"]:
-                shared_memory_locks["data_worker"].release()
                 break
-            shared_memory_locks["data_worker"].release()
             self.check_rules_should_be_checked()
             time.sleep(1)
 

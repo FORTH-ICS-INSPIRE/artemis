@@ -47,6 +47,7 @@ CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
 DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
+MAX_KAFKA_WAIT_TIMEOUT = 30  # seconds to determine internal error
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
@@ -93,13 +94,17 @@ def stop_data_worker(shared_memory_manager_dict):
     shared_memory_manager_dict["data_worker_should_run"] = False
     shared_memory_locks["data_worker"].release()
     # make sure that data worker is stopped
+    time_waiting = 0
     while True:
-        shared_memory_locks["data_worker"].acquire()
         if not shared_memory_manager_dict["data_worker_running"]:
-            shared_memory_locks["data_worker"].release()
             break
-        shared_memory_locks["data_worker"].release()
         time.sleep(1)
+        time_waiting += 1
+        if time_waiting == MAX_KAFKA_WAIT_TIMEOUT:
+            shared_memory_locks["data_worker"].acquire()
+            shared_memory_manager_dict["data_worker_running"] = False
+            shared_memory_locks["data_worker"].release()
+            log.error("kafka tap expired during stop-waiting")
     message = "instructed to stop"
     return message
 
@@ -108,9 +113,7 @@ def configure_bgpstreamkafka(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
             r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
@@ -126,9 +129,7 @@ def configure_bgpstreamkafka(msg, shared_memory_manager_dict):
                 return {"success": True, "message": "data worker not in configuration"}
 
             # check if the worker should run (if configured)
-            shared_memory_locks["data_worker"].acquire()
             should_run = shared_memory_manager_dict["data_worker_should_run"]
-            shared_memory_locks["data_worker"].release()
 
             # make sure that data worker is stopped
             stop_msg = stop_data_worker(shared_memory_manager_dict)
@@ -186,6 +187,45 @@ class ConfigHandler(RequestHandler):
 
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "data_worker_should_run": <bool>,
+            "data_worker_configured": <bool>,
+            "monitored_prefixes": <list>,
+            "host": <str>,
+            "port": <str>,
+            "topic": <str>,
+            "config_timestamp": <timestamp>
+        }
+        """
+        ret_dict = {}
+
+        ret_dict["data_worker_should_run"] = self.shared_memory_manager_dict[
+            "data_worker_should_run"
+        ]
+        ret_dict["data_worker_configured"] = self.shared_memory_manager_dict[
+            "data_worker_configured"
+        ]
+
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+
+        ret_dict["host"] = self.shared_memory_manager_dict["host"]
+
+        ret_dict["port"] = self.shared_memory_manager_dict["port"]
+
+        ret_dict["topic"] = self.shared_memory_manager_dict["topic"]
+
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+
+        self.write(ret_dict)
 
     def post(self):
         """
@@ -316,23 +356,17 @@ class BGPStreamKafkaDataWorker:
     def __init__(self, connection, shared_memory_manager_dict):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
-        shared_memory_locks["monitored_prefixes"].acquire()
         self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
-        shared_memory_locks["monitored_prefixes"].release()
-        shared_memory_locks["host"].acquire()
         self.host = shared_memory_manager_dict["host"]
-        shared_memory_locks["host"].release()
-        shared_memory_locks["port"].acquire()
         self.port = shared_memory_manager_dict["port"]
-        shared_memory_locks["port"].release()
-        shared_memory_locks["topic"].acquire()
         self.topic = shared_memory_manager_dict["topic"]
-        shared_memory_locks["topic"].release()
 
         # EXCHANGES
         self.update_exchange = create_exchange(
             "bgp-update", self.connection, declare=True
         )
+
+        log.info("data worker initiated")
 
     def run(self):
         # update redis
@@ -394,11 +428,8 @@ class BGPStreamKafkaDataWorker:
         validator = mformat_validator()
         with Producer(self.connection) as producer:
             while True:
-                shared_memory_locks["data_worker"].acquire()
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:
-                    shared_memory_locks["data_worker"].release()
                     break
-                shared_memory_locks["data_worker"].release()
 
                 # get next record
                 try:
@@ -416,11 +447,8 @@ class BGPStreamKafkaDataWorker:
                     continue
 
                 while elem:
-                    shared_memory_locks["data_worker"].acquire()
                     if not self.shared_memory_manager_dict["data_worker_should_run"]:
-                        shared_memory_locks["data_worker"].release()
                         break
-                    shared_memory_locks["data_worker"].release()
 
                     if elem.type in {"A", "W"}:
                         redis.set(

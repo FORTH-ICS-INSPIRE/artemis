@@ -805,11 +805,9 @@ def post_configuration_to_other_services(
                     if replica_ip == local_ip:
                         continue
                     # check if you need to inform the other microservice about the fileobserver ignoring state
-                    shared_memory_locks["ignore_fileobserver"].acquire()
                     ignore_fileobserver = shared_memory_manager_dict[
                         "ignore_fileobserver"
                     ]
-                    shared_memory_locks["ignore_fileobserver"].release()
                     # no need to update data, just notify about fileobserver ignore state
                     if same_service_only:
                         r = requests.post(
@@ -1342,7 +1340,16 @@ class ConfigHandler(RequestHandler):
 
     def get(self):
         """
-        Simply provides the configuration (in the form of a JSON dict) to the requester
+        Simply provides the configuration (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "prefixes": <dict>,
+            "asns": <dict>,
+            "monitors": <dict>,
+            "rules": <list>,
+            "autoignore": <dict>,
+            "timestamp": <timestamp>
+        }
         """
         self.write(self.shared_memory_manager_dict["config_data"])
 

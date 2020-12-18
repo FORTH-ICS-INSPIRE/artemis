@@ -5,7 +5,7 @@ enum34==1.1.6
 gql==0.4.0
 kubernetes==12.0.1
 psycopg2==2.8.4
-requests==2.22.0
+requests==2.25.1
 slacker-log-handler==1.7.1
 tornado==6.0.4
 ujson==1.35

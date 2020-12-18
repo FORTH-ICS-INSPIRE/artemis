@@ -1,4 +1,4 @@
-FROM mavromat/artemis-base-images:monitor-1.0.0
+FROM mavromat/artemis-base-images:monitor-1.0.1
 LABEL maintainer="Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>"
 
 RUN apt-get update && \

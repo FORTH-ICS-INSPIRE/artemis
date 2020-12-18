@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced bulk timer thread with separate process
 - Replaced autoignore checker thread with separate process
 - Replaced exabgp autoconf thread with separate process
+- Upgraded to new bgpstream containers (using also ris and routeviews live sources)
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TBD (removed a feature)
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- 'caida' project in bgpstreamlive
 
 ### Security
 - TBD (addressing vulnerability)

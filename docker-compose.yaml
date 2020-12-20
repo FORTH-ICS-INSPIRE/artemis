@@ -522,6 +522,60 @@ services:
         command:
             - graphql-engine
             - serve
+    elastic:
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3
+        container_name: elastic
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - "9200:9200"
+            - "9300:9300"
+        environment:
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+            - "discovery.type=single-node"
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+        volumes:
+            - "elastic:/usr/share/elasticsearch/data"
+    kibana:
+        image: docker.elastic.co/kibana/kibana-oss:7.9.3
+        container_name: kibana
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - 5601:5601
+        environment:
+            ELASTICSEARCH_URL: http://elastic:9200
+            ELASTICSEARCH_HOSTS: http://elastic:9200
+        volumes:
+            - "kibana:/usr/share/kibana/data"
+    telegraf:
+        image: telegraf
+        container_name: telegraf
+        restart: always
+        networks:
+            - artemis
+        ports:
+            - 8888:8080
+        environment:
+            HOST_PROC: /rootfs/proc
+            HOST_SYS: /rootfs/sys
+            HOST_ETC: /rootfs/etc
+        volumes:
+            - ./other/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - /sys:/rootfs/sys:ro
+            - /proc:/rootfs/proc:ro
+            - /etc:/rootfs/etc:ro
+
 
 networks:
     artemis:
+
+volumes:
+    elastic:
+    kibana:

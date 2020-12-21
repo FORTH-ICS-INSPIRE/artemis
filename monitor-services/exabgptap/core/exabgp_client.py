@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import os
 import signal
 import time
 
@@ -9,10 +8,14 @@ import requests
 import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
 from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.redis import ping_redis
 from artemis_utils.updates import key_generator
@@ -43,10 +46,6 @@ shared_memory_locks = {
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 AUTOCONF_INTERVAL = 10
 SERVICE_NAME = "exabgptap"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 

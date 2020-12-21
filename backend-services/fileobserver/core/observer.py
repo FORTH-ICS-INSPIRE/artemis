@@ -1,11 +1,12 @@
 import difflib
 import multiprocessing as mp
-import os
 import time
 
 import requests
 import ujson as json
 from artemis_utils import get_logger
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.envvars import REST_PORT
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
@@ -19,10 +20,7 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
-COMPOSE_PROJECT_NAME = os.getenv("COMPOSE_PROJECT_NAME", "artemis")
 SERVICE_NAME = "fileobserver"
-CONFIGURATION_HOST = "configuration"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 class ConfigHandler(RequestHandler):

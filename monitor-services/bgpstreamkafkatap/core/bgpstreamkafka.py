@@ -10,10 +10,16 @@ import requests
 import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import MAX_DATA_WORKER_WAIT_TIMEOUT
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.constants import START_TIME_OFFSET
 from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.redis import ping_redis
 from artemis_utils.updates import key_generator
@@ -41,16 +47,8 @@ shared_memory_locks = {
 }
 
 # global vars
-START_TIME_OFFSET = 3600  # seconds
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 SERVICE_NAME = "bgpstreamkafkatap"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
-MAX_WAIT_TIMEOUT = (
-    10
-)  # seconds to determine that current data worker cannot stop gracefully
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
@@ -107,7 +105,7 @@ def stop_data_worker(shared_memory_manager_dict):
             break
         time.sleep(1)
         time_waiting += 1
-        if time_waiting == MAX_WAIT_TIMEOUT:
+        if time_waiting == MAX_DATA_WORKER_WAIT_TIMEOUT:
             log.error(
                 "timeout expired during stop-waiting, will kill process non-gracefully"
             )

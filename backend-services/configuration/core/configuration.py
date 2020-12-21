@@ -24,10 +24,24 @@ from artemis_utils import ArtemisError
 from artemis_utils import flatten
 from artemis_utils import get_hash
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
 from artemis_utils import update_aliased_list
+from artemis_utils.constants import AUTOIGNORE_HOST
+from artemis_utils.constants import BGPSTREAMHISTTAP_HOST
+from artemis_utils.constants import BGPSTREAMKAFKATAP_HOST
+from artemis_utils.constants import BGPSTREAMLIVETAP_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import DETECTION_HOST
+from artemis_utils.constants import EXABGPTAP_HOST
+from artemis_utils.constants import MITIGATION_HOST
+from artemis_utils.constants import NOTIFIER_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.constants import RIPERISTAP_HOST
+from artemis_utils.envvars import COMPOSE_PROJECT_NAME
+from artemis_utils.envvars import IS_KUBERNETES
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
 from artemis_utils.redis import ping_redis
@@ -55,19 +69,7 @@ shared_memory_locks = {
 }
 
 # global vars
-COMPOSE_PROJECT_NAME = os.getenv("COMPOSE_PROJECT_NAME", "artemis")
 SERVICE_NAME = "configuration"
-AUTOIGNORE_HOST = "autoignore"
-DATABASE_HOST = "database"
-PREFIXTREE_HOST = "prefixtree"
-NOTIFIER_HOST = "notifier"
-DETECTION_HOST = "detection"
-MITIGATION_HOST = "mitigation"
-RIPERISTAP_HOST = "riperistap"
-BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
-BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
-BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
-EXABGPTAP_HOST = "exabgptap"
 ALL_CONFIGURABLE_SERVICES = [
     SERVICE_NAME,
     PREFIXTREE_HOST,
@@ -89,9 +91,6 @@ MONITOR_SERVICES = [
     BGPSTREAMHISTTAP_HOST,
     EXABGPTAP_HOST,
 ]
-REST_PORT = int(os.getenv("REST_PORT", 3000))
-# need to move to utils
-IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
 
 
 # need to move to utils

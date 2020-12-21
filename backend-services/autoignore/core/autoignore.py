@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import os
 import time
 from typing import Dict
 from typing import NoReturn
@@ -7,13 +6,18 @@ from typing import NoReturn
 import requests
 import ujson as json
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
+from artemis_utils.constants import PREFIXTREE_HOST
 from artemis_utils.db_util import DB
 from artemis_utils.envvars import DB_HOST
 from artemis_utils.envvars import DB_NAME
 from artemis_utils.envvars import DB_PASS
 from artemis_utils.envvars import DB_PORT
 from artemis_utils.envvars import DB_USER
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
 from kombu import Connection
@@ -38,13 +42,7 @@ shared_memory_locks = {
 
 # global vars
 SERVICE_NAME = "autoignore"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
-REST_PORT = int(os.getenv("REST_PORT", 3000))
-# need to move to utils
-HEALTH_CHECK_TIMEOUT = 5
 
 
 # need to move this to utils

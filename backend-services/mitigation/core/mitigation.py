@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import os
 import subprocess
 import time
 from typing import Dict
@@ -8,7 +7,11 @@ from typing import NoReturn
 import requests
 import ujson as json
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
 from kombu import Connection
@@ -27,12 +30,7 @@ shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "mitigation"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
-# need to move to utils
-HEALTH_CHECK_TIMEOUT = 5
 
 
 # need to move this to utils

@@ -1,7 +1,6 @@
 import datetime
 import json as classic_json
 import multiprocessing as mp
-import os
 import time
 from typing import Dict
 from typing import NoReturn
@@ -11,10 +10,10 @@ import requests
 import ujson as json
 from artemis_utils import get_hash
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
-from artemis_utils import WITHDRAWN_HIJACK_THRESHOLD
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
+from artemis_utils.constants import NOTIFIER_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
 from artemis_utils.db_util import DB
 from artemis_utils.envvars import BULK_TIMER
 from artemis_utils.envvars import DB_HOST
@@ -23,6 +22,11 @@ from artemis_utils.envvars import DB_PASS
 from artemis_utils.envvars import DB_PORT
 from artemis_utils.envvars import DB_USER
 from artemis_utils.envvars import HISTORIC
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.envvars import WITHDRAWN_HIJACK_THRESHOLD
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
 from artemis_utils.redis import ping_redis
@@ -57,13 +61,7 @@ shared_memory_locks = {
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
 SERVICE_NAME = "database"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-NOTIFIER_HOST = "notifier"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
-# need to move to utils
-HEALTH_CHECK_TIMEOUT = 5
 
 
 # need to move this to utils

@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import os
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -11,10 +10,12 @@ import ujson as json
 from artemis_utils import flatten
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
 from artemis_utils.redis import ping_redis
@@ -50,8 +51,6 @@ shared_memory_locks = {
 
 # global vars
 SERVICE_NAME = "prefixtree"
-CONFIGURATION_HOST = "configuration"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 # need to move this to artemis-utils

@@ -7,14 +7,32 @@ import time
 import requests
 import ujson as json
 from artemis_utils import get_logger
-from artemis_utils import TEST_ENV
+from artemis_utils.constants import AUTOIGNORE_HOST
+from artemis_utils.constants import BGPSTREAMHISTTAP_HOST
+from artemis_utils.constants import BGPSTREAMKAFKATAP_HOST
+from artemis_utils.constants import BGPSTREAMLIVETAP_HOST
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import DETECTION_HOST
+from artemis_utils.constants import EXABGPTAP_HOST
+from artemis_utils.constants import FILEOBSERVER_HOST
+from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
+from artemis_utils.constants import LOCALHOST
+from artemis_utils.constants import MITIGATION_HOST
+from artemis_utils.constants import NOTIFIER_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.constants import RIPERISTAP_HOST
 from artemis_utils.db_util import DB
 from artemis_utils.envvars import AUTO_RECOVER_PROCESS_STATE
+from artemis_utils.envvars import COMPOSE_PROJECT_NAME
 from artemis_utils.envvars import DB_HOST
 from artemis_utils.envvars import DB_NAME
 from artemis_utils.envvars import DB_PASS
 from artemis_utils.envvars import DB_PORT
 from artemis_utils.envvars import DB_USER
+from artemis_utils.envvars import IS_KUBERNETES
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.envvars import TEST_ENV
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
@@ -27,23 +45,7 @@ shared_memory_locks = {"worker": mp.Lock(), "detection_update_trigger": mp.Lock(
 
 # global vars
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 5))
-LOCALHOST = "127.0.0.1"
-COMPOSE_PROJECT_NAME = os.getenv("COMPOSE_PROJECT_NAME", "artemis")
 SERVICE_NAME = "autostarter"
-AUTOIGNORE_HOST = "autoignore"
-CONFIGURATION_HOST = "configuration"
-DATABASE_HOST = "database"
-FILEOBSERVER_HOST = "fileobserver"
-PREFIXTREE_HOST = "prefixtree"
-NOTIFIER_HOST = "notifier"
-DETECTION_HOST = "detection"
-MITIGATION_HOST = "mitigation"
-RIPERISTAP_HOST = "riperistap"
-BGPSTREAMLIVETAP_HOST = "bgpstreamlivetap"
-BGPSTREAMKAFKATAP_HOST = "bgpstreamkafkatap"
-BGPSTREAMHISTTAP_HOST = "bgpstreamhisttap"
-EXABGPTAP_HOST = "exabgptap"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 ALWAYS_RUNNING_SERVICES = [
     SERVICE_NAME,
     CONFIGURATION_HOST,
@@ -67,10 +69,6 @@ DEPRECATED_SERVICES = ["monitor"]
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
 CREATE_TRIGGER_QUERY = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
-# need to move to utils
-IS_KUBERNETES = os.getenv("KUBERNETES_SERVICE_HOST") is not None
-# need to move to utils
-HEALTH_CHECK_TIMEOUT = 5
 
 
 # need to move to utils

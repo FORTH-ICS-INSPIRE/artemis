@@ -11,7 +11,6 @@ import ujson as json
 from artemis_utils import get_hash
 from artemis_utils import get_logger
 from artemis_utils.constants import CONFIGURATION_HOST
-from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
 from artemis_utils.constants import NOTIFIER_HOST
 from artemis_utils.constants import PREFIXTREE_HOST
 from artemis_utils.db_util import DB
@@ -32,6 +31,7 @@ from artemis_utils.rabbitmq import create_queue
 from artemis_utils.redis import ping_redis
 from artemis_utils.redis import purge_redis_eph_pers_keys
 from artemis_utils.redis import redis_key
+from artemis_utils.service import wait_data_worker_dependencies
 from kombu import Connection
 from kombu import Producer
 from kombu import uuid
@@ -62,38 +62,6 @@ TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
 SERVICE_NAME = "database"
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
-
-
-# need to move this to utils
-def wait_data_worker_dependencies(data_worker_dependencies):
-    while True:
-        met_deps = set()
-        unmet_deps = set()
-        for service in data_worker_dependencies:
-            try:
-                r = requests.get(
-                    "http://{}:{}/health".format(service, REST_PORT),
-                    timeout=HEALTH_CHECK_TIMEOUT,
-                )
-                status = True if r.json()["status"] == "running" else False
-                if not status:
-                    unmet_deps.add(service)
-                else:
-                    met_deps.add(service)
-            except Exception:
-                unmet_deps.add(service)
-        if len(unmet_deps) == 0:
-            log.info(
-                "all needed data workers started: {}".format(data_worker_dependencies)
-            )
-            break
-        else:
-            log.info(
-                "'{}' data workers started, waiting for: '{}'".format(
-                    met_deps, unmet_deps
-                )
-            )
-        time.sleep(1)
 
 
 def save_config(wo_db, config_hash, yaml_config, raw_config, comment, config_timestamp):

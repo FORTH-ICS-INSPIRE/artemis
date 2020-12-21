@@ -1,7 +1,5 @@
 import multiprocessing as mp
 import os
-import re
-import socket
 import time
 
 import requests
@@ -24,7 +22,6 @@ from artemis_utils.constants import PREFIXTREE_HOST
 from artemis_utils.constants import RIPERISTAP_HOST
 from artemis_utils.db_util import DB
 from artemis_utils.envvars import AUTO_RECOVER_PROCESS_STATE
-from artemis_utils.envvars import COMPOSE_PROJECT_NAME
 from artemis_utils.envvars import DB_HOST
 from artemis_utils.envvars import DB_NAME
 from artemis_utils.envvars import DB_PASS
@@ -33,6 +30,8 @@ from artemis_utils.envvars import DB_USER
 from artemis_utils.envvars import IS_KUBERNETES
 from artemis_utils.envvars import REST_PORT
 from artemis_utils.envvars import TEST_ENV
+from artemis_utils.service import service_to_ips_and_replicas_in_compose
+from artemis_utils.service import service_to_ips_and_replicas_in_k8s
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
@@ -69,60 +68,6 @@ DEPRECATED_SERVICES = ["monitor"]
 # trigger queries
 DROP_TRIGGER_QUERY = "DROP TRIGGER IF EXISTS send_update_event ON public.bgp_updates;"
 CREATE_TRIGGER_QUERY = "CREATE TRIGGER send_update_event AFTER INSERT ON bgp_updates FOR EACH ROW EXECUTE PROCEDURE rabbitmq.on_row_change('update-insert');"
-
-
-# need to move to utils
-def get_local_ip():
-    return socket.gethostbyname(socket.gethostname())
-
-
-# need to move to utils
-def service_to_ips_and_replicas(base_service_name):
-    local_ip = get_local_ip()
-    service_to_ips_and_replicas_set = set([])
-    addr_infos = socket.getaddrinfo(base_service_name, REST_PORT)
-    for addr_info in addr_infos:
-        af, sock_type, proto, canon_name, sa = addr_info
-        replica_ip = sa[0]
-        # do not include yourself
-        if base_service_name == SERVICE_NAME and replica_ip == local_ip:
-            continue
-        replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
-        replica_name_match = re.match(
-            r"^"
-            + re.escape(COMPOSE_PROJECT_NAME)
-            + r"_"
-            + re.escape(base_service_name)
-            + r"_(\d+)",
-            replica_host_by_addr,
-        )
-        replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))
-        service_to_ips_and_replicas_set.add((replica_name, replica_ip))
-    return service_to_ips_and_replicas_set
-
-
-# need to move to utils
-def service_to_ips_and_replicas_in_k8s(base_service_name):
-    from kubernetes import client, config
-
-    service_to_ips_and_replicas_set = set([])
-    config.load_incluster_config()
-    current_namespace = open(
-        "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-    ).read()
-    v1 = client.CoreV1Api()
-    try:
-        endpoints = v1.read_namespaced_endpoints_with_http_info(
-            base_service_name, current_namespace, _return_http_data_only=True
-        ).to_dict()
-        for entry in endpoints["subsets"][0]["addresses"]:
-            replica_name = entry["target_ref"]["name"]
-            replica_ip = entry["ip"]
-            service_to_ips_and_replicas_set.add((replica_name, replica_ip))
-    except Exception as e:
-        log.exception(e)
-
-    return service_to_ips_and_replicas_set
 
 
 class ConfigHandler(RequestHandler):
@@ -316,9 +261,9 @@ class AutostarterWorker:
                         service
                     ] = service_to_ips_and_replicas_in_k8s(service)
                 else:
-                    ips_and_replicas_per_service[service] = service_to_ips_and_replicas(
+                    ips_and_replicas_per_service[
                         service
-                    )
+                    ] = service_to_ips_and_replicas_in_compose(SERVICE_NAME, service)
             except Exception:
                 log.exception("exception")
                 continue

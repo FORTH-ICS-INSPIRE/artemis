@@ -8,7 +8,6 @@ import ujson as json
 from artemis_utils import get_logger
 from artemis_utils.constants import CONFIGURATION_HOST
 from artemis_utils.constants import DATABASE_HOST
-from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
 from artemis_utils.constants import PREFIXTREE_HOST
 from artemis_utils.db_util import DB
 from artemis_utils.envvars import DB_HOST
@@ -20,6 +19,7 @@ from artemis_utils.envvars import RABBITMQ_URI
 from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
+from artemis_utils.service import wait_data_worker_dependencies
 from kombu import Connection
 from kombu import Producer
 from kombu import uuid
@@ -43,38 +43,6 @@ shared_memory_locks = {
 # global vars
 SERVICE_NAME = "autoignore"
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
-
-
-# need to move this to utils
-def wait_data_worker_dependencies(data_worker_dependencies):
-    while True:
-        met_deps = set()
-        unmet_deps = set()
-        for service in data_worker_dependencies:
-            try:
-                r = requests.get(
-                    "http://{}:{}/health".format(service, REST_PORT),
-                    timeout=HEALTH_CHECK_TIMEOUT,
-                )
-                status = True if r.json()["status"] == "running" else False
-                if not status:
-                    unmet_deps.add(service)
-                else:
-                    met_deps.add(service)
-            except Exception:
-                unmet_deps.add(service)
-        if len(unmet_deps) == 0:
-            log.info(
-                "all needed data workers started: {}".format(data_worker_dependencies)
-            )
-            break
-        else:
-            log.info(
-                "'{}' data workers started, waiting for: '{}'".format(
-                    met_deps, unmet_deps
-                )
-            )
-        time.sleep(1)
 
 
 def configure_autoignore(msg, shared_memory_manager_dict):

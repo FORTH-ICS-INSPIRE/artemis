@@ -1,8 +1,8 @@
 # aux logging functions
 from logging.handlers import SMTPHandler
 
-from envvars import ARTEMIS_WEB_HOST
-from envvars import HIJACK_LOG_FIELDS
+from artemis_utils.envvars import ARTEMIS_WEB_HOST
+from artemis_utils.envvars import HIJACK_LOG_FIELDS
 
 from . import log
 

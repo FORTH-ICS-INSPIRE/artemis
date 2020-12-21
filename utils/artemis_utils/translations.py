@@ -3,8 +3,8 @@ import re
 from ipaddress import ip_network as str2ip
 
 import requests
-from constants import ASN_REGEX
-from constants import RIPE_ASSET_REGEX
+from artemis_utils.constants import ASN_REGEX
+from artemis_utils.constants import RIPE_ASSET_REGEX
 
 from . import ArtemisError
 

@@ -2,8 +2,8 @@
 import os
 
 import ujson as json
-from constants import DEFAULT_HIJACK_LOG_FIELDS
-from constants import DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.constants import DEFAULT_HIJACK_LOG_FIELDS
+from artemis_utils.constants import DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
 
 
 ARTEMIS_WEB_HOST = os.getenv("ARTEMIS_WEB_HOST", "artemis.com")

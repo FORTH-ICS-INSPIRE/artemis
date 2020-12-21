@@ -6,7 +6,7 @@ from ipaddress import ip_network as str2ip
 from typing import List
 from typing import Tuple
 
-from envvars import HISTORIC
+from artemis_utils.envvars import HISTORIC
 
 from . import get_hash
 

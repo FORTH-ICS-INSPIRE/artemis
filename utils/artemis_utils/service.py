@@ -4,9 +4,9 @@ import socket
 import time
 
 import requests
-from constants import HEALTH_CHECK_TIMEOUT
-from envvars import COMPOSE_PROJECT_NAME
-from envvars import REST_PORT
+from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
+from artemis_utils.envvars import COMPOSE_PROJECT_NAME
+from artemis_utils.envvars import REST_PORT
 
 from . import log
 

@@ -10,13 +10,14 @@ import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import key_generator
-from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
 from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.updates import MformatValidator
 from kombu import Connection
 from kombu import Producer
 from socketIO_client import BaseNamespace
@@ -40,7 +41,6 @@ shared_memory_locks = {
 
 # global vars
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 AUTOCONF_INTERVAL = 10
 SERVICE_NAME = "exabgptap"
 CONFIGURATION_HOST = "configuration"
@@ -466,19 +466,10 @@ class ExaBGPDataWorker:
                 prefix_tree[ip_version].insert(prefix, "")
 
             # set up message validator
-            validator = mformat_validator()
+            validator = MformatValidator()
 
             def handle_exabgp_msg(bgp_message):
-                redis.set(
-                    "exabgp_seen_bgp_update",
-                    "1",
-                    ex=int(
-                        os.getenv(
-                            "MON_TIMEOUT_LAST_BGP_UPDATE",
-                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                        )
-                    ),
-                )
+                redis.set("exabgp_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
                 msg = {
                     "type": bgp_message["type"],
                     "communities": bgp_message.get("communities", []),
@@ -558,15 +549,7 @@ class ExaBGPDataWorker:
     def run(self):
         # update redis
         ping_redis(redis)
-        redis.set(
-            "exabgp_seen_bgp_update",
-            "1",
-            ex=int(
-                os.getenv(
-                    "MON_TIMEOUT_LAST_BGP_UPDATE", DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
-                )
-            ),
-        )
+        redis.set("exabgp_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
 
         autoconf_running = self.shared_memory_manager_dict["autoconf_running"]
         if not autoconf_running:

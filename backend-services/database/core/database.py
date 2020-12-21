@@ -9,15 +9,8 @@ from typing import NoReturn
 import redis
 import requests
 import ujson as json
-from artemis_utils import BULK_TIMER
-from artemis_utils import DB_HOST
-from artemis_utils import DB_NAME
-from artemis_utils import DB_PASS
-from artemis_utils import DB_PORT
-from artemis_utils import DB_USER
 from artemis_utils import get_hash
 from artemis_utils import get_logger
-from artemis_utils import HISTORIC
 from artemis_utils import ping_redis
 from artemis_utils import purge_redis_eph_pers_keys
 from artemis_utils import RABBITMQ_URI
@@ -26,8 +19,15 @@ from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
 from artemis_utils import WITHDRAWN_HIJACK_THRESHOLD
 from artemis_utils.db_util import DB
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.envvars import BULK_TIMER
+from artemis_utils.envvars import DB_HOST
+from artemis_utils.envvars import DB_NAME
+from artemis_utils.envvars import DB_PASS
+from artemis_utils.envvars import DB_PORT
+from artemis_utils.envvars import DB_USER
+from artemis_utils.envvars import HISTORIC
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
 from kombu import Connection
 from kombu import Producer
 from kombu import uuid

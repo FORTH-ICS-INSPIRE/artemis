@@ -14,10 +14,10 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
-from artemis_utils import signal_loading
-from artemis_utils import translate_rfc2622
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.translations import translate_rfc2622
 from kombu import Connection
 from kombu import Consumer
 from kombu import Queue
@@ -25,7 +25,6 @@ from kombu import uuid
 from kombu.mixins import ConsumerProducerMixin
 
 log = get_logger()
-DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 PY_BIN = "/usr/local/bin/python"
 
 
@@ -82,14 +81,12 @@ class Monitor:
                 priority=2,
             )
 
-            signal_loading(self.module_name, True)
             self.config_request_rpc()
 
             # setup Redis monitor listeners
             self.setup_redis_mon_listeners()
 
             log.info("started")
-            signal_loading(self.module_name, False)
 
         def setup_redis_mon_listeners(self):
             def redis_event_handler(msg):
@@ -165,7 +162,6 @@ class Monitor:
         def handle_config_notify(self, message):
             message.ack()
             log.debug("message: {}\npayload: {}".format(message, message.payload))
-            signal_loading(self.module_name, True)
             try:
                 raw = message.payload
                 if raw["timestamp"] > self.timestamp:
@@ -175,8 +171,6 @@ class Monitor:
                     self.start_monitors()
             except Exception:
                 log.exception("Exception")
-            finally:
-                signal_loading(self.module_name, False)
 
         def start_monitors(self):
             log.info("Initiating monitor...")
@@ -324,14 +318,7 @@ class Monitor:
                     ("[ris] {} {}".format(rrcs, self.prefix_file), p)
                 )
                 self.redis.set(
-                    "ris_seen_bgp_update",
-                    "1",
-                    ex=int(
-                        os.getenv(
-                            "MON_TIMEOUT_LAST_BGP_UPDATE",
-                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                        )
-                    ),
+                    "ris_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE
                 )
 
         @exception_handler(log)
@@ -368,12 +355,7 @@ class Monitor:
                         )
                     )
                     self.redis.set(
-                        "exabgp_seen_bgp_update",
-                        "1",
-                        ex=os.getenv(
-                            "MON_TIMEOUT_LAST_BGP_UPDATE",
-                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                        ),
+                        "exabgp_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE
                     )
 
         @exception_handler(log)
@@ -434,12 +416,7 @@ class Monitor:
                     )
                 )
                 self.redis.set(
-                    "bgpstreamlive_seen_bgp_update",
-                    "1",
-                    ex=os.getenv(
-                        "MON_TIMEOUT_LAST_BGP_UPDATE",
-                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                    ),
+                    "bgpstreamlive_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE
                 )
 
         @exception_handler(log)
@@ -477,10 +454,7 @@ class Monitor:
                 self.redis.set(
                     "bgpstreamkafka_seen_bgp_update",
                     "1",
-                    ex=os.getenv(
-                        "MON_TIMEOUT_LAST_BGP_UPDATE",
-                        DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                    ),
+                    ex=MON_TIMEOUT_LAST_BGP_UPDATE,
                 )
 
 

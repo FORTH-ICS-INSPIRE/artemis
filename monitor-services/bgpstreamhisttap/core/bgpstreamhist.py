@@ -11,10 +11,10 @@ import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import key_generator
-from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
 from artemis_utils import RABBITMQ_URI
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.updates import MformatValidator
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
@@ -362,7 +362,7 @@ class BGPStreamHistDataWorker:
             prefix_tree[ip_version].insert(prefix, "")
 
         # start producing
-        validator = mformat_validator()
+        validator = MformatValidator()
         with Producer(self.connection) as producer:
             for csv_file in glob.glob("{}/*.csv".format(self.input_dir)):
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:

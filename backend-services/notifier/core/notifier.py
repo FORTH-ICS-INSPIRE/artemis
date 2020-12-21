@@ -10,8 +10,8 @@ import ujson as json
 from artemis_utils import get_logger
 from artemis_utils import hijack_log_field_formatter
 from artemis_utils import RABBITMQ_URI
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer

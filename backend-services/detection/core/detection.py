@@ -14,7 +14,6 @@ from typing import Tuple
 import redis
 import requests
 import ujson as json
-from artemis_utils import clean_as_path
 from artemis_utils import exception_handler
 from artemis_utils import get_hash
 from artemis_utils import get_ip_version
@@ -31,8 +30,9 @@ from artemis_utils import RPKI_VALIDATOR_ENABLED
 from artemis_utils import RPKI_VALIDATOR_HOST
 from artemis_utils import RPKI_VALIDATOR_PORT
 from artemis_utils import TEST_ENV
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.updates import clean_as_path
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer

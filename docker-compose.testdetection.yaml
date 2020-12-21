@@ -355,6 +355,7 @@ services:
         networks:
             - artemis
         environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
             HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
             HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
             RABBITMQ_USER: ${RABBITMQ_USER}

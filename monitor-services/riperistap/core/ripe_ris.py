@@ -11,13 +11,15 @@ import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import key_generator
-from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
 from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.envvars import RIS_ID
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.updates import MformatValidator
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
@@ -39,7 +41,6 @@ shared_memory_locks = {
 update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 SERVICE_NAME = "riperistap"
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
@@ -368,15 +369,7 @@ class RipeRisTapDataWorker:
     def run(self):
         # update redis
         ping_redis(redis)
-        redis.set(
-            "ris_seen_bgp_update",
-            "1",
-            ex=int(
-                os.getenv(
-                    "MON_TIMEOUT_LAST_BGP_UPDATE", DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
-                )
-            ),
-        )
+        redis.set("ris_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
 
         # build monitored prefix tree
         prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
@@ -385,10 +378,10 @@ class RipeRisTapDataWorker:
             prefix_tree[ip_version].insert(prefix, "")
 
         # set RIS suffix on connection
-        ris_suffix = os.getenv("RIS_ID", "my_as")
+        ris_suffix = RIS_ID
 
         # main loop to process BGP updates
-        validator = mformat_validator()
+        validator = MformatValidator()
         with Producer(self.connection) as producer:
             while True:
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:
@@ -427,12 +420,7 @@ class RipeRisTapDataWorker:
                                     redis.set(
                                         "ris_seen_bgp_update",
                                         "1",
-                                        ex=int(
-                                            os.getenv(
-                                                "MON_TIMEOUT_LAST_BGP_UPDATE",
-                                                DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                                            )
-                                        ),
+                                        ex=MON_TIMEOUT_LAST_BGP_UPDATE,
                                     )
                                     try:
                                         if validator.validate(norm_ris_msg):

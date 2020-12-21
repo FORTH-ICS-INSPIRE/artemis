@@ -6,15 +6,15 @@ import time
 
 import requests
 import ujson as json
-from artemis_utils import AUTO_RECOVER_PROCESS_STATE
-from artemis_utils import DB_HOST
-from artemis_utils import DB_NAME
-from artemis_utils import DB_PASS
-from artemis_utils import DB_PORT
-from artemis_utils import DB_USER
 from artemis_utils import get_logger
 from artemis_utils import TEST_ENV
 from artemis_utils.db_util import DB
+from artemis_utils.envvars import AUTO_RECOVER_PROCESS_STATE
+from artemis_utils.envvars import DB_HOST
+from artemis_utils.envvars import DB_NAME
+from artemis_utils.envvars import DB_PASS
+from artemis_utils.envvars import DB_PORT
+from artemis_utils.envvars import DB_USER
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler

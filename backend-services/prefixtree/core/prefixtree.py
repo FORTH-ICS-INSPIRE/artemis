@@ -16,10 +16,10 @@ from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
-from artemis_utils import translate_asn_range
-from artemis_utils import translate_rfc2622
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.translations import translate_asn_range
+from artemis_utils.translations import translate_rfc2622
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer

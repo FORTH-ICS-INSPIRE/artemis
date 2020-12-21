@@ -6,16 +6,16 @@ from typing import NoReturn
 
 import requests
 import ujson as json
-from artemis_utils import DB_HOST
-from artemis_utils import DB_NAME
-from artemis_utils import DB_PASS
-from artemis_utils import DB_PORT
-from artemis_utils import DB_USER
 from artemis_utils import get_logger
 from artemis_utils import RABBITMQ_URI
 from artemis_utils.db_util import DB
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.envvars import DB_HOST
+from artemis_utils.envvars import DB_NAME
+from artemis_utils.envvars import DB_PASS
+from artemis_utils.envvars import DB_PORT
+from artemis_utils.envvars import DB_USER
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
 from kombu import Connection
 from kombu import Producer
 from kombu import uuid

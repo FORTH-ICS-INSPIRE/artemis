@@ -11,13 +11,14 @@ import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
 from artemis_utils import key_generator
-from artemis_utils import mformat_validator
 from artemis_utils import normalize_msg_path
 from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.updates import MformatValidator
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
@@ -42,7 +43,6 @@ shared_memory_locks = {
 # global vars
 START_TIME_OFFSET = 3600  # seconds
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 SERVICE_NAME = "bgpstreamkafkatap"
 CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
@@ -389,15 +389,7 @@ class BGPStreamKafkaDataWorker:
     def run(self):
         # update redis
         ping_redis(redis)
-        redis.set(
-            "bgpstreamkafka_seen_bgp_update",
-            "1",
-            ex=int(
-                os.getenv(
-                    "MON_TIMEOUT_LAST_BGP_UPDATE", DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
-                )
-            ),
-        )
+        redis.set("bgpstreamkafka_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
 
         # create a new bgpstream instance and a reusable bgprecord instance
         stream = _pybgpstream.BGPStream()
@@ -443,7 +435,7 @@ class BGPStreamKafkaDataWorker:
         stream.start()
 
         # start producing
-        validator = mformat_validator()
+        validator = MformatValidator()
         with Producer(self.connection) as producer:
             while True:
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:
@@ -472,12 +464,7 @@ class BGPStreamKafkaDataWorker:
                         redis.set(
                             "bgpstreamkafka_seen_bgp_update",
                             "1",
-                            ex=int(
-                                os.getenv(
-                                    "MON_TIMEOUT_LAST_BGP_UPDATE",
-                                    DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                                )
-                            ),
+                            ex=MON_TIMEOUT_LAST_BGP_UPDATE,
                         )
                         this_prefix = str(elem.fields["prefix"])
                         service = "bgpstreamkafka|{}".format(str(rec.collector))

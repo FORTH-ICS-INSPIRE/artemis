@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import os
+import signal
 import time
 
 import _pybgpstream
@@ -47,7 +48,9 @@ CONFIGURATION_HOST = "configuration"
 PREFIXTREE_HOST = "prefixtree"
 DATABASE_HOST = "database"
 REST_PORT = int(os.getenv("REST_PORT", 3000))
-MAX_KAFKA_WAIT_TIMEOUT = 30  # seconds to determine internal error
+MAX_WAIT_TIMEOUT = (
+    10
+)  # seconds to determine that current data worker cannot stop gracefully
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
@@ -62,9 +65,13 @@ def start_data_worker(shared_memory_manager_dict):
         shared_memory_locks["data_worker"].release()
         return "already running"
     shared_memory_locks["data_worker"].release()
-    mp.Process(
+    data_worker_process = mp.Process(
         target=run_data_worker_process, args=(shared_memory_manager_dict,)
-    ).start()
+    )
+    data_worker_process.start()
+    shared_memory_locks["data_worker"].acquire()
+    shared_memory_manager_dict["data_worker_process"] = data_worker_process.pid
+    shared_memory_locks["data_worker"].release()
     return "instructed to start"
 
 
@@ -100,11 +107,21 @@ def stop_data_worker(shared_memory_manager_dict):
             break
         time.sleep(1)
         time_waiting += 1
-        if time_waiting == MAX_KAFKA_WAIT_TIMEOUT:
+        if time_waiting == MAX_WAIT_TIMEOUT:
+            log.error(
+                "timeout expired during stop-waiting, will kill process non-gracefully"
+            )
+            if shared_memory_manager_dict["data_worker_process"] is not None:
+                os.kill(
+                    shared_memory_manager_dict["data_worker_process"], signal.SIGKILL
+                )
+                shared_memory_locks["data_worker"].acquire()
+                shared_memory_manager_dict["data_worker_process"] = None
+                shared_memory_locks["data_worker"].release()
             shared_memory_locks["data_worker"].acquire()
             shared_memory_manager_dict["data_worker_running"] = False
             shared_memory_locks["data_worker"].release()
-            log.error("kafka tap expired during stop-waiting")
+            return "killed"
     message = "instructed to stop"
     return message
 
@@ -317,6 +334,7 @@ class BGPStreamKafkaTap:
         self.shared_memory_manager_dict["port"] = ""
         self.shared_memory_manager_dict["topic"] = ""
         self.shared_memory_manager_dict["config_timestamp"] = -1
+        self.shared_memory_manager_dict["data_worker_process"] = None
 
         log.info("service initiated")
 

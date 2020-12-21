@@ -20,6 +20,11 @@ spec:
     spec:
       containers:
       - env:
+        - name: ARTEMIS_WEB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: artemisWebHost
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:

@@ -18,13 +18,8 @@ from artemis_utils import exception_handler
 from artemis_utils import get_hash
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import get_rpki_val_result
-from artemis_utils import key_generator
-from artemis_utils import ping_redis
-from artemis_utils import purge_redis_eph_pers_keys
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
-from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
 from artemis_utils import RPKI_VALIDATOR_ENABLED
 from artemis_utils import RPKI_VALIDATOR_HOST
@@ -32,7 +27,12 @@ from artemis_utils import RPKI_VALIDATOR_PORT
 from artemis_utils import TEST_ENV
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
+from artemis_utils.redis import ping_redis
+from artemis_utils.redis import purge_redis_eph_pers_keys
+from artemis_utils.redis import redis_key
+from artemis_utils.rpki import get_rpki_val_result
 from artemis_utils.updates import clean_as_path
+from artemis_utils.updates import key_generator
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer

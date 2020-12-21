@@ -11,13 +11,13 @@ import ujson as json
 from artemis_utils import flatten
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
 from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
+from artemis_utils.redis import ping_redis
 from artemis_utils.translations import translate_asn_range
 from artemis_utils.translations import translate_rfc2622
 from kombu import Connection

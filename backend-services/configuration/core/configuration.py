@@ -24,14 +24,14 @@ from artemis_utils import ArtemisError
 from artemis_utils import flatten
 from artemis_utils import get_hash
 from artemis_utils import get_logger
-from artemis_utils import ping_redis
 from artemis_utils import RABBITMQ_URI
 from artemis_utils import REDIS_HOST
-from artemis_utils import redis_key
 from artemis_utils import REDIS_PORT
 from artemis_utils import update_aliased_list
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
+from artemis_utils.redis import ping_redis
+from artemis_utils.redis import redis_key
 from artemis_utils.translations import translate_as_set
 from artemis_utils.translations import translate_asn_range
 from artemis_utils.translations import translate_rfc2622

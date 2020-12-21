@@ -10,11 +10,11 @@ import requests
 import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import key_generator
-from artemis_utils import normalize_msg_path
 from artemis_utils import RABBITMQ_URI
 from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.updates import key_generator
 from artemis_utils.updates import MformatValidator
+from artemis_utils.updates import normalize_msg_path
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop

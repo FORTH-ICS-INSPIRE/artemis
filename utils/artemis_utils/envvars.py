@@ -5,6 +5,7 @@ import ujson as json
 from constants import DEFAULT_HIJACK_LOG_FIELDS
 from constants import DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
 
+
 ARTEMIS_WEB_HOST = os.getenv("ARTEMIS_WEB_HOST", "artemis.com")
 AUTO_RECOVER_PROCESS_STATE = os.getenv("AUTO_RECOVER_PROCESS_STATE", "true")
 BULK_TIMER = float(os.getenv("BULK_TIMER", 1))

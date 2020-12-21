@@ -1,8 +1,84 @@
 # aux logging functions
+from logging.handlers import SMTPHandler
+
 from envvars import ARTEMIS_WEB_HOST
 from envvars import HIJACK_LOG_FIELDS
 
 from . import log
+
+
+class TLSSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.starttls()  # for tls add this line
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
+
+
+class SSLSMTPHandler(SMTPHandler):
+    def emit(self, record):
+        """
+        Emit a record.
+        Format the record and send it to the specified addressees.
+        """
+        try:
+            import smtplib
+
+            try:
+                from email.utils import formatdate
+            except ImportError:
+                formatdate = self.date_time
+            port = self.mailport
+            if not port:
+                port = smtplib.SMTP_PORT
+            smtp = smtplib.SMTP(self.mailhost, port)
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                self.fromaddr,
+                ",".join(self.toaddrs),
+                self.getSubject(record),
+                formatdate(),
+                msg,
+            )
+            if self.username:
+                smtp.ehlo()  # for tls add this line
+                smtp.login(self.username, self.password)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
+            smtp.quit()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
 
 
 def hijack_log_field_formatter(hijack_dict):

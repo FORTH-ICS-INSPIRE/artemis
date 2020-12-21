@@ -1,6 +1,7 @@
 # constants (independent of environment)
 import ujson as json
 
+
 ASN_REGEX = r"^AS(\d+)$"
 DEFAULT_HIJACK_LOG_FIELDS = json.dumps(
     [

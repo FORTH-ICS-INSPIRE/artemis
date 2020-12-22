@@ -17,7 +17,6 @@ jobs:
       name: PreCommitCheck
       install:
         - python -m pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
-        - python -m pip install -e backend-services/detection/utils
         - python -m pip install -r backend-services/detection/requirements.txt
         - pre-commit install
       script:

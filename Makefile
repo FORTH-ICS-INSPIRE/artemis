@@ -56,14 +56,14 @@ verify-configuration:
 setup-dev: # pull all images and tag them for local development
 setup-dev:
 	@docker-compose pull
-	for service in $(BACKEND_SERVICES) $(TAP_SERVICES) frontend ; do \
+	@for service in $(BACKEND_SERVICES) $(TAP_SERVICES) frontend ; do \
 		docker tag inspiregroup/artemis-$$service:$(BUILD) artemis_$$service:$(BUILD); \
 	done
 
 .PHONY: unittest
 unittest: # run all unit tests
 unittest:
-	for service in detection configuration ; do \
+	@for service in detection configuration ; do \
         PYTHONPATH=./backend-services/$$service/core pytest --cov=$$service --cov-append --cov-config=./testing/.coveragerc backend-services/$$service; \
     done
 
@@ -71,8 +71,26 @@ unittest:
 all: # build all
 all: build-backend build-taps build-frontend
 
-.PHONY: clean-env
-clean-env: # stop containers and clean volumes
-clean-env:
+.PHONY: start
+start: # start local setup
+start:
+	@if [ ! -d "local_configs" ]; then \
+		mkdir -p local_configs && \
+		mkdir -p local_configs/backend && \
+		mkdir -p local_configs/monitor && \
+		mkdir -p local_configs/frontend && \
+		cp -rn backend-services/configs/* local_configs/backend && \
+		cp -rn monitor-services/configs/* local_configs/monitor && \
+		cp -rn frontend/webapp/configs/* local_configs/frontend; \
+	fi
+	@docker-compose up
+
+.PHONY: stop
+stop: # stop containers
+stop:
 	@docker-compose down -v --remove-orphans
+
+.PHONY: clean
+clean: # stop containers and clean volumes
+clean: stop
 	@sudo rm -rf postgres-data-* frontend/db/artemis_webapp.db

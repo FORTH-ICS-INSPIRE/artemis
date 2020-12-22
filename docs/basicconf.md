@@ -451,7 +451,7 @@ then the combinations ASN_A-ASN_D and ASN_C-ASN_B are also considered legal, eve
 
 ## Auto-populating the configuration file
 
-While this is a custom feature that needs to be handled by the ARTEMIS deployer (and is not provided by the open-source software as a service), we are offering a few utility functions that can be used by the user to generate yaml configurations in [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/utils/artemis_utils/conf_lib_util.py). The documentation of each function can be found below.
+While this is a custom feature that needs to be handled by the ARTEMIS deployer (and is not provided by the open-source software as a service), we are offering a few utility functions that can be used by the user to generate yaml configurations in [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/utils/artemis_utils/conf_lib.py). The documentation of each function can be found below.
 
 **We recommend though that you write your own custom scripts and functions based on your local setup. The requirements for being able to generate yaml from custom sources are the `json` and `ruamel.yaml` pip packages.**
 

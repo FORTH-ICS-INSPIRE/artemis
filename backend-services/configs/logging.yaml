@@ -31,9 +31,9 @@ handlers:
 
     # for email
     # smtps_handler:
-    #     # artemis_utils.logging.TLSSMTPHandler for TLS
-    #     # artemis_utils.logging.SSLSMTPHandler for SSL
-    #     class: artemis_utils.logging.TLSSMTPHandler
+    #     # artemis_utils.logaux.TLSSMTPHandler for TLS
+    #     # artemis_utils.logaux.SSLSMTPHandler for SSL
+    #     class: artemis_utils.logaux.TLSSMTPHandler
     #     level: INFO
     #     formatter: simple
     #     mailhost:

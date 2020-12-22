@@ -13,7 +13,7 @@ from artemis_utils import get_logger
 from artemis_utils.constants import CONFIGURATION_HOST
 from artemis_utils.constants import NOTIFIER_HOST
 from artemis_utils.constants import PREFIXTREE_HOST
-from artemis_utils.db_util import DB
+from artemis_utils.db import DB
 from artemis_utils.envvars import BULK_TIMER
 from artemis_utils.envvars import DB_HOST
 from artemis_utils.envvars import DB_NAME

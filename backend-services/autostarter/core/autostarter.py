@@ -20,7 +20,7 @@ from artemis_utils.constants import MITIGATION_HOST
 from artemis_utils.constants import NOTIFIER_HOST
 from artemis_utils.constants import PREFIXTREE_HOST
 from artemis_utils.constants import RIPERISTAP_HOST
-from artemis_utils.db_util import DB
+from artemis_utils.db import DB
 from artemis_utils.envvars import AUTO_RECOVER_PROCESS_STATE
 from artemis_utils.envvars import DB_HOST
 from artemis_utils.envvars import DB_NAME

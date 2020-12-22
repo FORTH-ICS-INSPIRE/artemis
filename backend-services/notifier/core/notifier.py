@@ -11,7 +11,7 @@ from artemis_utils import get_logger
 from artemis_utils.constants import CONFIGURATION_HOST
 from artemis_utils.envvars import RABBITMQ_URI
 from artemis_utils.envvars import REST_PORT
-from artemis_utils.logging import hijack_log_field_formatter
+from artemis_utils.logaux import hijack_log_field_formatter
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.rabbitmq import create_queue
 from kombu import Connection

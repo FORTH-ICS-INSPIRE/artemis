@@ -9,11 +9,6 @@ RUN apt-get update && \
 WORKDIR /root
 
 COPY requirements.txt ./requirements.txt
-# TODO: only for testing until artemis-utils==1.0.6 release
-# do not forget to re-instate requirements
-RUN mkdir -p ./utils
-COPY utils/* ./utils/
-RUN pip3 --no-cache-dir install -e utils
 RUN pip3 --no-cache-dir install -r requirements.txt
 
 RUN mkdir -p /etc/artemis/ && \

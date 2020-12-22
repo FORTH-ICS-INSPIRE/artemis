@@ -7,11 +7,6 @@ WORKDIR /root
 RUN ln -s /usr/local/lib/pyenv/versions/3.6.8/bin/python /usr/local/bin
 
 COPY requirements.txt ./requirements.txt
-# TODO: only for testing until artemis-utils==1.0.6 release
-# do not forget to re-instate requirements
-RUN mkdir -p ./utils
-COPY utils/* ./utils/
-RUN pip --no-cache-dir install -e utils
 RUN pip --no-cache-dir install -r requirements.txt --ignore-installed
 
 RUN mkdir -p /etc/artemis/ && \

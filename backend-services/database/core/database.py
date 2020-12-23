@@ -1,7 +1,6 @@
 import datetime
 import json as classic_json
 import multiprocessing as mp
-import os
 import time
 from typing import Dict
 from typing import NoReturn
@@ -9,25 +8,30 @@ from typing import NoReturn
 import redis
 import requests
 import ujson as json
-from artemis_utils import BULK_TIMER
-from artemis_utils import DB_HOST
-from artemis_utils import DB_NAME
-from artemis_utils import DB_PASS
-from artemis_utils import DB_PORT
-from artemis_utils import DB_USER
 from artemis_utils import get_hash
 from artemis_utils import get_logger
-from artemis_utils import HISTORIC
-from artemis_utils import ping_redis
-from artemis_utils import purge_redis_eph_pers_keys
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import redis_key
-from artemis_utils import REDIS_PORT
-from artemis_utils import WITHDRAWN_HIJACK_THRESHOLD
-from artemis_utils.db_util import DB
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import NOTIFIER_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.db import DB
+from artemis_utils.envvars import BULK_TIMER
+from artemis_utils.envvars import DB_HOST
+from artemis_utils.envvars import DB_NAME
+from artemis_utils.envvars import DB_PASS
+from artemis_utils.envvars import DB_PORT
+from artemis_utils.envvars import DB_USER
+from artemis_utils.envvars import HISTORIC
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.envvars import WITHDRAWN_HIJACK_THRESHOLD
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.redis import ping_redis
+from artemis_utils.redis import purge_redis_eph_pers_keys
+from artemis_utils.redis import redis_key
+from artemis_utils.service import wait_data_worker_dependencies
 from kombu import Connection
 from kombu import Producer
 from kombu import uuid
@@ -57,55 +61,23 @@ shared_memory_locks = {
 TABLES = ["bgp_updates", "hijacks", "configs"]
 VIEWS = ["view_configs", "view_bgpupdates", "view_hijacks"]
 SERVICE_NAME = "database"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-NOTIFIER_HOST = "notifier"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, NOTIFIER_HOST]
-# need to move to utils
-HEALTH_CHECK_TIMEOUT = 5
 
 
-# need to move this to utils
-def wait_data_worker_dependencies(data_worker_dependencies):
-    while True:
-        met_deps = set()
-        unmet_deps = set()
-        for service in data_worker_dependencies:
-            try:
-                r = requests.get(
-                    "http://{}:{}/health".format(service, REST_PORT),
-                    timeout=HEALTH_CHECK_TIMEOUT,
-                )
-                status = True if r.json()["status"] == "running" else False
-                if not status:
-                    unmet_deps.add(service)
-                else:
-                    met_deps.add(service)
-            except Exception:
-                unmet_deps.add(service)
-        if len(unmet_deps) == 0:
-            log.info(
-                "all needed data workers started: {}".format(data_worker_dependencies)
-            )
-            break
-        else:
-            log.info(
-                "'{}' data workers started, waiting for: '{}'".format(
-                    met_deps, unmet_deps
-                )
-            )
-        time.sleep(1)
-
-
-def save_config(wo_db, config_hash, yaml_config, raw_config, comment):
+def save_config(wo_db, config_hash, yaml_config, raw_config, comment, config_timestamp):
     try:
         query = (
             "INSERT INTO configs (key, raw_config, time_modified, comment)"
             "VALUES (%s, %s, %s, %s);"
         )
         wo_db.execute(
-            query, (config_hash, raw_config, datetime.datetime.now(), comment)
+            query,
+            (
+                config_hash,
+                raw_config,
+                datetime.datetime.fromtimestamp(config_timestamp),
+                comment,
+            ),
         )
     except Exception:
         log.exception("failed to save config in db")
@@ -188,10 +160,9 @@ def configure_database(msg, shared_memory_manager_dict):
         )
 
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
+            incoming_config_timestamp = config["timestamp"]
             if "timestamp" in config:
                 del config["timestamp"]
             raw_config = ""
@@ -205,7 +176,14 @@ def configure_database(msg, shared_memory_manager_dict):
             config_hash = get_hash(raw_config)
             latest_config_in_db_hash = retrieve_most_recent_config_hash(ro_db)
             if config_hash != latest_config_in_db_hash:
-                save_config(wo_db, config_hash, config, raw_config, comment)
+                save_config(
+                    wo_db,
+                    config_hash,
+                    config,
+                    raw_config,
+                    comment,
+                    incoming_config_timestamp,
+                )
             else:
                 log.debug("database config is up-to-date")
 
@@ -245,7 +223,7 @@ def configure_database(msg, shared_memory_manager_dict):
             shared_memory_locks["configured_prefix_count"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = incoming_config_timestamp
             shared_memory_locks["config_timestamp"].release()
 
         return {"success": True, "message": "configured"}
@@ -265,9 +243,7 @@ class MonitorHandler(RequestHandler):
         """
         Simply provides the configured monitors (in the form of a JSON dict) to the requester
         """
-        shared_memory_locks["monitors"].acquire()
         self.write({"monitors": self.shared_memory_manager_dict["monitors"]})
-        shared_memory_locks["monitors"].release()
 
 
 class ConfigHandler(RequestHandler):
@@ -292,7 +268,14 @@ class ConfigHandler(RequestHandler):
     def get(self):
         """
         Simply provides the raw configuration stored in the DB
-        (with timestamp, hash and comment) to the requester
+        (with timestamp, hash and comment) to the requester.
+        Format:
+        {
+            "key": <string>,
+            "raw_config": <string>,
+            "comment": <string>,
+            "time_modified": <timestamp>,
+        }
         """
         most_recent_config = retrieve_most_recent_raw_config(self.ro_db)
         if most_recent_config:

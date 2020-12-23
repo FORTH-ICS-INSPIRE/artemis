@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import os
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -11,15 +10,17 @@ import ujson as json
 from artemis_utils import flatten
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import ping_redis
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
-from artemis_utils import translate_asn_range
-from artemis_utils import translate_rfc2622
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.redis import ping_redis
+from artemis_utils.translations import translate_asn_range
+from artemis_utils.translations import translate_rfc2622
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer
@@ -50,11 +51,8 @@ shared_memory_locks = {
 
 # global vars
 SERVICE_NAME = "prefixtree"
-CONFIGURATION_HOST = "configuration"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
-# need to move this to artemis-utils
 def pytricia_to_dict(pyt_tree):
     pyt_dict = {}
     for prefix in pyt_tree:
@@ -62,7 +60,6 @@ def pytricia_to_dict(pyt_tree):
     return pyt_dict
 
 
-# need to move this to artemis-utils
 def dict_to_pytricia(dict_tree, size=32):
     pyt_tree = pytricia.PyTricia(size)
     for prefix in dict_tree:
@@ -74,9 +71,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
 
             # calculate prefix tree
@@ -98,7 +93,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                     "origin_asns": rule["origin_asns"],
                     "neighbors": rule["neighbors"],
                     "prepend_seq": rule.get("prepend_seq", []),
-                    "policies": set(rule.get("policies", [])),
+                    "policies": list(set(rule.get("policies", []))),
                     "community_annotations": rule.get("community_annotations", []),
                     "mitigation": rule.get("mitigation", "manual"),
                 }
@@ -186,7 +181,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
             shared_memory_locks["autoignore"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
         return {"success": True, "message": "configured"}
@@ -203,9 +198,61 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "prefix_tree": {
+                "v4": <dict>,
+                "v6": <dict>
+            },
+            "prefix_tree_recalculate": <bool>,
+            "monitored_prefixes": <list>,
+            "configured_prefix_count": <int>,
+            "autoignore_rules": <dict>,
+            "autoignore_prefix_tree": {
+                "v4": <dict>,
+                "v6": <dict>
+            },
+            "autoignore_recalculate": <bool>,
+            "config_timestamp": <timestamp>
+        }
+        """
+        ret_dict = {}
+
+        ret_dict["prefix_tree"] = self.shared_memory_manager_dict["prefix_tree"]
+        ret_dict["prefix_tree_recalculate"] = self.shared_memory_manager_dict[
+            "prefix_tree_recalculate"
+        ]
+
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+
+        ret_dict["configured_prefix_count"] = self.shared_memory_manager_dict[
+            "configured_prefix_count"
+        ]
+
+        ret_dict["autoignore_rules"] = self.shared_memory_manager_dict[
+            "autoignore_rules"
+        ]
+        ret_dict["autoignore_prefix_tree"] = self.shared_memory_manager_dict[
+            "autoignore_prefix_tree"
+        ]
+        ret_dict["autoignore_recalculate"] = self.shared_memory_manager_dict[
+            "autoignore_recalculate"
+        ]
+
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+
+        self.write(ret_dict)
+
     def post(self):
         """
-        Cofnigures prefix tree and responds with a success message.
+        Configures prefix tree and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         try:
@@ -333,7 +380,6 @@ class ConfiguredPrefixCountHandler(RequestHandler):
         """
         Simply provides the configured prefix count (in the form of a JSON dict) to the requester
         """
-        shared_memory_locks["configured_prefix_count"].acquire()
         self.write(
             {
                 "configured_prefix_count": self.shared_memory_manager_dict[
@@ -341,7 +387,6 @@ class ConfiguredPrefixCountHandler(RequestHandler):
                 ]
             }
         )
-        shared_memory_locks["configured_prefix_count"].release()
 
 
 class MonitoredPrefixesHandler(RequestHandler):
@@ -356,7 +401,6 @@ class MonitoredPrefixesHandler(RequestHandler):
         """
         Simply provides the monitored prefixes (in the form of a JSON dict) to the requester
         """
-        shared_memory_locks["monitored_prefixes"].acquire()
         self.write(
             {
                 "monitored_prefixes": self.shared_memory_manager_dict[
@@ -364,7 +408,6 @@ class MonitoredPrefixesHandler(RequestHandler):
                 ]
             }
         )
-        shared_memory_locks["monitored_prefixes"].release()
 
 
 class PrefixTree:

@@ -1,11 +1,12 @@
 import difflib
 import multiprocessing as mp
-import os
 import time
 
 import requests
 import ujson as json
 from artemis_utils import get_logger
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.envvars import REST_PORT
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
@@ -19,16 +20,33 @@ log = get_logger()
 shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
-COMPOSE_PROJECT_NAME = os.getenv("COMPOSE_PROJECT_NAME", "artemis")
 SERVICE_NAME = "fileobserver"
-CONFIGURATION_HOST = "configuration"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 class ConfigHandler(RequestHandler):
     """
     REST request handler for configuration.
     """
+
+    def initialize(self, shared_memory_manager_dict):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Note that autoignore does not have any actual configuration, but we return the following
+        information that it uses to operate:
+        {
+            "dirname": <string>,
+            "filename": <string>
+        }
+        """
+        self.write(
+            {
+                "dirname": self.shared_memory_manager_dict["dirname"],
+                "filename": self.shared_memory_manager_dict["filename"],
+            }
+        )
 
     def post(self):
         """
@@ -96,11 +114,8 @@ class ControlHandler(RequestHandler):
             log.info("data worker started")
             while True:
                 time.sleep(5)
-                shared_memory_locks["data_worker"].acquire()
                 if not self.shared_memory_manager_dict["data_worker_running"]:
-                    shared_memory_locks["data_worker"].release()
                     break
-                shared_memory_locks["data_worker"].release()
         except Exception:
             log.exception("exception")
             shared_memory_locks["data_worker"].release()

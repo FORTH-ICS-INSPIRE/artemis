@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import os
+import signal
 import time
 from copy import deepcopy
 
@@ -9,14 +10,21 @@ import requests
 import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import key_generator
-from artemis_utils import mformat_validator
-from artemis_utils import normalize_msg_path
-from artemis_utils import ping_redis
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import MAX_DATA_WORKER_WAIT_TIMEOUT
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.envvars import RIS_ID
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.redis import ping_redis
+from artemis_utils.updates import key_generator
+from artemis_utils.updates import MformatValidator
+from artemis_utils.updates import normalize_msg_path
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
@@ -38,12 +46,7 @@ shared_memory_locks = {
 update_to_type = {"announcements": "A", "withdrawals": "W"}
 update_types = ["announcements", "withdrawals"]
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 SERVICE_NAME = "riperistap"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
@@ -59,9 +62,13 @@ def start_data_worker(shared_memory_manager_dict):
         shared_memory_locks["data_worker"].release()
         return "already running"
     shared_memory_locks["data_worker"].release()
-    mp.Process(
+    data_worker_process = mp.Process(
         target=run_data_worker_process, args=(shared_memory_manager_dict,)
-    ).start()
+    )
+    data_worker_process.start()
+    shared_memory_locks["data_worker"].acquire()
+    shared_memory_manager_dict["data_worker_process"] = data_worker_process.pid
+    shared_memory_locks["data_worker"].release()
     return "instructed to start"
 
 
@@ -89,13 +96,27 @@ def stop_data_worker(shared_memory_manager_dict):
     shared_memory_manager_dict["data_worker_should_run"] = False
     shared_memory_locks["data_worker"].release()
     # make sure that data worker is stopped
+    time_waiting = 0
     while True:
-        shared_memory_locks["data_worker"].acquire()
         if not shared_memory_manager_dict["data_worker_running"]:
-            shared_memory_locks["data_worker"].release()
             break
-        shared_memory_locks["data_worker"].release()
         time.sleep(1)
+        time_waiting += 1
+        if time_waiting == MAX_DATA_WORKER_WAIT_TIMEOUT:
+            log.error(
+                "timeout expired during stop-waiting, will kill process non-gracefully"
+            )
+            if shared_memory_manager_dict["data_worker_process"] is not None:
+                os.kill(
+                    shared_memory_manager_dict["data_worker_process"], signal.SIGKILL
+                )
+                shared_memory_locks["data_worker"].acquire()
+                shared_memory_manager_dict["data_worker_process"] = None
+                shared_memory_locks["data_worker"].release()
+            shared_memory_locks["data_worker"].acquire()
+            shared_memory_manager_dict["data_worker_running"] = False
+            shared_memory_locks["data_worker"].release()
+            return "killed"
     message = "instructed to stop"
     return message
 
@@ -104,9 +125,7 @@ def configure_ripe_ris(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
             r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
@@ -122,9 +141,7 @@ def configure_ripe_ris(msg, shared_memory_manager_dict):
                 return {"success": True, "message": "data worker not in configuration"}
 
             # check if the worker should run (if configured)
-            shared_memory_locks["data_worker"].acquire()
             should_run = shared_memory_manager_dict["data_worker_should_run"]
-            shared_memory_locks["data_worker"].release()
 
             # make sure that data worker is stopped
             stop_msg = stop_data_worker(shared_memory_manager_dict)
@@ -175,6 +192,39 @@ class ConfigHandler(RequestHandler):
 
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "data_worker_should_run": <bool>,
+            "data_worker_configured": <bool>,
+            "monitored_prefixes": <list>,
+            "monitor_projects": <list>,
+            "config_timestamp": <timestamp>
+        }
+        """
+        ret_dict = {}
+
+        ret_dict["data_worker_should_run"] = self.shared_memory_manager_dict[
+            "data_worker_should_run"
+        ]
+        ret_dict["data_worker_configured"] = self.shared_memory_manager_dict[
+            "data_worker_configured"
+        ]
+
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+
+        ret_dict["hosts"] = self.shared_memory_manager_dict["hosts"]
+
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+
+        self.write(ret_dict)
 
     def post(self):
         """
@@ -264,6 +314,7 @@ class RipeRisTap:
         self.shared_memory_manager_dict["monitored_prefixes"] = list()
         self.shared_memory_manager_dict["hosts"] = list()
         self.shared_memory_manager_dict["config_timestamp"] = -1
+        self.shared_memory_manager_dict["data_worker_process"] = None
 
         log.info("service initiated")
 
@@ -303,30 +354,20 @@ class RipeRisTapDataWorker:
     def __init__(self, connection, shared_memory_manager_dict):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
-        shared_memory_locks["monitored_prefixes"].acquire()
         self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
-        shared_memory_locks["monitored_prefixes"].release()
-        shared_memory_locks["hosts"].acquire()
         self.hosts = self.shared_memory_manager_dict["hosts"]
-        shared_memory_locks["hosts"].release()
 
         # EXCHANGES
         self.update_exchange = create_exchange(
             "bgp-update", self.connection, declare=True
         )
 
+        log.info("data worker initiated")
+
     def run(self):
         # update redis
         ping_redis(redis)
-        redis.set(
-            "ris_seen_bgp_update",
-            "1",
-            ex=int(
-                os.getenv(
-                    "MON_TIMEOUT_LAST_BGP_UPDATE", DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
-                )
-            ),
-        )
+        redis.set("ris_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
 
         # build monitored prefix tree
         prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
@@ -335,17 +376,14 @@ class RipeRisTapDataWorker:
             prefix_tree[ip_version].insert(prefix, "")
 
         # set RIS suffix on connection
-        ris_suffix = os.getenv("RIS_ID", "my_as")
+        ris_suffix = RIS_ID
 
         # main loop to process BGP updates
-        validator = mformat_validator()
+        validator = MformatValidator()
         with Producer(self.connection) as producer:
             while True:
-                shared_memory_locks["data_worker"].acquire()
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:
-                    shared_memory_locks["data_worker"].release()
                     break
-                shared_memory_locks["data_worker"].release()
                 try:
                     events = requests.get(
                         "https://ris-live.ripe.net/v1/stream/?format=json&client=artemis-{}".format(
@@ -358,13 +396,10 @@ class RipeRisTapDataWorker:
                     iterator = events.iter_lines()
                     next(iterator)
                     for data in iterator:
-                        shared_memory_locks["data_worker"].acquire()
                         if not self.shared_memory_manager_dict[
                             "data_worker_should_run"
                         ]:
-                            shared_memory_locks["data_worker"].release()
                             break
-                        shared_memory_locks["data_worker"].release()
                         try:
                             parsed = json.loads(data)
                             msg = parsed["data"]
@@ -383,12 +418,7 @@ class RipeRisTapDataWorker:
                                     redis.set(
                                         "ris_seen_bgp_update",
                                         "1",
-                                        ex=int(
-                                            os.getenv(
-                                                "MON_TIMEOUT_LAST_BGP_UPDATE",
-                                                DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                                            )
-                                        ),
+                                        ex=MON_TIMEOUT_LAST_BGP_UPDATE,
                                     )
                                     try:
                                         if validator.validate(norm_ris_msg):
@@ -409,13 +439,15 @@ class RipeRisTapDataWorker:
                                                 "Invalid format message: {}".format(msg)
                                             )
                                     except BaseException:
-                                        log.exception(
+                                        log.exception("exception")
+                                        log.error(
                                             "Error when normalizing BGP message: {}".format(
                                                 norm_ris_msg
                                             )
                                         )
                         except Exception:
-                            log.exception("exception message {}".format(data))
+                            log.exception("exception")
+                            log.error("exception message {}".format(data))
                     log.warning(
                         "Iterator ran out of data; the connection will be retried"
                     )

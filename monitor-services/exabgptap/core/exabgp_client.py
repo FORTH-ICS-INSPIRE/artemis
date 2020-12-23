@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import os
 import signal
 import time
 
@@ -9,14 +8,19 @@ import requests
 import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import key_generator
-from artemis_utils import mformat_validator
-from artemis_utils import normalize_msg_path
-from artemis_utils import ping_redis
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.redis import ping_redis
+from artemis_utils.updates import key_generator
+from artemis_utils.updates import MformatValidator
+from artemis_utils.updates import normalize_msg_path
 from kombu import Connection
 from kombu import Producer
 from socketIO_client import BaseNamespace
@@ -40,13 +44,8 @@ shared_memory_locks = {
 
 # global vars
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 AUTOCONF_INTERVAL = 10
 SERVICE_NAME = "exabgptap"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
@@ -57,8 +56,8 @@ def start_data_worker(shared_memory_manager_dict):
         shared_memory_locks["data_worker"].release()
         return "not configured, will not start"
     if shared_memory_manager_dict["data_worker_running"]:
-        log.info("data worker already running")
         shared_memory_locks["data_worker"].release()
+        log.info("data worker already running")
         return "already running"
     shared_memory_locks["data_worker"].release()
     mp.Process(
@@ -92,11 +91,8 @@ def stop_data_worker(shared_memory_manager_dict):
     shared_memory_locks["data_worker"].release()
     # make sure that data worker is stopped
     while True:
-        shared_memory_locks["data_worker"].acquire()
         if not shared_memory_manager_dict["data_worker_running"]:
-            shared_memory_locks["data_worker"].release()
             break
-        shared_memory_locks["data_worker"].release()
         time.sleep(1)
     message = "instructed to stop"
     return message
@@ -106,9 +102,7 @@ def configure_exabgp(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
             # get monitors
             r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
@@ -124,9 +118,7 @@ def configure_exabgp(msg, shared_memory_manager_dict):
                 return {"success": True, "message": "data worker not in configuration"}
 
             # check if the worker should run (if configured)
-            shared_memory_locks["data_worker"].acquire()
             should_run = shared_memory_manager_dict["data_worker_should_run"]
-            shared_memory_locks["data_worker"].release()
 
             # make sure that data worker is stopped
             stop_msg = stop_data_worker(shared_memory_manager_dict)
@@ -151,6 +143,7 @@ def configure_exabgp(msg, shared_memory_manager_dict):
                     hosts[host].add("autoconf")
                 if "learn_neighbors" in exabgp_monitor:
                     hosts[host].add("learn_neighbors")
+                hosts[host] = list(hosts[host])
             shared_memory_locks["hosts"].acquire()
             shared_memory_manager_dict["hosts"] = hosts
             shared_memory_locks["hosts"].release()
@@ -182,6 +175,39 @@ class ConfigHandler(RequestHandler):
 
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
+
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "data_worker_should_run": <bool>,
+            "data_worker_configured": <bool>,
+            "monitored_prefixes": <list>,
+            "hosts": <dict>,
+            "config_timestamp": <timestamp>
+        }
+        """
+        ret_dict = {}
+
+        ret_dict["data_worker_should_run"] = self.shared_memory_manager_dict[
+            "data_worker_should_run"
+        ]
+        ret_dict["data_worker_configured"] = self.shared_memory_manager_dict[
+            "data_worker_configured"
+        ]
+
+        ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
+            "monitored_prefixes"
+        ]
+
+        ret_dict["hosts"] = self.shared_memory_manager_dict["hosts"]
+
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+
+        self.write(ret_dict)
 
     def post(self):
         """
@@ -393,12 +419,8 @@ class ExaBGPDataWorker:
     def __init__(self, connection, shared_memory_manager_dict):
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
-        shared_memory_locks["monitored_prefixes"].acquire()
         self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
-        shared_memory_locks["monitored_prefixes"].release()
-        shared_memory_locks["hosts"].acquire()
         self.hosts = self.shared_memory_manager_dict["hosts"]
-        shared_memory_locks["hosts"].release()
         self.autoconf_updater = None
 
         # EXCHANGES
@@ -406,6 +428,8 @@ class ExaBGPDataWorker:
             "bgp-update", self.connection, declare=True
         )
         self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
+
+        log.info("data worker initiated")
 
     def run_host_sio_process(self, host):
         def exit_gracefully(signum, frame):
@@ -441,19 +465,10 @@ class ExaBGPDataWorker:
                 prefix_tree[ip_version].insert(prefix, "")
 
             # set up message validator
-            validator = mformat_validator()
+            validator = MformatValidator()
 
             def handle_exabgp_msg(bgp_message):
-                redis.set(
-                    "exabgp_seen_bgp_update",
-                    "1",
-                    ex=int(
-                        os.getenv(
-                            "MON_TIMEOUT_LAST_BGP_UPDATE",
-                            DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                        )
-                    ),
-                )
+                redis.set("exabgp_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
                 msg = {
                     "type": bgp_message["type"],
                     "communities": bgp_message.get("communities", []),
@@ -533,19 +548,9 @@ class ExaBGPDataWorker:
     def run(self):
         # update redis
         ping_redis(redis)
-        redis.set(
-            "exabgp_seen_bgp_update",
-            "1",
-            ex=int(
-                os.getenv(
-                    "MON_TIMEOUT_LAST_BGP_UPDATE", DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
-                )
-            ),
-        )
+        redis.set("exabgp_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
 
-        shared_memory_locks["autoconf_updates"].acquire()
         autoconf_running = self.shared_memory_manager_dict["autoconf_running"]
-        shared_memory_locks["autoconf_updates"].release()
         if not autoconf_running:
             log.info("setting up autoconf updater process...")
             with Connection(RABBITMQ_URI) as connection:
@@ -566,13 +571,10 @@ class ExaBGPDataWorker:
             host_process.start()
 
         while True:
-            shared_memory_locks["data_worker"].acquire()
             if not self.shared_memory_manager_dict["data_worker_should_run"]:
-                shared_memory_locks["data_worker"].release()
                 for host_process in host_processes:
                     host_process.terminate()
                 break
-            shared_memory_locks["data_worker"].release()
             time.sleep(1)
 
 

@@ -1,21 +1,25 @@
 import multiprocessing as mp
-import os
 import time
 from typing import Dict
 from typing import NoReturn
 
 import requests
 import ujson as json
-from artemis_utils import DB_HOST
-from artemis_utils import DB_NAME
-from artemis_utils import DB_PASS
-from artemis_utils import DB_PORT
-from artemis_utils import DB_USER
 from artemis_utils import get_logger
-from artemis_utils import RABBITMQ_URI
-from artemis_utils.db_util import DB
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.db import DB
+from artemis_utils.envvars import DB_HOST
+from artemis_utils.envvars import DB_NAME
+from artemis_utils.envvars import DB_PASS
+from artemis_utils.envvars import DB_PORT
+from artemis_utils.envvars import DB_USER
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.service import wait_data_worker_dependencies
 from kombu import Connection
 from kombu import Producer
 from kombu import uuid
@@ -38,54 +42,14 @@ shared_memory_locks = {
 
 # global vars
 SERVICE_NAME = "autoignore"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST]
-REST_PORT = int(os.getenv("REST_PORT", 3000))
-# need to move to utils
-HEALTH_CHECK_TIMEOUT = 5
-
-
-# need to move this to utils
-def wait_data_worker_dependencies(data_worker_dependencies):
-    while True:
-        met_deps = set()
-        unmet_deps = set()
-        for service in data_worker_dependencies:
-            try:
-                r = requests.get(
-                    "http://{}:{}/health".format(service, REST_PORT),
-                    timeout=HEALTH_CHECK_TIMEOUT,
-                )
-                status = True if r.json()["status"] == "running" else False
-                if not status:
-                    unmet_deps.add(service)
-                else:
-                    met_deps.add(service)
-            except Exception:
-                unmet_deps.add(service)
-        if len(unmet_deps) == 0:
-            log.info(
-                "all needed data workers started: {}".format(data_worker_dependencies)
-            )
-            break
-        else:
-            log.info(
-                "'{}' data workers started, waiting for: '{}'".format(
-                    met_deps, unmet_deps
-                )
-            )
-        time.sleep(1)
 
 
 def configure_autoignore(msg, shared_memory_manager_dict):
     config = msg
     try:
         # check newer config
-        shared_memory_locks["config_timestamp"].acquire()
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
-        shared_memory_locks["config_timestamp"].release()
         if config["timestamp"] > config_timestamp:
 
             # extract autoignore rules
@@ -99,7 +63,7 @@ def configure_autoignore(msg, shared_memory_manager_dict):
             shared_memory_locks["autoignore"].release()
 
             shared_memory_locks["config_timestamp"].acquire()
-            shared_memory_manager_dict["config_timestamp"] = config_timestamp
+            shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
             shared_memory_locks["time"].acquire()
@@ -120,9 +84,30 @@ class ConfigHandler(RequestHandler):
     def initialize(self, shared_memory_manager_dict):
         self.shared_memory_manager_dict = shared_memory_manager_dict
 
+    def get(self):
+        """
+        Provides current configuration primitives (in the form of a JSON dict) to the requester.
+        Format:
+        {
+            "autoignore_rules": <dict>,
+            "config_timestamp": <timestamp>
+        }
+        """
+        ret_dict = {}
+
+        ret_dict["autoignore_rules"] = self.shared_memory_manager_dict[
+            "autoignore_rules"
+        ]
+
+        ret_dict["config_timestamp"] = self.shared_memory_manager_dict[
+            "config_timestamp"
+        ]
+
+        self.write(ret_dict)
+
     def post(self):
         """
-        Cofnigures autoignore and responds with a success message.
+        Configures autoignore and responds with a success message.
         :return: {"success": True | False, "message": < message >}
         """
         try:

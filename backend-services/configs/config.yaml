@@ -23,7 +23,6 @@ monitors: {}
   #bgpstreamlive:
   #- routeviews
   #- ris
-  #- caida
   #bgpstreamkafka:
   #  host: bmp.bgpstream.caida.org
   #  port: 9092

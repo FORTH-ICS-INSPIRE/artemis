@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display info on new microservices, grouping backend/monitor
 - Upgraded requests to 2.25.1
 - Upgraded to new bgpstream containers (using also ris and routeviews live sources)
-- Full refactoring and upgrade of artemis-utils (1.0.6)
+- Full refactoring and upgrade of artemis-utils, refactored all imports (1.0.7)
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)

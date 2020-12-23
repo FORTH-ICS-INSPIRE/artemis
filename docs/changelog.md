@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to reload targeted services based on what conf section changed
 - GET config endpoints to backend and monitor services
 - Makefile for local commands (dev/ci)
+- Added healthchecks to docker-compose (docker-compose version bumped to 3.4)
 
 ### Changed
 - Decoupled microservice architecture for backend and frontend

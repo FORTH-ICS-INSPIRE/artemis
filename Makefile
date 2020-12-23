@@ -1,27 +1,44 @@
-BACKEND_SERVICES = autoignore autostarter configuration database detection fileobserver mitigation notifier prefixtree
-TAP_SERVICES = bgpstreamhisttap bgpstreamkafkatap bgpstreamlivetap exabgptap riperistap
+BACKEND_SERVICES ?= autoignore autostarter configuration database detection fileobserver mitigation notifier prefixtree
+TAP_SERVICES ?= bgpstreamhisttap bgpstreamkafkatap bgpstreamlivetap exabgptap riperistap
+FRONTEND_SERVICES ?= frontend
 
-BUILD ?= latest
+SERVICES ?= $(BACKEND_SERVICES) + $(TAP_SERVICES) + $(FRONTEND_SERVICES)
+
+PUSH ?= false
+BUILD_TAG ?= latest
+CONTAINER_REPO ?= docker.io/inspiregroup
 
 .PHONY: $(BACKEND_SERVICES)
 $(BACKEND_SERVICES): # build backend container
 $(BACKEND_SERVICES):
-	@echo "Building $@ service for tag $(BUILD)"
-	@docker pull inspiregroup/artemis-$@:latest
-ifneq ($(BUILD), "latest")
-	@docker pull inspiregroup/artemis-$@:$(BUILD)
+	@echo "Building $@ service for tag $(BUILD_TAG)"
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest
+ifneq ($(BUILD_TAG), "latest")
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG)
 endif
-	@docker build -t artemis-$@:$(BUILD) --cache-from inspiregroup/artemis-$@:latest --cache-from inspiregroup/artemis-$@:$(BUILD) backend-services/$@/
+	@docker build -t artemis-$@:$(BUILD_TAG) \
+		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
+		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
+		backend-services/$@/
+ifeq ($(PUSH), "true")
+	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
+endif
 
 .PHONY: $(TAP_SERVICES)
 $(TAP_SERVICES): # build tap container
 $(TAP_SERVICES):
-	@echo "Building $@ service for tag $(BUILD)"
-	@docker pull inspiregroup/artemis-$@:latest
-ifneq ($(BUILD), "latest")
-	@docker pull inspiregroup/artemis-$@:$(BUILD)
+	@echo "Building $@ service for tag $(BUILD_TAG)"
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest
+ifneq ($(BUILD_TAG), "latest")
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG)
 endif
-	@docker build -t artemis-$@:$(BUILD) --cache-from inspiregroup/artemis-$@:latest --cache-from inspiregroup/artemis-$@:$(BUILD) monitor-services/$@/
+	@docker build -t artemis-$@:$(BUILD_TAG) \
+		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
+		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
+		monitor-services/$@/
+ifeq ($(PUSH), "true")
+	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
+endif
 
 .PHONY: build-backend
 build-backend: # builds all backend containers
@@ -33,9 +50,9 @@ build-taps: $(TAP_SERVICES)
 
 .PHONY: build-frontend
 build-frontend: # builds frontend container
-build-frontend: log-message
-	@docker pull inspiregroup/artemis-frontend:latest
-	@docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:$(BUILD) --cache-from inspiregroup/artemis-frontend:latest --cache-from inspiregroup/artemis-frontend:$(BUILD) frontend/
+build-frontend:
+	@docker pull $(CONTAINER_REPO)/artemis-frontend:latest
+	@docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:$(BUILD_TAG) --cache-from $(CONTAINER_REPO)/artemis-frontend:latest --cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
 
 .PHONY: migration-check
 migration-check: # checks if migration is not broken
@@ -55,10 +72,29 @@ verify-configuration:
 .PHONE: setup-dev
 setup-dev: # pull all images and tag them for local development
 setup-dev:
-	@docker-compose pull
-	@for service in $(BACKEND_SERVICES) $(TAP_SERVICES) frontend ; do \
-		docker tag inspiregroup/artemis-$$service:$(BUILD) artemis_$$service:$(BUILD); \
+	@for service in $(SERVICES) ; do \
+  		@docker-compose pull $$service
+		docker tag $(CONTAINER_REPO)/artemis-$$service:$(BUILD_TAG) artemis_$$service:latest; \
 	done
+	@if [ ! -d "local_configs" ]; then \
+		mkdir -p local_configs && \
+		mkdir -p local_configs/backend && \
+		mkdir -p local_configs/monitor && \
+		mkdir -p local_configs/frontend && \
+		cp -rn backend-services/configs/* local_configs/backend && \
+		cp -rn monitor-services/configs/* local_configs/monitor && \
+		cp -rn frontend/webapp/configs/* local_configs/frontend; \
+	fi
+
+.PHONE: setup-routinator
+setup-routinator: # create needed configuration for routinator
+setup-routinator:
+	@mkdir -p local_configs/routinator/tals
+	@sudo chown -R 1012:1012 local_configs/routinator/tals
+	@mkdir -p local_configs/routinator/rpki-repo
+	@sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
+	@cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
+	@sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
 
 .PHONY: unittest
 unittest: # run all unit tests
@@ -67,9 +103,9 @@ unittest:
         PYTHONPATH=./backend-services/$$service/core pytest --cov=$$service --cov-append --cov-config=./testing/.coveragerc backend-services/$$service; \
     done
 
-.PHONY: all
-all: # build all
-all: build-backend build-taps build-frontend
+.PHONY: build
+build: # build all
+build: $(SERVICES)
 
 .PHONY: start
 start: # start local setup

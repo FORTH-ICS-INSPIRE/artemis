@@ -10,11 +10,16 @@ import requests
 import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import key_generator
-from artemis_utils import mformat_validator
-from artemis_utils import normalize_msg_path
-from artemis_utils import RABBITMQ_URI
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import MAX_DATA_WORKER_WAIT_TIMEOUT
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.updates import key_generator
+from artemis_utils.updates import MformatValidator
+from artemis_utils.updates import normalize_msg_path
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
@@ -34,13 +39,6 @@ shared_memory_locks = {
 
 # global vars
 SERVICE_NAME = "bgpstreamhisttap"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
-MAX_WAIT_TIMEOUT = (
-    10
-)  # seconds to determine that current data worker cannot stop gracefully
 
 
 def start_data_worker(shared_memory_manager_dict):
@@ -95,7 +93,7 @@ def stop_data_worker(shared_memory_manager_dict):
             break
         time.sleep(1)
         time_waiting += 1
-        if time_waiting == MAX_WAIT_TIMEOUT:
+        if time_waiting == MAX_DATA_WORKER_WAIT_TIMEOUT:
             log.error(
                 "timeout expired during stop-waiting, will kill process non-gracefully"
             )
@@ -362,7 +360,7 @@ class BGPStreamHistDataWorker:
             prefix_tree[ip_version].insert(prefix, "")
 
         # start producing
-        validator = mformat_validator()
+        validator = MformatValidator()
         with Producer(self.connection) as producer:
             for csv_file in glob.glob("{}/*.csv".format(self.input_dir)):
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:

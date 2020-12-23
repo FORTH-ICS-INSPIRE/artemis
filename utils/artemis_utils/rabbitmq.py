@@ -1,3 +1,4 @@
+# rabbitmq aux functions
 from kombu import Exchange
 from kombu import Queue
 from kombu import uuid

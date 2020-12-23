@@ -8,10 +8,12 @@ from typing import NoReturn
 import requests
 import ujson as json
 from artemis_utils import get_logger
-from artemis_utils import hijack_log_field_formatter
-from artemis_utils import RABBITMQ_URI
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.logaux import hijack_log_field_formatter
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer
@@ -53,8 +55,6 @@ shared_memory_locks = {"data_worker": mp.Lock(), "config_timestamp": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "notifier"
-CONFIGURATION_HOST = "configuration"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
 def configure_notifier(msg, shared_memory_manager_dict):

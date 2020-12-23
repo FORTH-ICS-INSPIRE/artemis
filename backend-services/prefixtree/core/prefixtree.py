@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import os
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -11,15 +10,17 @@ import ujson as json
 from artemis_utils import flatten
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import ping_redis
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
 from artemis_utils import search_worst_prefix
-from artemis_utils import translate_asn_range
-from artemis_utils import translate_rfc2622
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.redis import ping_redis
+from artemis_utils.translations import translate_asn_range
+from artemis_utils.translations import translate_rfc2622
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer
@@ -50,11 +51,8 @@ shared_memory_locks = {
 
 # global vars
 SERVICE_NAME = "prefixtree"
-CONFIGURATION_HOST = "configuration"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 
 
-# need to move this to artemis-utils
 def pytricia_to_dict(pyt_tree):
     pyt_dict = {}
     for prefix in pyt_tree:
@@ -62,7 +60,6 @@ def pytricia_to_dict(pyt_tree):
     return pyt_dict
 
 
-# need to move this to artemis-utils
 def dict_to_pytricia(dict_tree, size=32):
     pyt_tree = pytricia.PyTricia(size)
     for prefix in dict_tree:

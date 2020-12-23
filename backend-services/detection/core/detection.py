@@ -1,7 +1,6 @@
 import ipaddress
 import json as classic_json
 import multiprocessing as mp
-import os
 import re
 import time
 from datetime import datetime
@@ -12,27 +11,31 @@ from typing import NoReturn
 from typing import Tuple
 
 import redis
-import requests
 import ujson as json
-from artemis_utils import clean_as_path
 from artemis_utils import exception_handler
 from artemis_utils import get_hash
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import get_rpki_val_result
-from artemis_utils import key_generator
-from artemis_utils import ping_redis
-from artemis_utils import purge_redis_eph_pers_keys
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import redis_key
-from artemis_utils import REDIS_PORT
-from artemis_utils import RPKI_VALIDATOR_ENABLED
-from artemis_utils import RPKI_VALIDATOR_HOST
-from artemis_utils import RPKI_VALIDATOR_PORT
-from artemis_utils import TEST_ENV
-from artemis_utils.rabbitmq_util import create_exchange
-from artemis_utils.rabbitmq_util import create_queue
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import NOTIFIER_HOST
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.envvars import RPKI_VALIDATOR_ENABLED
+from artemis_utils.envvars import RPKI_VALIDATOR_HOST
+from artemis_utils.envvars import RPKI_VALIDATOR_PORT
+from artemis_utils.envvars import TEST_ENV
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.rabbitmq import create_queue
+from artemis_utils.redis import ping_redis
+from artemis_utils.redis import purge_redis_eph_pers_keys
+from artemis_utils.redis import redis_key
+from artemis_utils.rpki import get_rpki_val_result
+from artemis_utils.service import wait_data_worker_dependencies
+from artemis_utils.updates import clean_as_path
+from artemis_utils.updates import key_generator
 from kombu import Connection
 from kombu import Consumer
 from kombu import Producer
@@ -50,10 +53,6 @@ shared_memory_locks = {"data_worker": mp.Lock()}
 
 # global vars
 SERVICE_NAME = "detection"
-NOTIFIER_HOST = "notifier"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 HIJACK_DIM_COMBINATIONS = [
     ["S", "0", "-", "-"],
     ["S", "0", "-", "L"],
@@ -72,40 +71,6 @@ HIJACK_DIM_COMBINATIONS = [
     ["Q", "0", "-", "L"],
 ]
 DATA_WORKER_DEPENDENCIES = [PREFIXTREE_HOST, DATABASE_HOST, NOTIFIER_HOST]
-# need to move to utils
-HEALTH_CHECK_TIMEOUT = 5
-
-
-# need to move this to utils
-def wait_data_worker_dependencies(data_worker_dependencies):
-    while True:
-        met_deps = set()
-        unmet_deps = set()
-        for service in data_worker_dependencies:
-            try:
-                r = requests.get(
-                    "http://{}:{}/health".format(service, REST_PORT),
-                    timeout=HEALTH_CHECK_TIMEOUT,
-                )
-                status = True if r.json()["status"] == "running" else False
-                if not status:
-                    unmet_deps.add(service)
-                else:
-                    met_deps.add(service)
-            except Exception:
-                unmet_deps.add(service)
-        if len(unmet_deps) == 0:
-            log.info(
-                "all needed data workers started: {}".format(data_worker_dependencies)
-            )
-            break
-        else:
-            log.info(
-                "'{}' data workers started, waiting for: '{}'".format(
-                    met_deps, unmet_deps
-                )
-            )
-        time.sleep(1)
 
 
 class ConfigHandler(RequestHandler):

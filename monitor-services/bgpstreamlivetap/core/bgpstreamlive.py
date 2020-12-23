@@ -10,14 +10,21 @@ import requests
 import ujson as json
 from artemis_utils import get_ip_version
 from artemis_utils import get_logger
-from artemis_utils import key_generator
-from artemis_utils import mformat_validator
-from artemis_utils import normalize_msg_path
-from artemis_utils import ping_redis
-from artemis_utils import RABBITMQ_URI
-from artemis_utils import REDIS_HOST
-from artemis_utils import REDIS_PORT
-from artemis_utils.rabbitmq_util import create_exchange
+from artemis_utils.constants import CONFIGURATION_HOST
+from artemis_utils.constants import DATABASE_HOST
+from artemis_utils.constants import MAX_DATA_WORKER_WAIT_TIMEOUT
+from artemis_utils.constants import PREFIXTREE_HOST
+from artemis_utils.constants import START_TIME_OFFSET
+from artemis_utils.envvars import MON_TIMEOUT_LAST_BGP_UPDATE
+from artemis_utils.envvars import RABBITMQ_URI
+from artemis_utils.envvars import REDIS_HOST
+from artemis_utils.envvars import REDIS_PORT
+from artemis_utils.envvars import REST_PORT
+from artemis_utils.rabbitmq import create_exchange
+from artemis_utils.redis import ping_redis
+from artemis_utils.updates import key_generator
+from artemis_utils.updates import MformatValidator
+from artemis_utils.updates import normalize_msg_path
 from kombu import Connection
 from kombu import Producer
 from tornado.ioloop import IOLoop
@@ -38,19 +45,10 @@ shared_memory_locks = {
 }
 
 # global vars
-START_TIME_OFFSET = 3600  # seconds
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
-DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE = 60 * 60
 SERVICE_NAME = "bgpstreamlivetap"
-CONFIGURATION_HOST = "configuration"
-PREFIXTREE_HOST = "prefixtree"
-DATABASE_HOST = "database"
-REST_PORT = int(os.getenv("REST_PORT", 3000))
 LIVE_PROJECT_MAPPINGS = {"ris": "ris-live", "routeviews": "routeviews-stream"}
 DEPRECATED_PROJECTS = ["caida"]
-MAX_WAIT_TIMEOUT = (
-    10
-)  # seconds to determine that current data worker cannot stop gracefully
 
 # TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
@@ -107,7 +105,7 @@ def stop_data_worker(shared_memory_manager_dict):
             break
         time.sleep(1)
         time_waiting += 1
-        if time_waiting == MAX_WAIT_TIMEOUT:
+        if time_waiting == MAX_DATA_WORKER_WAIT_TIMEOUT:
             log.error(
                 "timeout expired during stop-waiting, will kill process non-gracefully"
             )
@@ -372,15 +370,7 @@ class BGPStreamLiveDataWorker:
     def run(self):
         # update redis
         ping_redis(redis)
-        redis.set(
-            "bgpstreamlive_seen_bgp_update",
-            "1",
-            ex=int(
-                os.getenv(
-                    "MON_TIMEOUT_LAST_BGP_UPDATE", DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE
-                )
-            ),
-        )
+        redis.set("bgpstreamlive_seen_bgp_update", "1", ex=MON_TIMEOUT_LAST_BGP_UPDATE)
 
         # create a new bgpstream instance and a reusable bgprecord instance
         stream = _pybgpstream.BGPStream()
@@ -419,7 +409,7 @@ class BGPStreamLiveDataWorker:
         stream.start()
 
         # start producing
-        validator = mformat_validator()
+        validator = MformatValidator()
         with Producer(self.connection) as producer:
             while True:
                 if not self.shared_memory_manager_dict["data_worker_should_run"]:
@@ -448,12 +438,7 @@ class BGPStreamLiveDataWorker:
                         redis.set(
                             "bgpstreamlive_seen_bgp_update",
                             "1",
-                            ex=int(
-                                os.getenv(
-                                    "MON_TIMEOUT_LAST_BGP_UPDATE",
-                                    DEFAULT_MON_TIMEOUT_LAST_BGP_UPDATE,
-                                )
-                            ),
+                            ex=MON_TIMEOUT_LAST_BGP_UPDATE,
                         )
                         this_prefix = str(elem.fields["prefix"])
                         service = "bgpstreamlive|{}|{}".format(

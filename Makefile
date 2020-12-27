@@ -7,20 +7,22 @@ SERVICES ?= $(BACKEND_SERVICES) + $(TAP_SERVICES) + $(FRONTEND_SERVICES)
 PUSH ?= false
 BUILD_TAG ?= latest
 CONTAINER_REPO ?= docker.io/inspiregroup
+RELEASE ?= latest
 
 .PHONY: $(BACKEND_SERVICES)
 $(BACKEND_SERVICES): # build backend container
 $(BACKEND_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
-	@docker pull $(CONTAINER_REPO)/artemis-$@:latest
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
 ifneq ($(BUILD_TAG), "latest")
-	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG)
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
 		backend-services/$@/
 ifeq ($(PUSH), "true")
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 endif
 
@@ -28,16 +30,34 @@ endif
 $(TAP_SERVICES): # build tap container
 $(TAP_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
-	@docker pull $(CONTAINER_REPO)/artemis-$@:latest
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
 ifneq ($(BUILD_TAG), "latest")
-	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG)
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
 		monitor-services/$@/
 ifeq ($(PUSH), "true")
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
+endif
+
+.PHONY: $(FRONTEND_SERVICES)
+$(FRONTEND_SERVICES): # build frontend container
+$(FRONTEND_SERVICES):
+	@echo "Building $@ service for tag $(BUILD_TAG)"
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
+ifneq ($(BUILD_TAG), "latest")
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
+endif
+	@docker build --build-arg revision=$(git rev-parse --short HEAD) \
+		-t artemis-frontend:$(BUILD_TAG) \
+		--cache-from $(CONTAINER_REPO)/artemis-frontend:latest \
+		--cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
+ifeq ($(PUSH), "true")
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
+	@docker push $(CONTAINER_REPO)/artemis-temp$@:${BUILD_TAG}
 endif
 
 .PHONY: build-backend
@@ -50,9 +70,7 @@ build-taps: $(TAP_SERVICES)
 
 .PHONY: build-frontend
 build-frontend: # builds frontend container
-build-frontend:
-	@docker pull $(CONTAINER_REPO)/artemis-frontend:latest
-	@docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:$(BUILD_TAG) --cache-from $(CONTAINER_REPO)/artemis-frontend:latest --cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
+build-frontend: $(FRONTEND_SERVICES)
 
 .PHONY: migration-check
 migration-check: # checks if migration is not broken
@@ -119,14 +137,27 @@ start:
 		cp -rn monitor-services/configs/* local_configs/monitor && \
 		cp -rn frontend/webapp/configs/* local_configs/frontend; \
 	fi
-	@docker-compose up
+	@docker-compose up -d
 
 .PHONY: stop
 stop: # stop containers
 stop:
 	@docker-compose down -v --remove-orphans
 
-.PHONY: clean
-clean: # stop containers and clean volumes
-clean: stop
+.PHONY: clean-db
+clean-db: # stop containers and clean volumes
+clean-db: stop
 	@sudo rm -rf postgres-data-* frontend/db/artemis_webapp.db
+
+.PHONY: release
+release: # pull and tag images for a new release
+release:
+ifneq ($(BUILD_TAG), "latest")
+	@for service in $(SERVICES) ; do \
+		@docker $(CONTAINER_REPO)/artemis-$$service:latest \
+		@docker tag $(CONTAINER_REPO)/artemis-$$service:latest $(CONTAINER_REPO)/artemis-$$service:$(RELEASE) \
+		@docker push $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \
+	done
+else
+	@echo "Provide the release to tag and push (i.e 'RELEASE=v1.2.3 make release')"
+endif

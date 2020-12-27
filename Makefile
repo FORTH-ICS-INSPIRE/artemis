@@ -12,9 +12,9 @@ CONTAINER_REPO ?= docker.io/inspiregroup
 $(BACKEND_SERVICES): # build backend container
 $(BACKEND_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
-	@docker pull $(CONTAINER_REPO)/artemis-$@:latest
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
 ifneq ($(BUILD_TAG), "latest")
-	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG)
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
@@ -28,9 +28,9 @@ endif
 $(TAP_SERVICES): # build tap container
 $(TAP_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
-	@docker pull $(CONTAINER_REPO)/artemis-$@:latest
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
 ifneq ($(BUILD_TAG), "latest")
-	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG)
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
@@ -51,8 +51,8 @@ build-taps: $(TAP_SERVICES)
 .PHONY: build-frontend
 build-frontend: # builds frontend container
 build-frontend:
-	@docker pull $(CONTAINER_REPO)/artemis-frontend:latest
-	@docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:$(BUILD_TAG) --cache-from $(CONTAINER_REPO)/artemis-frontend:latest --cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
+	@docker pull $(CONTAINER_REPO)/artemis-frontend:latest || true
+	@docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:$(BUILD_TAG) --cache-from $(CONTAINER_REPO)/artemis-frontend:latest --cache-from $(CONTAINER_REPO)/artemis-tempfrontend:$(BUILD_TAG) frontend/
 
 .PHONY: migration-check
 migration-check: # checks if migration is not broken
@@ -119,14 +119,14 @@ start:
 		cp -rn monitor-services/configs/* local_configs/monitor && \
 		cp -rn frontend/webapp/configs/* local_configs/frontend; \
 	fi
-	@docker-compose up
+	@docker-compose up -d
 
 .PHONY: stop
 stop: # stop containers
 stop:
 	@docker-compose down -v --remove-orphans
 
-.PHONY: clean
-clean: # stop containers and clean volumes
-clean: stop
+.PHONY: clean-db
+clean-db: # stop containers and clean volumes
+clean-db: stop
 	@sudo rm -rf postgres-data-* frontend/db/artemis_webapp.db

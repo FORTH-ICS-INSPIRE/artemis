@@ -91,8 +91,8 @@ verify-configuration:
 setup-dev: # pull all images and tag them for local development
 setup-dev:
 	@for service in $(SERVICES) ; do \
-  		@docker-compose pull $$service
-		docker tag $(CONTAINER_REPO)/artemis-$$service:$(BUILD_TAG) artemis_$$service:latest; \
+		@docker-compose pull $$service; \
+		@docker tag $(CONTAINER_REPO)/artemis-$$service:$(BUILD_TAG) artemis_$$service:latest; \
 	done
 	@if [ ! -d "local_configs" ]; then \
 		mkdir -p local_configs && \
@@ -154,8 +154,8 @@ release: # pull and tag images for a new release
 release:
 ifneq ($(BUILD_TAG), "latest")
 	@for service in $(SERVICES) ; do \
-		@docker $(CONTAINER_REPO)/artemis-$$service:latest \
-		@docker tag $(CONTAINER_REPO)/artemis-$$service:latest $(CONTAINER_REPO)/artemis-$$service:$(RELEASE) \
+		@docker pull $(CONTAINER_REPO)/artemis-$$service:latest; \
+		@docker tag $(CONTAINER_REPO)/artemis-$$service:latest $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \
 		@docker push $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \
 	done
 else

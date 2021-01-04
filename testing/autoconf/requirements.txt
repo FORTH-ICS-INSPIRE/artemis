@@ -1,4 +1,4 @@
 kombu==4.6.7
 psycopg2==2.8.4
 requests==2.25.1
-ujson==1.35
+ujson==4.0.1

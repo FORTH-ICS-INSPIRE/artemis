@@ -4,7 +4,7 @@ gql==0.4.0
 ipaddress==1.0.23
 kombu==4.6.7
 netaddr==0.7.19
-psycopg2==2.8.4
+psycopg2==2.8.6
 pytricia==1.0.0
 PyYAML==5.3
 redis==3.4.0

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced sets that are not supported by shared manager with lists
 - Removed unneeded read locks
 - Non-gracefull SIGKILL for taps in case graceful stop delays a lot
+- Redis configuration file input
 
 ### Removed
 - TBD (removed a feature)

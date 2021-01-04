@@ -50,8 +50,6 @@ SERVICE_NAME = "bgpstreamlivetap"
 LIVE_PROJECT_MAPPINGS = {"ris": "ris-live", "routeviews": "routeviews-stream"}
 DEPRECATED_PROJECTS = ["caida"]
 
-# TODO: introduce redis-based restart logic (if no data is received within certain time frame)
-
 
 def start_data_worker(shared_memory_manager_dict):
     shared_memory_locks["data_worker"].acquire()
@@ -349,6 +347,40 @@ class BGPStreamLiveTap:
         IOLoop.current().start()
 
 
+class RedisChecker:
+    """
+    Checker for redis expiry events (stops data worker and allows it to restart automatically)
+    """
+
+    def __init__(self, shared_memory_manager_dict, monitor="bgpstreamlive"):
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+        self.redis_pubsub = redis.pubsub()
+        self.redis_pubsub_mon_channel = "__keyspace@0__:{}_seen_bgp_update".format(
+            monitor
+        )
+        self.redis_listener_thread = None
+
+    def redis_event_handler(self, msg):
+        if (
+            "pattern" in msg
+            and "channel" in msg
+            and "data" in msg
+            and str(msg["channel"].decode()) == self.redis_pubsub_mon_channel
+            and str(msg["data"].decode()) == "expired"
+        ):
+            stop_msg = stop_data_worker(self.shared_memory_manager_dict)
+            log.info(stop_msg)
+
+    def run(self):
+        try:
+            self.redis_pubsub.psubscribe(
+                **{self.redis_pubsub_mon_channel: self.redis_event_handler}
+            )
+            self.redis_listener_thread = self.redis_pubsub.run_in_thread(sleep_time=1)
+        except Exception:
+            log.exception("Exception")
+
+
 class BGPStreamLiveDataWorker:
     """
     RabbitMQ Producer for the BGPStream Live tap Service.
@@ -514,6 +546,12 @@ def main():
             )
     except Exception:
         log.info("could not get configuration upon startup, will get via POST later")
+
+    # initiate redis checker
+    log.info("setting up redis expiry checker process...")
+    redis_checker = RedisChecker(bgpStreamLiveTapService.shared_memory_manager_dict)
+    mp.Process(target=redis_checker.run).start()
+    log.info("redis expiry checker set up")
 
     # start REST within main process
     bgpStreamLiveTapService.start_rest_app()

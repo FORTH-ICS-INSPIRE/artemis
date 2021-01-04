@@ -1,4 +1,4 @@
-kombu==4.6.7
+kombu==5.0.2
 psycopg2==2.8.4
 redis==3.4.0
 requests==2.25.1

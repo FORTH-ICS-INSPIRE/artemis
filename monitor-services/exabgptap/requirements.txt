@@ -13,6 +13,6 @@ ruamel.yaml==0.16.5
 socketIO-client==0.7.2
 socketIO-client-nexus==0.7.6
 tornado==6.0.4
-ujson==1.35
+ujson==4.0.1
 websocket-client==0.57.0
 wheel==0.34.2

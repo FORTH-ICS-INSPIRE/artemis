@@ -1,5 +1,5 @@
 kombu==4.6.7
-psycopg2==2.8.4
+psycopg2==2.8.6
 PyYAML==5.3
 redis==3.4.0
 requests==2.25.1

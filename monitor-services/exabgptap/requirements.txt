@@ -15,4 +15,4 @@ socketIO-client-nexus==0.7.6
 tornado==6.0.4
 ujson==1.35
 websocket-client==0.57.0
-wheel==0.34.2
+wheel==0.36.2

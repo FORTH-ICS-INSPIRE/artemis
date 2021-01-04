@@ -56,17 +56,32 @@ check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docke
    git pull origin master
    ```
 
-6. Re-apply local changes (if auto-merge fails, resolve any conflicts)
+6. (**Only if migrating to 2.0.0**)
+
+   ```
+   mkdir -p local_configs && \
+   mkdir -p local_configs/backend && \
+   mkdir -p local_configs/monitor && \
+   mkdir -p local_configs/frontend && \
+   cp -rn backend-services/configs/* local_configs/backend && \
+   cp backend-services/configs/redis.conf local_configs/backend/redis.conf && \
+   cp -rn monitor-services/configs/* local_configs/monitor && \
+   cp -rn frontend/webapp/configs/* local_configs/frontend
+   ```
+
+   The `-n` flag will prevent overwriting any local changes you have already made.
+
+7. Re-apply local changes (if auto-merge fails, resolve any conflicts)
 
    ```
    git stash pop
    ```
 
-   **NOTE: when migrating from 1.7.0 to 2.0.0, the `docker-compose.yaml` file will undergo significant changes
-   which you should accept from upstream. If needed, recheck the yaml file from scratch and make sure that the correct
-   `local-configs` volume mappings are applied.
+   **NOTE: when migrating to 2.0.0, the `docker-compose.yaml` file will undergo significant changes
+   which you should accept from upstream! If needed, recheck the yaml file and make sure that the correct
+   `local-configs` volume mappings are applied.**
 
-7. **Make sure that you also do a**
+8. **Make sure that you also do a**
    ```
    docker-compose -f ... pull
    ```

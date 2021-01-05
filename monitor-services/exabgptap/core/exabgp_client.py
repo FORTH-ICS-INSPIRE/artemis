@@ -429,6 +429,8 @@ class RedisChecker:
             and "data" in msg
             and str(msg["channel"].decode()) == self.redis_pubsub_mon_channel
             and str(msg["data"].decode()) == "expired"
+            and self.shared_memory_manager_dict["data_worker_configured"]
+            and self.shared_memory_manager_dict["data_worker_running"]
         ):
             stop_msg = stop_data_worker(self.shared_memory_manager_dict)
             log.info(stop_msg)

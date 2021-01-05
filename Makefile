@@ -2,7 +2,7 @@ BACKEND_SERVICES ?= autoignore autostarter configuration database detection file
 TAP_SERVICES ?= bgpstreamhisttap bgpstreamkafkatap bgpstreamlivetap exabgptap riperistap
 FRONTEND_SERVICES ?= frontend
 
-SERVICES ?= $(BACKEND_SERVICES) + $(TAP_SERVICES) + $(FRONTEND_SERVICES)
+SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES) $(FRONTEND_SERVICES)
 
 PUSH ?= false
 BUILD_TAG ?= latest
@@ -14,14 +14,14 @@ $(BACKEND_SERVICES): # build backend container
 $(BACKEND_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
-ifneq ($(BUILD_TAG), "latest")
+ifneq ($(BUILD_TAG), latest)
 	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
 		backend-services/$@/
-ifeq ($(PUSH), "true")
+ifeq ($(PUSH), true)
 	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 endif
@@ -31,14 +31,14 @@ $(TAP_SERVICES): # build tap container
 $(TAP_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
-ifneq ($(BUILD_TAG), "latest")
+ifneq ($(BUILD_TAG), latest)
 	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
 		monitor-services/$@/
-ifeq ($(PUSH), "true")
+ifeq ($(PUSH), true)
 	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 endif
@@ -48,15 +48,15 @@ $(FRONTEND_SERVICES): # build frontend container
 $(FRONTEND_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
-ifneq ($(BUILD_TAG), "latest")
+ifneq ($(BUILD_TAG), latest)
 	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build --build-arg revision=$(git rev-parse --short HEAD) \
-		-t artemis-frontend:$(BUILD_TAG) \
+		-t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-frontend:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
-ifeq ($(PUSH), "true")
-	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
+ifeq ($(PUSH), true)
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-temp$@:${BUILD_TAG}
 	@docker push $(CONTAINER_REPO)/artemis-temp$@:${BUILD_TAG}
 endif
 
@@ -152,7 +152,7 @@ clean-db: stop
 .PHONY: release
 release: # pull and tag images for a new release
 release:
-ifneq ($(BUILD_TAG), "latest")
+ifneq ($(RELEASE), latest)
 	@for service in $(SERVICES) ; do \
 		docker pull $(CONTAINER_REPO)/artemis-$$service:latest; \
 		docker tag $(CONTAINER_REPO)/artemis-$$service:latest $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \

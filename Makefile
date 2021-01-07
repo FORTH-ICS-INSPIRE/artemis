@@ -9,8 +9,14 @@ BUILD_TAG ?= latest
 CONTAINER_REPO ?= docker.io/inspiregroup
 RELEASE ?= latest
 
+.PHONY: log-env
+log-env: # log environment variables
+log-env:
+	@echo "PUSH is set to: $(PUSH)"
+
 .PHONY: $(BACKEND_SERVICES)
 $(BACKEND_SERVICES): # build backend container
+$(BACKEND_SERVICES): log-env
 $(BACKEND_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
@@ -28,6 +34,7 @@ endif
 
 .PHONY: $(TAP_SERVICES)
 $(TAP_SERVICES): # build tap container
+$(TAP_SERVICES): log-env
 $(TAP_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
@@ -45,6 +52,7 @@ endif
 
 .PHONY: $(FRONTEND_SERVICES)
 $(FRONTEND_SERVICES): # build frontend container
+$(FRONTEND_SERVICES): log-env
 $(FRONTEND_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true

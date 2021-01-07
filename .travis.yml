@@ -8,6 +8,7 @@ env:
     - BUILD_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
       == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
     - IS_FORK=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "true"; fi)
+    - PUSH=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "false"; fi)
 branches:
   only:
     - master
@@ -38,91 +39,91 @@ jobs:
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-      - PUSH="${IS_FORK}" make riperistap
+        - make riperistap
     - name: bgpstreamlivetap
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make bgpstreamlivetap
+        - make bgpstreamlivetap
     - name: bgpstreamkafkatap
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make bgpstreamkafkatap
+        - make bgpstreamkafkatap
     - name: bgpstreamhisttap
       install: [ ]
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make bgpstreamhisttap
+        - make bgpstreamhisttap
     - name: exabgptap
       install: [ ]
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make exabgptap
+        - make exabgptap
     - name: autoignore
       install: [ ]
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make autoignore
+        - make autoignore
     - name: autostarter
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make autostarter
+        - make autostarter
     - name: configuration
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make configuration
+        - make configuration
     - name: detection
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make detection
+        - make detection
     - name: database
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make database
+        - make database
     - name: fileobserver
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make fileobserver
+        - make fileobserver
     - name: mitigation
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make mitigation
+        - make mitigation
     - name: notifier
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make notifier
+        - make notifier
     - name: prefixtree
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make prefixtree
+        - make prefixtree
     - name: frontend
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - PUSH="${IS_FORK}" make frontend
+        - make frontend
     - stage: run tests
       name: TestDetection
       install:

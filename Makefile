@@ -99,7 +99,7 @@ verify-configuration:
 setup-dev: # pull all images and tag them for local development
 setup-dev:
 	@for service in $(SERVICES) ; do \
-		docker-compose pull $$service; \
+		docker pull $(CONTAINER_REPO)/artemis-$$service:$(BUILD_TAG); \
 		docker tag $(CONTAINER_REPO)/artemis-$$service:$(BUILD_TAG) artemis_$$service:latest; \
 	done
 	@if [ ! -d "local_configs" ]; then \

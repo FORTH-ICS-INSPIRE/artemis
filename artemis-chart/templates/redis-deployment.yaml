@@ -22,6 +22,10 @@ spec:
       - name: redis
         image: {{ .image }}
         resources: {}
+        command:
+          - redis-server
+        args:
+          - /usr/local/etc/redis/redis.conf
         volumeMounts:
         - mountPath: /usr/local/etc/redis/redis.conf
           name: redis-configmap

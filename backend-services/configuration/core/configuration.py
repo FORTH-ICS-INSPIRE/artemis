@@ -735,6 +735,7 @@ def post_configuration_to_other_services(
     same_service_only = False
     if services == [SERVICE_NAME]:
         same_service_only = True
+    pending_services = set(services)
     for service in services:
         try:
             if IS_KUBERNETES:
@@ -746,6 +747,12 @@ def post_configuration_to_other_services(
         except Exception:
             log.error("could not resolve service '{}'".format(service))
             continue
+        if not same_service_only:
+            log.info(
+                "Reconfiguring '{}' microservice ({} replicas). Pending microservices: {}".format(
+                    service, len(ips_and_replicas), pending_services
+                )
+            )
         for replica_name, replica_ip in ips_and_replicas:
             try:
                 # same service (configuration)
@@ -784,6 +791,14 @@ def post_configuration_to_other_services(
                 assert response["success"]
             except Exception:
                 log.error("could not configure service '{}'".format(replica_name))
+        pending_services.remove(service)
+        if not same_service_only:
+            log.info(
+                "Reconfigured '{}' microservice ({} replicas). Pending microservices: {}".format(
+                    service, len(ips_and_replicas), pending_services
+                )
+            )
+    log.info("All microservices reconfigured")
 
 
 def write_conf_via_tmp_file(config_file, tmp_file, conf, yaml=True) -> NoReturn:

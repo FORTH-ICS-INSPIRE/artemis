@@ -67,6 +67,7 @@ shared_memory_locks = {
     "data_worker": mp.Lock(),
     "config_data": mp.Lock(),
     "ignore_fileobserver": mp.Lock(),
+    "service_reconfiguring": mp.Lock(),
 }
 
 # global vars
@@ -1087,6 +1088,9 @@ class HijackLearnRuleHandler(RequestHandler):
 
 def configure_configuration(msg, shared_memory_manager_dict):
     ret_json = {}
+    shared_memory_locks["service_reconfiguring"].acquire()
+    shared_memory_manager_dict["service_reconfiguring"] = True
+    shared_memory_locks["service_reconfiguring"].release()
 
     # ignore file observer if this is a change that we expect and do not need to re-consider
     if "origin" in msg and msg["origin"] == "fileobserver":
@@ -1101,6 +1105,9 @@ def configure_configuration(msg, shared_memory_manager_dict):
             post_configuration_to_other_services(
                 shared_memory_manager_dict, services=[SERVICE_NAME]
             )
+            shared_memory_locks["service_reconfiguring"].acquire()
+            shared_memory_manager_dict["service_reconfiguring"] = False
+            shared_memory_locks["service_reconfiguring"].release()
             return ret_json
         shared_memory_locks["ignore_fileobserver"].release()
 
@@ -1275,6 +1282,9 @@ def configure_configuration(msg, shared_memory_manager_dict):
         ret_json = {"success": False, "message": "unknown error"}
     finally:
         shared_memory_locks["config_data"].release()
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
         return ret_json
 
 
@@ -1439,6 +1449,7 @@ class Configuration:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["service_reconfiguring"] = False
         self.shared_memory_manager_dict["config_file"] = "/etc/artemis/config.yaml"
         self.shared_memory_manager_dict[
             "tmp_config_file"

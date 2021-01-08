@@ -47,6 +47,7 @@ shared_memory_locks = {
     "monitored_prefixes": mp.Lock(),
     "configured_prefix_count": mp.Lock(),
     "config_timestamp": mp.Lock(),
+    "service_reconfiguring": mp.Lock(),
 }
 
 # global vars
@@ -73,6 +74,9 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
         # check newer config
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
         if config["timestamp"] > config_timestamp:
+            shared_memory_locks["service_reconfiguring"].acquire()
+            shared_memory_manager_dict["service_reconfiguring"] = True
+            shared_memory_locks["service_reconfiguring"].release()
 
             # calculate prefix tree
             prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
@@ -184,10 +188,16 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
             shared_memory_manager_dict["config_timestamp"] = config["timestamp"]
             shared_memory_locks["config_timestamp"].release()
 
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
         return {"success": True, "message": "configured"}
     except Exception:
         log.exception("exception")
-        return {"success": False, "message": "error during data worker configuration"}
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
+        return {"success": False, "message": "error during service configuration"}
 
 
 class ConfigHandler(RequestHandler):
@@ -260,7 +270,7 @@ class ConfigHandler(RequestHandler):
             self.write(configure_prefixtree(msg, self.shared_memory_manager_dict))
         except Exception:
             self.write(
-                {"success": False, "message": "error during data worker configuration"}
+                {"success": False, "message": "error during service configuration"}
             )
 
 
@@ -420,6 +430,7 @@ class PrefixTree:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["service_reconfiguring"] = False
         self.shared_memory_manager_dict["prefix_tree"] = {"v4": {}, "v6": {}}
         self.shared_memory_manager_dict["prefix_tree_recalculate"] = True
         self.shared_memory_manager_dict["monitored_prefixes"] = list()

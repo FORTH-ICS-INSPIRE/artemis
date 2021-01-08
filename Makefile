@@ -2,7 +2,7 @@ BACKEND_SERVICES ?= autoignore autostarter configuration database detection file
 TAP_SERVICES ?= bgpstreamhisttap bgpstreamkafkatap bgpstreamlivetap exabgptap riperistap
 FRONTEND_SERVICES ?= frontend
 
-SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES) $(FRONTEND_SERVICES)
+SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES) tempfrontend
 
 PUSH ?= false
 BUILD_TAG ?= latest

@@ -109,7 +109,7 @@ class Modules_state:
     def is_up_or_running(self, module):
         try:
             r = requests.get("http://{}:{}/health".format(module, REST_PORT))
-            return r.json()["status"] == "running"
+            return r.json()["status"].startswith("running")
         except Exception:
             log.exception("exception")
             return False

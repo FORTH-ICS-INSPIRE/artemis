@@ -67,13 +67,15 @@ class HealthHandler(RequestHandler):
     def get(self):
         """
         Extract the status of a service via a GET request.
-        :return: {"status" : <unconfigured|running|stopped>}
+        :return: {"status" : <unconfigured|running|stopped><,reconfiguring>}
         """
         status = "stopped"
         shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
         shared_memory_locks["data_worker"].release()
+        if self.shared_memory_manager_dict["service_reconfiguring"]:
+            status += ",reconfiguring"
         self.write({"status": status})
 
 
@@ -170,6 +172,7 @@ class Mitigation:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["service_reconfiguring"] = False
 
         log.info("service initiated")
 

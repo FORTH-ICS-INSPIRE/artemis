@@ -1254,10 +1254,11 @@ def configure_configuration(msg, shared_memory_manager_dict):
                             if service not in services_to_notify:
                                 services_to_notify.append(service)
 
-                    # configure needed services with the new config
-                    post_configuration_to_other_services(
-                        shared_memory_manager_dict, services=services_to_notify
-                    )
+                    # configure needed services with the new config in background process
+                    mp.Process(
+                        target=post_configuration_to_other_services,
+                        args=(shared_memory_manager_dict, services_to_notify),
+                    ).start()
 
                     # if the change did not come from the file observer itself,
                     # we write the file

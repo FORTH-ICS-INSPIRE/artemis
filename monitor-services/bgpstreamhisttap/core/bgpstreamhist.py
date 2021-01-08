@@ -129,8 +129,9 @@ def configure_bgpstreamhist(msg, shared_memory_manager_dict):
 
             # check if "bgpstreamhist" is configured at all
             if "bgpstreamhist" not in monitors:
-                stop_msg = stop_data_worker(shared_memory_manager_dict)
-                log.info(stop_msg)
+                if shared_memory_manager_dict["data_worker_running"]:
+                    stop_msg = stop_data_worker(shared_memory_manager_dict)
+                    log.info(stop_msg)
                 shared_memory_locks["data_worker"].acquire()
                 shared_memory_manager_dict["data_worker_configured"] = False
                 shared_memory_locks["data_worker"].release()

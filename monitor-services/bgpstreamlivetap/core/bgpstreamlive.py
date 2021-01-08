@@ -22,6 +22,7 @@ from artemis_utils.envvars import REDIS_PORT
 from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.redis import ping_redis
+from artemis_utils.redis import RedisExpiryChecker
 from artemis_utils.updates import key_generator
 from artemis_utils.updates import MformatValidator
 from artemis_utils.updates import normalize_msg_path
@@ -347,42 +348,6 @@ class BGPStreamLiveTap:
         IOLoop.current().start()
 
 
-class RedisChecker:
-    """
-    Checker for redis expiry events (stops data worker and allows it to restart automatically)
-    """
-
-    def __init__(self, shared_memory_manager_dict, monitor="bgpstreamlive"):
-        self.shared_memory_manager_dict = shared_memory_manager_dict
-        self.redis_pubsub = redis.pubsub()
-        self.redis_pubsub_mon_channel = "__keyspace@0__:{}_seen_bgp_update".format(
-            monitor
-        )
-        self.redis_listener_thread = None
-
-    def redis_event_handler(self, msg):
-        if (
-            "pattern" in msg
-            and "channel" in msg
-            and "data" in msg
-            and str(msg["channel"].decode()) == self.redis_pubsub_mon_channel
-            and str(msg["data"].decode()) == "expired"
-            and self.shared_memory_manager_dict["data_worker_configured"]
-            and self.shared_memory_manager_dict["data_worker_running"]
-        ):
-            stop_msg = stop_data_worker(self.shared_memory_manager_dict)
-            log.info(stop_msg)
-
-    def run(self):
-        try:
-            self.redis_pubsub.psubscribe(
-                **{self.redis_pubsub_mon_channel: self.redis_event_handler}
-            )
-            self.redis_listener_thread = self.redis_pubsub.run_in_thread(sleep_time=1)
-        except Exception:
-            log.exception("Exception")
-
-
 class BGPStreamLiveDataWorker:
     """
     RabbitMQ Producer for the BGPStream Live tap Service.
@@ -551,7 +516,12 @@ def main():
 
     # initiate redis checker
     log.info("setting up redis expiry checker process...")
-    redis_checker = RedisChecker(bgpStreamLiveTapService.shared_memory_manager_dict)
+    redis_checker = RedisExpiryChecker(
+        redis=redis,
+        shared_memory_manager_dict=bgpStreamLiveTapService.shared_memory_manager_dict,
+        monitor="bgpstreamlive",
+        stop_data_worker_fun=stop_data_worker,
+    )
     mp.Process(target=redis_checker.run).start()
     log.info("redis expiry checker set up")
 

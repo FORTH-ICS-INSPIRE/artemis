@@ -56,3 +56,47 @@ def purge_redis_eph_pers_keys(redis_instance, ephemeral_key, persistent_key):
                 redis_pipeline.delete(prefix_peer_hijack_set)
         redis_pipeline.delete("hijack_{}_prefixes_peers".format(ephemeral_key))
     redis_pipeline.execute()
+
+
+class RedisExpiryChecker:
+    """
+    Checker for redis expiry events (stops data worker and allows it to restart automatically)
+    """
+
+    def __init__(
+        self,
+        redis=None,
+        shared_memory_manager_dict=None,
+        monitor=None,
+        stop_data_worker_fun=None,
+    ):
+        self.redis = redis
+        self.shared_memory_manager_dict = shared_memory_manager_dict
+        self.redis_pubsub = self.redis.pubsub()
+        self.redis_pubsub_mon_channel = "__keyspace@0__:{}_seen_bgp_update".format(
+            monitor
+        )
+        self.redis_listener_thread = None
+        self.stop_data_worker_fun = stop_data_worker_fun
+
+    def redis_event_handler(self, msg):
+        if (
+            "pattern" in msg
+            and "channel" in msg
+            and "data" in msg
+            and str(msg["channel"].decode()) == self.redis_pubsub_mon_channel
+            and str(msg["data"].decode()) == "expired"
+            and self.shared_memory_manager_dict["data_worker_configured"]
+            and self.shared_memory_manager_dict["data_worker_running"]
+        ):
+            stop_msg = self.stop_data_worker_fun(self.shared_memory_manager_dict)
+            log.info(stop_msg)
+
+    def run(self):
+        try:
+            self.redis_pubsub.psubscribe(
+                **{self.redis_pubsub_mon_channel: self.redis_event_handler}
+            )
+            self.redis_listener_thread = self.redis_pubsub.run_in_thread(sleep_time=1)
+        except Exception:
+            log.exception("Exception")

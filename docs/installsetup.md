@@ -111,6 +111,7 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    mkdir -p local_configs/monitor && \
    mkdir -p local_configs/frontend && \
    cp -rn backend-services/configs/* local_configs/backend && \
+   cp backend-services/configs/redis.conf local_configs/backend/redis.conf && \
    cp -rn monitor-services/configs/* local_configs/monitor && \
    cp -rn frontend/webapp/configs/* local_configs/frontend
    ```

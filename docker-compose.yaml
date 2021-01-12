@@ -372,6 +372,7 @@ services:
             - ${REDIS_PORT}
         volumes:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     frontend:
         build:
             context: frontend/

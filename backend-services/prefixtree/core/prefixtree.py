@@ -719,8 +719,7 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                     serializer="ujson",
                 )
             else:
-                # log.error("unconfigured BGP update received '{}'".format(bgp_update))
-                pass
+                log.warning("unconfigured BGP update received '{}'".format(bgp_update))
         except Exception:
             log.exception("exception")
 
@@ -742,10 +741,9 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                     serializer="ujson",
                 )
             else:
-                # log.error(
-                #     "unconfigured stored BGP update received '{}'".format(bgp_update)
-                # )
-                pass
+                log.warning(
+                    "unconfigured stored BGP update received '{}'".format(bgp_update)
+                )
         except Exception:
             log.exception("exception")
 

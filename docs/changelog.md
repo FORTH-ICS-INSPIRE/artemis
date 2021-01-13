@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to reload targeted services based on what conf section changed
 - GET config endpoints to backend and monitor services
 - Service reconfiguring flag and status
+- Redis no-data-received key expiry logic (default: 60 seconds)
 
 ### Changed
 - Decoupled microservice architecture for backend and frontend
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded to new bgpstream containers (using also ris and routeviews live sources)
 - Full refactoring and upgrade of artemis-utils, refactored all imports (1.0.7)
 - Upgraded Flask-JWT-Extended to 3.25.0 to address JWT issue with new browsers
+- Upgraded artemis-utils to 1.0.8
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)
@@ -32,15 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced sets that are not supported by shared manager with lists
 - Removed unneeded read locks
 - Non-gracefull SIGKILL for taps in case graceful stop delays a lot
-
-### Removed
-- TBD (removed a feature)
+- Redis configuration file input
 
 ### Deprecated
 - 'caida' project in bgpstreamlive
-
-### Security
-- TBD (addressing vulnerability)
+- supervisor support and configuration
 
 ## [1.6.0] (Achilles) - 2020-11-02
 ### Added

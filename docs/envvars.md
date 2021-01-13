@@ -43,10 +43,11 @@ Unique ID to be used for RIPE RIS BGP update streaming (recommended: use ASN)
 ```
 RIS_ID=8522
 ```
-Timeout (in seconds) since last seen BGP update for monitors (e.g., RIPE RIS, BGPStream RV, exaBGP, betaBMP, etc.).
-If no update has been received by one of the monitors during this interval, the respective monitor is restarted. Historical monitors are excluded for obvious reasons.
+Timeout (in seconds) since last seen BGP update for monitors (e.g., RIPE RIS, BGPStream RV/RIS, exaBGP, etc.).
+If no update has been received by one of the monitors during this interval, the respective monitor is restarted.
+Historical monitors are excluded for obvious reasons.
 ```
-MON_TIMEOUT_LAST_BGP_UPDATE=3600
+MON_TIMEOUT_LAST_BGP_UPDATE=60
 ```
 
 ## DB config (used by all containers)

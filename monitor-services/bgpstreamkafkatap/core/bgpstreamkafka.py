@@ -22,6 +22,7 @@ from artemis_utils.envvars import REDIS_PORT
 from artemis_utils.envvars import REST_PORT
 from artemis_utils.rabbitmq import create_exchange
 from artemis_utils.redis import ping_redis
+from artemis_utils.redis import RedisExpiryChecker
 from artemis_utils.updates import key_generator
 from artemis_utils.updates import MformatValidator
 from artemis_utils.updates import normalize_msg_path
@@ -50,8 +51,6 @@ shared_memory_locks = {
 # global vars
 redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 SERVICE_NAME = "bgpstreamkafkatap"
-
-# TODO: introduce redis-based restart logic (if no data is received within certain time frame)
 
 
 def start_data_worker(shared_memory_manager_dict):
@@ -557,6 +556,17 @@ def main():
             )
     except Exception:
         log.info("could not get configuration upon startup, will get via POST later")
+
+    # initiate redis checker
+    log.info("setting up redis expiry checker process...")
+    redis_checker = RedisExpiryChecker(
+        redis=redis,
+        shared_memory_manager_dict=bgpStreamKafkaTapService.shared_memory_manager_dict,
+        monitor="bgpstreamkafka",
+        stop_data_worker_fun=stop_data_worker,
+    )
+    mp.Process(target=redis_checker.run).start()
+    log.info("redis expiry checker set up")
 
     # start REST within main process
     bgpStreamKafkaTapService.start_rest_app()

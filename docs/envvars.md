@@ -47,7 +47,7 @@ Timeout (in seconds) since last seen BGP update for monitors (e.g., RIPE RIS, BG
 If no update has been received by one of the monitors during this interval, the respective monitor is restarted.
 Historical monitors are excluded for obvious reasons.
 ```
-MON_TIMEOUT_LAST_BGP_UPDATE=60
+MON_TIMEOUT_LAST_BGP_UPDATE=3600
 ```
 
 ## DB config (used by all containers)

@@ -55,6 +55,7 @@ shared_memory_locks = {
     "outdate_hijacks": mp.Lock(),
     "insert_hijacks_entries": mp.Lock(),
     "monitors": mp.Lock(),
+    "service_reconfiguring": mp.Lock(),
 }
 
 # global vars
@@ -162,6 +163,10 @@ def configure_database(msg, shared_memory_manager_dict):
         # check newer config
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
         if config["timestamp"] > config_timestamp:
+            shared_memory_locks["service_reconfiguring"].acquire()
+            shared_memory_manager_dict["service_reconfiguring"] = True
+            shared_memory_locks["service_reconfiguring"].release()
+
             incoming_config_timestamp = config["timestamp"]
             if "timestamp" in config:
                 del config["timestamp"]
@@ -226,8 +231,15 @@ def configure_database(msg, shared_memory_manager_dict):
             shared_memory_manager_dict["config_timestamp"] = incoming_config_timestamp
             shared_memory_locks["config_timestamp"].release()
 
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
         return {"success": True, "message": "configured"}
     except Exception:
+        log.exception("exception")
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
         return {"success": False, "message": "error during service configuration"}
 
 
@@ -310,13 +322,15 @@ class HealthHandler(RequestHandler):
     def get(self):
         """
         Extract the status of a service via a GET request.
-        :return: {"status" : <unconfigured|running|stopped>}
+        :return: {"status" : <unconfigured|running|stopped><,reconfiguring>}
         """
         status = "stopped"
         shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
         shared_memory_locks["data_worker"].release()
+        if self.shared_memory_manager_dict["service_reconfiguring"]:
+            status += ",reconfiguring"
         self.write({"status": status})
 
 
@@ -617,6 +631,7 @@ class Database:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["service_reconfiguring"] = False
         self.shared_memory_manager_dict["monitored_prefixes"] = list()
         self.shared_memory_manager_dict["monitors"] = {}
         self.shared_memory_manager_dict["configured_prefix_count"] = 0

@@ -41,6 +41,7 @@ shared_memory_locks = {
     "hosts": mp.Lock(),
     "autoconf_updates": mp.Lock(),
     "config_timestamp": mp.Lock(),
+    "service_reconfiguring": mp.Lock(),
 }
 
 # global vars
@@ -103,17 +104,25 @@ def configure_exabgp(msg, shared_memory_manager_dict):
         # check newer config
         config_timestamp = shared_memory_manager_dict["config_timestamp"]
         if config["timestamp"] > config_timestamp:
+            shared_memory_locks["service_reconfiguring"].acquire()
+            shared_memory_manager_dict["service_reconfiguring"] = True
+            shared_memory_locks["service_reconfiguring"].release()
+
             # get monitors
             r = requests.get("http://{}:{}/monitors".format(DATABASE_HOST, REST_PORT))
             monitors = r.json()["monitors"]
 
             # check if "exabgp" is configured at all
             if "exabgp" not in monitors:
-                stop_msg = stop_data_worker(shared_memory_manager_dict)
-                log.info(stop_msg)
+                if shared_memory_manager_dict["data_worker_running"]:
+                    stop_msg = stop_data_worker(shared_memory_manager_dict)
+                    log.info(stop_msg)
                 shared_memory_locks["data_worker"].acquire()
                 shared_memory_manager_dict["data_worker_configured"] = False
                 shared_memory_locks["data_worker"].release()
+                shared_memory_locks["service_reconfiguring"].acquire()
+                shared_memory_manager_dict["service_reconfiguring"] = False
+                shared_memory_locks["service_reconfiguring"].release()
                 return {"success": True, "message": "data worker not in configuration"}
 
             # check if the worker should run (if configured)
@@ -161,10 +170,16 @@ def configure_exabgp(msg, shared_memory_manager_dict):
                 start_msg = start_data_worker(shared_memory_manager_dict)
                 log.info(start_msg)
 
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
         return {"success": True, "message": "configured"}
     except Exception:
         log.exception("exception")
-        return {"success": False, "message": "error during data worker configuration"}
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
+        return {"success": False, "message": "error during service configuration"}
 
 
 class ConfigHandler(RequestHandler):
@@ -220,7 +235,7 @@ class ConfigHandler(RequestHandler):
             self.write(configure_exabgp(msg, self.shared_memory_manager_dict))
         except Exception:
             self.write(
-                {"success": False, "message": "error during data worker configuration"}
+                {"success": False, "message": "error during service configuration"}
             )
 
 
@@ -235,7 +250,7 @@ class HealthHandler(RequestHandler):
     def get(self):
         """
         Extract the status of a service via a GET request.
-        :return: {"status" : <unconfigured|running|stopped>}
+        :return: {"status" : <unconfigured|running|stopped><,reconfiguring>}
         """
         status = "stopped"
         shared_memory_locks["data_worker"].acquire()
@@ -244,6 +259,8 @@ class HealthHandler(RequestHandler):
         elif not self.shared_memory_manager_dict["data_worker_configured"]:
             status = "unconfigured"
         shared_memory_locks["data_worker"].release()
+        if self.shared_memory_manager_dict["service_reconfiguring"]:
+            status += ",reconfiguring"
         self.write({"status": status})
 
 
@@ -291,6 +308,7 @@ class ExaBGPTap:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["service_reconfiguring"] = False
         self.shared_memory_manager_dict["data_worker_should_run"] = False
         self.shared_memory_manager_dict["data_worker_configured"] = False
         self.shared_memory_manager_dict["monitored_prefixes"] = list()

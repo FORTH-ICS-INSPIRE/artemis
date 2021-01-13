@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Action and necessary logic to un-mitigate a hijack
 - Ability to reload targeted services based on what conf section changed
 - GET config endpoints to backend and monitor services
+- Service reconfiguring flag and status
 - Redis no-data-received key expiry logic (default: 60 seconds)
 
 ### Changed
@@ -35,14 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Non-gracefull SIGKILL for taps in case graceful stop delays a lot
 - Redis configuration file input
 
-### Removed
-- TBD (removed a feature)
-
 ### Deprecated
 - 'caida' project in bgpstreamlive
-
-### Security
-- TBD (addressing vulnerability)
+- supervisor support and configuration
 
 ## [1.6.0] (Achilles) - 2020-11-02
 ### Added

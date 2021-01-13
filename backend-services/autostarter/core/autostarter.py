@@ -97,11 +97,13 @@ class HealthHandler(RequestHandler):
     def get(self):
         """
         Extract the status of a service via a GET request.
-        :return: {"status" : <unconfigured|running|stopped>}
+        :return: {"status" : <unconfigured|running|stopped><,reconfiguring>}
         """
         status = "stopped"
         if self.shared_memory_manager_dict["worker_running"]:
             status = "running"
+        if self.shared_memory_manager_dict["service_reconfiguring"]:
+            status += ",reconfiguring"
         self.write({"status": status})
 
 
@@ -115,6 +117,7 @@ class Autostarter:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["worker_running"] = False
+        self.shared_memory_manager_dict["service_reconfiguring"] = False
         self.shared_memory_manager_dict["detection_update_trigger"] = False
 
         log.info("service initiated")
@@ -284,7 +287,9 @@ class AutostarterWorker:
                         "http://{}:{}/health".format(replica_ip, REST_PORT),
                         timeout=HEALTH_CHECK_TIMEOUT,
                     )
-                    current_status = True if r.json()["status"] == "running" else False
+                    current_status = (
+                        True if r.json()["status"].startswith("running") else False
+                    )
                     # check if we need to update stored status
                     stored_status = None
                     if replica_name in stored_status_dict:
@@ -297,7 +302,7 @@ class AutostarterWorker:
                     # ATTENTION: if response status is unconfigured, then the actual intention is False
                     intended_status = (
                         False
-                        if r.json()["status"] == "unconfigured"
+                        if r.json()["status"].startswith("unconfigured")
                         else intended_status
                     )
                     if intended_status == current_status:

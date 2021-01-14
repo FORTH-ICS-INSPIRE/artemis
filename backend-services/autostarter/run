@@ -1,0 +1,14 @@
+#!/bin/bash
+
+umask 002
+2>&1
+
+cd /opt/${MODULE}/
+
+# don't compile when developing
+if [ ! -d "/code" ]; then
+  make -j
+fi
+
+cd core
+exec chpst python -c "import ${MODULE}; ${MODULE}.run()"

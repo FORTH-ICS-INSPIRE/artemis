@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ -d "/utils" ]; then
+  pip install /utils
+fi
+
+if [ -d "/code" ]; then
+  rm -rf /opt/${MODULE}/
+  ln -s /code /opt/${MODULE}
+fi

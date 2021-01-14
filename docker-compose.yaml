@@ -152,7 +152,10 @@ services:
             - ./backend-services/autoignore/entrypoint:/root/entrypoint
     autostarter:
         image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
-        build: ./backend-services/autostarter/
+        build:
+            context: ./backend-services/autostarter/
+            args:
+                - MODULE=autostarter
         restart: always
         depends_on:
             - autoignore
@@ -182,7 +185,9 @@ services:
             REST_PORT: 3000
         volumes:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
-            - ./backend-services/autostarter/entrypoint:/root/entrypoint
+            # dev
+            - ./backend-services/autostarter:/code
+            - ./utils:/utils
     configuration:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
         build: ./backend-services/configuration/

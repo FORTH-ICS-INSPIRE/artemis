@@ -185,6 +185,7 @@
                                 <div class="col-lg-4">
                                     <button id="hijack_apply_action" type="button" class="btn btn-primary btn-sm">Apply</button>
                                 </div>
+                                <a id="downloadHijackJSONElem" style="display:none"></a>
                             </div>
                         </div>
                     </div>
@@ -933,6 +934,7 @@
 
                 $('#hijack_acknowledged_badge').show();
                 $("#hijack_action_selection").append(new Option("Delete Hijack", "hijack_action_delete"));
+                $("#hijack_action_selection").append(new Option("Export JSON", "hijack_action_export_json"));
                 asn_map_to_name();
             }
 
@@ -990,6 +992,9 @@
                             "state": false,
                             "action": "seen"
                         }
+                    }else if(action == "hijack_action_export_json"){
+                        hijack_export_json_link(hijack_obj['key']);
+                        return;
                     }
                     if(obj){
                         postFetch_json(url, obj);
@@ -1196,6 +1201,24 @@
                     url += "&parameters=" + downloadTable_parameters;
                 }
                 $("#download_table_button").attr("href", url);
+            }
+
+            function hijack_export_json_link(hijack_key){
+                var url = "{{ url_for('proxy_api') }}" + "?download_table=true&action=view_hijacks";
+                if(hijack_key != null){
+                    url += "&parameters=(key.eq." + hijack_key + ")";
+                }
+                $.getJSON(url, function(data) {
+                    hijack_data = null;
+                    if(data.length > 0){
+                        hijack_data = data[0];
+                    }
+                    var hijackDataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(hijack_data));
+                    var dlHijackJSONElem = document.getElementById('downloadHijackJSONElem');
+                    dlHijackJSONElem.setAttribute("href",     hijackDataStr     );
+                    dlHijackJSONElem.setAttribute("download", hijack_key + ".json");
+                    dlHijackJSONElem.click();
+                });
             }
 
             function format_bgp_update_expand(d) {

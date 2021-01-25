@@ -396,6 +396,7 @@ services:
             - ${REDIS_PORT}
         volumes:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     frontend:
         image: inspiregroup/artemis-tempfrontend:${SYSTEM_VERSION}
         build: ./frontend/

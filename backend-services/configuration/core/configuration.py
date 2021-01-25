@@ -67,6 +67,7 @@ shared_memory_locks = {
     "data_worker": mp.Lock(),
     "config_data": mp.Lock(),
     "ignore_fileobserver": mp.Lock(),
+    "service_reconfiguring": mp.Lock(),
 }
 
 # global vars
@@ -734,6 +735,7 @@ def post_configuration_to_other_services(
     same_service_only = False
     if services == [SERVICE_NAME]:
         same_service_only = True
+    pending_services = set(services)
     for service in services:
         try:
             if IS_KUBERNETES:
@@ -745,6 +747,12 @@ def post_configuration_to_other_services(
         except Exception:
             log.error("could not resolve service '{}'".format(service))
             continue
+        if not same_service_only:
+            log.info(
+                "Reconfiguring '{}' microservice ({} replicas). Pending microservices: {}".format(
+                    service, len(ips_and_replicas), pending_services
+                )
+            )
         for replica_name, replica_ip in ips_and_replicas:
             try:
                 # same service (configuration)
@@ -783,6 +791,14 @@ def post_configuration_to_other_services(
                 assert response["success"]
             except Exception:
                 log.error("could not configure service '{}'".format(replica_name))
+        pending_services.remove(service)
+        if not same_service_only:
+            log.info(
+                "Reconfigured '{}' microservice ({} replicas). Pending microservices: {}".format(
+                    service, len(ips_and_replicas), pending_services
+                )
+            )
+    log.info("All microservices reconfigured")
 
 
 def write_conf_via_tmp_file(config_file, tmp_file, conf, yaml=True) -> NoReturn:
@@ -1087,6 +1103,9 @@ class HijackLearnRuleHandler(RequestHandler):
 
 def configure_configuration(msg, shared_memory_manager_dict):
     ret_json = {}
+    shared_memory_locks["service_reconfiguring"].acquire()
+    shared_memory_manager_dict["service_reconfiguring"] = True
+    shared_memory_locks["service_reconfiguring"].release()
 
     # ignore file observer if this is a change that we expect and do not need to re-consider
     if "origin" in msg and msg["origin"] == "fileobserver":
@@ -1101,6 +1120,9 @@ def configure_configuration(msg, shared_memory_manager_dict):
             post_configuration_to_other_services(
                 shared_memory_manager_dict, services=[SERVICE_NAME]
             )
+            shared_memory_locks["service_reconfiguring"].acquire()
+            shared_memory_manager_dict["service_reconfiguring"] = False
+            shared_memory_locks["service_reconfiguring"].release()
             return ret_json
         shared_memory_locks["ignore_fileobserver"].release()
 
@@ -1247,10 +1269,11 @@ def configure_configuration(msg, shared_memory_manager_dict):
                             if service not in services_to_notify:
                                 services_to_notify.append(service)
 
-                    # configure needed services with the new config
-                    post_configuration_to_other_services(
-                        shared_memory_manager_dict, services=services_to_notify
-                    )
+                    # configure needed services with the new config in background process
+                    mp.Process(
+                        target=post_configuration_to_other_services,
+                        args=(shared_memory_manager_dict, services_to_notify),
+                    ).start()
 
                     # if the change did not come from the file observer itself,
                     # we write the file
@@ -1275,6 +1298,9 @@ def configure_configuration(msg, shared_memory_manager_dict):
         ret_json = {"success": False, "message": "unknown error"}
     finally:
         shared_memory_locks["config_data"].release()
+        shared_memory_locks["service_reconfiguring"].acquire()
+        shared_memory_manager_dict["service_reconfiguring"] = False
+        shared_memory_locks["service_reconfiguring"].release()
         return ret_json
 
 
@@ -1336,13 +1362,15 @@ class HealthHandler(RequestHandler):
     def get(self):
         """
         Extract the status of a service via a GET request.
-        :return: {"status" : <unconfigured|running|stopped>}
+        :return: {"status" : <unconfigured|running|stopped><,reconfiguring>}
         """
         status = "stopped"
         shared_memory_locks["data_worker"].acquire()
         if self.shared_memory_manager_dict["data_worker_running"]:
             status = "running"
         shared_memory_locks["data_worker"].release()
+        if self.shared_memory_manager_dict["service_reconfiguring"]:
+            status += ",reconfiguring"
         self.write({"status": status})
 
 
@@ -1439,6 +1467,7 @@ class Configuration:
         shared_memory_manager = mp.Manager()
         self.shared_memory_manager_dict = shared_memory_manager.dict()
         self.shared_memory_manager_dict["data_worker_running"] = False
+        self.shared_memory_manager_dict["service_reconfiguring"] = False
         self.shared_memory_manager_dict["config_file"] = "/etc/artemis/config.yaml"
         self.shared_memory_manager_dict[
             "tmp_config_file"

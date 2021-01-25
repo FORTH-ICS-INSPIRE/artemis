@@ -402,6 +402,7 @@ services:
             - ${REDIS_PORT}
         volumes:
             - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq

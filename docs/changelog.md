@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GET config endpoints to backend and monitor services
 - Service reconfiguring flag and status
 - Redis no-data-received key expiry logic (default: 60 seconds)
+- Hijack detail JSON export
 
 ### Changed
 - Decoupled microservice architecture for backend and frontend

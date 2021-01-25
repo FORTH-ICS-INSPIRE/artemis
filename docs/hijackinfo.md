@@ -182,6 +182,7 @@ Upon viewing a selected hijack event, the ADMIN user can execute the following a
   false positive until mitigated, resolved or marked explicitly. Note that acknowledging a hijack does not change any
   of its other states (e.g., if it is ongoing, it remains so).
 * **Delete**: This action will delete the hijack and all BGP messages related to it. Be cautious when deleting a hijack as this action cannot be undone.
+* **Export JSON**: This pseudo-action will query the Postgres DB via the PostgREST API and fetch the hijack details in JSON format (`<hijack_key>.json` file).
 
 **NOTE: Every hijack event should eventually be either resolved or ignored by an ADMIN user (or it can be auto-ignored by the system in case of limited impact/visibility).**
 

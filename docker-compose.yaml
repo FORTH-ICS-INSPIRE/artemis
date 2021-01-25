@@ -5,7 +5,7 @@ x-healtcheck: &healthcheck
     interval: 20s
     timeout: 5s
     retries: 5
-    start_period: 60s
+    start_period: 1800s
 
 services:
     riperistap:

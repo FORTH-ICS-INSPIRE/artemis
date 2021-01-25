@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [UNRELEASED] (latest) - YYYY-MM-DD
+## [UNRELEASED/master] (latest) - YYYY-MM-DD
+### Added
+- TBD (Added a new feature)
+
+### Changed
+- TBD (Changed existing functionality)
+
+### Fixed
+- TBD (bug-fix)
+
+### Removed
+- TBD (removed a feature)
+
+### Deprecated
+- TBD (soon-to-be removed feature)
+
+### Security
+- TBD (addressing vulnerability)
+
+## [2.0.0] (Boreas) - 2021-01-26
 ### Added
 - Action and necessary logic to un-mitigate a hijack
 - Ability to reload targeted services based on what conf section changed

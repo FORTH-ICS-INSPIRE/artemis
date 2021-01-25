@@ -344,6 +344,7 @@ services:
             - ${REDIS_PORT}
         volumes:
             - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     frontend:
         image: artemis_frontend
         build: ./frontend/

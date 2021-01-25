@@ -2,7 +2,7 @@ BACKEND_SERVICES ?= autoignore autostarter configuration database detection file
 TAP_SERVICES ?= bgpstreamhisttap bgpstreamkafkatap bgpstreamlivetap exabgptap riperistap
 FRONTEND_SERVICES ?= frontend
 
-SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES) tempfrontend
+SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES) $(FRONTEND_SERVICES)
 
 PUSH ?= false
 BUILD_TAG ?= latest
@@ -64,8 +64,8 @@ endif
 		--cache-from $(CONTAINER_REPO)/artemis-frontend:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
 ifeq ($(PUSH), true)
-	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-temp$@:${BUILD_TAG}
-	@docker push $(CONTAINER_REPO)/artemis-temp$@:${BUILD_TAG}
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
+	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 endif
 
 .PHONY: build-backend

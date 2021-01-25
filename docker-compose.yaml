@@ -397,7 +397,7 @@ services:
         volumes:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
     frontend:
-        image: inspiregroup/artemis-tempfrontend:${SYSTEM_VERSION}
+        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         build: ./frontend/
         container_name: frontend
         restart: always

@@ -140,7 +140,7 @@ services:
     ports:
     - 3000
   frontend:
-    image: inspiregroup/artemis-tempfrontend
+    image: inspiregroup/artemis-frontend
     replicas: 1
     ports:
       - 8000

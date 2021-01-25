@@ -2,42 +2,70 @@ BACKEND_SERVICES ?= autoignore autostarter configuration database detection file
 TAP_SERVICES ?= bgpstreamhisttap bgpstreamkafkatap bgpstreamlivetap exabgptap riperistap
 FRONTEND_SERVICES ?= frontend
 
-SERVICES ?= $(BACKEND_SERVICES) + $(TAP_SERVICES) + $(FRONTEND_SERVICES)
+SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES) tempfrontend
 
 PUSH ?= false
 BUILD_TAG ?= latest
 CONTAINER_REPO ?= docker.io/inspiregroup
+RELEASE ?= latest
+
+.PHONY: log-env
+log-env: # log environment variables
+log-env:
+	@echo "PUSH is set to: $(PUSH)"
 
 .PHONY: $(BACKEND_SERVICES)
 $(BACKEND_SERVICES): # build backend container
+$(BACKEND_SERVICES): log-env
 $(BACKEND_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
-ifneq ($(BUILD_TAG), "latest")
+ifneq ($(BUILD_TAG), latest)
 	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
 		backend-services/$@/
-ifeq ($(PUSH), "true")
+ifeq ($(PUSH), true)
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 endif
 
 .PHONY: $(TAP_SERVICES)
 $(TAP_SERVICES): # build tap container
+$(TAP_SERVICES): log-env
 $(TAP_SERVICES):
 	@echo "Building $@ service for tag $(BUILD_TAG)"
 	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
-ifneq ($(BUILD_TAG), "latest")
+ifneq ($(BUILD_TAG), latest)
 	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
 endif
 	@docker build -t artemis-$@:$(BUILD_TAG) \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:latest \
 		--cache-from $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) \
 		monitor-services/$@/
-ifeq ($(PUSH), "true")
+ifeq ($(PUSH), true)
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
+endif
+
+.PHONY: $(FRONTEND_SERVICES)
+$(FRONTEND_SERVICES): # build frontend container
+$(FRONTEND_SERVICES): log-env
+$(FRONTEND_SERVICES):
+	@echo "Building $@ service for tag $(BUILD_TAG)"
+	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
+ifneq ($(BUILD_TAG), latest)
+	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
+endif
+	@docker build --build-arg revision=$(git rev-parse --short HEAD) \
+		-t artemis-$@:$(BUILD_TAG) \
+		--cache-from $(CONTAINER_REPO)/artemis-frontend:latest \
+		--cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
+ifeq ($(PUSH), true)
+	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-temp$@:${BUILD_TAG}
+	@docker push $(CONTAINER_REPO)/artemis-temp$@:${BUILD_TAG}
 endif
 
 .PHONY: build-backend
@@ -50,9 +78,7 @@ build-taps: $(TAP_SERVICES)
 
 .PHONY: build-frontend
 build-frontend: # builds frontend container
-build-frontend:
-	@docker pull $(CONTAINER_REPO)/artemis-frontend:latest || true
-	@docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-frontend:$(BUILD_TAG) --cache-from $(CONTAINER_REPO)/artemis-frontend:latest --cache-from $(CONTAINER_REPO)/artemis-tempfrontend:$(BUILD_TAG) frontend/
+build-frontend: $(FRONTEND_SERVICES)
 
 .PHONY: migration-check
 migration-check: # checks if migration is not broken
@@ -73,7 +99,7 @@ verify-configuration:
 setup-dev: # pull all images and tag them for local development
 setup-dev:
 	@for service in $(SERVICES) ; do \
-  		@docker-compose pull $$service
+		docker pull $(CONTAINER_REPO)/artemis-$$service:$(BUILD_TAG); \
 		docker tag $(CONTAINER_REPO)/artemis-$$service:$(BUILD_TAG) artemis_$$service:latest; \
 	done
 	@if [ ! -d "local_configs" ]; then \
@@ -130,3 +156,16 @@ stop:
 clean-db: # stop containers and clean volumes
 clean-db: stop
 	@sudo rm -rf postgres-data-* frontend/db/artemis_webapp.db
+
+.PHONY: release
+release: # pull and tag images for a new release
+release:
+ifneq ($(RELEASE), latest)
+	@for service in $(SERVICES) ; do \
+		docker pull $(CONTAINER_REPO)/artemis-$$service:latest; \
+		docker tag $(CONTAINER_REPO)/artemis-$$service:latest $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \
+		docker push $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \
+	done
+else
+	@echo "Provide the release to tag and push (i.e 'RELEASE=v1.2.3 make release')"
+endif

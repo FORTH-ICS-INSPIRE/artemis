@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded requests to 2.25.1
 - Upgraded to new bgpstream containers (using also ris and routeviews live sources)
 - Full refactoring and upgrade of artemis-utils, refactored all imports (1.0.7)
+- Upgraded Flask-JWT-Extended to 3.25.0 to address JWT issue with new browsers
 
 ### Fixed
 - Discard messages with timestamps in future datetime (updated to artemis-utils==1.0.5)

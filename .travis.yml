@@ -7,7 +7,8 @@ env:
   global:
     - BUILD_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
       == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
-    - IS_FORK=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "fork"; fi)
+    - IS_FORK=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "true"; fi)
+    - PUSH=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "false"; else echo "true"; fi)
 branches:
   only:
     - master
@@ -38,106 +39,91 @@ jobs:
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-      - make riperistap
-      - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-riperistap:${BUILD_TAG}; fi
+        - make riperistap
     - name: bgpstreamlivetap
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make bgpstreamlivetap
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamlivetap:${BUILD_TAG}; fi
     - name: bgpstreamkafkatap
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make bgpstreamkafkatap
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamkafkatap:${BUILD_TAG}; fi
     - name: bgpstreamhisttap
       install: [ ]
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make bgpstreamhisttap
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamhisttap:${BUILD_TAG}; fi
     - name: exabgptap
       install: [ ]
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make exabgptap
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-exabgptap:${BUILD_TAG}; fi
     - name: autoignore
       install: [ ]
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make autoignore
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-autoignore:${BUILD_TAG}; fi
     - name: autostarter
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make autostarter
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-autostarter:${BUILD_TAG}; fi
     - name: configuration
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make configuration
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-configuration:${BUILD_TAG}; fi
     - name: detection
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make detection
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-detection:${BUILD_TAG}; fi
     - name: database
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make database
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-database:${BUILD_TAG}; fi
     - name: fileobserver
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make fileobserver
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-fileobserver:${BUILD_TAG}; fi
     - name: mitigation
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make mitigation
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-mitigation:${BUILD_TAG}; fi
     - name: notifier
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make notifier
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-notifier:${BUILD_TAG}; fi
     - name: prefixtree
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make prefixtree
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-prefixtree:${BUILD_TAG}; fi
     - name: frontend
       install: []
       before_script:
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
         - make frontend
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-tempfrontend:${BUILD_TAG}; fi
     - stage: run tests
       name: TestDetection
       install:

@@ -347,7 +347,7 @@ services:
             - ./local_configs/backend-services/redis/redis.conf:/usr/local/etc/redis/redis.conf
         command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     frontend:
-        image: inspiregroup/artemis-tempfrontend:${SYSTEM_VERSION}
+        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
         container_name: frontend
         restart: always
         depends_on:

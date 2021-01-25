@@ -5,9 +5,10 @@ services:
   - docker
 env:
   global:
-    - DOCKER_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
+    - BUILD_TAG=$(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH"
       == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
-    - IS_FORK=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "fork"; fi)
+    - IS_FORK=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "true"; fi)
+    - PUSH=$(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "false"; else echo "true"; fi)
 branches:
   only:
     - master
@@ -27,11 +28,7 @@ jobs:
       before_script:
         - docker-compose pull postgres
       script:
-        - wget -q -O postgres-data-current.tar.gz --no-check-certificate 'https://docs.google.com/uc?export=download&id=1UwtIp7gF5uO5PfhTbOAMPpDLJ4H55m7a'
-        - tar xzf postgres-data-current.tar.gz
-        - docker-compose up -d postgres
-        - sleep 10
-        - docker-compose logs postgres | grep "database system is ready to accept connections"
+        - make migration-check
       after_success:
         - docker-compose logs postgres
       after_failure:
@@ -40,186 +37,99 @@ jobs:
       name: riperistap
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-      - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-riperistap:${DOCKER_TAG} --cache-from inspiregroup/artemis-riperistap:latest --cache-from inspiregroup/artemis-riperistap:${DOCKER_TAG} monitor-services/riperistap/; fi
-      - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
-      - if [ $IS_FORK ]; then docker build -t artemis-riperistap:${DOCKER_TAG} monitor-services/riperistap/; fi
+        - make riperistap
     - name: bgpstreamlivetap
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstreamlivetap:latest --cache-from inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} monitor-services/bgpstreamlivetap/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-bgpstreamlivetap:${DOCKER_TAG} monitor-services/bgpstreamlivetap/; fi
+        - make bgpstreamlivetap
     - name: bgpstreamkafkatap
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstreamkafkatap:latest --cache-from inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} monitor-services/bgpstreamkafkatap/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-bgpstreamkafkatap:${DOCKER_TAG} monitor-services/bgpstreamkafkatap/; fi
+        - make bgpstreamkafkatap
     - name: bgpstreamhisttap
       install: [ ]
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} --cache-from inspiregroup/artemis-bgpstreamhisttap:latest --cache-from inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} monitor-services/bgpstreamhisttap/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-bgpstreamhisttap:${DOCKER_TAG} monitor-services/bgpstreamhisttap/; fi
+        - make bgpstreamhisttap
     - name: exabgptap
       install: [ ]
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-exabgptap:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-exabgptap:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-exabgptap:${DOCKER_TAG} --cache-from inspiregroup/artemis-exabgptap:latest --cache-from inspiregroup/artemis-exabgptap:${DOCKER_TAG} monitor-services/exabgptap/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-exabgptap:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-exabgptap:${DOCKER_TAG} monitor-services/exabgptap/; fi
+        - make exabgptap
     - name: autoignore
       install: [ ]
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autoignore:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autoignore:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-autoignore:${DOCKER_TAG} --cache-from inspiregroup/artemis-autoignore:latest --cache-from inspiregroup/artemis-autoignore:${DOCKER_TAG} backend-services/autoignore/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-autoignore:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-autoignore:${DOCKER_TAG} backend-services/autoignore/; fi
+        - make autoignore
     - name: autostarter
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-autostarter:${DOCKER_TAG} --cache-from inspiregroup/artemis-autostarter:latest --cache-from inspiregroup/artemis-autostarter:${DOCKER_TAG} backend-services/autostarter/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-autostarter:${DOCKER_TAG} backend-services/autostarter/; fi
+        - make autostarter
     - name: configuration
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-configuration:${DOCKER_TAG} --cache-from inspiregroup/artemis-configuration:latest --cache-from inspiregroup/artemis-configuration:${DOCKER_TAG} backend-services/configuration/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-configuration:${DOCKER_TAG} backend-services/configuration/; fi
+        - make configuration
     - name: detection
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-detection:${DOCKER_TAG} --cache-from inspiregroup/artemis-detection:latest --cache-from inspiregroup/artemis-detection:${DOCKER_TAG} backend-services/detection/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-detection:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-detection:${DOCKER_TAG} backend-services/detection/; fi
+        - make detection
     - name: database
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-database:${DOCKER_TAG} --cache-from inspiregroup/artemis-database:latest --cache-from inspiregroup/artemis-database:${DOCKER_TAG} backend-services/database/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-database:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-database:${DOCKER_TAG} backend-services/database/; fi
+        - make database
     - name: fileobserver
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-fileobserver:${DOCKER_TAG} --cache-from inspiregroup/artemis-fileobserver:latest --cache-from inspiregroup/artemis-fileobserver:${DOCKER_TAG} backend-services/fileobserver/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-fileobserver:${DOCKER_TAG} backend-services/fileobserver/; fi
+        - make fileobserver
     - name: mitigation
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-mitigation:${DOCKER_TAG} --cache-from inspiregroup/artemis-mitigation:latest --cache-from inspiregroup/artemis-mitigation:${DOCKER_TAG} backend-services/mitigation/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-mitigation:${DOCKER_TAG} backend-services/mitigation/; fi
+        - make mitigation
     - name: notifier
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-notifier:${DOCKER_TAG} --cache-from inspiregroup/artemis-notifier:latest --cache-from inspiregroup/artemis-notifier:${DOCKER_TAG} backend-services/notifier/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-notifier:${DOCKER_TAG} backend-services/notifier/; fi
+        - make notifier
     - name: prefixtree
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build -t inspiregroup/artemis-prefixtree:${DOCKER_TAG} --cache-from inspiregroup/artemis-prefixtree:latest --cache-from inspiregroup/artemis-prefixtree:${DOCKER_TAG} backend-services/prefixtree/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build -t artemis-prefixtree:${DOCKER_TAG} backend-services/prefixtree/; fi
+        - make prefixtree
     - name: frontend
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-tempfrontend:latest || true; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-tempfrontend:${DOCKER_TAG} || true; fi
         - if [ ! $IS_FORK ]; then echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin; fi
       script:
-        - if [ ! $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t inspiregroup/artemis-tempfrontend:${DOCKER_TAG} --cache-from inspiregroup/artemis-tempfrontend:latest --cache-from inspiregroup/artemis-tempfrontend:${DOCKER_TAG} frontend/; fi
-        - if [ ! $IS_FORK ]; then docker push inspiregroup/artemis-tempfrontend:${DOCKER_TAG}; fi
-        - if [ $IS_FORK ]; then docker build --build-arg revision=$(git rev-parse --short HEAD) -t artemis-tempfrontend:${DOCKER_TAG} frontend/; fi
+        - make frontend
     - stage: run tests
       name: TestDetection
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-riperistap:${DOCKER_TAG} artemis_riperistap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} artemis_bgpstreamlivetap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} artemis_bgpstreamkafkatap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} artemis_bgpstreamhisttap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-exabgptap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-exabgptap:${DOCKER_TAG} artemis_exabgptap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autoignore:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autoignore:${DOCKER_TAG} artemis_autoignore:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-configuration:${DOCKER_TAG} artemis_configuration:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-database:${DOCKER_TAG} artemis_database:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-detection:${DOCKER_TAG} artemis_detection:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-fileobserver:${DOCKER_TAG} artemis_fileobserver:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-mitigation:${DOCKER_TAG} artemis_mitigation:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-notifier:${DOCKER_TAG} artemis_notifier:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
+        - if [ ! $IS_FORK ]; then make setup-dev; fi
         - docker build -t artemis_detection_testing testing/detection
         - docker-compose -f docker-compose.testdetection.yaml up -d
       script:
@@ -233,34 +143,7 @@ jobs:
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-riperistap:${DOCKER_TAG} artemis_riperistap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} artemis_bgpstreamlivetap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} artemis_bgpstreamkafkatap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} artemis_bgpstreamhisttap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-exabgptap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-exabgptap:${DOCKER_TAG} artemis_exabgptap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autoignore:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autoignore:${DOCKER_TAG} artemis_autoignore:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-configuration:${DOCKER_TAG} artemis_configuration:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-database:${DOCKER_TAG} artemis_database:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-detection:${DOCKER_TAG} artemis_detection:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-fileobserver:${DOCKER_TAG} artemis_fileobserver:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-mitigation:${DOCKER_TAG} artemis_mitigation:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-notifier:${DOCKER_TAG} artemis_notifier:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
+        - if [ ! $IS_FORK ]; then make setup-dev; fi
         - docker build -t artemis_autoconf_testing testing/autoconf
         - docker-compose -f docker-compose.testautoconf.yaml up -d
       script:
@@ -274,34 +157,7 @@ jobs:
       if: type == pull_request && fork = false
       install: []
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-riperistap:${DOCKER_TAG} artemis_riperistap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} artemis_bgpstreamlivetap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} artemis_bgpstreamkafkatap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} artemis_bgpstreamhisttap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-exabgptap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-exabgptap:${DOCKER_TAG} artemis_exabgptap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autoignore:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autoignore:${DOCKER_TAG} artemis_autoignore:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-configuration:${DOCKER_TAG} artemis_configuration:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-database:${DOCKER_TAG} artemis_database:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-detection:${DOCKER_TAG} artemis_detection:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-fileobserver:${DOCKER_TAG} artemis_fileobserver:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-mitigation:${DOCKER_TAG} artemis_mitigation:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-notifier:${DOCKER_TAG} artemis_notifier:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
+        - if [ ! $IS_FORK ]; then make setup-dev; fi
         - docker build -t artemis_benchmark testing/benchmark
         - docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
       script:
@@ -311,34 +167,7 @@ jobs:
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-riperistap:${DOCKER_TAG} artemis_riperistap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} artemis_bgpstreamlivetap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} artemis_bgpstreamkafkatap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} artemis_bgpstreamhisttap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-exabgptap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-exabgptap:${DOCKER_TAG} artemis_exabgptap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autoignore:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autoignore:${DOCKER_TAG} artemis_autoignore:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-configuration:${DOCKER_TAG} artemis_configuration:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-database:${DOCKER_TAG} artemis_database:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-detection:${DOCKER_TAG} artemis_detection:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-fileobserver:${DOCKER_TAG} artemis_fileobserver:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-mitigation:${DOCKER_TAG} artemis_mitigation:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-notifier:${DOCKER_TAG} artemis_notifier:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
+        - if [ ! $IS_FORK ]; then make setup-dev; fi
         - docker build -t artemis_autoignore_testing testing/autoignore
         - docker-compose -f docker-compose.testautoignore.yaml up -d
       script:
@@ -352,40 +181,8 @@ jobs:
       install:
         - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
       before_script:
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-riperistap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-riperistap:${DOCKER_TAG} artemis_riperistap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamlivetap:${DOCKER_TAG} artemis_bgpstreamlivetap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamkafkatap:${DOCKER_TAG} artemis_bgpstreamkafkatap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-bgpstreamhisttap:${DOCKER_TAG} artemis_bgpstreamhisttap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-exabgptap:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-exabgptap:${DOCKER_TAG} artemis_exabgptap:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autoignore:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autoignore:${DOCKER_TAG} artemis_autoignore:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-autostarter:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-autostarter:${DOCKER_TAG} artemis_autostarter:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-configuration:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-configuration:${DOCKER_TAG} artemis_configuration:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-database:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-database:${DOCKER_TAG} artemis_database:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-detection:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-detection:${DOCKER_TAG} artemis_detection:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-fileobserver:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-fileobserver:${DOCKER_TAG} artemis_fileobserver:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-mitigation:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-mitigation:${DOCKER_TAG} artemis_mitigation:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-notifier:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-notifier:${DOCKER_TAG} artemis_notifier:latest; fi
-        - if [ ! $IS_FORK ]; then docker pull inspiregroup/artemis-prefixtree:${DOCKER_TAG}; fi
-        - if [ ! $IS_FORK ]; then docker tag inspiregroup/artemis-prefixtree:${DOCKER_TAG} artemis_prefixtree:latest; fi
-        - mkdir -p local_configs/routinator/tals
-        - sudo chown -R 1012:1012 local_configs/routinator/tals
-        - mkdir -p local_configs/routinator/rpki-repo
-        - sudo chown -R 1012:1012 local_configs/routinator/rpki-repo
-        - cp other/routinator/routinator.conf local_configs/routinator/routinator.conf
-        - sudo chown -R 1012:1012 local_configs/routinator/routinator.conf
+        - if [ ! $IS_FORK ]; then make setup-dev; fi
+        - make setup-routinator
         - docker build -t artemis_rpki_testing testing/rpki
         - docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
         - docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d

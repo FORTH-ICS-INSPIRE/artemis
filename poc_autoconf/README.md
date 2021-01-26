@@ -23,7 +23,7 @@ This is a Proof of Concept (PoC) implementation of an autoconfiguration setup to
 1. In `docker-compose.yaml`, edit volumes to point to the PoC's files:
 
     ```
-    version: '3'
+    version: '3.4'
     services:
       configuration:
         ...

@@ -37,7 +37,7 @@ BGP updates via PEER AS AS65005.
 1. In `docker-compose.yaml`, edit volumes to point to the PoC's files:
 
     ```
-    version: '3'
+    version: '3.4'
     services:
       ...
       configuration:
@@ -84,7 +84,7 @@ In case you want to run this in production you can adjust [`poc_mitigate_deaggre
 2. In `docker-compose.yaml`, edit volumes to point to the mitigation file:
 
     ```
-    version: '3'
+    version: '3.4'
     services:
       ...
       configuration:

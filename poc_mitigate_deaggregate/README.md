@@ -36,7 +36,7 @@ BGP updates via PEER AS AS65005.
 
     ```
        ```
-    version: '3'
+    version: '3.4'
     services:
       configuration:
         ...

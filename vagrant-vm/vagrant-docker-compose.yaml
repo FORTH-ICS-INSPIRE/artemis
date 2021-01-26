@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 services:
     riperistap:
         image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}

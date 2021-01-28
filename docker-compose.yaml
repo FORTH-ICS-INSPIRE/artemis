@@ -1,9 +1,18 @@
-version: '3'
+version: '3.4'
+
+x-healtcheck: &healthcheck
+    test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+    interval: 20s
+    timeout: 5s
+    retries: 5
+    start_period: 1800s
+
 services:
     riperistap:
         image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
         build: ./monitor-services/riperistap/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - database
             - prefixtree
@@ -30,6 +39,7 @@ services:
         image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
         build: ./monitor-services/bgpstreamlivetap/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - database
             - prefixtree
@@ -55,6 +65,7 @@ services:
         image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
         build: ./monitor-services/bgpstreamkafkatap/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - database
             - prefixtree
@@ -80,6 +91,7 @@ services:
         image: inspiregroup/artemis-bgpstreamhisttap:${SYSTEM_VERSION}
         build: ./monitor-services/bgpstreamhisttap/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - database
             - prefixtree
@@ -102,6 +114,7 @@ services:
         image: inspiregroup/artemis-exabgptap:${SYSTEM_VERSION}
         build: ./monitor-services/exabgptap/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - database
             - prefixtree
@@ -127,6 +140,7 @@ services:
         image: inspiregroup/artemis-autoignore:${SYSTEM_VERSION}
         build: ./backend-services/autoignore/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - database
             - prefixtree
@@ -154,6 +168,7 @@ services:
         image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
         build: ./backend-services/autostarter/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - autoignore
             - bgpstreamhisttap
@@ -169,6 +184,8 @@ services:
             - configuration
             - fileobserver
             - riperistap
+        expose:
+            - 3000
         networks:
             - artemis
         environment:
@@ -187,6 +204,7 @@ services:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
         build: ./backend-services/configuration/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - autoignore
             - bgpstreamhisttap
@@ -221,6 +239,7 @@ services:
         image: inspiregroup/artemis-database:${SYSTEM_VERSION}
         build: ./backend-services/database/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - graphql
             - notifier
@@ -258,6 +277,7 @@ services:
         image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
         build: ./backend-services/detection/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - notifier
             - database
@@ -286,6 +306,7 @@ services:
         image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
         build: ./backend-services/fileobserver/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - configuration
         expose:
@@ -301,6 +322,7 @@ services:
         image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
         build: ./backend-services/mitigation/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - rabbitmq
             - database
@@ -322,6 +344,7 @@ services:
         image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
         build: ./backend-services/notifier/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - rabbitmq
         expose:
@@ -344,6 +367,7 @@ services:
         image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
         build: ./backend-services/prefixtree/
         restart: always
+        healthcheck: *healthcheck
         depends_on:
             - rabbitmq
             - redis

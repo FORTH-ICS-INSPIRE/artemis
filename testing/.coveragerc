@@ -13,3 +13,9 @@ exclude_lines =
     log.exception
     log.error
     log.debug
+
+[paths]
+source =
+    backend-services/*/core
+    monitor-services/*/core
+    root/*/core

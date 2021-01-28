@@ -19,7 +19,7 @@ docker pull inspiregroup/artemis-fileobserver:latest
 docker pull inspiregroup/artemis-mitigation:latest
 docker pull inspiregroup/artemis-notifier:latest
 docker pull inspiregroup/artemis-prefixtree:latest
-docker pull inspiregroup/artemis-tempfrontend:latest
+docker pull inspiregroup/artemis-frontend:latest
 
 echo "[+] Tagging latest images with '$RELEASE'..."
 docker tag inspiregroup/artemis-riperistap:latest inspiregroup/artemis-riperistap:$RELEASE
@@ -36,7 +36,7 @@ docker tag inspiregroup/artemis-fileobserver:latest inspiregroup/artemis-fileobs
 docker tag inspiregroup/artemis-mitigation:latest inspiregroup/artemis-mitigation:$RELEASE
 docker tag inspiregroup/artemis-notifier:latest inspiregroup/artemis-notifier:$RELEASE
 docker tag inspiregroup/artemis-prefixtree:latest inspiregroup/artemis-prefixtree:$RELEASE
-docker tag inspiregroup/artemis-tempfrontend:latest inspiregroup/artemis-tempfrontend:$RELEASE
+docker tag inspiregroup/artemis-frontend:latest inspiregroup/artemis-frontend:$RELEASE
 
 echo "[+] Pushing '$RELEASE' images to docker cloud..."
 docker push inspiregroup/artemis-riperistap:$RELEASE
@@ -52,4 +52,4 @@ docker push inspiregroup/artemis-fileobserver:$RELEASE
 docker push inspiregroup/artemis-mitigation:$RELEASE
 docker push inspiregroup/artemis-notifier:$RELEASE
 docker push inspiregroup/artemis-prefixtree:$RELEASE
-docker push inspiregroup/artemis-tempfrontend:$RELEASE
+docker push inspiregroup/artemis-frontend:$RELEASE

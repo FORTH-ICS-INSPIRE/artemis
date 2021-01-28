@@ -20,7 +20,7 @@ For the sake of this page we will focus on:
 In `docker-compose.yaml`, configure `postgres` microservice to expose the needed host ports:
 
 ```
-version: '3'
+version: '3.4'
 services:
     ...
     postgres:

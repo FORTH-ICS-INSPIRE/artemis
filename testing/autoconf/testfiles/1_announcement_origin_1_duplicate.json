@@ -1,0 +1,38 @@
+{
+  "send": {
+    "key": 1,
+    "orig_path": [],
+    "communities": [],
+    "service": "test-autoconf",
+    "type": "A",
+    "path": [
+      4, 2, 1, 1, 1
+    ],
+    "prefix": "192.168.1.0/24",
+    "peer_asn": 4
+  },
+  "configuration": {
+    "prefixes": {
+      "AUTOCONF_P_192_168_1_0_24": [
+        "192.168.1.0/24"
+      ]
+    },
+    "monitors": {},
+    "asns": {
+      "AUTOCONF_AS_1": [
+        1
+      ]
+    },
+    "rules": [
+      {
+        "prefixes": [
+          "192.168.1.0/24"
+        ],
+        "origin_asns": [
+          1
+        ],
+        "mitigation": ["manual"]
+      }
+    ]
+  }
+}

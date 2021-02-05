@@ -845,7 +845,13 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
 
             prefix_node = self.find_prefix_node(bgp_update["prefix"])
             # small optimization: if prefix exist in prefix tree and we have an update, discard it
-            if prefix_node and bgp_update["type"] == "A":
+            # attention: subprefixes belong to existing prefix nodes, so the check should also account
+            # for exact prefix equality if it is to be deleted from the cache
+            if (
+                prefix_node
+                and bgp_update["prefix"] == prefix_node["prefix"]
+                and bgp_update["type"] == "A"
+            ):
                 delete_from_redis_without_sending_to_autoconf.add(bgp_update["key"])
             else:
                 bgp_updates_to_send_to_conf.append(bgp_update)

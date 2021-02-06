@@ -1,6 +1,6 @@
 {
   "send": {
-    "key": 4,
+    "key": 5,
     "orig_path": [],
     "communities": [],
     "service": "test-autoconf",
@@ -22,6 +22,9 @@
     "asns": {
       "AUTOCONF_AS_1": [
         1
+      ],
+      "AUTOCONF_AS_10": [
+        10
       ],
       "AUTOCONF_AS_2": [
         2

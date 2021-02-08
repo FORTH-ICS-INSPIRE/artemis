@@ -1,21 +1,20 @@
 {
   "send": {
-    "key": 5,
+    "key": 2,
     "orig_path": [],
     "communities": [],
     "service": "test-autoconf",
-    "type": "W",
-    "path": [],
+    "type": "A",
+    "path": [
+      4, 2, 10
+    ],
     "prefix": "192.168.1.0/24",
     "peer_asn": 4
   },
   "configuration": {
     "prefixes": {
-      "AUTOCONF_P_192_168_2_0_24": [
-        "192.168.2.0/24"
-      ],
-      "AUTOCONF_P_192_168_3_0_24": [
-        "192.168.3.0/24"
+      "AUTOCONF_P_192_168_1_0_24": [
+        "192.168.1.0/24"
       ]
     },
     "monitors": {},
@@ -25,18 +24,12 @@
       ],
       "AUTOCONF_AS_10": [
         10
-      ],
-      "AUTOCONF_AS_2": [
-        2
-      ],
-      "AUTOCONF_AS_3": [
-        3
       ]
     },
     "rules": [
       {
         "prefixes": [
-          "192.168.2.0/24"
+          "192.168.1.0/24"
         ],
         "origin_asns": [
           1
@@ -45,14 +38,10 @@
       },
       {
         "prefixes": [
-          "192.168.3.0/24"
+          "192.168.1.0/24"
         ],
         "origin_asns": [
-          1
-        ],
-        "neighbors": [
-          2,
-          3
+          10
         ],
         "mitigation": ["manual"]
       }

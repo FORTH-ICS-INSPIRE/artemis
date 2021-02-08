@@ -1,13 +1,13 @@
 {
   "send": {
-    "key": 5,
+    "key": 9,
     "orig_path": [],
     "communities": [],
     "service": "test-autoconf",
     "type": "W",
     "path": [],
-    "prefix": "192.168.3.0/24",
-    "peer_asn": 1
+    "prefix": "192.168.3.128/25",
+    "peer_asn": 4
   },
   "configuration": {
     "prefixes": {},
@@ -18,6 +18,9 @@
       ],
       "AUTOCONF_AS_2": [
         2
+      ],
+      "AUTOCONF_AS_10": [
+        10
       ],
       "AUTOCONF_AS_3": [
         3

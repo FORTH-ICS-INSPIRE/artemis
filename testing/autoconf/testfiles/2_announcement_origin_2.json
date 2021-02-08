@@ -1,6 +1,6 @@
 {
   "send": {
-    "key": 2,
+    "key": 3,
     "orig_path": [],
     "communities": [],
     "service": "test-autoconf",
@@ -28,6 +28,9 @@
     "asns": {
       "AUTOCONF_AS_1": [
         1
+      ],
+      "AUTOCONF_AS_10": [
+        10
       ]
     },
     "rules": [
@@ -37,6 +40,15 @@
         ],
         "origin_asns": [
           1
+        ],
+        "mitigation": ["manual"]
+      },
+      {
+        "prefixes": [
+          "192.168.1.0/24"
+        ],
+        "origin_asns": [
+          10
         ],
         "mitigation": ["manual"]
       },

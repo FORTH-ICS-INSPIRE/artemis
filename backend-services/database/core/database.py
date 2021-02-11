@@ -1480,13 +1480,13 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 queues=[self.hijack_ignore_queue],
                 on_message=self.handle_hijack_ignore,
                 prefetch_count=1,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.hijack_seen_queue],
                 on_message=self.handle_hijack_seen,
                 prefetch_count=1,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.hijack_ongoing_request_queue],
@@ -1504,7 +1504,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 queues=[self.hijack_delete_queue],
                 on_message=self.handle_hijack_delete,
                 prefetch_count=1,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.stop_queue],

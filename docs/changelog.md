@@ -7,13 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED/master] (latest) - YYYY-MM-DD
 ### Added
-- TBD (Added a new feature)
+- "json" encoding accepted for messages coming from frontend (ignore/resolve/seen/delete/(un-)mitigate)
 
 ### Changed
 - TBD (Changed existing functionality)
 
 ### Fixed
-- TBD (bug-fix)
+- Autoconfiguration subprefix bug in prefixtree plus new autoconf tests
 
 ### Removed
 - TBD (removed a feature)

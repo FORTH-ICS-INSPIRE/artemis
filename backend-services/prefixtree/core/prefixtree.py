@@ -622,13 +622,13 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 queues=[self.mitigation_request_queue],
                 on_message=self.annotate_mitigation_request,
                 prefetch_count=100,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.unmitigation_request_queue],
                 on_message=self.annotate_unmitigation_request,
                 prefetch_count=100,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.pg_amq_update_queue],

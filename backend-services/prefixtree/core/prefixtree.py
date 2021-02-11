@@ -622,13 +622,13 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 queues=[self.mitigation_request_queue],
                 on_message=self.annotate_mitigation_request,
                 prefetch_count=100,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.unmitigation_request_queue],
                 on_message=self.annotate_unmitigation_request,
                 prefetch_count=100,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.pg_amq_update_queue],
@@ -844,8 +844,26 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 return
 
             prefix_node = self.find_prefix_node(bgp_update["prefix"])
-            # small optimization: if prefix exist in prefix tree and we have an update, discard it
-            if prefix_node and bgp_update["type"] == "A":
+            add_update = True
+            # small optimization: if prefix exist in prefix tree and we have an update for existing origin, discard it
+            # attention: subprefixes belong to existing prefix nodes, so the check should also account
+            # for exact prefix equality if it is to be deleted from the cache
+            if (
+                prefix_node
+                and bgp_update["prefix"] == prefix_node["prefix"]
+                and bgp_update["type"] == "A"
+            ):
+                try:
+                    as_path = bgp_update["path"]
+                    origin = as_path[-1]
+                    for conf in prefix_node["data"]["confs"]:
+                        if origin in conf["origin_asns"]:
+                            add_update = False
+                            break
+                except Exception:
+                    log.exception("exception")
+                    add_update = False
+            if not add_update:
                 delete_from_redis_without_sending_to_autoconf.add(bgp_update["key"])
             else:
                 bgp_updates_to_send_to_conf.append(bgp_update)

@@ -1462,7 +1462,7 @@ class DatabaseDataWorker(ConsumerProducerMixin):
                 queues=[self.hijack_resolve_queue],
                 on_message=self.handle_hijack_resolve,
                 prefetch_count=1,
-                accept=["ujson"],
+                accept=["ujson", "json"],
             ),
             Consumer(
                 queues=[self.mitigate_queue],

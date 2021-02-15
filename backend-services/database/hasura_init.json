@@ -230,14 +230,16 @@
               "allow_aggregations": true,
               "columns": [
                 "hijack_key",
-                "valid_origin_as",
-                "hijack_as",
-                "dst_addr",
-                "msm_type",
+                "hijacked",
+                "hijacker_as",
                 "msm_id",
-                "msm_link",
+                "msm_protocol",
+                "msm_start_time",
+                "msm_stop_time",
+                "msm_type",
+                "num_of_probes",
                 "responding",
-                "hijacked"
+                "target_ip"
               ],
               "filter": {}
             }

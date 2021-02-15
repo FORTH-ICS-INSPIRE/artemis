@@ -137,6 +137,12 @@
             "db_version": "23",
             "description": "Altering hijacks TABLE possible_states constraints and extended intended_process_states and process_states name column to 63 chars",
             "file": "migration_23.sql"
+        },
+        "24": {
+            "id": "24",
+            "db_version": "24",
+            "description": "Drop and recreation of dataplane_msms table and view_dataplane_msms view, including new changes",
+            "file": "migration_24.sql"
         }
     }
 }

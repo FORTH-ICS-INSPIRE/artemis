@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - autoconfiguration subprefix bug in prefixtree plus new autoconf tests
+- vagrant docker-compose.yaml file fix (sync with master)
 
 ### Removed
 - TBD (removed a feature)

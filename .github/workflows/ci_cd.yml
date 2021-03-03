@@ -11,9 +11,9 @@ env:
     TRAVIS_BRANCH: ${{ github.base_ref }}
     TRAVIS_PULL_REQUEST_SLUG: ${{ github.repository }}
     TRAVIS_PULL_REQUEST: ${{ github.event.number }}
-    BUILD_TAG: $(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH" == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
-    IS_FORK: $(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "true"; fi)
-    PUSH: $(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "false"; else echo "true"; fi)
+    BUILD_TAG: ''
+    IS_FORK: ''
+    PUSH: ''
 
 jobs:
 
@@ -22,34 +22,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set BUILD_TAG
+        run: |
+          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+          fi
+      - name: Set IS_FORK
+        run: |
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi
+      - name: Set PUSH
+        run: |
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi
       - name: Print environment variables
         run: env
-      - name: install
-        run: |
-          python -m pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
-          python -m pip install -r backend-services/detection/requirements.txt
-          pre-commit install
-      - name: script
-        run: |
-          echo ${{ env.TRAVIS_PULL_REQUEST_SLUG }}
-          echo "::set-env name=SKIP::unittest pre-commit run --all-files"
+#      - name: install
+#        run: |
+#          python -m pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
+#          python -m pip install -r backend-services/detection/requirements.txt
+#          pre-commit install
+#      - name: script
+#        run: |
+#          echo ${{ env.TRAVIS_PULL_REQUEST_SLUG }}
+#          echo "SKIP=$(unittest pre-commit run --all-files)" >> $GITHUB_ENV
 
-  migration-check:
-    name: Migration Check
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: before script
-        run: docker-compose pull postgres
-      - name: script
-        run: make migration-check
-      - name: success
-        if: ${{ success() }}
-        run: docker-compose logs postgres
-      - name: failure
-        if: ${{ failure() }}
-        run: docker-compose logs postgres
+#  migration-check:
+#    name: Migration Check
+#
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: before script
+#        run: docker-compose pull postgres
+#      - name: script
+#        run: make migration-check
+#      - name: success
+#        if: ${{ success() }}
+#        run: docker-compose logs postgres
+#      - name: failure
+#        if: ${{ failure() }}
+#        run: docker-compose logs postgres
 #
 #  build-and-push:
 #    needs: [ precommit-check, migration-check ]

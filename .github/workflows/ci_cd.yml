@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.6'
       - name: install
         run: |
           pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0

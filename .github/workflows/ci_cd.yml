@@ -123,7 +123,7 @@ jobs:
       - name: before script up
         run: docker-compose -f docker-compose.testdetection.yaml up -d
       - name: script
-        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_detection_testing
       - name: success
         if: ${{ success() }}
         run: |
@@ -166,7 +166,7 @@ jobs:
       - name: before script up
         run: docker-compose -f docker-compose.testautoconf.yaml up -d
       - name: script
-        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_autoconf_testing
       - name: success
         if: ${{ success() }}
         run: |
@@ -242,7 +242,7 @@ jobs:
       - name: before script up
         run: docker-compose -f docker-compose.testautoignore.yaml up -d
       - name: script
-        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoignore_testing
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_autoignore_testing
       - name: success
         if: ${{ success() }}
         run: |
@@ -289,7 +289,7 @@ jobs:
       - name: before script up
         run: docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
       - name: script
-        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_rpki_testing
       - name: success
         if: ${{ success() }}
         run: |

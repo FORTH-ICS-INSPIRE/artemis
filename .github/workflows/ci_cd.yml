@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python
+      - name: set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.6'
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Print environment variables
+      - name: print environment variables
         run: env
       - name: before script
         run: docker-compose pull postgres
@@ -53,6 +53,7 @@ jobs:
         run: docker-compose logs postgres
 
   build-and-push:
+    name: Build and Push Container Images
     needs: [ precommit-check, migration-check ]
     runs-on: ubuntu-latest
     strategy:
@@ -61,7 +62,7 @@ jobs:
         service: [ "riperistap", "bgpstreamlivetap", "bgpstreamkafkatap", "bgpstreamhisttap", "exabgptap", "autoignore", "autostarter", "configuration", "database", "detection", "fileobserver", "mitigation", "notifier", "prefixtree", "frontend" ]
     steps:
       - uses: actions/checkout@v2
-      - name: Set env vars
+      - name: set env vars
         run: |
           if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
@@ -76,9 +77,9 @@ jobs:
           else
             echo "PUSH=true" >> $GITHUB_ENV;
           fi;
-      - name: Print environment variables
+      - name: print environment variables
         run: env
-      - name: Check not fork
+      - name: check not fork
         if: ${{ ! env.IS_FORK }}
         run: echo "Not a fork. Proceeding..."
       - name: Login to Docker Hub
@@ -91,11 +92,12 @@ jobs:
         run: make ${{ matrix.service }}
 
   test-detection:
+    name: E2E Test Detection
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set env vars
+      - name: set env vars
         run: |
           if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
@@ -110,7 +112,7 @@ jobs:
           else
             echo "PUSH=true" >> $GITHUB_ENV;
           fi;
-      - name: Print environment variables
+      - name: print environment variables
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
@@ -134,6 +136,7 @@ jobs:
         run: docker-compose -f docker-compose.testdetection.yaml logs
 
   test-autoconf:
+    name: E2E Test Auto-configuration
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -153,7 +156,7 @@ jobs:
           else
             echo "PUSH=true" >> $GITHUB_ENV;
           fi;
-      - name: Print environment variables
+      - name: print environment variables
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
@@ -176,40 +179,43 @@ jobs:
         if: ${{ failure() }}
         run: docker-compose -f docker-compose.testautoconf.yaml logs
 
-#  benchmark:
-#    needs: build-and-push
-#    runs-on: ubuntu-latest
-#    if: ${{ github.event_name == 'pull_request' && !env.IS_FORK }}
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Set env vars
-#        run: |
-#          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
-#            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
-#          else
-#            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
-#          fi;
-#          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
-#            echo "IS_FORK=true" >> $GITHUB_ENV;
-#          fi;
-#          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
-#            echo "PUSH=false" >> $GITHUB_ENV;
-#          else
-#            echo "PUSH=true" >> $GITHUB_ENV;
-#          fi;
-#      - name: Print environment variables
-#        run: env
-#      - name: before script setup
-#        if: ${{ ! env.IS_FORK }}
-#        run: make setup-dev
-#      - name: before script build
-#        run: docker build -t artemis_benchmark testing/benchmark
-#      - name: before script up
-#        run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
-#      - name: script
-#        run: docker run --rm -ti --env-file .env -e "REPO_SLUG=$TRAVIS_REPO_SLUG" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$TRAVIS_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
+  benchmark:
+    name: E2E Benchmark
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: set env vars
+        run: |
+          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: print environment variables
+        run: env
+      - name: Git checkout
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        uses: actions/checkout@v2
+      - name: before script setup
+        if: ${{ ! env.IS_FORK }}
+        run: make setup-dev
+      - name: before script build
+        run: docker build -t artemis_benchmark testing/benchmark
+      - name: before script up
+        run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
+      - name: script
+        run: docker run --rm -ti --env-file .env -e "REPO_SLUG=$GITHUB_REPOSITORY" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$TRAVIS_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
 
   test-autoignore:
+    name: E2E Test Auto-ignore
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -229,7 +235,7 @@ jobs:
           else
             echo "PUSH=true" >> $GITHUB_ENV;
           fi;
-      - name: Print environment variables
+      - name: print environment variables
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
@@ -253,6 +259,7 @@ jobs:
         run: docker-compose -f docker-compose.testautoignore.yaml logs
 
   test-rpki:
+    name: E2E Test RPKI
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -272,7 +279,7 @@ jobs:
           else
             echo "PUSH=true" >> $GITHUB_ENV;
           fi;
-      - name: Print environment variables
+      - name: print environment variables
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}

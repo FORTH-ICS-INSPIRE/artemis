@@ -1,0 +1,197 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ master, pull_request ]
+  pull_request:
+    branches: [ master ]
+
+env:
+    TRAVIS_PULL_REQUEST_BRANCH: ${{ github.head_ref }}
+    TRAVIS_BRANCH: ${{ github.base_ref }}
+    TRAVIS_PULL_REQUEST_SLUG: ${{ github.repository }}
+    TRAVIS_PULL_REQUEST: ${{ github.event.number }}
+    BUILD_TAG: $(if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST_BRANCH" == "" ]; then echo "latest"; else echo dev-PR${TRAVIS_PULL_REQUEST}; fi)
+    IS_FORK: $(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "true"; fi)
+    PUSH: $(if [ "$TRAVIS_PULL_REQUEST_BRANCH" != "" ] && [ "$TRAVIS_PULL_REQUEST_SLUG" != "FORTH-ICS-INSPIRE/artemis" ]; then echo "false"; else echo "true"; fi)
+
+jobs:
+
+  precommit-check:
+    name: Pre-commit Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Print environment variables
+        run: env
+      - name: install
+        run: |
+          python -m pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
+          python -m pip install -r backend-services/detection/requirements.txt
+          pre-commit install
+      - name: script
+        run: |
+          echo ${{ env.TRAVIS_PULL_REQUEST_SLUG }}
+          echo "::set-env name=SKIP::unittest pre-commit run --all-files"
+
+  migration-check:
+    name: Migration Check
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: before script
+        run: docker-compose pull postgres
+      - name: script
+        run: make migration-check
+      - name: success
+        if: ${{ success() }}
+        run: docker-compose logs postgres
+      - name: failure
+        if: ${{ failure() }}
+        run: docker-compose logs postgres
+#
+#  build-and-push:
+#    needs: [ precommit-check, migration-check ]
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: true
+#      matrix:
+#        service: [ "riperistap", "bgpstreamlivetap", "bgpstreamkafkatap", "bgpstreamhisttap", "exabgptap", "autoignore", "autostarter", "configuration", "database", "detection", "fileobserver", "mitigation", "notifier", "prefixtree", "frontend" ]
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Print environment variables
+#        run: env
+#      - name: Login to Docker Hub
+#        if: ${{ ! env.IS_FORK }}
+#        uses: docker/login-action@v1
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#      - name: make
+#        run: make ${{ matrix.service }}
+#
+#  test-detection:
+#    needs: build-and-push
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: install
+#        if: ${{ ! env.IS_FORK }}
+#        run: pip install coverage==4.5.4 codecov==2.1.0
+#      - name: before script setup
+#        if: ${{ ! env.IS_FORK }}
+#        run: make setup-dev
+#      - name: before script build
+#        run: docker build -t artemis_detection_testing testing/detection
+#      - name: before script up
+#        run: docker-compose -f docker-compose.testdetection.yaml up -d
+#      - name: script
+#        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_detection_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+#      - name: failure
+#        if: ${{ failure() }}
+#        run: docker-compose -f docker-compose.testdetection.yaml logs
+#
+#  test-autoconf:
+#    needs: build-and-push
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: install
+#        if: ${{ ! env.IS_FORK }}
+#        run: pip install coverage==4.5.4 codecov==2.1.0
+#      - name: before script setup
+#        if: ${{ ! env.IS_FORK }}
+#        run: make setup-dev
+#      - name: before script build
+#        run: docker build -t artemis_autoconf_testing testing/autoconf
+#      - name: before script up
+#        run: docker-compose -f docker-compose.testautoconf.yaml up -d
+#      - name: script
+#        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoconf_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+#      - name: failure
+#        if: ${{ failure() }}
+#        run: docker-compose -f docker-compose.testautoconf.yaml logs
+#
+#  benchmark:
+#    needs: build-and-push
+#    runs-on: ubuntu-latest
+#    if: ${{ github.event_name == 'pull_request' && !env.IS_FORK }}
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: before script setup
+#        if: ${{ ! env.IS_FORK }}
+#        run: make setup-dev
+#      - name: before script build
+#        run: docker build -t artemis_benchmark testing/benchmark
+#      - name: before script up
+#        run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
+#      - name: script
+#        run: docker run --rm -ti --env-file .env -e "REPO_SLUG=${TRAVIS_REPO_SLUG}" -e "GITHUB_TOKEN=${GITHUB_TOKEN}"
+#        -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
+#
+#  test-autoignore:
+#    needs: build-and-push
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: install
+#        if: ${{ ! env.IS_FORK }}
+#        run: pip install coverage==4.5.4 codecov==2.1.0
+#      - name: before script setup
+#        if: ${{ ! env.IS_FORK }}
+#        run: make setup-dev
+#      - name: before script build
+#        run: docker build -t artemis_autoignore_testing testing/autoignore
+#      - name: before script up
+#        run: docker-compose -f docker-compose.testautoignore.yaml up -d
+#      - name: script
+#        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_autoignore_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+#      - name: failure
+#        if: ${{ failure() }}
+#        run: docker-compose -f docker-compose.testautoignore.yaml logs
+#
+#  test-rpki:
+#    needs: build-and-push
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: install
+#        if: ${{ ! env.IS_FORK }}
+#        run: pip install coverage==4.5.4 codecov==2.1.0
+#      - name: before script setup
+#        if: ${{ ! env.IS_FORK }}
+#        run: make setup-dev
+#      - name: before script setup routinator
+#        run: make setup-routinator
+#      - name: before script build
+#        run: docker build -t artemis_rpki_testing testing/rpki
+#      - name: before script run
+#        run: docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
+#      - name: before script up
+#        run: docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
+#      - name: script
+#        run: docker run --rm -ti --env-file .env --network artemis_artemis artemis_rpki_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+#      - name: failure
+#        if: ${{ failure() }}
+#        run: docker-compose -f docker-compose.testrpki.yaml logs

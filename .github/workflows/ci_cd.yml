@@ -95,6 +95,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: Print environment variables
+        run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
         run: pip install coverage==4.5.4 codecov==2.1.0
@@ -121,6 +138,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: Print environment variables
+        run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
         run: pip install coverage==4.5.4 codecov==2.1.0
@@ -142,17 +176,34 @@ jobs:
         if: ${{ failure() }}
         run: docker-compose -f docker-compose.testautoconf.yaml logs
 
-#  benchmark:
-#    needs: build-and-push
-#    runs-on: ubuntu-latest
-#    if: ${{ github.event_name == 'pull_request' && !env.IS_FORK }}
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: before script setup
-#        if: ${{ ! env.IS_FORK }}
-#        run: make setup-dev
-#      - name: before script build
-#        run: docker build -t artemis_benchmark testing/benchmark
+  benchmark:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && !env.IS_FORK }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: Print environment variables
+        run: env
+      - name: before script setup
+        if: ${{ ! env.IS_FORK }}
+        run: make setup-dev
+      - name: before script build
+        run: docker build -t artemis_benchmark testing/benchmark
 #      - name: before script up
 #        run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
 #      - name: script
@@ -163,6 +214,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: Print environment variables
+        run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
         run: pip install coverage==4.5.4 codecov==2.1.0
@@ -189,6 +257,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $TRAVIS_BRANCH == 'master' ] && [ $TRAVIS_PULL_REQUEST_BRANCH == '' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: Print environment variables
+        run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
         run: pip install coverage==4.5.4 codecov==2.1.0

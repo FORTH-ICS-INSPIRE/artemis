@@ -99,6 +99,8 @@ Where `query.json` file includes:
     type
     under_mitigation
     withdrawn
+    community_annotation
+    rpki_status
   }
 }"
 }

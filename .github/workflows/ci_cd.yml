@@ -212,7 +212,7 @@ jobs:
       - name: before script up
         run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
       - name: script
-        run: docker run --rm -ti --env-file .env -e "REPO_SLUG=$GITHUB_REPOSITORY" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$TRAVIS_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
+        run: docker run --rm --env-file .env -e "REPO_SLUG=$GITHUB_REPOSITORY" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$TRAVIS_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
 
   test-autoignore:
     name: E2E Test Auto-ignore

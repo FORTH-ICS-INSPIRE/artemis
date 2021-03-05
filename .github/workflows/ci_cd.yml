@@ -183,6 +183,8 @@ jobs:
     name: E2E Benchmark
     needs: build-and-push
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: set env vars
         run: |
@@ -205,14 +207,17 @@ jobs:
         if: github.event_name == 'pull_request' && ! env.IS_FORK
         uses: actions/checkout@v2
       - name: before script setup
-        if: ${{ ! env.IS_FORK }}
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
         run: make setup-dev
       - name: before script build
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
         run: docker build -t artemis_benchmark testing/benchmark
       - name: before script up
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
         run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
       - name: script
-        run: docker run --rm --env-file .env -e "REPO_SLUG=$GITHUB_REPOSITORY" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$TRAVIS_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        run: docker run --rm --env-file .env -e "REPO_SLUG=$TRAVIS_PULL_REQUEST_SLUG" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$TRAVIS_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
 
   test-autoignore:
     name: E2E Test Auto-ignore

@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - changes in "dataplane_msms" table and "view_dataplane_msms" view, in order to support the new design of the "dataplane_view" module.
 - upgraded artemis-utils to 1.0.10 to include the slacker-log-handler==1.7.1 dep
+- migrating from travis to GH actions
+- downgraded to six==1.11.0 to achieve compatibility
 
 ### Fixed
 - autoconfiguration subprefix bug in prefixtree plus new autoconf tests

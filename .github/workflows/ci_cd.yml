@@ -7,10 +7,10 @@ on:
     branches: [ master ]
 
 env:
-    TRAVIS_PULL_REQUEST_BRANCH: ${{ github.head_ref }}
-    TRAVIS_BRANCH: ${{ github.base_ref }}
-    TRAVIS_PULL_REQUEST_SLUG: ${{ github.repository }}
-    TRAVIS_PULL_REQUEST: ${{ github.event.number }}
+    G_PULL_REQUEST_BRANCH: ${{ github.head_ref }}
+    G_BRANCH: ${{ github.base_ref }}
+    G_REPO_SLUG: ${{ github.repository }}
+    G_PULL_REQUEST: ${{ github.event.number }}
     G_REF: ${{ github.ref }}
     EVENT: ${{ github.event_name }}
     BUILD_TAG: ''
@@ -69,21 +69,18 @@ jobs:
           if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
           else
-            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
           fi;
       - name: print environment variables
         run: env
-      - name: check not fork
-        if: ${{ ! env.IS_FORK }}
-        run: echo "Not a fork. Proceeding..."
       - name: Login to Docker Hub
         if: ${{ ! env.IS_FORK }}
         uses: docker/login-action@v1
@@ -104,12 +101,12 @@ jobs:
           if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
           else
-            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -122,6 +119,8 @@ jobs:
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
       - name: before script build
         run: docker build -t artemis_detection_testing testing/detection
       - name: before script up
@@ -148,12 +147,12 @@ jobs:
           if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
           else
-            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -166,6 +165,8 @@ jobs:
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
       - name: before script build
         run: docker build -t artemis_autoconf_testing testing/autoconf
       - name: before script up
@@ -193,12 +194,12 @@ jobs:
           if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
           else
-            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -211,6 +212,8 @@ jobs:
       - name: before script setup
         if: github.event_name == 'pull_request' && ! env.IS_FORK
         run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
       - name: before script build
         if: github.event_name == 'pull_request' && ! env.IS_FORK
         run: docker build -t artemis_benchmark testing/benchmark
@@ -219,7 +222,7 @@ jobs:
         run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
       - name: script
         if: github.event_name == 'pull_request' && ! env.IS_FORK
-        run: docker run --rm --env-file .env -e "REPO_SLUG=$TRAVIS_PULL_REQUEST_SLUG" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$TRAVIS_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
+        run: docker run --rm --env-file .env -e "REPO_SLUG=$G_REPO_SLUG" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$G_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
 
   test-autoignore:
     name: E2E Test Auto-ignore
@@ -232,12 +235,12 @@ jobs:
           if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
           else
-            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -250,6 +253,8 @@ jobs:
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
       - name: before script build
         run: docker build -t artemis_autoignore_testing testing/autoignore
       - name: before script up
@@ -276,12 +281,12 @@ jobs:
           if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
             echo "BUILD_TAG=latest" >> $GITHUB_ENV;
           else
-            echo "BUILD_TAG=dev-PR$TRAVIS_PULL_REQUEST" >> $GITHUB_ENV;
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $TRAVIS_PULL_REQUEST_BRANCH != '' ] && [ $TRAVIS_PULL_REQUEST_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if [ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -294,6 +299,8 @@ jobs:
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
       - name: before script setup routinator
         run: make setup-routinator
       - name: before script build

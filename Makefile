@@ -112,6 +112,19 @@ setup-dev:
 		cp -rn frontend/webapp/configs/* local_configs/frontend; \
 	fi
 
+.PHONE: setup-conf
+setup-conf: # set only local_configs, if not existing
+setup-conf:
+	@if [ ! -d "local_configs" ]; then \
+		mkdir -p local_configs && \
+		mkdir -p local_configs/backend && \
+		mkdir -p local_configs/monitor && \
+		mkdir -p local_configs/frontend && \
+		cp -rn backend-services/configs/* local_configs/backend && \
+		cp -rn monitor-services/configs/* local_configs/monitor && \
+		cp -rn frontend/webapp/configs/* local_configs/frontend; \
+	fi
+
 .PHONE: setup-routinator
 setup-routinator: # create needed configuration for routinator
 setup-routinator:

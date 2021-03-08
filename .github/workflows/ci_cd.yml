@@ -11,6 +11,7 @@ env:
     TRAVIS_BRANCH: ${{ github.base_ref }}
     TRAVIS_PULL_REQUEST_SLUG: ${{ github.repository }}
     TRAVIS_PULL_REQUEST: ${{ github.event.number }}
+    G_REF: ${{ github.ref }}
     BUILD_TAG: ''
     IS_FORK: ''
     PUSH: ''

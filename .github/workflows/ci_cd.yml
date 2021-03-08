@@ -72,10 +72,10 @@ jobs:
           else
             echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -104,10 +104,10 @@ jobs:
           else
             echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -150,10 +150,10 @@ jobs:
           else
             echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -197,10 +197,10 @@ jobs:
           else
             echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -239,10 +239,10 @@ jobs:
           else
             echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;
@@ -285,10 +285,10 @@ jobs:
           else
             echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "IS_FORK=true" >> $GITHUB_ENV;
           fi;
-          if [ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]; then
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
             echo "PUSH=false" >> $GITHUB_ENV;
           else
             echo "PUSH=true" >> $GITHUB_ENV;

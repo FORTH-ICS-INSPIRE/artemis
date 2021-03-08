@@ -213,6 +213,7 @@ jobs:
         if: github.event_name == 'pull_request' && ! env.IS_FORK
         run: make setup-dev
       - name: setup conf
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
         run: make setup-conf
       - name: before script build
         if: github.event_name == 'pull_request' && ! env.IS_FORK

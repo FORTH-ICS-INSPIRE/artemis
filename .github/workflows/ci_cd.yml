@@ -23,6 +23,7 @@ jobs:
   precommit-check:
     name: Pre-commit Check
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
       - name: set up Python
@@ -40,6 +41,7 @@ jobs:
   migration-check:
     name: Migration Check
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
       - name: print environment variables
@@ -59,6 +61,7 @@ jobs:
     name: Build and Push Container Images
     needs: [ precommit-check, migration-check ]
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     strategy:
       fail-fast: true
       matrix:
@@ -95,6 +98,7 @@ jobs:
     name: E2E Test Detection
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
       - name: set env vars
@@ -141,6 +145,7 @@ jobs:
     name: E2E Test Auto-configuration
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
       - name: Set env vars
@@ -187,6 +192,7 @@ jobs:
     name: E2E Benchmark
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -230,6 +236,7 @@ jobs:
     name: E2E Test Auto-ignore
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
       - name: Set env vars
@@ -276,6 +283,7 @@ jobs:
     name: E2E Test RPKI
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
       - name: Set env vars

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - upgraded artemis-utils to 1.0.10 to include the slacker-log-handler==1.7.1 dep
 - migrating from travis to GH actions
 - downgraded to six==1.11.0 to achieve compatibility
+- changed tap invalid format logging level to debug (instead of warning)
 
 ### Fixed
 - autoconfiguration subprefix bug in prefixtree plus new autoconf tests

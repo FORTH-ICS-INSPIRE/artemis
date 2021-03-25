@@ -437,7 +437,7 @@ class BGPStreamHistDataWorker:
                                                 )
                                                 time.sleep(0.01)
                                         else:
-                                            log.warning(
+                                            log.debug(
                                                 "Invalid format message: {}".format(msg)
                                             )
                                     except BaseException:

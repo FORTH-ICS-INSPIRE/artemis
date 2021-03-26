@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - migrating from travis to GH actions
 - downgraded to six==1.11.0 to achieve compatibility
 - changed tap invalid format logging level to debug (instead of warning)
+- updated artemis-utils to 1.0.11
 
 ### Fixed
 - autoconfiguration subprefix bug in prefixtree plus new autoconf tests
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TBD (soon-to-be removed feature)
 
 ### Security
-- TBD (addressing vulnerability)
+- updated PyYAML to 5.4 (fixing sec vulnerabilitiy)
 
 ## [2.0.0] (Boreas) - 2021-01-26
 ### Added

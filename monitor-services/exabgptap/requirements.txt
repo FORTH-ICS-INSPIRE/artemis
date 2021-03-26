@@ -6,7 +6,7 @@ kombu==4.6.7
 netaddr==0.7.19
 psycopg2==2.8.4
 pytricia==1.0.0
-PyYAML==5.3
+PyYAML==5.4
 redis==3.4.0
 requests==2.25.1
 ruamel.yaml==0.16.5

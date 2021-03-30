@@ -10,10 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "json" encoding accepted for messages coming from frontend (ignore/resolve/seen/delete/(un-)mitigate)
 
 ### Changed
-- TBD (Changed existing functionality)
+- changes in "dataplane_msms" table and "view_dataplane_msms" view, in order to support the new design of the "dataplane_view" module.
+- upgraded artemis-utils to 1.0.10 to include the slacker-log-handler==1.7.1 dep
+- migrating from travis to GH actions
+- downgraded to six==1.11.0 to achieve compatibility
+- changed tap invalid format logging level to debug (instead of warning)
+- updated artemis-utils to 1.0.11
 
 ### Fixed
-- Autoconfiguration subprefix bug in prefixtree plus new autoconf tests
+- autoconfiguration subprefix bug in prefixtree plus new autoconf tests
+- vagrant docker-compose.yaml file fix (sync with master)
+- session timeout behavior
 
 ### Removed
 - TBD (removed a feature)
@@ -22,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TBD (soon-to-be removed feature)
 
 ### Security
-- TBD (addressing vulnerability)
+- updated PyYAML to 5.4 (fixing sec vulnerabilitiy)
 
 ## [2.0.0] (Boreas) - 2021-01-26
 ### Added

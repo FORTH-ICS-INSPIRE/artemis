@@ -9,9 +9,9 @@ Logs (which are useful for debugging) can be accessed as follows:
 docker-compose logs
 ```
 The "-f" flag will provide you live logs while the tool is running.
-If you need the logs from a particular running container, e.g., the backend, you can also do the following:
+If you need the logs from a particular running container, e.g., the `autostarter`, you can also do the following:
 ```
-docker-compose exec backend bash
+docker-compose exec autostarter bash
 cd /var/log/artemis
 ```
 Both containers use [Python's logging library](https://docs.python.org/3/library/logging.html) and can be configured as such. The tool supports SMTP, SMPTS and SYSLOG handlers for the loggers, which can be defined as follows:
@@ -54,8 +54,8 @@ slack_handler:
 Then, you can attach them to the already defined loggers based on their purpose. For example, backend loggers include:
 
 * artemis_logger: Output of all (backend) services.
-* mail_logger: Triggered on new hijack events (targeted information to avoid spamming for mail services - **only** triggered on hijack events). For its current use, check [this line](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/backend-services/detection/core/detection.py#L1043).
-* hijack_logger: Triggered for every hijack update (not only on first trigger). Be careful to avoid being overwhelmed with messages in case you attach a handler to it! Useful for monitoring the progress of a hijack in terms of incoming BGP updates.
+* mail_logger: Triggered on new hijack events (targeted information to avoid spamming for mail services - **only** triggered on hijack events). Also activated when a hijack becomes outdated or withdrawn automatically.
+* hijack_logger: Triggered for every hijack update (not only on first trigger). Be careful to avoid being overwhelmed with messages in case you attach a handler to it! Useful for monitoring the progress of a hijack in terms of incoming BGP updates. Also activated when a hijack becomes outdated or withdrawn automatically.
 * taps_logger: Logger for the monitoring services.
 
 *Note that you should attach a logger you would like to use.

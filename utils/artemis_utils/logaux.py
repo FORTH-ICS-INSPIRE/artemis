@@ -4,8 +4,6 @@ from logging.handlers import SMTPHandler
 from artemis_utils.envvars import ARTEMIS_WEB_HOST
 from artemis_utils.envvars import HIJACK_LOG_FIELDS
 
-from . import log
-
 
 class TLSSMTPHandler(SMTPHandler):
     def emit(self, record):
@@ -93,6 +91,8 @@ def hijack_log_field_formatter(hijack_dict):
                 ARTEMIS_WEB_HOST, hijack_dict["key"]
             )
     except Exception:
+        from . import log
+
         log.exception("exception")
         return hijack_dict
     return logged_hijack_dict

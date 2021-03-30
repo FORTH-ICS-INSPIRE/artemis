@@ -1,6 +1,5 @@
 import glob
 import os
-import re
 import time
 
 import psycopg2
@@ -233,23 +232,13 @@ class AutoconfTester:
             # wait for dependencies data workers to start
             wait_data_worker_dependencies(DATA_WORKER_DEPENDENCIES)
 
-            full_testfiles = glob.glob("testfiles/*.json")
-            testfiles_to_id = {}
-            for full_testfile in full_testfiles:
-                testfile = full_testfile.split("/")[-1]
-                id_match = re.match(r"^(\d+)_.*$", testfile)
-                if id_match:
-                    testfiles_to_id[testfile] = int(id_match.group(1))
-            testfiles = sorted(
-                list(testfiles_to_id.keys()), key=lambda x: testfiles_to_id[x]
-            )
-            for i, testfile in enumerate(testfiles):
+            for i, testfile in enumerate(sorted(glob.glob("testfiles/*.json"))):
                 print(
                     "[+] Commencing test {}: '{}'".format(
-                        i + 1, testfile.split(".json")[0]
+                        i + 1, testfile.split("/")[-1].split(".json")[0]
                     )
                 )
-                with open("testfiles/{}".format(testfile), "r") as f:
+                with open(testfile, "r") as f:
                     autoconf_test_info = json.load(f)
                     message = autoconf_test_info["send"]
                     self.expected_configuration = autoconf_test_info["configuration"]

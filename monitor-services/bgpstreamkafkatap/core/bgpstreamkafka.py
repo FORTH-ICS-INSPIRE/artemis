@@ -526,9 +526,7 @@ class BGPStreamKafkaDataWorker:
                                             serializer="ujson",
                                         )
                                 else:
-                                    log.warning(
-                                        "Invalid format message: {}".format(msg)
-                                    )
+                                    log.debug("Invalid format message: {}".format(msg))
                             except BaseException:
                                 log.exception(
                                     "Error when normalizing BGP message: {}".format(msg)

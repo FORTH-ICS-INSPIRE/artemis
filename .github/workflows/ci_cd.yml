@@ -1,0 +1,331 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+    G_PULL_REQUEST_BRANCH: ${{ github.head_ref }}
+    G_BRANCH: ${{ github.base_ref }}
+    G_PR_REPO_SLUG: ${{ github.event.pull_request.head.repo.full_name }}
+    G_REPO_SLUG: ${{ github.repository }}
+    G_PULL_REQUEST: ${{ github.event.number }}
+    G_REF: ${{ github.ref }}
+    EVENT: ${{ github.event_name }}
+    BUILD_TAG: ''
+    IS_FORK: ''
+    PUSH: ''
+
+jobs:
+
+  precommit-check:
+    name: Pre-commit Check
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.6'
+      - name: install
+        run: |
+          pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
+          pip install -r backend-services/detection/requirements.txt
+          pre-commit install
+      - name: script
+        run: pre-commit run --all-files
+
+  migration-check:
+    name: Migration Check
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    steps:
+      - uses: actions/checkout@v2
+      - name: print environment variables
+        run: env
+      - name: before script
+        run: docker-compose pull postgres
+      - name: script
+        run: make migration-check
+      - name: success
+        if: ${{ success() }}
+        run: docker-compose logs postgres
+      - name: failure
+        if: ${{ failure() }}
+        run: docker-compose logs postgres
+
+  build-and-push:
+    name: Build and Push Container Images
+    needs: [ precommit-check, migration-check ]
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    strategy:
+      fail-fast: true
+      matrix:
+        service: [ "riperistap", "bgpstreamlivetap", "bgpstreamkafkatap", "bgpstreamhisttap", "exabgptap", "autoignore", "autostarter", "configuration", "database", "detection", "fileobserver", "mitigation", "notifier", "prefixtree", "frontend" ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: set env vars
+        run: |
+          if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: print environment variables
+        run: env
+      - name: Login to Docker Hub
+        if: ${{ ! env.IS_FORK }}
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: make
+        run: make ${{ matrix.service }}
+
+  test-detection:
+    name: E2E Test Detection
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    steps:
+      - uses: actions/checkout@v2
+      - name: set env vars
+        run: |
+          if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: print environment variables
+        run: env
+      - name: install
+        if: ${{ ! env.IS_FORK }}
+        run: pip install coverage==4.5.4 codecov==2.1.0
+      - name: before script setup
+        if: ${{ ! env.IS_FORK }}
+        run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
+      - name: before script build
+        run: docker build -t artemis_detection_testing testing/detection
+      - name: before script up
+        run: docker-compose -f docker-compose.testdetection.yaml up -d
+      - name: script
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_detection_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+      - name: failure
+        if: ${{ failure() }}
+        run: docker-compose -f docker-compose.testdetection.yaml logs
+
+  test-autoconf:
+    name: E2E Test Auto-configuration
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: print environment variables
+        run: env
+      - name: install
+        if: ${{ ! env.IS_FORK }}
+        run: pip install coverage==4.5.4 codecov==2.1.0
+      - name: before script setup
+        if: ${{ ! env.IS_FORK }}
+        run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
+      - name: before script build
+        run: docker build -t artemis_autoconf_testing testing/autoconf
+      - name: before script up
+        run: docker-compose -f docker-compose.testautoconf.yaml up -d
+      - name: script
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_autoconf_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+      - name: failure
+        if: ${{ failure() }}
+        run: docker-compose -f docker-compose.testautoconf.yaml logs
+
+  benchmark:
+    name: E2E Benchmark
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: set env vars
+        run: |
+          if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: print environment variables
+        run: env
+      - name: Git checkout
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        uses: actions/checkout@v2
+      - name: before script setup
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        run: make setup-dev
+      - name: setup conf
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        run: make setup-conf
+      - name: before script build
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        run: docker build -t artemis_benchmark testing/benchmark
+      - name: before script up
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        run: docker-compose -f docker-compose.benchmark.yaml up --scale detection=4 --scale prefixtree=4 --scale database=4 -d
+      - name: script
+        if: github.event_name == 'pull_request' && ! env.IS_FORK
+        run: docker run --rm --env-file .env -e "REPO_SLUG=$G_REPO_SLUG" -e "GITHUB_TOKEN=$GITHUB_TOKEN" -e "PULL_REQUEST_NUMBER=$G_PULL_REQUEST"  --network artemis_artemis artemis_benchmark
+
+  test-autoignore:
+    name: E2E Test Auto-ignore
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: print environment variables
+        run: env
+      - name: install
+        if: ${{ ! env.IS_FORK }}
+        run: pip install coverage==4.5.4 codecov==2.1.0
+      - name: before script setup
+        if: ${{ ! env.IS_FORK }}
+        run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
+      - name: before script build
+        run: docker build -t artemis_autoignore_testing testing/autoignore
+      - name: before script up
+        run: docker-compose -f docker-compose.testautoignore.yaml up -d
+      - name: script
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_autoignore_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+      - name: failure
+        if: ${{ failure() }}
+        run: docker-compose -f docker-compose.testautoignore.yaml logs
+
+  test-rpki:
+    name: E2E Test RPKI
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set env vars
+        run: |
+          if [ $G_REF == 'refs/heads/master' ] && [ $EVENT == 'push' ]; then
+            echo "BUILD_TAG=latest" >> $GITHUB_ENV;
+          else
+            echo "BUILD_TAG=dev-PR$G_PULL_REQUEST" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "IS_FORK=true" >> $GITHUB_ENV;
+          fi;
+          if ([ $G_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]) || ([ $EVENT == 'pull_request' ] && [ $G_PR_REPO_SLUG != 'FORTH-ICS-INSPIRE/artemis' ]); then
+            echo "PUSH=false" >> $GITHUB_ENV;
+          else
+            echo "PUSH=true" >> $GITHUB_ENV;
+          fi;
+      - name: print environment variables
+        run: env
+      - name: install
+        if: ${{ ! env.IS_FORK }}
+        run: pip install coverage==4.5.4 codecov==2.1.0
+      - name: before script setup
+        if: ${{ ! env.IS_FORK }}
+        run: make setup-dev
+      - name: setup conf
+        run: make setup-conf
+      - name: before script setup routinator
+        run: make setup-routinator
+      - name: before script build
+        run: docker build -t artemis_rpki_testing testing/rpki
+      - name: before script run
+        run: docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
+      - name: before script up
+        run: docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
+      - name: script
+        run: docker run --rm --env-file .env --network artemis_artemis artemis_rpki_testing
+#      - name: success
+#        if: ${{ success() }}
+#        run: |
+#          sh convert_coverage.sh
+#          codecov
+      - name: failure
+        if: ${{ failure() }}
+        run: docker-compose -f docker-compose.testrpki.yaml logs

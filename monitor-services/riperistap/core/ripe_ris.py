@@ -451,7 +451,7 @@ class RipeRisTapDataWorker:
                                                     serializer="ujson",
                                                 )
                                         else:
-                                            log.warning(
+                                            log.debug(
                                                 "Invalid format message: {}".format(msg)
                                             )
                                     except BaseException:

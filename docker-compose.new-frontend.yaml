@@ -1,0 +1,571 @@
+version: '3.4'
+
+x-healtcheck: &healthcheck
+    test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+    interval: 20s
+    timeout: 5s
+    retries: 5
+    start_period: 1800s
+
+services:
+    riperistap:
+        image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
+        build: ./monitor-services/riperistap/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RIS_ID: ${RIS_ID}
+        volumes:
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
+            - ./monitor-services/riperistap/entrypoint:/root/entrypoint
+    bgpstreamlivetap:
+        image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamlivetap/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
+            - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
+    bgpstreamkafkatap:
+        image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamkafkatap/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
+            - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
+    bgpstreamhisttap:
+        image: inspiregroup/artemis-bgpstreamhisttap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamhisttap/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - database
+            - prefixtree
+            - rabbitmq
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            HISTORIC: "true"
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
+            - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
+    exabgptap:
+        image: inspiregroup/artemis-exabgptap:${SYSTEM_VERSION}
+        build: ./monitor-services/exabgptap/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            MON_TIMEOUT_LAST_BGP_UPDATE: ${MON_TIMEOUT_LAST_BGP_UPDATE}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
+            - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
+    autoignore:
+        image: inspiregroup/artemis-autoignore:${SYSTEM_VERSION}
+        build: ./backend-services/autoignore/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - database
+            - prefixtree
+            - rabbitmq
+            - postgres
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/autoignore/entrypoint:/root/entrypoint
+    autostarter:
+        image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
+        build: ./backend-services/autostarter/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - autoignore
+            - bgpstreamhisttap
+            - bgpstreamkafkatap
+            - bgpstreamlivetap
+            - database
+            - detection
+            - exabgptap
+            - mitigation
+            - notifier
+            - postgres
+            - prefixtree
+            - configuration
+            - fileobserver
+            - riperistap
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            AUTO_RECOVER_PROCESS_STATE: ${AUTO_RECOVER_PROCESS_STATE}
+            CHECK_INTERVAL: 5
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/autostarter/entrypoint:/root/entrypoint
+    configuration:
+        image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
+        build: ./backend-services/configuration/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - autoignore
+            - bgpstreamhisttap
+            - bgpstreamkafkatap
+            - bgpstreamlivetap
+            - database
+            - detection
+            - exabgptap
+            - mitigation
+            - notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+            - riperistap
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/backend/:/etc/artemis/
+            - ./backend-services/configuration/entrypoint:/root/entrypoint
+    database:
+        image: inspiregroup/artemis-database:${SYSTEM_VERSION}
+        build: ./backend-services/database/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - graphql
+            - notifier
+            - postgres
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            DB_USER: ${DB_USER}
+            DB_PASS: ${DB_PASS}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_NAME: ${DB_NAME}
+            DB_VERSION: ${DB_VERSION}
+            HASURA_HOST: ${HASURA_HOST}
+            HASURA_PORT: ${HASURA_PORT}
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            WITHDRAWN_HIJACK_THRESHOLD: ${WITHDRAWN_HIJACK_THRESHOLD}
+            HISTORIC: ${HISTORIC}
+        volumes:
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/database/entrypoint:/root/entrypoint
+    detection:
+        image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
+        build: ./backend-services/detection/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - notifier
+            - database
+            - prefixtree
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+            RPKI_VALIDATOR_ENABLED: ${RPKI_VALIDATOR_ENABLED}
+            RPKI_VALIDATOR_HOST: ${RPKI_VALIDATOR_HOST}
+            RPKI_VALIDATOR_PORT: ${RPKI_VALIDATOR_PORT}
+        volumes:
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/detection/entrypoint:/root/entrypoint
+    fileobserver:
+        image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
+        build: ./backend-services/fileobserver/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - configuration
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/backend/:/etc/artemis/
+            - ./backend-services/fileobserver/entrypoint:/root/entrypoint
+    mitigation:
+        image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
+        build: ./backend-services/mitigation/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - rabbitmq
+            - database
+            - prefixtree
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/mitigation/entrypoint:/root/entrypoint
+    notifier:
+        image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
+        build: ./backend-services/notifier/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - rabbitmq
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
+            HIJACK_LOG_FILTER: ${HIJACK_LOG_FILTER}
+            HIJACK_LOG_FIELDS: ${HIJACK_LOG_FIELDS}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/notifier/entrypoint:/root/entrypoint
+    prefixtree:
+        image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
+        build: ./backend-services/prefixtree/
+        restart: always
+        healthcheck: *healthcheck
+        depends_on:
+            - rabbitmq
+            - redis
+        expose:
+            - 3000
+        networks:
+            - artemis
+        environment:
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            REDIS_HOST: ${REDIS_HOST}
+            REDIS_PORT: ${REDIS_PORT}
+            REST_PORT: 3000
+        volumes:
+            - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
+            - ./backend-services/prefixtree/entrypoint:/root/entrypoint
+    redis:
+        image: redis:latest
+        container_name: redis
+        restart: always
+        networks:
+            - artemis
+        expose:
+            - ${REDIS_PORT}
+        volumes:
+            - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    artemis-web:
+        image: inspiregroup/artemis-frontend-web:latest
+        restart: always
+        container_name: artemis-web
+        networks:
+            - artemis
+        expose:
+            - ${WEBAPP_PORT}
+        depends_on:
+            - mongodb
+            - database
+            - graphql
+            - postgres
+            - postgrest
+            - rabbitmq
+    mongodb:
+        image: mongo:latest
+        container_name: mongodb
+        restart: always
+        networks:
+            - artemis
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASS}
+        volumes:
+            - ./mongo-data:/data/db
+    ldap:
+        image: rroemhild/test-openldap:latest
+        container_name: ldap
+        restart: always
+        networks:
+            - artemis
+#    frontend:
+#        environment:
+#            API_HOST: ${API_HOST}
+#            API_PORT: ${API_PORT}
+#            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
+#            BIND_IP: ${BIND_IP}
+#            DB_HOST: ${DB_HOST}
+#            DB_PORT: ${DB_PORT}
+#            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
+#            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+#            HASURA_HOST: ${HASURA_HOST}
+#            HASURA_PORT: ${HASURA_PORT}
+#            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+#            JS_VERSION: ${JS_VERSION}
+#            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+#            RABBITMQ_USER: ${RABBITMQ_USER}
+#            RABBITMQ_PASS: ${RABBITMQ_PASS}
+#            RABBITMQ_HOST: ${RABBITMQ_HOST}
+#            RABBITMQ_PORT: ${RABBITMQ_PORT}
+#            REST_PORT: 3000
+#            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
+#            SYSTEM_VERSION: ${SYSTEM_VERSION}
+#            USER_ROOT_USERNAME: ${ADMIN_USER}
+#            USER_ROOT_PASSWORD: ${ADMIN_PASS}
+#            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
+#            WEBAPP_PORT: ${WEBAPP_PORT}
+#        volumes:
+#            - ./local_configs/frontend/:/etc/artemis/
+#            - ./frontend/db/:/etc/webapp/db/
+    nginx:
+        image: nginx:1.17-alpine
+        container_name: nginx
+        restart: always
+        depends_on:
+            - artemis-web
+            - postgrest
+        networks:
+            - artemis
+        ports:
+            # uncomment both lines for rootless
+            # - "8080:8080"
+            # - "8443:8443"
+            # comment both lines when running rootless
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
+            - ./local_configs/frontend/certs/:/etc/nginx/certs/
+    rabbitmq:
+        image: rabbitmq:3.8.3-management-alpine
+        container_name: rabbitmq
+        restart: always
+        networks:
+            - artemis
+        expose:
+            - ${RABBITMQ_PORT}
+            # - 15672 management port
+        environment:
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+            RABBITMQ_IO_THREAD_POOL_SIZE: ${RABBITMQ_IO_THREAD_POOL_SIZE:-128}
+        volumes:
+            - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
+    postgres:
+        image: timescale/timescaledb:1.1.0-pg10
+        container_name: postgres
+        restart: always
+        networks:
+            - artemis
+        expose:
+            - ${DB_PORT}
+        environment:
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASS}
+            DB_BACKUP: ${DB_BACKUP}
+            DB_AUTOCLEAN: ${DB_AUTOCLEAN}
+            DB_HIJACK_DORMANT: ${DB_HIJACK_DORMANT}
+        volumes:
+            - ./postgres-data-current:/var/lib/postgresql/data
+            - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
+            - ./postgres-data-backup/:/tmp/
+            - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
+            - ./other/db/data/:/docker-entrypoint-initdb.d/data/
+            - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
+        entrypoint: ["./postgres-entrypoint.sh"]
+    postgrest:
+        image: postgrest/postgrest:v7.0.0
+        container_name: postgrest
+        restart: always
+        depends_on:
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - ${API_PORT}
+        environment:
+            PGRST_DB_URI: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=postgrest
+            PGRST_DB_SCHEMA: ${DB_SCHEMA}
+            PGRST_DB_ANON_ROLE: ${DB_USER}
+    pg-amqp-bridge:
+        image: subzerocloud/pg-amqp-bridge:0.0.6
+        container_name: pg-amqp-bridge
+        restart: always
+        depends_on:
+            - postgres
+            - database
+            - rabbitmq
+        networks:
+            - artemis
+        environment:
+            - POSTGRESQL_URI=postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=pg-amqp-bridge
+            - AMQP_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+            - BRIDGE_CHANNELS=events:amq.direct
+            # - RUST_LOG=debug
+            # - RUST_BACKTRACE=1
+        volumes:
+            - ./backend-services/database/wait-for:/root/wait-for
+        command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
+    graphql:
+        image: hasura/graphql-engine:v1.1.0
+        container_name: graphql
+        restart: always
+        depends_on:
+            - postgres
+        networks:
+            - artemis
+        expose:
+            - ${HASURA_PORT}
+        environment:
+            HASURA_GRAPHQL_DATABASE_URL: postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?application_name=graphql
+            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
+            HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_GUI}
+            HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key":"${JWT_SECRET_KEY}"}'
+        command:
+            - graphql-engine
+            - serve
+
+networks:
+    artemis:

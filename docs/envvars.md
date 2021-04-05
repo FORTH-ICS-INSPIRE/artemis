@@ -92,7 +92,7 @@ Javascript Script version to avoid browser caching:
 ```
 JS_VERSION=0.1.0
 ```
-Web host name (used for connect-src CSP policy, typically the DNS name or IP address of the ARTEMIS server)
+Web host name (used for connect-src CSP policy, typically the DNS name or IP address of the ARTEMIS server; it also affects hijack logging to point to the correct server domain)
 ```
 ARTEMIS_WEB_HOST=artemis.com
 ```

@@ -72,8 +72,6 @@ These changes should be sufficient to have artemis running rootless on `https://
 ## Setup Tool
 
 1. Edit environment variables in `.env` file (especially the security-related variables); please check [this docs page](https://bgpartemis.readthedocs.io/en/latest/envvars/) for more information on the env variables.
-A comprehensive list of environment variables and their exact use can be found at [Environment variables](https://bgpartemis.readthedocs.io/en/latest/envvars/),
-detailing all variables used in the .env file used for ARTEMIS system setup (non-hijack-related).
 
 2. It is important that before starting ARTEMIS, you should setup secure access to the web application
    (used to configure/control ARTEMIS and view its state),
@@ -87,6 +85,7 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    ADMIN_USER=admin
    ADMIN_PASS=admin123
    ADMIN_EMAIL=admin@admin
+   ARTEMIS_WEB_HOST=artemis.com # please adjust to your local server domain
    ```
    and modifying the secrets for your own deployment (**critical**):
    ```

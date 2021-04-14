@@ -66,7 +66,7 @@ check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docke
    cp -rn backend-services/configs/* local_configs/backend && \
    cp backend-services/configs/redis.conf local_configs/backend/redis.conf && \
    cp -rn monitor-services/configs/* local_configs/monitor && \
-   cp -rn frontend/webapp/configs/* local_configs/frontend
+   cp -rn other/frontend/configs/* local_configs/frontend
    ```
 
    The `-n` flag will prevent overwriting any local changes you have already made.

@@ -113,7 +113,7 @@ detailing all variables used in the .env file used for ARTEMIS system setup (non
    cp -rn backend-services/configs/* local_configs/backend && \
    cp backend-services/configs/redis.conf local_configs/backend/redis.conf && \
    cp -rn monitor-services/configs/* local_configs/monitor && \
-   cp -rn frontend/webapp/configs/* local_configs/frontend
+   cp -rn other/frontend/configs/* local_configs/frontend
    ```
    The source mappings in `docker-compose.yaml` are already updated by default.
    The `local_configs` directory is NOT under version control.

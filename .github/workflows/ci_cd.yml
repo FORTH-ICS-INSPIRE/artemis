@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        service: [ "riperistap", "bgpstreamlivetap", "bgpstreamkafkatap", "bgpstreamhisttap", "exabgptap", "autoignore", "autostarter", "configuration", "database", "detection", "fileobserver", "mitigation", "notifier", "prefixtree", "frontend" ]
+        service: [ "riperistap", "bgpstreamlivetap", "bgpstreamkafkatap", "bgpstreamhisttap", "exabgptap", "autoignore", "autostarter", "configuration", "database", "detection", "fileobserver", "mitigation", "notifier", "prefixtree" ]
     steps:
       - uses: actions/checkout@v2
       - name: set env vars

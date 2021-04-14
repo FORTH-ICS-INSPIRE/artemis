@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED/master] (latest) - YYYY-MM-DD
 ### Added
+- new frontend (React)
 - "json" encoding accepted for messages coming from frontend (ignore/resolve/seen/delete/(un-)mitigate)
 
 ### Changed
@@ -26,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TBD (removed a feature)
 
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- old frontend (Flask, custom JS)
 
 ### Security
 - updated PyYAML to 5.4 (fixing sec vulnerabilitiy)

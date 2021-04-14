@@ -36,7 +36,6 @@ docker tag inspiregroup/artemis-fileobserver:latest inspiregroup/artemis-fileobs
 docker tag inspiregroup/artemis-mitigation:latest inspiregroup/artemis-mitigation:$RELEASE
 docker tag inspiregroup/artemis-notifier:latest inspiregroup/artemis-notifier:$RELEASE
 docker tag inspiregroup/artemis-prefixtree:latest inspiregroup/artemis-prefixtree:$RELEASE
-docker tag inspiregroup/artemis-frontend:latest inspiregroup/artemis-frontend:$RELEASE
 
 echo "[+] Pushing '$RELEASE' images to docker cloud..."
 docker push inspiregroup/artemis-riperistap:$RELEASE
@@ -52,4 +51,3 @@ docker push inspiregroup/artemis-fileobserver:$RELEASE
 docker push inspiregroup/artemis-mitigation:$RELEASE
 docker push inspiregroup/artemis-notifier:$RELEASE
 docker push inspiregroup/artemis-prefixtree:$RELEASE
-docker push inspiregroup/artemis-frontend:$RELEASE

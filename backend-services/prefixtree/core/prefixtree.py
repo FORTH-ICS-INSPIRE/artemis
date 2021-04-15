@@ -718,8 +718,8 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                     routing_key="update-with-prefix-node",
                     serializer="ujson",
                 )
-            else:
-                log.warning("unconfigured BGP update received '{}'".format(bgp_update))
+            # else:
+            #     log.warning("unconfigured BGP update received '{}'".format(bgp_update))
         except Exception:
             log.exception("exception")
 

@@ -74,32 +74,28 @@ DB_HIJACK_DORMANT=24 # deactivation with "false" (no dormant hijack characteriza
 ```
 
 ## Frontend config
-Listening address for frontend container (this is mapped from nginx so it can be left as is):
+Port where frontend is deployed:
 ```
-BIND_IP=0.0.0.0
-```
-Port where webapp is deployed:
-```
-WEBAPP_PORT=8000
+WEBAPP_PORT=4200
 ```
 Default credentials for admin user (**WARNING: please change the default ones before deploying!**):
 ```
 ADMIN_USER=admin
-ADMIN_PASS=admin123
-ADMIN_EMAIL=admin@admin
-```
-Javascript Script version to avoid browser caching:
-```
-JS_VERSION=0.1.0
+ADMIN_PASS=admin1234
+ADMIN_EMAIL=admin@admin.com
 ```
 Web host name (used for connect-src CSP policy, typically the DNS name or IP address of the ARTEMIS server)
 ```
 ARTEMIS_WEB_HOST=artemis.com
 ```
-Number of GUnicorn workers that serve frontend:
-```
-GUNICORN_WORKERS=4
-```
+
+## MongoDB config
+
+**TODO**
+
+## LDAP config
+
+**TODO**
 
 ## Rabbitmq config
 RabbitMQ IP, port, user and password:
@@ -134,8 +130,6 @@ HASURA_SECRET_KEY=@rt3m1s.
 Secret keys and password salt (**WARNING: please change the default ones before deploying**):
 ```
 JWT_SECRET_KEY=44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f
-FLASK_SECRET_KEY=76f8bae45e807865955344c1a58882d38c8ceb4f855f58091642b7d48290af97
-SECURITY_PASSWORD_SALT=06a4b397fc7045eac527c2aec3ff46cee5ce30016c760f238c26e79902fe67b6
 ```
 
 ## Community log filter

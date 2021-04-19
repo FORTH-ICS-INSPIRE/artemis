@@ -101,8 +101,6 @@ When you install ARTEMIS's helm chart you need to provide some values in a .yalm
 ```
 hasuraSecret   # Alphanumeric string that is used as the super-secret of hasura
 jwtSecret      # Secret used for the JWT authentication
-flaskSecret    # Secret used for the session id's generation
-passwordSalt   # Password salt for the frontend database
 privKey        # Private key for the HTTPS certificate
 certificate    # HTTPS certificate
 ### OPTIONAL ###

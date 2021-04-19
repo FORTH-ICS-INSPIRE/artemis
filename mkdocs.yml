@@ -14,7 +14,6 @@ nav:
     -   Configuration:
             -   Basic: basicconf.md
             -   'Environment Variables': envvars.md
-            -   Frontend: frontendconf.md
             -   Logging: loggingconf.md
             -   LDAP: ldapconf.md
             -   'RPKI Validation': rpkivalidconf.md

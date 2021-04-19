@@ -13,6 +13,9 @@ redisPort: 6379
 # api
 apiHost: postgrest
 apiPort: 3000
+configHost: configuration
+configPort: 3000
+databaseHost: database
 restPort: 3000
 
 # monitor-specific configs
@@ -30,15 +33,17 @@ dbAutoClean: false
 dbBackup: true
 dbHijackDormant: false
 
-# webapp
-bindIp: 0.0.0.0
+# frontend
 webappHost: frontend
-webappPort: 8000
-adminUser: admin
-adminPass: admin123
-adminEmail: admin@admin
-gunicornWorkers: 4
-jsVersion: 1.0.4
+webappPort: 4200
+adminPass: admin1234
+adminEmail: admin@admin.com
+
+# mongodb
+# TODO
+
+# ldap
+# TODO
 
 # rabbitmq
 rabbitmqHost: rabbitmq
@@ -140,10 +145,10 @@ services:
     ports:
     - 3000
   frontend:
-    image: inspiregroup/artemis-frontend
+    image: inspiregroup/artemis-frontend-web:latest
     replicas: 1
     ports:
-      - 8000
+    - 4200
   redis:
     image: redis:latest
     ports:

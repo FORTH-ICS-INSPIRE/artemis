@@ -6,7 +6,7 @@ to a new location due to e.g., permission issues, the following steps can be fol
 3. Backup your `postgres-data-current` folder; this includes BGP update and hijack information, as well
    as related statistics, old configurations and intended service states.
    You can delete it altogether if you do not need this kind of state and want to start with a clean DB.
-4. Backup your `frontend/db` folder; this includes the user DB used to authenticate and authorize frontend users.
+4. Backup your `mongo-data` folder; this includes the user DB used to authenticate and authorize frontend users.
 5. Backup your `.env` file; this includes all environment variables used for ARTEMIS (see also [this page](https://bgpartemis.readthedocs.io/en/latest/envvars/)).
 6. Backup any `docker-compose` yaml files that you might have changed with custom volume mappings, environment variables, etc.
 7. Clone ARTEMIS anew in a new filesystem location: `git clone https://github.com/FORTH-ICS-INSPIRE/artemis`.

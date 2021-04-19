@@ -1,3 +1,5 @@
+**TODO: UPDATE FOR NEW FRONTEND**
+
 You can configure LDAP as an authentication method. You need to change the following variables in the `/frontend/webapp/configs/webapp.cfg` file:
 
 ```

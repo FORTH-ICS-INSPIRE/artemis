@@ -6,6 +6,8 @@ The default `ADMIN` user can login with the credentials set in the `.env` variab
 
 We recommend that you use the latest version of Chrome for the best ARTEMIS experience.
 
+**TODO: new functionality from new frontend**
+
 ## Registering users
 ```
 https://<ARTEMIS_HOST>/create_account

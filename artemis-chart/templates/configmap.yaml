@@ -13,6 +13,9 @@ data:
   redisPort: {{ .Values.redisPort | default "6379" | quote }}
   apiHost: {{ .Values.apiHost | default "postgrest" }}
   apiPort: {{ .Values.apiPort | default "3000" | quote }}
+  configHost: {{ .Values.configHost | default "configuration" }}
+  configPort: {{ .Values.configPort | default "3000" | quote }}
+  databaseHost: {{ .Values.databaseHost | default "database" }}
   restPort: {{ .Values.restPort | default "3000" | quote }}
   risId: {{ .Values.risId | default "8522" | quote }}
   dbHost: {{ .Values.dbHost | default "postgres" }}
@@ -25,13 +28,9 @@ data:
   dbBackup: {{ .Values.dbBackup | default "true" | quote }}
   dbHijackDormant: {{ .Values.dbHijackDormant | default "false" | quote }}
   dbUri: postgres://{{ .Values.dbUser | default "artemis_user" }}:{{ .Values.dbPass | default "Art3m1s" }}@{{ .Values.dbHost | default "postgres"}}:{{ .Values.dbPort | default 5432 }}/{{ .Values.dbName | default "artemis_db" }}
-  bindIp: {{ .Values.bindIp | default "0.0.0.0" | quote }}
   webappHost: {{ .Values.webappHost | default "frontend" }}
-  webappPort: {{ .Values.webappPort | default "8000" | quote }}
-  adminUser: {{ .Values.adminUser | default "admin" | quote }}
+  webappPort: {{ .Values.webappPort | default "4200" | quote }}
   adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
-  gunicornWorkers: {{ .Values.gunicornWorkers | default "4" | quote }}
-  jsVersion: {{ .Values.jsVersion | default "1.0.4" | quote }}
   rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" }}
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}

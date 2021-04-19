@@ -38,16 +38,26 @@ spec:
             configMapKeyRef:
               name: configmap
               key: apiPort
+        - name: CONFIG_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: configHost
+        - name: CONFIG_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: configPort
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: databaseHost
         - name: REST_PORT
           valueFrom:
             configMapKeyRef:
               name: configmap
               key: restPort
-        - name: BIND_IP
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: bindIp
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
@@ -58,11 +68,6 @@ spec:
             configMapKeyRef:
               name: configmap
               key: dbPort
-        - name: FLASK_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: secret
-              key: flaskSecret
         - name: HASURA_HOST
           valueFrom:
             configMapKeyRef:
@@ -73,11 +78,6 @@ spec:
             configMapKeyRef:
               name: configmap
               key: hasuraPort
-        - name: JS_VERSION
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: jsVersion
         - name: JWT_SECRET_KEY
           valueFrom:
             secretKeyRef:
@@ -103,11 +103,6 @@ spec:
             configMapKeyRef:
               name: configmap
               key: rabbitmqUser
-        - name: SECURITY_PASSWORD_SALT
-          valueFrom:
-            secretKeyRef:
-              name: secret
-              key: passwordSalt
         - name: SYSTEM_VERSION
           valueFrom:
             configMapKeyRef:
@@ -123,21 +118,11 @@ spec:
             secretKeyRef:
               name: secret
               key: adminPass
-        - name: USER_ROOT_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: adminUser
         - name: WEBAPP_PORT
           valueFrom:
             configMapKeyRef:
               name: configmap
               key: webappPort
-        - name: GUNICORN_WORKERS
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: gunicornWorkers
         volumeMounts:
         - mountPath: /etc/artemis/
           name: frontend-configmap

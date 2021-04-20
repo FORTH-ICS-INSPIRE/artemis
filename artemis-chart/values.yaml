@@ -40,10 +40,26 @@ adminPass: admin1234
 adminEmail: admin@admin.com
 
 # mongodb
-# TODO
+mongodbUser: admin
+mongodbPass: pass
+mongodbHost: mongodb
+mongodbPort: 27017
+mongodbName: artemis-web
 
 # ldap
 # TODO
+# LDAP_ENABLED=true
+# LDAP_HOST=ldap
+# LDAP_PORT=10389
+# LDAP_PROTOCOL=ldap
+# LDAP_BIND_DN="cn=admin,dc=planetexpress,dc=com"
+# LDAP_BIND_SECRET="GoodNewsEveryone"
+# LDAP_SEARCH_BASE="ou=people,dc=planetexpress,dc=com"
+# LDAP_SEARCH_FILTER="(mail={{username}})"
+# LDAP_SEARCH_ATTRIBUTES="mail, uid"
+# LDAP_EMAIL_FIELDNAME=mail
+# LDAP_ADMIN_GROUP=admin_staff
+# LDAP_USER_GROUP=
 
 # rabbitmq
 rabbitmqHost: rabbitmq
@@ -171,6 +187,10 @@ services:
     - 8080
   pgamqpbridge:
     image: subzerocloud/pg-amqp-bridge:0.0.6
+  mongodb:
+    image: mongo:latest
+    ports:
+    - 27017
 
 # ingress
 ingress:

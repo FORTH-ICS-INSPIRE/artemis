@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: {{  .image  }}:{{ $.Values.systemVersion }}
+        image: {{  .image  }}
         imagePullPolicy: Always
         env:
         - name: ARTEMIS_WEB_HOST
@@ -123,25 +123,32 @@ spec:
             configMapKeyRef:
               name: configmap
               key: webappPort
-        volumeMounts:
-        - mountPath: /etc/artemis/
-          name: frontend-configmap
-        - mountPath: /etc/webapp/db/
-          name: frontend-pvc
-          subPath: webbapp-db
+        - name: MONGODB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: mongodbUser
+        - name: MONGODB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: mongodbPass
+        - name: MONGODB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: mongodbHost
+        - name: MONGODB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: mongodbPort
+        - name: MONGODB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: mongodbName
       restartPolicy: Always
-      volumes:
-      - configMap:
-          name: volumes
-          items:
-          - key: webapp.cfg
-            path: webapp.cfg
-          - key: logging.yaml
-            path: logging.yaml
-        name: frontend-configmap
-      - persistentVolumeClaim:
-          claimName: frontend-pvc
-        name: frontend-pvc
       {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}

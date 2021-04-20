@@ -31,6 +31,10 @@ data:
   webappHost: {{ .Values.webappHost | default "frontend" }}
   webappPort: {{ .Values.webappPort | default "4200" | quote }}
   adminEmail: {{ .Values.adminEmail | default "admin@admin.com" | quote }}
+  mongodbUser: {{ .Values.mongodbUser | default "admin" | quote }}
+  mongodbHost: {{ .Values.mongodbHost | default "mongodb" | quote }}
+  mongodbPort: {{ .Values.mongodbPort | default "27017" | quote }}
+  mongodbName: {{ .Values.mongodbName | default "artemis-web" | quote }}
   rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" }}
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}

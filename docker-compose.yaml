@@ -449,6 +449,8 @@ services:
         restart: always
         networks:
             - artemis
+        expose:
+            - ${MONGODB_PORT}
         environment:
             MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
             MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASS}

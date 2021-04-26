@@ -422,6 +422,7 @@ services:
             DEFAULT_PASS: ${ADMIN_PASS}
             HASURA_SECRET: ${HASURA_SECRET_KEY}
             JWT_SECRET: ${JWT_SECRET_KEY}
+            CSRF_SECRET: ${CSRF_SECRET}
             LDAP_ENABLED: ${LDAP_ENABLED}
             LDAP_HOST: ${LDAP_HOST}
             LDAP_PORT: ${LDAP_PORT}

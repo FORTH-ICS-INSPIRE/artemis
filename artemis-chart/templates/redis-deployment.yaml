@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: redis
-        image: {{ .image }}
+        image: {{ .image }}:latest
         resources: {}
         command:
           - redis-server

@@ -161,12 +161,12 @@ services:
     ports:
     - 3000
   frontend:
-    image: inspiregroup/artemis-frontend-web:latest
+    image: inspiregroup/artemis-frontend-web
     replicas: 1
     ports:
     - 4200
   redis:
-    image: redis:latest
+    image: redis
     ports:
     - 6379
   postgrest:
@@ -188,7 +188,7 @@ services:
   pgamqpbridge:
     image: subzerocloud/pg-amqp-bridge:0.0.6
   mongodb:
-    image: mongo:latest
+    image: mongo
     ports:
     - 27017
 
@@ -211,8 +211,8 @@ pvc:
   storage: 1Gi
   # storageClassName: rook-block
   accessMode: ReadWriteOnce
-  annotations:
-    helm.sh/resource-policy: "keep"
+  # annotations:
+  #   helm.sh/resource-policy: "keep"
 
 # nodeselector
 nodeSelector: {}

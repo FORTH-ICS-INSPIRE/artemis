@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: {{  .image  }}
+        image: {{  .image  }}:{{ $.Values.systemVersion }}
         imagePullPolicy: Always
         env:
         - name: ARTEMIS_WEB_HOST
@@ -148,6 +148,11 @@ spec:
             configMapKeyRef:
               name: configmap
               key: mongodbName
+        - name: CSRF_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: csrfSecret
       restartPolicy: Always
       {{- with $.Values.nodeSelector }}
       nodeSelector:

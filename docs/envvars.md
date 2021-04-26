@@ -131,6 +131,10 @@ Secret keys and password salt (**WARNING: please change the default ones before 
 ```
 JWT_SECRET_KEY=44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f
 ```
+CSRF protection (**WARNING: please change the default one before deploying!**):
+```
+CSRF_SECRET=P*3NGEEaJV3yUGDJA9428EQRg!ad
+```
 
 ## Community log filter
 Custom log filter for logging on syslog (or email or other logs) only hijacks with a certain annotation, see [this page](https://bgpartemis.readthedocs.io/en/latest/commannotations/):

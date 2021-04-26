@@ -23,11 +23,6 @@ spec:
         image: {{  .image  }}:{{ $.Values.systemVersion }}
         imagePullPolicy: Always
         env:
-        - name: ARTEMIS_WEB_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: artemisWebHost
         - name: API_HOST
           valueFrom:
             configMapKeyRef:
@@ -53,32 +48,17 @@ spec:
             configMapKeyRef:
               name: configmap
               key: databaseHost
-        - name: REST_PORT
+        - name: DEFAULT_EMAIL
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: restPort
-        - name: DB_HOST
+              key: adminEmail
+        - name: DEFAULT_PASS
           valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: dbHost
-        - name: DB_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: dbPort
-        - name: HASURA_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: hasuraHost
-        - name: HASURA_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: hasuraPort
-        - name: JWT_SECRET_KEY
+            secretKeyRef:
+              name: secret
+              key: adminPass
+        - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: secret
@@ -103,26 +83,11 @@ spec:
             configMapKeyRef:
               name: configmap
               key: rabbitmqUser
-        - name: SYSTEM_VERSION
+        - name: NEXT_PUBLIC_SYSTEM_VERSION
           valueFrom:
             configMapKeyRef:
               name: configmap
               key: systemVersion
-        - name: USER_ROOT_EMAIL
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: adminEmail
-        - name: USER_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: secret
-              key: adminPass
-        - name: WEBAPP_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: webappPort
         - name: MONGODB_USER
           valueFrom:
             configMapKeyRef:
@@ -153,6 +118,11 @@ spec:
             secretKeyRef:
               name: secret
               key: csrfSecret
+        - name: TESTING
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: testEnv
       restartPolicy: Always
       {{- with $.Values.nodeSelector }}
       nodeSelector:

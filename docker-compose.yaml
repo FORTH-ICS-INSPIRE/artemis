@@ -417,12 +417,12 @@ services:
             API_PORT: ${API_PORT}
             CONFIG_HOST: ${CONFIG_HOST}
             CONFIG_PORT: ${CONFIG_PORT}
+            CSRF_SECRET: ${CSRF_SECRET}
             DATABASE_HOST: ${DATABASE_HOST}
             DEFAULT_EMAIL: ${ADMIN_EMAIL}
             DEFAULT_PASS: ${ADMIN_PASS}
             HASURA_SECRET: ${HASURA_SECRET_KEY}
             JWT_SECRET: ${JWT_SECRET_KEY}
-            CSRF_SECRET: ${CSRF_SECRET}
             LDAP_ENABLED: ${LDAP_ENABLED}
             LDAP_HOST: ${LDAP_HOST}
             LDAP_PORT: ${LDAP_PORT}
@@ -440,10 +440,12 @@ services:
             MONGODB_HOST: ${MONGODB_HOST}
             MONGODB_PORT: ${MONGODB_PORT}
             MONGODB_NAME: ${MONGODB_NAME}
+            NEXT_PUBLIC_SYSTEM_VERSION: ${SYSTEM_VERSION}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
+            TESTING: ${TEST_ENV}
     mongodb:
         image: mongo:latest
         container_name: mongodb

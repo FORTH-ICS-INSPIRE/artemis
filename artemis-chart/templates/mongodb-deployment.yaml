@@ -36,7 +36,7 @@ spec:
         volumeMounts:
         - mountPath: /data/db/
           name: frontend-pvc
-          subPath: mongo-data
+          # subPath: mongo-data
       restartPolicy: Always
       volumes:
       - persistentVolumeClaim:

@@ -37,6 +37,15 @@ Postgrest container IP and PORT (containers have their name as hostname):
 API_HOST=postgrest
 API_PORT=3000
 ```
+Configuration container IP and port (containers have their name as hostname):
+```
+CONFIG_HOST=configuration
+CONFIG_PORT=3000
+```
+Database container IP and port (containers have their name as hostname):
+```
+DATABASE_HOST=database
+```
 
 ## Monitor-specific configs
 Unique ID to be used for RIPE RIS BGP update streaming (recommended: use ASN)
@@ -78,7 +87,7 @@ Port where frontend is deployed:
 ```
 WEBAPP_PORT=4200
 ```
-Default credentials for admin user (**WARNING: please change the default ones before deploying!**):
+Default credentials for admin user (**WARNING: please change the default password before deploying!**):
 ```
 ADMIN_USER=admin
 ADMIN_PASS=admin1234
@@ -90,8 +99,14 @@ ARTEMIS_WEB_HOST=artemis.com
 ```
 
 ## MongoDB config
-
-**TODO**
+Default credentials for mongodb (**WARNING: please change the default password before deploying!**):
+```
+MONGODB_USER=admin
+MONGODB_PASS=pass
+MONGODB_HOST=mongodb
+MONGODB_PORT=27017
+MONGODB_NAME=artemis-web
+```
 
 ## LDAP config
 

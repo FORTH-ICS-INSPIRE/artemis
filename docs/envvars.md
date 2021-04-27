@@ -109,8 +109,8 @@ MONGODB_NAME=artemis-web
 ```
 
 ## LDAP config
-
-**TODO**
+Default credentials for ldap (**WARNING: please change the default bind secret and other needed vars before deploying!**):
+Please check the detailed page [here](https://bgpartemis.readthedocs.io/en/latest/ldapconf/).
 
 ## Rabbitmq config
 RabbitMQ IP, port, user and password:

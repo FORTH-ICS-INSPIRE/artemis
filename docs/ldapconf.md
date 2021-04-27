@@ -1,16 +1,16 @@
-**TODO: UPDATE FOR NEW FRONTEND**
-
-You can configure LDAP as an authentication method. You need to change the following variables in the `/frontend/webapp/configs/webapp.cfg` file:
+You can configure LDAP as an authentication method. You need to change the following variables in the `.env` file:
 
 ```
-AUTH_METHOD = "ldap"                                          # Define AUTH method
-
-SECURITY_LDAP_URI = "ldap"                                    # URL for the LDAP server
-SECURITY_LDAP_BASE_DN = "ou=People,dc=example,dc=org"         # Base Domain that will be used for authentication
-SECURITY_LDAP_SEARCH_FILTER = "(mail={})"                     # Which field will be queried (email by default)
-SECURITY_LDAP_BIND_DN = "cn=admin,dc=example,dc=org"          # Bind Domain with user that will be used for queries
-SECURITY_LDAP_BIND_PASSWORD = "admin"                         # Password of the user that will be doing the queries
-SECURITY_LDAP_EMAIL_FIELDNAME = "mail"                        # Fieldname for email
-SECURITY_LDAP_ADMIN_GROUPS_FIELDNAME = "objectClass"          # Fieldname group that will seperate users from admins
-SECURITY_LDAP_ADMIN_GROUPS = ["top"]                          # Admin groups name
+LDAP_ENABLED=true                                             # Whether LDAP auth is enabled
+LDAP_HOST=ldap                                                # LDAP auth host (set by default to the used microservice)
+LDAP_PORT=10389                                               # LDAP bind port
+LDAP_PROTOCOL=ldap                                            # LDAP protocol
+LDAP_BIND_DN="cn=admin,dc=planetexpress,dc=com"               # Bind Domain with user that will be used for queries
+LDAP_BIND_SECRET="GoodNewsEveryone"                           # Bind secret
+LDAP_SEARCH_BASE="ou=people,dc=planetexpress,dc=com"          # Search base domain that will be used for authentication
+LDAP_SEARCH_FILTER="(mail={{username}})"                      # Which filter will be searched/queried (email by default)
+LDAP_SEARCH_ATTRIBUTES="mail, uid"                            # Search attributes
+LDAP_EMAIL_FIELDNAME=mail                                     # Fieldname for email
+LDAP_ADMIN_GROUP=admin_staff                                  # Admin group
+LDAP_USER_GROUP=                                              # User group
 ```

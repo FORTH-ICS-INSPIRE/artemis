@@ -93,6 +93,7 @@ These changes should be sufficient to have artemis running rootless on `https://
    JWT_SECRET_KEY
    HASURA_SECRET_KEY
    CSRF_SECRET
+   LDAP_BIND_SECRET
    ```
    Except for the `HASURA_SECRET_KEY`, which is a master password for the graphql queries, the other
    keys need to be randomly generated with the following command (generates 32 random bytes hexadecimal string):

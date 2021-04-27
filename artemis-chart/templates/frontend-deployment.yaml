@@ -123,6 +123,66 @@ spec:
             configMapKeyRef:
               name: configmap
               key: testEnv
+        - name: LDAP_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapEnabled
+        - name: LDAP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapHost
+        - name: LDAP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapPort
+        - name: LDAP_PROTOCOL
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapProtocol
+        - name: LDAP_BIND_DN
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapBindDN
+        - name: LDAP_BIND_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: ldapBindSecret
+        - name: LDAP_SEARCH_BASE
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapSearchBase
+        - name: LDAP_SEARCH_FILTER
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapSearchFilter
+        - name: LDAP_SEARCH_ATTRIBUTES
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapSearchAttributes
+        - name: LDAP_EMAIL_FIELDNAME
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapEmailFieldName
+        - name: LDAP_ADMIN_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapAdmninGroup
+        - name: LDAP_USER_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapUserGroup
       restartPolicy: Always
       {{- with $.Values.nodeSelector }}
       nodeSelector:

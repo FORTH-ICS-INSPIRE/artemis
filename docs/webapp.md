@@ -206,31 +206,31 @@ Regarding the Hijacks table, the following auxiliary actions are supported:
 ## UI overview (with screenshots)
 
 - Login
-  ![ARTEMIS - Login Page](./screenshot/login.png)
+  ![ARTEMIS - Login Page](./images/screenshot/login.png)
 
 - Register
-  ![ARTEMIS - Register Page](./screenshot/signup.png)
+  ![ARTEMIS - Register Page](./images/screenshot/signup.png)
 
 - Overview
-  ![ARTEMIS - Overview Page](./screenshot/dashboard.png)
+  ![ARTEMIS - Overview Page](./images/screenshot/dashboard.png)
 
 - BGP Updates
-  ![ARTEMIS - BGP Updates Page](./screenshot/bgpupdates.png)
+  ![ARTEMIS - BGP Updates Page](./images/screenshot/bgpupdates.png)
 
 - Hijacks
-  ![ARTEMIS - Hijacks Page](./screenshot/hijacks.png)
+  ![ARTEMIS - Hijacks Page](./images/screenshot/hijacks.png)
 
 - View specific hijack
-  ![ARTEMIS - View Hijack Page](./screenshot/hijack.png)
+  ![ARTEMIS - View Hijack Page](./images/screenshot/hijack.png)
 
 - System
-  ![ARTEMIS - System Page](./screenshot/system.png)
+  ![ARTEMIS - System Page](./images/screenshot/system.png)
 
 - User management
-  ![ARTEMIS - User Management Page](./screenshot/user_management.png)
+  ![ARTEMIS - User Management Page](./images/screenshot/user_management.png)
 
 - Config comparison
-  ![ARTEMIS - Config Comparison Page](./screenshot/config_comparison.png)
+  ![ARTEMIS - Config Comparison Page](./images/screenshot/config_comparison.png)
 
 - Learn new configuration rule
-  ![ARTEMIS - Config Comparison Page](./screenshot/learn_rule.png)
+  ![ARTEMIS - Config Comparison Page](./images/screenshot/learn_rule.png)

@@ -82,49 +82,34 @@ You can delete releases on demand, by doing:
 microk8s.helm3 list
 microk8s.helm3 uninstall <release>
 ```
-### 5. Login to kubernetes dashboard at
+### 5. Login to kubernetes dashboard
+Setup proxy:
 ```
-http://127.0.0.1:8080/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy
+microk8s kubectl port-forward -n kube-system service/kubernetes-dashboard 10443:443
+```
+Then visit:
+```
+https://127.0.0.1:10443
 ```
 with token from
 ```
 microk8s.kubectl -n kube-system describe secret $(microk8s.kubectl -n kube-system get secret | awk '/^kubernetes-dashboard-token-/{print $1}') | awk '$1=="token:"{print $2}'
 ```
-### 6. Find nginx cluster IP from
-```
-http://127.0.0.1:8080/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/#!/service?namespace=default
-```
-### 7. Visit artemis at the cluster IP with https
+You can have a total overview of what is going on in your cluster on this dashboard.
 
-In case you want to use the CLI instead of the GUI:
-```
-microk8s.kubectl get pods -o wide
-```
-to get details of all pods (including their IP addresses).
-
-Then proxy the nginx service to your localhost:
-```
-sudo microk8s.kubectl port-forward service/nginx 443:443
-```
-
-You can now access ARTEMIS on your localhost via HTTPS. If you want to make it available to an external interface you can use:
-```
-sudo microk8s.kubectl port-forward --address x.x.x.x service/nginx 443:443
-```
-
-## Using Ingress Controller (Enabled by default)
+## 6. Using Ingress Controller (Enabled by default)
 
 Ingress Controller is enabled by default in values.yaml file. You can disable the ingress controller in order to use the NGINX deployment approach instead. We already provide an [Ingress example](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/artemis-chart/templates/ingresses.yaml) that works with [NGINX Ingress Controller](https://github.com/kubernetes/ingress-nginx), an Ingress Controller maintained by the kubernetes community. You can run this controller from within microk8s by running `microk8s.enable ingress`.
 
-By default, the hostname defaults to `artemis.dev`; to change it, you can provide a value in your yaml file when installing with helm for value `ingress.host`:
+By default, the hostname defaults to `artemis.com`; to change it, you can provide a value in your yaml file when installing with helm for value `ingress.host`:
 ```
-echo 'ingress.host: artemis.dev' >> other/example-values.yaml
+echo 'ingress.host: artemis.com' >> other/example-values.yaml
 microk8s.helm3 install -f other/example-values artemis artemis/artemis-chart
 ```
 
 If you don't have a DNS record you can change your `/etc/hosts` file to point to the clusters external IP for the specified hostname:
 ```
-echo 'x.x.x.x artemis.dev' >> /etc/hosts
+echo 'x.x.x.x artemis.com' >> /etc/hosts
 ```
 
 ## Customization of Kubernetes Deployment

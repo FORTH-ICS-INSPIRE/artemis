@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ldap
+{{ include "artemis.labels" . | indent 4 }}
+  name: ldap
+{{- with .Values.services.ldap }}
+spec:
+  selector:
+    matchLabels:
+      app: ldap
+  replicas: {{ .replicas | default 1 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ldap
+    spec:
+      containers:
+      - name: ldap
+        image: {{  .image  }}:latest
+        imagePullPolicy: Always
+      restartPolicy: Always
+      volumes:
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | nindent 8 }}
+      {{- end }}
+  {{- end }}

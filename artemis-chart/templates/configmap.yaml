@@ -35,6 +35,17 @@ data:
   mongodbHost: {{ .Values.mongodbHost | default "mongodb" | quote }}
   mongodbPort: {{ .Values.mongodbPort | default "27017" | quote }}
   mongodbName: {{ .Values.mongodbName | default "artemis-web" | quote }}
+  ldapEnabled: {{ .Values.ldapEnabled | default "true" | quote }}
+  ldapHost: {{ .Values.ldapHost | default "ldap" | quote }}
+  ldapPort: {{ .Values.ldapPort | default "10389" | quote }}
+  ldapProtocol: {{ .Values.ldapProtocol | default "ldap" | quote }}
+  ldapBindDN: {{ .Values.ldapBindDN | default "cn=admin,dc=planetexpress,dc=com" | quote }}
+  ldapSearchBase: {{ .Values.ldapSearchBase | default "ou=people,dc=planetexpress,dc=com" | quote }}
+  ldapSearchFilter: {{ .Values.ldapSearchFilter | default "(mail={{username}})" | quote }}
+  ldapSearchAttributes: {{ .Values.ldapSearchAttributes | default "mail, uid" | quote }}
+  ldapEmailFieldName: {{ .Values.ldapEmailFieldName | default "mail" | quote }}
+  ldapAdmninGroup: {{ .Values.ldapAdmninGroup | default "admin_staff" | quote }}
+  ldapUserGroup: {{ .Values.ldapUserGroup | default "" | quote }}
   rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" }}
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}

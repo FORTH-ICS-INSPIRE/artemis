@@ -97,6 +97,14 @@ Web host name (used for connect-src CSP policy, typically the DNS name or IP add
 ```
 ARTEMIS_WEB_HOST=artemis.com
 ```
+Session cookie timeout:
+```
+SESSION_TIMEOUT=1800
+```
+Session inactivity timeout:
+```
+INACTIVITY_TIMEOUT=900
+```
 
 ## MongoDB config
 Default credentials for mongodb (**WARNING: please change the default password before deploying!**):

@@ -63,6 +63,16 @@ spec:
             secretKeyRef:
               name: secret
               key: jwtSecret
+        - name: NEXT_PUBLIC_INACTIVITY_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: inactivityTimeout
+        - name: SESSION_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: sessionTimeout
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:

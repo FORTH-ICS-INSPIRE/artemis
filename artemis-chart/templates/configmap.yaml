@@ -64,3 +64,5 @@ data:
   rpkiValidatorPort: {{ .Values.rpkiValidatorPort | default "3323" | quote }}
   testEnv: {{ .Values.testEnv | default "false" | quote }}
   autoRecoverProcessState: {{ .Values.autoRecoverProcessState | default "true" | quote }}
+  sessionTimeout: {{ .Values.sessionTimeout | default "1800" | quote }}
+  inactivityTimeout: {{ .Values.inactivityTimeout | default "900" | quote }}

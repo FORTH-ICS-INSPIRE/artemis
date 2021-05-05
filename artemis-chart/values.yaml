@@ -38,6 +38,8 @@ webappHost: frontend
 webappPort: 4200
 adminPass: admin1234
 adminEmail: admin@admin.com
+sessionTimeout: 1800
+inactivityTimeout: 900
 
 # mongodb
 mongodbUser: admin

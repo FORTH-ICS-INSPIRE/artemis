@@ -191,11 +191,6 @@ services:
     image: mongo
     ports:
     - 27017
-  ldap:
-    image: rroemhild/test-openldap
-    ports:
-    - 10389
-    - 10636
 
 # ingress
 ingress:

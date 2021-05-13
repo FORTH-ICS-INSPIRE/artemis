@@ -398,7 +398,7 @@ services:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
         command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     frontend:
-        image: inspiregroup/artemis-frontend-web:latest
+        image: inspiregroup/artemis-frontend-web:${SYSTEM_VERSION}
         restart: always
         container_name: frontend
         networks:

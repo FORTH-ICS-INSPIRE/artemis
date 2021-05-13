@@ -870,9 +870,10 @@ def translate_learn_rule_dicts_to_yaml_conf(
             return "ok", True
 
         # create prefix anchors
-        created_prefix_anchors, prefixes_exist = get_created_prefix_anchors_from_new_rule(
-            yaml_conf, rule_prefix
-        )
+        (
+            created_prefix_anchors,
+            prefixes_exist,
+        ) = get_created_prefix_anchors_from_new_rule(yaml_conf, rule_prefix)
 
         # create asn anchors
         created_asn_anchors, asns_exist = get_created_asn_anchors_from_new_rule(
@@ -1685,9 +1686,11 @@ def main():
             load_yaml=False,
             config_file=configurationService.shared_memory_manager_dict["config_file"],
         )
-        configurationService.shared_memory_manager_dict[
-            "config_data"
-        ], _flag, _error = parse(raw, yaml=True)
+        (
+            configurationService.shared_memory_manager_dict["config_data"],
+            _flag,
+            _error,
+        ) = parse(raw, yaml=True)
         # update data hashes
         configurationService.shared_memory_manager_dict["section_hashes"] = {
             "prefixes": get_hash(

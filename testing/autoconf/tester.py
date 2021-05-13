@@ -191,26 +191,22 @@ class AutoconfTester:
                         if isinstance(element[inner_key], list):
                             assert set(element[inner_key]) == set(
                                 raw[outer_key][i][inner_key]
-                            ), (
-                                "[-] Values of inner key '{}' for element '{}' for outer key '{}' do not agree: "
-                                "expected '{}', got '{}'".format(
-                                    inner_key,
-                                    element,
-                                    outer_key,
-                                    set(element[inner_key]),
-                                    set(raw[outer_key][i][inner_key]),
-                                )
+                            ), "[-] Values of inner key '{}' for element '{}' for outer key '{}' do not agree: " "expected '{}', got '{}'".format(
+                                inner_key,
+                                element,
+                                outer_key,
+                                set(element[inner_key]),
+                                set(raw[outer_key][i][inner_key]),
                             )
                         else:
-                            assert element[inner_key] == raw[outer_key][i][inner_key], (
-                                "[-] Value of inner key '{}' for element '{}' for outer key '{}' does not agree: "
-                                "expected '{}', got '{}'".format(
-                                    inner_key,
-                                    element,
-                                    outer_key,
-                                    element[inner_key],
-                                    raw[outer_key][i][inner_key],
-                                )
+                            assert (
+                                element[inner_key] == raw[outer_key][i][inner_key]
+                            ), "[-] Value of inner key '{}' for element '{}' for outer key '{}' does not agree: " "expected '{}', got '{}'".format(
+                                inner_key,
+                                element,
+                                outer_key,
+                                element[inner_key],
+                                raw[outer_key][i][inner_key],
                             )
 
     def test(self):

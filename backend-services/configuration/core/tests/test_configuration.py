@@ -58,9 +58,11 @@ class ConfigurationTester(unittest.TestCase):
             self.configurationService.shared_memory_manager_dict["config_file"], "r"
         ) as f:
             raw = f.read()
-            self.configurationService.shared_memory_manager_dict[
-                "config_data"
-            ], _flag, _error = configuration.parse(raw, yaml=True)
+            (
+                self.configurationService.shared_memory_manager_dict["config_data"],
+                _flag,
+                _error,
+            ) = configuration.parse(raw, yaml=True)
 
     def test_prefixes(self):
         self.assertEqual(

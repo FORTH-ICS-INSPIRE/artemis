@@ -216,16 +216,13 @@ class Tester:
             assert event[key] == expected_item[key] or (
                 isinstance(event[key], (list, set))
                 and set(event[key]) == set(expected_item[key])
-            ), (
-                'Test "{}" - Batch #{} - Type {}: Unexpected'
-                ' value for key "{}". Received: {}, Expected: {}'.format(
-                    self.curr_test,
-                    self.curr_idx,
-                    message.delivery_info["routing_key"],
-                    key,
-                    event[key],
-                    expected_item[key],
-                )
+            ), 'Test "{}" - Batch #{} - Type {}: Unexpected' ' value for key "{}". Received: {}, Expected: {}'.format(
+                self.curr_test,
+                self.curr_idx,
+                message.delivery_info["routing_key"],
+                key,
+                event[key],
+                expected_item[key],
             )
 
         self.expected_messages -= 1

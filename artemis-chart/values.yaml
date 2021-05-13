@@ -58,7 +58,7 @@ ldapSearchBase: "ou=people,dc=planetexpress,dc=com"
 ldapSearchFilter: "(mail={{username}})"
 ldapSearchAttributes: "mail, uid"
 ldapEmailFieldName: mail
-ldapAdmninGroup: admin_staff
+ldapAdminGroup: admin_staff
 ldapUserGroup:
 
 # rabbitmq

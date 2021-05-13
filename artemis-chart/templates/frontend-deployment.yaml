@@ -187,7 +187,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: ldapAdmninGroup
+              key: ldapAdminGroup
         - name: LDAP_USER_GROUP
           valueFrom:
             configMapKeyRef:

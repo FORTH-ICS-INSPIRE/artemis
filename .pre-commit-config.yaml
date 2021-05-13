@@ -19,7 +19,7 @@ repos:
       files: "backend-services/detection/core"
       pass_filenames: false
 - repo: https://github.com/ambv/black
-  rev: 19.3b0
+  rev: 21.5b1
   hooks:
     - id: black
       name: Apply black formatter

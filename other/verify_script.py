@@ -118,18 +118,24 @@ class TestStringMethods(unittest.TestCase):
     def test_env_values(self):
         env_vals = set(get_matches_from_file(ENV_FILE, r"([A-Z_]+)="))
         env_vals.remove("COMPOSE_PROJECT_NAME")
-        # dc_vals = set(get_matches_from_file(COMPOSE_FILE, r"\$\{([A-Z_]+)[:\-0-9]*\}"))
+        dc_vals = set(get_matches_from_file(COMPOSE_FILE, r"\$\{([A-Z_]+)[:\-0-9]*\}"))
 
-        # self.assertTrue(dc_vals.issubset(env_vals))
+        self.assertTrue(dc_vals.issubset(env_vals))
 
-        # k8s_vals = set(get_matches_from_file(K8S_VALUES_FILE, r"([A-Za-z]+):"))
+        k8s_vals = set(get_matches_from_file(K8S_VALUES_FILE, r"([A-Za-z]+):"))
         env_vals = {k.lower().replace("_", "") for k in env_vals}
         env_vals.difference_update(
-            {"jwtsecretkey", "hasurasecretkey", "artemiswebhost"}
+            {
+                "jwtsecretkey",
+                "hasurasecretkey",
+                "artemiswebhost",
+                "ldapbindsecret",
+                "csrfsecret",
+            }
         )
-        # k8s_vals = {k.lower() for k in k8s_vals}
+        k8s_vals = {k.lower() for k in k8s_vals}
 
-        # self.assertTrue(env_vals.issubset(k8s_vals))
+        self.assertTrue(env_vals.issubset(k8s_vals))
 
 
 if __name__ == "__main__":

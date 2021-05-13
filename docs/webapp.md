@@ -6,6 +6,11 @@ The default `ADMIN` user can login with the credentials set in the `.env` variab
 
 We recommend that you use the latest version of Chrome for the best ARTEMIS experience.
 
+## User authentication API
+
+Please download and render the HTML file from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/docs/api-documentation.html).
+This is the documentation of the Artemis REST API accessible to normal users. The respective `swagger.json` OpenAPI spec can be found [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/docs/swagger.json).
+
 ## Registering users
 
 ```
@@ -21,9 +26,9 @@ by an ADMIN user. The default role for new users is VIEWER.
 https://<ARTEMIS_HOST>/admin/user_management
 ```
 
-Here the ADMIN user can approve pending users,
+Here the ADMIN user can create new users, approve pending users,
 promote users to admins, demote users from admins,
-delete users and view all users.
+delete users, view all users and change their password.
 An ADMIN can delete VIEWER users, but not ADMIN users
 (these need to be demoted first; except for the root admin
 user who can never be demoted and thus deleted for availability

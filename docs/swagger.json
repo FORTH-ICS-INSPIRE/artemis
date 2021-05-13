@@ -1,0 +1,376 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "This is the documentation of the Artemis REST API accessible to normal users.",
+    "version": "1.0.0",
+    "title": "Artemis Web API"
+  },
+  "tags": [
+    {
+      "name": "login",
+      "description": "API for credentials and LDAP authentication"
+    },
+    {
+      "name": "user account",
+      "description": "API related to the user's account"
+    },
+    {
+      "name": "session",
+      "description": "API for handling the session state"
+    },
+    {
+      "name": "data",
+      "description": "API for retrieving miscellaneous application data"
+    }
+  ],
+  "paths": {
+    "/api/auth/login/credentials": {
+      "post": {
+        "tags": [
+          "login"
+        ],
+        "summary": "User logs in with credentials (email/password).",
+        "description": "",
+        "operationId": "credentials",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/loginBody"
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login/ldap": {
+      "post": {
+        "tags": [
+          "login"
+        ],
+        "summary": "User logs in with her ldap credentials (email/password).",
+        "description": "",
+        "operationId": "ldap",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/loginBody"
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "delete": {
+        "tags": [
+          "login"
+        ],
+        "summary": "User logout",
+        "description": "",
+        "operationId": "logoutp",
+        "responses": {
+          "204": {
+            "description": "User logged out."
+          }
+        }
+      }
+    },
+    "/api/auth/change-password": {
+      "put": {
+        "tags": [
+          "user account"
+        ],
+        "summary": "Change user's password",
+        "description": "",
+        "operationId": "changePass",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/passBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Your password has been updated."
+          },
+          "300": {
+            "description": "Old password is wrong or password missmatch."
+          }
+        }
+      }
+    },
+    "/api/auth/jwt": {
+      "get": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Retrieve JWT.",
+        "description": "",
+        "operationId": "jwt",
+        "responses": {
+          "200": {
+            "description": "JWT retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jwt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/signup": {
+      "post": {
+        "tags": [
+          "user account"
+        ],
+        "summary": "Create new account",
+        "description": "",
+        "operationId": "signup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/signupBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "user created"
+          },
+          "400": {
+            "description": "missing fields or invalid email."
+          },
+          "403": {
+            "description": "The email has already been used."
+          }
+        }
+      }
+    },
+    "/api/auth/userinfo": {
+      "post": {
+        "tags": [
+          "user account"
+        ],
+        "summary": "Get user information",
+        "description": "",
+        "operationId": "userifo",
+        "responses": {
+          "200": {
+            "description": "user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configs": {
+      "get": {
+        "tags": [
+          "data"
+        ],
+        "summary": "Get the configuration data",
+        "description": "",
+        "operationId": "configinfo",
+        "responses": {
+          "200": {
+            "description": "user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/configs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/download_tables": {
+      "get": {
+        "tags": [
+          "data"
+        ],
+        "summary": "Get data for the table described in the action field, in json format",
+        "description": "",
+        "operationId": "downloadtable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/tableBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/configs"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://demo.artemis-pc.duckdns.org"
+    }
+  ],
+  "components": {
+    "requestBodies": {
+      "loginBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/loginBody"
+            }
+          }
+        },
+        "required": true
+      }
+    },
+    "schemas": {
+      "loginBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "rememberMe": {
+            "type": "boolean"
+          }
+        }
+      },
+      "signupBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "tableBody": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "string"
+          }
+        }
+      },
+      "jwt": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        }
+      },
+      "passBody": {
+        "type": "object",
+        "properties": {
+          "old_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        }
+      },
+      "user": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
+              "lastLogin": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "configs": {
+        "type": "object",
+        "properties": {
+          "configs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "raw_config": {
+                  "type": "string"
+                },
+                "comment": {
+                  "type": "string"
+                },
+                "time_modified": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

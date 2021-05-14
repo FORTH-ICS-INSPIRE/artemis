@@ -52,7 +52,7 @@ check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docke
    git pull origin master
    ```
 
-6. (**Only if migrating to 2.0.0**)
+6. (**Only if migrating to 2.0.0 or latest from older version**)
 
    ```
    mkdir -p local_configs && \

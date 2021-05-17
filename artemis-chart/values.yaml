@@ -211,8 +211,8 @@ pvc:
   storage: 1Gi
   # storageClassName: rook-block
   accessMode: ReadWriteOnce
-  # annotations:
-  #   helm.sh/resource-policy: "keep"
+  annotations:
+    helm.sh/resource-policy: "keep"
 
 # nodeselector
 nodeSelector: {}

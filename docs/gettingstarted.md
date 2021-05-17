@@ -60,7 +60,7 @@ A running demo of ARTEMIS based on the configuration of our home institute (FORT
 You can access the demo as a guest (non-admin) user by using the following credentials:
 
 ```
-username: "guest"
+email: "guest@guest.com"
 password: "guest@artemis"
 ```
 

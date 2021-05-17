@@ -185,7 +185,7 @@ docker-compose -f docker-compose.yaml -f docker-compose.<other_service>.yaml -..
 
 A running demo of ARTEMIS based on the configuration of our home institute (FORTH) can be found [here](https://demo.bgpartemis.org).
 You can access the demo as a guest (non-admin) user by using the following credentials:
-* username: "guest"
+* email: "guest@guest.com"
 * password: "guest@artemis"
 
 *Please do not request new accounts on the demo portal. Use the given credentials to browse ARTEMIS as a guest user. In case you need admin access, simply clone ARTEMIS locally and use the given configuration file.*

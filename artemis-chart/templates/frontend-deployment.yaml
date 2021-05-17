@@ -23,66 +23,61 @@ spec:
         image: {{  .image  }}:{{ $.Values.systemVersion }}
         imagePullPolicy: Always
         env:
-        - name: ARTEMIS_WEB_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: artemisWebHost
         - name: API_HOST
           valueFrom:
             configMapKeyRef:
               name: configmap
               key: apiHost
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: apiKey
         - name: API_PORT
           valueFrom:
             configMapKeyRef:
               name: configmap
               key: apiPort
-        - name: REST_PORT
+        - name: CONFIG_HOST
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: restPort
-        - name: BIND_IP
+              key: configHost
+        - name: CONFIG_PORT
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: bindIp
-        - name: DB_HOST
+              key: configPort
+        - name: DATABASE_HOST
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: dbHost
-        - name: DB_PORT
+              key: databaseHost
+        - name: DEFAULT_EMAIL
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: dbPort
-        - name: FLASK_SECRET_KEY
+              key: adminEmail
+        - name: DEFAULT_PASS
           valueFrom:
             secretKeyRef:
               name: secret
-              key: flaskSecret
-        - name: HASURA_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: hasuraHost
-        - name: HASURA_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: hasuraPort
-        - name: JS_VERSION
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: jsVersion
-        - name: JWT_SECRET_KEY
+              key: adminPass
+        - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: secret
               key: jwtSecret
+        - name: NEXT_PUBLIC_INACTIVITY_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: inactivityTimeout
+        - name: SESSION_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: sessionTimeout
         - name: RABBITMQ_HOST
           valueFrom:
             configMapKeyRef:
@@ -103,60 +98,107 @@ spec:
             configMapKeyRef:
               name: configmap
               key: rabbitmqUser
-        - name: SECURITY_PASSWORD_SALT
-          valueFrom:
-            secretKeyRef:
-              name: secret
-              key: passwordSalt
-        - name: SYSTEM_VERSION
+        - name: NEXT_PUBLIC_SYSTEM_VERSION
           valueFrom:
             configMapKeyRef:
               name: configmap
               key: systemVersion
-        - name: USER_ROOT_EMAIL
+        - name: MONGODB_USER
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: adminEmail
-        - name: USER_ROOT_PASSWORD
+              key: mongodbUser
+        - name: MONGODB_PASS
           valueFrom:
             secretKeyRef:
               name: secret
-              key: adminPass
-        - name: USER_ROOT_USERNAME
+              key: mongodbPass
+        - name: MONGODB_HOST
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: adminUser
-        - name: WEBAPP_PORT
+              key: mongodbHost
+        - name: MONGODB_PORT
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: webappPort
-        - name: GUNICORN_WORKERS
+              key: mongodbPort
+        - name: MONGODB_NAME
           valueFrom:
             configMapKeyRef:
               name: configmap
-              key: gunicornWorkers
-        volumeMounts:
-        - mountPath: /etc/artemis/
-          name: frontend-configmap
-        - mountPath: /etc/webapp/db/
-          name: frontend-pvc
-          subPath: webbapp-db
+              key: mongodbName
+        - name: CSRF_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: csrfSecret
+        - name: TESTING
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: testEnv
+        - name: LDAP_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapEnabled
+        - name: LDAP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapHost
+        - name: LDAP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapPort
+        - name: LDAP_PROTOCOL
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapProtocol
+        - name: LDAP_BIND_DN
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapBindDN
+        - name: LDAP_BIND_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: ldapBindSecret
+        - name: LDAP_SEARCH_BASE
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapSearchBase
+        - name: LDAP_SEARCH_FILTER
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapSearchFilter
+        - name: LDAP_SEARCH_ATTRIBUTES
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapSearchAttributes
+        - name: LDAP_EMAIL_FIELDNAME
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapEmailFieldName
+        - name: LDAP_ADMIN_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapAdminGroup
+        - name: LDAP_USER_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapUserGroup
       restartPolicy: Always
-      volumes:
-      - configMap:
-          name: volumes
-          items:
-          - key: webapp.cfg
-            path: webapp.cfg
-          - key: logging.yaml
-            path: logging.yaml
-        name: frontend-configmap
-      - persistentVolumeClaim:
-          claimName: frontend-pvc
-        name: frontend-pvc
       {{- with $.Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | nindent 8 }}

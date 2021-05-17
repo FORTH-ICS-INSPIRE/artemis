@@ -27,7 +27,7 @@ The following microservices compose ARTEMIS:
   * `bgpstreamkafkatap`: collects real-time BGP update information via `Kafka` from public and [private BMP feeds](https://bgpstream.caida.org/v2-beta#bmp-private).
   * `bgpstreamhisttap`: replays historical BGP updates as described [here](https://bgpartemis.readthedocs.io/en/latest/history/).
   * `exabgptap`: collects real-time BGP update information from local BGP feeds via [exaBGP](https://github.com/Exa-Networks/exabgp).
-* Frontend: the frontend/UI of ARTEMIS. It communicates with the backend via GraphQL and REST.
+* Frontend: the frontend/UI of ARTEMIS. It communicates with the backend via GraphQL and REST. Separate mono-repo [here](https://github.com/FORTH-ICS-INSPIRE/artemis-web).
 * Other:
   * `redis`: in-memory key-value store.
   * `nginx`: frontend ingress.

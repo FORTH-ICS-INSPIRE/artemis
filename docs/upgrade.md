@@ -22,11 +22,7 @@ check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docke
    │   ├── certs
    │   │   ├── cert.pem
    │   │   └── key.pem
-   │   ├── config.py
-   │   ├── __init__.py
-   │   ├── logging.yaml
-   │   ├── nginx.conf
-   │   └── webapp.cfg
+   │   └── nginx.conf
    └── monitor
        ├── exabgp.conf
        └── logging.yaml
@@ -56,7 +52,7 @@ check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docke
    git pull origin master
    ```
 
-6. (**Only if migrating to 2.0.0**)
+6. (**Only if migrating to 2.0.0 or latest from older version**)
 
    ```
    mkdir -p local_configs && \
@@ -66,7 +62,7 @@ check [this file](https://github.com/FORTH-ICS-INSPIRE/artemis/blob/master/docke
    cp -rn backend-services/configs/* local_configs/backend && \
    cp backend-services/configs/redis.conf local_configs/backend/redis.conf && \
    cp -rn monitor-services/configs/* local_configs/monitor && \
-   cp -rn frontend/webapp/configs/* local_configs/frontend
+   cp -rn other/frontend/configs/* local_configs/frontend
    ```
 
    The `-n` flag will prevent overwriting any local changes you have already made.
@@ -111,21 +107,16 @@ docker-compose -f ... up -d
 ```
 
 **OPTIONAL**: If you want to change things at your local source code, and need to build your custom
-frontend and backend containers (instead of pre-built images), you can use the following lines instead of `image: ...` (for backend, frontend and monitor containers, respectively):
+monitor and backend containers (instead of pre-built images), you can use the following lines instead of `image: ...` (for backend and monitor containers, respectively):
 ```
 build: ./backend-services/<microservice>
 build: ./monitor-services/<microservice>
-build: ./frontend
 ```
 Note also that you need to always map your volumes properly (e.g., `./backend-services/<microservice>:/root/....`, etc.).
 Custom building can be triggered with:
 ```
 docker-compose -f ... build
 ```
-*Note that for the frontend, you need to make sure that the js-compiled files are
-properly generated. You may need to copy them from a pre-built frontend container
-to be user. More details to follow (this refers only to custom builds that
-require changes to the frontend).*
 
 **Also note that Kubernetes/helm upgrades may require a slightly different process, based on deployment upgrade.
 For more details please ping us on slack or describe your experience in a GitHub issue.**

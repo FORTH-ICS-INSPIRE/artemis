@@ -1,7 +1,7 @@
 apiVersion: v2
 name: artemis-chart
 description: ARTEMIS helm chart for deploying on kubernetes.
-version: 0.0.5
+version: 0.0.6
 icon: https://github.com/FORTH-ICS-INSPIRE/artemis/blob/gh-pages/logo.png
 kubeVersion: ">1.14.0-alpha"
 keywords:

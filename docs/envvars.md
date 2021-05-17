@@ -37,6 +37,15 @@ Postgrest container IP and PORT (containers have their name as hostname):
 API_HOST=postgrest
 API_PORT=3000
 ```
+Configuration container IP and port (containers have their name as hostname):
+```
+CONFIG_HOST=configuration
+CONFIG_PORT=3000
+```
+Database container IP and port (containers have their name as hostname):
+```
+DATABASE_HOST=database
+```
 
 ## Monitor-specific configs
 Unique ID to be used for RIPE RIS BGP update streaming (recommended: use ASN)
@@ -74,32 +83,42 @@ DB_HIJACK_DORMANT=24 # deactivation with "false" (no dormant hijack characteriza
 ```
 
 ## Frontend config
-Listening address for frontend container (this is mapped from nginx so it can be left as is):
+Port where frontend is deployed:
 ```
-BIND_IP=0.0.0.0
+WEBAPP_PORT=4200
 ```
-Port where webapp is deployed:
-```
-WEBAPP_PORT=8000
-```
-Default credentials for admin user (**WARNING: please change the default ones before deploying!**):
+Default credentials for admin user (**WARNING: please change the default password before deploying!**):
 ```
 ADMIN_USER=admin
-ADMIN_PASS=admin123
-ADMIN_EMAIL=admin@admin
-```
-Javascript Script version to avoid browser caching:
-```
-JS_VERSION=0.1.0
+ADMIN_PASS=admin1234
+ADMIN_EMAIL=admin@admin.com
 ```
 Web host name (used for connect-src CSP policy, typically the DNS name or IP address of the ARTEMIS server; it also affects hijack logging to point to the correct server domain)
 ```
 ARTEMIS_WEB_HOST=artemis.com
 ```
-Number of GUnicorn workers that serve frontend:
+Session cookie timeout:
 ```
-GUNICORN_WORKERS=4
+SESSION_TIMEOUT=1800
 ```
+Session inactivity timeout:
+```
+INACTIVITY_TIMEOUT=900
+```
+
+## MongoDB config
+Default credentials for mongodb (**WARNING: please change the default password before deploying!**):
+```
+MONGODB_USER=admin
+MONGODB_PASS=pass
+MONGODB_HOST=mongodb
+MONGODB_PORT=27017
+MONGODB_NAME=artemis-web
+```
+
+## LDAP config
+Default credentials for ldap (**WARNING: please change the default bind secret and other needed vars before deploying!**):
+Please check the detailed page [here](https://bgpartemis.readthedocs.io/en/latest/ldapconf/).
 
 ## Rabbitmq config
 RabbitMQ IP, port, user and password:
@@ -134,8 +153,14 @@ HASURA_SECRET_KEY=@rt3m1s.
 Secret keys and password salt (**WARNING: please change the default ones before deploying**):
 ```
 JWT_SECRET_KEY=44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f
-FLASK_SECRET_KEY=76f8bae45e807865955344c1a58882d38c8ceb4f855f58091642b7d48290af97
-SECURITY_PASSWORD_SALT=06a4b397fc7045eac527c2aec3ff46cee5ce30016c760f238c26e79902fe67b6
+```
+CSRF protection (**WARNING: please change the default one before deploying!**):
+```
+CSRF_SECRET=P*3NGEEaJV3yUGDJA9428EQRg!ad
+```
+API key (**WARNING: please change the default one before deploying!**):
+```
+API_KEY=29870959469dc320ff80c02dcccaf0a62394459e22e6acfdce7cf40f94281d85
 ```
 
 ## Community log filter

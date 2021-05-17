@@ -512,9 +512,11 @@ class ExaBGPDataWorker:
                                         shared_memory_locks[
                                             "autoconf_updates"
                                         ].acquire()
-                                        autoconf_updates = self.shared_memory_manager_dict[
-                                            "autoconf_updates"
-                                        ]
+                                        autoconf_updates = (
+                                            self.shared_memory_manager_dict[
+                                                "autoconf_updates"
+                                            ]
+                                        )
                                         autoconf_updates[msg["key"]] = msg
                                         self.shared_memory_manager_dict[
                                             "autoconf_updates"

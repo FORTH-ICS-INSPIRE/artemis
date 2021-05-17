@@ -56,20 +56,6 @@ class TestStringMethods(unittest.TestCase):
             version, configmap_version, "Wrong db version in {}".format(CONFIGMAP_FILE)
         )
 
-    def test_js_version(self):
-        version = get_match_from_file(ENV_FILE, r"JS_VERSION=([0-9.]*)")
-        k8s_version = get_match_from_file(K8S_VALUES_FILE, r"jsVersion: ([0-9.]*)")
-        configmap_version = get_match_from_file(
-            CONFIGMAP_FILE, r"\.Values\.jsVersion \| default \"([0-9.]*)\""
-        )
-
-        self.assertEqual(
-            version, k8s_version, "Wrong js version in {}".format(K8S_VALUES_FILE)
-        )
-        self.assertEqual(
-            version, configmap_version, "Wrong js version in {}".format(CONFIGMAP_FILE)
-        )
-
     def test_system_version(self):
         version = get_match_from_file(ENV_FILE, r"SYSTEM_VERSION=([\-_a-zA-Z0-9.]*)")
         k8s_version = get_match_from_file(
@@ -141,10 +127,11 @@ class TestStringMethods(unittest.TestCase):
         env_vals.difference_update(
             {
                 "jwtsecretkey",
-                "flasksecretkey",
-                "securitypasswordsalt",
                 "hasurasecretkey",
                 "artemiswebhost",
+                "ldapbindsecret",
+                "csrfsecret",
+                "apikey",
             }
         )
         k8s_vals = {k.lower() for k in k8s_vals}

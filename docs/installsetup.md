@@ -82,17 +82,19 @@ These changes should be sufficient to have artemis running rootless on `https://
    and adjusting the following parameters/environment variables related
    to the artemis_frontend:
    ```
-   ADMIN_USER=admin
-   ADMIN_PASS=admin123
-   ADMIN_EMAIL=admin@admin
+   ADMIN_PASS=admin1234
+   ADMIN_EMAIL=admin@admin.com
+   MONGODB_USER=admin
+   MONGODB_PASS=pass
    ARTEMIS_WEB_HOST=artemis.com # please adjust to your local server domain
    ```
    and modifying the secrets for your own deployment (**critical**):
    ```
    JWT_SECRET_KEY
-   FLASK_SECRET_KEY
-   SECURITY_PASSWORD_SALT
    HASURA_SECRET_KEY
+   CSRF_SECRET
+   API_KEY
+   LDAP_BIND_SECRET
    ```
    Except for the `HASURA_SECRET_KEY`, which is a master password for the graphql queries, the other
    keys need to be randomly generated with the following command (generates 32 random bytes hexadecimal string):
@@ -112,7 +114,7 @@ These changes should be sufficient to have artemis running rootless on `https://
    cp -rn backend-services/configs/* local_configs/backend && \
    cp backend-services/configs/redis.conf local_configs/backend/redis.conf && \
    cp -rn monitor-services/configs/* local_configs/monitor && \
-   cp -rn frontend/webapp/configs/* local_configs/frontend
+   cp -rn other/frontend/configs/* local_configs/frontend
    ```
    The source mappings in `docker-compose.yaml` are already updated by default.
    The `local_configs` directory is NOT under version control.
@@ -120,7 +122,7 @@ These changes should be sufficient to have artemis running rootless on `https://
    ```
    postgres-data-current
    postgres-data-backup
-   frontend/db
+   mongo-data
    ```
    A sample folder structure for local_configs is the following:
    ```
@@ -135,11 +137,7 @@ These changes should be sufficient to have artemis running rootless on `https://
    │   ├── certs
    │   │   ├── cert.pem
    │   │   └── key.pem
-   │   ├── config.py
-   │   ├── __init__.py
-   │   ├── logging.yaml
-   │   ├── nginx.conf
-   │   └── webapp.cfg
+   │   └── nginx.conf
    └── monitor
        ├── exabgp.conf
        └── logging.yaml
@@ -195,14 +193,7 @@ You do not need to modify any other setup files and variables for now.
 
 ## Optional configurations
 
-Optionally, you may edit the file:
-```
-local_configs/frontend/webapp.cfg
-```
-to circumvent other default parameters used in the frontend.
-These parameters and their explanation can be found at [Additional frontend env variables](https://bgpartemis.readthedocs.io/en/latest/frontendconf/).
-
-Also optionally, you can enable daily backups by changing the `DB_BACKUP` environment variable inside `.env` to true:
+Optionally, you can enable daily backups by changing the `DB_BACKUP` environment variable inside `.env` to true:
 ```
 DB_BACKUP=true
 ```
@@ -217,4 +208,4 @@ in which ARTEMIS keeps benign BGP updates. E.g.,
 DB_AUTOCLEAN=24
 ```
 means that any non-hijack updates older than 24 hours will be deleted by the system.
-The default value is false (no deletion).
+The default value is 24 hours (one day).

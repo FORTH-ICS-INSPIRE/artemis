@@ -402,7 +402,7 @@ services:
             - "8443:8443"
         volumes:
             - ./testing/testcafe/configs/nginx.conf:/etc/nginx/nginx.conf
-            - ./frontend/webapp/configs/certs/:/etc/nginx/certs/
+            - ./other/frontend/configs/certs/:/etc/nginx/certs/
     rabbitmq:
         image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq

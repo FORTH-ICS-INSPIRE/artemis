@@ -1,8 +1,7 @@
 BACKEND_SERVICES ?= autoignore autostarter configuration database detection fileobserver mitigation notifier prefixtree
 TAP_SERVICES ?= bgpstreamhisttap bgpstreamkafkatap bgpstreamlivetap exabgptap riperistap
-FRONTEND_SERVICES ?= frontend
 
-SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES) $(FRONTEND_SERVICES)
+SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES)
 
 PUSH ?= false
 BUILD_TAG ?= latest
@@ -50,24 +49,6 @@ ifeq ($(PUSH), true)
 	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
 endif
 
-.PHONY: $(FRONTEND_SERVICES)
-$(FRONTEND_SERVICES): # build frontend container
-$(FRONTEND_SERVICES): log-env
-$(FRONTEND_SERVICES):
-	@echo "Building $@ service for tag $(BUILD_TAG)"
-	@docker pull $(CONTAINER_REPO)/artemis-$@:latest || true
-ifneq ($(BUILD_TAG), latest)
-	@docker pull $(CONTAINER_REPO)/artemis-$@:$(BUILD_TAG) || true
-endif
-	@docker build --build-arg revision=$(git rev-parse --short HEAD) \
-		-t artemis-$@:$(BUILD_TAG) \
-		--cache-from $(CONTAINER_REPO)/artemis-frontend:latest \
-		--cache-from $(CONTAINER_REPO)/artemis-frontend:$(BUILD_TAG) frontend/
-ifeq ($(PUSH), true)
-	@docker tag artemis-$@:$(BUILD_TAG) $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
-	@docker push $(CONTAINER_REPO)/artemis-$@:${BUILD_TAG}
-endif
-
 .PHONY: build-backend
 build-backend: # builds all backend containers
 build-backend: $(BACKEND_SERVICES)
@@ -75,10 +56,6 @@ build-backend: $(BACKEND_SERVICES)
 .PHONY: build-taps
 build-taps: # builds all tap containers
 build-taps: $(TAP_SERVICES)
-
-.PHONY: build-frontend
-build-frontend: # builds frontend container
-build-frontend: $(FRONTEND_SERVICES)
 
 .PHONY: migration-check
 migration-check: # checks if migration is not broken
@@ -109,7 +86,7 @@ setup-dev:
 		mkdir -p local_configs/frontend && \
 		cp -rn backend-services/configs/* local_configs/backend && \
 		cp -rn monitor-services/configs/* local_configs/monitor && \
-		cp -rn frontend/webapp/configs/* local_configs/frontend; \
+		cp -rn other/frontend/configs/* local_configs/frontend; \
 	fi
 
 .PHONE: setup-conf
@@ -122,7 +99,7 @@ setup-conf:
 		mkdir -p local_configs/frontend && \
 		cp -rn backend-services/configs/* local_configs/backend && \
 		cp -rn monitor-services/configs/* local_configs/monitor && \
-		cp -rn frontend/webapp/configs/* local_configs/frontend; \
+		cp -rn other/frontend/configs/* local_configs/frontend; \
 	fi
 
 .PHONE: setup-routinator
@@ -156,7 +133,7 @@ start:
 		mkdir -p local_configs/frontend && \
 		cp -rn backend-services/configs/* local_configs/backend && \
 		cp -rn monitor-services/configs/* local_configs/monitor && \
-		cp -rn frontend/webapp/configs/* local_configs/frontend; \
+		cp -rn other/frontend/configs/* local_configs/frontend; \
 	fi
 	@docker-compose up -d
 
@@ -168,7 +145,7 @@ stop:
 .PHONY: clean-db
 clean-db: # stop containers and clean volumes
 clean-db: stop
-	@sudo rm -rf postgres-data-* frontend/db/artemis_webapp.db
+	@sudo rm -rf postgres-data-* mongo-data
 
 .PHONY: release
 release: # pull and tag images for a new release

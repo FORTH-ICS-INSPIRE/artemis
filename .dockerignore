@@ -11,10 +11,8 @@ __pycache__
 */logs/*
 */snapshots/*
 node_modules/
-artemis.db
-webapp.log
 .npm/
-frontend/db/*
+mongo-data/*
 postgres-data-current/*
 postgres-data-backup/*
 .idea

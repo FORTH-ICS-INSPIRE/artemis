@@ -13,6 +13,9 @@ redisPort: 6379
 # api
 apiHost: postgrest
 apiPort: 3000
+configHost: configuration
+configPort: 3000
+databaseHost: database
 restPort: 3000
 
 # monitor-specific configs
@@ -30,15 +33,33 @@ dbAutoClean: false
 dbBackup: true
 dbHijackDormant: false
 
-# webapp
-bindIp: 0.0.0.0
+# frontend
 webappHost: frontend
-webappPort: 8000
-adminUser: admin
-adminPass: admin123
-adminEmail: admin@admin
-gunicornWorkers: 4
-jsVersion: 1.0.4
+webappPort: 4200
+adminPass: admin1234
+adminEmail: admin@admin.com
+sessionTimeout: 1800
+inactivityTimeout: 900
+
+# mongodb
+mongodbUser: admin
+mongodbPass: pass
+mongodbHost: mongodb
+mongodbPort: 27017
+mongodbName: artemis-web
+
+# ldap
+ldapEnabled: true
+ldapHost: ldap
+ldapPort: 10389
+ldapProtocol: ldap
+ldapBindDN: "cn=admin,dc=planetexpress,dc=com"
+ldapSearchBase: "ou=people,dc=planetexpress,dc=com"
+ldapSearchFilter: "(mail={{username}})"
+ldapSearchAttributes: "mail, uid"
+ldapEmailFieldName: mail
+ldapAdminGroup: admin_staff
+ldapUserGroup:
 
 # rabbitmq
 rabbitmqHost: rabbitmq
@@ -140,12 +161,12 @@ services:
     ports:
     - 3000
   frontend:
-    image: inspiregroup/artemis-frontend
+    image: inspiregroup/artemis-frontend-web
     replicas: 1
     ports:
-      - 8000
+    - 4200
   redis:
-    image: redis:latest
+    image: redis
     ports:
     - 6379
   postgrest:
@@ -166,6 +187,10 @@ services:
     - 8080
   pgamqpbridge:
     image: subzerocloud/pg-amqp-bridge:0.0.6
+  mongodb:
+    image: mongo
+    ports:
+    - 27017
 
 # ingress
 ingress:

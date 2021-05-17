@@ -52,7 +52,7 @@ mkdir -p local_configs/monitor && \
 mkdir -p local_configs/frontend && \
 cp -rn backend-services/configs/* local_configs/backend && \
 cp -rn monitor-services/configs/* local_configs/monitor && \
-cp -rn frontend/webapp/configs/* local_configs/frontend
+cp -rn other/frontend/configs/* local_configs/frontend
 #echo "[+] ARTEMIS VM provisioning completed"
 
 # Setting up firewall

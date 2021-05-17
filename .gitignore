@@ -5,11 +5,9 @@ venv/
 */logs/*
 */snapshots/*
 node_modules/
-artemis.db
-webapp.log
 .npm/
 *.pem
-frontend/db/*
+mongo-data/*
 postgres-data-current/*
 postgres-data-backup/*
 .idea

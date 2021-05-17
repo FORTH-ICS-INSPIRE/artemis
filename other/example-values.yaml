@@ -1,7 +1,8 @@
+csrfSecret: "P*3NGEEaJV3yUGDJA9428EQRg!ad"
+apiKey: "29870959469dc320ff80c02dcccaf0a62394459e22e6acfdce7cf40f94281d85"
 hasuraSecret: "@rt3m1s."
 jwtSecret: 44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f
-flaskSecret: 76f8bae45e807865955344c1a58882d38c8ceb4f855f58091642b7d48290af97
-passwordSalt: 06a4b397fc7045eac527c2aec3ff46cee5ce30016c760f238c26e79902fe67b6
+ldapBindSecret: "GoodNewsEveryone"
 privKey: |-
   -----BEGIN PRIVATE KEY-----
   MIIJRAIBADANBgkqhkiG9w0BAQEFAASCCS4wggkqAgEAAoICAQDS4QL2IaWQPTRp

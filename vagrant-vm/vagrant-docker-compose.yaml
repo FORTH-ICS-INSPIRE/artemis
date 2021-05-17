@@ -398,48 +398,70 @@ services:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
         command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     frontend:
-        image: inspiregroup/artemis-frontend:${SYSTEM_VERSION}
-        build: ./frontend/
-        container_name: frontend
+        image: inspiregroup/artemis-frontend-web:${SYSTEM_VERSION}
         restart: always
+        container_name: frontend
+        networks:
+            - artemis
+        expose:
+            - ${WEBAPP_PORT}
         depends_on:
+            - mongodb
             - database
             - graphql
             - postgres
             - postgrest
             - rabbitmq
-        networks:
-            - artemis
-        expose:
-            - ${WEBAPP_PORT}
         environment:
             API_HOST: ${API_HOST}
+            API_KEY: ${API_KEY}
             API_PORT: ${API_PORT}
-            ARTEMIS_WEB_HOST: ${ARTEMIS_WEB_HOST}
-            BIND_IP: ${BIND_IP}
-            DB_HOST: ${DB_HOST}
-            DB_PORT: ${DB_PORT}
-            FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
-            GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
-            HASURA_HOST: ${HASURA_HOST}
-            HASURA_PORT: ${HASURA_PORT}
-            HASURA_GRAPHQL_ACCESS_KEY: ${HASURA_SECRET_KEY}
-            JS_VERSION: ${JS_VERSION}
-            JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+            CONFIG_HOST: ${CONFIG_HOST}
+            CONFIG_PORT: ${CONFIG_PORT}
+            CSRF_SECRET: ${CSRF_SECRET}
+            DATABASE_HOST: ${DATABASE_HOST}
+            DEFAULT_EMAIL: ${ADMIN_EMAIL}
+            DEFAULT_PASS: ${ADMIN_PASS}
+            HASURA_SECRET: ${HASURA_SECRET_KEY}
+            JWT_SECRET: ${JWT_SECRET_KEY}
+            LDAP_ENABLED: ${LDAP_ENABLED}
+            LDAP_HOST: ${LDAP_HOST}
+            LDAP_PORT: ${LDAP_PORT}
+            LDAP_PROTOCOL: ${LDAP_PROTOCOL}
+            LDAP_BIND_DN: ${LDAP_BIND_DN}
+            LDAP_BIND_SECRET: ${LDAP_BIND_SECRET}
+            LDAP_SEARCH_BASE: ${LDAP_SEARCH_BASE}
+            LDAP_SEARCH_FILTER: ${LDAP_SEARCH_FILTER}
+            LDAP_SEARCH_ATTRIBUTES: ${LDAP_SEARCH_ATTRIBUTES}
+            LDAP_EMAIL_FIELDNAME: ${LDAP_EMAIL_FIELDNAME}
+            LDAP_ADMIN_GROUP: ${LDAP_ADMIN_GROUP}
+            LDAP_USER_GROUP: ${LDAP_USER_GROUP}
+            MONGODB_USER: ${MONGODB_USER}
+            MONGODB_PASS: ${MONGODB_PASS}
+            MONGODB_HOST: ${MONGODB_HOST}
+            MONGODB_PORT: ${MONGODB_PORT}
+            MONGODB_NAME: ${MONGODB_NAME}
+            NEXT_PUBLIC_INACTIVITY_TIMEOUT: ${INACTIVITY_TIMEOUT}
+            NEXT_PUBLIC_SYSTEM_VERSION: ${SYSTEM_VERSION}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
-            REST_PORT: 3000
-            SECURITY_PASSWORD_SALT: ${SECURITY_PASSWORD_SALT}
-            SYSTEM_VERSION: ${SYSTEM_VERSION}
-            USER_ROOT_USERNAME: ${ADMIN_USER}
-            USER_ROOT_PASSWORD: ${ADMIN_PASS}
-            USER_ROOT_EMAIL: ${ADMIN_EMAIL}
-            WEBAPP_PORT: ${WEBAPP_PORT}
+            SESSION_TIMEOUT: ${SESSION_TIMEOUT}
+            TESTING: ${TEST_ENV}
+    mongodb:
+        image: mongo:latest
+        container_name: mongodb
+        restart: always
+        networks:
+            - artemis
+        expose:
+            - ${MONGODB_PORT}
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASS}
         volumes:
-            - ./local_configs/frontend/:/etc/artemis/
-            - ./frontend/db/:/etc/webapp/db/
+            - ./mongo-data:/data/db
     nginx:
         image: nginx:1.17-alpine
         container_name: nginx

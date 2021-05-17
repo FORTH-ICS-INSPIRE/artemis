@@ -5,31 +5,110 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [UNRELEASED/master] (latest) - YYYY-MM-DD
+## [UNRELEASED/MASTER] (N/A) - yyyy-mm-dd
 ### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+### Deprecated
+
+### Security
+
+## [2.1.0] (Bellerophon) - 2021-05-17
+### Added
+- new frontend (React) in new repo and container
+- modular component-oriented UI
+- CSRF protection
+- improved LDAP support
+- responsive layout and window scaling fix
+- user feedback when tables are not properly rendered
+- allow creation of new user from admin user management page
+- admins can now set user's password
+- correct auto-logout
+- configurable session and inactivity timeout in .env
 - "json" encoding accepted for messages coming from frontend (ignore/resolve/seen/delete/(un-)mitigate)
+- frontend REST API
 
 ### Changed
 - changes in "dataplane_msms" table and "view_dataplane_msms" view, in order to support the new design of the "dataplane_view" module.
+- improved server-side auth
 - upgraded artemis-utils to 1.0.10 to include the slacker-log-handler==1.7.1 dep
 - migrating from travis to GH actions
 - downgraded to six==1.11.0 to achieve compatibility
 - changed tap invalid format logging level to debug (instead of warning)
 - updated artemis-utils to 1.0.11
+- updated k8s documentation
+- updated artemis-chart
+- replaced bcrypt with argon2
 
 ### Fixed
 - autoconfiguration subprefix bug in prefixtree plus new autoconf tests
 - vagrant docker-compose.yaml file fix (sync with master)
 - session timeout behavior
 
-### Removed
-- TBD (removed a feature)
-
 ### Deprecated
-- TBD (soon-to-be removed feature)
+- old frontend (Flask, custom JS)
 
 ### Security
 - updated PyYAML to 5.4 (fixing sec vulnerabilitiy)
+
+### Backwards Incompatible Changes
+
+:rotating_light: You can follow the classic update process for the transition to the latest version, however note that the new frontend requires the following changes that are not backwards compatible:
+
+#### Deprecation of initial frontend user DB
+We have migrated to mongoDB from sqlite. Due to security implications
+for migrating salted hashed passwords between the two databases based on the algorithms we used initially and the ones we use currently, we opted for simply deprecating the sqlite DB. Locally managed users will
+have to be recreated per instance. However, to ease this process, the new frontend now provides admins with the capability to create new users and set their password accordingly.
+
+#### New and deleted env variables
+* `CONFIG_HOST=configuration` [NEW, NO ACTION REQUIRED]
+* `CONFIG_PORT=3000` [NEW, NO ACTION REQUIRED]
+* `DATABASE_HOST=database` [NEW, NO ACTION REQUIRED]
+* `BIND_IP=0.0.0.0` [DELETED]
+* `WEBAPP_PORT=4200` [CORRECT VALUE CHANGED FROM 8000 to 4200]
+* `ADMIN_USER=admin` [DELETED, NOW USING ONLY EMAIL]
+* `JS_VERSION=1.0.4` [DELETED]
+* `GUNICORN_WORKERS=4` [DELETED]
+* `SESSION_TIMEOUT=1800` [NEW]
+* `INACTIVITY_TIMEOUT=900` [NEW]
+* `MONGODB_USER=admin` [NEW]
+* `MONGODB_PASS=pass` [NEW, SECRET]
+* `MONGODB_HOST=mongodb` [NEW]
+* `MONGODB_PORT=27017` [NEW]
+* `MONGODB_NAME=artemis-web` [NEW]
+* `LDAP_ENABLED=true` [NEW]
+* `LDAP_HOST=ldap` [NEW]
+* `LDAP_PORT=10389` [NEW]
+* `LDAP_PROTOCOL=ldap` [NEW]
+* `LDAP_BIND_DN="cn=admin,dc=planetexpress,dc=com"` [NEW]
+* `LDAP_BIND_SECRET="GoodNewsEveryone"` [NEW, SECRET]
+* `LDAP_SEARCH_BASE="ou=people,dc=planetexpress,dc=com"` [NEW]
+* `LDAP_SEARCH_FILTER="(mail={{username}})"` [NEW]
+* `LDAP_SEARCH_ATTRIBUTES="mail, uid"` [NEW]
+* `LDAP_EMAIL_FIELDNAME=mail` [NEW]
+* `LDAP_ADMIN_GROUP=admin_staff` [NEW]
+* `LDAP_USER_GROUP=` [NEW]
+* `FLASK_SECRET_KEY` [DELETED]
+* `SECURITY_PASSWORD_SALT` [DELETED]
+* `CSRF_SECRET` [NEW, SECRET]
+* `API_KEY` [NEW, SECRET]
+
+#### Deprecated/removed files
+* Entire `frontend` code section. The current code is in the mono-repo https://github.com/FORTH-ICS-INSPIRE/artemis-web .
+* `local_configs/frontend/webapp.cfg`
+* `local_configs/frontend/config.py`
+* `local_configs/frontend/logging.yaml`
+* `local_configs/frontend/__init__.py`
+* `frontend/db`
+
+#### docker-compose.yaml
+* Heavy revisions in frontend section to sync with new env variables. Please make sure you properly resolve conflicts with your on-premise ARTEMIS instance.
+* Addition of mongodb section, user data is now kept at the mapped `./mongo_data` folder.
 
 ## [2.0.0] (Boreas) - 2021-01-26
 ### Added

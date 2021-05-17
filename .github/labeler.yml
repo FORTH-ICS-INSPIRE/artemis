@@ -23,7 +23,7 @@ javascript:
 
 configuration:
 - backend/configs/**/*
-- frontend/webapp/configs/**/*
+- other/frontend/configs/**/*
 - monitor/configs/**/*
 
 database:

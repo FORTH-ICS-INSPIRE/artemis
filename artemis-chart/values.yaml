@@ -1,6 +1,6 @@
 # general
 guiEnabled: true
-systemVersion: latest
+systemVersion: release-2.1.0
 historic: false
 
 # autostarter

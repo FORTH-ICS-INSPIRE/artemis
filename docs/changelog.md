@@ -96,7 +96,7 @@ have to be recreated per instance. However, to ease this process, the new fronte
 * `FLASK_SECRET_KEY` [DELETED]
 * `SECURITY_PASSWORD_SALT` [DELETED]
 * `CSRF_SECRET` [NEW, SECRET]
-* TODO: API_KEY
+* `API_KEY` [NEW, SECRET]
 
 #### Deprecated/removed files
 * Entire `frontend` code section. The current code is in the mono-repo https://github.com/FORTH-ICS-INSPIRE/artemis-web .

@@ -8,8 +8,8 @@ We recommend that you use the latest version of Chrome for the best ARTEMIS expe
 
 ## User authentication API
 
-Please download and render the HTML file from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/docs/api-documentation.html).
-This is the documentation of the Artemis REST API accessible to normal users. The respective `swagger.json` OpenAPI spec can be found [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/docs/swagger.json).
+Please download and render the HTML file from [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/docs/api-documentation.html), or simply check the PDF [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/docs/api-documentation.pdf).
+This is the documentation of the Artemis REST API accessible to normal users. The respective `swagger.yaml` OpenAPI spec can be found [here](https://github.com/FORTH-ICS-INSPIRE/artemis/tree/master/docs/swagger.yaml).
 
 ## Registering users
 

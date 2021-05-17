@@ -122,6 +122,7 @@ jwtSecret      # Secret used for the JWT authentication
 csrfSecret     # Secret used for CSRF protection
 privKey        # Private key for the HTTPS certificate
 certificate    # HTTPS certificate
+apiKey         # secret used for frontend API use
 ### OPTIONAL ###
 hostName       # Host name for Ingress Controller
 ```

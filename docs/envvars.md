@@ -158,6 +158,10 @@ CSRF protection (**WARNING: please change the default one before deploying!**):
 ```
 CSRF_SECRET=P*3NGEEaJV3yUGDJA9428EQRg!ad
 ```
+API key (**WARNING: please change the default one before deploying!**):
+```
+API_KEY=29870959469dc320ff80c02dcccaf0a62394459e22e6acfdce7cf40f94281d85
+```
 
 ## Community log filter
 Custom log filter for logging on syslog (or email or other logs) only hijacks with a certain annotation, see [this page](https://bgpartemis.readthedocs.io/en/latest/commannotations/):

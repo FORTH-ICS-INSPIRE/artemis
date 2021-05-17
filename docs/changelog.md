@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - correct auto-logout
 - configurable session and inactivity timeout in .env
 - "json" encoding accepted for messages coming from frontend (ignore/resolve/seen/delete/(un-)mitigate)
-- frontend REST API
+- frontend REST API (OpenAPI-swagger)
 
 ### Changed
 - changes in "dataplane_msms" table and "view_dataplane_msms" view, in order to support the new design of the "dataplane_view" module.

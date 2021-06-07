@@ -56,10 +56,12 @@ ldapProtocol: ldap
 ldapBindDN: "cn=admin,dc=planetexpress,dc=com"
 ldapSearchBase: "ou=people,dc=planetexpress,dc=com"
 ldapSearchFilter: "(mail={{username}})"
-ldapSearchAttributes: "mail, uid"
+ldapSearchAttributes: "mail,uid"
+ldapGroupSearchBase: "ou=people,dc=planetexpress,dc=com"
+ldapGroupSearchFilter: "(mail={{username}})"
+ldapGroupSearchAttributes: "mail,uid"
 ldapEmailFieldName: mail
 ldapAdminGroup: admin_staff
-ldapUserGroup:
 
 # rabbitmq
 rabbitmqHost: rabbitmq

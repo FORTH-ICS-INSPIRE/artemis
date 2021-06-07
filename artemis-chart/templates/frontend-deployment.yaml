@@ -183,6 +183,21 @@ spec:
             configMapKeyRef:
               name: configmap
               key: ldapSearchAttributes
+        - name: LDAP_GROUP_SEARCH_BASE
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapGroupSearchBase
+        - name: LDAP_GROUP_SEARCH_FILTER
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapGroupSearchFilter
+        - name: LDAP_GROUP_SEARCH_ATTRIBUTES
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: ldapGroupSearchAttributes
         - name: LDAP_EMAIL_FIELDNAME
           valueFrom:
             configMapKeyRef:
@@ -193,11 +208,6 @@ spec:
             configMapKeyRef:
               name: configmap
               key: ldapAdminGroup
-        - name: LDAP_USER_GROUP
-          valueFrom:
-            configMapKeyRef:
-              name: configmap
-              key: ldapUserGroup
       restartPolicy: Always
       {{- with $.Values.nodeSelector }}
       nodeSelector:

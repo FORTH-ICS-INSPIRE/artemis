@@ -42,10 +42,12 @@ data:
   ldapBindDN: {{ .Values.ldapBindDN | default "cn=admin,dc=planetexpress,dc=com" | quote }}
   ldapSearchBase: {{ .Values.ldapSearchBase | default "ou=people,dc=planetexpress,dc=com" | quote }}
   ldapSearchFilter: {{ .Values.ldapSearchFilter | default "(mail={{username}})" | quote }}
-  ldapSearchAttributes: {{ .Values.ldapSearchAttributes | default "mail, uid" | quote }}
+  ldapSearchAttributes: {{ .Values.ldapSearchAttributes | default "mail,uid" | quote }}
+  ldapGroupSearchBase: {{ .Values.ldapGroupSearchBase | default "ou=people,dc=planetexpress,dc=com" | quote }}
+  ldapGroupSearchFilter: {{ .Values.ldapGroupSearchFilter | default "(mail={{username}})" | quote }}
+  ldapGroupSearchAttributes: {{ .Values.ldapGroupSearchAttributes | default "mail,uid" | quote }}
   ldapEmailFieldName: {{ .Values.ldapEmailFieldName | default "mail" | quote }}
   ldapAdminGroup: {{ .Values.ldapAdminGroup | default "admin_staff" | quote }}
-  ldapUserGroup: {{ .Values.ldapUserGroup | default "" | quote }}
   rabbitmqHost: {{ .Values.rabbimtqHost | default "rabbitmq" }}
   rabbitmqPort: {{ .Values.rabbimtqPort | default "5672" | quote }}
   rabbitmqUser: {{ .Values.rabbitmqUser | default "guest" | quote }}

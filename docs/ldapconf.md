@@ -14,5 +14,5 @@ LDAP_GROUP_SEARCH_BASE="ou=people,dc=planetexpress,dc=com"    # Optional. The ba
 LDAP_GROUP_SEARCH_FILTER="(member={{dn}})"                    # Optional. LDAP search filter for groups.
 LDAP_GROUP_SEARCH_ATTRIBUTES="mail,uid"                       # Optional, default all. Array of attributes to fetch from LDAP server.
 LDAP_EMAIL_FIELDNAME=mail                                     # Fieldname for email
-LDAP_ADMIN_GROUP=admin_staff                                  # Admin group
+LDAP_ADMIN_GROUP=admin_staff                                  # Admin group (use "," for multiple groups)
 ```

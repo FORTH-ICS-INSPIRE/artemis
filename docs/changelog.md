@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - enforce ssl_protocols TLSv1.2 TLSv1.3 in default nginx.conf
 
 ### Fixed
+- LDAP behavior and correct vars
 
 ### Removed
 

@@ -451,6 +451,11 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             SESSION_TIMEOUT: ${SESSION_TIMEOUT}
             TESTING: ${TEST_ENV}
+        volumes:
+            - type: bind
+              source: ./.env
+              target: /app/.env
+              read_only: true
     mongodb:
         image: mongo:latest
         container_name: mongodb

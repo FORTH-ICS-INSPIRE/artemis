@@ -6,8 +6,7 @@ import sys
 
 import netaddr
 import ujson
-from _pybgpstream import BGPRecord
-from _pybgpstream import BGPStream
+import pybgpstream
 
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 
@@ -26,6 +25,14 @@ def is_valid_ip_prefix(pref_str=None):
         return False
     return True
 
+def func_communities_to_json(value):
+    liste=[]
+    for i in value:
+        a_1=i.split(':')
+        a_2={'asn':int(a_1[0]), 'value':int(a_1[1])}
+        liste.append(a_2)
+    json_file=ujson.dumps(liste)
+    return json_file
 
 def run_bgpstream(prefix, start, end, out_file):
     """
@@ -41,70 +48,48 @@ def run_bgpstream(prefix, start, end, out_file):
     :return: -
     """
     # create a new bgpstream instance and a reusable bgprecord instance
-    stream = BGPStream()
-    rec = BGPRecord()
-
-    # consider collectors from routeviews and ris
-    stream.add_filter("project", "routeviews")
-    stream.add_filter("project", "ris")
-
-    # filter prefix
-    stream.add_filter("prefix", prefix)
-
-    # filter record type
-    stream.add_filter("record-type", "updates")
-
-    # filter based on timing
-    stream.add_interval_filter(start, end)
-
-    # start the stream
-    stream.start()
+    # More to information about filter: https://github.com/CAIDA/bgpstream/blob/master/FILTERING
+    stream = pybgpstream.BGPStream(
+        from_time=start, until_time=end, # filter based on timing
+        collectors=[], # empty=use all RRC from RIPE and RouteViews
+        record_type="updates", # filter record type
+        filter="prefix any "+str(prefix),  # filter prefix
+    )
 
     # set the csv writer
     with open(out_file, "w") as f:
         csv_writer = csv.writer(f, delimiter="|")
 
-        # get next record
-        while stream.get_next_record(rec):
-            if (rec.status != "valid") or (rec.type != "update"):
+        for elem in stream:
+            if (elem.status != "valid") or (elem.record.rec.type != "update"):
                 continue
-
-            # get next element
-            elem = rec.get_next_elem()
-
-            while elem:
-                if elem.type in ["A", "W"]:
-                    elem_csv_list = []
-                    if elem.type == "A":
-                        elem_csv_list = [
-                            str(elem.fields["prefix"]),
-                            str(elem.fields["as-path"].split(" ")[-1]),
-                            str(elem.peer_asn),
-                            str(elem.fields["as-path"]),
-                            str(rec.project),
-                            str(rec.collector),
-                            str(elem.type),
-                            ujson.dumps(elem.fields["communities"]),
-                            str(elem.time),
-                        ]
-                    else:
-                        elem_csv_list = [
-                            str(elem.fields["prefix"]),
-                            "",
-                            str(elem.peer_asn),
-                            "",
-                            str(rec.project),
-                            str(rec.collector),
-                            str(elem.type),
-                            ujson.dumps([]),
-                            str(rec.time),
-                        ]
-                    csv_writer.writerow(elem_csv_list)
-                elem = rec.get_next_elem()
-
-    # release resources
-    del rec
-    del stream
+            if elem.type in ["A", "W"]:
+                elem_csv_list = []
+                if elem.type == "A":
+                    elem_csv_list = [
+                        str(elem.fields["prefix"]),
+                        str(elem.fields["as-path"].split(" ")[-1]),
+                        str(elem.peer_asn),
+                        str(elem.fields["as-path"]),
+                        str(elem.project),
+                        str(elem.collector),
+                        str(elem.type),
+                        func_communities_to_json(elem.fields["communities"]),
+                        str(elem.time),
+                    ]
+                else:
+                    elem_csv_list = [
+                        str(elem.fields["prefix"]),
+                        "",
+                        str(elem.peer_asn),
+                        "",
+                        str(elem.project),
+                        str(elem.collector),
+                        str(elem.type),
+                        ujson.dumps([]),
+                        str(elem.time),
+                    ]
+                csv_writer.writerow(elem_csv_list)
 
 
 def main():

@@ -5,8 +5,8 @@ import os
 import sys
 
 import netaddr
-import ujson
 import pybgpstream
+import ujson
 
 # install as described in https://bgpstream.caida.org/docs/install/pybgpstream
 
@@ -25,14 +25,16 @@ def is_valid_ip_prefix(pref_str=None):
         return False
     return True
 
+
 def community_list(value):
-    com_list=[]
+    com_list = []
     for i in value:
-        asn_val_pair=i.split(':')
-        asn_val_dict={'asn':int(asn_val_pair[0]), 'value':int(asn_val_pair[1])}
+        asn_val_pair = i.split(":")
+        asn_val_dict = {"asn": int(asn_val_pair[0]), "value": int(asn_val_pair[1])}
         com_list.append(asn_val_dict)
-    json_file=ujson.dumps(com_list)
-    return json_file
+    json_dump = ujson.dumps(com_list)
+    return json_dump
+
 
 def run_bgpstream(prefix, start, end, out_file):
     """
@@ -50,10 +52,11 @@ def run_bgpstream(prefix, start, end, out_file):
     # create a new bgpstream instance and a reusable bgprecord instance
     # More to information about filter: https://github.com/CAIDA/bgpstream/blob/master/FILTERING
     stream = pybgpstream.BGPStream(
-        from_time=start, until_time=end, # filter based on timing
-        collectors=[], # empty=use all RRC from RIPE and RouteViews
-        record_type="updates", # filter record type
-        filter="prefix any "+str(prefix),  # filter prefix
+        from_time=start,
+        until_time=end,  # filter based on timing
+        collectors=[],  # empty=use all RRC from RIPE and RouteViews
+        record_type="updates",  # filter record type
+        filter="prefix any " + str(prefix),  # filter prefix
     )
 
     # set the csv writer

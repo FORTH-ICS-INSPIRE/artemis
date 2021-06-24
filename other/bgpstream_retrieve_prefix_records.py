@@ -25,12 +25,12 @@ def is_valid_ip_prefix(pref_str=None):
         return False
     return True
 
-def func_communities_to_json(value):
-    liste=[]
+def community_list(value):
+    com_list=[]
     for i in value:
-        a_1=i.split(':')
-        a_2={'asn':int(a_1[0]), 'value':int(a_1[1])}
-        liste.append(a_2)
+        asn_val_pair=i.split(':')
+        asn_val_dict={'asn':int(asn_val_pair[0]), 'value':int(asn_val_pair[1])}
+        com_list.append(asn_val_dict)
     json_file=ujson.dumps(liste)
     return json_file
 
@@ -74,7 +74,7 @@ def run_bgpstream(prefix, start, end, out_file):
                         str(elem.project),
                         str(elem.collector),
                         str(elem.type),
-                        func_communities_to_json(elem.fields["communities"]),
+                        community_list(elem.fields["communities"]),
                         str(elem.time),
                     ]
                 else:

@@ -31,7 +31,7 @@ def community_list(value):
         asn_val_pair=i.split(':')
         asn_val_dict={'asn':int(asn_val_pair[0]), 'value':int(asn_val_pair[1])}
         com_list.append(asn_val_dict)
-    json_file=ujson.dumps(liste)
+    json_file=ujson.dumps(com_list)
     return json_file
 
 def run_bgpstream(prefix, start, end, out_file):

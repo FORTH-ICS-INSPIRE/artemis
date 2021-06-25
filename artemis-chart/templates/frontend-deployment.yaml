@@ -68,7 +68,7 @@ spec:
             secretKeyRef:
               name: secret
               key: jwtSecret
-        - name: NEXT_PUBLIC_INACTIVITY_TIMEOUT
+        - name: INACTIVITY_TIMEOUT
           valueFrom:
             configMapKeyRef:
               name: configmap
@@ -98,7 +98,7 @@ spec:
             configMapKeyRef:
               name: configmap
               key: rabbitmqUser
-        - name: NEXT_PUBLIC_SYSTEM_VERSION
+        - name: SYSTEM_VERSION
           valueFrom:
             configMapKeyRef:
               name: configmap

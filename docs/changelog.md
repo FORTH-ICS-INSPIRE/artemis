@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - LDAP behavior and correct vars
+- Admin login bug
+- Bug with logout warning popup
+- GQL ports in frontend
 
 ### Removed
 

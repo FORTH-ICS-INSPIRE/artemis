@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: mongodb
-        image: {{  .image  }}:latest
+        image: {{  .image  }}:4.4.6-bionic
         imagePullPolicy: Always
         env:
         - name: MONGO_INITDB_ROOT_USERNAME

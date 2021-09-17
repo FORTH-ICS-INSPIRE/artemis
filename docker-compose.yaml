@@ -443,21 +443,16 @@ services:
             MONGODB_HOST: ${MONGODB_HOST}
             MONGODB_PORT: ${MONGODB_PORT}
             MONGODB_NAME: ${MONGODB_NAME}
-            NEXT_PUBLIC_INACTIVITY_TIMEOUT: ${INACTIVITY_TIMEOUT}
-            NEXT_PUBLIC_SYSTEM_VERSION: ${SYSTEM_VERSION}
+            INACTIVITY_TIMEOUT: ${INACTIVITY_TIMEOUT}
+            SYSTEM_VERSION: ${SYSTEM_VERSION}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             SESSION_TIMEOUT: ${SESSION_TIMEOUT}
             TESTING: ${TEST_ENV}
-        volumes:
-            - type: bind
-              source: ./.env
-              target: /app/.env
-              read_only: true
     mongodb:
-        image: mongo:latest
+        image: mongo:4.4.6-bionic
         container_name: mongodb
         restart: always
         networks:

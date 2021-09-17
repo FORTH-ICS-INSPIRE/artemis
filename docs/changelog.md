@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - enforce ssl_protocols TLSv1.2 TLSv1.3 in default nginx.conf
+- bumped caida/bgpstream to 2.2.0 and monitor containers to related 1.0.3
 
 ### Fixed
 - LDAP behavior and correct vars
+- Admin login bug
+- Bug with logout warning popup
+- GQL ports in frontend
 
 ### Removed
 

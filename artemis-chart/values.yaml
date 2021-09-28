@@ -40,6 +40,8 @@ adminPass: admin1234
 adminEmail: admin@admin.com
 sessionTimeout: 1800
 inactivityTimeout: 900
+limitWindow: 900000
+limitRequests: 20
 
 # mongodb
 mongodbUser: admin

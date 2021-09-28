@@ -73,6 +73,16 @@ spec:
             configMapKeyRef:
               name: configmap
               key: inactivityTimeout
+        - name: LIMIT_WINDOW
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: limitWindow
+        - name: LIMIT_REQUESTS
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: limitRequests
         - name: SESSION_TIMEOUT
           valueFrom:
             configMapKeyRef:

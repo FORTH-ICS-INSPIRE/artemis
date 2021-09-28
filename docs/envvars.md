@@ -105,6 +105,16 @@ Session inactivity timeout:
 ```
 INACTIVITY_TIMEOUT=900
 ```
+Specifies the API rate-limiting time window in ms within which `LIMIT_REQUESTS` requests are allowed
+(from [this PR](https://github.com/FORTH-ICS-INSPIRE/artemis-web/pull/126)):
+```
+LIMIT_WINDOW
+```
+Specifies the API rate-limiting number of allowed requests in that specific time window `LIMIT_WINDOW`
+(from [this PR](https://github.com/FORTH-ICS-INSPIRE/artemis-web/pull/126)):
+```
+LIMIT_REQUESTS
+```
 
 ## MongoDB config
 Default credentials for mongodb (**WARNING: please change the default password before deploying!**):

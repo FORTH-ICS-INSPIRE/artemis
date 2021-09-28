@@ -68,3 +68,5 @@ data:
   autoRecoverProcessState: {{ .Values.autoRecoverProcessState | default "true" | quote }}
   sessionTimeout: {{ .Values.sessionTimeout | default "1800" | quote }}
   inactivityTimeout: {{ .Values.inactivityTimeout | default "900" | quote }}
+  limitWindow: {{ .Values.limitWindow | default "900000" | quote }}
+  limitRequests: {{ .Values.limitRequests | default "20" | quote }}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED/MASTER] (N/A) - yyyy-mm-dd
 ### Added
+- every api call now has a rate limit. The limit is per api endpoint, so it is not a global counter. The default value is 20 requests per 15 minutes. The user has to define 2 extra environmental variables:
+  * LIMIT_WINDOW specifies the time window in ms.
+  * LIMIT_REQUESTS specifies the number of allowed requests in that secific time window.
+- GRIP api integration. When there is 1 or more GRIP events related to the ARTEMIS event, a dropdown menu with the event ids is added to the hijack page. When clicked, a new tab to grip event page is opened.
 
 ### Changed
 - enforce ssl_protocols TLSv1.2 TLSv1.3 in default nginx.conf

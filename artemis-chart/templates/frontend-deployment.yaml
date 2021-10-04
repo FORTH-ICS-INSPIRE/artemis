@@ -83,6 +83,21 @@ spec:
             configMapKeyRef:
               name: configmap
               key: limitRequests
+        - name: CAPTCHA_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: captchaSecret
+        - name: CAPTCHA_WINDOW
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: captchaWindow
+        - name: CAPTCHA_TRIES
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: captchaTries
         - name: SESSION_TIMEOUT
           valueFrom:
             configMapKeyRef:

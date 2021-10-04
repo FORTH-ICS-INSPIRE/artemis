@@ -1,4 +1,5 @@
 csrfSecret: "P*3NGEEaJV3yUGDJA9428EQRg!ad"
+captchaSecret: "44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f"
 apiKey: "29870959469dc320ff80c02dcccaf0a62394459e22e6acfdce7cf40f94281d85"
 hasuraSecret: "@rt3m1s."
 jwtSecret: 44fe431cdc896ccab691ad0599f4e0a12690ce1ededebe57b825823bc6b4d24f

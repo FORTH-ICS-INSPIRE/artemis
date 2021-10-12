@@ -4,14 +4,35 @@ Database is accessible through a GraphQL API which uses JWT tokens as an Authent
 
 ## JWT Request
 
-To generate a JWT access token you need to send a `POST` request on `/jwt/auth` endpoint.
-`POST` request should include username and password of the user that wants to access the API.
+To generate a JWT access token you need to:
+
+1. send a `POST` request on `/api/auth/login/credentials` endpoint to get a session ID. (_note_: you can also use LDAP for this,
+   the process is similar on endpoint `/api/auth/login/ldap`)
+2. send a `POST` request on `/api/auth/jwt` endpoint to get the token.
+
+The login `POST` request should include username and password of the user that wants to access the API.
 Depending on the role of the user permissions are different.
 
-Example of a curl request (-k is for self-signed certificates):
+Example of a curl login request (-k is for self-signed certificates):
 
 ```
-curl -k -X POST -H "Content-Type: application/json" -d '{"username":$username, "password":$password}' https://url/jwt/auth
+curl -k -X POST -H "Content-Type: application/json" -H "x-artemis-api-key: $API_KEY" -d "{\"email\":\"$user_email\",\"password\":\"$user_password\"}" https://$url/api/auth/login/credentials
+```
+
+Note that the `$API_KEY` is the one you define in your environment (secret). The rest of the variables are also local (`$user_email`, `$user_password`, `$url`).
+
+Successful request reply (200 status code):
+
+```
+{"user":{"_id":"...","name":"...","email":"...","role":"...","lastLogin":"...","sessionId":"..."}}
+```
+
+Keep the `sessionID` value. You will need it to request the JWT and then logout.
+
+Example of a curl `JWT` request (-k is for self-signed certificates):
+
+```
+curl -k -X GET -H "Content-Type: application/json" -H "x-artemis-api-key: $API_KEY" -H "Cookie: sid=$sessionID" https://$url/api/auth/jwt
 ```
 
 Successful request reply (200 status code):
@@ -20,10 +41,10 @@ Successful request reply (200 status code):
 {"access_token": "xxxxxxxxx"}
 ```
 
-Failed request reply (401 status code):
+You can optionally logout to invalidate the session (note though that the access token will remain until it expires):
 
 ```
-{"error": "wrong credentials"}
+curl -k -X DELETE -H "Content-Type: application/json" -H "x-artemis-api-key: $API_KEY" -H "Cookie: sid=$sessionID" https://$url/api/auth/logout
 ```
 
 ## Querying GraphQL
@@ -35,7 +56,7 @@ You can access the GraphQL API endpoint at `/api/graphql`. The schemas are auto-
 Query on `bgp_updates` table for all fields:
 
 ```
-curl -k -X POST -H "Content-Type: application/json" -H "Authorization":"Bearer "$access_token https://url/api/graphql -d @query.json
+curl -k -X POST -H "Content-Type: application/json" -H "Authorization":"Bearer "$access_token https://$url/api/graphql -d @query.json
 ```
 
 Where `query.json` file includes:
@@ -65,7 +86,7 @@ Where `query.json` file includes:
 Query on `hijacks` table for all fields:
 
 ```
-curl -k -X POST -H "Content-Type: application/json" -H "Authorization":"Bearer "$access_token https://url/api/graphql -d @query.json
+curl -k -X POST -H "Content-Type: application/json" -H "Authorization":"Bearer "$access_token https://$url/api/graphql -d @query.json
 ```
 
 Where `query.json` file includes:

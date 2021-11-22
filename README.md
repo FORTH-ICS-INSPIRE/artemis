@@ -32,7 +32,7 @@ Read more at [bgpartemis.org](http://bgpartemis.org/) and the [docs](https://bgp
 Table of Contents
   * [General](#general)
   * [Features](#features)
-  * [Architecture](#architecture)
+  * [Architecture](#system-architecture)
   * [Getting Started](#getting-started)
   * [Minimum Technical Requirements](#minimum-technical-requirements)
   * [How to Install and Setup](#how-to-install-and-setup)

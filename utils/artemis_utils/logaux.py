@@ -1,6 +1,7 @@
 # aux logging functions
 from logging.handlers import SMTPHandler
 
+from artemis_utils.envvars import ARTEMIS_WEB_BASE_DIR
 from artemis_utils.envvars import ARTEMIS_WEB_HOST
 from artemis_utils.envvars import HIJACK_LOG_FIELDS
 
@@ -87,8 +88,11 @@ def hijack_log_field_formatter(hijack_dict):
             logged_hijack_dict[field] = hijack_dict[field]
         # instead of storing in redis, simply add the hijack url upon logging
         if "hijack_url" in HIJACK_LOG_FIELDS and "key" in hijack_dict:
-            logged_hijack_dict["hijack_url"] = "https://{}/main/hijack?key={}".format(
-                ARTEMIS_WEB_HOST, hijack_dict["key"]
+            web_base_dir = ""
+            if ARTEMIS_WEB_BASE_DIR:
+                web_base_dir = "{}/".format(ARTEMIS_WEB_BASE_DIR)
+            logged_hijack_dict["hijack_url"] = "https://{}/{}main/hijack?key={}".format(
+                ARTEMIS_WEB_HOST, web_base_dir, hijack_dict["key"]
             )
     except Exception:
         from . import log

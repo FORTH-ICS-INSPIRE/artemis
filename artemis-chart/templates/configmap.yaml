@@ -72,3 +72,4 @@ data:
   limitRequests: {{ .Values.limitRequests | default "20" | quote }}
   captchaWindow: {{ .Values.captchaWindow | default "900000" | quote }}
   captchaTries: {{ .Values.captchaTries | default "4" | quote }}
+  artemisWebBaseDir: {{ .Values.artemisWebBaseDir | default "" | quote }}

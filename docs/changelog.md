@@ -17,11 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `CAPTCHA_SECRET`. This would preferably be a long random hash value.
   - `CAPTCHA_WINDOW` specifies the time where the false login attempt count is valid.
   - `CAPTCHA_TRIES` is the number of unsuccessful login attempts that are needed to trigger the CAPTCHA generation.
+- New env var `ARTEMIS_WEB_BASE_DIR` specifies the ARTEMIS web base directory (default: empty).
+- Condition to limit GRIP events association to 1 hour time window w.r.t. ARTEMIS alerts.
+- A web command line search experience based on https://saharmor.github.io/react-super-cmd. To trigger the search modal:
+  - Windows + Linux OS: ctrl + Windows key (super) + k
+  - MacOS : cmd + k
 
 ### Changed
 
 - enforce ssl_protocols TLSv1.2 TLSv1.3 in default nginx.conf
 - bumped caida/bgpstream to 2.2.0 and monitor containers to related 1.0.3
+- migrated our web application to Nextjs 11/12 and webpack 5
 
 ### Fixed
 
@@ -30,12 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bug with logout warning popup
 - GQL ports in frontend
 - `login` and `JWT` auth calls and documentation
-
-### Removed
-
-### Deprecated
-
-### Security
 
 ## [2.1.0] (Bellerophon) - 2021-05-17
 

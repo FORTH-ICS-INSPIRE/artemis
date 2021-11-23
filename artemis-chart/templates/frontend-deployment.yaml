@@ -98,6 +98,11 @@ spec:
             configMapKeyRef:
               name: configmap
               key: captchaTries
+        - name: ARTEMIS_WEB_BASE_DIR
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: artemisWebBaseDir
         - name: SESSION_TIMEOUT
           valueFrom:
             configMapKeyRef:

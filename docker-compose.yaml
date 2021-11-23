@@ -1,7 +1,8 @@
 version: '3.4'
 
-x-healtcheck: &healthcheck
-    test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+x-healtcheck:
+    &healthcheck
+    test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
     interval: 20s
     timeout: 5s
     retries: 5
@@ -396,7 +397,7 @@ services:
             - ${REDIS_PORT}
         volumes:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
-        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+        command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     frontend:
         image: inspiregroup/artemis-frontend-web:${SYSTEM_VERSION}
         restart: always
@@ -449,6 +450,7 @@ services:
             CAPTCHA_SECRET: ${CAPTCHA_SECRET}
             CAPTCHA_WINDOW: ${CAPTCHA_WINDOW}
             CAPTCHA_TRIES: ${CAPTCHA_TRIES}
+            ARTEMIS_WEB_BASE_DIR: ${ARTEMIS_WEB_BASE_DIR}
             SYSTEM_VERSION: ${SYSTEM_VERSION}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASS: ${RABBITMQ_PASS}
@@ -525,7 +527,7 @@ services:
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
-        entrypoint: ["./postgres-entrypoint.sh"]
+        entrypoint: [ "./postgres-entrypoint.sh" ]
     postgrest:
         image: postgrest/postgrest:v7.0.0
         container_name: postgrest
@@ -558,7 +560,15 @@ services:
             # - RUST_BACKTRACE=1
         volumes:
             - ./backend-services/database/wait-for:/root/wait-for
-        command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
+        command:
+            [
+                "/root/wait-for",
+                "${RABBITMQ_HOST}:${RABBITMQ_PORT}",
+                "-t",
+                "0",
+                "--",
+                "pg-amqp-bridge"
+            ]
     graphql:
         image: hasura/graphql-engine:v1.1.0
         container_name: graphql
@@ -579,4 +589,4 @@ services:
             - serve
 
 networks:
-    artemis:
+    artemis: null

@@ -44,6 +44,7 @@ limitWindow: 900000
 limitRequests: 20
 captchaWindow: 900000
 captchaTries: 4
+artemisWebBaseDir: ""
 
 # mongodb
 mongodbUser: admin

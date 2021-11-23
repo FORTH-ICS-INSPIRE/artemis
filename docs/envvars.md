@@ -172,6 +172,11 @@ Specifies the number of unsuccessful login attempts that are needed to trigger t
 CAPTCHA_TRIES
 ```
 
+Specifies the ARTEMIS web base directory (default: empty)
+```
+ARTEMIS_WEB_BASE_DIR
+```
+
 ## MongoDB config
 
 Default credentials for mongodb (**WARNING: please change the default password before deploying!**):

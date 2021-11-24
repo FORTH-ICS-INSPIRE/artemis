@@ -137,6 +137,20 @@ start:
 	fi
 	@docker-compose up -d
 
+.PHONY: start-gitpod
+start-gitpod: # start local setup
+start-gitpod:
+	@if [ ! -d "local_configs" ]; then \
+		mkdir -p local_configs && \
+		mkdir -p local_configs/backend && \
+		mkdir -p local_configs/monitor && \
+		mkdir -p local_configs/frontend && \
+		cp -rn backend-services/configs/* local_configs/backend && \
+		cp -rn monitor-services/configs/* local_configs/monitor && \
+		cp other/frontend/configs/nginx-gitpod.conf local_configs/frontend; \
+	fi
+	@docker-compose up -d
+
 .PHONY: stop
 stop: # stop containers
 stop:

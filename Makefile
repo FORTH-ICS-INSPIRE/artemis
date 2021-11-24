@@ -138,9 +138,9 @@ start:
 	fi
 	@docker-compose up -d
 
-.PHONY: start-gitpod
-start-gitpod: # start local setup
-start-gitpod:
+.PHONY: gitpod-start
+gitpod-start: # start local setup
+gitpod-start:
 	@if [ ! -d "local_configs" ]; then \
 		mkdir -p local_configs && \
 		mkdir -p local_configs/backend && \
@@ -148,7 +148,7 @@ start-gitpod:
 		mkdir -p local_configs/frontend && \
 		cp -rn backend-services/configs/* local_configs/backend && \
 		cp -rn monitor-services/configs/* local_configs/monitor && \
-		cp other/frontend/configs/nginx-gitpod.conf local_configs/frontend/; \
+		cp other/frontend/configs/nginx-gitpod.conf local_configs/frontend/nginx.conf; \
 	fi
 	@docker-compose up -d
 

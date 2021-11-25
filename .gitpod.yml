@@ -5,6 +5,7 @@ tasks:
     command: |
       sed -i 's/- "80:80"/- "8080:80"/' docker-compose.yaml
       sed -i 's/- "443:443"/- "8443:443"/' docker-compose.yaml
+      sed -i "/build: /d" docker-compose.yaml
       make gitpod-start
 
 ports:

@@ -105,7 +105,7 @@ normalize_input() {
 inspect_args() {
   readarray -t sorted_keys < <(printf '%s\n' "${!args[@]}" | sort)
   if (( ${#args[@]} )); then
-    echo args:
+    echo ${args[action]}:
     for k in "${sorted_keys[@]}"; do echo "- \${args[$k]} = ${args[$k]}"; done
   else
     echo args: none

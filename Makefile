@@ -146,8 +146,9 @@ gitpod-start:
 		mkdir -p local_configs/monitor && \
 		mkdir -p local_configs/frontend && \
 		cp -rn backend-services/configs/* local_configs/backend && \
+		cp backend-services/configs/redis.conf local_configs/backend/redis.conf && \
 		cp -rn monitor-services/configs/* local_configs/monitor && \
-		cp other/frontend/configs/nginx-gitpod.conf local_configs/frontend/nginx.conf; \
+		cp other/frontend/configs/nginx-gitpod.conf local_configs/frontend/nginx.conf
 	fi
 	@docker-compose up -d
 

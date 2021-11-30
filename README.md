@@ -14,6 +14,8 @@
 <img src="docs/images/artemis_logo.png" style="margin-bottom: 15px;"/>
 </p>
 
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/FORTH-ICS-INSPIRE/artemis)
+
 #
 
 ARTEMIS is an open-source tool, that implements a defense approach against BGP prefix hijacking attacks.

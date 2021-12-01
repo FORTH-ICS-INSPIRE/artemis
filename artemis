@@ -22,8 +22,10 @@ version_command() {
 }
 
 install() {
-  read -r -p 'Is your ARTEMIS configuration ready? (type "y" or "n"): '
-  [[ "${REPLY}" == 'n' ]] && msg "You need to create the appropriate configuration!"
+  read -r -p 'Would you like to use the default ARTEMIS configs? (type "y" or "n"): '
+  [[ "${REPLY}" == 'n' ]] && read -r -p 'Would you like to use the default ARTEMIS configs? (type "y" or "n"): '
+  [[ "${REPLY}" == 'n' ]] && read -r -p 'Would you like to edit the backend and monitor log configs? (type "y" or "n"): '
+  [[ "${REPLY}" == 'y' ]] && vim local_configs/backend/logging.yaml
   # msg "backend-services/configs"
 }
 

@@ -90,8 +90,8 @@ def hijack_log_field_formatter(hijack_dict):
         if "hijack_url" in HIJACK_LOG_FIELDS and "key" in hijack_dict:
             web_base_dir = ""
             if ARTEMIS_WEB_BASE_DIR:
-                web_base_dir = "{}/".format(ARTEMIS_WEB_BASE_DIR)
-            logged_hijack_dict["hijack_url"] = "https://{}/{}main/hijack?key={}".format(
+                web_base_dir = "{}/".format(ARTEMIS_WEB_BASE_DIR.rstrip("/"))
+            logged_hijack_dict["hijack_url"] = "https://{}/{}hijack?key={}".format(
                 ARTEMIS_WEB_HOST, web_base_dir, hijack_dict["key"]
             )
     except Exception:

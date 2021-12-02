@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - migrating from travis to GH actions
 - downgraded to six==1.11.0 to achieve compatibility
 - changed tap invalid format logging level to debug (instead of warning)
-- updated artemis-utils to 1.0.12
+- updated artemis-utils to 1.0.13
 - updated k8s documentation
 - updated artemis-chart
 - replaced bcrypt with argon2

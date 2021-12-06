@@ -7,7 +7,11 @@ Read more at [bgpartemis.org](http://bgpartemis.org/) and the [docs](https://bgp
 Instructions on publishing a package update:
 
 ```
+# install twine
+https://pypi.org/manage/account/token/
+# follow instructions to build a correct $HOME/.pypirc for artemis-utils
+https://pypi.org/manage/account/token/
 # update the package (code, version, files, etc.)
 python3 setup.py sdist bdist_wheel
-python3 -m twine upload dist/*
+twine upload dist/*
 ```

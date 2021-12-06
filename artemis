@@ -19,17 +19,40 @@ version_command() {
 }
 
 install() {
-  read -r -p 'Would you like to use the default ARTEMIS configs? (type "y" or "n"): '
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  NC='\033[0m' # No Color
+
+  echo -e "${GREEN}Installation has started ${NC} \n"
+  read -n1 -p "Would you like to use the default ARTEMIS configs? (type 'y' or 'n'): "
+  echo
   if [[ "${REPLY}" == 'n' ]]; then 
-    read -r -p 'Would you like to edit the backend and monitor log configs? (type "y" or "n"): '
+    read -n1 -p $'Would you like to edit the backend and monitor log configs? (type "y" or "n"): '
     [[ "${REPLY}" == 'y' ]] && vim local_configs/backend/logging.yaml && vim local_configs/monitor/logging.yaml
-    read -r -p 'Would you like to modify the default database credentials? (type "y" or "n"): '
+    echo
+
+    read -n1 -p 'Would you like to modify the default database credentials? (type "y" or "n"): '
     if [[ "${REPLY}" == 'y' ]]; then 
-      read -r -p 'Insert the new database username: ' && sed -ie "s/DB_USER=.*/DB_USER=${REPLY}/" .env
-      read -r -p 'Insert the new database password: ' && sed -ie "s/DB_PASS=.*/DB_PASS=${REPLY}/" .env
+      read -r -p $'\x0aInsert the new database username: ' && sed -ie "s/^DB_USER=.*/DB_USER=${REPLY}/" .env
+      read -r -p 'Insert the new database password: ' && sed -ie "s/^DB_PASS=.*/DB_PASS=${REPLY}/" .env
     fi
-    
-    read -r -p 'Would you like to modify the default web application credentials? (type "y" or "n"): '
+    echo
+
+    read -n1 -p 'Would you like to modify the default WEB application configuration? (type "y" or "n"): '
+    if [[ "${REPLY}" == 'y' ]]; then
+      read -r -p $'\x0aInsert the new MongoDB username: ' && sed -ie "s/MONGODB_USER=.*/MONGODB_USER=${REPLY}/" .env
+      read -r -p 'Insert the new MongoDB password: ' && sed -ie "s/MONGODB_PASS=.*/MONGODB_PASS=${REPLY}/" .env
+
+      read -r -p 'Insert the new admin username: ' && sed -ie "s/ADMIN_EMAIL=.*/ADMIN_EMAIL=${REPLY}/" .env
+      read -r -p 'Insert the new admin password: ' && sed -ie "s/ADMIN_PASS=.*/ADMIN_PASS=${REPLY}/" .env
+
+      read -p 'What is this instance WEB host? ' && sed -ie "s/ARTEMIS_WEB_HOST=.*/ARTEMIS_WEB_HOST=${REPLY}/" .env
+      
+      echo
+    fi
+    echo -e "\nAll the necessary configuration is created \n"
+  else
+    echo -e "\nInstallation procceding with the default configuration \n"
   fi
   # msg "backend-services/configs"
 }

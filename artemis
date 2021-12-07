@@ -73,17 +73,14 @@ detect_distro() {
 
 dependencies_install() {
   packagesNeeded='git python3 python3-pip ntp ca-certificates curl gnupg make'
-  if [[ "${OS}" == 'linux' ]]; then
+
+  if [[ "${os}" == 'linux' ]]; then
     if [ -x "$(command -v apk)" ];       then yes | sudo apk add --no-cache $packagesNeeded
-    elif [ -x "$(command -v apt-get)" ]; then yes | sudo apt-get install $packagesNeeded
+    elif [ -x "$(command -v apt-get)" ]; then yes | sudo apt update && sudo apt-get install $packagesNeeded
     elif [ -x "$(command -v dnf)" ];     then yes | sudo dnf install $packagesNeeded
     elif [ -x "$(command -v zypper)" ];  then yes | sudo zypper install $packagesNeeded
-    elif [ -x "$(command -v pacman)" ];  then yes | sudo pacman -S $packagesNeeded
+    elif [ -x "$(command -v pacman)" ];  then yes | sudo pacman -Syy && sudo pacman -S $packagesNeeded
     elif [ -x "$(command -v yum)" ];     then yes | sudo yum install $packagesNeeded
-    else
-      echo -e "${RED}No package manager found${NC}"
-      exit 1
-    fi
     else echo -e "${RED}FAILED TO INSTALL PACKAGE: Package manager not found. You must manually install: $packagesNeeded ${NC}">&2; fi
 
     curl -fsSL https://get.docker.com -o get-docker.sh
@@ -164,7 +161,7 @@ install() {
   fi
 
   echo -e "\n${PURPLE}Lets install the dependencies 📦 ${NC} \n"
-  dependencies_install
+  dependencies_install 
   echo -e "\n${GREEN}Dependencies installed${NC} \n"
 
   echo -e "\n${PURPLE}Copying configuration files... ⚙️ ${NC} \n"
@@ -347,7 +344,17 @@ initialize() {
   long_usage=''
   set -e
 
-  src/header.sh
+  echo """
+     ▄▄▄▄▄▄▄ ▄▄▄▄▄▄   ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄   ▄▄ ▄▄▄ ▄▄▄▄▄▄▄ 
+    █       █   ▄  █ █       █       █  █▄█  █   █       █
+    █   ▄   █  █ █ █ █▄     ▄█    ▄▄▄█       █   █  ▄▄▄▄▄█
+    █  █▄█  █   █▄▄█▄  █   █ █   █▄▄▄█       █   █ █▄▄▄▄▄ 
+    █       █    ▄▄  █ █   █ █    ▄▄▄█       █   █▄▄▄▄▄  █
+    █   ▄   █   █  █ █ █   █ █   █▄▄▄█ ██▄██ █   █▄▄▄▄▄█ █
+    █▄▄█ █▄▄█▄▄▄█  █▄█ █▄▄▄█ █▄▄▄▄▄▄▄█▄█   █▄█▄▄▄█▄▄▄▄▄▄▄█
+    
+""";
+
 }
 
 # :command.run

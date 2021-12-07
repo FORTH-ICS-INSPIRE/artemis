@@ -24,7 +24,7 @@ detect_os() {
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     os="mac"
     if [[ `uname -m` == 'arm64' ]]; then
-      echo M1
+      arch="arm64"
     fi
   elif [[ "$OSTYPE" == "cygwin" ]]; then
     os="cygwin"
@@ -43,20 +43,20 @@ detect_distro() {
   if [ -f /etc/os-release ]; then
     # freedesktop.org and systemd
     . /etc/os-release
-    OS=$NAME
+    DISTRO=$NAME
     VER=$VERSION_ID
   elif type lsb_release >/dev/null 2>&1; then
       # linuxbase.org
-      OS=$(lsb_release -si)
+      DISTRO=$(lsb_release -si)
       VER=$(lsb_release -sr)
   elif [ -f /etc/lsb-release ]; then
       # For some versions of Debian/Ubuntu without lsb_release command
       . /etc/lsb-release
-      OS=$DISTRIB_ID
+      DISTRO=$DISTRIB_ID
       VER=$DISTRIB_RELEASE
   elif [ -f /etc/debian_version ]; then
       # Older Debian/Ubuntu/etc.
-      OS=Debian
+      DISTRO=Debian
       VER=$(cat /etc/debian_version)
   elif [ -f /etc/SuSe-release ]; then
       # Older SuSE/etc.
@@ -66,13 +66,39 @@ detect_distro() {
       ...
   else
       # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
-      OS=$(uname -s)
+      DISTRO=$(uname -s)
       VER=$(uname -r)
+  fi
+}
+
+dependencies_install() {
+  packagesNeeded='git python3 python3-pip ntp ca-certificates curl gnupg make'
+  if [[ "${OS}" == 'linux' ]]; then
+    if [ -x "$(command -v apk)" ];       then yes | sudo apk add --no-cache $packagesNeeded
+    elif [ -x "$(command -v apt-get)" ]; then yes | sudo apt-get install $packagesNeeded
+    elif [ -x "$(command -v dnf)" ];     then yes | sudo dnf install $packagesNeeded
+    elif [ -x "$(command -v zypper)" ];  then yes | sudo zypper install $packagesNeeded
+    elif [ -x "$(command -v pacman)" ];  then yes | sudo pacman -S $packagesNeeded
+    elif [ -x "$(command -v yum)" ];     then yes | sudo yum install $packagesNeeded
+    else
+      echo -e "${RED}No package manager found${NC}"
+      exit 1
+    fi
+    else echo -e "${RED}FAILED TO INSTALL PACKAGE: Package manager not found. You must manually install: $packagesNeeded ${NC}">&2; fi
+
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    sudo usermod -aG docker $USER
+    sudo systemctl enable docker
+    sudo systemctl start docker
+    sudo pip3 install docker-compose
   fi
 }
 
 install() {
   detect_os
+  [[ "${os}" == 'linux' ]] && detect_distro
+
   RED='\033[0;31m'
   GREEN='\033[0;32m'
   PURPLE='\033[0;35m'
@@ -110,7 +136,19 @@ install() {
       read -r -p 'Insert the ARTEMIS web base directory (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/ARTEMIS_WEB_BASE_DIR=.*/ARTEMIS_WEB_BASE_DIR=${REPLY}/" .env
 
       read -p 'What is this instance WEB host (e.g. artemis.com)? ' && sed -ie "s/ARTEMIS_WEB_HOST=.*/ARTEMIS_WEB_HOST=${REPLY}/" .env
-      echo
+
+      read -n1 -p 'Will you be using LDAP ? (type "y" or "n"): '
+      if [[ "${REPLY}" == 'y' ]]; then
+        read -r -p 'Insert the LDAP server URL (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/LDAP_SERVER_URL=.*/LDAP_SERVER_URL=${REPLY}/" .env
+        read -r -p 'Insert the LDAP server port (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/LDAP_SERVER_PORT=.*/LDAP_SERVER_PORT=${REPLY}/" .env
+        read -r -p 'Insert the LDAP server bind DN (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/LDAP_SERVER_BIND_DN=.*/LDAP_SERVER_BIND_DN=${REPLY}/" .env
+        read -r -p 'Insert the LDAP server bind password (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/LDAP_SERVER_BIND_PASS=.*/LDAP_SERVER_BIND_PASS=${REPLY}/" .env
+        read -r -p 'Insert the LDAP server search base (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/LDAP_SERVER_SEARCH_BASE=.*/LDAP_SERVER_SEARCH_BASE=${REPLY}/" .env
+        read -r -p 'Insert the LDAP server search filter (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/LDAP_SERVER_SEARCH_FILTER=.*/LDAP_SERVER_SEARCH_FILTER=${REPLY}/" .env
+        read -r -p 'Insert the LDAP server search filter attribute (press ENTER for default): ' && [[ "${REPLY}" != '' ]] && sed -ie "s/LDAP_SERVER_SEARCH_FILTER_ATTRIBUTE=.*/LDAP_SERVER_SEARCH_FILTER" .env
+      else
+        sed -ie "s/LDAP_ENABLED=.*/LDAP_ENABLED=false/" .env
+      fi
     fi
 
     echo -e "\n${PURPLE}Lets change the secret keys 🔒 ${NC} \n"
@@ -120,10 +158,26 @@ install() {
     read -r -p 'Insert the API client key : ' && sed -ie "s/API_KEY=.*/API_KEY=${REPLY}/" .env
     read -r -p 'Insert the CAPTCHA protection secret : ' && sed -ie "s/CAPTCHA_SECRET=.*/CAPTCHA_SECRET=${REPLY}/" .env
 
-    echo -e "\n${GREEN}All the necessary configuration is created${NC} \n"
+    echo -e "\n${GREEN}All the necessary configuration ⚙️ is created${NC} \n"
   else
     echo -e "\n${GREEN}Installation procceding with the default configuration${NC} \n"
   fi
+
+  echo -e "\n${PURPLE}Lets install the dependencies 📦 ${NC} \n"
+  dependencies_install
+  echo -e "\n${GREEN}Dependencies installed${NC} \n"
+
+  echo -e "\n${PURPLE}Copying configuration files... ⚙️ ${NC} \n"
+  make setup-conf
+
+  read -n1 -p 'Shall we install for development or production ? (type "d" or "p"): '
+  if [[ "${REPLY}" == 'd' ]]; then
+    make start
+  else
+    docker-compose pull
+  fi
+
+  echo -e "\n${GREEN}Installation complete 🎉 ${NC} \n"
   # msg "backend-services/configs"
 }
 

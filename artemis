@@ -8,6 +8,11 @@ if [[ "${BASH_VERSINFO:-0}" -lt 4 ]]; then
   exit 1
 fi
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+PURPLE='\033[0;35m'
+NC='\033[0m' # No Color
+
 # :command.root_command
 root_command() {
   inspect_args
@@ -89,17 +94,33 @@ dependencies_install() {
     sudo systemctl enable docker
     sudo systemctl start docker
     sudo pip3 install docker-compose
+  elif [[ "${os}" == 'mac' ]]; then
+    brew install $packagesNeeded
+
+    if ! command -v docker &> /dev/null
+    then
+        echo -e "${RED}Docker could not be found. Please download and install from : https://docs.docker.com/desktop/mac/install ${NC}">&2;
+        exit
+    fi
+    sudo pip3 install docker-compose
   fi
 }
 
-install() {
+kubernetes_install() {
+  if [[ "${os}" == 'linux' ]]; then
+    curl -LO https://storage.googleapis.com/kuber
+    curl -LO https://storage.googleapis.com/kuber/kubernetes-client-linux-amd64.tar.gz
+    tar -xvf kubernetes-client-linux-amd64.tar.gz
+    sudo mv kubernetes/client/bin/* /usr/local/bin/
+    sudo rm -rf kuber kubernetes-client-linux-amd64.tar.gz
+  elif [[ "${os}" == 'mac' ]]; then
+    brew install kubernetes-cli
+  fi
+}
+
+local_install() {
   detect_os
   [[ "${os}" == 'linux' ]] && detect_distro
-
-  RED='\033[0;31m'
-  GREEN='\033[0;32m'
-  PURPLE='\033[0;35m'
-  NC='\033[0m' # No Color
 
   echo -e "${GREEN}Installation has started 🚀 ${NC} \n"
   read -n1 -p "Would you like to use the default ARTEMIS configs? (type 'y' or 'n'): "
@@ -169,6 +190,12 @@ install() {
 
   read -n1 -p 'Shall we install for development or production ? (type "d" or "p"): '
   if [[ "${REPLY}" == 'd' ]]; then
+    read -n1 -p 'Shall we setup frontend for development ? (type "y" or "n"): '
+    if [[ "${REPLY}" == 'y' ]]; then
+      git clone https://github.com/FORTH-ICS-INSPIRE/artemis-web  
+      sed -ie "s/container_name: frontend.*/build: .\/artemis-web \n        container_name: frontend/" docker-compose.yaml    
+    fi
+  fi
     make start
   else
     docker-compose pull
@@ -257,7 +284,15 @@ inspect_args() {
   readarray -t sorted_keys < <(printf '%s\n' "${!args[@]}" | sort)
   if (( ${#args[@]} )); then
     if [[ "${args[action]}" == "install" ]]; then
-      install
+      local_install
+    elif [[ "${args[action]}" == "restart" ]]; then
+      docker-compose restart
+    elif [[ "${args[action]}" == "help" ]]; then
+      artemis_usage
+    elif [[ "${args[action]}" == "version" ]]; then
+      artemis_version
+    else
+      artemis_usage
     fi
     # for k in "${sorted_keys[@]}"; do echo "- \${args[$k]} = ${args[$k]}"; done
   else
@@ -281,9 +316,22 @@ inspect_args() {
 # :command.parse_requirements
 parse_requirements() {
   # :command.fixed_flag_filter
+  local=true
   case "${1:-}" in
   --version | -v )
     version_command
+    exit
+    ;;
+
+  --kubernetes | -k )
+    kubernetes=true
+    local=false
+    exit
+    ;;
+
+  --local | -l )
+    local=true
+    kubernetes=false
     exit
     ;;
 
@@ -344,7 +392,7 @@ initialize() {
   long_usage=''
   set -e
 
-  echo """
+  echo -e """${RED}
      ▄▄▄▄▄▄▄ ▄▄▄▄▄▄   ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄   ▄▄ ▄▄▄ ▄▄▄▄▄▄▄ 
     █       █   ▄  █ █       █       █  █▄█  █   █       █
     █   ▄   █  █ █ █ █▄     ▄█    ▄▄▄█       █   █  ▄▄▄▄▄█
@@ -352,7 +400,7 @@ initialize() {
     █       █    ▄▄  █ █   █ █    ▄▄▄█       █   █▄▄▄▄▄  █
     █   ▄   █   █  █ █ █   █ █   █▄▄▄█ ██▄██ █   █▄▄▄▄▄█ █
     █▄▄█ █▄▄█▄▄▄█  █▄█ █▄▄▄█ █▄▄▄▄▄▄▄█▄█   █▄█▄▄▄█▄▄▄▄▄▄▄█
-    
+  ${NC}  
 """;
 
 }

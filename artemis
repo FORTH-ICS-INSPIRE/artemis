@@ -12,6 +12,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
+BACKEND_SERVICES=(autoignore autostarter configuration database detection fileobserver mitigation notifier prefixtree)
 
 # :command.root_command
 root_command() {
@@ -188,17 +189,27 @@ local_install() {
   echo -e "\n${PURPLE}Copying configuration files... ⚙️ ${NC} \n"
   make setup-conf
 
-  read -n1 -p 'Shall we install for development or production ? (type "d" or "p"): '
-  if [[ "${REPLY}" == 'd' ]]; then
-    read -n1 -p 'Shall we setup frontend for development ? (type "y" or "n"): '
-    if [[ "${REPLY}" == 'y' ]]; then
-      git clone https://github.com/FORTH-ICS-INSPIRE/artemis-web  
-      sed -ie "s/container_name: frontend.*/build: .\/artemis-web \n        container_name: frontend/" docker-compose.yaml    
-    fi
-  fi
-    make start
-  else
+
+  if [[ "${arch}" == 'm1' ]]; then
+    sed -i '' "/build: /d" docker-compose.yaml
+    for service in $BACKEND_SERVICES
+    do
+      sed -ie "s/inspiregroup\/artemis-$service/curiouzk0d3r\/artemis-$service/" docker-compose.yaml
+    done
     docker-compose pull
+  else
+    read -n1 -p 'Shall we install for development or production ? (type "d" or "p"): '
+    if [[ "${REPLY}" == 'd' ]]; then
+      read -n1 -p 'Shall we setup frontend for development ? (type "y" or "n"): '
+      if [[ "${REPLY}" == 'y' ]]; then
+        git clone https://github.com/FORTH-ICS-INSPIRE/artemis-web  
+        sed -ie "s/container_name: frontend.*/build: .\/artemis-web \n        container_name: frontend/" docker-compose.yaml    
+      fi
+    fi
+      make start
+    else
+      docker-compose pull
+    fi
   fi
 
   echo -e "\n${GREEN}Installation complete 🎉 ${NC} \n"

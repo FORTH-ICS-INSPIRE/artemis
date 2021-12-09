@@ -196,6 +196,7 @@ local_install() {
     do
       sed -ie "s/inspiregroup\/artemis-$service/curiouzk0d3r\/artemis-$service/" docker-compose.yaml
     done
+    sed -ie "s/inspiregroup\/artemis-frontend-web/curiouzk0d3r\/artemis-frontend-web/" docker-compose.yaml
     docker-compose pull
   else
     read -n1 -p 'Shall we install for development or production ? (type "d" or "p"): '

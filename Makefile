@@ -6,6 +6,7 @@ SERVICES ?= $(BACKEND_SERVICES) $(TAP_SERVICES)
 PUSH ?= false
 BUILD_TAG ?= latest
 CONTAINER_REPO ?= docker.io/inspiregroup
+ARM_CONTAINER_REPO ?= docker.io/curiouzk0d3r
 RELEASE ?= latest
 
 .PHONY: log-env
@@ -155,6 +156,19 @@ ifneq ($(RELEASE), latest)
 		docker pull $(CONTAINER_REPO)/artemis-$$service:latest; \
 		docker tag $(CONTAINER_REPO)/artemis-$$service:latest $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \
 		docker push $(CONTAINER_REPO)/artemis-$$service:$(RELEASE); \
+	done
+else
+	@echo "Provide the release to tag and push (i.e 'RELEASE=v1.2.3 make release')"
+endif
+
+.PHONY: release-arm
+release-arm: # pull and tag images for a new release
+release-arm:
+ifneq ($(RELEASE), latest)
+	@for service in $(SERVICES) ; do \
+		docker pull $(ARM_CONTAINER_REPO)/artemis-$$service:latest; \
+		docker tag $(ARM_CONTAINER_REPO)/artemis-$$service:latest $(ARM_CONTAINER_REPO)/artemis-$$service:arm64-$(RELEASE); \
+		docker push $(ARM_CONTAINER_REPO)/artemis-$$service:arm64-$(RELEASE); \
 	done
 else
 	@echo "Provide the release to tag and push (i.e 'RELEASE=v1.2.3 make release')"

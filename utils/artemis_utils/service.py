@@ -29,22 +29,11 @@ def service_to_ips_and_replicas_in_compose(own_service_name, base_service_name):
         replica_name_match = re.match(
             r"^"
             + re.escape(COMPOSE_PROJECT_NAME)
-            + r"_"
+            + r"[_|-]"
             + re.escape(base_service_name)
-            + r"_(\d+)",
+            + r"[_|-](\d+)",
             replica_host_by_addr,
         )
-
-        if replica_name_match is None:
-            replica_name_match = re.match(
-                r"^"
-                + re.escape(COMPOSE_PROJECT_NAME)
-                + r"-"
-                + re.escape(base_service_name)
-                + r"-(\d+)",
-                replica_host_by_addr,
-            )
-            
         replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))
         service_to_ips_and_replicas_set.add((replica_name, replica_ip))
     return service_to_ips_and_replicas_set

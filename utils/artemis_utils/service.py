@@ -29,9 +29,9 @@ def service_to_ips_and_replicas_in_compose(own_service_name, base_service_name):
         replica_name_match = re.match(
             r"^"
             + re.escape(COMPOSE_PROJECT_NAME)
-            + r"_"
+            + r"[_|-]"
             + re.escape(base_service_name)
-            + r"_(\d+)",
+            + r"[_|-](\d+)",
             replica_host_by_addr,
         )
         replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))

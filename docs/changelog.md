@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - enforce ssl_protocols TLSv1.2 TLSv1.3 in default nginx.conf
 - bumped caida/bgpstream to 2.2.0 and monitor containers to related 1.0.3
 - migrated our web application to Nextjs 11/12 and webpack 5
+- updated artemis-utils to 1.0.13 (service name fix for `docker-compose`)
 
 ### Fixed
 

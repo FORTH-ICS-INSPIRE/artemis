@@ -23,6 +23,10 @@ from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
 
+from datetime import datetime
+import firebase_admin
+from firebase_admin import messaging
+
 # loggers
 log = get_logger()
 hij_log = logging.getLogger("hijack_logger")
@@ -273,6 +277,9 @@ class NotifierDataWorker(ConsumerProducerMixin):
     RabbitMQ Consumer/Producer for this Service.
     """
 
+    default_app = firebase_admin.initialize_app()
+    topic = 'hjtopic'
+
     def __init__(
         self, connection: Connection, shared_memory_manager_dict: Dict
     ) -> NoReturn:
@@ -306,6 +313,26 @@ class NotifierDataWorker(ConsumerProducerMixin):
         )
 
         log.info("data worker initiated")
+    
+    def firebase_notification(self, hijack_obj):
+        #     # See documentation on defining a message payload.
+        #     message = messaging.Message(
+        #         data = {
+        #             'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+        #             'key': 'key'
+        #         },
+        #         notification = messaging.Notification(
+        #             title = 'Active Hijack detected!',
+        #             body = 'Tap to view more'
+        #         ),
+        #         topic=self.topic
+        #     )
+
+        #     # Send a message to the devices subscribed to the provided topic.
+        #     response = messaging.send(message)
+        #     # Response is a message ID string.
+        #     print('Successfully sent message:', response)
+        pass
 
     def get_consumers(self, Consumer: Consumer, channel: Connection) -> List[Consumer]:
         return [
@@ -335,6 +362,13 @@ class NotifierDataWorker(ConsumerProducerMixin):
         """
         message.ack()
         hij_dict = message.payload
+        curr_dt = datetime.now().timestamp()
+        hijack_obj = hijack_log_field_formatter(hij_dict)
+        is_new = curr_dt - int(hijack_obj["time_last"]) < 3600
+
+        if is_new:
+            self.firebase_notification(hijack_obj)
+
         hij_log.info(
             "{}".format(json.dumps(hijack_log_field_formatter(hij_dict))),
             extra={"community_annotation": hij_dict.get("community_annotation", "NA")},

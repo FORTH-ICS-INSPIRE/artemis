@@ -16,3 +16,4 @@ six==1.11.0
 slacker-log-handler==1.7.1
 tornado==6.0.4
 ujson==1.35
+firebase_admin===5.2.0

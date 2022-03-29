@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- accessibility
 - every api call now has a rate limit. The limit is per api endpoint, so it is not a global counter. The default value is 20 requests per 15 minutes. The user has to define 2 extra environmental variables:
   - LIMIT_WINDOW specifies the time window in ms.
   - LIMIT_REQUESTS specifies the number of allowed requests in that secific time window.
@@ -29,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bumped caida/bgpstream to 2.2.0 and monitor containers to related 1.0.3
 - migrated our web application to Nextjs 11/12 and webpack 5
 - updated artemis-utils to 1.0.13 (service name fix for `docker-compose`)
+- password policy change
 
 ### Fixed
 
@@ -37,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bug with logout warning popup
 - GQL ports in frontend
 - `login` and `JWT` auth calls and documentation
+- LDAP button is hidden when no LDAP service is being used
+- tooltips bug
 
 ## [2.1.0] (Bellerophon) - 2021-05-17
 

@@ -16,6 +16,7 @@ nav:
       - "Environment Variables": envvars.md
       - Logging: loggingconf.md
       - LDAP: ldapconf.md
+      - SSO: ssoconf.md
       - "RPKI Validation": rpkivalidconf.md
       - "ExaBGP Local Feed": exabgpfeed.md
   - Details:

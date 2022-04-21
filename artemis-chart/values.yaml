@@ -193,7 +193,7 @@ services:
     ports:
       - 8080
   pgamqpbridge:
-    image: curiouzk0d3r/pg-amqp-bridge:0.0.6
+    image: curiouzk0d3r/pg-amqp-bridge:latest
   mongodb:
     image: mongo
     ports:

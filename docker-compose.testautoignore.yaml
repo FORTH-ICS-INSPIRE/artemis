@@ -435,7 +435,7 @@ services:
             - ./testing/detection/db/data/:/docker-entrypoint-initdb.d/data/
             - ./testing/detection/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
-        image: curiouzk0d3r/pg-amqp-bridge:0.0.6
+        image: curiouzk0d3r/pg-amqp-bridge:latest
         container_name: pg-amqp-bridge
         restart: always
         depends_on:

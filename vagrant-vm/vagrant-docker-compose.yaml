@@ -544,7 +544,9 @@ services:
             PGRST_DB_ANON_ROLE: ${DB_USER}
     pg-amqp-bridge:
         container_name: pg-amqp-bridge
-        build: https://github.com/subzerocloud/pg-amqp-bridge.git#master
+        build:
+            context: https://github.com/subzerocloud/pg-amqp-bridge.git#master
+            dockerfile: Dockerfile
         restart: always
         depends_on:
             - postgres

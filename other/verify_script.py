@@ -108,10 +108,10 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(version, k8s_version)
 
         version = get_match_from_file(
-            COMPOSE_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
+            COMPOSE_FILE, r"image: curiouzk0d3r/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
         )
         k8s_version = get_match_from_file(
-            K8S_VALUES_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
+            K8S_VALUES_FILE, r"image: curiouzk0d3r/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
         )
         self.assertEqual(version, k8s_version)
 

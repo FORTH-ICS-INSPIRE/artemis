@@ -235,7 +235,7 @@ jobs:
   test-autoignore:
     name: E2E Test Auto-ignore
     needs: build-and-push
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2

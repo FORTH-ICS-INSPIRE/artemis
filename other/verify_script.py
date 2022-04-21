@@ -107,13 +107,13 @@ class TestStringMethods(unittest.TestCase):
         )
         self.assertEqual(version, k8s_version)
 
-        version = get_match_from_file(
-            COMPOSE_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
-        )
-        k8s_version = get_match_from_file(
-            K8S_VALUES_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
-        )
-        self.assertEqual(version, k8s_version)
+        # version = get_match_from_file(
+        #     COMPOSE_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
+        # )
+        # k8s_version = get_match_from_file(
+        #     K8S_VALUES_FILE, r"image: subzerocloud/pg-amqp-bridge:([a-zA-Z0-9.\-_]*)"
+        # )
+        # self.assertEqual(version, k8s_version)
 
     def test_env_values(self):
         env_vals = set(get_matches_from_file(ENV_FILE, r"([A-Z_]+)="))

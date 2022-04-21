@@ -18,11 +18,11 @@ repos:
       language: script
       files: "backend-services/detection/core"
       pass_filenames: false
-- repo: https://github.com/ambv/black
-  rev: 21.5b1
-  hooks:
-    - id: black
-      name: Apply black formatter
+# - repo: https://github.com/ambv/black
+#   rev: 21.5b1
+#   hooks:
+#     - id: black
+#       name: Apply black formatter
 - repo: git://github.com/asottile/reorder_python_imports
   rev: v1.4.0
   hooks:

@@ -20,23 +20,23 @@ env:
 
 jobs:
 
-  # precommit-check:
-  #   name: Pre-commit Check
-  #   runs-on: ubuntu-latest
-  #   if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: set up Python
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: '3.6'
-  #     - name: install
-  #       run: |
-  #         pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
-  #         pip install -r backend-services/detection/requirements.txt
-  #         pre-commit install
-  #     - name: script
-  #       run: pre-commit run --all-files
+  precommit-check:
+    name: Pre-commit Check
+    runs-on: ubuntu-latest
+    if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.6'
+      - name: install
+        run: |
+          pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
+          pip install -r backend-services/detection/requirements.txt
+          pre-commit install
+      - name: script
+        run: pre-commit run --all-files
 
   migration-check:
     name: Migration Check
@@ -59,7 +59,7 @@ jobs:
 
   build-and-push:
     name: Build and Push Container Images
-    needs: [ migration-check ]
+    needs: [ precommit-check, migration-check ]
     runs-on: ubuntu-latest
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     strategy:

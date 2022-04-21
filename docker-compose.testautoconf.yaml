@@ -435,8 +435,8 @@ services:
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
     pg-amqp-bridge:
-        image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
+        build: https://github.com/subzerocloud/pg-amqp-bridge.git#master
         restart: always
         depends_on:
             - postgres

@@ -22,7 +22,7 @@ jobs:
 
   precommit-check:
     name: Pre-commit Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
@@ -40,7 +40,7 @@ jobs:
 
   migration-check:
     name: Migration Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
@@ -60,7 +60,7 @@ jobs:
   build-and-push:
     name: Build and Push Container Images
     needs: [ precommit-check, migration-check ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     strategy:
       fail-fast: true
@@ -97,7 +97,7 @@ jobs:
   test-detection:
     name: E2E Test Detection
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
@@ -144,7 +144,7 @@ jobs:
   test-autoconf:
     name: E2E Test Auto-configuration
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
@@ -191,7 +191,7 @@ jobs:
   benchmark:
     name: E2E Benchmark
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -235,7 +235,7 @@ jobs:
   test-autoignore:
     name: E2E Test Auto-ignore
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2
@@ -282,7 +282,7 @@ jobs:
   test-rpki:
     name: E2E Test RPKI
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: github.repository == 'FORTH-ICS-INSPIRE/artemis'
     steps:
       - uses: actions/checkout@v2

@@ -11,7 +11,6 @@ x-healtcheck:
 services:
     riperistap:
         image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
-        build: ./monitor-services/riperistap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -38,7 +37,6 @@ services:
             - ./monitor-services/riperistap/entrypoint:/root/entrypoint
     bgpstreamlivetap:
         image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
-        build: ./monitor-services/bgpstreamlivetap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -64,7 +62,6 @@ services:
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
     bgpstreamkafkatap:
         image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
-        build: ./monitor-services/bgpstreamkafkatap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -90,7 +87,6 @@ services:
             - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
     bgpstreamhisttap:
         image: inspiregroup/artemis-bgpstreamhisttap:${SYSTEM_VERSION}
-        build: ./monitor-services/bgpstreamhisttap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -113,7 +109,6 @@ services:
             - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
     exabgptap:
         image: inspiregroup/artemis-exabgptap:${SYSTEM_VERSION}
-        build: ./monitor-services/exabgptap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -138,8 +133,7 @@ services:
             - ./local_configs/monitor/logging.yaml:/etc/artemis/logging.yaml
             - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
     autoignore:
-        image: inspiregroup/artemis-autoignore:${SYSTEM_VERSION}
-        build: ./backend-services/autoignore/
+        image: curiouzk0d3r/artemis-autoignore:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -166,8 +160,7 @@ services:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/autoignore/entrypoint:/root/entrypoint
     autostarter:
-        image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
-        build: ./backend-services/autostarter/
+        image: curiouzk0d3r/artemis-autostarter:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -202,8 +195,7 @@ services:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
     configuration:
-        image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
-        build: ./backend-services/configuration/
+        image: curiouzk0d3r/artemis-configuration:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -237,8 +229,7 @@ services:
             - ./local_configs/backend/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
     database:
-        image: inspiregroup/artemis-database:${SYSTEM_VERSION}
-        build: ./backend-services/database/
+        image: curiouzk0d3r/artemis-database:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -275,8 +266,7 @@ services:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/database/entrypoint:/root/entrypoint
     detection:
-        image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
-        build: ./backend-services/detection/
+        image: curiouzk0d3r/artemis-detection:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -304,8 +294,7 @@ services:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/detection/entrypoint:/root/entrypoint
     fileobserver:
-        image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
-        build: ./backend-services/fileobserver/
+        image: curiouzk0d3r/artemis-fileobserver:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -320,8 +309,7 @@ services:
             - ./local_configs/backend/:/etc/artemis/
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
     mitigation:
-        image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
-        build: ./backend-services/mitigation/
+        image: curiouzk0d3r/artemis-mitigation:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -342,8 +330,7 @@ services:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/mitigation/entrypoint:/root/entrypoint
     notifier:
-        image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
-        build: ./backend-services/notifier/
+        image: curiouzk0d3r/artemis-notifier:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -365,8 +352,7 @@ services:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/notifier/entrypoint:/root/entrypoint
     prefixtree:
-        image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
-        build: ./backend-services/prefixtree/
+        image: curiouzk0d3r/artemis-prefixtree:${SYSTEM_VERSION}
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -543,8 +529,8 @@ services:
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
     pg-amqp-bridge:
-        image: subzerocloud/pg-amqp-bridge:0.0.6
         container_name: pg-amqp-bridge
+        build: https://github.com/subzerocloud/pg-amqp-bridge.git#master
         restart: always
         depends_on:
             - postgres

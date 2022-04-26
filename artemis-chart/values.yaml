@@ -68,6 +68,11 @@ ldapGroupSearchAttributes: "mail,uid"
 ldapEmailFieldName: mail
 ldapAdminGroup: admin_staff
 
+# Google SSO
+googleEnabled: false
+googleClientID: ''
+googleClientSecret: ''
+
 # rabbitmq
 rabbitmqHost: rabbitmq
 rabbitmqPort: 5672

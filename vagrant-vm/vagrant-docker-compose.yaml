@@ -543,7 +543,7 @@ services:
             PGRST_DB_SCHEMA: ${DB_SCHEMA}
             PGRST_DB_ANON_ROLE: ${DB_USER}
     pg-amqp-bridge:
-        image: subzerocloud/pg-amqp-bridge:0.0.6
+        image: curiouzk0d3r/pg-amqp-bridge:latest
         container_name: pg-amqp-bridge
         restart: always
         depends_on:

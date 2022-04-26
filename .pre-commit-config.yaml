@@ -18,17 +18,17 @@ repos:
       language: script
       files: "backend-services/detection/core"
       pass_filenames: false
-- repo: https://github.com/ambv/black
-  rev: 21.5b1
-  hooks:
-    - id: black
-      name: Apply black formatter
-- repo: git://github.com/asottile/reorder_python_imports
+# - repo: https://github.com/ambv/black
+#   rev: 21.5b1
+#   hooks:
+#     - id: black
+#       name: Apply black formatter
+- repo: https://github.com/asottile/reorder_python_imports
   rev: v1.4.0
   hooks:
     - id: reorder-python-imports
       name: Reorder python imports
-- repo: git://github.com/pre-commit/pre-commit-hooks
+- repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v2.1.0
   hooks:
     - id: check-added-large-files

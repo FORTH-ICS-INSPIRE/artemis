@@ -73,6 +73,9 @@ googleEnabled: false
 googleClientID: ''
 googleClientSecret: ''
 
+# Firebase
+serviceAccountPath: ''
+
 # rabbitmq
 rabbitmqHost: rabbitmq
 rabbitmqPort: 5672

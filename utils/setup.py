@@ -25,7 +25,7 @@ setuptools.setup(
     install_requires=[
         "kombu==4.6.7",
         "ruamel.yaml==0.16.5",
-        "ujson==1.35",
+        "ujson==5.2.0",
         "PyYAML==5.4",
         "gql==0.4.0",
         "ipaddress==1.0.23",

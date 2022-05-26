@@ -11,5 +11,5 @@ redis==3.4.0
 requests==2.25.1
 ruamel.yaml==0.16.5
 tornado==6.0.4
-ujson==1.35
+ujson==5.2.0
 wheel==0.34.2

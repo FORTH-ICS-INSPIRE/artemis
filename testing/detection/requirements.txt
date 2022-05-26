@@ -3,4 +3,4 @@ psycopg2==2.8.4
 PyYAML==5.4
 redis==3.4.0
 requests==2.25.1
-ujson==1.35
+ujson==5.2.0

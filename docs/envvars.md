@@ -177,6 +177,12 @@ Specifies the ARTEMIS web base directory (default: empty)
 ARTEMIS_WEB_BASE_DIR
 ```
 
+Specifies the path to a file containing the service account private key required by the Firebase Admin SDK:
+
+```
+SERVICE_ACCOUNT_PATH
+```
+
 ## MongoDB config
 
 Default credentials for mongodb (**WARNING: please change the default password before deploying!**):
@@ -187,14 +193,6 @@ MONGODB_PASS=pass
 MONGODB_HOST=mongodb
 MONGODB_PORT=27017
 MONGODB_NAME=artemis-web
-```
-
-## Firebase
-
-Specifies the path to a file containing the private key required by the Firebase Admin SDK:
-
-```
-SERVICE_ACCOUNT_PATH
 ```
 
 ## LDAP config

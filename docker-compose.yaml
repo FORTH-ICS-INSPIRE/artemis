@@ -462,6 +462,7 @@ services:
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             SESSION_TIMEOUT: ${SESSION_TIMEOUT}
             TESTING: ${TEST_ENV}
+            SERVICE_ACCOUNT_PATH: ${SERVICE_ACCOUNT_PATH}
     mongodb:
         image: mongo:4.4.6-bionic
         container_name: mongodb

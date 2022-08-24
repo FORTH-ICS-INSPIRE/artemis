@@ -174,7 +174,7 @@ CAPTCHA_TRIES
 
 Specifies the ARTEMIS web base directory (default: empty)
 ```
-ARTEMIS_WEB_BASE_DIR
+ARTEMIS_WEB_BASE_DIR 
 ```
 
 Specifies the path to a file containing the service account private key required by the Firebase Admin SDK:

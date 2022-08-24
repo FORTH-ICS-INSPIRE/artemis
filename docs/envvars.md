@@ -189,6 +189,14 @@ MONGODB_PORT=27017
 MONGODB_NAME=artemis-web
 ```
 
+## Firebase
+
+Specifies the path to a file containing the private key required by the Firebase Admin SDK:
+
+```
+SERVICE_ACCOUNT_PATH
+```
+
 ## LDAP config
 
 Default credentials for ldap (**WARNING: please change the default bind secret and other needed vars before deploying!**):

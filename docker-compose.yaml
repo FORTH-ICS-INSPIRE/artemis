@@ -476,7 +476,7 @@ services:
         volumes:
             - ./mongo-data:/data/db
     nginx:
-        image: nginx:1.23-alpine
+        image: nginx:1.17-alpine
         container_name: nginx
         restart: always
         depends_on:
@@ -495,7 +495,7 @@ services:
             - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
             - ./local_configs/frontend/certs/:/etc/nginx/certs/
     rabbitmq:
-        image: rabbitmq:3.9.20-management-alpine
+        image: rabbitmq:3.8.3-management-alpine
         container_name: rabbitmq
         restart: always
         networks:
@@ -510,7 +510,7 @@ services:
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
-        image: timescale/timescaledb:2.7.0-pg14
+        image: timescale/timescaledb:1.1.0-pg10
         container_name: postgres
         restart: always
         networks:
@@ -527,13 +527,13 @@ services:
         volumes:
             - ./postgres-data-current:/var/lib/postgresql/data
             - ./other/postgres-entrypoint.sh:/postgres-entrypoint.sh
-            - ./postgres-data-backup/:/postgres-entrypoint.d/
+            - ./postgres-data-backup/:/tmp/
             - ./other/db/init.sql:/docker-entrypoint-initdb.d/zinit.sql
             - ./other/db/data/:/docker-entrypoint-initdb.d/data/
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         entrypoint: [ "./postgres-entrypoint.sh" ]
     postgrest:
-        image: postgrest/postgrest:v9.0.0
+        image: postgrest/postgrest:v7.0.0
         container_name: postgrest
         restart: always
         depends_on:
@@ -574,7 +574,7 @@ services:
                 "pg-amqp-bridge"
             ]
     graphql:
-        image: hasura/graphql-engine:v2.8.4
+        image: hasura/graphql-engine:v1.1.0
         container_name: graphql
         restart: always
         depends_on:

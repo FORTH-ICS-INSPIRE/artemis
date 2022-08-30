@@ -7,5 +7,3 @@ To enable the notification service, you need to define the following variable in
 SERVICE_ACCOUNT_PATH=
 
 ```
-
-

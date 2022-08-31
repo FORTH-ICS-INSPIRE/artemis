@@ -45,6 +45,7 @@ limitRequests: 20
 captchaWindow: 900000
 captchaTries: 4
 artemisWebBaseDir: ""
+serviceAccountPath: ""
 
 # mongodb
 mongodbUser: admin
@@ -72,9 +73,6 @@ ldapAdminGroup: admin_staff
 googleEnabled: false
 googleClientID: ''
 googleClientSecret: ''
-
-# Firebase
-serviceAccountPath: ''
 
 # rabbitmq
 rabbitmqHost: rabbitmq

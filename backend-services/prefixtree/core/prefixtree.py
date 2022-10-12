@@ -157,7 +157,9 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                 "v6": pytricia_to_dict(prefix_tree["v6"]),
             }
             shared_memory_manager_dict["prefix_tree"] = dict_prefix_tree
-            shared_memory_manager_dict["prefix_tree_recalculate"] = True
+            # Splitting the recalculate indicator to ensure both v4 and v6 trees are updated
+            shared_memory_manager_dict["prefix_tree_recalculate_v4"] = True
+            shared_memory_manager_dict["prefix_tree_recalculate_v6"] = True
             shared_memory_locks["prefix_tree"].release()
 
             shared_memory_locks["monitored_prefixes"].acquire()
@@ -217,7 +219,8 @@ class ConfigHandler(RequestHandler):
                 "v4": <dict>,
                 "v6": <dict>
             },
-            "prefix_tree_recalculate": <bool>,
+            "prefix_tree_recalculate_v4": <bool>,
+            "prefix_tree_recalculate_v6": <bool>,
             "monitored_prefixes": <list>,
             "configured_prefix_count": <int>,
             "autoignore_rules": <dict>,
@@ -232,8 +235,12 @@ class ConfigHandler(RequestHandler):
         ret_dict = {}
 
         ret_dict["prefix_tree"] = self.shared_memory_manager_dict["prefix_tree"]
-        ret_dict["prefix_tree_recalculate"] = self.shared_memory_manager_dict[
-            "prefix_tree_recalculate"
+
+        ret_dict["prefix_tree_recalculate_v4"] = self.shared_memory_manager_dict[
+            "prefix_tree_recalculate_v4"
+        ]
+        ret_dict["prefix_tree_recalculate_v6"] = self.shared_memory_manager_dict[
+            "prefix_tree_recalculate_v6"
         ]
 
         ret_dict["monitored_prefixes"] = self.shared_memory_manager_dict[
@@ -434,7 +441,8 @@ class PrefixTree:
         self.shared_memory_manager_dict["data_worker_running"] = False
         self.shared_memory_manager_dict["service_reconfiguring"] = False
         self.shared_memory_manager_dict["prefix_tree"] = {"v4": {}, "v6": {}}
-        self.shared_memory_manager_dict["prefix_tree_recalculate"] = True
+        self.shared_memory_manager_dict["prefix_tree_recalculate_v4"] = True
+        self.shared_memory_manager_dict["prefix_tree_recalculate_v6"] = True
         self.shared_memory_manager_dict["monitored_prefixes"] = list()
         self.shared_memory_manager_dict["configured_prefix_count"] = 0
         self.shared_memory_manager_dict["autoignore_rules"] = {}
@@ -497,7 +505,12 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
 
         self.prefix_tree = {"v4": pytricia.PyTricia(32), "v6": pytricia.PyTricia(128)}
         shared_memory_locks["prefix_tree"].acquire()
-        if self.shared_memory_manager_dict["prefix_tree_recalculate"]:
+        # We could go with an "and" condition but for now let's keep it loose with an "or"
+        # so that both v4 and v6 are built:
+        if (
+            self.shared_memory_manager_dict["prefix_tree_recalculate_v4"]
+            or self.shared_memory_manager_dict["prefix_tree_recalculate_v6"]
+        ):
             for ip_version in ["v4", "v6"]:
                 if ip_version == "v4":
                     size = 32
@@ -509,7 +522,8 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 log.info(
                     "{} pytricia tree parsed from configuration".format(ip_version)
                 )
-                self.shared_memory_manager_dict["prefix_tree_recalculate"] = False
+                self.shared_memory_manager_dict["prefix_tree_recalculate_v4"] = False
+                self.shared_memory_manager_dict["prefix_tree_recalculate_v6"] = False
         shared_memory_locks["prefix_tree"].release()
 
         self.autoignore_prefix_tree = {
@@ -665,12 +679,17 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
         else:
             size = 128
         # need to turn to pytricia tree since this means that the tree has changed due to re-configuration
-        if self.shared_memory_manager_dict["prefix_tree_recalculate"]:
+        # Switching to per ip_version prefix trees' recalculate indicators.
+        # This is important as we want to ensure that changes in v4 will not lock out v6 tree builds
+        # and vice-versa.
+        if self.shared_memory_manager_dict[f"prefix_tree_recalculate_{ip_version}"]:
             self.prefix_tree[ip_version] = dict_to_pytricia(
                 self.shared_memory_manager_dict["prefix_tree"][ip_version], size
             )
             log.info("{} pytricia tree re-parsed from configuration".format(ip_version))
-            self.shared_memory_manager_dict["prefix_tree_recalculate"] = False
+            self.shared_memory_manager_dict[
+                f"prefix_tree_recalculate_{ip_version}"
+            ] = False
         if prefix in self.prefix_tree[ip_version]:
             prefix_node = self.prefix_tree[ip_version][prefix]
         shared_memory_locks["prefix_tree"].release()

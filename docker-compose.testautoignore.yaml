@@ -404,7 +404,7 @@ services:
             - ./backend-services/redis/configs/redis.conf:/usr/local/etc/redis/redis.conf
         command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     rabbitmq:
-        image: rabbitmq:3.8.3-management-alpine
+        image: rabbitmq:3.9.20-management-alpine
         container_name: rabbitmq
         restart: always
         networks:
@@ -416,7 +416,7 @@ services:
         volumes:
             - ./testing/detection/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
-        image: timescale/timescaledb:1.1.0-pg10
+        image: timescale/timescaledb:2.8.1-pg14
         container_name: postgres
         restart: always
         networks:
@@ -452,7 +452,7 @@ services:
             - ./backend-services/database/wait-for:/root/wait-for
         command: ["/root/wait-for", "${RABBITMQ_HOST}:${RABBITMQ_PORT}", "-t", "0", "--", "pg-amqp-bridge"]
     graphql:
-        image: hasura/graphql-engine:v1.1.0
+        image: hasura/graphql-engine:v2.8.4
         container_name: graphql
         restart: always
         depends_on:

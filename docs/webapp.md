@@ -171,7 +171,7 @@ Regarding the BGP Updates table, the following auxiliary actions are supported:
 
 - (De)activate "Live Update" via the button at the top right of the page.
 - Select past time threshold for viewing BGP updates, based on their _Timestamp_ field using the controls at the top left of the page (Past 1h,..,Custom).
-- Download current (filtered or not) table in json format using the _Download Table_ button at the top right of the page.
+- Download current (filtered or not) table in JSON format using the _Download Table_ button at the top right of the page.
 - Tune the number of shown BGP update entries using the control _Show_ at the top left of the page.
 - Select the configured prefix that you want to filter the BGP updates against (sub-prefixes are also accounted for) using the control _Select prefix_ at the top left of the page.
 - Use the filters on _Prefix_, _Origin AS_, _Peer AS_, _Service_ and _Type_ to filter the BGP updates against, using the empty fields under the table.
@@ -201,7 +201,7 @@ Regarding the Hijacks table, the following auxiliary actions are supported:
 - Select and perform actions on multiple hijacks using the control above the table (Apply/Clear).
 - (De)activate "Live Update" via the button at the top right of the page.
 - Select past time threshold for viewing Hijacks, based on their Time Detected field using the controls at the top left of the page (Past 1h,..,Custom).
-- Download current (filtered or not) table in json format using the Download Table button at the top right of the page.
+- Download current (filtered or not) table in JSON format using the Download Table button at the top right of the page.
 - Tune the number of shown hijack entries using the control Show at the top left of the page.
 - Select the configured prefix that you want to filter the hijacks against (sub-prefixes are also accounted for) using the control Select prefix at the top left of the page.
 - Use the filters on Prefix, Type and Hijacker AS to filter the hijacks against, using the empty fields under the table.

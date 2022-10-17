@@ -4,7 +4,7 @@
 
 ## General
 
-ARTEMIS is an open-soure tool, that implements a defense approach against BGP prefix hijacking attacks.
+ARTEMIS is an open-source tool, that implements a defense approach against BGP prefix hijacking attacks.
 It is (a) based on accurate and fast detection operated by the AS itself,
 by leveraging the pervasiveness of publicly available BGP monitoring
 services, and it (b) enables flexible and fast mitigation of hijacking events.
@@ -22,7 +22,7 @@ Depending on the preferences of the user, ARTEMIS can be used in 3 basic modes a
 *Any of these combinations is valid. To start with, we recommend using mode (2).
 Mode (3) is under development (currently only a mitigation wrapper is offered).*
 
-You can read more about the ARTEMIS methodology, blog posts, presentations, publications and research experiments
+You can read more about the ARTEMIS methodology, blog posts, presentations, publications, and research experiments
 on the ARTEMIS [webpage](https://bgpartemis.org).
 
 This repository contains the software of ARTEMIS as a tool.
@@ -47,7 +47,7 @@ For a detailed list of supported features please check the [CHANGELOG](changelog
   * exact-prefix, type 0/1, any data plane manipulation
   * sub-prefix, any type (0/1/-), any data plane manipulation
   * squatting attacks, type 0 (others are N/A), any data plane manipulation
-  * policy violations (route leaks) due to long paths towards no-export prefixes
+  * policy violations (route leaks) due to long paths toward no-export prefixes
 * Automatic/custom tagging of detected BGP hijack events (ongoing, resolved, ignored, under mitigation, withdrawn, outdated and dormant).
 * Manual or manually controlled mitigation of BGP prefix hijacking attacks.
 * Comprehensive web-based User Interface (UI).

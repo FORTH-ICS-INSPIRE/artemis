@@ -549,7 +549,7 @@ have to be recreated per instance. However, to ease this process, the new fronte
   - [BGPStream](https://bgpstream.caida.org/), supporting:
     - RouteViews and RIPE RIS (30-minute delayed streaming)
     - BetaBMP (real-time streaming)
-    - Historical updates replayed from csv files (historical streaming)
+    - Historical updates replayed from CSV files (historical streaming)
   - [exaBGP](https://github.com/Exa-Networks/exabgp) (real-time streaming)
 - Configuration micro-service, dealing with reading the ARTEMIS configuration from a file (YAML); the file
   contains information about: prefixes, ASNs, monitors and ARTEMIS rules (e.g., "ASX advertises prefix P to ASY").

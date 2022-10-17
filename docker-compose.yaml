@@ -495,7 +495,7 @@ services:
         volumes:
             - ./other/rabbitmq/enabled-plugins:/etc/rabbitmq/enabled_plugins
     postgres:
-        image: timescale/timescaledb:2.8.0-pg14
+        image: timescale/timescaledb:2.8.1-pg14
         container_name: postgres
         restart: always
         networks:

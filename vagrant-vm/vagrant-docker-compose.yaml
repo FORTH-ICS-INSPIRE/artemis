@@ -518,7 +518,7 @@ services:
             - ./other/db/libs/:/docker-entrypoint-initdb.d/libs/
         entrypoint: [ "./postgres-entrypoint.sh" ]
     postgrest:
-        image: postgrest/postgrest:v9.0.0
+        image: postgrest/postgrest:v10.0.0
         container_name: postgrest
         restart: always
         depends_on:

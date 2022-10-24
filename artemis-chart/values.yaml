@@ -185,7 +185,7 @@ services:
     ports:
       - 6379
   postgrest:
-    image: postgrest/postgrest:v9.0.0
+    image: postgrest/postgrest:v10.0.0
     ports:
       - 3000
   postgres:

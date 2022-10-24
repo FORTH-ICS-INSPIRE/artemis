@@ -24,7 +24,7 @@ version: '3.4'
 services:
     ...
     postgres:
-        image: timescale/timescaledb:1.1.0-pg10
+        image: timescale/timescaledb:2.8.1-pg14
         container_name: postgres
         restart: always
         networks:

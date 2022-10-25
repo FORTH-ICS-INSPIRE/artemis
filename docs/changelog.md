@@ -9,38 +9,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- accessibility
-- every api call now has a rate limit. The limit is per api endpoint, so it is not a global counter. The default value is 20 requests per 15 minutes. The user has to define 2 extra environmental variables:
+- SSO support with Google SSO PoC (frontend)
+- accessibility (frontend)
+- firebase notifications (for mobile applications)
+- every API call now has a rate limit. The limit is per API endpoint, so it is not a global counter. The default value is 20 requests per 15 minutes. The user has to define 2 extra environmental variables:
   - LIMIT_WINDOW specifies the time window in ms.
   - LIMIT_REQUESTS specifies the number of allowed requests in that secific time window.
-- GRIP api integration. When there is 1 or more GRIP events related to the ARTEMIS event, a dropdown menu with the event ids is added to the hijack page. When clicked, a new tab to grip event page is opened.
-- Signup and Login forms now include a captcha field for bot protection. The user has to additionally define the following `.env` variables:
+- GRIP API integration. When there is 1 or more GRIP events related to the ARTEMIS event, a dropdown menu with the event ids is added to the hijack page. When clicked, a new tab to grip event page is opened.
+- signup and Login forms now include a captcha field for bot protection. The user has to additionally define the following `.env` variables:
   - `CAPTCHA_SECRET`. This would preferably be a long random hash value.
   - `CAPTCHA_WINDOW` specifies the time where the false login attempt count is valid.
   - `CAPTCHA_TRIES` is the number of unsuccessful login attempts that are needed to trigger the CAPTCHA generation.
-- New env var `ARTEMIS_WEB_BASE_DIR` specifies the ARTEMIS web base directory (default: empty).
-- Condition to limit GRIP events association to 1 hour time window w.r.t. ARTEMIS alerts.
-- A web command line search experience based on https://saharmor.github.io/react-super-cmd. To trigger the search modal:
+- new env var `ARTEMIS_WEB_BASE_DIR` specifies the ARTEMIS web base directory (default: empty).
+- condition to limit GRIP events association to 1 hour time window w.r.t. ARTEMIS alerts.
+- a web command line search experience based on [super-cmd](https://saharmor.github.io/react-super-cmd). To trigger the search modal:
   - Windows + Linux OS: ctrl + Windows key (super) + k
   - MacOS : cmd + k
+- logout alerts (frontend)
+- live button in dashboard page (frontend)
+- 401 notification for unauthorized users (frontend)
+- visual testing on cypress (frontend)
+- `install_pybgpstreamv2_for_ubuntu.sh` utility for pybgpstrem installation
 
 ### Changed
 
+- upgraded NGINX to 1.23
+- upgraded RabbitMQ to 3.9.20
+- (breaking) upgraded timescale DB to 2.8.1-pg14
+- upgraded postgrest to v10
+- upgraded hasura GraphQL engine v2.8.4
+- changed `bgpstream_retrieve_prefix_records.py` to support BGPStream v2 (new version)
 - enforce ssl_protocols TLSv1.2 TLSv1.3 in default nginx.conf
 - bumped caida/bgpstream to 2.2.0 and monitor containers to related 1.0.3
-- migrated our web application to Nextjs 11/12 and webpack 5
-- updated artemis-utils to 1.0.13 (service name fix for `docker-compose`)
+- migrated our web application to latest Nextjs, React and Webpack
+- updated artemis-utils to 1.0.14 (service name fix for `docker-compose`)
 - password policy change
+- increased size limit for POST /api/config to host larger configuration files
+- removed process parallelism for internal reconfiguration tasks for thread-safety
+- default frontend password for `admin`
 
 ### Fixed
 
-- LDAP behavior and correct vars
-- Admin login bug
+- Split prefixtree recalculation indicator and fixed prefix trie bug with v4/v6
+- LDAP behavior and correct vars (frontend)
+- Admin login bug (frontend)
 - Bug with logout warning popup
 - GQL ports in frontend
 - `login` and `JWT` auth calls and documentation
-- LDAP button is hidden when no LDAP service is being used
-- tooltips bug
+- LDAP button is hidden when no LDAP service is being used (frontend)
+- tooltips bug (frontend)
+- timezone and timestamps bug (frontend)
+- pending users treatment
+- hijack time started timestamp fix (frontend)
+- broken hijack URL in logs
 
 ## [2.1.0] (Bellerophon) - 2021-05-17
 

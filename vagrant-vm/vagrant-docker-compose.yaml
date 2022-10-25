@@ -11,6 +11,7 @@ x-healtcheck:
 services:
     riperistap:
         image: inspiregroup/artemis-riperistap:${SYSTEM_VERSION}
+        build: ./monitor-services/riperistap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -37,6 +38,7 @@ services:
             - ./monitor-services/riperistap/entrypoint:/root/entrypoint
     bgpstreamlivetap:
         image: inspiregroup/artemis-bgpstreamlivetap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamlivetap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -62,6 +64,7 @@ services:
             - ./monitor-services/bgpstreamlivetap/entrypoint:/root/entrypoint
     bgpstreamkafkatap:
         image: inspiregroup/artemis-bgpstreamkafkatap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamkafkatap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -87,6 +90,7 @@ services:
             - ./monitor-services/bgpstreamkafkatap/entrypoint:/root/entrypoint
     bgpstreamhisttap:
         image: inspiregroup/artemis-bgpstreamhisttap:${SYSTEM_VERSION}
+        build: ./monitor-services/bgpstreamhisttap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -109,6 +113,7 @@ services:
             - ./monitor-services/bgpstreamhisttap/entrypoint:/root/entrypoint
     exabgptap:
         image: inspiregroup/artemis-exabgptap:${SYSTEM_VERSION}
+        build: ./monitor-services/exabgptap/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -134,6 +139,7 @@ services:
             - ./monitor-services/exabgptap/entrypoint:/root/entrypoint
     autoignore:
         image: inspiregroup/artemis-autoignore:${SYSTEM_VERSION}
+        build: ./backend-services/autoignore/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -161,6 +167,7 @@ services:
             - ./backend-services/autoignore/entrypoint:/root/entrypoint
     autostarter:
         image: inspiregroup/artemis-autostarter:${SYSTEM_VERSION}
+        build: ./backend-services/autostarter/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -196,6 +203,7 @@ services:
             - ./backend-services/autostarter/entrypoint:/root/entrypoint
     configuration:
         image: inspiregroup/artemis-configuration:${SYSTEM_VERSION}
+        build: ./backend-services/configuration/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -230,6 +238,7 @@ services:
             - ./backend-services/configuration/entrypoint:/root/entrypoint
     database:
         image: inspiregroup/artemis-database:${SYSTEM_VERSION}
+        build: ./backend-services/database/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -267,6 +276,7 @@ services:
             - ./backend-services/database/entrypoint:/root/entrypoint
     detection:
         image: inspiregroup/artemis-detection:${SYSTEM_VERSION}
+        build: ./backend-services/detection/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -295,6 +305,7 @@ services:
             - ./backend-services/detection/entrypoint:/root/entrypoint
     fileobserver:
         image: inspiregroup/artemis-fileobserver:${SYSTEM_VERSION}
+        build: ./backend-services/fileobserver/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -310,6 +321,7 @@ services:
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
     mitigation:
         image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
+        build: ./backend-services/mitigation/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -331,6 +343,7 @@ services:
             - ./backend-services/mitigation/entrypoint:/root/entrypoint
     notifier:
         image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
+        build: ./backend-services/notifier/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -353,6 +366,7 @@ services:
             - ./backend-services/notifier/entrypoint:/root/entrypoint
     prefixtree:
         image: inspiregroup/artemis-prefixtree:${SYSTEM_VERSION}
+        build: ./backend-services/prefixtree/
         restart: always
         healthcheck: *healthcheck
         depends_on:
@@ -475,7 +489,8 @@ services:
             # - "8080:8080"
             # - "8443:8443"
             # comment both lines when running rootless
-            - "8080:80"
+            - "80:80"
+            - "443:443"
         volumes:
             - ./local_configs/frontend/nginx.conf:/etc/nginx/nginx.conf
             - ./local_configs/frontend/certs/:/etc/nginx/certs/

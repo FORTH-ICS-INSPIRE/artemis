@@ -183,25 +183,25 @@ services:
     ports:
       - 6379
   postgrest:
-    image: postgrest/postgrest:v7.0.0
+    image: postgrest/postgrest:v10.0.0
     ports:
       - 3000
   postgres:
-    image: timescale/timescaledb:1.1.0-pg10
+    image: timescale/timescaledb:2.8.1-pg14
     ports:
       - 5432
   rabbitmq:
-    image: rabbitmq:3.8.3-management-alpine
+    image: rabbitmq:3.9.20-management-alpine
     ports:
       - 5672
   graphql:
-    image: hasura/graphql-engine:v1.1.0
+    image: hasura/graphql-engine:v2.8.4
     ports:
       - 8080
   pgamqpbridge:
     image: curiouzk0d3r/pg-amqp-bridge:latest
   mongodb:
-    image: mongo
+    image: mongo:4.4.6-bionic
     ports:
       - 27017
 

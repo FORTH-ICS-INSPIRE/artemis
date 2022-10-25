@@ -60,7 +60,8 @@ build-taps: $(TAP_SERVICES)
 .PHONY: migration-check
 migration-check: # checks if migration is not broken
 migration-check:
-	@wget -q -O postgres-data-current.tar.gz --no-check-certificate 'https://docs.google.com/uc?export=download&id=1UwtIp7gF5uO5PfhTbOAMPpDLJ4H55m7a'
+	@pip install gdown
+	@gdown https://drive.google.com/uc?id=1CzePNLbCrmQ1F_h1NDD1ecmLeEHKEcGa
 	@tar xzf postgres-data-current.tar.gz
 	@docker-compose up -d postgres
 	@sleep 10

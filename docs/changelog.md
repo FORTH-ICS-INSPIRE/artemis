@@ -63,6 +63,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - hijack time started timestamp fix (frontend)
 - broken hijack URL in logs
 
+### Backwards Incompatible Changes
+
+:rotating_light: Since we migrated to a new version of the backend database, you will need to do the following process to upgrade ARTEMIS:
+- Deactivate current running instance: `docker-compose -f ... down`
+- Stash any local changes that should not conflict with upstream: `git stash`
+- Checkout the master branch `git checkout master`
+- Pull most recent code (including .env, versions, etc.) `git pull origin master`
+- (IMPORTANT) Delete old DB data `sudo rm -r postgres-data-current && sudo rm -r postgres-data-backup`
+- Pop local changes and resolve conflicts by preferring upstream: `git stash pop`
+- Pull latest containers `docker-compose -f ... pull`
+- Start ARTEMIS! `docker-compose -f ... up -d`
+
+
 ## [2.1.0] (Bellerophon) - 2021-05-17
 
 ### Added

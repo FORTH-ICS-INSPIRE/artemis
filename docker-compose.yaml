@@ -461,6 +461,7 @@ services:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             SESSION_TIMEOUT: ${SESSION_TIMEOUT}
+            NGINX_HOST: ${NGINX_HOST}
             TESTING: ${TEST_ENV}
     mongodb:
         image: mongo:4.4.6-bionic

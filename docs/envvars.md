@@ -63,6 +63,11 @@ Database container IP and port (containers have their name as hostname):
 DATABASE_HOST=database
 ```
 
+Nginx container IP (containers have their name as hostname):
+```
+NGINX_HOST=nginx
+```
+
 ## Monitor-specific configs
 
 Unique ID to be used for RIPE RIS BGP update streaming (recommended: use ASN)

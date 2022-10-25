@@ -28,6 +28,11 @@ spec:
             configMapKeyRef:
               name: configmap
               key: apiHost
+        - name: NGINX_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: nginxHost
         - name: API_KEY
           valueFrom:
             secretKeyRef:

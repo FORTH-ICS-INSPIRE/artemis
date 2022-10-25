@@ -13,6 +13,7 @@ data:
   redisPort: {{ .Values.redisPort | default "6379" | quote }}
   apiHost: {{ .Values.apiHost | default "postgrest" }}
   apiPort: {{ .Values.apiPort | default "3000" | quote }}
+  nginxHost: {{ .Values.nginxHost | default "nginx" }}
   configHost: {{ .Values.configHost | default "configuration" }}
   configPort: {{ .Values.configPort | default "3000" | quote }}
   databaseHost: {{ .Values.databaseHost | default "database" }}

@@ -17,6 +17,7 @@ configHost: configuration
 configPort: 3000
 databaseHost: database
 restPort: 3000
+nginxHost: nginx
 
 # monitor-specific configs
 risId: 8522

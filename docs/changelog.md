@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - upgraded RabbitMQ to 3.9.20
 - (breaking) upgraded timescale DB to 2.8.1-pg14
 - upgraded postgrest to v10
-- upgraded hasura GraphQL engine v2.8.4
+- upgraded hasura GraphQL engine v2.10.0
 - changed `bgpstream_retrieve_prefix_records.py` to support BGPStream v2 (new version)
 - enforce ssl_protocols TLSv1.2 TLSv1.3 in default nginx.conf
 - bumped caida/bgpstream to 2.2.0 and monitor containers to related 1.0.3

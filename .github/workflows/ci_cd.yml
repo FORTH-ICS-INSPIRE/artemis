@@ -316,7 +316,7 @@ jobs:
       - name: before script build
         run: docker build -t artemis_rpki_testing testing/rpki
       - name: before script run
-        run: docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator init -f --accept-arin-rpa
+        run: docker run --rm -v $(pwd)/local_configs/routinator/tals:/home/routinator/.rpki-cache/tals nlnetlabs/routinator:v0.7.0 init -f --accept-arin-rpa
       - name: before script up
         run: docker-compose -f docker-compose.testrpki.yaml -f docker-compose.routinator.yaml up -d
       - name: script

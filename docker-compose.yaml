@@ -575,7 +575,7 @@ services:
                 "pg-amqp-bridge"
             ]
     graphql:
-        image: hasura/graphql-engine:v2.8.4
+        image: hasura/graphql-engine:v2.10.0
         container_name: graphql
         restart: always
         depends_on:

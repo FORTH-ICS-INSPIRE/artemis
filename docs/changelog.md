@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Backwards Incompatible Changes
+
+## [2.3.0] (Cadmus) - 2022-11-24
+
+### Added
+
 - SSO support with Google SSO PoC (frontend)
 - accessibility (frontend)
 - firebase notifications (for mobile applications)

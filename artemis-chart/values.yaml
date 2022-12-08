@@ -196,7 +196,7 @@ services:
     ports:
       - 5672
   graphql:
-    image: hasura/graphql-engine:v2.10.0
+    image: hasura/graphql-engine:v2.10.2
     ports:
       - 8080
   pgamqpbridge:

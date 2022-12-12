@@ -9,7 +9,7 @@ RUN apt-get update --allow-insecure-repositories && \
 WORKDIR /root
 
 COPY requirements.txt ./requirements.txt
-RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade --no-cache-dir pip
 RUN pip3 --no-cache-dir install -r requirements.txt
 RUN mkdir -p /etc/artemis/ && \
     mkdir -p /var/log/artemis/

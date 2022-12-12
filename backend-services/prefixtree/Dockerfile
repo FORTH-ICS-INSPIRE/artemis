@@ -8,7 +8,7 @@ RUN ln -s /usr/local/lib/pyenv/versions/3.6.8/bin/python /usr/local/bin
 
 COPY requirements.txt ./requirements.txt
 
-RUN pip install --upgrade pip
+RUN pip install --upgrade --no-cache-dir pip
 RUN pip --no-cache-dir install -r requirements.txt --ignore-installed
 
 RUN mkdir -p /etc/artemis/ && \

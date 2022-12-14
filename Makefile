@@ -124,6 +124,11 @@ unittest:
 build: # build all
 build: $(SERVICES)
 
+.PHONY: strip-build
+strip-build:
+strip-build:
+	sed -i "/build: /d" docker-compose.yaml
+
 .PHONY: start
 start: # start local setup
 start:

@@ -8,7 +8,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setuptools.setup(
     name="artemis_utils",
-    version="1.0.14",
+    version="1.0.16.1",
     author="Dimitrios Mavrommatis, Vassileios Kotronis",
     author_email="jim.mavrommatis@gmail.com, biece89@gmail.com",
     description="ARTEMIS utility modules",
@@ -23,7 +23,7 @@ setuptools.setup(
     ],
     python_requires=">=3.6",
     install_requires=[
-        "kombu==4.6.7",
+        "kombu==4.6.3",
         "ruamel.yaml==0.16.5",
         "ujson==1.35",
         "PyYAML==5.4",

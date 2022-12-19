@@ -1,10 +1,10 @@
-artemis-utils==1.0.14
+artemis-utils==1.0.16.1
 cffi==1.13.2
 Cython==0.29.14
 enum34==1.1.6
 gql==0.4.0
 ipaddress==1.0.23
-kombu==4.6.7
+kombu==4.6.3
 netaddr==0.7.19
 psycopg2==2.8.4
 pytricia==1.0.0

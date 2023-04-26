@@ -2,6 +2,7 @@
 import re
 import socket
 import time
+import dns.resolver
 
 import requests
 from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
@@ -14,28 +15,44 @@ from . import log
 def get_local_ip():
     return socket.gethostbyname(socket.gethostname())
 
+def resolve_dns(query:str, rtype:str = 'A', timeout:int = 2)->list:
+  rtype.upper()
+  resolver = dns.resolver.Resolver()
+  if rtype == "PTR":
+    query = dns.reversename.from_address(query)
+  msg = dns.message.make_query(query,rtype)
+  for dns_server in resolver.nameservers:
+    try:
+      resp = dns.query.udp(msg,dns_server,timeout=timeout)
+      if resp.answer:
+        return [str(a) for a in resp.answer[0] ]
+    except Exception as e:
+       log.error("error:",dns_server, e)
+  return []
+
 
 def service_to_ips_and_replicas_in_compose(own_service_name, base_service_name):
     local_ip = get_local_ip()
+    address_regexp = re.compile ('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
     service_to_ips_and_replicas_set = set([])
-    addr_infos = socket.getaddrinfo(base_service_name, REST_PORT)
-    for addr_info in addr_infos:
-        af, sock_type, proto, canon_name, sa = addr_info
-        replica_ip = sa[0]
+    addr_infos = resolve_dns(base_service_name)
+    for replica_ip in addr_infos:
         # do not include yourself
         if base_service_name == own_service_name and replica_ip == local_ip:
             continue
-        replica_host_by_addr = socket.gethostbyaddr(replica_ip)[0]
-        replica_name_match = re.match(
+        ptr = resolve_dns(replica_ip, 'PTR')
+        for replica_host_by_addr in ptr:
+          replica_name_match = re.match(
             r"^"
             + re.escape(COMPOSE_PROJECT_NAME)
             + r"[_|-]"
             + re.escape(base_service_name)
             + r"[_|-](\d+)",
             replica_host_by_addr,
-        )
-        replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))
-        service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+          )
+          if replica_name_match:
+            replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))
+            service_to_ips_and_replicas_set.add((replica_name, replica_ip))
     return service_to_ips_and_replicas_set
 
 

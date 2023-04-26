@@ -32,5 +32,6 @@ setuptools.setup(
         "psycopg2==2.8.4",
         "slacker-log-handler==1.7.1",
         "tornado==6.0.4",
+        "dnspython==2.2.1",
     ],
 )

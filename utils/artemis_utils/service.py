@@ -3,6 +3,7 @@ import re
 import socket
 import time
 import dns.resolver
+import dns.query
 
 import requests
 from artemis_utils.constants import HEALTH_CHECK_TIMEOUT

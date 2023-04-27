@@ -21,7 +21,7 @@ def resolve_dns(query:str, rtype = ['AAAA','A'], timeout:int = 2)->list:
     rtype.upper()
     rlist = rtype.split()
   else:
-    rlist = (t.upper() for t in rtype)
+    rlist = [t.upper() for t in rtype]
 
   def lookup(query, rtype:str, timeout:int = 2)->list:
     resolver = dns.resolver.Resolver()

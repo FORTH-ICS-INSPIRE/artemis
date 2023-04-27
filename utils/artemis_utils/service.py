@@ -16,21 +16,32 @@ from . import log
 def get_local_ip():
     return socket.gethostbyname(socket.gethostname())
 
-def resolve_dns(query:str, rtype:str = 'A', timeout:int = 2)->list:
-  rtype.upper()
-  resolver = dns.resolver.Resolver()
-  if rtype == "PTR":
-    query = dns.reversename.from_address(query)
-  msg = dns.message.make_query(query,rtype)
-  for dns_server in resolver.nameservers:
-    try:
-      resp = dns.query.udp(msg,dns_server,timeout=timeout)
-      if resp.answer:
-        return [str(a) for a in resp.answer[0] ]
-    except Exception as e:
-       log.error("error:",dns_server, e)
-  return []
+def resolve_dns(query:str, rtype = ['AAAA','A'], timeout:int = 2)->list:
+  if isinstance(rtype, str):
+    rtype.upper()
+    rlist =  rtype.split()
+  else:
+    rlist = (t.upper() for t in rtype)
 
+  def lookup(query, rtype:str, timeout:int = 2)->list:
+    resolver = dns.resolver.Resolver()
+    if rtype == "PTR":
+      query = dns.reversename.from_address(query)
+    msg = dns.message.make_query(query,rtype)
+    for dns_server in resolver.nameservers:
+      try:
+        resp = dns.query.udp(msg,dns_server,timeout=timeout)
+        if resp.answer:
+          return [str(a) for a in resp.answer[0] ]
+      except Exception as e:
+         log.error("error:",dns_server, e)
+    return []
+
+  #podman responds with an A record if you query with AAAA and AAAA does not exist.
+  #for this reason, we must remove dupliicates.
+  result = []
+  result += [r for qt in rlist for r in (lookup(query, qt, timeout)) if r not in result ]
+  return result
 
 def service_to_ips_and_replicas_in_compose(own_service_name, base_service_name):
     local_ip = get_local_ip()

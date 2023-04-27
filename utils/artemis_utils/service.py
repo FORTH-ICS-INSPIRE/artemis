@@ -19,7 +19,7 @@ def get_local_ip():
 def resolve_dns(query:str, rtype = ['AAAA','A'], timeout:int = 2)->list:
   if isinstance(rtype, str):
     rtype.upper()
-    rlist =  rtype.split()
+    rlist = rtype.split()
   else:
     rlist = (t.upper() for t in rtype)
 

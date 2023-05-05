@@ -17,7 +17,7 @@ jobs:
     - stage: checks
       name: PreCommitCheck
       install:
-        - python -m pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
+        - python -m pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.13
         - python -m pip install -r backend-services/detection/requirements.txt
         - pre-commit install
       script:
@@ -127,7 +127,7 @@ jobs:
     - stage: run tests
       name: TestDetection
       install:
-        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
+        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.13; fi
       before_script:
         - if [ ! $IS_FORK ]; then make setup-dev; fi
         - docker build -t artemis_detection_testing testing/detection
@@ -141,7 +141,7 @@ jobs:
         - docker-compose -f docker-compose.testdetection.yaml logs
     - name: TestAutoconf
       install:
-        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
+        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.13; fi
       before_script:
         - if [ ! $IS_FORK ]; then make setup-dev; fi
         - docker build -t artemis_autoconf_testing testing/autoconf
@@ -165,7 +165,7 @@ jobs:
           -e "PULL_REQUEST_NUMBER=${TRAVIS_PULL_REQUEST}"  --network artemis_artemis artemis_benchmark
     - name: TestAutoignore
       install:
-        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
+        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.13; fi
       before_script:
         - if [ ! $IS_FORK ]; then make setup-dev; fi
         - docker build -t artemis_autoignore_testing testing/autoignore
@@ -179,7 +179,7 @@ jobs:
         - docker-compose -f docker-compose.testautoignore.yaml logs
     - name: TestRPKI
       install:
-        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.0; fi
+        - if [ ! $IS_FORK ]; then pip install coverage==4.5.4 codecov==2.1.13; fi
       before_script:
         - if [ ! $IS_FORK ]; then make setup-dev; fi
         - make setup-routinator

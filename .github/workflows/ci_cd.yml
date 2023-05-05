@@ -32,7 +32,7 @@ jobs:
           python-version: '3.9'
       - name: install
         run: |
-          pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.0
+          pip install pre-commit pytest pytest-cov coverage==4.5.4 codecov==2.1.13
           pip install -r backend-services/detection/requirements.txt
           pre-commit install
       - name: script
@@ -120,7 +120,7 @@ jobs:
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
-        run: pip install coverage==4.5.4 codecov==2.1.0
+        run: pip install coverage==4.5.4 codecov==2.1.13
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev
@@ -167,7 +167,7 @@ jobs:
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
-        run: pip install coverage==4.5.4 codecov==2.1.0
+        run: pip install coverage==4.5.4 codecov==2.1.13
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev
@@ -258,7 +258,7 @@ jobs:
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
-        run: pip install coverage==4.5.4 codecov==2.1.0
+        run: pip install coverage==4.5.4 codecov==2.1.13
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev
@@ -305,7 +305,7 @@ jobs:
         run: env
       - name: install
         if: ${{ ! env.IS_FORK }}
-        run: pip install coverage==4.5.4 codecov==2.1.0
+        run: pip install coverage==4.5.4 codecov==2.1.13
       - name: before script setup
         if: ${{ ! env.IS_FORK }}
         run: make setup-dev

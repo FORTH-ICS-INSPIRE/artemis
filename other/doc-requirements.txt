@@ -1,5 +1,5 @@
 mdx-truly-sane-lists==1.2
-mkdocs==1.1.2
+mkdocs==1.2.3
 mkdocs-bootstrap4==0.1.4
 mkdocs-git-committers-plugin==0.1.10
 mkdocs-material==5.5.3

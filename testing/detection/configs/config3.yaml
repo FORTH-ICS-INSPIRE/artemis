@@ -23,6 +23,10 @@ prefixes:
         - 10.12.0.0/16^24
     test_n_m_op_16: &test_n_m_op_16
         - 10.13.0.0/16^20-24
+    test_n_op_32: &test_n_op_32
+        - 2001:db8::/32^48
+    test_n_m_op_32: &test_n_m_op_32
+        - 2001:db9::/32^32-48
     test_comms_24: &test_comms_24
         - 10.0.20.0/24
     test_as_set_24: &test_as_set_24
@@ -112,6 +116,8 @@ rules:
   - *test_inc_op_23
   - *test_n_op_16
   - *test_n_m_op_16
+  - *test_n_op_32
+  - *test_n_m_op_32
   origin_asns:
   - *op_test_origin
   neighbors:

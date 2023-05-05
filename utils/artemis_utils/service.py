@@ -1,10 +1,11 @@
+# flake8: noqa
 # service util functions
 import re
 import socket
 import time
-import dns.resolver
-import dns.query
 
+import dns.query
+import dns.resolver
 import requests
 from artemis_utils.constants import HEALTH_CHECK_TIMEOUT
 from artemis_utils.envvars import COMPOSE_PROJECT_NAME
@@ -16,36 +17,39 @@ from . import log
 def get_local_ip():
     return socket.gethostbyname(socket.gethostname())
 
-def resolve_dns(query:str, rtype = ['AAAA','A'], timeout:int = 2)->list:
-  if isinstance(rtype, str):
-    rtype.upper()
-    rlist = rtype.split()
-  else:
-    rlist = [t.upper() for t in rtype]
 
-  def lookup(query, rtype:str, timeout:int = 2)->list:
-    resolver = dns.resolver.Resolver()
-    if rtype == "PTR":
-      query = dns.reversename.from_address(query)
-    msg = dns.message.make_query(query,rtype)
-    for dns_server in resolver.nameservers:
-      try:
-        resp = dns.query.udp(msg,dns_server,timeout=timeout)
-        if resp.answer:
-          return [str(a) for a in resp.answer[0] ]
-      except Exception as e:
-         log.error("error:",dns_server, e)
-    return []
+def resolve_dns(query: str, rtype=['AAAA', 'A'], timeout: int = 2) -> list:
+    if isinstance(rtype, str):
+        rtype.upper()
+        rlist = rtype.split()
+    else:
+        rlist = [t.upper() for t in rtype]
 
-  #podman responds with an A record if you query with AAAA and AAAA does not exist.
-  #for this reason, we must remove dupliicates.
-  result = []
-  result += [r for qt in rlist for r in (lookup(query, qt, timeout)) if r not in result ]
-  return result
+    def lookup(query, rtype: str, timeout: int = 2) -> list:
+        resolver = dns.resolver.Resolver()
+        if rtype == "PTR":
+            query = dns.reversename.from_address(query)
+        msg = dns.message.make_query(query, rtype)
+        for dns_server in resolver.nameservers:
+            try:
+                resp = dns.query.udp(msg, dns_server, timeout=timeout)
+                if resp.answer:
+                    return [str(a) for a in resp.answer[0]]
+            except Exception as e:
+                log.error("error:", dns_server, e)
+        return []
+
+    # podman responds with an A record if you query with AAAA and AAAA does not exist.
+    # for this reason, we must remove dupliicates.
+    result = []
+    result += [r for qt in rlist for r in (lookup(query,
+                                           qt, timeout)) if r not in result]
+    return result
+
 
 def service_to_ips_and_replicas_in_compose(own_service_name, base_service_name):
     local_ip = get_local_ip()
-    address_regexp = re.compile ('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+    address_regexp = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
     service_to_ips_and_replicas_set = set([])
     addr_infos = resolve_dns(base_service_name)
     for replica_ip in addr_infos:
@@ -54,17 +58,18 @@ def service_to_ips_and_replicas_in_compose(own_service_name, base_service_name):
             continue
         ptr = resolve_dns(replica_ip, 'PTR')
         for replica_host_by_addr in ptr:
-          replica_name_match = re.match(
-            r"^"
-            + re.escape(COMPOSE_PROJECT_NAME)
-            + r"[_|-]"
-            + re.escape(base_service_name)
-            + r"[_|-](\d+)",
-            replica_host_by_addr,
-          )
-          if replica_name_match:
-            replica_name = "{}-{}".format(base_service_name, replica_name_match.group(1))
-            service_to_ips_and_replicas_set.add((replica_name, replica_ip))
+            replica_name_match = re.match(
+                r"^"
+                + re.escape(COMPOSE_PROJECT_NAME)
+                + r"[_|-]"
+                + re.escape(base_service_name)
+                + r"[_|-](\d+)",
+                replica_host_by_addr,
+            )
+            if replica_name_match:
+                replica_name = "{}-{}".format(base_service_name,
+                                              replica_name_match.group(1))
+                service_to_ips_and_replicas_set.add((replica_name, replica_ip))
     return service_to_ips_and_replicas_set
 
 

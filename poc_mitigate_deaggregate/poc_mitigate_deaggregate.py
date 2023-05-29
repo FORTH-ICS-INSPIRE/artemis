@@ -33,6 +33,14 @@ parser.add_argument(
     help="hijack event information",
     required=True,
 )
+parser.add_argument(
+    "-p",
+    "--announce_prefixes",
+    dest="announce_prefixes",
+    type=str,
+    help="prefixes to be announced for mitigation",
+    required=False,
+)
 args = parser.parse_args()
 
 # info_hijack = {
@@ -41,6 +49,10 @@ args = parser.parse_args()
 # }
 try:
     info_hijack = json.loads(args.info_hijack)
+    announce_prefixes = []
+    if args.announce_prefixes:
+        announce_prefixes = json.loads(args.announce_prefixes)
+
     log.info("Preparing to mitigate via deaggregation hijack {}".format(info_hijack))
     hijacked_prefix = str2ip(info_hijack["prefix"])
     hijacked_prefix_len = hijacked_prefix.prefixlen
@@ -50,6 +62,9 @@ try:
     if hijacked_prefix_len < deagg_len_threshold:
         subnets = list(map(str, list(hijacked_prefix.subnets())))
         log.info("Subnets to announce: {}".format(subnets))
+        if len(announce_prefixes) > 0:
+            subnets = announce_prefixes
+
         for subnet in subnets:
             exa_command = "announce route {} next-hop self".format(subnet)
             sio = SocketIO("http://" + EXA_ROUTE_COMMAND_HOST, namespace=BaseNamespace)

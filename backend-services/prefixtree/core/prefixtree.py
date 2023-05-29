@@ -100,6 +100,7 @@ def configure_prefixtree(msg, shared_memory_manager_dict):
                     "policies": list(set(rule.get("policies", []))),
                     "community_annotations": rule.get("community_annotations", []),
                     "mitigation": rule.get("mitigation", "manual"),
+                    "announced_prefixes": rule.get("announced_prefixes", []),
                 }
                 for prefix in rule["prefixes"]:
                     for translated_prefix in translate_rfc2622(prefix):
@@ -805,6 +806,9 @@ class PrefixTreeDataWorker(ConsumerProducerMixin):
                 annotated_mit_request["mitigation_action"] = prefix_node["data"][
                     "confs"
                 ][0]["mitigation"]
+                annotated_mit_request["announced_prefixes"] = prefix_node["data"][
+                    "confs"
+                ][0]["announced_prefixes"]
                 self.producer.publish(
                     annotated_mit_request,
                     exchange=self.mitigation_exchange,

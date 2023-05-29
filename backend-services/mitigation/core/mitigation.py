@@ -272,6 +272,7 @@ class MitigationDataWorker(ConsumerProducerMixin):
         try:
             hijack_info = mit_request["hijack_info"]
             mitigation_action = mit_request["mitigation_action"]
+            log.info("debugging {}".format(str(mit_request["announced_prefixes"])))
             if isinstance(mitigation_action, list):
                 mitigation_action = mitigation_action[0]
             if mitigation_action == "manual":

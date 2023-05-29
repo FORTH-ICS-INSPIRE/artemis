@@ -213,6 +213,7 @@ def check_rules(_rules):
         "neighbors",
         "prepend_seq",
         "mitigation",
+        "announced_prefixes",
         "community_annotations",
     }
 
@@ -238,6 +239,7 @@ def check_rules(_rules):
             rule["neighbors"] = [-1]
         rule["prepend_seq"] = list(map(flatten, rule.get("prepend_seq", [])))
         rule["mitigation"] = flatten(rule.get("mitigation", "manual"))
+        rule["announced_prefixes"] = flatten(rule.get("announced_prefixes", []))
         rule["policies"] = flatten(rule.get("policies", []))
         rule["community_annotations"] = rule.get("community_annotations", [])
         if not isinstance(rule["community_annotations"], list):
@@ -473,7 +475,8 @@ def translate_learn_rule_msg_to_dicts(raw):
                 "neighbors": [
                     rule_asns[asn] for asn in sorted(orig_to_neighb[raw["hijack_as"]])
                 ],
-                "mitigation": "manual",
+                "announced_prefixes": [],
+                "mitigation": "manual"
             }
             rules.append(learned_rule)
         elif re.match(r"^[E|S]\|1.*", raw["type"]):
@@ -485,6 +488,7 @@ def translate_learn_rule_msg_to_dicts(raw):
                     rule_asns[asn] for asn in sorted(neighb_to_origs[raw["hijack_as"]])
                 ],
                 "neighbors": [rule_asns[raw["hijack_as"]]],
+                "announced_prefixes": [],
                 "mitigation": "manual",
             }
             rules.append(learned_rule)
@@ -496,6 +500,7 @@ def translate_learn_rule_msg_to_dicts(raw):
                     "neighbors": [
                         rule_asns[asn] for asn in sorted(orig_to_neighb[origin])
                     ],
+                    "announced_prefixes": [],
                     "mitigation": "manual",
                 }
                 rules.append(learned_rule)
@@ -576,6 +581,7 @@ def translate_bgp_update_to_dicts(bgp_update, learn_neighbors=False):
                 "prefixes": [rule_prefix[bgp_update["prefix"]]],
                 "origin_asns": [rule_asns[origin_asn]],
                 "mitigation": "manual",
+                "announced_prefixes": []
             }
             if neighbors:
                 learned_rule["neighbors"] = []
@@ -918,7 +924,7 @@ def translate_learn_rule_dicts_to_yaml_conf(
 
                 # append mitigation action
                 rule_map["mitigation"] = rule["mitigation"]
-
+                rule_map["announced_prefixes"] = rule["announced_prefixes"]
                 yaml_conf["rules"].append(rule_map)
             # else delete any created anchors (not needed), as long as no rule update is needed
             elif not rule_update_needed:

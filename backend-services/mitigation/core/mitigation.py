@@ -269,9 +269,11 @@ class MitigationDataWorker(ConsumerProducerMixin):
     def handle_mitigation_request(self, message):
         message.ack()
         mit_request = message.payload
+        log.info("yolo")
         try:
             hijack_info = mit_request["hijack_info"]
             mitigation_action = mit_request["mitigation_action"]
+            log.info("yolo {}".format(str(mit_request)))
             log.info("debugging {}".format(str(mit_request["announced_prefixes"])))
             if isinstance(mitigation_action, list):
                 mitigation_action = mitigation_action[0]

@@ -190,11 +190,13 @@ CREATE TABLE IF NOT EXISTS process_states (
     name VARCHAR (63) UNIQUE,
     running BOOLEAN DEFAULT FALSE,
     loading BOOLEAN DEFAULT FALSE,
+    extra_info VARCHAR (63) DEFAULT '',
     timestamp TIMESTAMP default current_timestamp
 );
 
 CREATE TABLE IF NOT EXISTS intended_process_states (
     name VARCHAR (63) UNIQUE,
+    extra_info VARCHAR (63) DEFAULT '',
     running BOOLEAN DEFAULT FALSE
 );
 

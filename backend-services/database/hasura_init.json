@@ -45,7 +45,8 @@
                 "name",
                 "running",
                 "loading",
-                "timestamp"
+                "timestamp",
+                "extra_info"
               ],
               "filter": {}
             }
@@ -68,7 +69,8 @@
               "allow_aggregations": true,
               "columns": [
                 "name",
-                "running"
+                "running",
+                "extra_info"
               ],
               "filter": {}
             }

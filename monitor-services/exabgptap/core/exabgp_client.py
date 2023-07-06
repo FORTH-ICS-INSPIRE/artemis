@@ -29,6 +29,12 @@ from socketIO_client import SocketIO
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
+from artemis_utils.db import DB
+from artemis_utils.envvars import DB_HOST
+from artemis_utils.envvars import DB_NAME
+from artemis_utils.envvars import DB_PASS
+from artemis_utils.envvars import DB_PORT
+from artemis_utils.envvars import DB_USER
 
 
 # logger
@@ -356,11 +362,23 @@ class AutoconfUpdater:
         self.connection = connection
         self.shared_memory_manager_dict = shared_memory_manager_dict
         self.previous_redis_autoconf_updates = set()
+        self.ro_db = DB(
+            application_name="autostarter-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
 
         # EXCHANGES
         self.autoconf_exchange = create_exchange("autoconf", connection, declare=True)
 
     def send_autoconf_updates(self):
+
         # clean up unneeded updates stored in RAM (with thread-safe access)
         shared_memory_locks["autoconf_updates"].acquire()
         autoconf_update_keys_to_process = set(
@@ -424,9 +442,12 @@ class AutoconfUpdater:
             # no need to ever stop autoconf mechanism from the moment it starts
             # independent of what happens to the parent (e.g., if conf changes,
             # etc.)
-            self.send_autoconf_updates()
-            time.sleep(AUTOCONF_INTERVAL)
+            stored_status_query = "SELECT name, running, extra_info FROM process_states WHERE name='exabgptap-1'"
+            stored_status_entries = self.ro_db.execute(stored_status_query)
 
+            if str(stored_status_entries[0][2]) == "autoconf-on":
+                self.send_autoconf_updates()
+            time.sleep(AUTOCONF_INTERVAL)
 
 class ExaBGPDataWorker:
     """
@@ -599,6 +620,7 @@ class ExaBGPDataWorker:
 
 def main():
     # initiate ExaBGP tap service with REST
+    log.info("hey!!!!!")
     exabgpTapService = ExaBGPTap()
 
     # try to get configuration upon start (it is OK if it fails, will get it from POST)

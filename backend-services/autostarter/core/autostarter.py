@@ -45,6 +45,8 @@ shared_memory_locks = {"worker": mp.Lock(), "detection_update_trigger": mp.Lock(
 # global vars
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 5))
 SERVICE_NAME = "autostarter"
+AUTOCONF_HOST = "exabgp"
+
 ALWAYS_RUNNING_SERVICES = [
     SERVICE_NAME,
     CONFIGURATION_HOST,
@@ -62,6 +64,7 @@ USER_CONTROLLED_SERVICES = [
     BGPSTREAMKAFKATAP_HOST,
     BGPSTREAMHISTTAP_HOST,
     EXABGPTAP_HOST,
+    AUTOCONF_HOST
 ]
 DEPRECATED_SERVICES = ["monitor"]
 

@@ -55,7 +55,6 @@ redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 AUTOCONF_INTERVAL = 10
 SERVICE_NAME = "exabgptap"
 
-
 def start_data_worker(shared_memory_manager_dict):
     shared_memory_locks["data_worker"].acquire()
     if not shared_memory_manager_dict["data_worker_configured"]:
@@ -70,7 +69,6 @@ def start_data_worker(shared_memory_manager_dict):
         target=run_data_worker_process, args=(shared_memory_manager_dict,)
     ).start()
     return "instructed to start"
-
 
 def run_data_worker_process(shared_memory_manager_dict):
     try:
@@ -89,7 +87,6 @@ def run_data_worker_process(shared_memory_manager_dict):
         shared_memory_manager_dict["data_worker_running"] = False
         shared_memory_locks["data_worker"].release()
         log.info("data worker stopped")
-
 
 def stop_data_worker(shared_memory_manager_dict):
     shared_memory_locks["data_worker"].acquire()
@@ -444,8 +441,7 @@ class AutoconfUpdater:
             # etc.)
             stored_status_query = "SELECT name, running, extra_info FROM process_states WHERE name='exabgptap-1'"
             stored_status_entries = self.ro_db.execute(stored_status_query)
-
-            if str(stored_status_entries[0][2]) == "autoconf-on":
+            if str(stored_status_entries[0][2]) == "automodule-on":
                 self.send_autoconf_updates()
             time.sleep(AUTOCONF_INTERVAL)
 
@@ -460,6 +456,17 @@ class ExaBGPDataWorker:
         self.prefixes = self.shared_memory_manager_dict["monitored_prefixes"]
         self.hosts = self.shared_memory_manager_dict["hosts"]
         self.autoconf_updater = None
+        self.ro_db = DB(
+            application_name="autostarter-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
 
         # EXCHANGES
         self.update_exchange = create_exchange(
@@ -487,7 +494,9 @@ class ExaBGPDataWorker:
             # set autoconf booleans
             autoconf = False
             learn_neighbors = False
-            if "autoconf" in self.hosts[host]:
+            stored_status_query = "SELECT name, running, extra_info FROM process_states WHERE name='exabgptap-1'"
+            stored_status_entries = self.ro_db.execute(stored_status_query)
+            if str(stored_status_entries[0][2]) == "automodule-on":
                 autoconf = True
                 if "learn_neighbors" in self.hosts[host]:
                     learn_neighbors = True
@@ -620,7 +629,6 @@ class ExaBGPDataWorker:
 
 def main():
     # initiate ExaBGP tap service with REST
-    log.info("hey!!!!!")
     exabgpTapService = ExaBGPTap()
 
     # try to get configuration upon start (it is OK if it fails, will get it from POST)

@@ -1,8 +1,86 @@
-prefixes: {}
+#
+# ARTEMIS Configuration File (FORTH NETWORK)
+#
+# Start of Prefix Definitions
+prefixes:
+  forth_prefix_main: &forth_prefix_main
+  - 139.91.0.0/16
+  forth_prefix_lamda: &forth_prefix_lamda
+  - 139.91.250.0/24
+  forth_prefix_vod: &forth_prefix_vod
+  - 139.91.2.0/24
+  # new v4 prefix observed, need to be verified with FORTH
+  forth_prefix_v4_new: &forth_prefix_v4_new
+  - 192.67.249.0/24
+  # new v6 prefix observed, need to be verified with FORTH
+  forth_prefix_v6_new: &forth_prefix_v6_new
+  - 2001:648:2c30::/48
+# End of Prefix Definitions
+
+# Start of Monitor Definitions
 monitors:
-  exabgp:
-  - ip: exabgpmonitor
-    port: 5000
-    autoconf: "true"
-asns: {}
-rules: []
+  riperis: ['']
+  #bgpstreamlive:
+  #- routeviews
+  #- ris
+  #bgpstreamkafka:
+  #  host: bmp.bgpstream.caida.org
+  #  port: 9092
+  #  topic: '^openbmp\.router--.+\.peer-as--.+\.bmp_raw'
+  #bgpstreamhist: '/etc/artemis/'
+# End of Monitor Definitions
+
+autoignore:
+  autoignore_non_important_prefixes:
+    thres_num_peers_seen: 2
+    thres_num_ases_infected: 3
+    interval: 3600
+    prefixes:
+    - *forth_prefix_lamda
+    - *forth_prefix_vod
+
+# Start of ASN Definitions
+asns:
+  forth_asn: &forth_asn
+  - 8522
+  grnet_forth_upstream: &grnet_forth_upstream
+  - 5408
+  lamda_forth_upstream_back: &lamda_forth_upstream_back
+  - 56910
+  vodafone_forth_upstream_back: &vodafone_forth_upstream_back
+  - 12361
+# End of ASN Definitions
+
+# Start of Rule Definitions
+rules:
+
+- prefixes:
+  - *forth_prefix_main
+  - *forth_prefix_v4_new
+  - *forth_prefix_v6_new
+  origin_asns:
+  - *forth_asn
+  neighbors:
+  - *grnet_forth_upstream
+  - *vodafone_forth_upstream_back
+  mitigation: '/root/poc_mitigate_deaggregate.py'
+
+- prefixes:
+  - *forth_prefix_lamda
+  origin_asns:
+  - *forth_asn
+  neighbors:
+  - *lamda_forth_upstream_back
+  mitigation: manual
+
+- prefixes:
+  - *forth_prefix_vod
+  origin_asns:
+  - *forth_asn
+  neighbors:
+  - *vodafone_forth_upstream_back
+  mitigation: manual
+# End of Rule Definitions
+
+
+

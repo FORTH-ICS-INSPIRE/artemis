@@ -212,17 +212,17 @@ class AutostarterWorker:
                 self.wo_db.execute(query, (service,))
 
             query = (
-                "INSERT INTO intended_process_states (name, running) "
-                "VALUES (%s, %s) ON CONFLICT(name) DO NOTHING"
+                "INSERT INTO intended_process_states (name, running, extra_info) "
+                "VALUES (%s, %s, %s) ON CONFLICT(name) DO NOTHING"
             )
             services_with_status = []
             for service in ALWAYS_RUNNING_SERVICES:
-                services_with_status.append((service, True))
+                services_with_status.append((service, True, ""))
             for service in USER_CONTROLLED_SERVICES:
                 if TEST_ENV == "true":
-                    services_with_status.append((service, True))
+                    services_with_status.append((service, True, ""))
                 else:
-                    services_with_status.append((service, False))
+                    services_with_status.append((service, False, ""))
             self.wo_db.execute_batch(query, services_with_status)
 
             # if the user does not wish to auto-recover user-controlled processes on startup,
@@ -238,26 +238,26 @@ class AutostarterWorker:
         except Exception:
             log.exception("exception")
 
-    def set_current_service_status(self, service, running=False):
+    def set_current_service_status(self, service, running=False, extra_info=''):
         query = (
-            "INSERT INTO process_states (name, running) "
-            "VALUES (%s, %s) ON CONFLICT (name) DO UPDATE "
-            "SET running = EXCLUDED.running"
+            "INSERT INTO process_states (name, running, extra_info) "
+            "VALUES (%s, %s, %s) ON CONFLICT (name) DO UPDATE "
+            "SET running = EXCLUDED.running, extra_info = EXCLUDED.extra_info"
         )
-        self.wo_db.execute(query, (service, running))
+        self.wo_db.execute(query, (service, running, extra_info))
 
     def check_and_control_services(self):
-        intended_status_query = "SELECT name, running FROM intended_process_states"
+        intended_status_query = "SELECT name, running, extra_info FROM intended_process_states"
         intended_status_entries = self.ro_db.execute(intended_status_query)
         intended_status_dict = {}
-        for service, intended_status in intended_status_entries:
-            intended_status_dict[service] = intended_status
+        for service, intended_status, intented_info in intended_status_entries:
+            intended_status_dict[service] = (intended_status, intented_info)
 
-        stored_status_query = "SELECT name, running FROM process_states"
+        stored_status_query = "SELECT name, running, extra_info FROM process_states"
         stored_status_entries = self.ro_db.execute(stored_status_query)
         stored_status_dict = {}
-        for service, stored_status in stored_status_entries:
-            stored_status_dict[service] = stored_status
+        for service, stored_status, stored_info in stored_status_entries:
+            stored_status_dict[service] = (stored_status, stored_info)
 
         ips_and_replicas_per_service = {}
         for service in intended_status_dict:
@@ -285,7 +285,8 @@ class AutostarterWorker:
 
             for replica_name, replica_ip in ips_and_replicas_per_service[service]:
                 try:
-                    intended_status = intended_status_dict[service]
+                    intended_status = intended_status_dict[service][0]
+                    intended_info = intended_status_dict[service][1]
                     r = requests.get(
                         "http://{}:{}/health".format(replica_ip, REST_PORT),
                         timeout=HEALTH_CHECK_TIMEOUT,
@@ -295,11 +296,13 @@ class AutostarterWorker:
                     )
                     # check if we need to update stored status
                     stored_status = None
+                    stored_info = ''
                     if replica_name in stored_status_dict:
-                        stored_status = stored_status_dict[replica_name]
-                    if current_status != stored_status:
+                        stored_status = stored_status_dict[replica_name][0]
+                        stored_info = stored_status_dict[replica_name][1]
+                    if current_status != stored_status or stored_info != intended_info:
                         self.set_current_service_status(
-                            replica_name, running=current_status
+                            replica_name, running=current_status, extra_info=intended_info
                         )
 
                     # ATTENTION: if response status is unconfigured, then the actual intention is False
@@ -367,7 +370,7 @@ class AutostarterWorker:
 
             # in the end, check the special case of detection
             if service == DETECTION_HOST:
-                intended_status = intended_status_dict[service]
+                intended_status = intended_status_dict[service][0]
                 detection_update_trigger = self.shared_memory_manager_dict[
                     "detection_update_trigger"
                 ]

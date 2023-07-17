@@ -21,6 +21,15 @@ from tornado.ioloop import IOLoop
 from tornado.web import Application
 from tornado.web import RequestHandler
 
+from artemis_utils.db import DB
+from artemis_utils.envvars import AUTO_RECOVER_PROCESS_STATE
+from artemis_utils.envvars import DB_HOST
+from artemis_utils.envvars import DB_NAME
+from artemis_utils.envvars import DB_PASS
+from artemis_utils.envvars import DB_PORT
+from artemis_utils.envvars import DB_USER
+
+
 # logger
 log = get_logger()
 
@@ -242,6 +251,18 @@ class MitigationDataWorker(ConsumerProducerMixin):
             priority=1,
         )
 
+        self.ro_db = DB(
+            application_name="autostarter-readonly",
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            reconnect=True,
+            autocommit=True,
+            readonly=True,
+        )
+
         log.info("data worker initiated")
 
     def get_consumers(self, Consumer, channel):
@@ -283,7 +304,18 @@ class MitigationDataWorker(ConsumerProducerMixin):
                         hijack_info, mitigation_action
                     )
                 )
+
                 hijack_info_str = json.dumps(hijack_info)
+                # add condition to deactivate mitigation if pseudo-service exists
+                intended_status_query = "SELECT name, running, extra_info FROM intended_process_states WHERE name='mitigation'"
+                intended_status_entries = self.ro_db.execute(intended_status_query)
+                
+                extra_info=intended_status_entries[0][2]
+                log.info(extra_info)
+                if extra_info == 'automodule-off':
+                    log.info("mitigation is canceled")
+                    return
+
                 subprocess.Popen(
                     [mitigation_action, "-i", hijack_info_str],
                     shell=False,

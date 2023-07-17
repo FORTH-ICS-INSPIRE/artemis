@@ -44,9 +44,9 @@
               "columns": [
                 "name",
                 "running",
+                "extra_info",
                 "loading",
-                "timestamp",
-                "extra_info"
+                "timestamp"
               ],
               "filter": {}
             }

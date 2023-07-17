@@ -1,27 +1,9 @@
-prefixes:
-    super_prefix: &super_prefix
-        - 192.168.0.0/16
-    sub_prefix_1: &sub_prefix_1
-        - 192.168.0.0/17
-    sub_prefix_2: &sub_prefix_2
-        - 192.168.128.0/17
+prefixes: {}
 monitors:
-    exabgp:
-      - ip: exabgpmonitor
-        port: 5000
-asns:
-    origin: &origin
-        65002
-    peer: &peer
-        65005
-rules:
-- prefixes:
-    - *super_prefix
-    - *sub_prefix_1
-    - *sub_prefix_2
-  origin_asns:
-    - *origin
-  neighbors:
-    - *peer
-  mitigation:
-      "/root/poc_mitigate_deaggregate.py"
+  exabgp:
+  - ip: exabgp
+    port: 5000
+    autoconf: "true"
+asns: {}
+rules: []
+

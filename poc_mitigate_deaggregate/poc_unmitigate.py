@@ -20,8 +20,8 @@ handler.setFormatter(formatter)
 # add the handlers to the logger
 log.addHandler(handler)
 
-# Sample call: python poc_mitigate_deaggregate.py -i '{"key":"123","prefix":"10.0.0.0/23"}'
-parser = argparse.ArgumentParser(description="test ARTEMIS mitigation via deggregation")
+# Sample call: python poc_unmitigate.py -i '{"key":"123","prefix":"10.0.0.0/23"}'
+parser = argparse.ArgumentParser(description="test ARTEMIS unmitigation")
 parser.add_argument(
     "-i",
     "--info_hijack",

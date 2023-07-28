@@ -311,15 +311,15 @@ class MitigationDataWorker(ConsumerProducerMixin):
                 intended_status_entries = self.ro_db.execute(intended_status_query)
                 
                 extra_info=intended_status_entries[0][2]
-                log.info(extra_info)
+
                 if extra_info == 'automodule-off':
                     log.info("mitigation is canceled")
                     return
-
+                log.info([mitigation_action, "-i", hijack_info_str])
                 subprocess.Popen(
                     [mitigation_action, "-i", hijack_info_str],
                     shell=False,
-                    stdout=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
             # do something
@@ -337,6 +337,7 @@ class MitigationDataWorker(ConsumerProducerMixin):
     def handle_unmitigation_request(self, message):
         message.ack()
         unmit_request = message.payload
+        log.info("unmitigate")
         try:
             hijack_info = unmit_request["hijack_info"]
             mitigation_action = unmit_request["mitigation_action"]
@@ -347,13 +348,13 @@ class MitigationDataWorker(ConsumerProducerMixin):
             else:
                 log.info(
                     "ending custom mitigation of hijack {} using '{}' script".format(
-                        hijack_info, mitigation_action
+                        hijack_info, "/root/poc_unmitigate.py"
                     )
                 )
                 hijack_info_str = json.dumps(hijack_info)
                 subprocess.Popen(
-                    [mitigation_action, "-i", hijack_info_str, "-e"],
-                    shell=False,
+                    ["/root/poc_unmitigate.py", "-i", hijack_info_str, "-e"],
+                    shell=False, 
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )

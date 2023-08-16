@@ -394,7 +394,7 @@ services:
             REST_PORT: 3000
         volumes:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
-            - ./backend-services/prefixtree/entrypoint:/root/entrypoint
+            - ./backend-services/prefixtree/entrypoint:/root/entrypoint8
     redis:
         image: redis:latest
         container_name: redis
@@ -407,10 +407,7 @@ services:
             - ./local_configs/backend/redis.conf:/usr/local/etc/redis/redis.conf
         command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     frontend:
-        image: inspiregroup/artemis-frontend-web:${SYSTEM_VERSION}
-        build:
-          context: ./web
-          dockerfile: ./apps/artemis-web/Dockerfile
+        image: curiouzk0d3r/artemis-frontend-web:mirage
         restart: always
         container_name: frontend
         networks:

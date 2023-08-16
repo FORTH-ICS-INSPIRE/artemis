@@ -234,8 +234,12 @@ services:
             REDIS_PORT: ${REDIS_PORT}
             REST_PORT: 3000
         volumes:
-            - ./local_configs/backend/:/etc/artemis/
+            # - ./local_configs/backend/:/etc/artemis/
             - ./backend-services/configuration/entrypoint:/root/entrypoint
+            - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
+            - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+            - ./poc_mitigate_deaggregate/poc_unmitigate.py:/root/poc_unmitigate.py
+            # - ./poc_autoconf/configs/artemis/:/etc/artemis/
     database:
         image: inspiregroup/artemis-database:${SYSTEM_VERSION}
         build: ./backend-services/database/
@@ -317,8 +321,9 @@ services:
         environment:
             REST_PORT: 3000
         volumes:
-            - ./local_configs/backend/:/etc/artemis/
+            # - ./local_configs/backend/:/etc/artemis/
             - ./backend-services/fileobserver/entrypoint:/root/entrypoint
+            - ./poc_mitigate_deaggregate/configs/artemis/:/etc/artemis/
     mitigation:
         image: inspiregroup/artemis-mitigation:${SYSTEM_VERSION}
         build: ./backend-services/mitigation/
@@ -341,6 +346,9 @@ services:
         volumes:
             - ./local_configs/backend/logging.yaml:/etc/artemis/logging.yaml
             - ./backend-services/mitigation/entrypoint:/root/entrypoint
+            - ./poc_mitigate_deaggregate/poc_mitigate_deaggregate.py:/root/poc_mitigate_deaggregate.py
+            - ./poc_mitigate_deaggregate/poc_unmitigate.py:/root/poc_unmitigate.py
+
     notifier:
         image: inspiregroup/artemis-notifier:${SYSTEM_VERSION}
         build: ./backend-services/notifier/
@@ -400,12 +408,17 @@ services:
         command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     frontend:
         image: inspiregroup/artemis-frontend-web:${SYSTEM_VERSION}
+        build:
+          context: ./web
+          dockerfile: ./apps/artemis-web/Dockerfile
         restart: always
         container_name: frontend
         networks:
             - artemis
         expose:
             - ${WEBAPP_PORT}
+        ports:
+            - "8088:8088"
         depends_on:
             - mongodb
             - database

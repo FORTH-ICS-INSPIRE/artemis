@@ -1,6 +1,6 @@
 version: '3.4'
 services:
-  exabgpmonitor:
+  exabgp:
     image: mavromat/exabgp-monitor:latest
     container_name: exabgpmonitor
     restart: always

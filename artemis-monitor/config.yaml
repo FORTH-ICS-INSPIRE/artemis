@@ -1,0 +1,57 @@
+services:
+  configuration:
+    host: configuration
+    port: 3000
+    endpoint: /health
+  database:
+    host: database
+    port: 3000
+    endpoint: /health
+  detection:
+    host: detection
+    port: 3000
+    endpoint: /health
+  prefixtree:
+    host: prefixtree
+    port: 3000
+    endpoint: /health
+  mitigation:
+    host: mitigation
+    port: 3000
+    endpoint: /health
+  notifier:
+    host: notifier
+    port: 3000
+    endpoint: /health
+  autoignore:
+    host: autoignore
+    port: 3000
+    endpoint: /health
+  autostarter:
+    host: autostarter
+    port: 3000
+    endpoint: /health
+  fileobserver:
+    host: fileobserver
+    port: 3000
+    endpoint: /health
+  riperistap:
+    host: riperistap
+    port: 3000
+    endpoint: /health
+  bgpstreamlivetap:
+    host: bgpstreamlivetap
+    port: 3000
+    endpoint: /health
+  bgpstreamkafkatap:
+    host: bgpstreamkafkatap
+    port: 3000
+    endpoint: /health
+  bgpstreamhisttap:
+    host: bgpstreamhisttap
+    port: 3000
+    endpoint: /health
+  exabgptap:
+    host: exabgptap
+    port: 3000
+    endpoint: /health

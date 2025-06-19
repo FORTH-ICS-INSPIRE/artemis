@@ -1,0 +1,22 @@
+version: '3.4'
+
+services:
+  artemis-monitor:
+    build: ./artemis-monitor
+    container_name: artemis-monitor
+    restart: always
+    ports:
+      - "3001:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./artemis-monitor/config.yaml:/app/config.yaml
+    networks:
+      - artemis
+    environment:
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASS=${ADMIN_PASS}
+      - API_KEY=${API_KEY}
+      - NGINX_HOST=${NGINX_HOST}
+
+networks:
+  artemis:

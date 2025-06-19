@@ -1,0 +1,7 @@
+flask[async]==2.3.3
+aiohttp==3.8.5
+python-json-logger==2.0.7
+rich==13.7.0
+asyncio==3.4.3
+docker==7.1.0
+PyYAML==6.0.1
